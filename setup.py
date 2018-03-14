@@ -1,15 +1,12 @@
 from setuptools import setup, find_packages
 
-project_name = 'YOUR-PACKAGE'
-package_name = 'YOUR_PACKAGE'
-
 setup(
-    name=project_name,
-    version='0.1',
+    name='brewblox-controller-spark',
+    version='0.1.0',
     long_description=open('README.md').read(),
-    url='YOUR_REPOSITORY',
-    author='YOUR NAME',
-    author_email='YOU@PROVIDER.com',
+    url='https://github.com/BrewBlox/brewblox-controller-spark',
+    author='BrewPi',
+    author_email='Development@brewpi.com',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'License :: OSI Approved :: GNU General Public License (GPL)',
@@ -17,7 +14,7 @@ setup(
         'Intended Audience :: End Users/Desktop',
         'Topic :: System :: Hardware',
     ],
-    keywords='brewing brewpi brewblox embedded plugin service',
+    keywords='brewing brewpi brewblox embedded controller spark service',
     packages=find_packages(exclude=['test']),
     install_requires=[
         'brewblox-service~=0.5'
