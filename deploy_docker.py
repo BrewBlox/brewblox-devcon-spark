@@ -17,8 +17,9 @@ def parse_args(sys_args: list=None):
 
 
 def login(client, args):
-    print('==== Logging in ====')
-    client.login(username=args.user, password=args.password)
+    if args.user:
+        print('==== Logging in ====')
+        client.login(username=args.user, password=args.password)
 
 
 def build(client, args):
