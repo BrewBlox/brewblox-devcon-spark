@@ -74,3 +74,4 @@ target/
 
 # Python package files for building Docker
 docker/pkg/*
+!docker/pkg/.gitkeep
