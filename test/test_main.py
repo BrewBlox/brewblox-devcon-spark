@@ -1,8 +1,8 @@
 """
-Tests brewblox_controller_spark.__main__.py
+Tests brewblox_devcon_spark.__main__.py
 """
 
-from brewblox_controller_spark import __main__ as main
+from brewblox_devcon_spark import __main__ as main
 
 
 TESTED = main.__name__

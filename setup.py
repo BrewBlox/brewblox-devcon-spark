@@ -1,10 +1,10 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='brewblox-controller-spark',
+    name='brewblox-devcon-spark',
     version='0.1.0',
     long_description=open('README.md').read(),
-    url='https://github.com/BrewBlox/brewblox-controller-spark',
+    url='https://github.com/BrewBlox/brewblox-devcon-spark',
     author='BrewPi',
     author_email='Development@brewpi.com',
     classifiers=[
