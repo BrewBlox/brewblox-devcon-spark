@@ -5,7 +5,7 @@ Example of how to import and use the brewblox service
 import logging
 
 from brewblox_service import service, events
-from brewblox_controller_spark import controller
+from brewblox_devcon_spark import controller
 
 LOGGER = logging.getLogger(__name__)
 

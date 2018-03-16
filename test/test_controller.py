@@ -1,9 +1,9 @@
 """
-Tests brewblox_controller_spark.controller
+Tests brewblox_devcon_spark.controller
 """
 
 import pytest
-from brewblox_controller_spark import controller
+from brewblox_devcon_spark import controller
 
 TESTED = controller.__name__
 

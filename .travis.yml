@@ -27,7 +27,7 @@ deploy:
       python3 ./deploy_docker.py 
       --user "$DOCKER_USER"
       --password "$DOCKER_PASSWORD"
-      --name brewblox/brewblox-controller-spark
+      --name brewblox/brewblox-devcon-spark
       --tags latest $(git describe --tags)
     skip_cleanup: true
     on:
@@ -39,10 +39,10 @@ deploy:
       python3 ./deploy_docker.py 
       --user "$DOCKER_USER"
       --password "$DOCKER_PASSWORD"
-      --name brewblox/brewblox-controller-spark
+      --name brewblox/brewblox-devcon-spark
       --tags "$TRAVIS_BRANCH"
     skip_cleanup: true
     on:
       tags: false
-      repo: BrewBlox/brewblox-controller-spark
+      repo: BrewBlox/brewblox-devcon-spark
       all_branches: true

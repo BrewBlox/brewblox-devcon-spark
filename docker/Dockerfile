@@ -7,6 +7,6 @@ COPY ./Dockerfile ./pkg/* /pkg/
 
 EXPOSE 5000
 
-RUN pip3 install -U brewblox-controller-spark -f /pkg/
+RUN pip3 install -U brewblox-devcon-spark -f /pkg/
 
-ENTRYPOINT ["python3", "-m", "brewblox_controller_spark"]
+ENTRYPOINT ["python3", "-m", "brewblox_devcon_spark"]
