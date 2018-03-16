@@ -19,6 +19,8 @@ setup(
     install_requires=[
         'brewblox-service~=0.5',
         'nesdict~=0.2.0',
+        'pyserial-asyncio==0.4',
+        'logger==1.4'
     ],
     python_requires='>=3.6',
     extras_require={'dev': ['tox']}
