@@ -5,17 +5,18 @@ Implements a protocol and a conduit for async serial communication.
 import asyncio
 import logging
 import re
-from typing import Tuple, Iterable, Generator, Callable
+from typing import Tuple, Callable
+# from typing import Tuple, Iterable, Generator, Callable
+from functools import partial
 
 import serial
 from serial.aio import SerialTransport
-from serial.tools import list_ports
+# from serial.tools import list_ports
 
 LOGGER = logging.getLogger(__name__)
 
 DeviceType_ = Tuple[str, str, str]
-DataCallback_ = Callable[[str], None]
-DebugCallback_ = Callable[[str], None]
+MessageCallback_ = Callable[['SparkConduit', str], None]
 
 
 PARTICLE_DEVICES = {
@@ -30,21 +31,76 @@ DEFAULT_BAUD_RATE = 57600
 AUTO_PORT = 'auto'
 
 
-class SerialProtocol(asyncio.Protocol):
-    def __init__(self, loop):
+async def _default_on_message(conduit: 'SparkConduit', message: str):
+    LOGGER.info(f'Unhandled message: conduit={conduit}, message={message}')
+
+
+class SparkConduit():
+
+    def __init__(self,
+                 on_event: MessageCallback_=None,
+                 on_data: MessageCallback_=None):
+        # Communication
+        self._port = None
+        self._protocol = None
+        self._serial = None
+
+        # Callback handling
+        self.on_event = on_event
+        self.on_data = on_data
+
+    @property
+    def on_event(self) -> MessageCallback_:
+        return self._on_event
+
+    @on_event.setter
+    def on_event(self, f: MessageCallback_):
+        self._on_event = f if f else _default_on_message
+
+    @property
+    def on_data(self) -> MessageCallback_:
+        return self._on_data
+
+    @on_data.setter
+    def on_data(self, f: MessageCallback_):
+        self._on_data = f if f else _default_on_message
+
+    @property
+    def is_bound(self):
+        return self._serial and self._serial.is_open
+
+    def bind(self, port: str=AUTO_PORT, loop: asyncio.BaseEventLoop=None):
+        loop = loop or asyncio.get_event_loop()
+
+        # TODO(Bob): use detect port
+        self._port = port
+        self._protocol = SparkProtocol(
+            on_event=partial(self._do_callback, loop, 'on_event'),
+            on_data=partial(self._do_callback, loop, 'on_data'))
+        self._serial = serial.serial_for_url(self._port, baudrate=DEFAULT_BAUD_RATE)
+        self._transport = SerialTransport(loop, self._protocol, self._serial)
+
+        return self._transport is not None
+
+    async def write(self, data):
+        assert self._serial, 'Serial unbound or not available'
+        self._serial.write(data)
+
+    def _do_callback(self, loop, cb_attr, message):
+        # Retrieve the callback function every time to allow changing it
+        func = getattr(self, cb_attr)
+        # ensure_future does not raise exceptions
+        asyncio.ensure_future(func(self, message), loop=loop)
+
+
+class SparkProtocol(asyncio.Protocol):
+    def __init__(self,
+                 on_event: Callable[[str], None],
+                 on_data: Callable[[str], None]):
         super().__init__()
-        self._loop = loop
-        self._data_messages = asyncio.Queue()
-        self._event_messages = asyncio.Queue()
+        self._on_event = on_event
+        self._on_data = on_data
         self._buffer = ''
-
-    @property
-    def events(self):
-        return self._event_messages
-
-    @property
-    def data(self):
-        return self._data_messages
 
     def connection_made(self, transport):
         transport.serial.rts = False
@@ -57,12 +113,12 @@ class SerialProtocol(asyncio.Protocol):
         # Most annotations can be discarded, except for event messages
         # Event messages are annotations that start with !
         for event in self._coerce_message_from_buffer(start='<', end='>', filter_expr='!([\s\S]*)'):
-            self._event_messages.put_nowait(event)
+            self._on_event(event)
 
         # Once annotations are filtered, all that remains is data
         # Data is newline-separated
         for data in self._coerce_message_from_buffer(start='^', end='\n'):
-            self._data_messages.put_nowait(data)
+            self._on_data(data)
 
     def connection_lost(self, exc):
         LOGGER.warn(f'port closed: {exc}')
@@ -115,62 +171,39 @@ class SerialProtocol(asyncio.Protocol):
         yield from messages
 
 
-class SerialConduit():
-
-    def __init__(self, port: str=AUTO_PORT, loop: asyncio.BaseEventLoop=None):
-        self._loop = loop or asyncio.get_event_loop()
-        self.port = detect_port(port)
-        self.transport = None
-        self.serial = serial.serial_for_url(port, baudrate=DEFAULT_BAUD_RATE)
-        self.protocol = SerialProtocol(self._loop)
-
-    def bind(self):
-        self.transport = SerialTransport(self._loop, self.protocol, self.serial)
-        return self.transport is not None
-
-    async def write(self, data):
-        self.serial.write(data)
-
-    async def watch_messages(self):
-        yield await self.protocol.watch_messages()
-
-    @property
-    def is_bound(self):
-        return self.serial.is_open
+# def all_serial_devices() -> Iterable[DeviceType_]:
+#     return tuple(list_ports.comports())
 
 
-def all_serial_devices() -> Iterable[DeviceType_]:
-    return tuple(list_ports.comports())
+# def all_serial_ports() -> Generator[str, None, None]:
+#     for port, desc, hwid in all_serial_devices():
+#         yield port
 
 
-def all_serial_ports() -> Generator[str, None, None]:
-    for (port, name, desc) in all_serial_devices():
-        yield port
+# def recognized_serial_ports(devices: Iterable[DeviceType_]) -> Generator[str, None, None]:
+#     devices = devices if devices is not None else all_serial_devices()
+#     for device in devices:
+#         if is_recognized_device(device):
+#             yield device[0]
 
 
-def recognized_serial_ports(devices: Iterable[DeviceType_]) -> Generator[str, None, None]:
-    devices = devices if devices is not None else all_serial_devices()
-    for device in devices:
-        if is_recognized_device(device):
-            yield device[0]
+# def is_recognized_device(device: DeviceType_):
+#     port, desc, hwid = device
+#     for (device_name, device_desc) in KNOWN_DEVICES.keys():
+#         # used to match on name and desc, but under linux only desc is
+#         # returned, compared
+#         if re.match(device_desc, desc):
+#             return True
+#     return False
 
 
-def is_recognized_device(device: DeviceType_):
-    port, name, desc = device
-    for (device_name, device_desc) in KNOWN_DEVICES.keys():
-        # used to match on name and desc, but under linux only desc is
-        # returned, compared
-        if re.match(device_desc, desc):
-            return True
-    return False
+# def detect_port(port: str) -> str:
+#     if port == AUTO_PORT:
+#         devices = all_serial_devices()
+#         ports = tuple(recognized_serial_ports(devices))
+#         if not ports:
+#             raise ValueError(
+#                 f'Could not find recognized device. Known={[{v for v in d} for d in devices]}')
+#         return ports[0]
 
-
-def detect_port(port: str) -> str:
-    if port == AUTO_PORT:
-        devices = all_serial_devices()
-        ports = tuple(recognized_serial_ports(devices))
-        if not ports:
-            raise ValueError(f'Could not find recognized device. {repr(devices)}')
-        return ports[0]
-
-    return port
+#     return port
