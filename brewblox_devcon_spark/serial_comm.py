@@ -53,9 +53,14 @@ class SerialProtocol(asyncio.Protocol):
     def data_received(self, data):
         self._buffer += data.decode()
 
+        # Annotations use < and > as start/end characters
+        # Most annotations can be discarded, except for event messages
+        # Event messages are annotations that start with !
         for event in self._coerce_message_from_buffer(start='<', end='>', filter_expr='!([\s\S]*)'):
             self._event_messages.put_nowait(event)
 
+        # Once annotations are filtered, all that remains is data
+        # Data is newline-separated
         for data in self._coerce_message_from_buffer(start='^', end='\n'):
             self._data_messages.put_nowait(data)
 
@@ -63,9 +68,34 @@ class SerialProtocol(asyncio.Protocol):
         LOGGER.warn(f'port closed: {exc}')
 
     def _coerce_message_from_buffer(self, start: str, end: str, filter_expr: str=None):
+        """ Filters separate messages from the buffer.
+
+        It makes some assumptions about messages:
+        * They have a fixed start/end special character
+        * Start/end characters should not be included in yielded messages
+        * Messages do not include start/end characters of other message types
+        * Messages can be nested
+        * If a filter expression is specified, each capture should be a separate message
+
+        Returned messages are ordered on the position of their end character.
+        Given the buffer: (< and > are start/end characters)
+
+            '<messageA <messageB> <messageC> > data <messageD>'
+
+        Yielded messages will be:
+
+            [
+                'messageB',
+                'messageC',
+                'messageA   ',
+                'messageD'
+            ]
+
+        Afterwards, the buffer will contain ' data '
+        """
         messages = []
 
-        def remove_message(matchobj) -> str:
+        def extract_message(matchobj) -> str:
             msg = matchobj.group('message')
 
             if filter_expr is None:
@@ -78,7 +108,7 @@ class SerialProtocol(asyncio.Protocol):
         while re.search(f'.*{start}.*{end}', self._buffer):
             self._buffer = re.sub(
                 pattern=f'{start}(?P<message>[^{start}]*?){end}',
-                repl=remove_message,
+                repl=extract_message,
                 string=self._buffer,
                 count=1)
 

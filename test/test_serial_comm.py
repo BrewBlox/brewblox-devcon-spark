@@ -12,11 +12,13 @@ TESTED = serial_comm.__name__
 def serial_data():
     chunks = [
         '<add>0A<id>00<OneWir<!connected:sen'.encode(),
-        'sor>eTem<!n'.encode(),
-        'ewline\nmessage>pSensor>01<address>28C80E'.encode(),
+        'sor>eTem<!s'.encode(),
+        'paced message>pSensor>01<address>28C80E'.encode(),
         '9A0300009C\n'.encode(),
         '34234<!connected:mess<!interrupt>'.encode(),
-        'age>\n'.encode()
+        'age>\n'.encode(),
+        '<!interrupted '.encode(),
+        'message>'.encode()
     ]
 
     return chunks
@@ -28,9 +30,10 @@ async def test_coerce_events(loop, serial_data):
 
     expected_items = [
         'connected:sensor',
-        'newline\nmessage',
+        'spaced message',
         'interrupt',
         'connected:message',
+        'interrupted message'
     ]
     assert len(expected_items) == p.events.qsize()
     for expected in expected_items:
@@ -65,7 +68,7 @@ async def test_coerce_partial(loop, serial_data):
 
     p.data_received(serial_data[2])
     p.data_received(serial_data[3])
-    assert p.events.get_nowait() == 'newline\nmessage'
+    assert p.events.get_nowait() == 'spaced message'
     assert p.data.get_nowait() == '0A''00''01''28C80E9A0300009C'
 
     assert p.events.empty()
