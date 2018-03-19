@@ -104,10 +104,12 @@ class SparkConduit():
         self._transport = None
 
     async def write(self, data: str):
-        LOGGER.info(f'Writing [{data}]')
-        data += '\n'
+        return await self.write_encoded(data.encode())
+
+    async def write_encoded(self, data: bytes):
+        data += b'\n'
         assert self._serial, 'Serial unbound or not available'
-        return self._serial.write(data.encode())
+        return self._serial.write(data)
 
     def _do_callback(self, loop, cb_attr, message):
         # Retrieve the callback function every time to allow changing it
@@ -146,7 +148,7 @@ class SparkProtocol(asyncio.Protocol):
             self._on_data(data)
 
     def connection_lost(self, exc):
-        LOGGER.warn(f'Protocol connection lost: {exc}')
+        LOGGER.warn(f'Protocol connection lost, error: {exc}')
 
     def _coerce_message_from_buffer(self, start: str, end: str, filter_expr: str=None):
         """ Filters separate messages from the buffer.
@@ -204,7 +206,7 @@ def has_recognized_device(port: PortType_) -> bool:
     device, desc, hwid = port
     for known_device in KNOWN_DEVICES:
         # Compare on hardware ID
-        LOGGER.info(f'Comparing (known) {known_device.hwid} with (actual) {hwid}')
+        # LOGGER.info(f'Comparing (known) {known_device.hwid} with (actual) {hwid}')
         if re.match(known_device.hwid, hwid):
             return True
     return False
@@ -222,17 +224,9 @@ def detect_device(device: str=None) -> str:
         try:
             port = next(recognized_ports())
             device = port.device
+            LOGGER.info(f'Automatically detected {port}')
         except StopIteration:
             raise ValueError(
                 f'Could not find recognized device. Known={[{v for v in d} for d in all_ports()]}')
 
     return device
-
-
-if __name__ == '__main__':
-    # try:
-    #     print(detect_device())
-    # except ValueError as ex:
-    #     print(ex)
-    c = SparkConduit()
-    c.bind()

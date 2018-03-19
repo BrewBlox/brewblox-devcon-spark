@@ -1,5 +1,5 @@
 """
-Tests brewblox_devcon_spark.serial_comm
+Tests brewblox_devcon_spark.communication
 """
 
 import asyncio
@@ -9,9 +9,9 @@ from unittest.mock import Mock, call
 import pytest
 from asynctest import CoroutineMock
 
-from brewblox_devcon_spark import serial_comm
+from brewblox_devcon_spark import communication
 
-TESTED = serial_comm.__name__
+TESTED = communication.__name__
 LOGGER = logging.getLogger(__name__)
 
 
@@ -106,7 +106,7 @@ def bound_collector(loop):
 
 @pytest.fixture
 def bound_conduit(loop, serial_mock, transport_mock, bound_collector):
-    conduit = serial_comm.SparkConduit(
+    conduit = communication.SparkConduit(
         on_event=bound_collector.async_on_event,
         on_data=bound_collector.async_on_data)
     conduit.bind('port', loop)
@@ -132,7 +132,7 @@ def _send_chunks(protocol, data=None):
 async def test_protocol_funcs(loop):
     transport_mock = Mock()
     coll = Collector(loop)
-    p = serial_comm.SparkProtocol(coll.on_event, coll.on_data)
+    p = communication.SparkProtocol(coll.on_event, coll.on_data)
 
     p.connection_made(transport_mock)
     assert transport_mock.serial.rts is False
@@ -142,7 +142,7 @@ async def test_protocol_funcs(loop):
 
 async def test_coerce_messages(loop):
     coll = Collector(loop)
-    p = serial_comm.SparkProtocol(coll.on_event, coll.on_data)
+    p = communication.SparkProtocol(coll.on_event, coll.on_data)
 
     _send_chunks(p)
     await coll.verify()
@@ -150,7 +150,7 @@ async def test_coerce_messages(loop):
 
 async def test_coerce_partial(loop, serial_data):
     coll = Collector(loop)
-    p = serial_comm.SparkProtocol(coll.on_event, coll.on_data)
+    p = communication.SparkProtocol(coll.on_event, coll.on_data)
 
     p.data_received(serial_data[0])
     await coll.verify([], [])
@@ -165,7 +165,7 @@ async def test_coerce_partial(loop, serial_data):
 
 async def test_unbound_conduit(loop, serial_mock, transport_mock):
     coll = Collector(loop)
-    conduit = serial_comm.SparkConduit(
+    conduit = communication.SparkConduit(
         on_event=coll.async_on_event,
         on_data=coll.async_on_data)
 
@@ -212,7 +212,7 @@ async def test_conduit_none_callback(bound_collector, bound_conduit):
 
 async def test_conduit_err_callback(loop, serial_mock, transport_mock, expected_events):
     error_cb = CoroutineMock(side_effect=RuntimeError('boom!'))
-    conduit = serial_comm.SparkConduit(
+    conduit = communication.SparkConduit(
         on_event=error_cb,
         on_data=None
     )

@@ -9,7 +9,7 @@ from typing import Type
 from aiohttp import web
 from nesdict import NesDict
 
-from brewblox_devcon_spark.serial_comm import SparkConduit
+from brewblox_devcon_spark.commander import SparkCommander
 
 CONTROLLER_KEY = 'controller.spark'
 
@@ -31,7 +31,7 @@ class SparkController():
         self.name = name
         self.state = NesDict()
         self._task: Type[asyncio.Task] = None
-        self.conduit: SparkConduit = None
+        self.commander: SparkCommander = None
 
         if app:
             self.setup(app)
@@ -44,22 +44,20 @@ class SparkController():
         app.on_cleanup.append(self.close)
 
     async def start(self, app: Type[web.Application]):
-        self.conduit = SparkConduit()
-        # while True:
-        #     try:
-        self.conduit.bind(loop=app.loop)
-        #     break
-        # except CancelledError:
-        #     return
-        # except ValueError:
-        #     asyncio.sleep(1, loop=app.loop)
+        self.commander = SparkCommander()
+        self.commander.bind(loop=app.loop)
 
     async def close(self, app):
-        if self.conduit:
-            self.conduit.close()
+        if self.commander:
+            self.commander.close()
 
     async def write(self, command: str):
-        return await self.conduit.write(command)
+        return await self.commander.conduit.write(command)
+
+    async def do(self, command, *args, **kwargs):
+        f = getattr(self.commander, command)
+        LOGGER.info(f'command={command}, args={args}, kwargs={kwargs}')
+        return await f(*args, **kwargs)
 
 
 @routes.post('/write')
@@ -89,11 +87,48 @@ async def write(request: web.Request) -> web.Response:
                     type: string
                     example: '0F00'
     """
-    args = await request.json()
-    command = args['command']
+    command = (await request.json())['command']
+    retval = await get_controller(request.app).write(command)
+    return web.json_response(dict(written=retval))
+
+
+@routes.post('/do')
+async def do_command(request: web.Request) -> web.Response:
+    """
+    ---
+    tags:
+    - Controller
+    - Spark
+    operationId: controller.spark.do
+    summary: Do a specific command
+    description: >
+        Sends command, without waiting for response.
+    produces:
+    - application/json
+    parameters:
+    -
+        in: body
+        name: body
+        description: command
+        required: try
+        schema:
+            type: object
+            properties:
+                command:
+                    type: string
+                    example: list_objects
+                args:
+                    type: array
+                    example: []
+                kwargs:
+                    type: object
+    """
+    request_args = await request.json()
+    command = request_args['command']
+    args = request_args['args']
+    kwargs = request_args['kwargs']
     controller = get_controller(request.app)
-    retval = await controller.write(command)
-    return web.json_response(dict(resp=retval))
+    return web.json_response(await controller.do(command, *args, **kwargs))
 
 
 @routes.get('/state')
