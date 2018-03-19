@@ -3,6 +3,9 @@ from construct import (Byte, Const, Default, Enum, FlagsEnum, Int8sb, Int8ub,
                        Sequence, Struct, Terminated, VarInt, Adapter, RepeatUntil)
 
 
+COMMANDS = dict()
+
+
 class VariableLengthIDAdapter(Adapter):
 
     def __init__(self):
@@ -50,111 +53,125 @@ BrewBloxObjectTypeEnum = Enum(Byte,
                               )
 
 CBoxCommand = Struct(
-    "opcode" / CBoxOpcodeEnum,
-)
-
-# CREATE OBJECT
-CreateObjectCommandHeader = Struct(
-    "opcode" / Const(CBoxOpcodeEnum.encmapping['CREATE_OBJECT'], Byte),
-    "id" / VariableLengthIDAdapter()
-)
-
-CreateObjectCommandRequest = CreateObjectCommandHeader + Struct(
-    "type" / BrewBloxObjectTypeEnum,
-    "reserved_size" / Byte,
-    "data" / PrefixedArray(VarInt, Byte)
-)
-
-CreateObjectCommandResponse = CreateObjectCommandHeader + Struct(
-    "type" / Optional(BrewBloxObjectTypeEnum),
-    "reserved_size" / Byte,
-    "data" / Optional(PrefixedArray(VarInt, Byte)),
-    "status" / Int8sb,
-    Terminated
-)
-
-# CREATE PROFILE
-CreateProfileCommandRequest = Struct(
-    "opcode" / Const(CBoxOpcodeEnum.encmapping['CREATE_PROFILE'], Byte),
-)
-
-CreateProfileCommandResponse = CreateProfileCommandRequest + Struct(
-    "profile_id" / Int8sb,
-    Terminated
-)
-
-# ACTIVATE PROFILE
-ActivateProfileCommandRequest = Struct(
-    "opcode" / Const(CBoxOpcodeEnum.encmapping['ACTIVATE_PROFILE'], Byte),
-    "profile_id" / Int8sb
-)
-
-ActivateProfileCommandResponse = ActivateProfileCommandRequest + Struct(
-    "status" / Int8sb,
-    Terminated
-)
-
-# LIST PROFILES
-ListProfilesCommandRequest = Struct(
-    "opcode" / Const(CBoxOpcodeEnum.encmapping['LIST_PROFILES'], Byte),
-)
-
-ListProfilesCommandResponse = ListProfilesCommandRequest + Struct(
-    "active_profile" / Int8ub
-    #    "defined_profiles" / Sequence(Int8ub)
+    'opcode' / CBoxOpcodeEnum,
 )
 
 
-# LIST PROFILE OBJECTS
-ListObjectsCommandRequest = Struct(
-    "opcode" / Const(CBoxOpcodeEnum.encmapping['LIST_OBJECTS'], Byte),
-    "profile_id" / Int8sb
+class Command():
+    def __init__(self,
+                 opcode=None,
+                 header=Struct(),
+                 request=Struct(),
+                 response=Struct()):
+        self.opcode = opcode
+        self.opcode_struct = Struct('opcode' / Const(CBoxOpcodeEnum.encmapping[self.opcode], Byte))
+        self.header = self.opcode_struct + header
+        self.request = self.header + request
+        self.response = self.header + response
+
+
+def add_command(opcode,
+                header=Struct(),
+                request=Struct(),
+                response=Struct()):
+    COMMANDS[opcode] = Command(opcode, header, request, response)
+
+
+add_command(
+    opcode=CBoxOpcodeEnum.CREATE_OBJECT,
+    header=Struct(
+        'id' / VariableLengthIDAdapter()
+    ),
+    request=Struct(
+        'type' / BrewBloxObjectTypeEnum,
+        'reserved_size' / Byte,
+        'data' / PrefixedArray(VarInt, Byte)
+    ),
+    response=Struct(
+        'type' / Optional(BrewBloxObjectTypeEnum),
+        'reserved_size' / Byte,
+        'data' / Optional(PrefixedArray(VarInt, Byte)),
+        'status' / Int8sb,
+        Terminated
+    )
 )
 
-ListObjectsCommandResponse = ListObjectsCommandRequest + Struct(
-    "status" / Int8sb,
-    Padding(1),  # FIXME Protocol error?
-    "objects" / Optional(Sequence(CreateObjectCommandRequest)),
-    "terminator" / Const(0x00, Byte),
-    Terminated
+add_command(
+    opcode=CBoxOpcodeEnum.CREATE_PROFILE,
+    response=Struct(
+        'profile_id' / Int8sb,
+        Terminated
+    )
 )
 
-# READ VALUE
-ReadValueCommandHeader = Struct(
-    "opcode" / Const(CBoxOpcodeEnum.encmapping['READ_VALUE'], Byte),
-    "id" / VariableLengthIDAdapter(),
-    "type" / BrewBloxObjectTypeEnum
+add_command(
+    opcode=CBoxOpcodeEnum.ACTIVATE_PROFILE,
+    header=Struct(
+        'profile_id' / Int8sb
+    ),
+    response=Struct(
+        'status' / Int8sb,
+        Terminated
+    )
 )
 
-ReadValueCommandRequest = ReadValueCommandHeader + Struct(
-    "size" / Default(Int8ub, 0)
+add_command(
+    opcode=CBoxOpcodeEnum.LIST_PROFILES,
+    response=Struct(
+        'active_profile' / Int8ub
+        #    'defined_profiles' / Sequence(Int8ub)
+    )
 )
 
-ReadValueCommandResponse = ReadValueCommandHeader + Struct(
-    "expectedsize" / Int8sb,
-    "real-type" / BrewBloxObjectTypeEnum,
-    Padding(1),
-    "data" / Optional(PascalString(VarInt, 'utf8')),  # TODO(Bob): should encoding be utf8?
-    Terminated
+add_command(
+    opcode=CBoxOpcodeEnum.LIST_OBJECTS,
+    header=Struct(
+        'profile_id' / Int8sb
+    ),
+    response=Struct(
+        'status' / Int8sb,
+        Padding(1),  # FIXME Protocol error?
+        'objects' / Optional(Sequence(COMMANDS['CREATE_OBJECT'].request)),
+        'terminator' / Const(0x00, Byte),
+        Terminated
+    )
 )
 
-# DELETE OBJECT
-DeleteObjectCommandRequest = Struct(
-    "opcode" / Const(CBoxOpcodeEnum.encmapping['DELETE_OBJECT'], Byte),
-    "id" / VariableLengthIDAdapter()
+add_command(
+    opcode=CBoxOpcodeEnum.READ_VALUE,
+    header=Struct(
+        'id' / VariableLengthIDAdapter(),
+        'type' / BrewBloxObjectTypeEnum
+    ),
+    request=Struct(
+        'size' / Default(Int8ub, 0)
+    ),
+    response=Struct(
+        'expectedsize' / Int8sb,
+        'real-type' / BrewBloxObjectTypeEnum,
+        Padding(1),
+        'data' / Optional(PascalString(VarInt, 'utf8')),  # TODO(Bob): should encoding be utf8?
+        Terminated
+    )
 )
 
-DeleteObjectCommandResponse = DeleteObjectCommandRequest + Struct(
-    "status" / Int8sb,
-    Terminated
+add_command(
+    opcode=CBoxOpcodeEnum.DELETE_OBJECT,
+    header=Struct(
+        'id' / VariableLengthIDAdapter()
+    ),
+    response=Struct(
+        'status' / Int8sb,
+        Terminated
+    )
 )
 
-
-# RESET
-ResetCommandRequest = Struct(
-    "opcode" / Const(CBoxOpcodeEnum.encmapping['RESET'], Byte),
-    "flags" / FlagsEnum(Byte,
-                        erase_eeprom=1,
-                        hard_reset=2,
-                        default=0)
+add_command(
+    opcode=CBoxOpcodeEnum.RESET,
+    request=Struct(
+        'flags' / FlagsEnum(Byte,
+                            erase_eeprom=1,
+                            hard_reset=2,
+                            default=0)
+    )
 )
