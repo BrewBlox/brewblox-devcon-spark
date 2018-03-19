@@ -4,7 +4,7 @@ Tests brewblox_devcon_spark.serial_comm
 
 import asyncio
 import logging
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 import pytest
 from asynctest import CoroutineMock
@@ -31,6 +31,27 @@ class Collector():
 
     async def async_on_data(self, conduit, d):
         await self.data.put_nowait(d)
+
+    async def _verify(self, actual: asyncio.Queue, expected: list, items_left: bool):
+        await asyncio.sleep(0.001)
+        for expected_msg in expected:
+            actual_msg = actual.get_nowait()
+            assert actual_msg == expected_msg
+        assert items_left or actual.empty()
+
+    async def verify_events(self, expected: list=None, items_left=False):
+        if expected is None:
+            expected = expected_events()
+        await self._verify(self.events, expected, items_left)
+
+    async def verify_data(self, expected: list=None, items_left=False):
+        if expected is None:
+            expected = expected_data()
+        await self._verify(self.data, expected, items_left)
+
+    async def verify(self, expected_events: list=None, expected_data: list=None, items_left=False):
+        await self.verify_events(expected_events, items_left)
+        await self.verify_data(expected_data, items_left)
 
 
 @pytest.fixture
@@ -69,10 +90,43 @@ def expected_data():
 
 
 @pytest.fixture
+def serial_mock(mocker):
+    return mocker.patch(TESTED + '.serial.serial_for_url').return_value
+
+
+@pytest.fixture
+def transport_mock(mocker):
+    return mocker.patch(TESTED + '.SerialTransport').return_value
+
+
+@pytest.fixture
+def bound_collector(loop):
+    return Collector(loop)
+
+
+@pytest.fixture
+def bound_conduit(loop, serial_mock, transport_mock, bound_collector):
+    conduit = serial_comm.SparkConduit(
+        on_event=bound_collector.async_on_event,
+        on_data=bound_collector.async_on_data)
+    conduit.bind('port', loop)
+
+    return conduit
+
+
+@pytest.fixture
 def list_ports_mock(mocker):
     m = mocker.patch(TESTED + '.list_ports.comports')
     m.return_value = [('/dev/ttyX', 'Electron', 'USB VID:PID=2d04:c00a')]
     return m
+
+
+def _send_chunks(protocol, data=None):
+    """Helper function for calling data_received() on the protocol"""
+    if data is None:
+        data = serial_data()
+
+    [protocol.data_received(chunk) for chunk in data]
 
 
 async def test_protocol_funcs(loop):
@@ -86,20 +140,12 @@ async def test_protocol_funcs(loop):
     p.connection_lost('exception')
 
 
-async def test_coerce_messages(loop, serial_data, expected_events, expected_data):
+async def test_coerce_messages(loop):
     coll = Collector(loop)
     p = serial_comm.SparkProtocol(coll.on_event, coll.on_data)
-    [p.data_received(chunk) for chunk in serial_data]
 
-    assert len(expected_events) == coll.events.qsize()
-    for expected in expected_events:
-        actual = coll.events.get_nowait()
-        assert actual == expected
-
-    assert len(expected_data) == coll.data.qsize()
-    for expected in expected_data:
-        actual = coll.data.get_nowait()
-        assert actual == expected
+    _send_chunks(p)
+    await coll.verify()
 
 
 async def test_coerce_partial(loop, serial_data):
@@ -107,41 +153,17 @@ async def test_coerce_partial(loop, serial_data):
     p = serial_comm.SparkProtocol(coll.on_event, coll.on_data)
 
     p.data_received(serial_data[0])
-    assert coll.events.empty()
-    assert coll.data.empty()
+    await coll.verify([], [])
 
     p.data_received(serial_data[1])
-    assert coll.events.get_nowait() == 'connected:sensor'
-    assert coll.data.empty()
+    await coll.verify(['connected:sensor'], [])
 
     p.data_received(serial_data[2])
     p.data_received(serial_data[3])
-    assert coll.events.get_nowait() == 'spaced message'
-    assert coll.data.get_nowait() == '0A''00''01''28C80E9A0300009C'
-
-    assert coll.events.empty()
-    assert coll.data.empty()
+    await coll.verify(['spaced message'], ['0A''00''01''28C80E9A0300009C'])
 
 
-async def test_conduit(mocker, loop, serial_data, expected_events, expected_data):
-    serial_mock = mocker.patch(TESTED + '.serial.serial_for_url').return_value
-    mocker.patch(TESTED + '.SerialTransport')
-
-    async def test_callbacks(c: Collector):
-        [conduit._protocol.data_received(chunk) for chunk in serial_data]
-        # Allow event loop to process async calls inside the sync data_received() func
-        await asyncio.sleep(0.001)
-
-        for expected in expected_events:
-            actual = c.events.get_nowait()
-            assert actual == expected
-        assert c.events.empty()
-
-        for expected in expected_data:
-            actual = c.data.get_nowait()
-            assert actual == expected
-        assert c.events.empty()
-
+async def test_unbound_conduit(loop, serial_mock, transport_mock):
     coll = Collector(loop)
     conduit = serial_comm.SparkConduit(
         on_event=coll.async_on_event,
@@ -152,27 +174,50 @@ async def test_conduit(mocker, loop, serial_data, expected_events, expected_data
     with pytest.raises(AssertionError):
         await conduit.write('stuff')
 
-    # bind, and test callbacks provided in init
-    conduit.bind('port', loop)
-    await test_callbacks(coll)
 
+async def test_conduit_callbacks(bound_collector, bound_conduit):
+    # bind, and test callbacks provided in init
+    _send_chunks(bound_conduit._protocol)
+    await bound_collector.verify()
+
+
+async def test_conduit_write(bound_collector, bound_conduit, serial_mock):
     # write should be ok
-    await conduit.write('stuff')
+    await bound_conduit.write('stuff')
     serial_mock.write.assert_called_once_with('stuff')
 
+
+async def test_conduit_callback_change(loop, bound_collector, bound_conduit):
     # Change callback handler
     coll2 = Collector(loop)
-    conduit.on_event = coll2.async_on_event
-    conduit.on_data = coll2.async_on_data
-    await test_callbacks(coll2)
+    bound_conduit.on_event = coll2.async_on_event
+    bound_conduit.on_data = coll2.async_on_data
 
-    # None callback shouldn't break it
-    conduit.on_event = None
-    conduit.on_data = None
-    [conduit._protocol.data_received(chunk) for chunk in serial_data]
+    # Coll2 should receive all callbacks now
+    _send_chunks(bound_conduit._protocol)
+    await bound_collector.verify([], [])
+    await coll2.verify()
 
-    # Error in callback shouldn't break it
-    error_cb = CoroutineMock(side_effect=RuntimeError)
-    conduit.on_event = error_cb
-    [conduit._protocol.data_received(chunk) for chunk in serial_data]
-    assert error_cb.call_count == len(expected_events)
+
+async def test_conduit_none_callback(bound_collector, bound_conduit):
+    bound_conduit.on_event = None
+
+    # Should not raise any errors
+    _send_chunks(bound_conduit._protocol)
+
+    # No events received, but still getting data
+    await bound_collector.verify_events([])
+    await bound_collector.verify_data()
+
+
+async def test_conduit_err_callback(loop, serial_mock, transport_mock, expected_events):
+    error_cb = CoroutineMock(side_effect=RuntimeError('boom!'))
+    conduit = serial_comm.SparkConduit(
+        on_event=error_cb,
+        on_data=None
+    )
+    conduit.bind('port', loop)
+
+    # no errors should be thrown
+    _send_chunks(conduit._protocol)
+    assert error_cb.call_args_list == [call(conduit, e) for e in expected_events]
