@@ -5,30 +5,40 @@ Implements a protocol and a conduit for async serial communication.
 import asyncio
 import logging
 import re
-from typing import Tuple, Callable
-# from typing import Tuple, Iterable, Generator, Callable
+from typing import Tuple, Iterable, Generator, Callable
 from functools import partial
+from collections import namedtuple
 
 import serial
 from serial.aio import SerialTransport
-# from serial.tools import list_ports
+from serial.tools import list_ports
 
 LOGGER = logging.getLogger(__name__)
+DEFAULT_BAUD_RATE = 115200
 
-DeviceType_ = Tuple[str, str, str]
+PortType_ = Tuple[str, str, str]
 MessageCallback_ = Callable[['SparkConduit', str], None]
 
+DeviceMatch = namedtuple('DeviceMatcher', ['id', 'desc', 'hwid'])
 
-PARTICLE_DEVICES = {
-    (r'Spark Core.*Arduino.*', r'USB VID\:PID=1D50\:607D.*'): 'Spark Core',
-    (r'.*Photon.*', r'USB VID\:PID=2d04\:c006.*'): 'Particle Photon',
-    (r'.*P1.*', r'USB VID\:PID=2d04\:c008.*'): 'Particle P1',
-    (r'.*Electron.*', r'USB VID\:PID=2d04\:c00a.*'): 'Particle Electron'
+KNOWN_DEVICES = {
+    DeviceMatch(
+        id='Spark Core',
+        desc=r'Spark Core.*Arduino.*',
+        hwid=r'USB VID\:PID=1D50\:607D.*'),
+    DeviceMatch(
+        id='Particle Photon',
+        desc=r'.*Photon.*',
+        hwid=r'USB VID\:PID=2d04\:c006.*'),
+    DeviceMatch(
+        id='Particle P1',
+        desc=r'.*P1.*',
+        hwid=r'USB VID\:PID=2B04\:C008.*'),
+    DeviceMatch(
+        id='Particle Electron',
+        desc=r'.*Electron.*',
+        hwid=r'USB VID\:PID=2d04\:c00a.*'),
 }
-
-KNOWN_DEVICES = dict((k, v) for d in [PARTICLE_DEVICES] for k, v in d.items())
-DEFAULT_BAUD_RATE = 57600
-AUTO_PORT = 'auto'
 
 
 async def _default_on_message(conduit: 'SparkConduit', message: str):
@@ -41,9 +51,10 @@ class SparkConduit():
                  on_event: MessageCallback_=None,
                  on_data: MessageCallback_=None):
         # Communication
-        self._port = None
+        self._device = None
         self._protocol = None
         self._serial = None
+        self._transport = None
 
         # Callback handling
         self.on_event = on_event
@@ -69,22 +80,34 @@ class SparkConduit():
     def is_bound(self):
         return self._serial and self._serial.is_open
 
-    def bind(self, port: str=AUTO_PORT, loop: asyncio.BaseEventLoop=None):
+    def bind(self, device: str=None, loop: asyncio.BaseEventLoop=None):
+        self.close()
         loop = loop or asyncio.get_event_loop()
 
-        # TODO(Bob): use detect port
-        self._port = port
+        self._device = detect_device(device)
         self._protocol = SparkProtocol(
             on_event=partial(self._do_callback, loop, 'on_event'),
             on_data=partial(self._do_callback, loop, 'on_data'))
-        self._serial = serial.serial_for_url(self._port, baudrate=DEFAULT_BAUD_RATE)
+        self._serial = serial.serial_for_url(self._device, baudrate=DEFAULT_BAUD_RATE)
         self._transport = SerialTransport(loop, self._protocol, self._serial)
 
+        LOGGER.info(f'Conduit bound to {self._transport}')
         return self._transport is not None
 
-    async def write(self, data):
+    def close(self):
+        if self._transport:
+            self._transport.close()
+
+        self._device = None
+        self._protocol = None
+        self._serial = None
+        self._transport = None
+
+    async def write(self, data: str):
+        LOGGER.info(f'Writing [{data}]')
+        data += '\n'
         assert self._serial, 'Serial unbound or not available'
-        self._serial.write(data)
+        return self._serial.write(data.encode())
 
     def _do_callback(self, loop, cb_attr, message):
         # Retrieve the callback function every time to allow changing it
@@ -113,15 +136,17 @@ class SparkProtocol(asyncio.Protocol):
         # Most annotations can be discarded, except for event messages
         # Event messages are annotations that start with !
         for event in self._coerce_message_from_buffer(start='<', end='>', filter_expr='!([\s\S]*)'):
+            LOGGER.info(f'Event: [{event}]')
             self._on_event(event)
 
         # Once annotations are filtered, all that remains is data
         # Data is newline-separated
         for data in self._coerce_message_from_buffer(start='^', end='\n'):
+            LOGGER.info(f'Data: [{data}]')
             self._on_data(data)
 
     def connection_lost(self, exc):
-        LOGGER.warn(f'port closed: {exc}')
+        LOGGER.warn(f'Protocol connection lost: {exc}')
 
     def _coerce_message_from_buffer(self, start: str, end: str, filter_expr: str=None):
         """ Filters separate messages from the buffer.
@@ -152,7 +177,7 @@ class SparkProtocol(asyncio.Protocol):
         messages = []
 
         def extract_message(matchobj) -> str:
-            msg = matchobj.group('message')
+            msg = matchobj.group('message').rstrip()
 
             if filter_expr is None:
                 messages.append(msg)
@@ -171,39 +196,43 @@ class SparkProtocol(asyncio.Protocol):
         yield from messages
 
 
-# def all_serial_devices() -> Iterable[DeviceType_]:
-#     return tuple(list_ports.comports())
+def all_ports() -> Iterable[PortType_]:
+    return tuple(list_ports.comports())
 
 
-# def all_serial_ports() -> Generator[str, None, None]:
-#     for port, desc, hwid in all_serial_devices():
-#         yield port
+def has_recognized_device(port: PortType_) -> bool:
+    device, desc, hwid = port
+    for known_device in KNOWN_DEVICES:
+        # Compare on hardware ID
+        LOGGER.info(f'Comparing (known) {known_device.hwid} with (actual) {hwid}')
+        if re.match(known_device.hwid, hwid):
+            return True
+    return False
 
 
-# def recognized_serial_ports(devices: Iterable[DeviceType_]) -> Generator[str, None, None]:
-#     devices = devices if devices is not None else all_serial_devices()
-#     for device in devices:
-#         if is_recognized_device(device):
-#             yield device[0]
+def recognized_ports(ports: Iterable[PortType_]=None) -> Generator[PortType_, None, None]:
+    ports = ports if ports is not None else all_ports()
+    for port in ports:
+        if has_recognized_device(port):
+            yield port
 
 
-# def is_recognized_device(device: DeviceType_):
-#     port, desc, hwid = device
-#     for (device_name, device_desc) in KNOWN_DEVICES.keys():
-#         # used to match on name and desc, but under linux only desc is
-#         # returned, compared
-#         if re.match(device_desc, desc):
-#             return True
-#     return False
+def detect_device(device: str=None) -> str:
+    if device is None:
+        try:
+            port = next(recognized_ports())
+            device = port.device
+        except StopIteration:
+            raise ValueError(
+                f'Could not find recognized device. Known={[{v for v in d} for d in all_ports()]}')
+
+    return device
 
 
-# def detect_port(port: str) -> str:
-#     if port == AUTO_PORT:
-#         devices = all_serial_devices()
-#         ports = tuple(recognized_serial_ports(devices))
-#         if not ports:
-#             raise ValueError(
-#                 f'Could not find recognized device. Known={[{v for v in d} for d in devices]}')
-#         return ports[0]
-
-#     return port
+if __name__ == '__main__':
+    # try:
+    #     print(detect_device())
+    # except ValueError as ex:
+    #     print(ex)
+    c = SparkConduit()
+    c.bind()
