@@ -184,7 +184,7 @@ async def test_conduit_callbacks(bound_collector, bound_conduit):
 async def test_conduit_write(bound_collector, bound_conduit, serial_mock):
     # write should be ok
     await bound_conduit.write('stuff')
-    serial_mock.write.assert_called_once_with('stuff')
+    serial_mock.write.assert_called_once_with(b'stuff\n')
 
 
 async def test_conduit_callback_change(loop, bound_collector, bound_conduit):

@@ -30,7 +30,7 @@ class SparkController():
     def __init__(self, name: str, app=None):
         self.name = name
         self.state = NesDict()
-        self._task: Type[asyncio.Task] = None
+        self._task: asyncio.Task = None
         self.commander: SparkCommander = None
 
         if app:
@@ -55,9 +55,8 @@ class SparkController():
         return await self.commander.conduit.write(command)
 
     async def do(self, command, **kwargs):
-        f = getattr(self.commander, command)
         LOGGER.info(f'doing {command}{kwargs}')
-        return await f(**kwargs)
+        return await self.commander.do(command, **kwargs)
 
 
 @routes.post('/write')
@@ -92,7 +91,7 @@ async def write(request: web.Request) -> web.Response:
     return web.json_response(dict(written=retval))
 
 
-@routes.post('/do')
+@routes.post('/_debug/do')
 async def do_command(request: web.Request) -> web.Response:
     """
     ---
@@ -102,7 +101,7 @@ async def do_command(request: web.Request) -> web.Response:
     operationId: controller.spark.do
     summary: Do a specific command
     description: >
-        Sends command, without waiting for response.
+        Sends command, and returns controller response.
     produces:
     - application/json
     parameters:

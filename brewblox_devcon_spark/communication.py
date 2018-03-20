@@ -5,9 +5,9 @@ Implements a protocol and a conduit for async serial communication.
 import asyncio
 import logging
 import re
-from typing import Tuple, Iterable, Generator, Callable
-from functools import partial
 from collections import namedtuple
+from functools import partial
+from typing import Callable, Generator, Iterable, Tuple
 
 import serial
 from serial.aio import SerialTransport
@@ -60,6 +60,9 @@ class SparkConduit():
         self.on_event = on_event
         self.on_data = on_data
 
+        # Asyncio
+        self._loop = None
+
     @property
     def on_event(self) -> MessageCallback_:
         return self._on_event
@@ -82,14 +85,14 @@ class SparkConduit():
 
     def bind(self, device: str=None, loop: asyncio.BaseEventLoop=None):
         self.close()
-        loop = loop or asyncio.get_event_loop()
+        self._loop = loop or asyncio.get_event_loop()
 
         self._device = detect_device(device)
         self._protocol = SparkProtocol(
-            on_event=partial(self._do_callback, loop, 'on_event'),
-            on_data=partial(self._do_callback, loop, 'on_data'))
+            on_event=partial(self._do_callback, 'on_event'),
+            on_data=partial(self._do_callback, 'on_data'))
         self._serial = serial.serial_for_url(self._device, baudrate=DEFAULT_BAUD_RATE)
-        self._transport = SerialTransport(loop, self._protocol, self._serial)
+        self._transport = SerialTransport(self._loop, self._protocol, self._serial)
 
         LOGGER.info(f'Conduit bound to {self._transport}')
         return self._transport is not None
@@ -111,11 +114,11 @@ class SparkConduit():
         assert self._serial, 'Serial unbound or not available'
         return self._serial.write(data)
 
-    def _do_callback(self, loop, cb_attr, message):
+    def _do_callback(self, cb_attr, message):
         # Retrieve the callback function every time to allow changing it
         func = getattr(self, cb_attr)
         # ensure_future does not raise exceptions
-        asyncio.ensure_future(func(self, message), loop=loop)
+        asyncio.ensure_future(func(self, message), loop=self._loop)
 
 
 class SparkProtocol(asyncio.Protocol):
@@ -138,13 +141,11 @@ class SparkProtocol(asyncio.Protocol):
         # Most annotations can be discarded, except for event messages
         # Event messages are annotations that start with !
         for event in self._coerce_message_from_buffer(start='<', end='>', filter_expr='!([\s\S]*)'):
-            LOGGER.info(f'Event: [{event}]')
             self._on_event(event)
 
         # Once annotations are filtered, all that remains is data
         # Data is newline-separated
         for data in self._coerce_message_from_buffer(start='^', end='\n'):
-            LOGGER.info(f'Data: [{data}]')
             self._on_data(data)
 
     def connection_lost(self, exc):
@@ -206,7 +207,6 @@ def has_recognized_device(port: PortType_) -> bool:
     device, desc, hwid = port
     for known_device in KNOWN_DEVICES:
         # Compare on hardware ID
-        # LOGGER.info(f'Comparing (known) {known_device.hwid} with (actual) {hwid}')
         if re.match(known_device.hwid, hwid):
             return True
     return False
@@ -227,6 +227,6 @@ def detect_device(device: str=None) -> str:
             LOGGER.info(f'Automatically detected {port}')
         except StopIteration:
             raise ValueError(
-                f'Could not find recognized device. Known={[{v for v in d} for d in all_ports()]}')
+                f'Could not find recognized device. Known={[{d for d in p} for p in all_ports()]}')
 
     return device

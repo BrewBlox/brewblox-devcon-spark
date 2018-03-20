@@ -1,28 +1,8 @@
-from construct import (Byte, Const, Default, Enum, FlagsEnum, Int8sb, Int8ub,
-                       Optional, Padding, PascalString, PrefixedArray,
-                       Sequence, Struct, Terminated, VarInt, Adapter, RepeatUntil)
-
+from construct import (Adapter, Byte, Const, Default, Enum, FlagsEnum, Int8sb,
+                       Int8ub, Optional, Padding, PascalString, PrefixedArray,
+                       RepeatUntil, Sequence, Struct, Terminated, VarInt)
 
 COMMANDS = dict()
-
-
-class VariableLengthIDAdapter(Adapter):
-
-    def __init__(self):
-        super().__init__(RepeatUntil(lambda obj, lst, ctx: obj & 0xF0 == 0x00, Byte))
-
-    def _encode(self, obj, context):
-        rewritten_list = []
-        for idx, i in enumerate(obj):
-            if idx != len(obj)-1:
-                rewritten_list.append(i | 0x80)
-            else:
-                rewritten_list.append(i)
-
-        return rewritten_list
-
-    def _decode(self, obj, context):
-        return list(map(lambda x: x & 0x0F, obj))
 
 
 CBoxOpcodeEnum = Enum(Byte,
@@ -52,9 +32,24 @@ BrewBloxObjectTypeEnum = Enum(Byte,
                               SETPOINT_SIMPLE=7
                               )
 
-CBoxCommand = Struct(
-    'opcode' / CBoxOpcodeEnum,
-)
+
+class VariableLengthIDAdapter(Adapter):
+
+    def __init__(self):
+        super().__init__(RepeatUntil(lambda obj, lst, ctx: obj & 0xF0 == 0x00, Byte))
+
+    def _encode(self, obj, context):
+        rewritten_list = []
+        for idx, i in enumerate(obj):
+            if idx != len(obj)-1:
+                rewritten_list.append(i | 0x80)
+            else:
+                rewritten_list.append(i)
+
+        return rewritten_list
+
+    def _decode(self, obj, context):
+        return list(map(lambda x: x & 0x0F, obj))
 
 
 class Command():
@@ -70,14 +65,17 @@ class Command():
         self.response = self.header + response
 
 
-def add_command(opcode,
-                header=Struct(),
-                request=Struct(),
-                response=Struct()):
+def _add_command(opcode, header=Struct(), request=Struct(), response=Struct()):
     COMMANDS[opcode] = Command(opcode, header, request, response)
 
 
-add_command(
+def identify(unhexed: bytes) -> 'Command':
+    opcode = CBoxOpcodeEnum.parse(unhexed)
+    command = COMMANDS[opcode]
+    return command
+
+
+_add_command(
     opcode=CBoxOpcodeEnum.CREATE_OBJECT,
     header=Struct(
         'id' / VariableLengthIDAdapter()
@@ -96,7 +94,7 @@ add_command(
     )
 )
 
-add_command(
+_add_command(
     opcode=CBoxOpcodeEnum.CREATE_PROFILE,
     response=Struct(
         'profile_id' / Int8sb,
@@ -104,7 +102,7 @@ add_command(
     )
 )
 
-add_command(
+_add_command(
     opcode=CBoxOpcodeEnum.ACTIVATE_PROFILE,
     header=Struct(
         'profile_id' / Int8sb
@@ -115,7 +113,7 @@ add_command(
     )
 )
 
-add_command(
+_add_command(
     opcode=CBoxOpcodeEnum.LIST_PROFILES,
     response=Struct(
         'active_profile' / Int8ub
@@ -123,7 +121,7 @@ add_command(
     )
 )
 
-add_command(
+_add_command(
     opcode=CBoxOpcodeEnum.LIST_OBJECTS,
     header=Struct(
         'profile_id' / Int8sb
@@ -137,7 +135,7 @@ add_command(
     )
 )
 
-add_command(
+_add_command(
     opcode=CBoxOpcodeEnum.READ_VALUE,
     header=Struct(
         'id' / VariableLengthIDAdapter(),
@@ -155,7 +153,7 @@ add_command(
     )
 )
 
-add_command(
+_add_command(
     opcode=CBoxOpcodeEnum.DELETE_OBJECT,
     header=Struct(
         'id' / VariableLengthIDAdapter()
@@ -166,7 +164,7 @@ add_command(
     )
 )
 
-add_command(
+_add_command(
     opcode=CBoxOpcodeEnum.RESET,
     request=Struct(
         'flags' / FlagsEnum(Byte,

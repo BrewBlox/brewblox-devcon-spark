@@ -2,13 +2,12 @@
 Command-based device communication
 """
 
-# from construct.lib import hexlify
+import asyncio
 import codecs
 import logging
-from functools import partialmethod
-from collections import defaultdict
-import asyncio
 from binascii import unhexlify
+from collections import defaultdict
+from functools import partialmethod
 
 from brewblox_devcon_spark import commands, communication
 
@@ -37,8 +36,7 @@ class SparkCommander():
             msg = msg.replace(' ', '')
             unhexed = unhexlify(msg)
 
-            opcode = commands.CBoxOpcodeEnum.parse(unhexed)
-            command = commands.COMMANDS[opcode]
+            command = commands.identify(unhexed)
             raw_request = unhexed[:command.request.sizeof()]
             response = command.response.parse(unhexed)
 
@@ -48,11 +46,15 @@ class SparkCommander():
             LOGGER.error(ex)
 
     async def _command(self, cmd, **kwargs):
-        built_cmd = cmd.request.build(dict(**kwargs))
-        await self._conduit.write_encoded(codecs.encode(built_cmd, 'hex'))
+        raw_request = cmd.request.build(dict(**kwargs))
+        await self._conduit.write_encoded(codecs.encode(raw_request, 'hex'))
 
         # Wait for a request resolution (matched by request)
-        return await self._requests[built_cmd].get()
+        return await self._requests[raw_request].get()
+
+    async def do(self, cmd: str, **kwargs):
+        command = commands.COMMANDS[cmd.upper()]
+        return await self._command(command, **kwargs)
 
     # TODO(Bob): automatically generate this?
     list_objects = partialmethod(_command, cmd=commands.COMMANDS['LIST_OBJECTS'], profile_id=0)
