@@ -28,45 +28,49 @@ def setup(app: Type[web.Application]):
 
 class SparkController():
     def __init__(self, name: str, app=None):
-        self.name = name
-        self.state = NesDict()
+        self._name = name
+        self._state = NesDict()
         self._task: asyncio.Task = None
-        self.commander: SparkCommander = None
+        self._commander: SparkCommander = None
 
         if app:
             self.setup(app)
 
+    @property
+    def name(self):
+        return self._name
+
     def get(self, path: str='*') -> dict:
-        return self.state.get(path)
+        return self._state.get(path)
 
     def setup(self, app: Type[web.Application]):
         app.on_startup.append(self.start)
         app.on_cleanup.append(self.close)
 
     async def start(self, app: Type[web.Application]):
-        self.commander = SparkCommander()
-        self.commander.bind(loop=app.loop)
+        self._commander = SparkCommander(app.loop)
+        self._commander.bind(loop=app.loop)
 
-    async def close(self, app):
-        if self.commander:
-            self.commander.close()
+    async def close(self, *args, **kwargs):
+        if self._commander:
+            self._commander.close()
+            self._commander = None
 
     async def write(self, command: str):
-        return await self.commander.conduit.write(command)
+        return await self._commander.write(command)
 
     async def do(self, command, **kwargs):
         LOGGER.info(f'doing {command}{kwargs}')
-        return await self.commander.do(command, **kwargs)
+        return await self._commander.do(command, **kwargs)
 
 
-@routes.post('/write')
+@routes.post('/_debug/write')
 async def write(request: web.Request) -> web.Response:
     """
     ---
     tags:
-    - Controller
     - Spark
-    operationId: controller.spark.write
+    operationId: controller.spark.debug.write
     summary: Write a serial command
     description: >
         Writes a raw serial command to the controller.
@@ -96,9 +100,8 @@ async def do_command(request: web.Request) -> web.Response:
     """
     ---
     tags:
-    - Controller
     - Spark
-    operationId: controller.spark.do
+    operationId: controller.spark.debug.do
     summary: Do a specific command
     description: >
         Sends command, and returns controller response.
@@ -131,7 +134,6 @@ async def all_values(request: web.Request) -> web.Response:
     """
     ---
     tags:
-    - Controller
     - Spark
     operationId: controller.spark.state
     summary: Get the complete state of the controller
@@ -151,7 +153,6 @@ async def specific_values(request: web.Request) -> web.Response:
     """
     ---
     tags:
-    - Controller
     - Spark
     operationId: controller.spark.state.path
     summary: Get a subset of the controller state.

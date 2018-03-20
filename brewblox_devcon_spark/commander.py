@@ -7,7 +7,6 @@ import codecs
 import logging
 from binascii import unhexlify
 from collections import defaultdict
-from functools import partialmethod
 
 from brewblox_devcon_spark import commands, communication
 
@@ -16,14 +15,11 @@ LOGGER = logging.getLogger(__name__)
 
 class SparkCommander():
 
-    def __init__(self):
+    def __init__(self, loop: asyncio.BaseEventLoop):
         self._requests = defaultdict(asyncio.Queue)
+        # TODO(Bob): handle events
         self._conduit = communication.SparkConduit(
             on_data=self._on_data)
-
-    @property
-    def conduit(self):
-        return self._conduit
 
     def bind(self, *args, **kwargs):
         return self._conduit.bind(*args, **kwargs)
@@ -35,6 +31,7 @@ class SparkCommander():
         try:
             msg = msg.replace(' ', '')
             unhexed = unhexlify(msg)
+            LOGGER.info(unhexed)
 
             command = commands.identify(unhexed)
             raw_request = unhexed[:command.request.sizeof()]
@@ -56,5 +53,5 @@ class SparkCommander():
         command = commands.COMMANDS[cmd.upper()]
         return await self._command(command, **kwargs)
 
-    # TODO(Bob): automatically generate this?
-    list_objects = partialmethod(_command, cmd=commands.COMMANDS['LIST_OBJECTS'], profile_id=0)
+    async def write(self, data: str):
+        return await self._conduit.write(data)

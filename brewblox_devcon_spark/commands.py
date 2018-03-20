@@ -26,7 +26,7 @@ CBoxOpcodeEnum = Enum(Byte,
                       )
 
 
-# FIXME
+# FIXME: Move to codec library
 BrewBloxObjectTypeEnum = Enum(Byte,
                               TEMPERATURE_SENSOR=6,
                               SETPOINT_SIMPLE=7
@@ -34,22 +34,31 @@ BrewBloxObjectTypeEnum = Enum(Byte,
 
 
 class VariableLengthIDAdapter(Adapter):
+    """Adapter for the brewblox ID schema
+
+    Individual IDs are 7 bit, with the first bit reserved for a nesting flag.
+    Range is 0-127 / 0x0-0x7F
+
+    If the first bit is set, it indicates that the current byte is a container ID,
+    and more IDs are to follow.
+    Example:
+        bytes: [1000 0011] [0000 0111]
+
+    Here a container with ID 3 contains an object with ID 7
+    """
 
     def __init__(self):
-        super().__init__(RepeatUntil(lambda obj, lst, ctx: obj & 0xF0 == 0x00, Byte))
+        # Predicate: repeat until ID does not contain a nesting flag
+        super().__init__(RepeatUntil(lambda obj, lst, ctx: obj & 0x80 == 0x00, Byte))
 
-    def _encode(self, obj, context):
-        rewritten_list = []
-        for idx, i in enumerate(obj):
-            if idx != len(obj)-1:
-                rewritten_list.append(i | 0x80)
-            else:
-                rewritten_list.append(i)
+    def _encode(self, obj, context, path):
+        # Add a nesting flag to all but the last object
+        return [b | 0x80 for b in obj[:-1]] + [obj[-1]]
 
-        return rewritten_list
-
-    def _decode(self, obj, context):
-        return list(map(lambda x: x & 0x0F, obj))
+    def _decode(self, obj, context, path):
+        # Remove all nesting flags
+        # No need to worry about whether it's the last ID
+        return [b & 0x7F for b in obj]
 
 
 class Command():

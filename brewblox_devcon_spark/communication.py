@@ -14,7 +14,7 @@ from serial.aio import SerialTransport
 from serial.tools import list_ports
 
 LOGGER = logging.getLogger(__name__)
-DEFAULT_BAUD_RATE = 115200
+DEFAULT_BAUD_RATE = 57600
 
 PortType_ = Tuple[str, str, str]
 MessageCallback_ = Callable[['SparkConduit', str], None]
@@ -204,10 +204,8 @@ def all_ports() -> Iterable[PortType_]:
 
 
 def has_recognized_device(port: PortType_) -> bool:
-    device, desc, hwid = port
     for known_device in KNOWN_DEVICES:
-        # Compare on hardware ID
-        if re.match(known_device.hwid, hwid):
+        if re.match(known_device.hwid, port.hwid):
             return True
     return False
 
