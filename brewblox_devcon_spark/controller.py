@@ -49,11 +49,11 @@ class SparkController():
 
     async def start(self, app: Type[web.Application]):
         self._commander = SparkCommander(app.loop)
-        self._commander.bind(loop=app.loop)
+        await self._commander.bind(loop=app.loop)
 
     async def close(self, *args, **kwargs):
         if self._commander:
-            self._commander.close()
+            await self._commander.close()
             self._commander = None
 
     async def write(self, command: str):

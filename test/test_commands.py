@@ -17,7 +17,7 @@ def test_known_commands():
         'LIST_OBJECTS',
         'READ_VALUE',
         'DELETE_OBJECT',
-        'RESET',
+        # reset has no response
     ]:
         command = commands.COMMANDS[cmd_name]
         assert command.opcode == cmd_name
@@ -25,11 +25,21 @@ def test_known_commands():
         assert command.response
 
 
+def test_none_response():
+    cmd = commands.COMMANDS['RESET']
+    assert cmd.opcode == 'RESET'
+    assert cmd.request
+    assert cmd.response is None
+
+
 def test_identify():
     byte_obj = commands.CBoxOpcodeEnum.build('LIST_OBJECTS')
     assert commands.identify(byte_obj).opcode == 'LIST_OBJECTS'
 
-    with pytest.raises(KeyError):
+    with pytest.raises(LookupError):
+        commands.identify(bytearray([0xFF]))
+
+    with pytest.raises(LookupError):
         byte_obj = commands.CBoxOpcodeEnum.build('UNUSED')
         commands.identify(byte_obj)
 

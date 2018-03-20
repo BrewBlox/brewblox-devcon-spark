@@ -1,6 +1,6 @@
 from construct import (Adapter, Byte, Const, Default, Enum, FlagsEnum, Int8sb,
-                       Int8ub, Optional, Padding, PascalString, PrefixedArray,
-                       RepeatUntil, Sequence, Struct, Terminated, VarInt)
+                       Int8ub, Optional, Padding, RepeatUntil, Sequence,
+                       Struct, Terminated)
 
 COMMANDS = dict()
 
@@ -71,7 +71,7 @@ class Command():
         self.opcode_struct = Struct('opcode' / Const(CBoxOpcodeEnum.encmapping[self.opcode], Byte))
         self.header = self.opcode_struct + header
         self.request = self.header + request
-        self.response = self.header + response
+        self.response = self.header + response if response is not None else None
 
 
 def _add_command(opcode, header=Struct(), request=Struct(), response=Struct()):
@@ -79,9 +79,13 @@ def _add_command(opcode, header=Struct(), request=Struct(), response=Struct()):
 
 
 def identify(unhexed: bytes) -> 'Command':
-    opcode = CBoxOpcodeEnum.parse(unhexed)
-    command = COMMANDS[opcode]
-    return command
+    try:
+        opcode = CBoxOpcodeEnum.parse(unhexed)
+        command = COMMANDS[opcode]
+        return command
+    except KeyError as ex:
+        # Add some relevant info
+        raise LookupError(f'Failed to identify command for opcode [{opcode}]')
 
 
 _add_command(
@@ -92,12 +96,12 @@ _add_command(
     request=Struct(
         'type' / BrewBloxObjectTypeEnum,
         'reserved_size' / Byte,
-        'data' / PrefixedArray(VarInt, Byte)
+        'data' / Byte[:]
     ),
     response=Struct(
         'type' / Optional(BrewBloxObjectTypeEnum),
         'reserved_size' / Byte,
-        'data' / Optional(PrefixedArray(VarInt, Byte)),
+        'data' / Optional(Byte[:]),
         'status' / Int8sb,
         Terminated
     )
@@ -157,7 +161,7 @@ _add_command(
         'expectedsize' / Int8sb,
         'real-type' / BrewBloxObjectTypeEnum,
         Padding(1),
-        'data' / Optional(PascalString(VarInt, 'utf8')),  # TODO(Bob): should encoding be utf8?
+        'data' / Optional(Byte[:]),
         Terminated
     )
 )
@@ -180,5 +184,6 @@ _add_command(
                             erase_eeprom=1,
                             hard_reset=2,
                             default=0)
-    )
+    ),
+    response=None
 )

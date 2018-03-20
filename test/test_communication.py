@@ -65,7 +65,7 @@ def serial_data():
         '9A0300009C\n'.encode(),
         '34234<!connected:mess<!interrupt>'.encode(),
         'age>\n'.encode(),
-        '<!interrupted '.encode(),
+        '<!interrupted! '.encode(),
         'message>'.encode()
     ]
 
@@ -79,7 +79,7 @@ def expected_events():
         'spaced message',
         'interrupt',
         'connected:message',
-        'interrupted message'
+        'interrupted! message'
     ]
 
 
