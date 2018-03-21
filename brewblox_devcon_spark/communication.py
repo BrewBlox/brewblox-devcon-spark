@@ -126,7 +126,7 @@ class SparkConduit():
             task = asyncio.ensure_future(func(self, message), loop=self._loop)
             self._loop.run_until_complete(task)
         except Exception as ex:
-            LOGGER.warn(f'Unhandled exception in callback {self}, message={message}')
+            LOGGER.warn(f'Unhandled exception in callback {self}, message={message}, ex={ex}')
 
 
 class SparkProtocol(asyncio.Protocol):
