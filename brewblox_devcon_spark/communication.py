@@ -121,8 +121,12 @@ class SparkConduit():
     def _do_callback(self, cb_attr, message):
         # Retrieve the callback function every time to allow changing it
         func = getattr(self, cb_attr)
-        # ensure_future does not raise exceptions
-        asyncio.ensure_future(func(self, message), loop=self._loop)
+
+        try:
+            task = asyncio.ensure_future(func(self, message), loop=self._loop)
+            self._loop.run_until_complete(task)
+        except Exception as ex:
+            LOGGER.warn(f'Unhandled exception in callback {self}, message={message}')
 
 
 class SparkProtocol(asyncio.Protocol):
@@ -144,7 +148,7 @@ class SparkProtocol(asyncio.Protocol):
         # Annotations use < and > as start/end characters
         # Most annotations can be discarded, except for event messages
         # Event messages are annotations that start with !
-        for event in self._coerce_message_from_buffer(start='<', end='>', filter_expr='!([\s\S]*)'):
+        for event in self._coerce_message_from_buffer(start='<', end='>', filter_expr='^!([\s\S]*)'):
             self._on_event(event)
 
         # Once annotations are filtered, all that remains is data

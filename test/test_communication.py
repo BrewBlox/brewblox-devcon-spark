@@ -59,17 +59,18 @@ class Collector():
 @pytest.fixture
 def serial_data():
     chunks = [
-        '<add>0A<id>00<OneWir<!connected:sen'.encode(),
-        'sor>eTem<!s'.encode(),
-        'paced message>pSensor>01<address>28C80E'.encode(),
-        '9A0300009C\n'.encode(),
-        '34234<!connected:mess<!interrupt>'.encode(),
-        'age>\n'.encode(),
-        '<!interrupted! '.encode(),
-        'message>'.encode()
+        '<add>0A<id>00<OneWir<!connected:sen',
+        'sor>eTem<!s',
+        'paced message>pSensor>01<address>28C80E',
+        '9A0300009C\n',
+        '34234<!connected:mess<!interrupt>',
+        'age>\n',
+        '<!interrupted! ',
+        'message>',
+        '<invalid! event!>'
     ]
 
-    return chunks
+    return [c.encode() for c in chunks]
 
 
 @pytest.fixture
@@ -107,7 +108,7 @@ def bound_collector(loop):
 
 
 @pytest.fixture
-def bound_conduit(loop, serial_mock, transport_mock, bound_collector):
+async def bound_conduit(loop, serial_mock, transport_mock, bound_collector):
     conduit = communication.SparkConduit(
         on_event=bound_collector.async_on_event,
         on_data=bound_collector.async_on_data)
