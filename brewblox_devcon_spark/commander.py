@@ -77,10 +77,14 @@ class SparkCommander():
     def __init__(self, loop: asyncio.BaseEventLoop):
         self._loop = loop or asyncio.get_event_loop()
         self._requests = defaultdict(TimestampedQueue)
-        self._cleanup_task = None
+        self._cleanup_task: asyncio.Task = None
+
         # TODO(Bob): handle events
         self._conduit = communication.SparkConduit(
             on_data=self._on_data)
+
+    def __str__(self):
+        return f'<{type(self).__name__} for {self._conduit}>'
 
     async def bind(self, *args, **kwargs):
         self._conduit.bind(*args, **kwargs)
@@ -98,17 +102,21 @@ class SparkCommander():
 
     async def _cleanup(self):
         while True:
-            await asyncio.sleep(CLEANUP_INTERVAL_S)
-            stale = [k for k, queue in self._requests.items() if not queue.fresh]
-            LOGGER.info(f'Cleaning stale queues: {stale}')
-            for key in stale:
-                del self._requests[key]
+            try:
+                await asyncio.sleep(CLEANUP_INTERVAL_S)
+                stale = [k for k, queue in self._requests.items() if not queue.fresh]
+                LOGGER.info(f'Cleaning stale queues: {stale}')
+                for key in stale:
+                    del self._requests[key]
+            except CancelledError:  # pragma: no cover
+                break
+            except Exception as ex:  # pragma: no cover
+                LOGGER.warn(f'{self} cleanup task error: {ex}')
 
     async def _on_data(self, conduit, msg: str):
         try:
             msg = msg.replace(' ', '')
             unhexed = unhexlify(msg)
-            LOGGER.info(unhexed)
 
             command = commands.identify(unhexed)
             raw_request = unhexed[:command.request.sizeof()]

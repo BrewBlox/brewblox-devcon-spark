@@ -15,6 +15,8 @@ TESTED = controller.__name__
 @pytest.fixture
 async def commander_mock(mocker):
     m = mocker.patch(TESTED + '.SparkCommander')
+    m.return_value.bind = CoroutineMock()
+    m.return_value.close = CoroutineMock()
     return m.return_value
 
 

@@ -2,11 +2,14 @@
 Tests brewblox_devcon_spark.commander
 """
 
-import pytest
-from brewblox_devcon_spark import commander
-from asynctest import CoroutineMock
 import asyncio
 from datetime import timedelta
+from unittest.mock import PropertyMock
+
+import pytest
+from asynctest import CoroutineMock
+
+from brewblox_devcon_spark import commander
 
 TESTED = commander.__name__
 
@@ -25,11 +28,17 @@ async def sparky(conduit_mock, loop):
 
 
 async def test_init(conduit_mock, sparky, loop):
-    sparky.bind(loop=loop)
+    await sparky.close()
+    assert conduit_mock.close.call_count == 1
+
+    await sparky.bind(loop=loop)
     assert conduit_mock.bind.call_count == 1
 
     await sparky.close()
-    assert conduit_mock.close.call_count == 1
+    await sparky.close()
+    assert conduit_mock.close.call_count == 3
+
+    assert str(sparky)
 
 
 async def test_write(conduit_mock, sparky):
@@ -82,3 +91,45 @@ async def test_stale_reply(conduit_mock, sparky):
 
     resp = await sparky.do('list_objects', profile_id=0)
     assert resp == 'fresh'
+
+
+async def test_timestamped_queue():
+    q = commander.TimestampedQueue()
+    assert q.fresh
+
+    q._timestamp -= 2*commander.QUEUE_VALID_DURATION
+    assert not q.fresh
+
+    # retrieving the queue should reset timestamp
+    assert q.queue.empty()
+    assert q.fresh
+
+
+async def test_timestamped_response():
+    res = commander.TimestampedResponse('data')
+    assert res.fresh
+
+    res._timestamp -= 2*commander.RESPONSE_VALID_DURATION
+    assert not res.fresh
+
+    # retrieving data does not reset timestamp
+    assert res.data == 'data'
+    assert not res.fresh
+
+
+async def test_queue_cleanup(mocker, conduit_mock, sparky):
+    mocker.patch(TESTED + '.CLEANUP_INTERVAL_S', 0.01)
+    fresh_mock = PropertyMock(return_value=True)
+    type(commander.TimestampedQueue()).fresh = fresh_mock
+
+    await sparky.bind()
+    await sparky._on_data(conduit_mock, '05 00 00 00 00')
+
+    # Still fresh
+    await asyncio.sleep(0.1)
+    assert len(sparky._requests) == 1
+
+    # Assert stale was removed
+    fresh_mock.return_value = False
+    await asyncio.sleep(0.1)
+    assert len(sparky._requests) == 0

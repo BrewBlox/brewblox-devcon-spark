@@ -63,6 +63,9 @@ class SparkConduit():
         # Asyncio
         self._loop = None
 
+    def __str__(self):
+        return f'<{type(self).__name__} for {self._transport}>'
+
     @property
     def on_event(self) -> MessageCallback_:
         return self._on_event
@@ -101,6 +104,7 @@ class SparkConduit():
         if self._transport:
             self._transport.close()
 
+        self._loop = None
         self._device = None
         self._protocol = None
         self._serial = None
