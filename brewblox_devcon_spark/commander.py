@@ -126,11 +126,9 @@ class SparkCommander():
 
     async def _on_data(self, conduit, msg: str):
         try:
-            LOGGER.info(f'Data message received: {msg}')
             raw_request, raw_response = [
                 unhexlify(part)
                 for part in msg.replace(' ', '').split(RESPONSE_SEPARATOR)]
-            LOGGER.info(f'raw request={raw_request} response={raw_response}')
 
             converter = commands.ResponseConverter(raw_request, raw_response)
 
@@ -140,7 +138,6 @@ class SparkCommander():
             # Otherwise the parsed response
             queue = self._requests[raw_request].queue
             content = converter.error or converter.response
-            LOGGER.info(content)
             await queue.put(TimestampedResponse(content))
 
         except Exception as ex:

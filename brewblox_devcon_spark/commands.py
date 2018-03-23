@@ -121,21 +121,21 @@ class ResponseConverter():
             # Add some relevant info
             raise KeyError(f'Failed to identify command for opcode [{opcode}]')
 
-    def _is_ok(self):
-        errcode = int(ErrorcodeEnum.parse(self._raw_response))
-        return errcode >= 0
+    def _parse_errcode(self):
+        return int(self._definition.status.parse(self._raw_response).errcode)
 
     @property
     def error(self):
-        if self._is_ok():
+        errcode = self._parse_errcode()
+
+        if errcode >= 0:
             return None
 
-        errcode = self._definition.status.parse(self._raw_response).errcode
         return CommandException(f'{self._definition.opcode} failed with code {errcode}')
 
     @property
     def response(self):
-        if not self._is_ok():
+        if self._parse_errcode() < 0:
             return None
 
         return self._definition.response.parse(self._raw_response)

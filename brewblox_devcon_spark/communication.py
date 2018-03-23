@@ -115,7 +115,6 @@ class SparkConduit():
 
     async def write_encoded(self, data: bytes):
         data += b'\n'
-        LOGGER.info(f'Writing [{data}]')
         assert self._serial, 'Serial unbound or not available'
         return self._serial.write(data)
 
@@ -149,7 +148,6 @@ class SparkProtocol(asyncio.Protocol):
 
     def data_received(self, data):
         self._buffer += data.decode()
-        LOGGER.info(self._buffer)
 
         # Annotations use < and > as start/end characters
         # Most annotations can be discarded, except for event messages
