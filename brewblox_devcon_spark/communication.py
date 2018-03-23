@@ -64,7 +64,7 @@ class SparkConduit():
         self._loop = None
 
     def __str__(self):
-        return f'<{type(self).__name__} for {self._transport}>'
+        return f'<{type(self).__name__} for {self._device}>'
 
     @property
     def on_event(self) -> MessageCallback_:
@@ -115,18 +115,23 @@ class SparkConduit():
 
     async def write_encoded(self, data: bytes):
         data += b'\n'
+        LOGGER.info(f'Writing [{data}]')
         assert self._serial, 'Serial unbound or not available'
         return self._serial.write(data)
 
     def _do_callback(self, cb_attr, message):
+
+        def check_result(fut):
+            try:
+                fut.result()
+            except Exception as ex:
+                LOGGER.warn(f'Unhandled exception in callback {self}, message={message}, ex={ex}')
+
         # Retrieve the callback function every time to allow changing it
         func = getattr(self, cb_attr)
-
-        try:
-            task = asyncio.ensure_future(func(self, message), loop=self._loop)
-            self._loop.run_until_complete(task)
-        except Exception as ex:
-            LOGGER.warn(f'Unhandled exception in callback {self}, message={message}, ex={ex}')
+        # Schedule the callback for execution
+        task = asyncio.ensure_future(func(self, message), loop=self._loop)
+        task.add_done_callback(check_result)
 
 
 class SparkProtocol(asyncio.Protocol):
@@ -144,6 +149,7 @@ class SparkProtocol(asyncio.Protocol):
 
     def data_received(self, data):
         self._buffer += data.decode()
+        LOGGER.info(self._buffer)
 
         # Annotations use < and > as start/end characters
         # Most annotations can be discarded, except for event messages

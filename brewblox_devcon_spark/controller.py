@@ -59,9 +59,9 @@ class SparkController():
     async def write(self, command: str):
         return await self._commander.write(command)
 
-    async def do(self, command, **kwargs):
-        LOGGER.info(f'doing {command}{kwargs}')
-        return await self._commander.do(command, **kwargs)
+    async def do(self, command: str, data: dict):
+        LOGGER.info(f'doing {command}{data}')
+        return await self._commander.do(command, data)
 
 
 @routes.post('/_debug/write')
@@ -121,12 +121,13 @@ async def do_command(request: web.Request) -> web.Response:
                     example: list_objects
                 kwargs:
                     type: object
+                    example: {"profile_id":0}
     """
     request_args = await request.json()
     command = request_args['command']
-    kwargs = request_args['kwargs']
+    data = request_args['kwargs']
     controller = get_controller(request.app)
-    return web.json_response(await controller.do(command, **kwargs))
+    return web.json_response(await controller.do(command, data))
 
 
 @routes.get('/state')

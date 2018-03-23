@@ -33,14 +33,14 @@ def test_none_response():
 
 
 def test_identify():
-    byte_obj = commands.CBoxOpcodeEnum.build('LIST_OBJECTS')
+    byte_obj = commands.OpcodeEnum.build('LIST_OBJECTS')
     assert commands.identify(byte_obj).opcode == 'LIST_OBJECTS'
 
     with pytest.raises(LookupError):
         commands.identify(bytearray([0xFF]))
 
     with pytest.raises(LookupError):
-        byte_obj = commands.CBoxOpcodeEnum.build('UNUSED')
+        byte_obj = commands.OpcodeEnum.build('UNUSED')
         commands.identify(byte_obj)
 
 

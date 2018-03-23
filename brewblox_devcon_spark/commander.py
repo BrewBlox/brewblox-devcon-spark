@@ -6,13 +6,16 @@ import asyncio
 import codecs
 import logging
 from binascii import unhexlify
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from concurrent.futures import CancelledError
 from datetime import datetime, timedelta
 
 from brewblox_devcon_spark import commands, communication
 
 LOGGER = logging.getLogger(__name__)
+ActualCommand = namedtuple('ActualCommand', ['command', 'raw_request', 'raw_response'])
+
+RESPONSE_SEPARATOR = '|'
 
 # As requests are matched on request code + arguments, they may cause bloating in the matcher
 # This would happen if the same request is made often with different arguments
@@ -36,6 +39,7 @@ CLEANUP_INTERVAL_S = 60
 #
 # In this scenario, the response will only be t=10 old, as it was stored at t=100
 RESPONSE_VALID_DURATION = timedelta(seconds=5)
+REQUEST_TIMEOUT = timedelta(seconds=5)
 
 
 class TimestampedQueue():
@@ -56,16 +60,16 @@ class TimestampedQueue():
 
 class TimestampedResponse():
 
-    def __init__(self, data):
-        self._data = data
+    def __init__(self, content):
+        self._content = content
         self._timestamp = datetime.utcnow()
 
     def __str__(self):
-        return f'{self.data} @ {self._timestamp}'
+        return f'{self._content} @ {self._timestamp}'
 
     @property
-    def data(self):
-        return self._data
+    def content(self):
+        return self._content
 
     @property
     def fresh(self):
@@ -94,58 +98,71 @@ class SparkCommander():
         self._conduit.close()
 
         if self._cleanup_task:
-            try:
-                self._cleanup_task.cancel()
-                await self._cleanup_task
-            except CancelledError:
-                pass
+            self._cleanup_task.cancel()
+            await self._cleanup_task
 
     async def _cleanup(self):
         while True:
             try:
+
                 await asyncio.sleep(CLEANUP_INTERVAL_S)
                 stale = [k for k, queue in self._requests.items() if not queue.fresh]
-                LOGGER.info(f'Cleaning stale queues: {stale}')
+
+                if stale:
+                    LOGGER.info(f'Cleaning stale queues: {stale}')
+
                 for key in stale:
                     del self._requests[key]
+
             except CancelledError:  # pragma: no cover
+                LOGGER.info(f'{self} cleanup task shutdown')
                 break
+
             except Exception as ex:  # pragma: no cover
                 LOGGER.warn(f'{self} cleanup task error: {ex}')
 
     async def _on_data(self, conduit, msg: str):
         try:
-            msg = msg.replace(' ', '')
-            unhexed = unhexlify(msg)
+            LOGGER.info(f'Data message received: {msg}')
+            raw_request, raw_response = [
+                unhexlify(part)
+                for part in msg.replace(' ', '').split(RESPONSE_SEPARATOR)]
+            LOGGER.info(f'raw request={raw_request} response={raw_response}')
 
-            command = commands.identify(unhexed)
-            raw_request = unhexed[:command.request.sizeof()]
-            response = command.response.parse(unhexed)
+            converter = commands.ResponseConverter(raw_request, raw_response)
 
-            # Resolve the request using its encoded representation
+            # Match the request queue
+            # key is the raw request
+            # If the call failed, it is resolved with the exception
+            # Otherwise the parsed response
             queue = self._requests[raw_request].queue
-            await queue.put(TimestampedResponse(response))
+            content = converter.error or converter.response
+            LOGGER.info(content)
+            await queue.put(TimestampedResponse(content))
+
         except Exception as ex:
-            LOGGER.error(ex)
+            LOGGER.error(f'On data error in {self} : {ex}')
 
-    async def _command(self, cmd, **kwargs):
-        raw_request = cmd.request.build(dict(**kwargs))
-        await self._conduit.write_encoded(codecs.encode(raw_request, 'hex'))
+    async def do(self, name: str, data: dict):
+        converter = commands.RequestConverter(name, data)
 
-        while cmd.response is not None:
+        raw_request = converter.raw_request
+        assert await self._conduit.write_encoded(codecs.encode(raw_request, 'hex'))
+
+        while True:
             # Wait for a request resolution (matched by request)
             queue = self._requests[raw_request].queue
-            response = await queue.get()
+            response = await asyncio.wait_for(queue.get(), timeout=REQUEST_TIMEOUT.seconds)
 
             if not response.fresh:
                 LOGGER.warn(f'Discarding stale response: {response}')
                 continue
 
-            return response.data
+            if isinstance(response.content, Exception):
+                raise response.content
 
-    async def do(self, cmd: str, **kwargs):
-        command = commands.COMMANDS[cmd.upper()]
-        return await self._command(command, **kwargs)
+            return response.content
 
     async def write(self, data: str):
+        LOGGER.info(f'Writing {data}')
         return await self._conduit.write(data)
