@@ -27,7 +27,7 @@ OpcodeEnum = Enum(Byte,
 ErrorcodeEnum = Enum(Int8sb,
                      OK=0,
                      UNKNOWN_ERROR=-1,
-                     STREAM_ERROR=-1,
+                     STREAM_ERROR=-2,
                      PROFILE_NOT_ACTIVE=-3,
                      INSUFFICIENT_PERSISTENT_STORAGE=-16,
                      INSUFFICIENT_HEAP=-17,
@@ -122,19 +122,16 @@ class ResponseConverter():
             raise KeyError(f'Failed to identify command for opcode [{opcode}]')
 
     def _is_ok(self):
-        return self._raw_response[0] >= 0
-
-    @property
-    def raw_request(self):
-        return self._raw_request
+        errcode = int(ErrorcodeEnum.parse(self._raw_response))
+        return errcode >= 0
 
     @property
     def error(self):
         if self._is_ok():
             return None
 
-        status = self._definition.status.parse(self._raw_response)
-        return CommandException(f'{self._definition.opcode} failed with status {status}')
+        errcode = self._definition.status.parse(self._raw_response).errcode
+        return CommandException(f'{self._definition.opcode} failed with code {errcode}')
 
     @property
     def response(self):

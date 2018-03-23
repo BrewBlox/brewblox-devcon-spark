@@ -98,8 +98,11 @@ class SparkCommander():
         self._conduit.close()
 
         if self._cleanup_task:
-            self._cleanup_task.cancel()
-            await self._cleanup_task
+            try:
+                self._cleanup_task.cancel()
+                await self._cleanup_task
+            except CancelledError:
+                pass
 
     async def _cleanup(self):
         while True:

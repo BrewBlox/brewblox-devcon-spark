@@ -2,56 +2,44 @@
 Tests brewblox_devcon_spark.commands
 """
 
-import pytest
 from brewblox_devcon_spark import commands
+from binascii import unhexlify
 
 TESTED = commands.__name__
 
 
 def test_known_commands():
     for cmd_name in [
-        'CREATE_OBJECT',
-        'CREATE_PROFILE',
-        'ACTIVATE_PROFILE',
-        'LIST_PROFILES',
-        'LIST_OBJECTS',
         'READ_VALUE',
+        'WRITE_VALUE',
+        'CREATE_OBJECT',
         'DELETE_OBJECT',
-        # reset has no response
+        'LIST_OBJECTS',
+        'FREE_SLOT',
+        'CREATE_PROFILE',
+        'DELETE_PROFILE',
+        'ACTIVATE_PROFILE',
+        'LOG_VALUES',
+        'RESET',
+        'FREE_SLOT_ROOT',
+        'LIST_PROFILES',
+        'READ_SYSTEM_VALUE',
+        'WRITE_SYSTEM_VALUE',
     ]:
-        command = commands.COMMANDS[cmd_name]
+        command = commands.COMMAND_DEFS[cmd_name]
         assert command.opcode == cmd_name
         assert command.request
         assert command.response
-
-
-def test_none_response():
-    cmd = commands.COMMANDS['RESET']
-    assert cmd.opcode == 'RESET'
-    assert cmd.request
-    assert cmd.response is None
-
-
-def test_identify():
-    byte_obj = commands.OpcodeEnum.build('LIST_OBJECTS')
-    assert commands.identify(byte_obj).opcode == 'LIST_OBJECTS'
-
-    with pytest.raises(LookupError):
-        commands.identify(bytearray([0xFF]))
-
-    with pytest.raises(LookupError):
-        byte_obj = commands.OpcodeEnum.build('UNUSED')
-        commands.identify(byte_obj)
 
 
 def test_variable_id_length():
     id = [127, 7]
     args = dict(
         id=id,
-        type='TEMPERATURE_SENSOR',
-        reserved_size=10,
+        type=6,
+        size=10,
         data=[0x0F]*10)
-    command = commands.COMMANDS['CREATE_OBJECT']
+    command = commands.COMMAND_DEFS['WRITE_VALUE']
     bin_cmd = command.request.build(args)
 
     # nesting flag was added
@@ -61,3 +49,11 @@ def test_variable_id_length():
     decoded = command.request.parse(bin_cmd)
     assert decoded.id == id
     assert decoded.data == args['data']
+
+
+def test_response_converter():
+    request, response = unhexlify('05'), unhexlify('81')
+    converter = commands.ResponseConverter(request, response)
+
+    assert isinstance(converter.error, commands.CommandException)
+    assert converter.response is None
