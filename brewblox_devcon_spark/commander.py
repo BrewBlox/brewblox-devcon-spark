@@ -6,14 +6,13 @@ import asyncio
 import codecs
 import logging
 from binascii import unhexlify
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 from concurrent.futures import CancelledError
 from datetime import datetime, timedelta
 
 from brewblox_devcon_spark import commands, communication
 
 LOGGER = logging.getLogger(__name__)
-ActualCommand = namedtuple('ActualCommand', ['command', 'raw_request', 'raw_response'])
 
 RESPONSE_SEPARATOR = '|'
 
@@ -22,7 +21,7 @@ RESPONSE_SEPARATOR = '|'
 #
 # There is no functional danger here - we just need to curb this equivalent of a memory leak
 QUEUE_VALID_DURATION = timedelta(minutes=15)
-CLEANUP_INTERVAL_S = 60
+CLEANUP_INTERVAL = timedelta(seconds=60)
 
 # There is no strict guarantee that when ClientA and ClientB make the same request at the same time,
 # they get the exact response they triggered.
@@ -108,8 +107,9 @@ class SparkCommander():
         while True:
             try:
 
-                await asyncio.sleep(CLEANUP_INTERVAL_S)
-                stale = [k for k, queue in self._requests.items() if not queue.fresh]
+                await asyncio.sleep(CLEANUP_INTERVAL.seconds)
+                stale = [k for k, queue in self._requests.items()
+                         if not queue.fresh]
 
                 if stale:
                     LOGGER.info(f'Cleaning stale queues: {stale}')

@@ -129,7 +129,7 @@ async def test_timestamped_response():
 
 
 async def test_queue_cleanup(mocker, conduit_mock, sparky):
-    mocker.patch(TESTED + '.CLEANUP_INTERVAL_S', 0.01)
+    mocker.patch(TESTED + '.CLEANUP_INTERVAL', timedelta(milliseconds=10))
     fresh_mock = PropertyMock(return_value=True)
     type(commander.TimestampedQueue()).fresh = fresh_mock
 
