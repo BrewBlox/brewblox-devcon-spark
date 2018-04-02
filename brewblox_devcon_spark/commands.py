@@ -76,6 +76,10 @@ class VariableLengthIDAdapter(Adapter):
         return [b & 0x7F for b in obj]
 
 
+class CommandException(Exception):
+    pass
+
+
 class CommandDefinition():
     def __init__(self,
                  opcode=None,
@@ -90,55 +94,74 @@ class CommandDefinition():
         self.response = self.status + response
 
 
-class CommandException(Exception):
-    pass
+class Command():
+    def __init__(self,
+                 definition: CommandDefinition,
+                 encoded: tuple=(None, None),
+                 decoded: tuple=(None, None)):
+        self._definition: CommandDefinition = definition
 
+        self._encoded_request: bytes = encoded[0]
+        self._encoded_response: bytes = encoded[1]
 
-class RequestConverter():
-    def __init__(self, command_name: str, data: dict):
-        self._definition = COMMAND_DEFS[command_name.upper()]
-        self._data = data
+        self._decoded_request: dict = decoded[0]
+        self._decoded_response: dict = decoded[1]
 
-    @property
-    def raw_request(self):
-        return self._definition.request.build(self._data)
-
-
-class ResponseConverter():
-    def __init__(self, raw_request: str, raw_response: str):
-        assert raw_request is not None, 'Raw request not specified'
-        assert raw_response is not None, 'Raw response not specified'
-
-        self._definition = self._identify(raw_request)
-        self._raw_request = raw_request
-        self._raw_response = raw_response
-
-    def _identify(self, raw_request: bytes) -> CommandDefinition:
+    @classmethod
+    def from_decoded(cls, command_name: str, command_args: dict) -> 'Command':
         try:
-            opcode = OpcodeEnum.parse(raw_request)
-            return COMMAND_DEFS[opcode]
-        except KeyError as ex:
-            # Add some relevant info
+            definition = COMMAND_DEFS[command_name.upper()]
+            return cls(definition, decoded=(command_args, None))
+        except KeyError:
+            raise KeyError(f'No command definition known for [{command_name}]')
+
+    @classmethod
+    def from_encoded(cls, request: bytes, response: bytes) -> 'Command':
+        try:
+            opcode = OpcodeEnum.parse(request)
+            definition = COMMAND_DEFS[opcode]
+            return cls(definition, encoded=(request, response))
+        except KeyError:
             raise KeyError(f'Failed to identify command for opcode [{opcode}]')
 
-    def _parse_errcode(self):
-        return int(self._definition.status.parse(self._raw_response).errcode)
+    @property
+    def encoded_request(self):
+        if self._should_convert(self._encoded_request, self._decoded_request):
+            self._encoded_request = self._definition.request.build(self._decoded_request)
+
+        return self._encoded_request
 
     @property
-    def error(self):
-        errcode = self._parse_errcode()
+    def encoded_response(self):
+        if self._should_convert(self._encoded_response, self._decoded_response):
+            self._encoded_response = self._definition.response.build(self._decoded_response)
 
-        if errcode >= 0:
-            return None
-
-        return CommandException(f'{self._definition.opcode} failed with code {errcode}')
+        return self._encoded_response
 
     @property
-    def response(self):
-        if self._parse_errcode() < 0:
-            return None
+    def decoded_request(self):
+        if self._should_convert(self._decoded_request, self._encoded_request):
+            self._decoded_request = self._definition.request.parse(self._encoded_request)
 
-        return self._definition.response.parse(self._raw_response)
+        return self._decoded_request
+
+    @property
+    def decoded_response(self):
+        if self._should_convert(self._decoded_response, self._encoded_response):
+            self._decoded_response = self._parse_error() or self._definition.response.parse(self._encoded_response)
+
+        return self._decoded_response
+
+    def _should_convert(self, dest, src) -> bool:
+        return dest is None and src is not None
+
+    def _parse_error(self):
+        errcode = int(self._definition.status.parse(self._encoded_response).errcode)
+
+        if errcode < 0:
+            return CommandException(f'{self._definition.opcode} failed with code {errcode}')
+        else:
+            return None
 
 
 # Generics

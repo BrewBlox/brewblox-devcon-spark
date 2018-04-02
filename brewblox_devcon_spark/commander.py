@@ -3,9 +3,8 @@ Command-based device communication
 """
 
 import asyncio
-import codecs
 import logging
-from binascii import unhexlify
+from binascii import hexlify, unhexlify
 from collections import defaultdict
 from concurrent.futures import CancelledError
 from datetime import datetime, timedelta
@@ -14,6 +13,8 @@ from brewblox_devcon_spark import commands, communication
 
 LOGGER = logging.getLogger(__name__)
 
+# Spark protocol is to echo the request in the response
+# To prevent decoding ambiguity, a non-hexadecimal character separates the request and response
 RESPONSE_SEPARATOR = '|'
 
 # As requests are matched on request code + arguments, they may cause bloating in the matcher
@@ -84,7 +85,7 @@ class SparkCommander():
 
         # TODO(Bob): handle events
         self._conduit = communication.SparkConduit(
-            on_data=self._on_data)
+            on_data=self._process_response)
 
     def __str__(self):
         return f'<{type(self).__name__} for {self._conduit}>'
@@ -124,40 +125,39 @@ class SparkCommander():
             except Exception as ex:  # pragma: no cover
                 LOGGER.warn(f'{self} cleanup task error: {ex}')
 
-    async def _on_data(self, conduit, msg: str):
+    async def _process_response(self, conduit, msg: str):
         try:
             raw_request, raw_response = [
                 unhexlify(part)
                 for part in msg.replace(' ', '').split(RESPONSE_SEPARATOR)]
 
-            converter = commands.ResponseConverter(raw_request, raw_response)
+            command = commands.Command.from_encoded(raw_request, raw_response)
 
             # Match the request queue
-            # key is the raw request
-            # If the call failed, it is resolved with the exception
-            # Otherwise the parsed response
-            queue = self._requests[raw_request].queue
-            content = converter.error or converter.response
-            await queue.put(TimestampedResponse(content))
+            # key is the encoded request
+            queue = self._requests[command.encoded_request].queue
+            await queue.put(TimestampedResponse(command.decoded_response))
 
         except Exception as ex:
             LOGGER.error(f'On data error in {self} : {ex}')
 
     async def do(self, name: str, data: dict):
-        converter = commands.RequestConverter(name, data)
+        command = commands.Command.from_decoded(name, data)
 
-        raw_request = converter.raw_request
-        assert await self._conduit.write_encoded(codecs.encode(raw_request, 'hex'))
+        encoded_request = command.encoded_request
+        assert await self._conduit.write_encoded(hexlify(encoded_request))
 
         while True:
             # Wait for a request resolution (matched by request)
-            queue = self._requests[raw_request].queue
+            queue = self._requests[encoded_request].queue
             response = await asyncio.wait_for(queue.get(), timeout=REQUEST_TIMEOUT.seconds)
 
             if not response.fresh:
                 LOGGER.warn(f'Discarding stale response: {response}')
                 continue
 
+            # If the call failed, its response will be an exception
+            # We can raise it here
             if isinstance(response.content, Exception):
                 raise response.content
 

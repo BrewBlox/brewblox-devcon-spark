@@ -46,37 +46,37 @@ async def test_write(conduit_mock, sparky):
     conduit_mock.write.assert_called_once_with('stuff')
 
 
-async def test_on_data(conduit_mock, sparky):
+async def test_process_response(conduit_mock, sparky):
     assert len(sparky._requests) == 0
 
-    await sparky._on_data(conduit_mock, '05 00 |00 00 00')
+    await sparky._process_response(conduit_mock, '05 00 |00 00 00')
     await asyncio.sleep(0.0001)
     assert len(sparky._requests) == 1
     assert sparky._requests[b'\x05\x00'].queue.qsize() == 1
 
 
-async def test_on_data_error(mocker, conduit_mock, sparky):
+async def test_process_response_error(mocker, conduit_mock, sparky):
     logger_mock = mocker.spy(commander, 'LOGGER')
 
     # No response pipe
-    await sparky._on_data(conduit_mock, '1234')
+    await sparky._process_response(conduit_mock, '1234')
     assert len(sparky._requests) == 0
     assert logger_mock.error.call_count == 1
 
     # Not a hex string
-    await sparky._on_data(conduit_mock, 'pancakes|tasty')
+    await sparky._process_response(conduit_mock, 'pancakes|tasty')
 
     assert len(sparky._requests) == 0
     assert logger_mock.error.call_count == 2
 
     # valid hex, not an opcode
-    await sparky._on_data(conduit_mock, 'BB|AA')
+    await sparky._process_response(conduit_mock, 'BB|AA')
     assert len(sparky._requests) == 0
     assert logger_mock.error.call_count == 3
 
 
 async def test_command(conduit_mock, sparky):
-    await sparky._on_data(conduit_mock, '05 00 |00 00 00')
+    await sparky._process_response(conduit_mock, '05 00 |00 00 00')
 
     resp = await sparky.do('list_objects', dict(profile_id=0))
     assert resp.objects is None
@@ -85,7 +85,7 @@ async def test_command(conduit_mock, sparky):
 
 
 async def test_error_command(conduit_mock, sparky):
-    await sparky._on_data(conduit_mock, '05 00 |FF 00 00')
+    await sparky._process_response(conduit_mock, '05 00 |FF 00 00')
 
     with pytest.raises(commands.CommandException):
         await sparky.do('list_objects', dict(profile_id=0))
@@ -134,7 +134,7 @@ async def test_queue_cleanup(mocker, conduit_mock, sparky):
     type(commander.TimestampedQueue()).fresh = fresh_mock
 
     await sparky.bind()
-    await sparky._on_data(conduit_mock, '05 00 |00 00 00')
+    await sparky._process_response(conduit_mock, '05 00 |00 00 00')
 
     # Still fresh
     await asyncio.sleep(0.1)
