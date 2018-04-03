@@ -75,3 +75,7 @@ target/
 # Python package files for building Docker
 docker/pkg/*
 !docker/pkg/.gitkeep
+
+# Python package files for building Docker
+rpi-docker/pkg/*
+!rpi-docker/pkg/.gitkeep

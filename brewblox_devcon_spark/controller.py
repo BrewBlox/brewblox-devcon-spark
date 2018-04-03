@@ -10,6 +10,7 @@ from aiohttp import web
 from nesdict import NesDict
 
 from brewblox_devcon_spark.commander import SparkCommander
+from brewblox_codec_spark import codec
 
 CONTROLLER_KEY = 'controller.spark'
 
@@ -62,6 +63,20 @@ class SparkController():
     async def do(self, command: str, data: dict):
         LOGGER.info(f'doing {command}{data}')
         return await self._commander.do(command, data)
+
+    async def write_system_value(self, obj_args):
+        obj = codec.encode_delimited(2, obj_args)  # command
+        LOGGER.info(f'obj={obj}')
+        retval = await self._commander.do('write_system_value',
+                                          dict(
+                                              id=[2],
+                                              type=0,
+                                              size=0,
+                                              data=obj,
+                                          ))
+        retval['data'] = codec.decode_delimited(3, retval['data'])
+        LOGGER.info(f'Retval = {retval}')
+        return retval
 
 
 @routes.post('/_debug/write')
@@ -128,6 +143,37 @@ async def do_command(request: web.Request) -> web.Response:
     data = request_args['kwargs']
     controller = get_controller(request.app)
     return web.json_response(await controller.do(command, data))
+
+
+@routes.post('/_debug/write_system_value')
+async def write_system_value(request: web.Request) -> web.Response:
+    """
+    ---
+    tags:
+    - Spark
+    operationId: controller.spark.debug.write_system_value
+    summary: Do a specific command
+    description: >
+        Sends command, and returns controller response.
+    produces:
+    - application/json
+    parameters:
+    -
+        in: body
+        name: body
+        description: command
+        required: try
+        schema:
+            type: object
+            properties:
+                obj_args:
+                    type: object
+                    example: {"command":2, "data":4136}
+    """
+    request_args = await request.json()
+    obj_args = request_args['obj_args']
+    controller = get_controller(request.app)
+    return web.json_response(await controller.write_system_value(obj_args))
 
 
 @routes.get('/state')

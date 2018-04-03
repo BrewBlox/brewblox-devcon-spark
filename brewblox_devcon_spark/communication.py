@@ -114,6 +114,7 @@ class SparkConduit():
         return await self.write_encoded(data.encode())
 
     async def write_encoded(self, data: bytes):
+        LOGGER.info(f'Writing {data}')
         data += b'\n'
         assert self._serial, 'Serial unbound or not available'
         return self._serial.write(data)

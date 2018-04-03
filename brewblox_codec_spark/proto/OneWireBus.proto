@@ -1,0 +1,16 @@
+syntax = "proto2";
+
+package blox;
+
+// Command encodes the next command to perform when the object is read
+// data is optional and only used in some commands. For example when doing a family search, data contains the family ID 
+message OneWireCommand {
+	optional uint32 command = 1 [default = 100];
+	optional uint32 data = 2;
+}
+
+// OneWire read executes the last command that was written and returns the result.
+message OneWireRead {
+    optional OneWireCommand lastCommand = 1;
+    repeated bytes address = 2;
+}
