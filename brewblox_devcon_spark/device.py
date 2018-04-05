@@ -8,9 +8,10 @@ from typing import List, Type
 
 from aiohttp import web
 from brewblox_codec_spark import codec
+from deprecated import deprecated
 
-from brewblox_devcon_spark.commander import SparkCommander
 from brewblox_devcon_spark import commands
+from brewblox_devcon_spark.commander import SparkCommander
 
 CONTROLLER_KEY = 'controller.spark'
 
@@ -51,13 +52,14 @@ class SparkController():
             await self._commander.close()
             self._commander = None
 
-    # TODO(Bob): Remove or deprecate debug function?
+    @deprecated(reason='Debugging function')
     async def write(self, command: str):
+        LOGGER.info(f'Writing {command}')
         return await self._commander.write(command)
 
-    # TODO(Bob): Remove or deprecate debug function?
+    @deprecated(reason='Debugging function')
     async def do(self, command: str, data: dict):
-        LOGGER.info(f'doing {command}{data}')
+        LOGGER.info(f'Doing {command}{data}')
         return await self._commander.do(command, data)
 
     async def _process_retval(self, retval: dict):
@@ -82,24 +84,6 @@ class SparkController():
     async def _execute(self, command: commands.Command) -> dict:
         return await self._process_retval(await self._commander.execute(command))
 
-    # TODO(Bob): Remove
-    async def write_system_value(self, obj_id: List[int], obj_type: int, obj_args: dict) -> dict:
-        obj = codec.encode(obj_type, obj_args)
-
-        LOGGER.info(f'obj={obj}')
-
-        command = commands.WriteSystemValueCommand().from_args(
-            id=obj_id,
-            type=0,
-            size=0,
-            data=obj
-        )
-
-        retval = await self._execute(command)
-
-        LOGGER.info(f'Retval = {retval}')
-        return retval
-
     async def create(self, obj_type: int, obj: dict) -> List[int]:
         """
         Creates a new object on the controller.
@@ -107,15 +91,12 @@ class SparkController():
         Returns ID of newly created object.
         """
         encoded = codec.encode(obj_type, obj)
-
         command = commands.CreateObjectCommand().from_args(
             type=obj_type,
             size=len(encoded),
             data=encoded
         )
-
         return await self._execute(command)
-        # TODO(Bob): return object ID
 
     async def read(self, id: List[int]) -> dict:
         """
@@ -128,7 +109,6 @@ class SparkController():
             type=0,
             size=0
         )
-
         return await self._execute(command)
 
     async def update(self, id: List[int], obj_type: int, obj: dict) -> dict:
@@ -143,7 +123,6 @@ class SparkController():
             size=0,
             data=codec.encode(obj_type, obj)
         )
-
         return await self._execute(command)
 
     async def delete(self, id: List[int]):
@@ -171,7 +150,6 @@ class SparkController():
             type=0,
             size=0
         )
-
         return await self._execute(command)
 
     async def system_update(self, id: List[int], obj_type: int, obj: dict) -> dict:
@@ -186,5 +164,4 @@ class SparkController():
             size=0,
             data=codec.encode(obj_type, obj)
         )
-
         return await self._execute(command)

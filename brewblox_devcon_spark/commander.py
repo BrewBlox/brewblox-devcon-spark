@@ -9,6 +9,8 @@ from collections import defaultdict
 from concurrent.futures import CancelledError
 from datetime import datetime, timedelta
 
+from deprecated import deprecated
+
 from brewblox_devcon_spark import commands, communication
 
 LOGGER = logging.getLogger(__name__)
@@ -138,13 +140,13 @@ class SparkCommander():
             # Match the request queue
             # key is the encoded request
             queue = self._requests[command.encoded_request].queue
-            LOGGER.info(f'Decoded response: {command.decoded_response}')
             await queue.put(TimestampedResponse(command.decoded_response))
+            LOGGER.debug(f'Decoded response: {command.decoded_response}')
 
         except Exception as ex:
             LOGGER.error(f'Response error in {self} : {ex}')
 
-    async def execute(self, command: commands.Command):
+    async def execute(self, command: commands.Command) -> dict:
         encoded_request = command.encoded_request
         assert await self._conduit.write_encoded(hexlify(encoded_request))
 
@@ -164,12 +166,11 @@ class SparkCommander():
 
             return response.content
 
-    # TODO(Bob): Remove debug function?
+    @deprecated(reason='Debugging function')
     async def do(self, name: str, data: dict) -> dict:
         command = self._index.identify(name).from_args(**data)
         return await self.execute(command)
 
-    # TODO(Bob): Remove debug function?
+    @deprecated(reason='Debugging function')
     async def write(self, data: str):
-        LOGGER.info(f'Writing {data}')
         return await self._conduit.write(data)

@@ -1,9 +1,13 @@
 import inspect
+import logging
 import sys
 from abc import ABC
 
 from construct import (Adapter, Byte, Const, Enum, FlagsEnum, Int8sb, Optional,
                        Padding, RepeatUntil, Sequence, Struct, Terminated)
+
+LOGGER = logging.getLogger(__name__)
+
 
 OBJECT_ID_KEY = 'id'
 OBJECT_TYPE_KEY = 'type'
@@ -144,6 +148,9 @@ class Command(ABC):
         # Initialize empty
         self._set_data()
 
+    def __str__(self):
+        return f'<{type(self).__name__}>'
+
     def _set_data(self,
                   encoded: tuple=(None, None),
                   decoded: tuple=(None, None)):
@@ -154,16 +161,18 @@ class Command(ABC):
         self._decoded_response: dict = decoded[1]
 
     def from_args(self, **kwargs):
-        print(kwargs)
         self._set_data(decoded=(kwargs, None))
+        LOGGER.info(f'{self} from args: {kwargs}')
         return self
 
     def from_encoded(self, request: bytes, response: bytes):
         self._set_data(encoded=(request, response))
+        LOGGER.info(f'{self} from encoded: {request} / {response}')
         return self
 
     def from_decoded(self, request: dict, response: dict):
         self._set_data(decoded=(request, response))
+        LOGGER.info(f'{self} from decoded: {request} / {response}')
         return self
 
     @property

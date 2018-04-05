@@ -22,6 +22,7 @@ setup(
         'pyserial-asyncio==0.4',
         'logger==1.4',
         'construct==2.9.39',
+        'deprecated==1.2.0',
     ],
     python_requires='>=3.6',
     extras_require={'dev': ['tox']}

@@ -20,7 +20,7 @@ async def write(request: web.Request) -> web.Response:
     """
     ---
     tags:
-    - Spark
+    - Debug
     operationId: controller.spark.debug.write
     summary: Write a serial command
     description: >
@@ -51,7 +51,7 @@ async def do_command(request: web.Request) -> web.Response:
     """
     ---
     tags:
-    - Spark
+    - Debug
     operationId: controller.spark.debug.do
     summary: Do a specific command
     description: >
@@ -79,93 +79,6 @@ async def do_command(request: web.Request) -> web.Response:
     data = request_args['kwargs']
     controller = device.get_controller(request.app)
     return web.json_response(await controller.do(command, data))
-
-
-@routes.post('/_debug/write_system_value')
-async def write_system_value(request: web.Request) -> web.Response:
-    """
-    ---
-    tags:
-    - Spark
-    operationId: controller.spark.debug.write_system_value
-    summary: Do a specific command
-    description: >
-        Sends command, and returns controller response.
-    produces:
-    - application/json
-    parameters:
-    -
-        in: body
-        name: body
-        description: command
-        required: true
-        schema:
-            type: object
-            properties:
-                obj_id:
-                    type: array
-                    example: [2]
-                obj_type:
-                    type: int
-                    example: 2
-                obj_args:
-                    type: object
-                    example: {"command":2, "data":4136}
-
-    """
-    request_args = await request.json()
-    obj_id = request_args['obj_id']
-    obj_type = request_args['obj_type']
-    obj_args = request_args['obj_args']
-    controller = device.get_controller(request.app)
-    return web.json_response(await controller.write_system_value(obj_id, obj_type, obj_args))
-
-
-@routes.get('/state')
-async def all_values(request: web.Request) -> web.Response:
-    """
-    ---
-    tags:
-    - Spark
-    operationId: controller.spark.state
-    summary: Get the complete state of the controller
-    description: >
-        Retrieves all values as defined by this controller Protobuf spec.
-        This will include settings, volatile state, and mapping.
-        Block ID's are those as set by the user.
-    produces:
-    - application/json
-    """
-    controller = device.get_controller(request.app)
-    return web.json_response(controller.get())
-
-
-@routes.get('/state/{path}')
-async def specific_values(request: web.Request) -> web.Response:
-    """
-    ---
-    tags:
-    - Spark
-    operationId: controller.spark.state.path
-    summary: Get a subset of the controller state.
-    description: >
-        Retrieves all values matching the given path.
-        Values are returned as defined by the controller Protobuf spec.
-        Block ID's are those as set by the user.
-    produces:
-    - application/json
-    parameters:
-    -
-        name: path
-        in: path
-        required: true
-        description: the /-separated subset specification of desired values.
-        schema:
-            type: string
-    """
-    path = request.match_info['path']
-    controller = device.get_controller(request.app)
-    return web.json_response(controller.get(path))
 
 
 @routes.put('/object')
