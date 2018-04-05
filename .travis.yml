@@ -16,9 +16,9 @@ install: pip install tox docker
 script: tox
 
 before_deploy:
-  chmod +x ./distcopy
-  && ./distcopy ./docker/pkg
-  && ./distcopy ./rpi-docker/pkg
+  chmod +x ./distcopy.sh
+  && ./distcopy.sh ./docker/pkg
+  && ./distcopy.sh ./rpi-docker/pkg
   && docker login -u "$DOCKER_USER" -p "$DOCKER_PASSWORD"
   && docker run --rm --privileged multiarch/qemu-user-static:register --reset
 
