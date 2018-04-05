@@ -21,8 +21,15 @@ _TYPE_MAPPING = {
 }
 
 
+def _get_type(obj_type: str):
+    try:
+        return _TYPE_MAPPING[obj_type]()
+    except KeyError:
+        raise KeyError(f'No codec found for object type [{obj_type}]')
+
+
 def encode_delimited(obj_type: int, values: dict) -> bytes:
-    obj = _TYPE_MAPPING[obj_type]()
+    obj = _get_type(obj_type)
     obj = json_format.ParseDict(values, obj)
 
     data = obj.SerializeToString()
@@ -35,7 +42,7 @@ def decode_delimited(obj_type: int, encoded: Union[bytes, list]) -> dict:
     if isinstance(encoded, list):
         encoded = bytes(encoded)
 
-    obj = _TYPE_MAPPING[obj_type]()
+    obj = _get_type(obj_type)
 
     (size, position) = internal_decoder._DecodeVarint(encoded, 0)
     obj.ParseFromString(encoded[position:position+size])

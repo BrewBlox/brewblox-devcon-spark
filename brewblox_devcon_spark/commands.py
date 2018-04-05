@@ -1,8 +1,16 @@
-from construct import (Adapter, Byte, Const, Enum, FlagsEnum, Int8sb, Int8ub,
-                       Optional, Padding, RepeatUntil, Sequence, Struct,
-                       Terminated)
+import inspect
+import sys
+from abc import ABC
 
-COMMAND_DEFS = dict()
+from construct import (Adapter, Byte, Const, Enum, FlagsEnum, Int8sb, Optional,
+                       Padding, RepeatUntil, Sequence, Struct, Terminated)
+
+OBJECT_ID_KEY = 'id'
+OBJECT_TYPE_KEY = 'type'
+OBJECT_SIZE_KEY = 'size'
+OBJECT_DATA_KEY = 'data'
+OBJECT_LIST_KEY = 'objects'
+PROFILE_ID_KEY = 'profile_id'
 
 
 OpcodeEnum = Enum(Byte,
@@ -80,75 +88,121 @@ class CommandException(Exception):
     pass
 
 
-class CommandDefinition():
-    def __init__(self,
-                 opcode=None,
-                 request=Struct(),
-                 response=Struct()):
-        self.opcode = opcode
+class CommandIndex():
 
-        self.opcode_struct = Struct('opcode' / Const(OpcodeEnum.encmapping[self.opcode], Byte))
-        self.request = self.opcode_struct + request
+    def __init__(self):
+        current_module = sys.modules[__name__]
+        self._commands = dict()
 
-        self.status = Struct('errcode' / ErrorcodeEnum)
-        self.response = self.status + response
+        for name, val in inspect.getmembers(current_module, inspect.isclass):
+            if issubclass(val, Command) and val is not Command:
+                self._commands[val._OPCODE] = val
+
+    def identify(self, opcode: str) -> 'Command':
+        try:
+            command = self._commands[opcode]
+            return command()
+        except KeyError:
+            raise KeyError(f'No command found for opcode [{opcode}]')
+
+    def identify_encoded(self, request: bytes) -> 'Command':
+        opcode = OpcodeEnum.parse(request)
+        return self.identify(opcode)
 
 
-class Command():
-    def __init__(self,
-                 definition: CommandDefinition,
-                 encoded: tuple=(None, None),
-                 decoded: tuple=(None, None)):
-        self._definition: CommandDefinition = definition
+class Command(ABC):
+    """
+    Base class for all commands.
+    This class handles encoding and decoding of arguments.
 
+    Subclasses are expected to set static class variables to define their protocol.
+    The constructor will fail if these are not defined.
+
+    Required class variables:
+        _OPCODE
+        _REQUEST
+        _RESPONSE
+
+    Opcode must always be set, request and response can be None.
+    """
+
+    def __init__(self):
+        opcode = self.__class__._OPCODE
+        self._opcode = Struct('opcode' / Const(OpcodeEnum.encmapping[opcode], Byte))
+
+        request = self.__class__._REQUEST or Struct()
+        self._request = self.opcode + request
+
+        self._status = Struct('errcode' / ErrorcodeEnum)
+        response = self.__class__._RESPONSE or Struct()
+        self._response = self.status + response
+
+        # Initialize empty
+        self._set_data()
+
+    def _set_data(self,
+                  encoded: tuple=(None, None),
+                  decoded: tuple=(None, None)):
         self._encoded_request: bytes = encoded[0]
         self._encoded_response: bytes = encoded[1]
 
         self._decoded_request: dict = decoded[0]
         self._decoded_response: dict = decoded[1]
 
-    @classmethod
-    def from_decoded(cls, command_name: str, command_args: dict) -> 'Command':
-        try:
-            definition = COMMAND_DEFS[command_name.upper()]
-            return cls(definition, decoded=(command_args, None))
-        except KeyError:
-            raise KeyError(f'No command definition known for [{command_name}]')
+    def from_args(self, **kwargs):
+        print(kwargs)
+        self._set_data(decoded=(kwargs, None))
+        return self
 
-    @classmethod
-    def from_encoded(cls, request: bytes, response: bytes) -> 'Command':
-        try:
-            opcode = OpcodeEnum.parse(request)
-            definition = COMMAND_DEFS[opcode]
-            return cls(definition, encoded=(request, response))
-        except KeyError:
-            raise KeyError(f'Failed to identify command for opcode [{opcode}]')
+    def from_encoded(self, request: bytes, response: bytes):
+        self._set_data(encoded=(request, response))
+        return self
+
+    def from_decoded(self, request: dict, response: dict):
+        self._set_data(decoded=(request, response))
+        return self
+
+    @property
+    def opcode(self):
+        return self._opcode
+
+    @property
+    def request(self):
+        return self._request
+
+    @property
+    def status(self):
+        return self._status
+
+    @property
+    def response(self):
+        return self._response
 
     @property
     def encoded_request(self):
         if self._should_convert(self._encoded_request, self._decoded_request):
-            self._encoded_request = self._definition.request.build(self._decoded_request)
+            self._encoded_request = self.request.build(self._decoded_request)
 
         return self._encoded_request
 
     @property
     def encoded_response(self):
         if self._should_convert(self._encoded_response, self._decoded_response):
-            self._encoded_response = self._definition.response.build(self._decoded_response)
+            self._encoded_response = self.response.build(self._decoded_response)
 
         return self._encoded_response
 
     @property
     def decoded_request(self):
         if self._should_convert(self._decoded_request, self._encoded_request):
-            self._decoded_request = self._definition.request.parse(self._encoded_request)
+            self._decoded_request = self.request.parse(self._encoded_request)
 
         return self._decoded_request
 
     @property
     def decoded_response(self):
         if self._should_convert(self._decoded_response, self._encoded_response):
-            self._decoded_response = self._parse_error() or self._definition.response.parse(self._encoded_response)
+            self._decoded_response = self._parse_error() or self.response.parse(self._encoded_response)
 
         return self._decoded_response
 
@@ -156,125 +210,131 @@ class Command():
         return dest is None and src is not None
 
     def _parse_error(self):
-        errcode = int(self._definition.status.parse(self._encoded_response).errcode)
+        errcode = int(self.status.parse(self._encoded_response).errcode)
 
         if errcode < 0:
-            return CommandException(f'{self._definition.opcode} failed with code {errcode}')
+            return CommandException(f'{self.opcode} failed with code {errcode}')
         else:
             return None
 
 
-# Generics
-OBJECT_ID = Struct('id' / VariableLengthIDAdapter())
-OBJECT_TYPE = Struct('type' / Byte)
-OBJECT_SIZE = Struct('size' / Byte)
-OBJECT_DATA = Struct('data' / Byte[:])
+# Reoccurring data types - can be used as a macro
+_OBJECT_ID = Struct(OBJECT_ID_KEY / VariableLengthIDAdapter())
+_OBJECT_TYPE = Struct(OBJECT_TYPE_KEY / Byte)
+_OBJECT_SIZE = Struct(OBJECT_SIZE_KEY / Byte)
+_OBJECT_DATA = Struct(OBJECT_DATA_KEY / Byte[:])
 
-PROFILE_ID = Struct('profile_id' / Int8sb)
-
-
-def _define_command(opcode, request=Struct(), response=Struct()):
-    COMMAND_DEFS[opcode] = CommandDefinition(opcode, request, response)
+_PROFILE_ID = Struct(PROFILE_ID_KEY / Int8sb)
 
 
-_define_command(
-    opcode=OpcodeEnum.READ_VALUE,
-    request=OBJECT_ID + OBJECT_TYPE + OBJECT_SIZE,
-    response=OBJECT_TYPE + OBJECT_SIZE + OBJECT_DATA,
-)
+class ReadValueCommand(Command):
+    _OPCODE = OpcodeEnum.READ_VALUE
+    _REQUEST = _OBJECT_ID + _OBJECT_TYPE + _OBJECT_SIZE
+    _RESPONSE = _OBJECT_TYPE + _OBJECT_SIZE + _OBJECT_DATA
 
-_define_command(
-    opcode=OpcodeEnum.WRITE_VALUE,
-    request=OBJECT_ID + OBJECT_TYPE + OBJECT_SIZE + OBJECT_DATA,
-    response=OBJECT_TYPE + OBJECT_SIZE + OBJECT_DATA
-)
 
-_define_command(
-    opcode=OpcodeEnum.CREATE_OBJECT,
-    request=OBJECT_TYPE + OBJECT_SIZE + OBJECT_DATA
-)
+class WriteValueCommand(Command):
+    _OPCODE = OpcodeEnum.WRITE_VALUE
+    _REQUEST = _OBJECT_ID + _OBJECT_TYPE + _OBJECT_SIZE + _OBJECT_DATA
+    _RESPONSE = _OBJECT_TYPE + _OBJECT_SIZE + _OBJECT_DATA
 
-_define_command(
-    opcode=OpcodeEnum.DELETE_OBJECT,
-    request=OBJECT_ID
-)
 
-_define_command(
-    opcode=OpcodeEnum.LIST_OBJECTS,
-    request=PROFILE_ID,
-    response=Struct(
+class CreateObjectCommand(Command):
+    _OPCODE = OpcodeEnum.CREATE_OBJECT
+    _REQUEST = _OBJECT_TYPE + _OBJECT_SIZE + _OBJECT_DATA
+    _RESPONSE = None
+
+
+class DeleteObjectCommand(Command):
+    _OPCODE = OpcodeEnum.DELETE_OBJECT
+    _REQUEST = _OBJECT_ID
+    _RESPONSE = None
+
+
+class ListObjectsCommand(Command):
+    _OPCODE = OpcodeEnum.LIST_OBJECTS
+    _REQUEST = _PROFILE_ID
+    _RESPONSE = Struct(
         Padding(1),  # FIXME Protocol error?
-        'objects' / Optional(Sequence(OBJECT_ID + OBJECT_TYPE + OBJECT_SIZE + OBJECT_DATA)),
-        'terminator' / Const(0x00, Byte),
+        OBJECT_LIST_KEY / Optional(Sequence(_OBJECT_ID + _OBJECT_TYPE + _OBJECT_SIZE + _OBJECT_DATA)),
+        Padding(1),
         Terminated
     )
-)
 
-_define_command(
-    opcode=OpcodeEnum.FREE_SLOT,
-    request=OBJECT_ID
-)
 
-_define_command(
-    opcode=OpcodeEnum.CREATE_PROFILE,
-    response=PROFILE_ID
-)
+class FreeSlotCommand(Command):
+    _OPCODE = OpcodeEnum.FREE_SLOT
+    _REQUEST = _OBJECT_ID
+    _RESPONSE = None
 
-_define_command(
-    opcode=OpcodeEnum.DELETE_PROFILE,
-    request=PROFILE_ID
-)
 
-_define_command(
-    opcode=OpcodeEnum.ACTIVATE_PROFILE,
-    request=PROFILE_ID
-)
+class CreateProfileCommand(Command):
+    _OPCODE = OpcodeEnum.CREATE_PROFILE
+    _REQUEST = None
+    _RESPONSE = _PROFILE_ID
 
-_define_command(
-    opcode=OpcodeEnum.LOG_VALUES,
-    request=Struct(
+
+class DeleteProfileCommand(Command):
+    _OPCODE = OpcodeEnum.DELETE_PROFILE
+    _REQUEST = _PROFILE_ID
+    _RESPONSE = None
+
+
+class ActiveProfileCommand(Command):
+    _OPCODE = OpcodeEnum.ACTIVATE_PROFILE
+    _REQUEST = _PROFILE_ID
+    _RESPONSE = None
+
+
+class LogValuesCommand(Command):
+    _OPCODE = OpcodeEnum.LOG_VALUES
+
+    _REQUEST = Struct(
         'flags' / FlagsEnum(Byte,
                             id_chain=1,
                             system_container=2,
                             default=0)
-    ) + Optional(OBJECT_ID),
-    response=Struct(
-        'objects' / Optional(Sequence(Padding(1) + OBJECT_ID + OBJECT_TYPE + OBJECT_SIZE + OBJECT_DATA)),
-        'terminator' / Const(0x00, Byte),
+    ) + Optional(_OBJECT_ID),
+
+    _RESPONSE = Struct(
+        OBJECT_LIST_KEY / Optional(Sequence(Padding(1) + _OBJECT_ID + _OBJECT_TYPE + _OBJECT_SIZE + _OBJECT_DATA)),
+        Padding(1),
         Terminated
     )
-)
 
-_define_command(
-    opcode=OpcodeEnum.RESET,
-    request=Struct(
+
+class ResetCommand(Command):
+    _OPCODE = OpcodeEnum.RESET
+    _REQUEST = Struct(
         'flags' / FlagsEnum(Byte,
                             erase_eeprom=1,
                             hard_reset=2,
                             default=0)
     )
-)
+    _RESPONSE = None
 
-_define_command(
-    opcode=OpcodeEnum.FREE_SLOT_ROOT,
-    request=OBJECT_ID
-)
 
-_define_command(
-    opcode=OpcodeEnum.LIST_PROFILES,
-    response=PROFILE_ID + Struct(
-        'defined_profiles' / Sequence(Int8ub)
+class FreeSlotRootCommand(Command):
+    _OPCODE = OpcodeEnum.FREE_SLOT_ROOT
+    _REQUEST = _OBJECT_ID
+    _RESPONSE = None
+
+
+class ListProfilesCommand(Command):
+    _OPCODE = OpcodeEnum.LIST_PROFILES
+    _REQUEST = None
+    _RESPONSE = _PROFILE_ID + Struct(
+        'defined_profiles' / Sequence(_PROFILE_ID)
     )
-)
 
-_define_command(
-    opcode=OpcodeEnum.READ_SYSTEM_VALUE,
-    request=OBJECT_ID + OBJECT_TYPE + OBJECT_SIZE,
-    response=OBJECT_TYPE + OBJECT_SIZE + OBJECT_DATA,
-)
 
-_define_command(
-    opcode=OpcodeEnum.WRITE_SYSTEM_VALUE,
-    request=OBJECT_ID + OBJECT_TYPE + OBJECT_SIZE + OBJECT_DATA,
-    response=OBJECT_TYPE + OBJECT_SIZE + OBJECT_DATA
-)
+class ReadSystemValueCommand(Command):
+    _OPCODE = OpcodeEnum.READ_SYSTEM_VALUE
+    _REQUEST = _OBJECT_ID + _OBJECT_TYPE + _OBJECT_SIZE
+    _RESPONSE = _OBJECT_TYPE + _OBJECT_SIZE + _OBJECT_DATA
+
+
+class WriteSystemValueCommand(Command):
+    _OPCODE = OpcodeEnum.WRITE_SYSTEM_VALUE
+    _REQUEST = _OBJECT_ID + _OBJECT_TYPE + _OBJECT_SIZE + _OBJECT_DATA
+    _RESPONSE = _OBJECT_TYPE + _OBJECT_SIZE + _OBJECT_DATA

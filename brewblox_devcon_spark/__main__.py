@@ -5,7 +5,7 @@ Example of how to import and use the brewblox service
 import logging
 
 from brewblox_service import service
-from brewblox_devcon_spark import controller
+from brewblox_devcon_spark import device, api
 
 LOGGER = logging.getLogger(__name__)
 
@@ -13,7 +13,8 @@ LOGGER = logging.getLogger(__name__)
 def main():
     app = service.create_app(default_name='spark')
 
-    controller.setup(app)
+    device.setup(app)
+    api.setup(app)
 
     service.furnish(app)
 
