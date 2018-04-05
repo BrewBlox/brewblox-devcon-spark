@@ -39,7 +39,7 @@ deploy:
       --image docker
       --name "$DOCKER_REPO"
       --tags latest $(git describe --tags)
-
+      &&
       python3 -u ./deploy_docker.py
       --image rpi-docker
       --name "$DOCKER_REPO"
@@ -55,7 +55,7 @@ deploy:
       --image docker
       --name "$DOCKER_REPO"
       --tags "$TRAVIS_BRANCH"
-
+      &&
       python3 -u ./deploy_docker.py 
       --image rpi-docker
       --name "$DOCKER_REPO"
