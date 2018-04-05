@@ -13,11 +13,11 @@ env:
 python: '3.6'
 install: pip install tox docker
 script: tox
-before_deploy: |-
-  ./distcopy ./docker/pkg
-  ./distcopy ./rpi-docker/pkg
-  docker login -u "$DOCKER_USER" -p "$DOCKER_PASSWORD"
-  docker run --rm --privileged multiarch/qemu-user-static:register --reset
+before_deploy:
+  /bin/sh ./distcopy ./docker/pkg
+  && /bin/sh ./distcopy ./rpi-docker/pkg
+  && docker login -u "$DOCKER_USER" -p "$DOCKER_PASSWORD"
+  && docker run --rm --privileged multiarch/qemu-user-static:register --reset
 deploy:
 
   # Deploy to PyPi on tagged commits
@@ -30,7 +30,7 @@ deploy:
 
   # Deploy "latest" and version tag to Docker Hub on tagged commits
   - provider: script
-    script: >
+    script:
       python3 -u ./deploy_docker.py
       --image docker
       --name "$DOCKER_REPO"
@@ -46,7 +46,7 @@ deploy:
 
   # Deploy branch to Docker Hub on any push to an upstream branch
   - provider: script
-    script: >
+    script:
       python3 -u ./deploy_docker.py 
       --image docker
       --name "$DOCKER_REPO"
