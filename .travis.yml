@@ -32,10 +32,10 @@ deploy:
   # Deploy "latest" and version tag to Docker Hub on tagged commits
   - provider: script
     script: >-
-      python3 ./deploy_docker.py
+      python3 -u ./deploy_docker.py
       --name brewblox/brewblox-devcon-spark
       && 
-      python3 ./deploy_docker.py
+      python3 -u ./deploy_docker.py
       --image rpi-docker
       --name brewblox/brewblox-devcon-spark
       --tags rpi-latest rpi-$(git describe --tags)
