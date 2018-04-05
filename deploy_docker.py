@@ -41,7 +41,7 @@ def build(client, args):
             output = next(generator).rstrip()
             json_output = json.loads(output)
             if 'stream' in json_output:
-                print(json_output['stream'].rstrip(), flush=True)
+                print(json_output['stream'].rstrip())
         except StopIteration:
             print('Docker image build complete.')
             break
