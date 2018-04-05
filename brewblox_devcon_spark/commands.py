@@ -10,7 +10,11 @@ OBJECT_TYPE_KEY = 'type'
 OBJECT_SIZE_KEY = 'size'
 OBJECT_DATA_KEY = 'data'
 OBJECT_LIST_KEY = 'objects'
+
 PROFILE_ID_KEY = 'profile_id'
+PROFILE_LIST_KEY = 'profiles'
+
+FLAGS_KEY = 'flags'
 
 
 OpcodeEnum = Enum(Byte,
@@ -290,10 +294,10 @@ class LogValuesCommand(Command):
     _OPCODE = OpcodeEnum.LOG_VALUES
 
     _REQUEST = Struct(
-        'flags' / FlagsEnum(Byte,
-                            id_chain=1,
-                            system_container=2,
-                            default=0)
+        FLAGS_KEY / FlagsEnum(Byte,
+                              id_chain=1,
+                              system_container=2,
+                              default=0)
     ) + Optional(_OBJECT_ID),
 
     _RESPONSE = Struct(
@@ -306,10 +310,10 @@ class LogValuesCommand(Command):
 class ResetCommand(Command):
     _OPCODE = OpcodeEnum.RESET
     _REQUEST = Struct(
-        'flags' / FlagsEnum(Byte,
-                            erase_eeprom=1,
-                            hard_reset=2,
-                            default=0)
+        FLAGS_KEY / FlagsEnum(Byte,
+                              erase_eeprom=1,
+                              hard_reset=2,
+                              default=0)
     )
     _RESPONSE = None
 
@@ -324,7 +328,7 @@ class ListProfilesCommand(Command):
     _OPCODE = OpcodeEnum.LIST_PROFILES
     _REQUEST = None
     _RESPONSE = _PROFILE_ID + Struct(
-        'defined_profiles' / Sequence(_PROFILE_ID)
+        PROFILE_LIST_KEY / Sequence(_PROFILE_ID)
     )
 
 

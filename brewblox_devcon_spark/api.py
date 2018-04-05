@@ -219,7 +219,7 @@ async def read(request: web.Request) -> web.Response:
         schema:
             type: string
     """
-    obj_id = request.match_info['id'].split('-')
+    obj_id = [int(i) for i in request.match_info['id'].split('-')]
     controller = device.get_controller(request.app)
 
     return web.json_response(await controller.read(obj_id))
@@ -239,7 +239,7 @@ async def update(request: web.Request) -> web.Response:
         name: id
         in: path
         required: true
-        description: object ID, separated by -
+        description: object ID, separated by '-'
         schema:
             type: string
     -
@@ -260,7 +260,7 @@ async def update(request: web.Request) -> web.Response:
     request_args = await request.json()
     controller = device.get_controller(request.app)
 
-    obj_id = request.match_info['id'].split('-')
+    obj_id = [int(i) for i in request.match_info['id'].split('-')]
     obj_type = request_args['obj_type']
     obj_args = request_args['obj_args']
 
@@ -281,11 +281,11 @@ async def delete(request: web.Request) -> web.Response:
         name: id
         in: path
         required: true
-        description: object ID, separated by -
+        description: object ID, separated by '-'
         schema:
             type: string
     """
-    obj_id = request.match_info['id'].split('-')
+    obj_id = [int(i) for i in request.match_info['id'].split('-')]
     controller = device.get_controller(request.app)
 
     return web.json_response(await controller.delete(obj_id))
@@ -303,3 +303,69 @@ async def all(request: web.Request) -> web.Response:
     """
     controller = device.get_controller(request.app)
     return web.json_response(await controller.all())
+
+
+@routes.get('/system/{id}')
+async def system_read(request: web.Request) -> web.Response:
+    """
+    ---
+    tags:
+    - Spark
+    operationId: controller.spark.system.read
+    produces:
+    - application/json
+    parameters:
+    -
+        name: id
+        in: path
+        required: true
+        description: object ID, separated by '-'
+        schema:
+            type: string
+    """
+    obj_id = [int(i) for i in request.match_info['id'].split('-')]
+    controller = device.get_controller(request.app)
+
+    return web.json_response(await controller.system_read(obj_id))
+
+
+@routes.post('/system/{id}')
+async def system_update(request: web.Request) -> web.Response:
+    """
+    ---
+    tags:
+    - Spark
+    operationId: controller.spark.system.update
+    produces:
+    - application/json
+    parameters:
+    -
+        name: id
+        in: path
+        required: true
+        description: object ID, separated by -
+        schema:
+            type: string
+    -
+        name: body
+        in: body
+        description: object
+        required: true
+        schema:
+            type: object
+            properties:
+                obj_type:
+                    type: int
+                    example: 10
+                obj_args:
+                    type: object
+                    example: { "command": { "opcode":2, "data":4136 } }
+    """
+    request_args = await request.json()
+    controller = device.get_controller(request.app)
+
+    obj_id = [int(i) for i in request.match_info['id'].split('-')]
+    obj_type = request_args['obj_type']
+    obj_args = request_args['obj_args']
+
+    return web.json_response(await controller.system_update(obj_id, obj_type, obj_args))

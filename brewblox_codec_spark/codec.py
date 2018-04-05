@@ -4,47 +4,77 @@ Offers encoding and decoding of objects.
 """
 
 import logging
+from abc import ABC, abstractmethod
+from typing import Union
 
 from brewblox_codec_spark.proto import OneWireBus_pb2, OneWireTempSensor_pb2
 from google.protobuf import json_format
-from google.protobuf.internal import encoder as internal_encoder
 from google.protobuf.internal import decoder as internal_decoder
-from typing import Union
+from google.protobuf.internal import encoder as internal_encoder
 
 LOGGER = logging.getLogger(__name__)
 
 
-_TYPE_MAPPING = {
-    2: OneWireBus_pb2.OneWireCommand,
-    3: OneWireBus_pb2.OneWireRead,
-    6: OneWireTempSensor_pb2.OneWireTempSensor,
-}
+def encode(obj_type: int, values: dict) -> bytes:
+    return _transcoder(obj_type).encode(values)
 
 
-def _get_type(obj_type: str):
+def decode(obj_type: int, encoded: Union[bytes, list]) -> dict:
+    return _transcoder(obj_type).decode(encoded)
+
+
+def _transcoder(obj_type: str) -> 'Transcoder':
     try:
         return _TYPE_MAPPING[obj_type]()
     except KeyError:
         raise KeyError(f'No codec found for object type [{obj_type}]')
 
 
-def encode_delimited(obj_type: int, values: dict) -> bytes:
-    obj = _get_type(obj_type)
-    obj = json_format.ParseDict(values, obj)
+class Transcoder(ABC):
 
-    data = obj.SerializeToString()
-    delimiter = internal_encoder._VarintBytes(len(data))
+    @abstractmethod
+    def encode(self, values: dict) -> bytes:
+        pass
 
-    return delimiter + data
+    @abstractmethod
+    def decode(encoded: Union[bytes, list]) -> dict:
+        pass
 
 
-def decode_delimited(obj_type: int, encoded: Union[bytes, list]) -> dict:
-    if isinstance(encoded, list):
-        encoded = bytes(encoded)
+class ProtobufTranscoder(Transcoder):
 
-    obj = _get_type(obj_type)
+    @property
+    def message(self):
+        return self.__class__._MESSAGE()
 
-    (size, position) = internal_decoder._DecodeVarint(encoded, 0)
-    obj.ParseFromString(encoded[position:position+size])
+    def encode(self, values: dict) -> bytes:
+        obj = json_format.ParseDict(values, self.message)
 
-    return json_format.MessageToDict(obj)
+        data = obj.SerializeToString()
+        delimiter = internal_encoder._VarintBytes(len(data))
+
+        return delimiter + data
+
+    def decode(self, encoded: Union[bytes, list]) -> dict:
+        if isinstance(encoded, list):
+            encoded = bytes(encoded)
+
+        obj = self.message
+        (size, position) = internal_decoder._DecodeVarint(encoded, 0)
+        obj.ParseFromString(encoded[position:position+size])
+
+        return json_format.MessageToDict(obj)
+
+
+class OneWireBusTranscoder(ProtobufTranscoder):
+    _MESSAGE = OneWireBus_pb2.OneWireBus
+
+
+class OneWireTempSensorTranscoder(ProtobufTranscoder):
+    _MESSAGE = OneWireTempSensor_pb2.OneWireTempSensor
+
+
+_TYPE_MAPPING = {
+    10: OneWireBusTranscoder,
+    6: OneWireTempSensorTranscoder,
+}

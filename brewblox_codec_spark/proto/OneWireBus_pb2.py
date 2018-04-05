@@ -19,28 +19,28 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='OneWireBus.proto',
   package='blox',
   syntax='proto2',
-  serialized_pb=_b('\n\x10OneWireBus.proto\x12\x04\x62lox\"4\n\x0eOneWireCommand\x12\x14\n\x07\x63ommand\x18\x01 \x01(\r:\x03\x31\x30\x30\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\r\"I\n\x0bOneWireRead\x12)\n\x0blastCommand\x18\x01 \x01(\x0b\x32\x14.blox.OneWireCommand\x12\x0f\n\x07\x61\x64\x64ress\x18\x02 \x03(\x0c')
+  serialized_pb=_b('\n\x10OneWireBus.proto\x12\x04\x62lox\"v\n\nOneWireBus\x12)\n\x07\x63ommand\x18\x01 \x01(\x0b\x32\x18.blox.OneWireBus.Command\x12\x0f\n\x07\x61\x64\x64ress\x18\x02 \x03(\x0c\x1a,\n\x07\x43ommand\x12\x13\n\x06opcode\x18\x01 \x01(\r:\x03\x31\x30\x30\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\r\"<\n\x0fOneWireBusWrite\x12)\n\x07\x63ommand\x18\x01 \x01(\x0b\x32\x18.blox.OneWireBus.Command')
 )
 
 
 
 
-_ONEWIRECOMMAND = _descriptor.Descriptor(
-  name='OneWireCommand',
-  full_name='blox.OneWireCommand',
+_ONEWIREBUS_COMMAND = _descriptor.Descriptor(
+  name='Command',
+  full_name='blox.OneWireBus.Command',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='command', full_name='blox.OneWireCommand.command', index=0,
+      name='opcode', full_name='blox.OneWireBus.Command.opcode', index=0,
       number=1, type=13, cpp_type=3, label=1,
       has_default_value=True, default_value=100,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='data', full_name='blox.OneWireCommand.data', index=1,
+      name='data', full_name='blox.OneWireBus.Command.data', index=1,
       number=2, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -58,29 +58,59 @@ _ONEWIRECOMMAND = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=26,
-  serialized_end=78,
+  serialized_start=100,
+  serialized_end=144,
 )
 
-
-_ONEWIREREAD = _descriptor.Descriptor(
-  name='OneWireRead',
-  full_name='blox.OneWireRead',
+_ONEWIREBUS = _descriptor.Descriptor(
+  name='OneWireBus',
+  full_name='blox.OneWireBus',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='lastCommand', full_name='blox.OneWireRead.lastCommand', index=0,
+      name='command', full_name='blox.OneWireBus.command', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='address', full_name='blox.OneWireRead.address', index=1,
+      name='address', full_name='blox.OneWireBus.address', index=1,
       number=2, type=12, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[_ONEWIREBUS_COMMAND, ],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto2',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=26,
+  serialized_end=144,
+)
+
+
+_ONEWIREBUSWRITE = _descriptor.Descriptor(
+  name='OneWireBusWrite',
+  full_name='blox.OneWireBusWrite',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='command', full_name='blox.OneWireBusWrite.command', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
@@ -96,28 +126,38 @@ _ONEWIREREAD = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=80,
-  serialized_end=153,
+  serialized_start=146,
+  serialized_end=206,
 )
 
-_ONEWIREREAD.fields_by_name['lastCommand'].message_type = _ONEWIRECOMMAND
-DESCRIPTOR.message_types_by_name['OneWireCommand'] = _ONEWIRECOMMAND
-DESCRIPTOR.message_types_by_name['OneWireRead'] = _ONEWIREREAD
+_ONEWIREBUS_COMMAND.containing_type = _ONEWIREBUS
+_ONEWIREBUS.fields_by_name['command'].message_type = _ONEWIREBUS_COMMAND
+_ONEWIREBUSWRITE.fields_by_name['command'].message_type = _ONEWIREBUS_COMMAND
+DESCRIPTOR.message_types_by_name['OneWireBus'] = _ONEWIREBUS
+DESCRIPTOR.message_types_by_name['OneWireBusWrite'] = _ONEWIREBUSWRITE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-OneWireCommand = _reflection.GeneratedProtocolMessageType('OneWireCommand', (_message.Message,), dict(
-  DESCRIPTOR = _ONEWIRECOMMAND,
-  __module__ = 'OneWireBus_pb2'
-  # @@protoc_insertion_point(class_scope:blox.OneWireCommand)
-  ))
-_sym_db.RegisterMessage(OneWireCommand)
+OneWireBus = _reflection.GeneratedProtocolMessageType('OneWireBus', (_message.Message,), dict(
 
-OneWireRead = _reflection.GeneratedProtocolMessageType('OneWireRead', (_message.Message,), dict(
-  DESCRIPTOR = _ONEWIREREAD,
+  Command = _reflection.GeneratedProtocolMessageType('Command', (_message.Message,), dict(
+    DESCRIPTOR = _ONEWIREBUS_COMMAND,
+    __module__ = 'OneWireBus_pb2'
+    # @@protoc_insertion_point(class_scope:blox.OneWireBus.Command)
+    ))
+  ,
+  DESCRIPTOR = _ONEWIREBUS,
   __module__ = 'OneWireBus_pb2'
-  # @@protoc_insertion_point(class_scope:blox.OneWireRead)
+  # @@protoc_insertion_point(class_scope:blox.OneWireBus)
   ))
-_sym_db.RegisterMessage(OneWireRead)
+_sym_db.RegisterMessage(OneWireBus)
+_sym_db.RegisterMessage(OneWireBus.Command)
+
+OneWireBusWrite = _reflection.GeneratedProtocolMessageType('OneWireBusWrite', (_message.Message,), dict(
+  DESCRIPTOR = _ONEWIREBUSWRITE,
+  __module__ = 'OneWireBus_pb2'
+  # @@protoc_insertion_point(class_scope:blox.OneWireBusWrite)
+  ))
+_sym_db.RegisterMessage(OneWireBusWrite)
 
 
 # @@protoc_insertion_point(module_scope)

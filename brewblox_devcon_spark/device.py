@@ -67,7 +67,7 @@ class SparkController():
 
         def decode_data(parent):
             if data_key in parent:
-                parent[data_key] = codec.decode_delimited(parent[type_key], parent[data_key])
+                parent[data_key] = codec.decode(parent[type_key], parent[data_key])
             return parent
 
         # Check for single data items
@@ -84,7 +84,7 @@ class SparkController():
 
     # TODO(Bob): Remove
     async def write_system_value(self, obj_id: List[int], obj_type: int, obj_args: dict) -> dict:
-        obj = codec.encode_delimited(obj_type, obj_args)
+        obj = codec.encode(obj_type, obj_args)
 
         LOGGER.info(f'obj={obj}')
 
@@ -106,7 +106,7 @@ class SparkController():
         Raises exception if object already exists.
         Returns ID of newly created object.
         """
-        encoded = codec.encode_delimited(obj_type, obj)
+        encoded = codec.encode(obj_type, obj)
 
         command = commands.CreateObjectCommand().from_args(
             type=obj_type,
@@ -141,7 +141,7 @@ class SparkController():
             id=id,
             type=obj_type,
             size=0,
-            data=codec.encode_delimited(obj_type, obj)
+            data=codec.encode(obj_type, obj)
         )
 
         return await self._execute(command)
@@ -158,4 +158,33 @@ class SparkController():
         Returns all known objects
         """
         command = commands.ListObjectsCommand().from_args(profile_id=0)
+        return await self._execute(command)
+
+    async def system_read(self, id: List[int]) -> dict:
+        """
+        Reads state for system object on controller.
+        Raises exception if object does not exist.
+        Returns object state.
+        """
+        command = commands.ReadSystemValueCommand().from_args(
+            id=id,
+            type=0,
+            size=0
+        )
+
+        return await self._execute(command)
+
+    async def system_update(self, id: List[int], obj_type: int, obj: dict) -> dict:
+        """
+        (partially) updates settings for existing object.
+        Raises exception if object does not exist.
+        Returns new state of object.
+        """
+        command = commands.WriteSystemValueCommand().from_args(
+            id=id,
+            type=obj_type,
+            size=0,
+            data=codec.encode(obj_type, obj)
+        )
+
         return await self._execute(command)
