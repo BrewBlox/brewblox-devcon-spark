@@ -1,5 +1,5 @@
 sudo: required
-language: python
+python: '3.6'
 
 services:
   - docker
@@ -10,14 +10,17 @@ env:
     - DOCKER_REPO=brewblox/brewblox-devcon-spark
     - GITHUB_REPO=BrewBlox/brewblox-devcon-spark
 
-python: '3.6'
 install: pip install tox docker
+
 script: tox
+
 before_deploy:
-  /bin/sh ./distcopy ./docker/pkg
-  && /bin/sh ./distcopy ./rpi-docker/pkg
+  chmod +x ./distcopy
+  && ./distcopy ./docker/pkg
+  && ./distcopy ./rpi-docker/pkg
   && docker login -u "$DOCKER_USER" -p "$DOCKER_PASSWORD"
   && docker run --rm --privileged multiarch/qemu-user-static:register --reset
+
 deploy:
 
   # Deploy to PyPi on tagged commits
