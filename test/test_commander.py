@@ -78,17 +78,19 @@ async def test_process_response_error(mocker, conduit_mock, sparky):
 async def test_command(conduit_mock, sparky):
     await sparky._process_response(conduit_mock, '05 00 |00 00 00')
 
-    resp = await sparky.do('list_objects', dict(profile_id=0))
+    command = commands.ListObjectsCommand().from_args(profile_id=0)
+    resp = await sparky.execute(command)
     assert resp.objects is None
 
     conduit_mock.write_encoded.assert_called_once_with(b'0500')
 
 
 async def test_error_command(conduit_mock, sparky):
+    command = commands.ListObjectsCommand().from_args(profile_id=0)
     await sparky._process_response(conduit_mock, '05 00 |FF 00 00')
 
     with pytest.raises(commands.CommandException):
-        await sparky.do('list_objects', dict(profile_id=0))
+        await sparky.execute(command)
 
 
 async def test_stale_reply(conduit_mock, sparky):
@@ -100,7 +102,8 @@ async def test_stale_reply(conduit_mock, sparky):
     await q.put(stale)
     await q.put(fresh)
 
-    resp = await sparky.do('list_objects', dict(profile_id=0))
+    command = commands.ListObjectsCommand().from_args(profile_id=0)
+    resp = await sparky.execute(command)
     assert resp == 'fresh'
 
 

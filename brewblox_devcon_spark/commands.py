@@ -165,15 +165,19 @@ class Command(ABC):
         LOGGER.info(f'{self} from args: {kwargs}')
         return self
 
-    def from_encoded(self, request: bytes, response: bytes):
+    def from_encoded(self, request: bytes=None, response: bytes=None):
         self._set_data(encoded=(request, response))
         LOGGER.info(f'{self} from encoded: {request} / {response}')
         return self
 
-    def from_decoded(self, request: dict, response: dict):
+    def from_decoded(self, request: dict=None, response: dict=None):
         self._set_data(decoded=(request, response))
         LOGGER.info(f'{self} from decoded: {request} / {response}')
         return self
+
+    @property
+    def name(self):
+        return self.__class__._OPCODE
 
     @property
     def opcode(self):
@@ -307,7 +311,7 @@ class LogValuesCommand(Command):
                               id_chain=1,
                               system_container=2,
                               default=0)
-    ) + Optional(_OBJECT_ID),
+    ) + Optional(_OBJECT_ID)
 
     _RESPONSE = Struct(
         OBJECT_LIST_KEY / Optional(Sequence(Padding(1) + _OBJECT_ID + _OBJECT_TYPE + _OBJECT_SIZE + _OBJECT_DATA)),
