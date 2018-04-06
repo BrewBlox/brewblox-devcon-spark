@@ -51,15 +51,23 @@ class ProtobufTranscoder(Transcoder):
         obj = json_format.ParseDict(values, self.message)
 
         data = obj.SerializeToString()
+
+        # We're using delimited Protobuf messages
+        # This means that messages are always prefixed with a varint indicating their encoded length
         delimiter = internal_encoder._VarintBytes(len(data))
 
         return delimiter + data
 
     def decode(self, encoded: Union[bytes, list]) -> dict:
+
+        # Supports binary input as both a byte string, or as a list of ints
         if isinstance(encoded, list):
             encoded = bytes(encoded)
 
         obj = self.message
+        # We're using delimited Protobuf messages
+        # This means that messages are always prefixed with a varint indicating their encoded length
+        # This is not strictly part of the Protobuf spec, so we need to slice it off before parsing
         (size, position) = internal_decoder._DecodeVarint(encoded, 0)
         obj.ParseFromString(encoded[position:position+size])
 

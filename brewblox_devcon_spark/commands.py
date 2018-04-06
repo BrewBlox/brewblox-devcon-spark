@@ -104,6 +104,8 @@ class CommandIndex():
 
         for name, val in inspect.getmembers(current_module, inspect.isclass):
             if issubclass(val, Command) and val is not Command:
+                # Quick sanity check that there are no copy-pasta errors after adding / changing commands
+                assert val._OPCODE not in self._commands, f'Multiple definition of {val._OPCODE}'
                 self._commands[val._OPCODE] = val
 
     def identify(self, opcode: str) -> 'Command':
@@ -132,6 +134,9 @@ class Command(ABC):
         _RESPONSE
 
     Opcode must always be set, request and response can be None.
+
+    Request or response being None does not mean the controller will literally send nothing.
+    Opcode/error code are always sent, and will be part of the decoded request/response.
     """
 
     def __init__(self):
@@ -149,7 +154,7 @@ class Command(ABC):
         self._set_data()
 
     def __str__(self):
-        return f'<{type(self).__name__}>'
+        return f'<{type(self).__name__} [{self.name}]>'
 
     def _set_data(self,
                   encoded: tuple=(None, None),

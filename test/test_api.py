@@ -14,8 +14,8 @@ TESTED = api.__name__
 @pytest.fixture
 def object_args():
     return dict(
-        obj_type=6,
-        obj_args=dict(
+        type=6,
+        obj=dict(
             settings=dict(
                 address=base64.b64encode(bytes([0xFF])).decode(),
                 offset=20
@@ -81,13 +81,13 @@ async def test_do(app, client, commander_mock):
 
 
 async def test_create(app, client, object_args):
-    res = await client.put('/object', json=object_args)
+    res = await client.post('/objects', json=object_args)
     assert res.status == 200
     assert (await res.json())['command'] == 'CREATE_OBJECT'
 
 
 async def test_read(app, client):
-    res = await client.get('/object/1-2-3')
+    res = await client.get('/objects/1-2-3')
     assert res.status == 200
 
     retval = await res.json()
@@ -96,14 +96,14 @@ async def test_read(app, client):
 
 
 async def test_update(app, client, object_args):
-    res = await client.post('/object/1-2-3', json=object_args)
+    res = await client.put('/objects/1-2-3', json=object_args)
     assert res.status == 200
     retval = await res.json()
     assert retval['command'] == 'WRITE_VALUE'
 
 
 async def test_delete(app, client):
-    res = await client.delete('/object/55-2')
+    res = await client.delete('/objects/55-2')
     assert res.status == 200
     retval = await res.json()
     assert retval['command'] == 'DELETE_OBJECT'
@@ -111,7 +111,7 @@ async def test_delete(app, client):
 
 
 async def test_all(app, client):
-    res = await client.get('/object')
+    res = await client.get('/objects')
     assert res.status == 200
     retval = await res.json()
     assert retval['command'] == 'LIST_OBJECTS'
@@ -127,7 +127,7 @@ async def test_system_read(app, client):
 
 
 async def test_system_update(app, client, object_args):
-    res = await client.post('/system/1-2-3', json=object_args)
+    res = await client.put('/system/1-2-3', json=object_args)
     assert res.status == 200
     retval = await res.json()
     assert retval['command'] == 'WRITE_SYSTEM_VALUE'

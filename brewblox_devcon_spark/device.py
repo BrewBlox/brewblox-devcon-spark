@@ -97,7 +97,7 @@ class SparkController():
         )
         return await self._execute(command)
 
-    async def read(self, id: List[int]) -> dict:
+    async def read(self, id: List[int], obj_type: int=0) -> dict:
         """
         Reads state for object on controller.
         Raises exception if object does not exist.
@@ -105,14 +105,14 @@ class SparkController():
         """
         command = commands.ReadValueCommand().from_args(
             id=id,
-            type=0,
+            type=obj_type,
             size=0
         )
         return await self._execute(command)
 
     async def update(self, id: List[int], obj_type: int, obj: dict) -> dict:
         """
-        (partially) updates settings for existing object.
+        Updates settings for existing object.
         Raises exception if object does not exist.
         Returns new state of object.
         """
@@ -153,7 +153,7 @@ class SparkController():
 
     async def system_update(self, id: List[int], obj_type: int, obj: dict) -> dict:
         """
-        (partially) updates settings for existing object.
+        Updates settings for existing object.
         Raises exception if object does not exist.
         Returns new state of object.
         """

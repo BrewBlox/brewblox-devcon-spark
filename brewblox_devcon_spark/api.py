@@ -85,13 +85,13 @@ async def do_command(request: web.Request) -> web.Response:
     return web.json_response(await controller.do(command, data))
 
 
-@routes.put('/object')
+@routes.post('/objects')
 async def create(request: web.Request) -> web.Response:
     """
     ---
     tags:
     - Spark
-    operationId: controller.spark.object.create
+    operationId: controller.spark.objects.create
     produces:
     - application/json
     parameters:
@@ -103,28 +103,28 @@ async def create(request: web.Request) -> web.Response:
         schema:
             type: object
             properties:
-                obj_type:
+                type:
                     type: int
                     example: 2
-                obj_args:
+                obj:
                     type: object
                     example: {"command":2, "data":4136}
     """
     request_args = await request.json()
     controller = device.get_controller(request.app)
 
-    obj_type = request_args['obj_type']
-    obj_args = request_args['obj_args']
+    obj_type = request_args['type']
+    obj_args = request_args['obj']
     return web.json_response(await controller.create(obj_type, obj_args))
 
 
-@routes.get('/object/{id}')
+@routes.get('/objects/{id}')
 async def read(request: web.Request) -> web.Response:
     """
     ---
     tags:
     - Spark
-    operationId: controller.spark.object.read
+    operationId: controller.spark.objects.read
     produces:
     - application/json
     parameters:
@@ -142,13 +142,13 @@ async def read(request: web.Request) -> web.Response:
     return web.json_response(await controller.read(obj_id))
 
 
-@routes.post('/object/{id}')
+@routes.put('/objects/{id}')
 async def update(request: web.Request) -> web.Response:
     """
     ---
     tags:
     - Spark
-    operationId: controller.spark.object.update
+    operationId: controller.spark.objects.update
     produces:
     - application/json
     parameters:
@@ -167,10 +167,10 @@ async def update(request: web.Request) -> web.Response:
         schema:
             type: object
             properties:
-                obj_type:
+                type:
                     type: int
                     example: 2
-                obj_args:
+                obj:
                     type: object
                     example: {"command":2, "data":4136}
     """
@@ -178,19 +178,19 @@ async def update(request: web.Request) -> web.Response:
     controller = device.get_controller(request.app)
 
     obj_id = _parse_id(request.match_info['id'])
-    obj_type = request_args['obj_type']
-    obj_args = request_args['obj_args']
+    obj_type = request_args['type']
+    obj_args = request_args['obj']
 
     return web.json_response(await controller.update(obj_id, obj_type, obj_args))
 
 
-@routes.delete('/object/{id}')
+@routes.delete('/objects/{id}')
 async def delete(request: web.Request) -> web.Response:
     """
     ---
     tags:
     - Spark
-    operationId: controller.spark.object.delete
+    operationId: controller.spark.objects.delete
     produces:
     - application/json
     parameters:
@@ -208,13 +208,13 @@ async def delete(request: web.Request) -> web.Response:
     return web.json_response(await controller.delete(obj_id))
 
 
-@routes.get('/object')
+@routes.get('/objects')
 async def all(request: web.Request) -> web.Response:
     """
     ---
     tags:
     - Spark
-    operationId: controller.spark.object.all
+    operationId: controller.spark.objects.all
     produces:
     - application/json
     """
@@ -246,7 +246,7 @@ async def system_read(request: web.Request) -> web.Response:
     return web.json_response(await controller.system_read(obj_id))
 
 
-@routes.post('/system/{id}')
+@routes.put('/system/{id}')
 async def system_update(request: web.Request) -> web.Response:
     """
     ---
@@ -271,10 +271,10 @@ async def system_update(request: web.Request) -> web.Response:
         schema:
             type: object
             properties:
-                obj_type:
+                type:
                     type: int
                     example: 10
-                obj_args:
+                obj:
                     type: object
                     example: { "command": { "opcode":2, "data":4136 } }
     """
@@ -282,7 +282,7 @@ async def system_update(request: web.Request) -> web.Response:
     controller = device.get_controller(request.app)
 
     obj_id = _parse_id(request.match_info['id'])
-    obj_type = request_args['obj_type']
-    obj_args = request_args['obj_args']
+    obj_type = request_args['type']
+    obj_args = request_args['obj']
 
     return web.json_response(await controller.system_update(obj_id, obj_type, obj_args))
