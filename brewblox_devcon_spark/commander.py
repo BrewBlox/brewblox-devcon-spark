@@ -9,6 +9,8 @@ from collections import defaultdict
 from concurrent.futures import CancelledError
 from datetime import datetime, timedelta
 
+from deprecated import deprecated
+
 from brewblox_devcon_spark import commands, communication
 
 LOGGER = logging.getLogger(__name__)
@@ -82,6 +84,7 @@ class SparkCommander():
         self._loop = loop or asyncio.get_event_loop()
         self._requests = defaultdict(TimestampedQueue)
         self._cleanup_task: asyncio.Task = None
+        self._index = commands.CommandIndex()
 
         # TODO(Bob): handle events
         self._conduit = communication.SparkConduit(
@@ -131,24 +134,25 @@ class SparkCommander():
                 unhexlify(part)
                 for part in msg.replace(' ', '').split(RESPONSE_SEPARATOR)]
 
-            command = commands.Command.from_encoded(raw_request, raw_response)
+            command = self._index.identify_encoded(raw_request)
+            command.from_encoded(raw_request, raw_response)
 
             # Match the request queue
             # key is the encoded request
             queue = self._requests[command.encoded_request].queue
             await queue.put(TimestampedResponse(command.decoded_response))
+            LOGGER.debug(f'Decoded response: {command.decoded_response}')
 
         except Exception as ex:
-            LOGGER.error(f'On data error in {self} : {ex}')
+            LOGGER.error(f'Response error in {self} : {ex}')
 
-    async def do(self, name: str, data: dict):
-        command = commands.Command.from_decoded(name, data)
-
+    async def execute(self, command: commands.Command) -> dict:
         encoded_request = command.encoded_request
         assert await self._conduit.write_encoded(hexlify(encoded_request))
 
         while True:
             # Wait for a request resolution (matched by request)
+            # Request will be resolved with a timestamped response
             queue = self._requests[encoded_request].queue
             response = await asyncio.wait_for(queue.get(), timeout=REQUEST_TIMEOUT.seconds)
 
@@ -158,11 +162,16 @@ class SparkCommander():
 
             # If the call failed, its response will be an exception
             # We can raise it here
-            if isinstance(response.content, Exception):
+            if isinstance(response.content, BaseException):
                 raise response.content
 
             return response.content
 
+    @deprecated(reason='Debug function')
+    async def do(self, name: str, data: dict) -> dict:
+        command = self._index.identify(name).from_args(**data)
+        return await self.execute(command)
+
+    @deprecated(reason='Debug function')
     async def write(self, data: str):
-        LOGGER.info(f'Writing {data}')
         return await self._conduit.write(data)

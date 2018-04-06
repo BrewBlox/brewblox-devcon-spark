@@ -34,7 +34,8 @@ def write_value_resp(write_value_args):
     )
 
 
-def test_known_commands():
+def test_index():
+    index = commands.CommandIndex()
     for cmd_name in [
         'READ_VALUE',
         'WRITE_VALUE',
@@ -52,16 +53,17 @@ def test_known_commands():
         'READ_SYSTEM_VALUE',
         'WRITE_SYSTEM_VALUE',
     ]:
-        command = commands.COMMAND_DEFS[cmd_name]
-        assert command.opcode == cmd_name
+        command = index.identify(cmd_name)
+        assert command.name == cmd_name
+        assert command.opcode
         assert command.request
         assert command.response
 
 
 def test_variable_id_length(write_value_args):
 
-    command = commands.COMMAND_DEFS['WRITE_VALUE']
-    bin_cmd = command.request.build(write_value_args)
+    command = commands.WriteValueCommand().from_args(**write_value_args)
+    bin_cmd = command.encoded_request
 
     # nesting flag was added
     assert bin_cmd[1:3] == bytearray([0xFF, 0x07])
@@ -73,10 +75,7 @@ def test_variable_id_length(write_value_args):
 
 
 def test_command_from_decoded(write_value_args):
-    with pytest.raises(KeyError):
-        commands.Command.from_decoded('spanish_inquisition', dict())
-
-    cmd = commands.Command.from_decoded('write_value', write_value_args)
+    cmd = commands.WriteValueCommand().from_decoded(write_value_args)
 
     assert cmd.encoded_request
     assert cmd.decoded_request == write_value_args
@@ -86,14 +85,11 @@ def test_command_from_decoded(write_value_args):
 
 
 def test_command_from_encoded(write_value_args, write_value_resp, write_value_req):
-    with pytest.raises(KeyError):
-        commands.Command.from_encoded(commands.OpcodeEnum.build('UNUSED'), None)
+    builder = commands.WriteValueCommand()
+    encoded_request = builder.request.build(write_value_args)
+    encoded_response = builder.response.build(write_value_resp)
 
-    cmd_def = commands.COMMAND_DEFS['WRITE_VALUE']
-    encoded_request = cmd_def.request.build(write_value_args)
-    encoded_response = cmd_def.response.build(write_value_resp)
-
-    cmd = commands.Command.from_encoded(encoded_request, encoded_response)
+    cmd = commands.WriteValueCommand().from_encoded(encoded_request, encoded_response)
 
     assert cmd.encoded_request == encoded_request
     assert cmd.encoded_response == encoded_response
@@ -103,20 +99,14 @@ def test_command_from_encoded(write_value_args, write_value_resp, write_value_re
 
 
 def test_command_props(write_value_args, write_value_resp, write_value_req):
-    cmd_def = commands.COMMAND_DEFS['WRITE_VALUE']
-    encoded_request = cmd_def.request.build(write_value_args)
-    encoded_response = cmd_def.response.build(write_value_resp)
+    command = commands.WriteValueCommand()
+    encoded_request = command.request.build(write_value_args)
+    encoded_response = command.response.build(write_value_resp)
 
     # Request only
     for cmd in [
-        commands.Command(
-            cmd_def,
-            encoded=(encoded_request, None)
-        ),
-        commands.Command(
-            cmd_def,
-            decoded=(write_value_req, None)
-        )
+        command.from_encoded(request=encoded_request),
+        command.from_decoded(request=write_value_req),
     ]:
         assert cmd.encoded_request == encoded_request
         assert cmd.decoded_request == write_value_req
@@ -125,14 +115,8 @@ def test_command_props(write_value_args, write_value_resp, write_value_req):
 
     # Response only
     for cmd in [
-        commands.Command(
-            cmd_def,
-            encoded=(None, encoded_response)
-        ),
-        commands.Command(
-            cmd_def,
-            decoded=(None, write_value_resp)
-        )
+        command.from_encoded(response=encoded_response),
+        command.from_decoded(response=write_value_resp),
     ]:
         assert cmd.encoded_request is None
         assert cmd.decoded_request is None

@@ -1,0 +1,21 @@
+syntax = "proto2";
+
+package blox;
+
+// Command encodes the next command to perform when the object is read
+// data is optional and only used in some commands. For example when doing a family search, data contains the family ID 
+
+message OneWireBus {
+    message Command {
+        optional uint32 opcode = 1 [default = 100];
+        optional uint32 data = 2;
+    }
+
+    optional Command command = 1;
+    repeated bytes address = 2;
+}
+
+// OneWire write does not include the volatile addresses
+message OneWireBusWrite {
+    optional OneWireBus.Command command = 1;
+}
