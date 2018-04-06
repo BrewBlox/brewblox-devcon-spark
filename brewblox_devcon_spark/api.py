@@ -15,6 +15,10 @@ def setup(app: Type[web.Application]):
     app.router.add_routes(routes)
 
 
+def _parse_id(id: str) -> list:
+    return [int(i) for i in id.split('-')]
+
+
 @routes.post('/_debug/write')
 async def write(request: web.Request) -> web.Response:
     """
@@ -173,7 +177,7 @@ async def update(request: web.Request) -> web.Response:
     request_args = await request.json()
     controller = device.get_controller(request.app)
 
-    obj_id = [int(i) for i in request.match_info['id'].split('-')]
+    obj_id = _parse_id(request.match_info['id'])
     obj_type = request_args['obj_type']
     obj_args = request_args['obj_args']
 
@@ -198,7 +202,7 @@ async def delete(request: web.Request) -> web.Response:
         schema:
             type: string
     """
-    obj_id = [int(i) for i in request.match_info['id'].split('-')]
+    obj_id = _parse_id(request.match_info['id'])
     controller = device.get_controller(request.app)
 
     return web.json_response(await controller.delete(obj_id))
@@ -236,7 +240,7 @@ async def system_read(request: web.Request) -> web.Response:
         schema:
             type: string
     """
-    obj_id = [int(i) for i in request.match_info['id'].split('-')]
+    obj_id = _parse_id(request.match_info['id'])
     controller = device.get_controller(request.app)
 
     return web.json_response(await controller.system_read(obj_id))
@@ -277,7 +281,7 @@ async def system_update(request: web.Request) -> web.Response:
     request_args = await request.json()
     controller = device.get_controller(request.app)
 
-    obj_id = [int(i) for i in request.match_info['id'].split('-')]
+    obj_id = _parse_id(request.match_info['id'])
     obj_type = request_args['obj_type']
     obj_args = request_args['obj_args']
 

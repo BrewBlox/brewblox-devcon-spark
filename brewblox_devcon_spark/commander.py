@@ -152,6 +152,7 @@ class SparkCommander():
 
         while True:
             # Wait for a request resolution (matched by request)
+            # Request will be resolved with a timestamped response
             queue = self._requests[encoded_request].queue
             response = await asyncio.wait_for(queue.get(), timeout=REQUEST_TIMEOUT.seconds)
 
@@ -161,16 +162,16 @@ class SparkCommander():
 
             # If the call failed, its response will be an exception
             # We can raise it here
-            if isinstance(response.content, Exception):
+            if isinstance(response.content, BaseException):
                 raise response.content
 
             return response.content
 
-    @deprecated(reason='Debugging function')
+    @deprecated(reason='Debug function')
     async def do(self, name: str, data: dict) -> dict:
         command = self._index.identify(name).from_args(**data)
         return await self.execute(command)
 
-    @deprecated(reason='Debugging function')
+    @deprecated(reason='Debug function')
     async def write(self, data: str):
         return await self._conduit.write(data)

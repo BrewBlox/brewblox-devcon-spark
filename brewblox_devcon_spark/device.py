@@ -2,7 +2,6 @@
 Offers a functional interface to the device functionality
 """
 
-import asyncio
 import logging
 from typing import List, Type
 
@@ -29,7 +28,6 @@ def setup(app: Type[web.Application]):
 class SparkController():
     def __init__(self, name: str, app=None):
         self._name = name
-        self._task: asyncio.Task = None
         self._commander: SparkCommander = None
 
         if app:
@@ -44,6 +42,7 @@ class SparkController():
         app.on_cleanup.append(self.close)
 
     async def start(self, app: Type[web.Application]):
+        await self.close()
         self._commander = SparkCommander(app.loop)
         await self._commander.bind(loop=app.loop)
 
@@ -52,12 +51,12 @@ class SparkController():
             await self._commander.close()
             self._commander = None
 
-    @deprecated(reason='Debugging function')
+    @deprecated(reason='Debug function')
     async def write(self, command: str):
         LOGGER.info(f'Writing {command}')
         return await self._commander.write(command)
 
-    @deprecated(reason='Debugging function')
+    @deprecated(reason='Debug function')
     async def do(self, command: str, data: dict):
         LOGGER.info(f'Doing {command}{data}')
         return await self._commander.do(command, data)
