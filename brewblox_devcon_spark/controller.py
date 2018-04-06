@@ -2,10 +2,14 @@
 Defines endpoints and basic functionality for the BrewPi Spark controller
 """
 
-from typing import Type
-from aiohttp import web
+import asyncio
 import logging
+from typing import Type
+
+from aiohttp import web
 from nesdict import NesDict
+
+from brewblox_devcon_spark.commander import SparkCommander
 
 CONTROLLER_KEY = 'controller.spark'
 
@@ -18,17 +22,112 @@ def get_controller(app) -> 'SparkController':
 
 
 def setup(app: Type[web.Application]):
-    app[CONTROLLER_KEY] = SparkController(name=app['config']['name'])
+    app[CONTROLLER_KEY] = SparkController(name=app['config']['name'], app=app)
     app.router.add_routes(routes)
 
 
 class SparkController():
-    def __init__(self, name: str):
-        self.name = name
-        self.state = NesDict()
+    def __init__(self, name: str, app=None):
+        self._name = name
+        self._state = NesDict()
+        self._task: asyncio.Task = None
+        self._commander: SparkCommander = None
+
+        if app:
+            self.setup(app)
+
+    @property
+    def name(self):
+        return self._name
 
     def get(self, path: str='*') -> dict:
-        return self.state.get(path)
+        return self._state.get(path)
+
+    def setup(self, app: Type[web.Application]):
+        app.on_startup.append(self.start)
+        app.on_cleanup.append(self.close)
+
+    async def start(self, app: Type[web.Application]):
+        self._commander = SparkCommander(app.loop)
+        await self._commander.bind(loop=app.loop)
+
+    async def close(self, *args, **kwargs):
+        if self._commander:
+            await self._commander.close()
+            self._commander = None
+
+    async def write(self, command: str):
+        return await self._commander.write(command)
+
+    async def do(self, command: str, data: dict):
+        LOGGER.info(f'doing {command}{data}')
+        return await self._commander.do(command, data)
+
+
+@routes.post('/_debug/write')
+async def write(request: web.Request) -> web.Response:
+    """
+    ---
+    tags:
+    - Spark
+    operationId: controller.spark.debug.write
+    summary: Write a serial command
+    description: >
+        Writes a raw serial command to the controller.
+        Does not return anything.
+    produces:
+    - application/json
+    parameters:
+    -
+        in: body
+        name: body
+        description: command
+        required: try
+        schema:
+            type: object
+            properties:
+                command:
+                    type: string
+                    example: '0F00'
+    """
+    command = (await request.json())['command']
+    retval = await get_controller(request.app).write(command)
+    return web.json_response(dict(written=retval))
+
+
+@routes.post('/_debug/do')
+async def do_command(request: web.Request) -> web.Response:
+    """
+    ---
+    tags:
+    - Spark
+    operationId: controller.spark.debug.do
+    summary: Do a specific command
+    description: >
+        Sends command, and returns controller response.
+    produces:
+    - application/json
+    parameters:
+    -
+        in: body
+        name: body
+        description: command
+        required: try
+        schema:
+            type: object
+            properties:
+                command:
+                    type: string
+                    example: list_objects
+                kwargs:
+                    type: object
+                    example: {"profile_id":0}
+    """
+    request_args = await request.json()
+    command = request_args['command']
+    data = request_args['kwargs']
+    controller = get_controller(request.app)
+    return web.json_response(await controller.do(command, data))
 
 
 @routes.get('/state')
@@ -36,7 +135,6 @@ async def all_values(request: web.Request) -> web.Response:
     """
     ---
     tags:
-    - Controller
     - Spark
     operationId: controller.spark.state
     summary: Get the complete state of the controller
@@ -56,7 +154,6 @@ async def specific_values(request: web.Request) -> web.Response:
     """
     ---
     tags:
-    - Controller
     - Spark
     operationId: controller.spark.state.path
     summary: Get a subset of the controller state.
