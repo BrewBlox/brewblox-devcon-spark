@@ -31,3 +31,12 @@ def test_modify_if_present():
 
     output = codec._modify_if_present(input, ['gnome_count'], lambda x: x+1)
     assert output == create_obj()
+
+
+def test_modify_if_present_no_copy():
+    input = create_obj()
+    output = codec._modify_if_present(input, ['type'], lambda x: x+1, copy=False)
+
+    assert output['type'] == 7
+    assert input == output
+    assert input != create_obj()

@@ -33,15 +33,14 @@ def _transcoder(obj_type: str) -> 'Transcoder':
         raise KeyError(f'No codec found for object type [{obj_type}]')
 
 
-def _modify_if_present(obj: dict, path: List[str], func: Callable) -> dict:
+def _modify_if_present(obj: dict, path: List[str], func: Callable, copy: bool=True) -> dict:
     """
-    Replaces a value in a (possibly nested) dict
-    Returns the a deep copy of input.
+    Replaces a value in a (possibly nested) dict.
+    Optionally first makes a deep copy of the input.
 
     If path is invalid, no values are changed.
-    A deep copy is still returned.
     """
-    parent = deepcopy(obj)
+    parent = deepcopy(obj) if copy else obj
     try:
         child = parent
         for key in path[:-1]:
@@ -114,9 +113,10 @@ class OneWireBusTranscoder(ProtobufTranscoder):
     # Overrides
     def encode(self, values: dict) -> bytes:
         modified = _modify_if_present(
-            values,
-            ['address'],
-            lambda addr: [_hex_to_b64(a) for a in addr]
+            obj=values,
+            path=['address'],
+            func=lambda addr: [_hex_to_b64(a) for a in addr],
+            copy=True
         )
         return super().encode(modified)
 
@@ -124,9 +124,10 @@ class OneWireBusTranscoder(ProtobufTranscoder):
     def decode(self, *args, **kwargs) -> dict:
         decoded = super().decode(*args, **kwargs)
         return _modify_if_present(
-            decoded,
-            ['address'],
-            lambda addr: [_b64_to_hex(a) for a in addr]
+            obj=decoded,
+            path=['address'],
+            func=lambda addr: [_b64_to_hex(a) for a in addr],
+            copy=False
         )
 
 
@@ -136,9 +137,10 @@ class OneWireTempSensorTranscoder(ProtobufTranscoder):
     # Overrides
     def encode(self, values: dict) -> bytes:
         modified = _modify_if_present(
-            values,
-            ['settings', 'address'],
-            _hex_to_b64
+            obj=values,
+            path=['settings', 'address'],
+            func=_hex_to_b64,
+            copy=True
         )
         return super().encode(modified)
 
@@ -146,9 +148,10 @@ class OneWireTempSensorTranscoder(ProtobufTranscoder):
     def decode(self, *args, **kwargs) -> dict:
         decoded = super().decode(*args, **kwargs)
         return _modify_if_present(
-            decoded,
-            ['settings', 'address'],
-            _b64_to_hex
+            obj=decoded,
+            path=['settings', 'address'],
+            func=_b64_to_hex,
+            copy=False
         )
 
 
