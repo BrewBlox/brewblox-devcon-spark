@@ -113,7 +113,7 @@ class CommandIndex():
         try:
             command = self._commands[opcode]
             return command()
-        except KeyError:  # pragma: no cover
+        except KeyError:
             raise KeyError(f'No command found for opcode [{opcode}]')
 
 

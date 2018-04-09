@@ -122,7 +122,7 @@ class SparkCommander():
                     del self._requests[key]
 
             except CancelledError:  # pragma: no cover
-                LOGGER.info(f'{self} cleanup task shutdown')
+                LOGGER.debug(f'{self} cleanup task shutdown')
                 break
 
             except Exception as ex:  # pragma: no cover
@@ -130,7 +130,6 @@ class SparkCommander():
 
     async def _process_response(self, conduit, msg: str):
         try:
-            LOGGER.debug(f'{self} received response: {msg}')
             raw_request, raw_response = [
                 unhexlify(part)
                 for part in msg.replace(' ', '').split(RESPONSE_SEPARATOR)]
@@ -146,7 +145,6 @@ class SparkCommander():
     async def execute(self, command: commands.Command) -> dict:
         encoded_request = command.encoded_request
         assert await self._conduit.write_encoded(hexlify(encoded_request))
-        LOGGER.debug(f'{self} sent request: {hexlify(encoded_request)}')
 
         while True:
             # Wait for a request resolution (matched by request)
@@ -160,13 +158,14 @@ class SparkCommander():
 
             # Create new command to avoid changing the 'command' argument
             response_cmd = type(command)().from_encoded(encoded_request, response.content)
+            decoded = response_cmd.decoded_response
 
             # If the call failed, its response will be an exception
             # We can raise it here
-            if isinstance(response_cmd.decoded_response, BaseException):
-                raise response_cmd.decoded_response
+            if isinstance(decoded, BaseException):
+                raise decoded
 
-            return response_cmd.decoded_response
+            return decoded
 
     @deprecated(reason='Debug function')
     async def do(self, name: str, data: dict) -> dict:

@@ -114,11 +114,13 @@ class SparkConduit():
         return await self.write_encoded(data.encode())
 
     async def write_encoded(self, data: bytes):
+        LOGGER.debug(f'{self} writing: {data}')
         data += b'\n'
         assert self._serial, 'Serial unbound or not available'
         return self._serial.write(data)
 
-    def _do_callback(self, cb_attr, message):
+    def _do_callback(self, cb_attr: str, message: str):
+        LOGGER.debug(f'{self} {cb_attr}({message})')
 
         def check_result(fut):
             try:

@@ -59,6 +59,9 @@ def test_index():
         assert command.request
         assert command.response
 
+    with pytest.raises(KeyError):
+        index.identify('UNUSED')
+
 
 def test_variable_id_length(write_value_args):
 
