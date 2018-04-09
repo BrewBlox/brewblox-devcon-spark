@@ -2,6 +2,7 @@ import inspect
 import logging
 import sys
 from abc import ABC
+from binascii import hexlify
 
 from construct import (Adapter, Byte, Const, Enum, FlagsEnum, Int8sb, Optional,
                        Padding, RepeatUntil, Sequence, Struct, Terminated)
@@ -112,12 +113,8 @@ class CommandIndex():
         try:
             command = self._commands[opcode]
             return command()
-        except KeyError:
+        except KeyError:  # pragma: no cover
             raise KeyError(f'No command found for opcode [{opcode}]')
-
-    def identify_encoded(self, request: bytes) -> 'Command':
-        opcode = OpcodeEnum.parse(request)
-        return self.identify(opcode)
 
 
 class Command(ABC):
@@ -165,6 +162,9 @@ class Command(ABC):
         self._decoded_request: dict = decoded[0]
         self._decoded_response: dict = decoded[1]
 
+    def _pretty_raw(self, raw: bytes) -> str:
+        return hexlify(raw) if raw is not None else None
+
     def from_args(self, **kwargs):
         self._set_data(decoded=(kwargs, None))
         LOGGER.info(f'{self} from args: {kwargs}')
@@ -172,12 +172,12 @@ class Command(ABC):
 
     def from_encoded(self, request: bytes=None, response: bytes=None):
         self._set_data(encoded=(request, response))
-        LOGGER.info(f'{self} from encoded: {request} / {response}')
+        LOGGER.info(f'{self} from encoded: {self._pretty_raw(request)} | {self._pretty_raw(response)}')
         return self
 
     def from_decoded(self, request: dict=None, response: dict=None):
         self._set_data(decoded=(request, response))
-        LOGGER.info(f'{self} from decoded: {request} / {response}')
+        LOGGER.info(f'{self} from decoded: {request} | {response}')
         return self
 
     @property
@@ -232,10 +232,10 @@ class Command(ABC):
         return dest is None and src is not None
 
     def _parse_error(self):
-        errcode = int(self.status.parse(self._encoded_response).errcode)
+        status = self.status.parse(self._encoded_response).errcode
 
-        if errcode < 0:
-            return CommandException(f'{self.opcode} failed with code {errcode}')
+        if int(status) < 0:
+            return CommandException(f'{self.name} failed with code {status}')
         else:
             return None
 
@@ -302,7 +302,7 @@ class DeleteProfileCommand(Command):
     _RESPONSE = None
 
 
-class ActiveProfileCommand(Command):
+class ActivateProfileCommand(Command):
     _OPCODE = OpcodeEnum.ACTIVATE_PROFILE
     _REQUEST = _PROFILE_ID
     _RESPONSE = None

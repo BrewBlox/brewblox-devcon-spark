@@ -6,6 +6,7 @@ Offers encoding and decoding of objects.
 import logging
 from abc import ABC, abstractmethod
 from typing import Union
+from binascii import hexlify
 
 from brewblox_codec_spark.proto import OneWireBus_pb2, OneWireTempSensor_pb2
 from google.protobuf import json_format
@@ -56,7 +57,9 @@ class ProtobufTranscoder(Transcoder):
         # This means that messages are always prefixed with a varint indicating their encoded length
         delimiter = internal_encoder._VarintBytes(len(data))
 
-        return delimiter + data
+        encoded = delimiter + data
+        LOGGER.info(f'Encoded {self.message.__class__} as {hexlify(encoded)}')
+        return encoded
 
     def decode(self, encoded: Union[bytes, list]) -> dict:
 

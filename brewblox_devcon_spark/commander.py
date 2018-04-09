@@ -84,6 +84,8 @@ class SparkCommander():
         self._loop = loop or asyncio.get_event_loop()
         self._requests = defaultdict(TimestampedQueue)
         self._cleanup_task: asyncio.Task = None
+
+        # Note: only used for debug functions
         self._index = commands.CommandIndex()
 
         # TODO(Bob): handle events
@@ -134,17 +136,13 @@ class SparkCommander():
                 unhexlify(part)
                 for part in msg.replace(' ', '').split(RESPONSE_SEPARATOR)]
 
-            command = self._index.identify_encoded(raw_request)
-            command.from_encoded(raw_request, raw_response)
-
             # Match the request queue
             # key is the encoded request
-            queue = self._requests[command.encoded_request].queue
-            await queue.put(TimestampedResponse(command.decoded_response))
-            LOGGER.debug(f'Decoded response: {command.decoded_response}')
+            queue = self._requests[raw_request].queue
+            await queue.put(TimestampedResponse(raw_response))
 
         except Exception as ex:
-            LOGGER.error(f'Response error in {self} : {ex}')
+            LOGGER.error(f'Response error in {self} : {ex}', exc_info=True)
 
     async def execute(self, command: commands.Command) -> dict:
         encoded_request = command.encoded_request
@@ -160,12 +158,15 @@ class SparkCommander():
                 LOGGER.warn(f'Discarding stale response: {response}')
                 continue
 
+            # Create new command to avoid changing the 'command' argument
+            response_cmd = type(command)().from_encoded(encoded_request, response.content)
+
             # If the call failed, its response will be an exception
             # We can raise it here
-            if isinstance(response.content, BaseException):
-                raise response.content
+            if isinstance(response_cmd.decoded_response, BaseException):
+                raise response_cmd.decoded_response
 
-            return response.content
+            return response_cmd.decoded_response
 
     @deprecated(reason='Debug function')
     async def do(self, name: str, data: dict) -> dict:
