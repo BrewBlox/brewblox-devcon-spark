@@ -5,10 +5,10 @@ Offers encoding and decoding of objects.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Union
+from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
-from base64 import b64decode
-from typing import Callable, List
+from copy import deepcopy
+from typing import Callable, List, Union
 
 from brewblox_codec_spark.proto import OneWireBus_pb2, OneWireTempSensor_pb2
 from google.protobuf import json_format
@@ -36,22 +36,31 @@ def _transcoder(obj_type: str) -> 'Transcoder':
 def _modify_if_present(obj: dict, path: List[str], func: Callable) -> dict:
     """
     Replaces a value in a (possibly nested) dict
-    Returns the dict
+    Returns the a deep copy of input.
 
-    Does nothing if path is invalid
+    If path is invalid, no values are changed.
+    A deep copy is still returned.
     """
-
+    parent = deepcopy(obj)
     try:
-        parent = obj
+        child = parent
         for key in path[:-1]:
-            parent = parent[key]
+            child = child[key]
 
-        parent[path[-1]] = func(parent[path[-1]])
+        child[path[-1]] = func(child[path[-1]])
 
     except KeyError:
         pass
 
-    return obj
+    return parent
+
+
+def _hex_to_b64(s):
+    return b64encode(unhexlify(s)).decode()
+
+
+def _b64_to_hex(s):
+    return hexlify(b64decode(s)).decode()
 
 
 class Transcoder(ABC):
@@ -72,9 +81,8 @@ class ProtobufTranscoder(Transcoder):
         return self.__class__._MESSAGE()
 
     def encode(self, values: dict) -> bytes:
+        LOGGER.debug(f'encoding {values} to {self.__class__._MESSAGE}')
         obj = json_format.ParseDict(values, self.message)
-        LOGGER.info(f'Object: {obj}')
-
         data = obj.SerializeToString()
 
         # We're using delimited Protobuf messages
@@ -84,7 +92,6 @@ class ProtobufTranscoder(Transcoder):
         return delimiter + data
 
     def decode(self, encoded: Union[bytes, list]) -> dict:
-
         # Supports binary input as both a byte string, or as a list of ints
         if isinstance(encoded, list):
             encoded = bytes(encoded)
@@ -96,23 +103,30 @@ class ProtobufTranscoder(Transcoder):
         (size, position) = internal_decoder._DecodeVarint(encoded, 0)
         obj.ParseFromString(encoded[position:position+size])
 
-        return json_format.MessageToDict(obj)
+        decoded = json_format.MessageToDict(obj)
+        LOGGER.debug(f'decoded {self.__class__._MESSAGE} to {decoded}')
+        return decoded
 
 
 class OneWireBusTranscoder(ProtobufTranscoder):
     _MESSAGE = OneWireBus_pb2.OneWireBus
 
     # Overrides
+    def encode(self, values: dict) -> bytes:
+        modified = _modify_if_present(
+            values,
+            ['address'],
+            lambda addr: [_hex_to_b64(a) for a in addr]
+        )
+        return super().encode(modified)
+
+    # Overrides
     def decode(self, *args, **kwargs) -> dict:
-        """
-        Default behavior for Protobuf is to decode bytes as base64
-        This changes encoding to hex data instead
-        """
         decoded = super().decode(*args, **kwargs)
         return _modify_if_present(
             decoded,
             ['address'],
-            lambda addr: [hexlify(b64decode(a)).decode() for a in addr]
+            lambda addr: [_b64_to_hex(a) for a in addr]
         )
 
 
@@ -121,28 +135,20 @@ class OneWireTempSensorTranscoder(ProtobufTranscoder):
 
     # Overrides
     def encode(self, values: dict) -> bytes:
-        """
-        Pre-encodes a hex string to bytes
-        """
-        values = _modify_if_present(
+        modified = _modify_if_present(
             values,
             ['settings', 'address'],
-            unhexlify
+            _hex_to_b64
         )
-
-        return super().encode(values)
+        return super().encode(modified)
 
     # Overrides
     def decode(self, *args, **kwargs) -> dict:
-        """
-        Default behavior for Protobuf is to decode bytes as base64
-        This changes encoding to hex data instead
-        """
         decoded = super().decode(*args, **kwargs)
         return _modify_if_present(
             decoded,
             ['settings', 'address'],
-            lambda a: hexlify(b64decode(a)).decode()
+            _b64_to_hex
         )
 
 

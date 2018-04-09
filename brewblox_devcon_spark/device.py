@@ -87,8 +87,9 @@ class SparkController():
         try:
             return await self._process_retval(await self._commander.execute(command))
         except Exception as ex:
-            LOGGER.error(f'Failed to execute: {ex}', exc_info=True)
-            raise ControllerException(f'{type(ex).__name__}: {ex}')
+            message = f'Failed to execute {command}: {type(ex).__name__}: {ex}'
+            LOGGER.error(message)
+            raise ControllerException(message)
 
     async def create(self, obj_type: int, obj: dict) -> List[int]:
         """
@@ -96,11 +97,10 @@ class SparkController():
         Raises exception if object already exists.
         Returns ID of newly created object.
         """
-        encoded = codec.encode(obj_type, obj)
         command = commands.CreateObjectCommand().from_args(
             type=obj_type,
-            size=100,  # TODO(BOb): fix protocol
-            data=encoded
+            size=18,  # TODO(BOb): fix protocol
+            data=codec.encode(obj_type, obj)
         )
         return await self._execute(command)
 

@@ -163,4 +163,4 @@ async def test_command_exception(app, client, commander_mock):
     assert res.status == 500
 
     retval = await res.json()
-    assert retval['error'] == 'RuntimeError: test error'
+    assert 'test error' in retval['error']
