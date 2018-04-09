@@ -116,7 +116,7 @@ class SparkCommander():
                          if not queue.fresh]
 
                 if stale:
-                    LOGGER.info(f'Cleaning stale queues: {stale}')
+                    LOGGER.debug(f'Cleaning stale queues: {stale}')
 
                 for key in stale:
                     del self._requests[key]

@@ -2,7 +2,6 @@
 Example of how to import and use the brewblox service
 """
 
-
 from brewblox_devcon_spark import api, brewblox_logger, device
 from brewblox_service import service
 

@@ -167,17 +167,17 @@ class Command(ABC):
 
     def from_args(self, **kwargs):
         self._set_data(decoded=(kwargs, None))
-        LOGGER.info(f'{self} from args: {kwargs}')
+        LOGGER.debug(f'{self} from args: {kwargs}')
         return self
 
     def from_encoded(self, request: bytes=None, response: bytes=None):
         self._set_data(encoded=(request, response))
-        LOGGER.info(f'{self} from encoded: {self._pretty_raw(request)} | {self._pretty_raw(response)}')
+        LOGGER.debug(f'{self} from encoded: {self._pretty_raw(request)} | {self._pretty_raw(response)}')
         return self
 
     def from_decoded(self, request: dict=None, response: dict=None):
         self._set_data(decoded=(request, response))
-        LOGGER.info(f'{self} from decoded: {request} | {response}')
+        LOGGER.debug(f'{self} from decoded: {request} | {response}')
         return self
 
     @property
