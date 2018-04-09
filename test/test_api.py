@@ -5,7 +5,6 @@ Tests brewblox_devcon_spark.api
 import pytest
 from brewblox_devcon_spark import api, device, commander
 from asynctest import CoroutineMock
-import base64
 
 
 TESTED = api.__name__
@@ -17,7 +16,7 @@ def object_args():
         type=6,
         obj=dict(
             settings=dict(
-                address=base64.b64encode(bytes([0xFF])).decode(),
+                address='FF',
                 offset=20
             ),
             state=dict(

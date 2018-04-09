@@ -3,17 +3,15 @@ Command-based device communication
 """
 
 import asyncio
-import logging
 from binascii import hexlify, unhexlify
 from collections import defaultdict
 from concurrent.futures import CancelledError
 from datetime import datetime, timedelta
 
+from brewblox_devcon_spark import commands, communication, brewblox_logger
 from deprecated import deprecated
 
-from brewblox_devcon_spark import commands, communication
-
-LOGGER = logging.getLogger(__name__)
+LOGGER = brewblox_logger(__name__)
 
 # Spark protocol is to echo the request in the response
 # To prevent decoding ambiguity, a non-hexadecimal character separates the request and response
@@ -132,6 +130,7 @@ class SparkCommander():
 
     async def _process_response(self, conduit, msg: str):
         try:
+            LOGGER.debug(f'{self} received response: {msg}')
             raw_request, raw_response = [
                 unhexlify(part)
                 for part in msg.replace(' ', '').split(RESPONSE_SEPARATOR)]
@@ -147,6 +146,7 @@ class SparkCommander():
     async def execute(self, command: commands.Command) -> dict:
         encoded_request = command.encoded_request
         assert await self._conduit.write_encoded(hexlify(encoded_request))
+        LOGGER.debug(f'{self} sent request: {hexlify(encoded_request)}')
 
         while True:
             # Wait for a request resolution (matched by request)

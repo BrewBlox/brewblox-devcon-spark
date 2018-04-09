@@ -1,13 +1,13 @@
 import inspect
-import logging
 import sys
 from abc import ABC
 from binascii import hexlify
 
+from brewblox_devcon_spark import brewblox_logger
 from construct import (Adapter, Byte, Const, Enum, FlagsEnum, Int8sb, Optional,
                        Padding, RepeatUntil, Sequence, Struct, Terminated)
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = LOGGER = brewblox_logger(__name__)
 
 
 OBJECT_ID_KEY = 'id'

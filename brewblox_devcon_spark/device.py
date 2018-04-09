@@ -2,19 +2,17 @@
 Offers a functional interface to the device functionality
 """
 
-import logging
 from typing import List, Type
 
 from aiohttp import web
 from brewblox_codec_spark import codec
-from deprecated import deprecated
-
-from brewblox_devcon_spark import commands
+from brewblox_devcon_spark import brewblox_logger, commands
 from brewblox_devcon_spark.commander import SparkCommander
+from deprecated import deprecated
 
 CONTROLLER_KEY = 'controller.spark'
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = LOGGER = brewblox_logger(__name__)
 
 
 def get_controller(app) -> 'SparkController':
@@ -101,7 +99,7 @@ class SparkController():
         encoded = codec.encode(obj_type, obj)
         command = commands.CreateObjectCommand().from_args(
             type=obj_type,
-            size=len(encoded),
+            size=100,  # TODO(BOb): fix protocol
             data=encoded
         )
         return await self._execute(command)

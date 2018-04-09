@@ -2,12 +2,12 @@
 Defines the REST API for the device
 """
 
-from aiohttp import web
-import logging
-from brewblox_devcon_spark import device
 from typing import Type
 
-LOGGER = logging.getLogger(__name__)
+from aiohttp import web
+from brewblox_devcon_spark import brewblox_logger, device
+
+LOGGER = LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
 
 

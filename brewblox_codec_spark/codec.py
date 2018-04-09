@@ -6,7 +6,9 @@ Offers encoding and decoding of objects.
 import logging
 from abc import ABC, abstractmethod
 from typing import Union
-from binascii import hexlify
+from binascii import hexlify, unhexlify
+from base64 import b64decode
+from typing import Callable, List
 
 from brewblox_codec_spark.proto import OneWireBus_pb2, OneWireTempSensor_pb2
 from google.protobuf import json_format
@@ -31,6 +33,27 @@ def _transcoder(obj_type: str) -> 'Transcoder':
         raise KeyError(f'No codec found for object type [{obj_type}]')
 
 
+def _modify_if_present(obj: dict, path: List[str], func: Callable) -> dict:
+    """
+    Replaces a value in a (possibly nested) dict
+    Returns the dict
+
+    Does nothing if path is invalid
+    """
+
+    try:
+        parent = obj
+        for key in path[:-1]:
+            parent = parent[key]
+
+        parent[path[-1]] = func(parent[path[-1]])
+
+    except KeyError:
+        pass
+
+    return obj
+
+
 class Transcoder(ABC):
 
     @abstractmethod
@@ -50,6 +73,7 @@ class ProtobufTranscoder(Transcoder):
 
     def encode(self, values: dict) -> bytes:
         obj = json_format.ParseDict(values, self.message)
+        LOGGER.info(f'Object: {obj}')
 
         data = obj.SerializeToString()
 
@@ -57,9 +81,7 @@ class ProtobufTranscoder(Transcoder):
         # This means that messages are always prefixed with a varint indicating their encoded length
         delimiter = internal_encoder._VarintBytes(len(data))
 
-        encoded = delimiter + data
-        LOGGER.info(f'Encoded {self.message.__class__} as {hexlify(encoded)}')
-        return encoded
+        return delimiter + data
 
     def decode(self, encoded: Union[bytes, list]) -> dict:
 
@@ -80,12 +102,52 @@ class ProtobufTranscoder(Transcoder):
 class OneWireBusTranscoder(ProtobufTranscoder):
     _MESSAGE = OneWireBus_pb2.OneWireBus
 
+    # Overrides
+    def decode(self, *args, **kwargs) -> dict:
+        """
+        Default behavior for Protobuf is to decode bytes as base64
+        This changes encoding to hex data instead
+        """
+        decoded = super().decode(*args, **kwargs)
+        return _modify_if_present(
+            decoded,
+            ['address'],
+            lambda addr: [hexlify(b64decode(a)).decode() for a in addr]
+        )
+
 
 class OneWireTempSensorTranscoder(ProtobufTranscoder):
     _MESSAGE = OneWireTempSensor_pb2.OneWireTempSensor
 
+    # Overrides
+    def encode(self, values: dict) -> bytes:
+        """
+        Pre-encodes a hex string to bytes
+        """
+        values = _modify_if_present(
+            values,
+            ['settings', 'address'],
+            unhexlify
+        )
+
+        return super().encode(values)
+
+    # Overrides
+    def decode(self, *args, **kwargs) -> dict:
+        """
+        Default behavior for Protobuf is to decode bytes as base64
+        This changes encoding to hex data instead
+        """
+        decoded = super().decode(*args, **kwargs)
+        return _modify_if_present(
+            decoded,
+            ['settings', 'address'],
+            lambda a: hexlify(b64decode(a)).decode()
+        )
+
 
 _TYPE_MAPPING = {
+    0: OneWireBusTranscoder,
     10: OneWireBusTranscoder,
     6: OneWireTempSensorTranscoder,
 }

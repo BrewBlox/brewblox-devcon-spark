@@ -3,17 +3,17 @@ Implements a protocol and a conduit for async serial communication.
 """
 
 import asyncio
-import logging
 import re
 from collections import namedtuple
 from functools import partial
 from typing import Callable, Generator, Iterable, Tuple
 
 import serial
+from brewblox_devcon_spark import brewblox_logger
 from serial.aio import SerialTransport
 from serial.tools import list_ports
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = LOGGER = brewblox_logger(__name__)
 DEFAULT_BAUD_RATE = 57600
 
 PortType_ = Tuple[str, str, str]
