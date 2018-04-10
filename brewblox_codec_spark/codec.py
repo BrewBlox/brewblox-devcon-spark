@@ -33,19 +33,49 @@ def _transcoder(obj_type: str) -> 'Transcoder':
         raise KeyError(f'No codec found for object type [{obj_type}]')
 
 
-def _modify_if_present(obj: dict, path: List[str], func: Callable, copy: bool=True) -> dict:
+def _modify_if_present(obj: dict, path: List[str], func: Callable, mutate_input: bool=False) -> dict:
     """
     Replaces a value in a (possibly nested) dict.
     Optionally first makes a deep copy of the input.
 
     If path is invalid, no values are changed.
+
+    Example (not mutating input):
+        >>> input = {'nested': { 'collection': { 'value': 0 }}}
+        >>> output =_modify_if_present(
+                        obj=input,
+                        path=['nested', 'collection', 'value'],
+                        func=lambda v: v +1,
+                        mutate_input=False)
+        >>> print(output)
+        {'nested': { 'collection': { 'value': 1 }}}
+        >>> print(input)
+        {'nested': { 'collection': { 'value': 0 }}}
+
+    Example (mutating input):
+        >>> input = {'nested': { 'collection': { 'value': 0 }}}
+        >>> output =_modify_if_present(
+                        obj=input,
+                        path=['nested', 'collection', 'value'],
+                        func=lambda v: v +1,
+                        mutate_input=True)
+        >>> print(output)
+        {'nested': { 'collection': { 'value': 1 }}}
+        >>> print(input)
+        {'nested': { 'collection': { 'value': 1 }}}
+
     """
-    parent = deepcopy(obj) if copy else obj
+    parent = deepcopy(obj) if not mutate_input else obj
     try:
+        # `child` is a reference to a dict nested inside `parent`.
+        # We move the `child` reference until it points to the dict containing the target value.
+        # Any changes made to objects inside `child` can be observed in `parent`.
         child = parent
         for key in path[:-1]:
             child = child[key]
 
+        # Update the value inside the `child` dict.
+        # Because `parent` contains `child`, `parent` now also contains the modified value.
         child[path[-1]] = func(child[path[-1]])
 
     except KeyError:
@@ -116,7 +146,7 @@ class OneWireBusTranscoder(ProtobufTranscoder):
             obj=values,
             path=['address'],
             func=lambda addr: [_hex_to_b64(a) for a in addr],
-            copy=True
+            mutate_input=False
         )
         return super().encode(modified)
 
@@ -127,7 +157,7 @@ class OneWireBusTranscoder(ProtobufTranscoder):
             obj=decoded,
             path=['address'],
             func=lambda addr: [_b64_to_hex(a) for a in addr],
-            copy=False
+            mutate_input=True
         )
 
 
@@ -140,7 +170,7 @@ class OneWireTempSensorTranscoder(ProtobufTranscoder):
             obj=values,
             path=['settings', 'address'],
             func=_hex_to_b64,
-            copy=True
+            mutate_input=False
         )
         return super().encode(modified)
 
@@ -151,7 +181,7 @@ class OneWireTempSensorTranscoder(ProtobufTranscoder):
             obj=decoded,
             path=['settings', 'address'],
             func=_b64_to_hex,
-            copy=False
+            mutate_input=True
         )
 
 

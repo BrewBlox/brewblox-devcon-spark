@@ -35,7 +35,7 @@ def test_modify_if_present():
 
 def test_modify_if_present_no_copy():
     input = create_obj()
-    output = codec._modify_if_present(input, ['type'], lambda x: x+1, copy=False)
+    output = codec._modify_if_present(input, ['type'], lambda x: x+1, mutate_input=True)
 
     assert output['type'] == 7
     assert input == output
