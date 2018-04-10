@@ -6,7 +6,6 @@ import pytest
 from brewblox_devcon_spark import device, commander
 from brewblox_codec_spark import codec
 from asynctest import CoroutineMock
-import base64
 
 
 TESTED = device.__name__
@@ -69,7 +68,7 @@ async def test_transcoding(app, client, commander_mock):
     obj_type = 6
     obj = dict(
         settings=dict(
-            address=base64.b64encode(bytes([0xFF])).decode(),
+            address='ff',
             offset=20
         ),
         state=dict(
@@ -78,7 +77,7 @@ async def test_transcoding(app, client, commander_mock):
         )
     )
     encoded = codec.encode(obj_type, obj)
-    codec.decode(obj_type, encoded)
+    obj = codec.decode(obj_type, encoded)
 
     retval = await controller.update([1, 2, 3], obj_type, obj)
     assert retval['data'] == obj

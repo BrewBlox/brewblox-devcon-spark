@@ -59,6 +59,9 @@ def test_index():
         assert command.request
         assert command.response
 
+    with pytest.raises(KeyError):
+        index.identify('UNUSED')
+
 
 def test_variable_id_length(write_value_args):
 
@@ -122,3 +125,10 @@ def test_command_props(write_value_args, write_value_resp, write_value_req):
         assert cmd.decoded_request is None
         assert cmd.encoded_response == encoded_response
         assert cmd.decoded_response == write_value_resp
+
+
+def test_pretty_raw():
+    command = commands.WriteValueCommand()
+
+    assert command._pretty_raw(bytes([0xde, 0xad])) == b'dead'
+    assert command._pretty_raw(None) is None

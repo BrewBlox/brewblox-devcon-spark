@@ -3,17 +3,15 @@ Command-based device communication
 """
 
 import asyncio
-import logging
 from binascii import hexlify, unhexlify
 from collections import defaultdict
 from concurrent.futures import CancelledError
 from datetime import datetime, timedelta
 
+from brewblox_devcon_spark import commands, communication, brewblox_logger
 from deprecated import deprecated
 
-from brewblox_devcon_spark import commands, communication
-
-LOGGER = logging.getLogger(__name__)
+LOGGER = brewblox_logger(__name__)
 
 # Spark protocol is to echo the request in the response
 # To prevent decoding ambiguity, a non-hexadecimal character separates the request and response
@@ -84,6 +82,8 @@ class SparkCommander():
         self._loop = loop or asyncio.get_event_loop()
         self._requests = defaultdict(TimestampedQueue)
         self._cleanup_task: asyncio.Task = None
+
+        # Note: only used for debug functions
         self._index = commands.CommandIndex()
 
         # TODO(Bob): handle events
@@ -116,13 +116,13 @@ class SparkCommander():
                          if not queue.fresh]
 
                 if stale:
-                    LOGGER.info(f'Cleaning stale queues: {stale}')
+                    LOGGER.debug(f'Cleaning stale queues: {stale}')
 
                 for key in stale:
                     del self._requests[key]
 
             except CancelledError:  # pragma: no cover
-                LOGGER.info(f'{self} cleanup task shutdown')
+                LOGGER.debug(f'{self} cleanup task shutdown')
                 break
 
             except Exception as ex:  # pragma: no cover
@@ -134,17 +134,13 @@ class SparkCommander():
                 unhexlify(part)
                 for part in msg.replace(' ', '').split(RESPONSE_SEPARATOR)]
 
-            command = self._index.identify_encoded(raw_request)
-            command.from_encoded(raw_request, raw_response)
-
             # Match the request queue
             # key is the encoded request
-            queue = self._requests[command.encoded_request].queue
-            await queue.put(TimestampedResponse(command.decoded_response))
-            LOGGER.debug(f'Decoded response: {command.decoded_response}')
+            queue = self._requests[raw_request].queue
+            await queue.put(TimestampedResponse(raw_response))
 
         except Exception as ex:
-            LOGGER.error(f'Response error in {self} : {ex}')
+            LOGGER.error(f'Response error in {self} : {ex}', exc_info=True)
 
     async def execute(self, command: commands.Command) -> dict:
         encoded_request = command.encoded_request
@@ -160,12 +156,16 @@ class SparkCommander():
                 LOGGER.warn(f'Discarding stale response: {response}')
                 continue
 
+            # Create new command to avoid changing the 'command' argument
+            response_cmd = type(command)().from_encoded(encoded_request, response.content)
+            decoded = response_cmd.decoded_response
+
             # If the call failed, its response will be an exception
             # We can raise it here
-            if isinstance(response.content, BaseException):
-                raise response.content
+            if isinstance(decoded, BaseException):
+                raise decoded
 
-            return response.content
+            return decoded
 
     @deprecated(reason='Debug function')
     async def do(self, name: str, data: dict) -> dict:

@@ -1,4 +1,4 @@
-FROM python:3.6
+FROM brewblox/brewblox-service:latest
 
 # Bit of a trick: copy Dockerfile, and the "pkg" directory if it exists
 # This allows a conditional copy of ./pkg/*

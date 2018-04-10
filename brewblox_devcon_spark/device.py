@@ -2,19 +2,17 @@
 Offers a functional interface to the device functionality
 """
 
-import logging
 from typing import List, Type
 
 from aiohttp import web
 from brewblox_codec_spark import codec
-from deprecated import deprecated
-
-from brewblox_devcon_spark import commands
+from brewblox_devcon_spark import brewblox_logger, commands
 from brewblox_devcon_spark.commander import SparkCommander
+from deprecated import deprecated
 
 CONTROLLER_KEY = 'controller.spark'
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = LOGGER = brewblox_logger(__name__)
 
 
 def get_controller(app) -> 'SparkController':
@@ -25,10 +23,15 @@ def setup(app: Type[web.Application]):
     app[CONTROLLER_KEY] = SparkController(name=app['config']['name'], app=app)
 
 
+class ControllerException(Exception):
+    pass
+
+
 class SparkController():
     def __init__(self, name: str, app=None):
         self._name = name
         self._commander: SparkCommander = None
+        self._active_profile = 0
 
         if app:
             self.setup(app)
@@ -61,7 +64,7 @@ class SparkController():
         LOGGER.info(f'Doing {command}{data}')
         return await self._commander.do(command, data)
 
-    async def _process_retval(self, retval: dict):
+    async def _process_retval(self, retval: dict) -> dict:
         obj_list_key = commands.OBJECT_LIST_KEY
         data_key = commands.OBJECT_DATA_KEY
         type_key = commands.OBJECT_TYPE_KEY
@@ -81,7 +84,12 @@ class SparkController():
         return retval
 
     async def _execute(self, command: commands.Command) -> dict:
-        return await self._process_retval(await self._commander.execute(command))
+        try:
+            return await self._process_retval(await self._commander.execute(command))
+        except Exception as ex:
+            message = f'Failed to execute {command}: {type(ex).__name__}: {ex}'
+            LOGGER.error(message)
+            raise ControllerException(message)
 
     async def create(self, obj_type: int, obj: dict) -> List[int]:
         """
@@ -89,11 +97,10 @@ class SparkController():
         Raises exception if object already exists.
         Returns ID of newly created object.
         """
-        encoded = codec.encode(obj_type, obj)
         command = commands.CreateObjectCommand().from_args(
             type=obj_type,
-            size=len(encoded),
-            data=encoded
+            size=18,  # TODO(BOb): fix protocol
+            data=codec.encode(obj_type, obj)
         )
         return await self._execute(command)
 
@@ -135,7 +142,9 @@ class SparkController():
         """
         Returns all known objects
         """
-        command = commands.ListObjectsCommand().from_args(profile_id=0)
+        command = commands.ListObjectsCommand().from_args(
+            profile_id=self._active_profile
+        )
         return await self._execute(command)
 
     async def system_read(self, id: List[int]) -> dict:
@@ -164,3 +173,33 @@ class SparkController():
             data=codec.encode(obj_type, obj)
         )
         return await self._execute(command)
+
+    async def profile_create(self) -> dict:
+        """
+        Creates new profile.
+        Returns id of newly created profile
+        """
+        command = commands.CreateProfileCommand().from_args()
+        return await self._execute(command)
+
+    async def profile_delete(self, profile_id: int) -> dict:
+        """
+        Deletes profile.
+        Raises exception if profile does not exist.
+        """
+        command = commands.DeleteProfileCommand().from_args(
+            profile_id=profile_id
+        )
+        return await self._execute(command)
+
+    async def profile_activate(self, profile_id: int) -> dict:
+        """
+        Activates profile.
+        Raises exception if profile does not exist.
+        """
+        command = commands.ActivateProfileCommand().from_args(
+            profile_id=profile_id
+        )
+        retval = await self._execute(command)
+        self._active_profile = profile_id
+        return retval

@@ -5,7 +5,6 @@ Tests brewblox_devcon_spark.api
 import pytest
 from brewblox_devcon_spark import api, device, commander
 from asynctest import CoroutineMock
-import base64
 
 
 TESTED = api.__name__
@@ -17,7 +16,7 @@ def object_args():
         type=6,
         obj=dict(
             settings=dict(
-                address=base64.b64encode(bytes([0xFF])).decode(),
+                address='FF',
                 offset=20
             ),
             state=dict(
@@ -131,3 +130,37 @@ async def test_system_update(app, client, object_args):
     assert res.status == 200
     retval = await res.json()
     assert retval['command'] == 'WRITE_SYSTEM_VALUE'
+
+
+async def test_profile_create(app, client):
+    res = await client.post('/profiles')
+    assert res.status == 200
+
+    retval = await res.json()
+    assert retval['command'] == 'CREATE_PROFILE'
+
+
+async def test_profile_delete(app, client):
+    res = await client.delete('/profiles/1')
+    assert res.status == 200
+
+    retval = await res.json()
+    assert retval['command'] == 'DELETE_PROFILE'
+
+
+async def test_profile_activate(app, client):
+    res = await client.post('/profiles/1')
+    assert res.status == 200
+
+    retval = await res.json()
+    assert retval['command'] == 'ACTIVATE_PROFILE'
+
+
+async def test_command_exception(app, client, commander_mock):
+    commander_mock.execute.side_effect = RuntimeError('test error')
+
+    res = await client.post('/profiles')
+    assert res.status == 500
+
+    retval = await res.json()
+    assert 'test error' in retval['error']

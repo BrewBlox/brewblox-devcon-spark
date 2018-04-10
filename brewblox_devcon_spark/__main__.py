@@ -2,12 +2,10 @@
 Example of how to import and use the brewblox service
 """
 
-import logging
-
+from brewblox_devcon_spark import api, brewblox_logger, device
 from brewblox_service import service
-from brewblox_devcon_spark import device, api
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = brewblox_logger(__name__)
 
 
 def main():
