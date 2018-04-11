@@ -9,7 +9,12 @@ LOGGER = brewblox_logger(__name__)
 
 
 def main():
-    app = service.create_app(default_name='spark')
+    parser = service.create_parser(default_name='spark')
+    parser.add_argument('--database',
+                        help='Backing file for the object database. [%(default)s]',
+                        default='brewblox_db.json')
+
+    app = service.create_app(parser=parser)
 
     datastore.setup(app)
     device.setup(app)

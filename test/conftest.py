@@ -5,9 +5,9 @@ Any fixtures declared here are available to all test functions in this directory
 
 
 import logging
+import os
 
 import pytest
-
 from brewblox_service import service
 
 
@@ -25,6 +25,7 @@ def app_config() -> dict:
         'host': 'localhost',
         'port': 1234,
         'debug': False,
+        'database': 'test_db.json'
     }
 
 
@@ -35,12 +36,18 @@ def sys_args(app_config) -> list:
         '--name', app_config['name'],
         '--host', app_config['host'],
         '--port', str(app_config['port']),
+        '--database', app_config['database'],
     ]
 
 
 @pytest.fixture
 def app(sys_args):
-    app = service.create_app('default', raw_args=sys_args[1:])
+    parser = service.create_parser('default')
+    parser.add_argument('--database',
+                        help='Backing file for the object database. [%(default)s]',
+                        default='brewblox_db.json')
+
+    app = service.create_app(parser=parser, raw_args=sys_args[1:])
     return app
 
 
@@ -51,3 +58,15 @@ def client(app, aiohttp_client, loop):
     Any tests wishing to add custom behavior to app can override the fixture
     """
     return loop.run_until_complete(aiohttp_client(app))
+
+
+@pytest.fixture(scope='session', autouse=True)
+def remove_test_db():
+    """
+    Automatically removes the test database file after a full run.
+    """
+    yield None
+    try:
+        os.remove('test_db.json')
+    except FileNotFoundError:
+        pass

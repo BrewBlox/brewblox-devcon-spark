@@ -9,6 +9,7 @@ TESTED = main.__name__
 
 
 def test_main(loop, mocker):
+    create_parser_mock = mocker.patch(TESTED + '.service.create_parser')
     create_mock = mocker.patch(TESTED + '.service.create_app')
     device_setup_mock = mocker.patch(TESTED + '.device.setup')
     furnish_mock = mocker.patch(TESTED + '.service.furnish')
@@ -17,7 +18,8 @@ def test_main(loop, mocker):
 
     main.main()
 
-    create_mock.assert_called_once_with(default_name='spark')
+    create_parser_mock.return_value.add_argument.assert_called_once()
+    create_mock.assert_called_once_with(parser=create_parser_mock.return_value)
     furnish_mock.assert_called_once_with(app_mock)
     run_mock.assert_called_once_with(app_mock)
     device_setup_mock.assert_called_once_with(app_mock)
