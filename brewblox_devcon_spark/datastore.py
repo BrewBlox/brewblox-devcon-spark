@@ -8,27 +8,18 @@ from concurrent.futures import CancelledError
 from datetime import timedelta
 from typing import Callable, List, Any
 
-from aiohttp import web
 from aiotinydb import AIOJSONStorage, AIOTinyDB
 from aiotinydb.middleware import CachingMiddleware
 from brewblox_devcon_spark import brewblox_logger
-from tinydb import Query, Storage
+from tinydb import Query, Storage, operations
+from deprecated import deprecated
 
 OBJECT_TYPE_ = dict
 ACTION_RETURN_TYPE_ = Any
-DATASTORE_KEY = 'controller.datastore'
 ACTION_TIMEOUT = timedelta(seconds=10)
 DATABASE_RETRY_INTERVAL = timedelta(seconds=1)
 
 LOGGER = brewblox_logger(__name__)
-
-
-def setup(app: web.Application):
-    app[DATASTORE_KEY] = DataStore(file=app['config']['database'], app=app)
-
-
-def get_datastore(app) -> 'DataStore':
-    return app[DATASTORE_KEY]
 
 
 class Action():
@@ -51,31 +42,25 @@ class DataStore():
 
     def __init__(self,
                  file: str,
-                 app: web.Application=None,
-                 storage: Storage=CachingMiddleware(AIOJSONStorage)):
+                 storage: Storage=CachingMiddleware(AIOJSONStorage),
+                 primary_key='alias'):
         self._file: str = file
         self._storage: Storage = storage
+        self._pk: str = primary_key
 
         self._pending_actions: asyncio.Queue = None
         self._runner: asyncio.Task = None
         self._loop: asyncio.BaseEventLoop = None
 
-        if app:
-            self.setup(app)
-
     def __str__(self):
         return f'<{type(self).__name__} for {self._file}>'
 
-    def setup(self, app: web.Application):
-        app.on_startup.append(self.start)
-        app.on_cleanup.append(self.close)
-
-    async def start(self, app):
-        self._loop = app.loop
+    async def start(self, loop: asyncio.BaseEventLoop):
+        self._loop = loop
         self._pending_actions = asyncio.Queue()
-        self._runner = app.loop.create_task(self._run())
+        self._runner = loop.create_task(self._run())
 
-    async def close(self, *args):
+    async def close(self):
         if self._runner:
             self._runner.cancel()
             await asyncio.wait([self._runner])
@@ -107,9 +92,30 @@ class DataStore():
     async def purge(self):
         return await self._do_with_db(lambda db: db.purge())
 
+    @deprecated('Debugging function')
     async def write(self, data: dict) -> List[int]:
         return await self._do_with_db(lambda db: db.insert(data))
 
-    async def find(self, alias: str) -> List[OBJECT_TYPE_]:
-        block = Query()
-        return await self._do_with_db(lambda db: db.search(block.alias == alias))
+    @deprecated('Debugging function')
+    async def all(self) -> List[OBJECT_TYPE_]:
+        return await self._do_with_db(lambda db: db.all())
+
+    async def find_by_id(self, id: str) -> List[OBJECT_TYPE_]:
+        return await self._do_with_db(lambda db: db.get(Query()[self._pk] == id))
+
+    async def create_by_id(self, id: str, obj: dict) -> OBJECT_TYPE_:
+        def action_func(db, alias: str, obj: dict):
+            assert not db.contains(Query()[self._pk] == id), f'{id} already exists'
+            obj[self._pk] = id
+            db.insert(obj)
+            return obj
+
+        return await self._do_with_db(lambda db: action_func(db, id, obj))
+
+    async def update_id(self, existing: str, new: str) -> OBJECT_TYPE_:
+        return await self._do_with_db(
+            lambda db: db.update(
+                operations.set(self._pk, new),
+                Query()[self._pk] == existing
+            )[0]
+        )

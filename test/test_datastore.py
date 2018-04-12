@@ -12,15 +12,23 @@ from brewblox_devcon_spark import datastore
 
 
 @pytest.fixture
-async def app(app):
-    """App with relevant setup functions called"""
-    datastore.setup(app)
-    return app
+def database_test_file():
+    def remove(f):
+        try:
+            os.remove(f)
+        except FileNotFoundError:
+            pass
+
+    f = 'test_file.json'
+    remove(f)
+    yield f
+    remove(f)
 
 
 @pytest.fixture
-async def store(app, client):
-    store = datastore.get_datastore(app)
+async def store(app, client, database_test_file, loop):
+    store = datastore.DataStore(file=database_test_file)
+    await store.start(loop=loop)
     await store.purge()
     return store
 
@@ -39,28 +47,14 @@ def obj():
     }
 
 
-@pytest.fixture
-def database_test_file():
-    def remove(f):
-        try:
-            os.remove(f)
-        except FileNotFoundError:
-            pass
-
-    f = 'test_file.json'
-    remove(f)
-    yield f
-    remove(f)
-
-
-async def test_start_stop(app, client, database_test_file):
-    store = datastore.DataStore(database_test_file)
+async def test_start_stop(client, database_test_file, loop):
+    store = datastore.DataStore(file=database_test_file)
     assert not Path(database_test_file).exists()
 
     await store.close()
     await store.close()
 
-    await store.start(app)
+    await store.start(loop)
     await asyncio.sleep(0.001)
     assert Path(database_test_file).exists()
 
@@ -70,7 +64,7 @@ async def test_start_stop(app, client, database_test_file):
 
 async def test_write(store, obj):
     await store.write(obj)
-    assert await store.find(obj['alias']) == [obj]
+    assert await store.find_by_id(obj['alias']) == obj
 
 
 async def test_spam(store, mocker, obj):
@@ -82,7 +76,7 @@ async def test_spam(store, mocker, obj):
     data = [dict(obj) for i in range(100)]
     await asyncio.wait([asyncio.ensure_future(store.write(d)) for d in data])
 
-    result = await store.find('pancakes')
+    result = await store.all()
     assert write_spy.call_count == len(data)
     assert len(data) == len(result)
 

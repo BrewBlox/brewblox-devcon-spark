@@ -16,10 +16,6 @@ def setup(app: Type[web.Application]):
     app.middlewares.append(controller_error_middleware)
 
 
-def _parse_id(id: str) -> list:
-    return [int(i) for i in id.split('-')]
-
-
 @web.middleware
 async def controller_error_middleware(request: web.Request, handler: web.RequestHandler) -> web.Response:
     try:
@@ -121,7 +117,7 @@ async def create(request: web.Request) -> web.Response:
 
     obj_type = request_args['type']
     obj_args = request_args['obj']
-    return web.json_response(await controller.create(obj_type, obj_args))
+    return web.json_response(await controller.object_create(obj_type, obj_args))
 
 
 @routes.get('/objects/{id}')
@@ -140,14 +136,14 @@ async def read(request: web.Request) -> web.Response:
         name: id
         in: path
         required: true
-        description: object ID, separated by -
+        description: Service ID of object
         schema:
             type: string
     """
-    obj_id = [int(i) for i in request.match_info['id'].split('-')]
+    obj_id = request.match_info['id']
     controller = device.get_controller(request.app)
 
-    return web.json_response(await controller.read(obj_id))
+    return web.json_response(await controller.object_read(obj_id))
 
 
 @routes.put('/objects/{id}')
@@ -166,7 +162,7 @@ async def update(request: web.Request) -> web.Response:
         name: id
         in: path
         required: true
-        description: object ID, separated by '-'
+        description: Service ID of object
         schema:
             type: string
     -
@@ -187,11 +183,11 @@ async def update(request: web.Request) -> web.Response:
     request_args = await request.json()
     controller = device.get_controller(request.app)
 
-    obj_id = _parse_id(request.match_info['id'])
+    obj_id = request.match_info['id']
     obj_type = request_args['type']
     obj_args = request_args['obj']
 
-    return web.json_response(await controller.update(obj_id, obj_type, obj_args))
+    return web.json_response(await controller.object_update(obj_id, obj_type, obj_args))
 
 
 @routes.delete('/objects/{id}')
@@ -210,14 +206,14 @@ async def delete(request: web.Request) -> web.Response:
         name: id
         in: path
         required: true
-        description: object ID, separated by '-'
+        description: Service ID of object
         schema:
             type: string
     """
-    obj_id = _parse_id(request.match_info['id'])
+    obj_id = request.match_info['id']
     controller = device.get_controller(request.app)
 
-    return web.json_response(await controller.delete(obj_id))
+    return web.json_response(await controller.object_delete(obj_id))
 
 
 @routes.get('/objects')
@@ -233,7 +229,7 @@ async def all(request: web.Request) -> web.Response:
     - application/json
     """
     controller = device.get_controller(request.app)
-    return web.json_response(await controller.all())
+    return web.json_response(await controller.object_all())
 
 
 @routes.get('/system/{id}')
@@ -252,11 +248,11 @@ async def system_read(request: web.Request) -> web.Response:
         name: id
         in: path
         required: true
-        description: object ID, separated by '-'
+        description: Service ID of object
         schema:
             type: string
     """
-    obj_id = _parse_id(request.match_info['id'])
+    obj_id = request.match_info['id']
     controller = device.get_controller(request.app)
 
     return web.json_response(await controller.system_read(obj_id))
@@ -278,7 +274,7 @@ async def system_update(request: web.Request) -> web.Response:
         name: id
         in: path
         required: true
-        description: object ID, separated by -
+        description: Service ID of object
         schema:
             type: string
     -
@@ -299,7 +295,7 @@ async def system_update(request: web.Request) -> web.Response:
     request_args = await request.json()
     controller = device.get_controller(request.app)
 
-    obj_id = _parse_id(request.match_info['id'])
+    obj_id = request.match_info['id']
     obj_type = request_args['type']
     obj_args = request_args['obj']
 
@@ -368,3 +364,72 @@ async def profile_activate(request: web.Request) -> web.Response:
     obj_id = int(request.match_info['id'])
     controller = device.get_controller(request.app)
     return web.json_response(await controller.profile_activate(obj_id))
+
+
+@routes.post('/aliases')
+async def alias_create(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Create new alias
+    tags:
+    - Spark
+    - Aliases
+    operationId: controller.spark.aliases.create
+    produces:
+    - application/json
+    parameters:
+    -
+        in: body
+        name: body
+        description: alias
+        required: true
+        schema:
+            type: object
+            properties:
+                alias:
+                    type: str
+                    example: onewirebus
+                    required: true
+                controller_id:
+                    type: list
+                    example: [2]
+                    required: true
+    """
+    request_args = await request.json()
+
+    controller = device.get_controller(request.app)
+    resp = await controller.alias_create(request_args['alias'], request_args['controller_id'])
+    return web.json_response(resp)
+
+
+@routes.put('/aliases/{alias}')
+async def alias_update(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Update existing alias
+    tags:
+    - Spark
+    - Aliases
+    operationId: controller.spark.aliases.update
+    produces:
+    - application/json
+    parameters:
+    -
+        in: body
+        name: body
+        description: alias
+        required: true
+        schema:
+            type: object
+            properties:
+                alias:
+                    type: str
+                    example: onewirebus
+                    required: true
+    """
+    existing = request.match_info['alias']
+    new = (await request.json())['alias']
+
+    controller = device.get_controller(request.app)
+    resp = await controller.alias_update(existing, new)
+    return web.json_response(resp)

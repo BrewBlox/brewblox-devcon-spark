@@ -2,10 +2,11 @@
 Tests brewblox_devcon_spark.api
 """
 
-import pytest
-from brewblox_devcon_spark import api, device, commander
-from asynctest import CoroutineMock
+import os
 
+import pytest
+from asynctest import CoroutineMock
+from brewblox_devcon_spark import api, commander, datastore, device
 
 TESTED = api.__name__
 
@@ -44,18 +45,37 @@ def commander_mock(mocker, loop):
 
 
 @pytest.fixture
-def controller_mock(mocker, commander_mock):
+def store():
+    def remove(f):
+        try:
+            os.remove(f)
+        except FileNotFoundError:
+            pass
+
+    f = 'test_file.json'
+    remove(f)
+    yield datastore.DataStore(f)
+    remove(f)
+
+
+@pytest.fixture
+def controller_mock(mocker, commander_mock, store):
     controller = device.SparkController('sparky')
     controller._commander = commander_mock
+    controller._store = store
 
     mocker.patch(device.__name__ + '.get_controller').return_value = controller
     return controller
 
 
 @pytest.fixture
-async def app(app, controller_mock):
+async def app(app, controller_mock, store, loop):
     """App + controller routes"""
     api.setup(app)
+    await store.start(loop=loop)
+    await store.purge()
+    await store.create_by_id('testobj', dict(controller_id=[1, 2, 3]))
+
     return app
 
 
@@ -86,7 +106,7 @@ async def test_create(app, client, object_args):
 
 
 async def test_read(app, client):
-    res = await client.get('/objects/1-2-3')
+    res = await client.get('/objects/testobj')
     assert res.status == 200
 
     retval = await res.json()
@@ -95,18 +115,19 @@ async def test_read(app, client):
 
 
 async def test_update(app, client, object_args):
-    res = await client.put('/objects/1-2-3', json=object_args)
+    res = await client.put('/objects/testobj', json=object_args)
     assert res.status == 200
     retval = await res.json()
     assert retval['command'] == 'WRITE_VALUE'
 
 
 async def test_delete(app, client):
-    res = await client.delete('/objects/55-2')
+
+    res = await client.delete('/objects/testobj')
     assert res.status == 200
     retval = await res.json()
     assert retval['command'] == 'DELETE_OBJECT'
-    assert retval['id'] == [55, 2]
+    assert retval['id'] == [1, 2, 3]
 
 
 async def test_all(app, client):
@@ -117,7 +138,7 @@ async def test_all(app, client):
 
 
 async def test_system_read(app, client):
-    res = await client.get('/system/1-2-3')
+    res = await client.get('/system/testobj')
     assert res.status == 200
 
     retval = await res.json()
@@ -126,7 +147,7 @@ async def test_system_read(app, client):
 
 
 async def test_system_update(app, client, object_args):
-    res = await client.put('/system/1-2-3', json=object_args)
+    res = await client.put('/system/testobj', json=object_args)
     assert res.status == 200
     retval = await res.json()
     assert retval['command'] == 'WRITE_SYSTEM_VALUE'
@@ -164,3 +185,26 @@ async def test_command_exception(app, client, commander_mock):
 
     retval = await res.json()
     assert 'test error' in retval['error']
+
+
+async def test_alias_create(app, client):
+    new_alias = dict(
+        alias='name',
+        controller_id=[4, 5, 6]
+    )
+    res = await client.post('/aliases', json=new_alias)
+    assert res.status == 200
+
+    res = await client.post('/aliases', json=new_alias)
+    assert res.status == 500
+
+
+async def test_alias_update(app, client):
+    res = await client.get('/objects/newname')
+    assert res.status == 500
+
+    res = await client.put('/aliases/testobj', json=dict(alias='newname'))
+    assert res.status == 200
+
+    res = await client.get('/objects/newname')
+    assert res.status == 200

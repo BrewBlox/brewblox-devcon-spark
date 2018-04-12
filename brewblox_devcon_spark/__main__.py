@@ -2,7 +2,7 @@
 Example of how to import and use the brewblox service
 """
 
-from brewblox_devcon_spark import api, brewblox_logger, device, datastore
+from brewblox_devcon_spark import api, brewblox_logger, device
 from brewblox_service import service
 
 LOGGER = brewblox_logger(__name__)
@@ -16,7 +16,6 @@ def main():
 
     app = service.create_app(parser=parser)
 
-    datastore.setup(app)
     device.setup(app)
     api.setup(app)
 

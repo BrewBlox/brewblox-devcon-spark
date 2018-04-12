@@ -6,6 +6,7 @@ import pytest
 from brewblox_devcon_spark import device, commander
 from brewblox_codec_spark import codec
 from asynctest import CoroutineMock
+from unittest.mock import Mock
 
 
 TESTED = device.__name__
@@ -29,9 +30,22 @@ def commander_mock(mocker, loop):
 
 
 @pytest.fixture
-async def app(app, commander_mock, mocker):
+def store_mock(mocker, loop):
+    store = Mock().return_value
+
+    store.start = CoroutineMock()
+    store.close = CoroutineMock()
+    store.find_by_id = CoroutineMock()
+    store.create_by_id = CoroutineMock()
+    store.update_by_id = CoroutineMock()
+    return store
+
+
+@pytest.fixture
+async def app(app, commander_mock, store_mock, mocker):
     """App + controller routes"""
     mocker.patch(TESTED + '.SparkCommander').return_value = commander_mock
+    mocker.patch(TESTED + '.DataStore').return_value = store_mock
     device.setup(app)
     return app
 
@@ -61,8 +75,9 @@ async def test_start_close(app, client, commander_mock):
     await controller.close()
 
 
-async def test_transcoding(app, client, commander_mock):
+async def test_transcoding(app, client, commander_mock, store_mock):
     controller = device.get_controller(app)
+    store_mock.find_by_id.return_value = dict(controller_id=[1, 2, 3])
 
     # OneWireTempSensor
     obj_type = 6
@@ -79,7 +94,7 @@ async def test_transcoding(app, client, commander_mock):
     encoded = codec.encode(obj_type, obj)
     obj = codec.decode(obj_type, encoded)
 
-    retval = await controller.update([1, 2, 3], obj_type, obj)
+    retval = await controller.object_update('alias', obj_type, obj)
     assert retval['data'] == obj
 
     # Test correct processing of lists of objects
@@ -90,5 +105,5 @@ async def test_transcoding(app, client, commander_mock):
             dict(type=obj_type, data=encoded),
         ]
     ))
-    retval = await controller.update([1, 2, 3], obj_type, obj)
+    retval = await controller.object_update('alias', obj_type, obj)
     assert retval['objects'] == [dict(type=obj_type, data=obj)] * 2
