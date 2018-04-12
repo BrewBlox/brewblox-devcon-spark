@@ -6,7 +6,7 @@ Offers block metadata CRUD
 import asyncio
 from concurrent.futures import CancelledError
 from datetime import timedelta
-from typing import Callable, List
+from typing import Callable, List, Any
 
 from aiohttp import web
 from aiotinydb import AIOJSONStorage, AIOTinyDB
@@ -15,17 +15,16 @@ from brewblox_devcon_spark import brewblox_logger
 from tinydb import Query, Storage
 
 OBJECT_TYPE_ = dict
+ACTION_RETURN_TYPE_ = Any
 DATASTORE_KEY = 'controller.datastore'
 ACTION_TIMEOUT = timedelta(seconds=10)
+DATABASE_RETRY_INTERVAL = timedelta(seconds=1)
 
 LOGGER = brewblox_logger(__name__)
-
-routes = web.RouteTableDef()
 
 
 def setup(app: web.Application):
     app[DATASTORE_KEY] = DataStore(file=app['config']['database'], app=app)
-    app.router.add_routes(routes)
 
 
 def get_datastore(app) -> 'DataStore':
@@ -44,7 +43,7 @@ class Action():
         except Exception as ex:
             self._future.set_exception(ex)
 
-    async def wait_result(self):
+    async def wait_result(self) -> ACTION_RETURN_TYPE_:
         return await asyncio.wait_for(self._future, timeout=ACTION_TIMEOUT.seconds)
 
 
@@ -76,7 +75,7 @@ class DataStore():
         self._pending_actions = asyncio.Queue()
         self._runner = app.loop.create_task(self._run())
 
-    async def close(self, app):
+    async def close(self, *args):
         if self._runner:
             self._runner.cancel()
             await asyncio.wait([self._runner])
@@ -97,9 +96,9 @@ class DataStore():
             except Exception as ex:
                 LOGGER.warn(f'{self} error: {ex}')
                 # Don't go crazy on persistent errors
-                await asyncio.sleep(1)
+                await asyncio.sleep(DATABASE_RETRY_INTERVAL.seconds)
 
-    async def _do_with_db(self, func):
+    async def _do_with_db(self, func) -> ACTION_RETURN_TYPE_:
         assert self._pending_actions is not None, f'{self} not started before functions were called'
         action = Action(func, self._loop)
         await self._pending_actions.put(action)
@@ -114,53 +113,3 @@ class DataStore():
     async def find(self, alias: str) -> List[OBJECT_TYPE_]:
         block = Query()
         return await self._do_with_db(lambda db: db.search(block.alias == alias))
-
-
-@routes.post('/_debug/data/write')
-async def write(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Write to the datastore
-    tags:
-    - Debug
-    - Datastore
-    operationId: controller.spark.data.write
-    produces:
-    - application/json
-    parameters:
-    -
-        in: body
-        name: body
-        description: data
-        required: try
-        schema:
-            type: object
-    """
-    data = await request.json()
-    await get_datastore(request.app).write(data)
-    return web.json_response()
-
-
-@routes.get('/_debug/data/{alias}')
-async def read(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Find data with alias
-    tags:
-    - Debug
-    - Datastore
-    operationId: controller.spark.data.find
-    produces:
-    - application/json
-    parameters:
-    -
-        name: alias
-        in: path
-        required: true
-        schema:
-            type: string
-    """
-    alias = request.match_info['alias']
-    store = get_datastore(request.app)
-
-    return web.json_response(await store.find(alias))

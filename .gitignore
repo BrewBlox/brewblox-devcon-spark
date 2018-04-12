@@ -79,3 +79,6 @@ docker/pkg/*
 # Python package files for building Docker
 rpi-docker/pkg/*
 !rpi-docker/pkg/.gitkeep
+
+# Default database file
+brewblox_db.json
