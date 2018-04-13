@@ -2,8 +2,6 @@
 Tests brewblox_devcon_spark.api
 """
 
-import os
-
 import pytest
 from asynctest import CoroutineMock
 from brewblox_devcon_spark import api, commander, datastore, device
@@ -46,35 +44,35 @@ def commander_mock(mocker, loop):
 
 @pytest.fixture
 def store():
-    def remove(f):
-        try:
-            os.remove(f)
-        except FileNotFoundError:
-            pass
-
-    f = 'test_file.json'
-    remove(f)
-    yield datastore.FileDataStore(f)
-    remove(f)
+    return datastore.MemoryDataStore()
 
 
 @pytest.fixture
-def controller_mock(mocker, commander_mock, store):
+def system_store():
+    return datastore.MemoryDataStore()
+
+
+@pytest.fixture
+def controller_mock(mocker, commander_mock, store, system_store):
     controller = device.SparkController('sparky')
     controller._commander = commander_mock
-    controller._store = store
+    controller._object_store = store
+    controller._system_store = system_store
 
     mocker.patch(device.__name__ + '.get_controller').return_value = controller
     return controller
 
 
 @pytest.fixture
-async def app(app, controller_mock, store, loop):
+async def app(app, controller_mock, store, system_store, loop):
     """App + controller routes"""
     api.setup(app)
+
     await store.start(loop=loop)
-    await store.purge()
     await store.create_by_id('testobj', dict(controller_id=[1, 2, 3]))
+
+    await system_store.start(loop=loop)
+    await system_store.create_by_id('sysobj', dict(controller_id=[3, 2, 1]))
 
     return app
 
@@ -138,16 +136,16 @@ async def test_all(app, client):
 
 
 async def test_system_read(app, client):
-    res = await client.get('/system/testobj')
+    res = await client.get('/system/sysobj')
     assert res.status == 200
 
     retval = await res.json()
     assert retval['command'] == 'READ_SYSTEM_VALUE'
-    assert retval['id'] == [1, 2, 3]
+    assert retval['id'] == [3, 2, 1]
 
 
 async def test_system_update(app, client, object_args):
-    res = await client.put('/system/testobj', json=object_args)
+    res = await client.put('/system/sysobj', json=object_args)
     assert res.status == 200
     retval = await res.json()
     assert retval['command'] == 'WRITE_SYSTEM_VALUE'

@@ -9,6 +9,7 @@ import os
 
 import pytest
 from brewblox_service import service
+from brewblox_devcon_spark.__main__ import create_parser
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -25,7 +26,8 @@ def app_config() -> dict:
         'host': 'localhost',
         'port': 1234,
         'debug': False,
-        'database': 'test_db.json'
+        'database': 'test_db.json',
+        'system_database': 'brewblox_sys_db.json',
     }
 
 
@@ -37,16 +39,13 @@ def sys_args(app_config) -> list:
         '--host', app_config['host'],
         '--port', str(app_config['port']),
         '--database', app_config['database'],
+        '--system-database', app_config['system_database'],
     ]
 
 
 @pytest.fixture
 def app(sys_args):
-    parser = service.create_parser('default')
-    parser.add_argument('--database',
-                        help='Backing file for the object database. [%(default)s]',
-                        default='brewblox_db.json')
-
+    parser = create_parser('default')
     app = service.create_app(parser=parser, raw_args=sys_args[1:])
     return app
 

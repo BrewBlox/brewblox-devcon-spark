@@ -8,7 +8,7 @@ from aiohttp import web
 from brewblox_codec_spark import codec
 from brewblox_devcon_spark import brewblox_logger, commands
 from brewblox_devcon_spark.commander import SparkCommander
-from brewblox_devcon_spark.datastore import FileDataStore
+from brewblox_devcon_spark.datastore import DataStore, FileDataStore, MemoryDataStore
 from deprecated import deprecated
 
 CONTROLLER_KEY = 'controller.spark'
@@ -32,7 +32,9 @@ class SparkController():
     def __init__(self, name: str, app=None):
         self._name = name
         self._commander: SparkCommander = None
-        self._store: FileDataStore = None
+        self._object_store: FileDataStore = None
+        self._system_store: FileDataStore = None
+        self._object_cache = MemoryDataStore()
         self._active_profile = 0
 
         if app:
@@ -49,8 +51,11 @@ class SparkController():
     async def start(self, app: Type[web.Application]):
         await self.close()
 
-        self._store = FileDataStore(file=app['config']['database'])
-        await self._store.start(loop=app.loop)
+        self._object_store = FileDataStore(file=app['config']['database'])
+        await self._object_store.start(loop=app.loop)
+
+        self._system_store = FileDataStore(file=app['config']['system_database'])
+        await self._system_store.start(loop=app.loop)
 
         self._commander = SparkCommander(app.loop)
         await self._commander.bind(loop=app.loop)
@@ -60,9 +65,14 @@ class SparkController():
             await self._commander.close()
             self._commander = None
 
-        if self._store:
-            await self._store.close()
-            self._store = None
+        [
+            await s.close() for s in [
+                self._object_store,
+                self._object_cache,
+                self._system_store
+            ]
+            if s is not None
+        ]
 
     @deprecated(reason='Debug function')
     async def write(self, command: str):
@@ -101,9 +111,9 @@ class SparkController():
             LOGGER.error(message)
             raise ControllerException(message)
 
-    async def _resolve_id(self, input_id: str) -> List[int]:
-        obj = await self._store.find_by_id(input_id)
-        assert obj, f'Service ID [{input_id}] not found'
+    async def _resolve_id(self, store: DataStore, input_id: str) -> List[int]:
+        obj = await store.find_by_id(input_id)
+        assert obj, f'Service ID [{input_id}] not found in {store}'
         return obj['controller_id']
 
     async def object_create(self, obj_type: int, obj: dict) -> List[int]:
@@ -126,7 +136,7 @@ class SparkController():
         Returns object state.
         """
         command = commands.ReadValueCommand().from_args(
-            id=(await self._resolve_id(id)),
+            id=(await self._resolve_id(self._object_store, id)),
             type=obj_type,
             size=0
         )
@@ -139,7 +149,7 @@ class SparkController():
         Returns new state of object.
         """
         command = commands.WriteValueCommand().from_args(
-            id=(await self._resolve_id(id)),
+            id=(await self._resolve_id(self._object_store, id)),
             type=obj_type,
             size=0,
             data=codec.encode(obj_type, obj)
@@ -150,7 +160,9 @@ class SparkController():
         """
         Deletes object on the controller.
         """
-        command = commands.DeleteObjectCommand().from_args(id=await self._resolve_id(id))
+        command = commands.DeleteObjectCommand().from_args(
+            id=await self._resolve_id(self._object_store, id)
+        )
         return await self._execute(command)
 
     async def object_all(self) -> dict:
@@ -169,7 +181,7 @@ class SparkController():
         Returns object state.
         """
         command = commands.ReadSystemValueCommand().from_args(
-            id=(await self._resolve_id(id)),
+            id=(await self._resolve_id(self._system_store, id)),
             type=0,
             size=0
         )
@@ -182,7 +194,7 @@ class SparkController():
         Returns new state of object.
         """
         command = commands.WriteSystemValueCommand().from_args(
-            id=(await self._resolve_id(id)),
+            id=(await self._resolve_id(self._system_store, id)),
             type=obj_type,
             size=0,
             data=codec.encode(obj_type, obj)
@@ -224,7 +236,7 @@ class SparkController():
         Creates new alias + id combination.
         Raises exception if alias already exists.
         """
-        return await self._store.create_by_id(alias, dict(controller_id=controller_id))
+        return await self._object_store.create_by_id(alias, dict(controller_id=controller_id))
 
     async def alias_update(self, existing: str, new: str) -> dict:
         """
@@ -232,4 +244,4 @@ class SparkController():
         Raises exception if no object was found.
         Returns object
         """
-        return await self._store.update_id(existing, new)
+        return await self._object_store.update_id(existing, new)

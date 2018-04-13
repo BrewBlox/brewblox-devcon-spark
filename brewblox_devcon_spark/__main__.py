@@ -8,13 +8,19 @@ from brewblox_service import service
 LOGGER = brewblox_logger(__name__)
 
 
-def main():
+def create_parser(default_name='spark'):
     parser = service.create_parser(default_name='spark')
     parser.add_argument('--database',
                         help='Backing file for the object database. [%(default)s]',
                         default='brewblox_db.json')
+    parser.add_argument('--system-database',
+                        help='Backing file for the system object database. [%(default)s]',
+                        default='brewblox_sys_db.json')
+    return parser
 
-    app = service.create_app(parser=parser)
+
+def main():
+    app = service.create_app(parser=create_parser())
 
     device.setup(app)
     api.setup(app)

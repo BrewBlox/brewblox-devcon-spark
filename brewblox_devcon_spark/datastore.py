@@ -10,7 +10,7 @@ from copy import deepcopy
 from datetime import timedelta
 from typing import Any, Callable, List
 
-from aiotinydb import AIOJSONStorage, AIOTinyDB
+from aiotinydb import AIOJSONStorage, AIOTinyDB, AIOImmutableJSONStorage
 from aiotinydb.middleware import CachingMiddleware
 from brewblox_devcon_spark import brewblox_logger
 from deprecated import deprecated
@@ -153,10 +153,13 @@ class FileDataStore(DataStore):
         async def wait_result(self) -> ACTION_RETURN_TYPE_:
             return await asyncio.wait_for(self._future, timeout=ACTION_TIMEOUT.seconds)
 
-    def __init__(self, filename: str, *args, **kwargs):
+    def __init__(self, filename: str, read_only: bool, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self._filename: str = filename
+
+        storage = AIOImmutableJSONStorage if read_only else AIOJSONStorage
+        self._storage = CachingMiddleware(storage)
 
         self._pending_actions: asyncio.Queue = None
         self._runner: asyncio.Task = None

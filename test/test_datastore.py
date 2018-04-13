@@ -27,7 +27,7 @@ def database_test_file():
 
 @pytest.fixture
 async def file_store(app, client, database_test_file, loop):
-    store = datastore.FileDataStore(filename=database_test_file)
+    store = datastore.FileDataStore(filename=database_test_file, read_only=False)
     await store.start(loop=loop)
     await store.purge()
     yield store
@@ -73,7 +73,7 @@ async def test_basics(client, stores, loop):
 
 
 async def test_file_start_stop(client, database_test_file, loop):
-    store = datastore.FileDataStore(filename=database_test_file)
+    store = datastore.FileDataStore(filename=database_test_file, read_only=False)
     assert not Path(database_test_file).exists()
 
     await store.close()
