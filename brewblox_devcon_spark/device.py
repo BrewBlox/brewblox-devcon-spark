@@ -143,7 +143,7 @@ class SparkController():
             'data': data
         }
 
-        object.update(await self._object_store.create_by_id(service_id, object))
+        # object.update()
 
         command = commands.CreateObjectCommand().from_args(
             type=obj_type,
@@ -153,7 +153,15 @@ class SparkController():
         # TODO(Bob): update object with values returned from create
         await self._execute(command)
 
-        await self._object_store.update_by_id(service_id, object)
+        try:
+            await self._object_store.create_by_id(service_id, object)
+        except AssertionError as ex:
+            # TODO(Bob): uncomment when controller id is known from create command
+            # rollback_command = commands.DeleteObjectCommand().from_args(
+            #     id=controller_id
+            # )
+            # await self._execute(rollback_command)
+            raise ex
 
         return object
 

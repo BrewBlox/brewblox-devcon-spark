@@ -30,7 +30,7 @@ async def file_store(app, client, database_test_file, loop):
     store = datastore.FileDataStore(
         filename=database_test_file,
         read_only=False,
-        primary_key='alias'
+        primary_key='pk'
     )
     await store.start(loop=loop)
     await store.purge()
@@ -40,7 +40,7 @@ async def file_store(app, client, database_test_file, loop):
 
 @pytest.fixture
 async def memory_store(app, client, loop):
-    store = datastore.MemoryDataStore(primary_key='alias')
+    store = datastore.MemoryDataStore(primary_key='pk')
     await store.start(loop=loop)
     yield store
     await store.close()
@@ -54,7 +54,7 @@ async def stores(file_store, memory_store):
 @pytest.fixture
 def obj():
     return {
-        'alias': 'pancakes',
+        'pk': 'pancakes',
         'type': 6,
         'obj': {
             'settings': {
@@ -118,7 +118,7 @@ async def test_exception_handling(stores, mocker):
             await store._do_with_db(lambda db: 1 / 0)
 
 
-async def test_action_error(file_store, mocker):
+async def test_file_action_error(file_store, mocker):
     log_spy = mocker.spy(datastore.LOGGER, 'warn')
 
     err_action = Mock()
@@ -128,3 +128,15 @@ async def test_action_error(file_store, mocker):
     await asyncio.sleep(0.01)
 
     assert log_spy.call_count == 1
+
+
+async def test_update_by_id(stores, obj):
+    for store in stores:
+        id = obj[store.primary_key]
+        await store.create_by_id(id, obj)
+
+        obj['type'] = 42
+        await store.update_by_id(id, obj)
+
+        read = await store.find_by_id(id)
+        assert read['type'] == 42
