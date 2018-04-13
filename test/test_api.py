@@ -54,7 +54,7 @@ def store():
 
     f = 'test_file.json'
     remove(f)
-    yield datastore.DataStore(f)
+    yield datastore.FileDataStore(f)
     remove(f)
 
 

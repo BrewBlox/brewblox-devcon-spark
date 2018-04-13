@@ -45,7 +45,7 @@ def store_mock(mocker, loop):
 async def app(app, commander_mock, store_mock, mocker):
     """App + controller routes"""
     mocker.patch(TESTED + '.SparkCommander').return_value = commander_mock
-    mocker.patch(TESTED + '.DataStore').return_value = store_mock
+    mocker.patch(TESTED + '.FileDataStore').return_value = store_mock
     device.setup(app)
     return app
 

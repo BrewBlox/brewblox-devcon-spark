@@ -8,7 +8,7 @@ from aiohttp import web
 from brewblox_codec_spark import codec
 from brewblox_devcon_spark import brewblox_logger, commands
 from brewblox_devcon_spark.commander import SparkCommander
-from brewblox_devcon_spark.datastore import DataStore
+from brewblox_devcon_spark.datastore import FileDataStore
 from deprecated import deprecated
 
 CONTROLLER_KEY = 'controller.spark'
@@ -32,7 +32,7 @@ class SparkController():
     def __init__(self, name: str, app=None):
         self._name = name
         self._commander: SparkCommander = None
-        self._store: DataStore = None
+        self._store: FileDataStore = None
         self._active_profile = 0
 
         if app:
@@ -49,7 +49,7 @@ class SparkController():
     async def start(self, app: Type[web.Application]):
         await self.close()
 
-        self._store = DataStore(file=app['config']['database'])
+        self._store = FileDataStore(file=app['config']['database'])
         await self._store.start(loop=app.loop)
 
         self._commander = SparkCommander(app.loop)
