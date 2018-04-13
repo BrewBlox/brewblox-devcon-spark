@@ -27,7 +27,11 @@ def database_test_file():
 
 @pytest.fixture
 async def file_store(app, client, database_test_file, loop):
-    store = datastore.FileDataStore(filename=database_test_file, read_only=False)
+    store = datastore.FileDataStore(
+        filename=database_test_file,
+        read_only=False,
+        primary_key='alias'
+    )
     await store.start(loop=loop)
     await store.purge()
     yield store
@@ -36,7 +40,7 @@ async def file_store(app, client, database_test_file, loop):
 
 @pytest.fixture
 async def memory_store(app, client, loop):
-    store = datastore.MemoryDataStore()
+    store = datastore.MemoryDataStore(primary_key='alias')
     await store.start(loop=loop)
     yield store
     await store.close()
@@ -50,8 +54,8 @@ async def stores(file_store, memory_store):
 @pytest.fixture
 def obj():
     return {
-        'type': 6,
         'alias': 'pancakes',
+        'type': 6,
         'obj': {
             'settings': {
                 'address': 'KP7p/ggAABc=',
@@ -90,7 +94,7 @@ async def test_file_start_stop(client, database_test_file, loop):
 async def test_write(stores, obj):
     for store in stores:
         await store.write(obj)
-        assert await store.find_by_id(obj['alias']) == obj
+        assert await store.find_by_id(obj[store.primary_key]) == obj
 
 
 async def test_spam(stores, mocker, obj):

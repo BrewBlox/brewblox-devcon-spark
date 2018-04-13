@@ -20,7 +20,7 @@ def setup(app: Type[web.Application]):
 async def controller_error_middleware(request: web.Request, handler: web.RequestHandler) -> web.Response:
     try:
         return await handler(request)
-    except device.ControllerException as ex:
+    except Exception as ex:
         return web.json_response({'error': str(ex)}, status=500)
 
 
@@ -105,19 +105,27 @@ async def create(request: web.Request) -> web.Response:
         schema:
             type: object
             properties:
+                id:
+                    type: string
+                    example: temp_sensor_1
                 type:
                     type: int
                     example: 2
-                obj:
+                data:
                     type: object
                     example: {"command":2, "data":4136}
     """
     request_args = await request.json()
     controller = device.get_controller(request.app)
 
+    service_id = request_args['id']
     obj_type = request_args['type']
-    obj_args = request_args['obj']
-    return web.json_response(await controller.object_create(obj_type, obj_args))
+    data = request_args['data']
+    return web.json_response(await controller.object_create(
+        service_id,
+        obj_type,
+        data
+    ))
 
 
 @routes.get('/objects/{id}')
@@ -140,10 +148,10 @@ async def read(request: web.Request) -> web.Response:
         schema:
             type: string
     """
-    obj_id = request.match_info['id']
+    service_id = request.match_info['id']
     controller = device.get_controller(request.app)
 
-    return web.json_response(await controller.object_read(obj_id))
+    return web.json_response(await controller.object_read(service_id))
 
 
 @routes.put('/objects/{id}')
@@ -176,18 +184,18 @@ async def update(request: web.Request) -> web.Response:
                 type:
                     type: int
                     example: 2
-                obj:
+                data:
                     type: object
                     example: {"command":2, "data":4136}
     """
     request_args = await request.json()
     controller = device.get_controller(request.app)
 
-    obj_id = request.match_info['id']
+    service_id = request.match_info['id']
     obj_type = request_args['type']
-    obj_args = request_args['obj']
+    obj_args = request_args['data']
 
-    return web.json_response(await controller.object_update(obj_id, obj_type, obj_args))
+    return web.json_response(await controller.object_update(service_id, obj_type, obj_args))
 
 
 @routes.delete('/objects/{id}')
@@ -210,10 +218,10 @@ async def delete(request: web.Request) -> web.Response:
         schema:
             type: string
     """
-    obj_id = request.match_info['id']
+    service_id = request.match_info['id']
     controller = device.get_controller(request.app)
 
-    return web.json_response(await controller.object_delete(obj_id))
+    return web.json_response(await controller.object_delete(service_id))
 
 
 @routes.get('/objects')
@@ -252,10 +260,10 @@ async def system_read(request: web.Request) -> web.Response:
         schema:
             type: string
     """
-    obj_id = request.match_info['id']
+    service_id = request.match_info['id']
     controller = device.get_controller(request.app)
 
-    return web.json_response(await controller.system_read(obj_id))
+    return web.json_response(await controller.system_read(service_id))
 
 
 @routes.put('/system/{id}')
@@ -288,18 +296,18 @@ async def system_update(request: web.Request) -> web.Response:
                 type:
                     type: int
                     example: 10
-                obj:
+                data:
                     type: object
                     example: { "command": { "opcode":2, "data":4136 } }
     """
     request_args = await request.json()
     controller = device.get_controller(request.app)
 
-    obj_id = request.match_info['id']
+    service_id = request.match_info['id']
     obj_type = request_args['type']
-    obj_args = request_args['obj']
+    obj_args = request_args['data']
 
-    return web.json_response(await controller.system_update(obj_id, obj_type, obj_args))
+    return web.json_response(await controller.system_update(service_id, obj_type, obj_args))
 
 
 @routes.post('/profiles')
@@ -337,9 +345,9 @@ async def profile_delete(request: web.Request) -> web.Response:
         schema:
             type: int
     """
-    obj_id = int(request.match_info['id'])
+    service_id = int(request.match_info['id'])
     controller = device.get_controller(request.app)
-    return web.json_response(await controller.profile_delete(obj_id))
+    return web.json_response(await controller.profile_delete(service_id))
 
 
 @routes.post('/profiles/{id}')
@@ -361,9 +369,9 @@ async def profile_activate(request: web.Request) -> web.Response:
         schema:
             type: int
     """
-    obj_id = int(request.match_info['id'])
+    service_id = int(request.match_info['id'])
     controller = device.get_controller(request.app)
-    return web.json_response(await controller.profile_activate(obj_id))
+    return web.json_response(await controller.profile_activate(service_id))
 
 
 @routes.post('/aliases')
@@ -422,7 +430,7 @@ async def alias_update(request: web.Request) -> web.Response:
         schema:
             type: object
             properties:
-                alias:
+                id:
                     type: str
                     example: onewirebus
                     required: true

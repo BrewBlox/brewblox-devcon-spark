@@ -12,8 +12,9 @@ TESTED = api.__name__
 @pytest.fixture
 def object_args():
     return dict(
+        id='testobj',
         type=6,
-        obj=dict(
+        data=dict(
             settings=dict(
                 address='FF',
                 offset=20
@@ -43,33 +44,39 @@ def commander_mock(mocker, loop):
 
 
 @pytest.fixture
-def store():
-    return datastore.MemoryDataStore()
+def object_store():
+    return datastore.MemoryDataStore(primary_key=device.SERVICE_ID_KEY)
 
 
 @pytest.fixture
 def system_store():
-    return datastore.MemoryDataStore()
+    return datastore.MemoryDataStore(primary_key=device.SERVICE_ID_KEY)
 
 
 @pytest.fixture
-def controller_mock(mocker, commander_mock, store, system_store):
+def object_cache():
+    return datastore.MemoryDataStore(primary_key=device.SERVICE_ID_KEY)
+
+
+@pytest.fixture
+def controller_mock(mocker, commander_mock, object_store, system_store, object_cache):
     controller = device.SparkController('sparky')
     controller._commander = commander_mock
-    controller._object_store = store
+    controller._object_store = object_store
     controller._system_store = system_store
+    controller._object_cache = object_cache
 
     mocker.patch(device.__name__ + '.get_controller').return_value = controller
     return controller
 
 
 @pytest.fixture
-async def app(app, controller_mock, store, system_store, loop):
+async def app(app, controller_mock, object_store, system_store, loop):
     """App + controller routes"""
     api.setup(app)
 
-    await store.start(loop=loop)
-    await store.create_by_id('testobj', dict(controller_id=[1, 2, 3]))
+    await object_store.start(loop=loop)
+    await object_store.create_by_id('testobj', dict(controller_id=[1, 2, 3]))
 
     await system_store.start(loop=loop)
     await system_store.create_by_id('sysobj', dict(controller_id=[3, 2, 1]))
@@ -99,8 +106,12 @@ async def test_do(app, client, commander_mock):
 
 async def test_create(app, client, object_args):
     res = await client.post('/objects', json=object_args)
+    assert res.status == 500  # testobj already exists
+
+    object_args['id'] = 'other_obj'
+    res = await client.post('/objects', json=object_args)
     assert res.status == 200
-    assert (await res.json())['command'] == 'CREATE_OBJECT'
+    assert (await res.json())['type'] == object_args['type']
 
 
 async def test_read(app, client):

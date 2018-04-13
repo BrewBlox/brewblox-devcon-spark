@@ -29,13 +29,17 @@ LOGGER = brewblox_logger(__name__)
 
 class DataStore(ABC):
 
-    DEFAULT_PK = 'alias'
+    DEFAULT_PK = '_id'
 
     def __init__(self, primary_key: str=DEFAULT_PK):
         self._pk: str = primary_key
 
     def __str__(self):
         return f'<{type(self).__name__}>'
+
+    @property
+    def primary_key(self):
+        return self._pk
 
     async def start(self, loop: asyncio.BaseEventLoop):
         """
@@ -91,14 +95,20 @@ class DataStore(ABC):
 
         Returns the newly inserted record - this includes the primary key.
         """
-        def action_func(db, id: str, obj: dict):
+        def func(db):
             assert not db.contains(Query()[self._pk] == id), f'{id} already exists'
             inserted = deepcopy(obj)
             inserted[self._pk] = id
             db.insert(inserted)
             return inserted
 
-        return await self._do_with_db(lambda db: action_func(db, id, obj))
+        return await self._do_with_db(func)
+
+    async def update_by_id(self, id: str, obj: dict) -> OBJECT_TYPE_:
+        """
+        Updates existing record with `id`.
+        """
+        return await self._do_with_db(lambda db: db.update(obj, Query()[self._pk] == id))
 
     async def update_id(self, existing: str, new: str) -> OBJECT_TYPE_:
         """

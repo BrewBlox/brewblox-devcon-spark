@@ -12,6 +12,8 @@ from brewblox_devcon_spark.datastore import DataStore, FileDataStore, MemoryData
 from deprecated import deprecated
 
 CONTROLLER_KEY = 'controller.spark'
+SERVICE_ID_KEY = 'service_id'
+CONTROLLER_ID_KEY = 'controller_id'
 
 LOGGER = LOGGER = brewblox_logger(__name__)
 
@@ -29,12 +31,13 @@ class ControllerException(Exception):
 
 
 class SparkController():
+
     def __init__(self, name: str, app=None):
         self._name = name
         self._commander: SparkCommander = None
         self._object_store: FileDataStore = None
         self._system_store: FileDataStore = None
-        self._object_cache = MemoryDataStore()
+        self._object_cache: MemoryDataStore = None
         self._active_profile = 0
 
         if app:
@@ -51,10 +54,23 @@ class SparkController():
     async def start(self, app: Type[web.Application]):
         await self.close()
 
-        self._object_store = FileDataStore(file=app['config']['database'])
+        self._object_cache = MemoryDataStore(
+            primary_key=SERVICE_ID_KEY
+        )
+        await self._object_cache.start(loop=app.loop)
+
+        self._object_store = FileDataStore(
+            filename=app['config']['database'],
+            read_only=False,
+            primary_key=SERVICE_ID_KEY
+        )
         await self._object_store.start(loop=app.loop)
 
-        self._system_store = FileDataStore(file=app['config']['system_database'])
+        self._system_store = FileDataStore(
+            filename=app['config']['system_database'],
+            read_only=False,
+            primary_key=SERVICE_ID_KEY
+        )
         await self._system_store.start(loop=app.loop)
 
         self._commander = SparkCommander(app.loop)
@@ -111,57 +127,69 @@ class SparkController():
             LOGGER.error(message)
             raise ControllerException(message)
 
-    async def _resolve_id(self, store: DataStore, input_id: str) -> List[int]:
+    async def _resolve_controller_id(self, store: DataStore, input_id: str) -> List[int]:
         obj = await store.find_by_id(input_id)
         assert obj, f'Service ID [{input_id}] not found in {store}'
-        return obj['controller_id']
+        return obj[CONTROLLER_ID_KEY]
 
-    async def object_create(self, obj_type: int, obj: dict) -> List[int]:
+    async def object_create(self, service_id: str, obj_type: int, data: dict) -> List[int]:
         """
         Creates a new object on the controller.
-        Raises exception if object already exists.
-        Returns ID of newly created object.
+        Raises exception if service_id already exists.
         """
+        object = {
+            self._object_store.primary_key: service_id,
+            'type': obj_type,
+            'data': data
+        }
+
+        object.update(await self._object_store.create_by_id(service_id, object))
+
         command = commands.CreateObjectCommand().from_args(
             type=obj_type,
-            size=18,  # TODO(BOb): fix protocol
-            data=codec.encode(obj_type, obj)
+            size=18,  # TODO(Bob): fix protocol
+            data=codec.encode(obj_type, data)
         )
-        return await self._execute(command)
+        # TODO(Bob): update object with values returned from create
+        await self._execute(command)
 
-    async def object_read(self, id: str, obj_type: int=0) -> dict:
+        await self._object_store.update_by_id(service_id, object)
+
+        return object
+
+    async def object_read(self, service_id: str, obj_type: int=0) -> dict:
         """
         Reads state for object on controller.
         Raises exception if object does not exist.
         Returns object state.
         """
         command = commands.ReadValueCommand().from_args(
-            id=(await self._resolve_id(self._object_store, id)),
+            id=(await self._resolve_controller_id(self._object_store, service_id)),
             type=obj_type,
             size=0
         )
         return await self._execute(command)
 
-    async def object_update(self, id: str, obj_type: int, obj: dict) -> dict:
+    async def object_update(self, service_id: str, obj_type: int, data: dict) -> dict:
         """
         Updates settings for existing object.
         Raises exception if object does not exist.
         Returns new state of object.
         """
         command = commands.WriteValueCommand().from_args(
-            id=(await self._resolve_id(self._object_store, id)),
+            id=(await self._resolve_controller_id(self._object_store, service_id)),
             type=obj_type,
             size=0,
-            data=codec.encode(obj_type, obj)
+            data=codec.encode(obj_type, data)
         )
         return await self._execute(command)
 
-    async def object_delete(self, id: str):
+    async def object_delete(self, service_id: str):
         """
         Deletes object on the controller.
         """
         command = commands.DeleteObjectCommand().from_args(
-            id=await self._resolve_id(self._object_store, id)
+            id=await self._resolve_controller_id(self._object_store, service_id)
         )
         return await self._execute(command)
 
@@ -174,30 +202,30 @@ class SparkController():
         )
         return await self._execute(command)
 
-    async def system_read(self, id: str) -> dict:
+    async def system_read(self, service_id: str) -> dict:
         """
         Reads state for system object on controller.
         Raises exception if object does not exist.
         Returns object state.
         """
         command = commands.ReadSystemValueCommand().from_args(
-            id=(await self._resolve_id(self._system_store, id)),
+            id=(await self._resolve_controller_id(self._system_store, service_id)),
             type=0,
             size=0
         )
         return await self._execute(command)
 
-    async def system_update(self, id: str, obj_type: int, obj: dict) -> dict:
+    async def system_update(self, service_id: str, obj_type: int, data: dict) -> dict:
         """
         Updates settings for existing object.
         Raises exception if object does not exist.
         Returns new state of object.
         """
         command = commands.WriteSystemValueCommand().from_args(
-            id=(await self._resolve_id(self._system_store, id)),
+            id=(await self._resolve_controller_id(self._system_store, service_id)),
             type=obj_type,
             size=0,
-            data=codec.encode(obj_type, obj)
+            data=codec.encode(obj_type, data)
         )
         return await self._execute(command)
 
