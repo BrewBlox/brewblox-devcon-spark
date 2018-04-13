@@ -2,7 +2,7 @@
 Defines the REST API for the device
 """
 
-from typing import Type
+from typing import Type, List
 
 from aiohttp import web
 from brewblox_devcon_spark import brewblox_logger, device
@@ -23,6 +23,117 @@ async def controller_error_middleware(request: web.Request, handler: web.Request
     except Exception as ex:
         LOGGER.debug(f'REST error: {ex}')
         return web.json_response({'error': str(ex)}, status=500)
+
+
+class Api():
+
+    def __init__(self, app: web.Application):
+        self._ctrl = device.get_controller(app)
+
+
+class ObjectApi(Api):
+
+    async def create(self, service_id: str, obj_type: int, data: dict) -> dict:
+        object = {
+            'service_id': service_id,
+            'type': obj_type,
+            'data': data
+        }
+
+        await self._ctrl.create_object(
+            type=obj_type,
+            size=18,  # TODO(Bob): fix protocol
+            data=data
+        )
+
+        # TODO(Bob): get controller id from create object
+        controller_id = [1, 2, 3]
+
+        try:
+            await self._ctrl.create_alias(
+                # service ID already is in object
+                controller_id=controller_id,
+                **object
+            )
+        except Exception as ex:
+            # TODO(Bob): uncomment when create returns an object
+            # await self.delete(id=controller_id)
+            raise ex
+
+        return object
+
+    async def read(self, service_id: str, obj_type: int=0) -> dict:
+        return await self._ctrl.read_value(
+            id=service_id,
+            type=obj_type,
+            size=0
+        )
+
+    async def update(self, service_id: str, obj_type: int, data: dict) -> dict:
+        return await self._ctrl.write_value(
+            id=service_id,
+            type=obj_type,
+            size=0,
+            data=data
+        )
+
+    async def delete(self, service_id: str) -> dict:
+        return await self._ctrl.delete_object(
+            id=service_id
+        )
+
+    async def all(self) -> dict:
+        return await self._ctrl.list_objects(
+            profile_id=self._ctrl.active_profile
+        )
+
+
+class SystemApi(Api):
+
+    async def read(self, service_id: str) -> dict:
+        return await self._ctrl.read_system_value(
+            system_id=service_id,
+            type=0,
+            size=0
+        )
+
+    async def update(self, service_id: str, obj_type: int, data: dict) -> dict:
+        return await self._ctrl.write_system_value(
+            system_id=service_id,
+            type=obj_type,
+            size=0,
+            data=data
+        )
+
+
+class ProfileApi(Api):
+
+    async def create(self) -> dict:
+        return await self._ctrl.create_profile()
+
+    async def delete(self, profile_id: int) -> dict:
+        return await self._ctrl.delete_profile(
+            profile_id=profile_id
+        )
+
+    async def activate(self, profile_id: int) -> dict:
+        retval = await self._ctrl.activate_profile(
+            profile_id=profile_id
+        )
+        self._ctrl.active_profile = profile_id
+        return retval
+
+
+class AliasApi(Api):
+
+    async def create(self, service_id: str, controller_id: List[int]) -> dict:
+        return await self._ctrl.create_alias(
+            service_id=service_id,
+            controller_id=controller_id
+        )
+
+    async def update(self, existing_id: str, new_id: str) -> dict:
+        return await self._ctrl.update_alias(existing_id, new_id)
 
 
 @routes.post('/_debug/do')
@@ -60,7 +171,7 @@ async def do_command(request: web.Request) -> web.Response:
 
 
 @routes.post('/objects')
-async def create(request: web.Request) -> web.Response:
+async def object_create(request: web.Request) -> web.Response:
     """
     ---
     summary: Create object
@@ -90,20 +201,18 @@ async def create(request: web.Request) -> web.Response:
                     example: {"command":2, "data":4136}
     """
     request_args = await request.json()
-    controller = device.get_controller(request.app)
 
-    service_id = request_args['id']
-    obj_type = request_args['type']
-    data = request_args['data']
-    return web.json_response(await controller.object_create(
-        service_id,
-        obj_type,
-        data
-    ))
+    return web.json_response(
+        await ObjectApi(request.app).create(
+            request_args['id'],
+            request_args['type'],
+            request_args['data']
+        )
+    )
 
 
 @routes.get('/objects/{id}')
-async def read(request: web.Request) -> web.Response:
+async def object_read(request: web.Request) -> web.Response:
     """
     ---
     summary: Read object
@@ -122,14 +231,15 @@ async def read(request: web.Request) -> web.Response:
         schema:
             type: string
     """
-    service_id = request.match_info['id']
-    controller = device.get_controller(request.app)
-
-    return web.json_response(await controller.object_read(service_id))
+    return web.json_response(
+        await ObjectApi(request.app).read(
+            request.match_info['id']
+        )
+    )
 
 
 @routes.put('/objects/{id}')
-async def update(request: web.Request) -> web.Response:
+async def object_update(request: web.Request) -> web.Response:
     """
     ---
     summary: Update object
@@ -163,17 +273,18 @@ async def update(request: web.Request) -> web.Response:
                     example: {"command":2, "data":4136}
     """
     request_args = await request.json()
-    controller = device.get_controller(request.app)
 
-    service_id = request.match_info['id']
-    obj_type = request_args['type']
-    obj_args = request_args['data']
-
-    return web.json_response(await controller.object_update(service_id, obj_type, obj_args))
+    return web.json_response(
+        await ObjectApi(request.app).update(
+            request.match_info['id'],
+            request_args['type'],
+            request_args['data'],
+        )
+    )
 
 
 @routes.delete('/objects/{id}')
-async def delete(request: web.Request) -> web.Response:
+async def object_delete(request: web.Request) -> web.Response:
     """
     ---
     summary: Delete object
@@ -192,14 +303,15 @@ async def delete(request: web.Request) -> web.Response:
         schema:
             type: string
     """
-    service_id = request.match_info['id']
-    controller = device.get_controller(request.app)
-
-    return web.json_response(await controller.object_delete(service_id))
+    return web.json_response(
+        await ObjectApi(request.app).delete(
+            request.match_info['id']
+        )
+    )
 
 
 @routes.get('/objects')
-async def all(request: web.Request) -> web.Response:
+async def object_all(request: web.Request) -> web.Response:
     """
     ---
     summary: List all objects
@@ -210,8 +322,9 @@ async def all(request: web.Request) -> web.Response:
     produces:
     - application/json
     """
-    controller = device.get_controller(request.app)
-    return web.json_response(await controller.object_all())
+    return web.json_response(
+        await ObjectApi(request.app).all()
+    )
 
 
 @routes.get('/system/{id}')
@@ -234,10 +347,11 @@ async def system_read(request: web.Request) -> web.Response:
         schema:
             type: string
     """
-    service_id = request.match_info['id']
-    controller = device.get_controller(request.app)
-
-    return web.json_response(await controller.system_read(service_id))
+    return web.json_response(
+        await SystemApi(request.app).read(
+            request.match_info['id']
+        )
+    )
 
 
 @routes.put('/system/{id}')
@@ -275,13 +389,14 @@ async def system_update(request: web.Request) -> web.Response:
                     example: { "command": { "opcode":2, "data":4136 } }
     """
     request_args = await request.json()
-    controller = device.get_controller(request.app)
 
-    service_id = request.match_info['id']
-    obj_type = request_args['type']
-    obj_args = request_args['data']
-
-    return web.json_response(await controller.system_update(service_id, obj_type, obj_args))
+    return web.json_response(
+        await SystemApi(request.app).update(
+            request.match_info['id'],
+            request_args['type'],
+            request_args['data']
+        )
+    )
 
 
 @routes.post('/profiles')
@@ -296,8 +411,9 @@ async def profile_create(request: web.Request) -> web.Response:
     produces:
     - application/json
     """
-    controller = device.get_controller(request.app)
-    return web.json_response(await controller.profile_create())
+    return web.json_response(
+        await ProfileApi(request.app).create()
+    )
 
 
 @routes.delete('/profiles/{id}')
@@ -319,9 +435,11 @@ async def profile_delete(request: web.Request) -> web.Response:
         schema:
             type: int
     """
-    service_id = int(request.match_info['id'])
-    controller = device.get_controller(request.app)
-    return web.json_response(await controller.profile_delete(service_id))
+    return web.json_response(
+        await ProfileApi(request.app).delete(
+            int(request.match_info['id'])
+        )
+    )
 
 
 @routes.post('/profiles/{id}')
@@ -343,9 +461,11 @@ async def profile_activate(request: web.Request) -> web.Response:
         schema:
             type: int
     """
-    service_id = int(request.match_info['id'])
-    controller = device.get_controller(request.app)
-    return web.json_response(await controller.profile_activate(service_id))
+    return web.json_response(
+        await ProfileApi(request.app).activate(
+            int(request.match_info['id'])
+        )
+    )
 
 
 @routes.post('/aliases')
@@ -368,7 +488,7 @@ async def alias_create(request: web.Request) -> web.Response:
         schema:
             type: object
             properties:
-                alias:
+                service_id:
                     type: str
                     example: onewirebus
                     required: true
@@ -379,12 +499,15 @@ async def alias_create(request: web.Request) -> web.Response:
     """
     request_args = await request.json()
 
-    controller = device.get_controller(request.app)
-    resp = await controller.alias_create(request_args['alias'], request_args['controller_id'])
-    return web.json_response(resp)
+    return web.json_response(
+        await AliasApi(request.app).create(
+            request_args['service_id'],
+            request_args['controller_id']
+        )
+    )
 
 
-@routes.put('/aliases/{alias}')
+@routes.put('/aliases/{current_id}')
 async def alias_update(request: web.Request) -> web.Response:
     """
     ---
@@ -397,6 +520,12 @@ async def alias_update(request: web.Request) -> web.Response:
     - application/json
     parameters:
     -
+        name: current_id
+        in: path
+        required: true
+        schema:
+            type: int
+    -
         in: body
         name: body
         description: alias
@@ -404,14 +533,14 @@ async def alias_update(request: web.Request) -> web.Response:
         schema:
             type: object
             properties:
-                id:
+                new_id:
                     type: str
                     example: onewirebus
                     required: true
     """
-    existing = request.match_info['alias']
-    new = (await request.json())['alias']
-
-    controller = device.get_controller(request.app)
-    resp = await controller.alias_update(existing, new)
-    return web.json_response(resp)
+    return web.json_response(
+        await AliasApi(request.app).update(
+            request.match_info['current_id'],
+            (await request.json())['new_id']
+        )
+    )

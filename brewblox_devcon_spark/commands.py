@@ -11,6 +11,7 @@ LOGGER = LOGGER = brewblox_logger(__name__)
 
 
 OBJECT_ID_KEY = 'id'
+SYSTEM_ID_KEY = 'system_id'
 OBJECT_TYPE_KEY = 'type'
 OBJECT_SIZE_KEY = 'size'
 OBJECT_DATA_KEY = 'data'
@@ -242,6 +243,7 @@ class Command(ABC):
 
 # Reoccurring data types - can be used as a macro
 _OBJECT_ID = Struct(OBJECT_ID_KEY / VariableLengthIDAdapter())
+_SYSTEM_ID = Struct(SYSTEM_ID_KEY / VariableLengthIDAdapter())
 _OBJECT_TYPE = Struct(OBJECT_TYPE_KEY / Byte)
 _OBJECT_SIZE = Struct(OBJECT_SIZE_KEY / Byte)
 _OBJECT_DATA = Struct(OBJECT_DATA_KEY / Byte[:])
@@ -338,7 +340,7 @@ class ResetCommand(Command):
 
 class FreeSlotRootCommand(Command):
     _OPCODE = OpcodeEnum.FREE_SLOT_ROOT
-    _REQUEST = _OBJECT_ID
+    _REQUEST = _SYSTEM_ID
     _RESPONSE = None
 
 
@@ -352,11 +354,11 @@ class ListProfilesCommand(Command):
 
 class ReadSystemValueCommand(Command):
     _OPCODE = OpcodeEnum.READ_SYSTEM_VALUE
-    _REQUEST = _OBJECT_ID + _OBJECT_TYPE + _OBJECT_SIZE
+    _REQUEST = _SYSTEM_ID + _OBJECT_TYPE + _OBJECT_SIZE
     _RESPONSE = _OBJECT_TYPE + _OBJECT_SIZE + _OBJECT_DATA
 
 
 class WriteSystemValueCommand(Command):
     _OPCODE = OpcodeEnum.WRITE_SYSTEM_VALUE
-    _REQUEST = _OBJECT_ID + _OBJECT_TYPE + _OBJECT_SIZE + _OBJECT_DATA
+    _REQUEST = _SYSTEM_ID + _OBJECT_TYPE + _OBJECT_SIZE + _OBJECT_DATA
     _RESPONSE = _OBJECT_TYPE + _OBJECT_SIZE + _OBJECT_DATA

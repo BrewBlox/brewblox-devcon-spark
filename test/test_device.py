@@ -90,7 +90,12 @@ async def test_transcoding(app, client, commander_mock, store_mock):
     encoded = codec.encode(obj_type, obj)
     obj = codec.decode(obj_type, encoded)
 
-    retval = await controller.object_update('alias', obj_type, obj)
+    retval = await controller.write_value(
+        id='alias',
+        type=obj_type,
+        size=0,
+        data=obj
+    )
     assert retval['data'] == obj
 
     # Test correct processing of lists of objects
@@ -101,5 +106,22 @@ async def test_transcoding(app, client, commander_mock, store_mock):
             dict(type=obj_type, data=encoded),
         ]
     ))
-    retval = await controller.object_update('alias', obj_type, obj)
+    retval = await controller.write_value(
+        id='alias',
+        type=obj_type,
+        size=0,
+        data=obj
+    )
     assert retval['objects'] == [dict(type=obj_type, data=obj)] * 2
+
+
+async def test_resolve_id(app, client, commander_mock, store_mock):
+    store_mock.find_by_id.return_value = dict(controller_id=[1, 2, 3])
+
+    ctrl = device.get_controller(app)
+
+    assert await ctrl.resolve_controller_id(ctrl._object_store, 'id') == [1, 2, 3]
+    assert await ctrl.resolve_controller_id(ctrl._object_store, [8, 4, 0]) == [8, 4, 0]
+
+    assert await ctrl.resolve_service_id(ctrl._object_store, [1, 2, 3]) == '1-2-3'
+    assert await ctrl.resolve_service_id(ctrl._object_store, 'testey') == 'testey'

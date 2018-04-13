@@ -105,7 +105,7 @@ async def test_read(app, client):
 
     retval = await res.json()
     assert retval['command'] == 'READ_VALUE'
-    assert retval['id'] == [1, 2, 3]
+    assert retval['id'] == '1-2-3'
 
 
 async def test_update(app, client, object_args):
@@ -121,7 +121,7 @@ async def test_delete(app, client):
     assert res.status == 200
     retval = await res.json()
     assert retval['command'] == 'DELETE_OBJECT'
-    assert retval['id'] == [1, 2, 3]
+    assert retval['id'] == '1-2-3'
 
 
 async def test_all(app, client):
@@ -137,7 +137,7 @@ async def test_system_read(app, client):
 
     retval = await res.json()
     assert retval['command'] == 'READ_SYSTEM_VALUE'
-    assert retval['id'] == [3, 2, 1]
+    assert retval['system_id'] == '3-2-1'
 
 
 async def test_system_update(app, client, object_args):
@@ -181,9 +181,25 @@ async def test_command_exception(app, client, commander_mock):
     assert 'test error' in retval['error']
 
 
+async def test_with_controller_id(app, client, object_args):
+    object_args['id'] = [7, 8, 9]
+
+    command = dict(command='write_value', data=object_args)
+    res = await client.post('/_debug/do', json=command)
+    assert res.status == 200
+
+    # ID is parsed, but unknown, so a new ID is generated
+    retval = await res.json()
+    assert retval['id'] == '7-8-9'
+
+    # We should be able to read it
+    res = await client.get('/objects/7-8-9')
+    assert res.status == 200
+
+
 async def test_alias_create(app, client):
     new_alias = dict(
-        alias='name',
+        service_id='name',
         controller_id=[4, 5, 6]
     )
     res = await client.post('/aliases', json=new_alias)
@@ -197,7 +213,7 @@ async def test_alias_update(app, client):
     res = await client.get('/objects/newname')
     assert res.status == 500
 
-    res = await client.put('/aliases/testobj', json=dict(alias='newname'))
+    res = await client.put('/aliases/testobj', json=dict(new_id='newname'))
     assert res.status == 200
 
     res = await client.get('/objects/newname')

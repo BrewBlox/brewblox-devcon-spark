@@ -5,10 +5,11 @@ Tests datastore.py
 import asyncio
 import os
 from pathlib import Path
-from unittest.mock import Mock
 
 import pytest
 from brewblox_devcon_spark import datastore
+
+TESTED = datastore.__name__
 
 
 @pytest.fixture
@@ -116,18 +117,6 @@ async def test_exception_handling(stores, mocker):
     for store in stores:
         with pytest.raises(ArithmeticError):
             await store._do_with_db(lambda db: 1 / 0)
-
-
-async def test_file_action_error(file_store, mocker):
-    log_spy = mocker.spy(datastore.LOGGER, 'warn')
-
-    err_action = Mock()
-    err_action.do.side_effect = RecursionError
-
-    await file_store._pending_actions.put(err_action)
-    await asyncio.sleep(0.01)
-
-    assert log_spy.call_count == 1
 
 
 async def test_update_by_id(stores, obj):

@@ -36,21 +36,18 @@ class ControllerException(Exception):
     pass
 
 
-async def resolve_controller_id(store: DataStore, input_id: str) -> List[int]:
-    obj = await store.find_by_id(input_id)
-    assert obj, f'Service ID [{input_id}] not found in {store}'
-    return obj[CONTROLLER_ID_KEY]
-
-
 class SparkController():
 
     def __init__(self, name: str, app=None):
-        self._name = name
+
         self._commander: SparkCommander = None
+
+        self._name = name
+        self._active_profile = 0
+
         self._object_store: FileDataStore = None
         self._system_store: FileDataStore = None
         self._object_cache: MemoryDataStore = None
-        self._active_profile = 0
 
         if app:
             self.setup(app)
@@ -58,6 +55,14 @@ class SparkController():
     @property
     def name(self):
         return self._name
+
+    @property
+    def active_profile(self):
+        return self._active_profile
+
+    @active_profile.setter
+    def active_profile(self, profile_id: int):
+        self._active_profile = profile_id
 
     def setup(self, app: Type[web.Application]):
         app.on_startup.append(self.start)
@@ -99,7 +104,7 @@ class SparkController():
             if s is not None
         ]
 
-    def _processed(self, func: Callable, content: dict) -> dict:
+    async def _data_processed(self, func: Callable, content: dict) -> dict:
         data_key = commands.OBJECT_DATA_KEY
         type_key = commands.OBJECT_TYPE_KEY
 
@@ -118,15 +123,65 @@ class SparkController():
 
         return content
 
+    _data_encoded = partialmethod(_data_processed, codec.encode)
+    _data_decoded = partialmethod(_data_processed, codec.decode)
+
+    async def resolve_controller_id(self, store: DataStore, input_id: Union[str, List[int]]) -> List[int]:
+        if not isinstance(input_id, str):
+            # No conversion required
+            return input_id
+
+        obj = await store.find_by_id(input_id)
+        assert obj, f'Service ID [{input_id}] not found in {store}'
+        return obj[CONTROLLER_ID_KEY]
+
+    async def resolve_service_id(self, store: DataStore, input_id: Union[str, List[int]]) -> str:
+        if isinstance(input_id, str):
+            # No conversion required
+            return input_id
+
+        # If service ID not found, create alias
+        service_id = '-'.join([str(i) for i in input_id])
+        try:
+            await self.create_alias(service_id, controller_id=input_id)
+        except Exception:
+            pass
+
+        return service_id
+
+    async def _id_resolved(self, resolver: Callable, content: dict) -> dict:
+        object_key = commands.OBJECT_ID_KEY
+        system_key = commands.SYSTEM_ID_KEY
+
+        if object_key in content:
+            content[object_key] = await resolver(self, self._object_store, content[object_key])
+
+        if system_key in content:
+            content[system_key] = await resolver(self, self._system_store, content[system_key])
+
+        return content
+
+    _controller_id_resolved = partialmethod(_id_resolved, resolve_controller_id)
+    _service_id_resolved = partialmethod(_id_resolved, resolve_service_id)
+
     async def _execute(self, command_type: type(commands.Command), **kwargs) -> dict:
         try:
-            LOGGER.info(f'{command_type.__name__}({kwargs})')
-            content = self._processed(codec.encode, kwargs)
 
-            command = command_type().from_decoded(content)
+            content = await self._controller_id_resolved(
+                await self._data_encoded(
+                    kwargs
+                )
+            )
 
-            retval = await self._commander.execute(command)
-            return self._processed(codec.decode, retval)
+            retval = await self._commander.execute(
+                command_type().from_decoded(content)
+            )
+
+            return await self._service_id_resolved(
+                await self._data_decoded(
+                    retval
+                )
+            )
 
         except Exception as ex:
             message = f'Failed to execute {command_type()}: {type(ex).__name__}: {ex}'
@@ -149,136 +204,14 @@ class SparkController():
     read_system_value = partialmethod(_execute, commands.ReadSystemValueCommand)
     write_system_value = partialmethod(_execute, commands.WriteSystemValueCommand)
 
-    async def object_create(self, service_id: str, obj_type: int, data: dict) -> List[int]:
-        """
-        Creates a new object on the controller.
-        Raises exception if service_id already exists.
-        """
-        object = {
-            self._object_store.primary_key: service_id,
-            'type': obj_type,
-            'data': data
-        }
-
-        await self.create_object(
-            type=obj_type,
-            size=18,  # TODO(Bob): fix protocol
-            data=data
+    async def create_alias(self, service_id: str, **kwargs) -> dict:
+        return await self._object_store.create_by_id(
+            service_id,
+            kwargs
         )
 
-        try:
-            await self._object_store.create_by_id(service_id, object)
-        except AssertionError as ex:
-            # TODO(Bob): uncomment when controller id is known from create command
-            # await self.delete_object(id=controller_id)
-            raise ex
-
-        return object
-
-    async def object_read(self, service_id: str, obj_type: int=0) -> dict:
-        """
-        Reads state for object on controller.
-        Raises exception if object does not exist.
-        Returns object state.
-        """
-        return await self.read_value(
-            id=(await resolve_controller_id(self._object_store, service_id)),
-            type=obj_type,
-            size=0
+    async def update_alias(self, existing_id: str, new_id: str) -> dict:
+        return await self._object_store.update_id(
+            existing_id,
+            new_id
         )
-
-    async def object_update(self, service_id: str, obj_type: int, data: dict) -> dict:
-        """
-        Updates settings for existing object.
-        Raises exception if object does not exist.
-        Returns new state of object.
-        """
-        return await self.write_value(
-            id=(await resolve_controller_id(self._object_store, service_id)),
-            type=obj_type,
-            size=0,
-            data=data
-        )
-
-    async def object_delete(self, service_id: str):
-        """
-        Deletes object on the controller.
-        """
-        return await self.delete_object(
-            id=await resolve_controller_id(self._object_store, service_id)
-        )
-
-    async def object_all(self) -> dict:
-        """
-        Returns all known objects
-        """
-        return await self.list_objects(
-            profile_id=self._active_profile
-        )
-
-    async def system_read(self, service_id: str) -> dict:
-        """
-        Reads state for system object on controller.
-        Raises exception if object does not exist.
-        Returns object state.
-        """
-        return await self.read_system_value(
-            id=(await resolve_controller_id(self._system_store, service_id)),
-            type=0,
-            size=0
-        )
-
-    async def system_update(self, service_id: str, obj_type: int, data: dict) -> dict:
-        """
-        Updates settings for existing object.
-        Raises exception if object does not exist.
-        Returns new state of object.
-        """
-        return await self.write_system_value(
-            id=(await resolve_controller_id(self._system_store, service_id)),
-            type=obj_type,
-            size=0,
-            data=data
-        )
-
-    async def profile_create(self) -> dict:
-        """
-        Creates new profile.
-        Returns id of newly created profile
-        """
-        return await self.create_profile()
-
-    async def profile_delete(self, profile_id: int) -> dict:
-        """
-        Deletes profile.
-        Raises exception if profile does not exist.
-        """
-        return await self.delete_profile(
-            profile_id=profile_id
-        )
-
-    async def profile_activate(self, profile_id: int) -> dict:
-        """
-        Activates profile.
-        Raises exception if profile does not exist.
-        """
-        retval = await self.activate_profile(
-            profile_id=profile_id
-        )
-        self._active_profile = profile_id
-        return retval
-
-    async def alias_create(self, alias: str, controller_id: List[int]) -> dict:
-        """
-        Creates new alias + id combination.
-        Raises exception if alias already exists.
-        """
-        return await self._object_store.create_by_id(alias, dict(controller_id=controller_id))
-
-    async def alias_update(self, existing: str, new: str) -> dict:
-        """
-        Updates object with given alias to new alias.
-        Raises exception if no object was found.
-        Returns object
-        """
-        return await self._object_store.update_id(existing, new)

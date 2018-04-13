@@ -211,7 +211,7 @@ class FileDataStore(DataStore):
                 LOGGER.debug(f'{self} shutdown')
                 break
 
-            except Exception as ex:
-                LOGGER.warn(f'{self} error: {ex}')
+            except Exception as ex:  # pragma: no cover
+                LOGGER.warn(f'{self} {type(ex).__name__}: {ex}')
                 # Don't go crazy on persistent errors
                 await asyncio.sleep(DATABASE_RETRY_INTERVAL.seconds)
