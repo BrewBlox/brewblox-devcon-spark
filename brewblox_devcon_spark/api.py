@@ -21,35 +21,8 @@ async def controller_error_middleware(request: web.Request, handler: web.Request
     try:
         return await handler(request)
     except Exception as ex:
+        LOGGER.debug(f'REST error: {ex}')
         return web.json_response({'error': str(ex)}, status=500)
-
-
-@routes.post('/_debug/write')
-async def write(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Write a serial command
-    tags:
-    - Debug
-    operationId: controller.spark.debug.write
-    produces:
-    - application/json
-    parameters:
-    -
-        in: body
-        name: body
-        description: command
-        required: try
-        schema:
-            type: object
-            properties:
-                command:
-                    type: string
-                    example: '0F00'
-    """
-    command = (await request.json())['command']
-    retval = await device.get_controller(request.app).write(command)
-    return web.json_response(dict(written=retval))
 
 
 @routes.post('/_debug/do')
@@ -74,15 +47,16 @@ async def do_command(request: web.Request) -> web.Response:
                 command:
                     type: string
                     example: list_objects
-                kwargs:
+                data:
                     type: object
                     example: {"profile_id":0}
     """
     request_args = await request.json()
     command = request_args['command']
-    data = request_args['kwargs']
+    data = request_args['data']
     controller = device.get_controller(request.app)
-    return web.json_response(await controller.do(command, data))
+    func = getattr(controller, command)
+    return web.json_response(await func(**data))
 
 
 @routes.post('/objects')

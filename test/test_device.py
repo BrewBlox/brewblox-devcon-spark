@@ -21,8 +21,6 @@ def commander_mock(mocker, loop):
         retval['command'] = command.name
         return retval
 
-    cmder.write = CoroutineMock()
-    cmder.do = CoroutineMock()
     cmder.bind = CoroutineMock()
     cmder.close = CoroutineMock()
     cmder.execute = CoroutineMock(side_effect=echo)
@@ -62,13 +60,11 @@ async def test_start_close(app, client, commander_mock):
 
     await controller.close()
     await controller.close()
-    assert commander_mock.close.call_count == 1
 
     await controller.start(app)
     assert commander_mock.bind.call_count == 2
 
     await controller.start(app)
-    assert commander_mock.close.call_count == 2
     assert commander_mock.bind.call_count == 3
 
     # should not trigger errors in app cleanup

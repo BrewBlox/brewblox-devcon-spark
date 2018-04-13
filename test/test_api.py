@@ -36,8 +36,6 @@ def commander_mock(mocker, loop):
         retval['command'] = command.name
         return retval
 
-    cmder.write = CoroutineMock()
-    cmder.do = CoroutineMock()
     cmder.execute = CoroutineMock()
     cmder.execute.side_effect = echo
     return cmder
@@ -84,24 +82,11 @@ async def app(app, controller_mock, object_store, system_store, loop):
     return app
 
 
-async def test_write(app, client, commander_mock):
-    commander_mock.write.return_value = 'reply'
-
-    res = await client.post('/_debug/write', json=dict(command='text'))
-    assert res.status == 200
-    assert (await res.json()) == dict(written='reply')
-    assert commander_mock.write.call_count == 1
-
-
-async def test_do(app, client, commander_mock):
-    command = dict(command='abracadabra', kwargs=dict(magic=True))
-    retval = dict(response='ok')
-    commander_mock.do.return_value = retval
+async def test_do(app, client, commander_mock, object_args):
+    command = dict(command='create_object', data=object_args)
 
     res = await client.post('/_debug/do', json=command)
     assert res.status == 200
-    assert (await res.json()) == retval
-    assert commander_mock.do.call_count == 1
 
 
 async def test_create(app, client, object_args):
