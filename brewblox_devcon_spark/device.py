@@ -70,22 +70,18 @@ class SparkController():
     async def start(self, app: Type[web.Application]):
         await self.close()
 
-        self._object_cache = MemoryDataStore(
-            primary_key=SERVICE_ID_KEY
-        )
+        self._object_cache = MemoryDataStore()
         await self._object_cache.start(loop=app.loop)
 
         self._object_store = FileDataStore(
             filename=app['config']['database'],
-            read_only=False,
-            primary_key=SERVICE_ID_KEY
+            read_only=False
         )
         await self._object_store.start(loop=app.loop)
 
         self._system_store = FileDataStore(
             filename=app['config']['system_database'],
-            read_only=True,
-            primary_key=SERVICE_ID_KEY
+            read_only=True
         )
         await self._system_store.start(loop=app.loop)
 
@@ -133,9 +129,10 @@ class SparkController():
         if not isinstance(input_id, str):
             return input_id
 
-        obj = await store.find_by_id(input_id)
-        assert obj, f'Service ID [{input_id}] not found in {store}'
-        return obj[CONTROLLER_ID_KEY]
+        objects = await store.find_by_key(SERVICE_ID_KEY, input_id)
+        assert objects, f'Service ID [{input_id}] not found in {store}'
+        assert len(objects) == 1, f'Multiple definition of Service ID [{input_id}] found: {objects}'
+        return objects[0][CONTROLLER_ID_KEY]
 
     async def resolve_service_id(self, store: DataStore, input_id: Union[str, List[int]]) -> str:
         """
@@ -145,12 +142,27 @@ class SparkController():
         if isinstance(input_id, str):
             return input_id
 
-        # If service ID not found, create alias
-        service_id = '-'.join([str(i) for i in input_id])
+        service_id = None
+
         try:
-            await self.create_alias(service_id, controller_id=input_id)
-        except Exception:
-            pass
+            # Get first item from data store with correct controller ID,
+            # and that has a service ID defined
+            objects = await store.find_by_key(CONTROLLER_ID_KEY, input_id)
+            service_id = next(o.get(SERVICE_ID_KEY) for o in objects)
+        except StopIteration:
+            # If service ID not found, create alias
+            service_id = '-'.join([str(i) for i in input_id])
+            try:
+                await store.insert_unique(
+                    SERVICE_ID_KEY,
+                    {
+                        SERVICE_ID_KEY: service_id,
+                        CONTROLLER_ID_KEY: input_id
+                    }
+                )
+            except AssertionError:
+                # We give up. Just use the raw controller ID.
+                service_id = input_id
 
         return service_id
 
@@ -215,14 +227,15 @@ class SparkController():
     read_system_value = partialmethod(_execute, commands.ReadSystemValueCommand)
     write_system_value = partialmethod(_execute, commands.WriteSystemValueCommand)
 
-    async def create_alias(self, service_id: str, **kwargs) -> dict:
-        return await self._object_store.create_by_id(
-            service_id,
+    async def create_alias(self, **kwargs) -> dict:
+        return await self._object_store.insert_unique(
+            SERVICE_ID_KEY,
             kwargs
         )
 
     async def update_alias(self, existing_id: str, new_id: str) -> dict:
-        return await self._object_store.update_id(
+        return await self._object_store.update_unique(
+            SERVICE_ID_KEY,
             existing_id,
-            new_id
+            {SERVICE_ID_KEY: new_id}
         )

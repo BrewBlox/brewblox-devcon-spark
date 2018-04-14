@@ -6,22 +6,22 @@ Offers block metadata CRUD
 import asyncio
 from abc import ABC, abstractmethod
 from concurrent.futures import CancelledError
-from copy import deepcopy
 from datetime import timedelta
 from typing import Any, Callable, List
 
-from aiotinydb import AIOJSONStorage, AIOTinyDB, AIOImmutableJSONStorage
+from aiotinydb import AIOImmutableJSONStorage, AIOJSONStorage, AIOTinyDB
 from aiotinydb.middleware import CachingMiddleware
-from brewblox_devcon_spark import brewblox_logger
 from deprecated import deprecated
-from tinydb import Query, TinyDB, operations
+from tinydb import Query, TinyDB
 from tinydb.storages import MemoryStorage
+
+from brewblox_devcon_spark import brewblox_logger
 
 OBJECT_TYPE_ = dict
 ACTION_RETURN_TYPE_ = Any
 DB_FUNC_TYPE_ = Callable[[TinyDB], ACTION_RETURN_TYPE_]
 
-ACTION_TIMEOUT = timedelta(seconds=10)
+ACTION_TIMEOUT = timedelta(seconds=5)
 DATABASE_RETRY_INTERVAL = timedelta(seconds=1)
 
 LOGGER = brewblox_logger(__name__)
@@ -29,17 +29,8 @@ LOGGER = brewblox_logger(__name__)
 
 class DataStore(ABC):
 
-    DEFAULT_PK = '_id'
-
-    def __init__(self, primary_key: str=DEFAULT_PK):
-        self._pk: str = primary_key
-
     def __str__(self):
         return f'<{type(self).__name__}>'
-
-    @property
-    def primary_key(self):
-        return self._pk
 
     async def start(self, loop: asyncio.BaseEventLoop):
         """
@@ -69,10 +60,6 @@ class DataStore(ABC):
         pass  # pragma: no cover
 
     @deprecated('Debugging function')
-    async def write(self, data: dict) -> List[int]:
-        return await self._do_with_db(lambda db: db.insert(data))
-
-    @deprecated('Debugging function')
     async def all(self) -> List[OBJECT_TYPE_]:
         return await self._do_with_db(lambda db: db.all())
 
@@ -82,52 +69,61 @@ class DataStore(ABC):
         """
         return await self._do_with_db(lambda db: db.purge())
 
-    async def find_by_id(self, id: str) -> List[OBJECT_TYPE_]:
+    async def find_by_key(self, id_key: str, id_val: Any) -> List[OBJECT_TYPE_]:
         """
-        Returns the first record where `id` matches the datastore primary key.
+        Returns all documents where document[id_key] == id_val
         """
-        return await self._do_with_db(lambda db: db.get(Query()[self._pk] == id))
+        return await self._do_with_db(lambda db: db.search(Query()[id_key] == id_val))
 
-    async def create_by_id(self, id: str, obj: dict) -> OBJECT_TYPE_:
+    async def insert(self, obj: dict):
         """
-        Creates a new record with `id` as primary key.
-        Raises an exception if `id` was already in use.
+        Inserts document in data store. Does not verify uniqueness of any of its keys.
+        """
+        return await self._do_with_db(lambda db: db.insert(obj))
 
-        Returns the newly inserted record - this includes the primary key.
+    async def insert_multiple(self, objects: List):
+        """
+        Inserts multiple documents in data store. Does not verify uniqueness.
+        """
+        return await self._do_with_db(lambda db: db.insert_multiple(objects))
+
+    async def insert_unique(self, id_key: str, obj: dict):
+        """
+        Inserts document in data store.
+        Asserts that no other document has the same value for the id_key.
         """
         def func(db):
-            assert not db.contains(Query()[self._pk] == id), f'{id} already exists'
-            inserted = deepcopy(obj)
-            inserted[self._pk] = id
-            db.insert(inserted)
-            return inserted
+            id = obj[id_key]
+            assert not db.contains(Query()[id_key] == id), f'{id} already exists'
+            db.insert(obj)
 
         return await self._do_with_db(func)
 
-    async def update_by_id(self, id: str, obj: dict) -> OBJECT_TYPE_:
+    async def update(self, id_key: str, id_val: Any, obj: dict):
         """
-        Updates existing record with `id`.
+        Replaces all documents in data store where document[id_key] == id_val.
         """
-        return await self._do_with_db(lambda db: db.update(obj, Query()[self._pk] == id))
+        return await self._do_with_db(
+            lambda db: db.update(obj, Query()[id_key] == id_val)
+        )
 
-    async def update_id(self, existing: str, new: str) -> OBJECT_TYPE_:
+    async def update_unique(self, id_key: str, id_val: Any, obj: dict, unique_key: str=None):
         """
-        Updates ID of record with `existing` as ID to `new` as ID.
-
-        Raises an exception if `existing` already is used by another record.
-
-        Returns None if no record was updated.
+        Replaces a document in data store where document[id_key] == id_val.
+        Creates new document if it did not yet exist.
+        Asserts that only one document will be updated.
+        Asserts that no other documents exist where document[unique_key] == obj[unique_key]
         """
         def func(db):
-            assert not db.get(Query()[self._pk] == id), \
-                f'Unable to update [{existing}] to [{new}]: ID already exists'
+            query = Query()[id_key] == id_val
+            assert db.count(query) <= 1, f'Multiple documents with {id_key}={id_val} exist'
+            # Check for documents that already use the to be inserted unique key
+            if unique_key is not None:
+                unique_id = obj[unique_key]
+                assert not db.contains(Query()[unique_key] == unique_id), \
+                    f'A document already exists with {unique_key}={unique_id}'
 
-            updated = db.update(
-                operations.set(self._pk, new),
-                Query()[self._pk] == existing
-            )
-
-            return updated[0] if updated else None
+            db.upsert(obj, query)
 
         return await self._do_with_db(func)
 
@@ -162,6 +158,8 @@ class FileDataStore(DataStore):
 
         async def wait_result(self) -> ACTION_RETURN_TYPE_:
             return await asyncio.wait_for(self._future, timeout=ACTION_TIMEOUT.seconds)
+
+    ######################################################################
 
     def __init__(self, filename: str, read_only: bool, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -43,17 +43,17 @@ def commander_mock(mocker, loop):
 
 @pytest.fixture
 def object_store():
-    return datastore.MemoryDataStore(primary_key=device.SERVICE_ID_KEY)
+    return datastore.MemoryDataStore()
 
 
 @pytest.fixture
 def system_store():
-    return datastore.MemoryDataStore(primary_key=device.SERVICE_ID_KEY)
+    return datastore.MemoryDataStore()
 
 
 @pytest.fixture
 def object_cache():
-    return datastore.MemoryDataStore(primary_key=device.SERVICE_ID_KEY)
+    return datastore.MemoryDataStore()
 
 
 @pytest.fixture
@@ -74,10 +74,10 @@ async def app(app, controller_mock, object_store, system_store, loop):
     api.setup(app)
 
     await object_store.start(loop=loop)
-    await object_store.create_by_id('testobj', dict(controller_id=[1, 2, 3]))
+    await object_store.insert(dict(service_id='testobj', controller_id=[1, 2, 3]))
 
     await system_store.start(loop=loop)
-    await system_store.create_by_id('sysobj', dict(controller_id=[3, 2, 1]))
+    await system_store.insert(dict(service_id='sysobj', controller_id=[3, 2, 1]))
 
     return app
 
@@ -105,7 +105,7 @@ async def test_read(app, client):
 
     retval = await res.json()
     assert retval['command'] == 'READ_VALUE'
-    assert retval['id'] == '1-2-3'
+    assert retval['id'] == 'testobj'
 
 
 async def test_update(app, client, object_args):
@@ -121,7 +121,7 @@ async def test_delete(app, client):
     assert res.status == 200
     retval = await res.json()
     assert retval['command'] == 'DELETE_OBJECT'
-    assert retval['id'] == '1-2-3'
+    assert retval['id'] == 'testobj'
 
 
 async def test_all(app, client):
@@ -137,7 +137,7 @@ async def test_system_read(app, client):
 
     retval = await res.json()
     assert retval['command'] == 'READ_SYSTEM_VALUE'
-    assert retval['system_id'] == '3-2-1'
+    assert retval['system_id'] == 'sysobj'
 
 
 async def test_system_update(app, client, object_args):
