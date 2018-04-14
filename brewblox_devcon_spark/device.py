@@ -40,11 +40,10 @@ class SparkController():
 
     def __init__(self, name: str, app=None):
 
-        self._commander: SparkCommander = None
-
         self._name = name
         self._active_profile = 0
 
+        self._commander: SparkCommander = None
         self._object_store: FileDataStore = None
         self._system_store: FileDataStore = None
         self._object_cache: MemoryDataStore = None
@@ -85,7 +84,7 @@ class SparkController():
 
         self._system_store = FileDataStore(
             filename=app['config']['system_database'],
-            read_only=False,
+            read_only=True,
             primary_key=SERVICE_ID_KEY
         )
         await self._system_store.start(loop=app.loop)
@@ -127,8 +126,11 @@ class SparkController():
     _data_decoded = partialmethod(_data_processed, codec.decode)
 
     async def resolve_controller_id(self, store: DataStore, input_id: Union[str, List[int]]) -> List[int]:
+        """
+        Finds the controller ID matching service ID input.
+        If input is not a string, it assumes it already is a controller ID.
+        """
         if not isinstance(input_id, str):
-            # No conversion required
             return input_id
 
         obj = await store.find_by_id(input_id)
@@ -136,8 +138,11 @@ class SparkController():
         return obj[CONTROLLER_ID_KEY]
 
     async def resolve_service_id(self, store: DataStore, input_id: Union[str, List[int]]) -> str:
+        """
+        Finds the service ID matching controller ID input.
+        If input is a string, it assumes it already is a service ID.
+        """
         if isinstance(input_id, str):
-            # No conversion required
             return input_id
 
         # If service ID not found, create alias
@@ -153,35 +158,41 @@ class SparkController():
         object_key = commands.OBJECT_ID_KEY
         system_key = commands.SYSTEM_ID_KEY
 
-        if object_key in content:
-            content[object_key] = await resolver(self, self._object_store, content[object_key])
+        async def resolve_key(key: str, store: DataStore):
+            if key in content:
+                content[key] = await resolver(self, store, content[key])
 
-        if system_key in content:
-            content[system_key] = await resolver(self, self._system_store, content[system_key])
+        await resolve_key(object_key, self._object_store)
+        await resolve_key(system_key, self._system_store)
 
         return content
 
     _controller_id_resolved = partialmethod(_id_resolved, resolve_controller_id)
     _service_id_resolved = partialmethod(_id_resolved, resolve_service_id)
 
-    async def _execute(self, command_type: type(commands.Command), **kwargs) -> dict:
+    async def _execute(self, command_type: type(commands.Command), **content) -> dict:
         try:
 
-            content = await self._controller_id_resolved(
-                await self._data_encoded(
-                    kwargs
-                )
-            )
+            # pre-processing
+            for afunc in [
+                self._controller_id_resolved,
+                self._data_encoded,
+            ]:
+                content = await afunc(content)
 
+            # execute
             retval = await self._commander.execute(
                 command_type().from_decoded(content)
             )
 
-            return await self._service_id_resolved(
-                await self._data_decoded(
-                    retval
-                )
-            )
+            # post-processing
+            for afunc in [
+                self._service_id_resolved,
+                self._data_decoded,
+            ]:
+                retval = await afunc(retval)
+
+            return retval
 
         except Exception as ex:
             message = f'Failed to execute {command_type()}: {type(ex).__name__}: {ex}'

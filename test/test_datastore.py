@@ -4,7 +4,6 @@ Tests datastore.py
 
 import asyncio
 import os
-from pathlib import Path
 
 import pytest
 from brewblox_devcon_spark import datastore
@@ -75,21 +74,6 @@ async def test_basics(client, stores, loop):
 
         await store.start(loop)
         await store.close()
-
-
-async def test_file_start_stop(client, database_test_file, loop):
-    store = datastore.FileDataStore(filename=database_test_file, read_only=False)
-    assert not Path(database_test_file).exists()
-
-    await store.close()
-    await store.close()
-
-    await store.start(loop)
-    await asyncio.sleep(0.001)
-    assert Path(database_test_file).exists()
-
-    await store.close()
-    assert Path(database_test_file).exists()
 
 
 async def test_write(stores, obj):
