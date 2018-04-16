@@ -14,7 +14,7 @@ def write_value_args():
         object_id=[127, 7],
         type=6,
         size=10,
-        data=[0x0F]*10)
+        data=bytes([0x0F]*10))
 
 
 @pytest.fixture
@@ -97,7 +97,7 @@ def test_command_from_encoded(write_value_args, write_value_resp, write_value_re
     assert cmd.encoded_request == encoded_request
     assert cmd.encoded_response == encoded_response
 
-    assert dict(**cmd.decoded_request) == write_value_req
+    assert cmd.decoded_request == write_value_req
     assert cmd.decoded_response == write_value_resp
 
 

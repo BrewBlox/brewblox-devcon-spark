@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='brewblox-devcon-spark',
-    version='0.1.0',
+    use_scm_version={'local_scheme': lambda v: ''},
     long_description=open('README.md').read(),
     url='https://github.com/BrewBlox/brewblox-devcon-spark',
     author='BrewPi',
@@ -26,5 +26,6 @@ setup(
         'aiotinydb==1.1.0',
     ],
     python_requires='>=3.6',
-    extras_require={'dev': ['tox']}
+    extras_require={'dev': ['tox']},
+    setup_requires=['setuptools_scm'],
 )

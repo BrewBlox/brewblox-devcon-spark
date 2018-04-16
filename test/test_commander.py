@@ -76,7 +76,7 @@ async def test_command(conduit_mock, sparky):
 
     command = commands.ListObjectsCommand().from_args(profile_id=0)
     resp = await sparky.execute(command)
-    assert resp.objects is None
+    assert resp['objects'] is None
 
     conduit_mock.write_encoded.assert_called_once_with(b'0500')
 
