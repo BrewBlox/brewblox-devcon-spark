@@ -105,7 +105,7 @@ async def test_read(app, client):
 
     retval = await res.json()
     assert retval['command'] == 'READ_VALUE'
-    assert retval['id'] == 'testobj'
+    assert retval['object_id'] == 'testobj'
 
 
 async def test_update(app, client, object_args):
@@ -121,7 +121,7 @@ async def test_delete(app, client):
     assert res.status == 200
     retval = await res.json()
     assert retval['command'] == 'DELETE_OBJECT'
-    assert retval['id'] == 'testobj'
+    assert retval['object_id'] == 'testobj'
 
 
 async def test_all(app, client):
@@ -137,7 +137,7 @@ async def test_system_read(app, client):
 
     retval = await res.json()
     assert retval['command'] == 'READ_SYSTEM_VALUE'
-    assert retval['system_id'] == 'sysobj'
+    assert retval['system_object_id'] == 'sysobj'
 
 
 async def test_system_update(app, client, object_args):
@@ -182,7 +182,7 @@ async def test_command_exception(app, client, commander_mock):
 
 
 async def test_with_controller_id(app, client, object_args):
-    object_args['id'] = [7, 8, 9]
+    object_args['object_id'] = [7, 8, 9]
 
     command = dict(command='write_value', data=object_args)
     res = await client.post('/_debug/do', json=command)
@@ -190,7 +190,7 @@ async def test_with_controller_id(app, client, object_args):
 
     # ID is parsed, but unknown, so a new ID is generated
     retval = await res.json()
-    assert retval['id'] == '7-8-9'
+    assert retval['object_id'] == '7-8-9'
 
     # We should be able to read it
     res = await client.get('/objects/7-8-9')

@@ -10,8 +10,8 @@ from construct import (Adapter, Byte, Const, Enum, FlagsEnum, Int8sb, Optional,
 LOGGER = LOGGER = brewblox_logger(__name__)
 
 
-OBJECT_ID_KEY = 'id'
-SYSTEM_ID_KEY = 'system_id'
+OBJECT_ID_KEY = 'object_id'
+SYSTEM_ID_KEY = 'system_object_id'
 OBJECT_TYPE_KEY = 'type'
 OBJECT_SIZE_KEY = 'size'
 OBJECT_DATA_KEY = 'data'

@@ -64,14 +64,14 @@ class ObjectApi(Api):
 
     async def read(self, service_id: str, obj_type: int=0) -> dict:
         return await self._ctrl.read_value(
-            id=service_id,
+            object_id=service_id,
             type=obj_type,
             size=0
         )
 
     async def update(self, service_id: str, obj_type: int, data: dict) -> dict:
         return await self._ctrl.write_value(
-            id=service_id,
+            object_id=service_id,
             type=obj_type,
             size=0,
             data=data
@@ -79,7 +79,7 @@ class ObjectApi(Api):
 
     async def delete(self, service_id: str) -> dict:
         return await self._ctrl.delete_object(
-            id=service_id
+            object_id=service_id
         )
 
     async def all(self) -> dict:
@@ -92,14 +92,14 @@ class SystemApi(Api):
 
     async def read(self, service_id: str) -> dict:
         return await self._ctrl.read_system_value(
-            system_id=service_id,
+            system_object_id=service_id,
             type=0,
             size=0
         )
 
     async def update(self, service_id: str, obj_type: int, data: dict) -> dict:
         return await self._ctrl.write_system_value(
-            system_id=service_id,
+            system_object_id=service_id,
             type=obj_type,
             size=0,
             data=data

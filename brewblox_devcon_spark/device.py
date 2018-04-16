@@ -99,7 +99,7 @@ class SparkController():
             if s is not None
         ]
 
-    async def _data_processed(self, func: Callable, content: dict) -> dict:
+    async def _data_processed(self, processor_func: Callable, content: dict) -> dict:
         data_key = commands.OBJECT_DATA_KEY
         type_key = commands.OBJECT_TYPE_KEY
 
@@ -114,7 +114,7 @@ class SparkController():
             obj_type = dpath.util.get(content, f'{parent}/{type_key}')
 
             # convert data, and replace in dict
-            dpath.util.set(content, f'{parent}/{data_key}', func(obj_type, data))
+            dpath.util.set(content, f'{parent}/{data_key}', processor_func(obj_type, data))
 
         return content
 
@@ -124,9 +124,9 @@ class SparkController():
     async def resolve_controller_id(self, store: DataStore, input_id: Union[str, List[int]]) -> List[int]:
         """
         Finds the controller ID matching service ID input.
-        If input is not a string, it assumes it already is a controller ID.
+        If input is a list of ints, it assumes it already is a controller ID
         """
-        if not isinstance(input_id, str):
+        if isinstance(input_id, list) and all([isinstance(i, int) for i in input_id]):
             return input_id
 
         objects = await store.find_by_key(SERVICE_ID_KEY, input_id)
@@ -171,8 +171,8 @@ class SparkController():
         system_key = commands.SYSTEM_ID_KEY
 
         async def resolve_key(key: str, store: DataStore):
-            if key in content:
-                content[key] = await resolver(self, store, content[key])
+            for path, id in dpath.util.search(content, f'**/{key}', yielded=True):
+                dpath.util.set(content, path, await resolver(self, store, content[key]))
 
         await resolve_key(object_key, self._object_store)
         await resolve_key(system_key, self._system_store)
