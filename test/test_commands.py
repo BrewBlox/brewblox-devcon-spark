@@ -11,7 +11,7 @@ TESTED = commands.__name__
 @pytest.fixture
 def write_value_args():
     return dict(
-        id=[127, 7],
+        object_id=[127, 7],
         type=6,
         size=10,
         data=[0x0F]*10)
@@ -73,7 +73,7 @@ def test_variable_id_length(write_value_args):
 
     # assert symmetrical encoding / decoding
     decoded = command.request.parse(bin_cmd)
-    assert decoded.id == write_value_args['id']
+    assert decoded.object_id == write_value_args['object_id']
     assert decoded.data == write_value_args['data']
 
 

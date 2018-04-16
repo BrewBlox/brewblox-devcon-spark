@@ -41,20 +41,6 @@ async def test_init(conduit_mock, sparky, loop):
     assert str(sparky)
 
 
-async def test_write(conduit_mock, sparky):
-    await sparky.write('stuff')
-    conduit_mock.write.assert_called_once_with('stuff')
-
-
-async def test_do(conduit_mock, sparky):
-    await sparky._process_response(conduit_mock, '05 00 |00 00 00')
-
-    resp = await sparky.do('LIST_OBJECTS', dict(profile_id=0))
-
-    assert resp.objects is None
-    conduit_mock.write_encoded.assert_called_once_with(b'0500')
-
-
 async def test_process_response(conduit_mock, sparky):
     assert len(sparky._requests) == 0
 

@@ -18,11 +18,18 @@ from google.protobuf.internal import encoder as internal_encoder
 LOGGER = logging.getLogger(__name__)
 
 
-def encode(obj_type: int, values: dict) -> bytes:
+OBJ_TYPE_TYPE_ = Union[int, str]
+ENCODE_DATA_TYPE_ = dict
+DECODE_DATA_TYPE_ = Union[bytes, list]
+
+
+def encode(obj_type: OBJ_TYPE_TYPE_, values: ENCODE_DATA_TYPE_) -> bytes:
+    assert isinstance(values, dict), f'Unable to encode [{type(values).__name__}] values'
     return _transcoder(obj_type).encode(values)
 
 
-def decode(obj_type: int, encoded: Union[bytes, list]) -> dict:
+def decode(obj_type: OBJ_TYPE_TYPE_, encoded: DECODE_DATA_TYPE_) -> dict:
+    assert isinstance(encoded, (bytes, list)), f'Unable to decode [{type(encoded).__name__}] values'
     return _transcoder(obj_type).decode(encoded)
 
 

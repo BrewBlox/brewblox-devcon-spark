@@ -9,7 +9,6 @@ from concurrent.futures import CancelledError
 from datetime import datetime, timedelta
 
 from brewblox_devcon_spark import commands, communication, brewblox_logger
-from deprecated import deprecated
 
 LOGGER = brewblox_logger(__name__)
 
@@ -166,12 +165,3 @@ class SparkCommander():
                 raise decoded
 
             return decoded
-
-    @deprecated(reason='Debug function')
-    async def do(self, name: str, data: dict) -> dict:
-        command = self._index.identify(name).from_args(**data)
-        return await self.execute(command)
-
-    @deprecated(reason='Debug function')
-    async def write(self, data: str):
-        return await self._conduit.write(data)

@@ -2,15 +2,24 @@
 Offers a functional interface to the device functionality
 """
 
-from typing import List, Type
+from functools import partialmethod
+from typing import Callable, List, Type, Union
 
+import dpath
 from aiohttp import web
+
 from brewblox_codec_spark import codec
 from brewblox_devcon_spark import brewblox_logger, commands
 from brewblox_devcon_spark.commander import SparkCommander
-from deprecated import deprecated
+from brewblox_devcon_spark.datastore import (DataStore, FileDataStore,
+                                             MemoryDataStore)
 
 CONTROLLER_KEY = 'controller.spark'
+SERVICE_ID_KEY = 'service_id'
+CONTROLLER_ID_KEY = 'controller_id'
+
+OBJ_TYPE_TYPE_ = Union[int, str]
+OBJ_DATA_TYPE_ = Union[bytes, dict]
 
 LOGGER = LOGGER = brewblox_logger(__name__)
 
@@ -28,10 +37,16 @@ class ControllerException(Exception):
 
 
 class SparkController():
+
     def __init__(self, name: str, app=None):
+
         self._name = name
-        self._commander: SparkCommander = None
         self._active_profile = 0
+
+        self._commander: SparkCommander = None
+        self._object_store: FileDataStore = None
+        self._system_store: FileDataStore = None
+        self._object_cache: MemoryDataStore = None
 
         if app:
             self.setup(app)
@@ -40,166 +55,187 @@ class SparkController():
     def name(self):
         return self._name
 
+    @property
+    def active_profile(self):
+        return self._active_profile
+
+    @active_profile.setter
+    def active_profile(self, profile_id: int):
+        self._active_profile = profile_id
+
     def setup(self, app: Type[web.Application]):
         app.on_startup.append(self.start)
         app.on_cleanup.append(self.close)
 
     async def start(self, app: Type[web.Application]):
         await self.close()
+
+        self._object_cache = MemoryDataStore()
+        await self._object_cache.start(loop=app.loop)
+
+        self._object_store = FileDataStore(
+            filename=app['config']['database'],
+            read_only=False
+        )
+        await self._object_store.start(loop=app.loop)
+
+        self._system_store = FileDataStore(
+            filename=app['config']['system_database'],
+            read_only=True
+        )
+        await self._system_store.start(loop=app.loop)
+
         self._commander = SparkCommander(app.loop)
         await self._commander.bind(loop=app.loop)
 
     async def close(self, *args, **kwargs):
-        if self._commander:
-            await self._commander.close()
-            self._commander = None
+        [
+            await s.close() for s in [
+                self._commander,
+                self._object_store,
+                self._object_cache,
+                self._system_store
+            ]
+            if s is not None
+        ]
 
-    @deprecated(reason='Debug function')
-    async def write(self, command: str):
-        LOGGER.info(f'Writing {command}')
-        return await self._commander.write(command)
-
-    @deprecated(reason='Debug function')
-    async def do(self, command: str, data: dict):
-        LOGGER.info(f'Doing {command}{data}')
-        return await self._commander.do(command, data)
-
-    async def _process_retval(self, retval: dict) -> dict:
-        obj_list_key = commands.OBJECT_LIST_KEY
+    async def _data_processed(self, processor_func: Callable, content: dict) -> dict:
         data_key = commands.OBJECT_DATA_KEY
         type_key = commands.OBJECT_TYPE_KEY
 
-        def decode_data(parent):
-            if data_key in parent:
-                parent[data_key] = codec.decode(parent[type_key], parent[data_key])
-            return parent
+        # Looks for codec data, and converts it
+        # A type ID is always present in the same dict as the data
+        for path, data in dpath.util.search(content, f'**/{data_key}', yielded=True):
 
-        # Check for single data items
-        retval = decode_data(retval)
+            # find path to dict containing both type and data
+            parent = '/'.join(path.split('/')[:-1])
 
-        # Check for lists of data
-        if obj_list_key in retval:
-            retval[obj_list_key] = [decode_data(obj) for obj in retval[obj_list_key] or []]
+            # get the type from the dict that contained data
+            obj_type = dpath.util.get(content, f'{parent}/{type_key}')
 
-        return retval
+            # convert data, and replace in dict
+            dpath.util.set(content, f'{parent}/{data_key}', processor_func(obj_type, data))
 
-    async def _execute(self, command: commands.Command) -> dict:
+        return content
+
+    _data_encoded = partialmethod(_data_processed, codec.encode)
+    _data_decoded = partialmethod(_data_processed, codec.decode)
+
+    async def resolve_controller_id(self, store: DataStore, input_id: Union[str, List[int]]) -> List[int]:
+        """
+        Finds the controller ID matching service ID input.
+        If input is a list of ints, it assumes it already is a controller ID
+        """
+        if isinstance(input_id, list) and all([isinstance(i, int) for i in input_id]):
+            return input_id
+
+        objects = await store.find_by_key(SERVICE_ID_KEY, input_id)
+        assert objects, f'Service ID [{input_id}] not found in {store}'
+        assert len(objects) == 1, f'Multiple definition of Service ID [{input_id}] found: {objects}'
+        return objects[0][CONTROLLER_ID_KEY]
+
+    async def resolve_service_id(self, store: DataStore, input_id: Union[str, List[int]]) -> str:
+        """
+        Finds the service ID matching controller ID input.
+        If input is a string, it assumes it already is a service ID.
+        """
+        if isinstance(input_id, str):
+            return input_id
+
+        service_id = None
+
         try:
-            return await self._process_retval(await self._commander.execute(command))
+            # Get first item from data store with correct controller ID,
+            # and that has a service ID defined
+            objects = await store.find_by_key(CONTROLLER_ID_KEY, input_id)
+            service_id = next(o.get(SERVICE_ID_KEY) for o in objects)
+        except StopIteration:
+            # If service ID not found, create alias
+            service_id = '-'.join([str(i) for i in input_id])
+            try:
+                await store.insert_unique(
+                    SERVICE_ID_KEY,
+                    {
+                        SERVICE_ID_KEY: service_id,
+                        CONTROLLER_ID_KEY: input_id
+                    }
+                )
+            except AssertionError:
+                # We give up. Just use the raw controller ID.
+                service_id = input_id
+
+        return service_id
+
+    async def _id_resolved(self, resolver: Callable, content: dict) -> dict:
+        object_key = commands.OBJECT_ID_KEY
+        system_key = commands.SYSTEM_ID_KEY
+
+        async def resolve_key(key: str, store: DataStore):
+            for path, id in dpath.util.search(content, f'**/{key}', yielded=True):
+                dpath.util.set(content, path, await resolver(self, store, content[key]))
+
+        await resolve_key(object_key, self._object_store)
+        await resolve_key(system_key, self._system_store)
+
+        return content
+
+    _controller_id_resolved = partialmethod(_id_resolved, resolve_controller_id)
+    _service_id_resolved = partialmethod(_id_resolved, resolve_service_id)
+
+    async def _execute(self, command_type: type(commands.Command), **content) -> dict:
+        try:
+
+            # pre-processing
+            for afunc in [
+                self._controller_id_resolved,
+                self._data_encoded,
+            ]:
+                content = await afunc(content)
+
+            # execute
+            retval = await self._commander.execute(
+                command_type().from_decoded(content)
+            )
+
+            # post-processing
+            for afunc in [
+                self._service_id_resolved,
+                self._data_decoded,
+            ]:
+                retval = await afunc(retval)
+
+            return retval
+
         except Exception as ex:
-            message = f'Failed to execute {command}: {type(ex).__name__}: {ex}'
-            LOGGER.error(message)
+            message = f'Failed to execute {command_type()}: {type(ex).__name__}: {ex}'
+            LOGGER.error(message, exc_info=True)
             raise ControllerException(message)
 
-    async def create(self, obj_type: int, obj: dict) -> List[int]:
-        """
-        Creates a new object on the controller.
-        Raises exception if object already exists.
-        Returns ID of newly created object.
-        """
-        command = commands.CreateObjectCommand().from_args(
-            type=obj_type,
-            size=18,  # TODO(BOb): fix protocol
-            data=codec.encode(obj_type, obj)
+    read_value = partialmethod(_execute, commands.ReadValueCommand)
+    write_value = partialmethod(_execute, commands.WriteValueCommand)
+    create_object = partialmethod(_execute, commands.CreateObjectCommand)
+    delete_object = partialmethod(_execute, commands.DeleteObjectCommand)
+    list_objects = partialmethod(_execute, commands.ListObjectsCommand)
+    free_slot = partialmethod(_execute, commands.FreeSlotCommand)
+    create_profile = partialmethod(_execute, commands.CreateProfileCommand)
+    delete_profile = partialmethod(_execute, commands.DeleteProfileCommand)
+    activate_profile = partialmethod(_execute, commands.ActivateProfileCommand)
+    log_values = partialmethod(_execute, commands.LogValuesCommand)
+    reset = partialmethod(_execute, commands.ResetCommand)
+    free_slot_root = partialmethod(_execute, commands.FreeSlotRootCommand)
+    list_profiles = partialmethod(_execute, commands.ListProfilesCommand)
+    read_system_value = partialmethod(_execute, commands.ReadSystemValueCommand)
+    write_system_value = partialmethod(_execute, commands.WriteSystemValueCommand)
+
+    async def create_alias(self, **kwargs) -> dict:
+        return await self._object_store.insert_unique(
+            SERVICE_ID_KEY,
+            kwargs
         )
-        return await self._execute(command)
 
-    async def read(self, id: List[int], obj_type: int=0) -> dict:
-        """
-        Reads state for object on controller.
-        Raises exception if object does not exist.
-        Returns object state.
-        """
-        command = commands.ReadValueCommand().from_args(
-            id=id,
-            type=obj_type,
-            size=0
+    async def update_alias(self, existing_id: str, new_id: str) -> dict:
+        return await self._object_store.update_unique(
+            SERVICE_ID_KEY,
+            existing_id,
+            {SERVICE_ID_KEY: new_id}
         )
-        return await self._execute(command)
-
-    async def update(self, id: List[int], obj_type: int, obj: dict) -> dict:
-        """
-        Updates settings for existing object.
-        Raises exception if object does not exist.
-        Returns new state of object.
-        """
-        command = commands.WriteValueCommand().from_args(
-            id=id,
-            type=obj_type,
-            size=0,
-            data=codec.encode(obj_type, obj)
-        )
-        return await self._execute(command)
-
-    async def delete(self, id: List[int]):
-        """
-        Deletes object on the controller.
-        """
-        command = commands.DeleteObjectCommand().from_args(id=id)
-        return await self._execute(command)
-
-    async def all(self) -> dict:
-        """
-        Returns all known objects
-        """
-        command = commands.ListObjectsCommand().from_args(
-            profile_id=self._active_profile
-        )
-        return await self._execute(command)
-
-    async def system_read(self, id: List[int]) -> dict:
-        """
-        Reads state for system object on controller.
-        Raises exception if object does not exist.
-        Returns object state.
-        """
-        command = commands.ReadSystemValueCommand().from_args(
-            id=id,
-            type=0,
-            size=0
-        )
-        return await self._execute(command)
-
-    async def system_update(self, id: List[int], obj_type: int, obj: dict) -> dict:
-        """
-        Updates settings for existing object.
-        Raises exception if object does not exist.
-        Returns new state of object.
-        """
-        command = commands.WriteSystemValueCommand().from_args(
-            id=id,
-            type=obj_type,
-            size=0,
-            data=codec.encode(obj_type, obj)
-        )
-        return await self._execute(command)
-
-    async def profile_create(self) -> dict:
-        """
-        Creates new profile.
-        Returns id of newly created profile
-        """
-        command = commands.CreateProfileCommand().from_args()
-        return await self._execute(command)
-
-    async def profile_delete(self, profile_id: int) -> dict:
-        """
-        Deletes profile.
-        Raises exception if profile does not exist.
-        """
-        command = commands.DeleteProfileCommand().from_args(
-            profile_id=profile_id
-        )
-        return await self._execute(command)
-
-    async def profile_activate(self, profile_id: int) -> dict:
-        """
-        Activates profile.
-        Raises exception if profile does not exist.
-        """
-        command = commands.ActivateProfileCommand().from_args(
-            profile_id=profile_id
-        )
-        retval = await self._execute(command)
-        self._active_profile = profile_id
-        return retval
