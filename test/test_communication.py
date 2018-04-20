@@ -11,7 +11,7 @@ from asynctest import CoroutineMock
 
 from brewblox_devcon_spark import communication
 
-DummyPortInfo = namedtuple('DummyPortInfo', ['device', 'description', 'hwid'])
+DummyPortInfo = namedtuple('DummyPortInfo', ['device', 'description', 'hwid', 'serial_number'])
 
 TESTED = communication.__name__
 LOGGER = logging.getLogger(__name__)
@@ -118,11 +118,21 @@ async def bound_conduit(loop, serial_mock, transport_mock, bound_collector):
 
 
 @pytest.fixture
-def list_ports_mock(mocker):
+def comports_mock(mocker):
     m = mocker.patch(TESTED + '.list_ports.comports')
     m.return_value = [
-        DummyPortInfo('/dev/dummy', 'Dummy', 'USB VID:PID=1a02:b123'),
-        DummyPortInfo('/dev/ttyX', 'Electron', 'USB VID:PID=2d04:c00a'),
+        DummyPortInfo('/dev/dummy', 'Dummy', 'USB VID:PID=1a02:b123', '1234'),
+        DummyPortInfo('/dev/ttyX', 'Electron', 'USB VID:PID=2d04:c00a', '4321'),
+    ]
+    return m
+
+
+@pytest.fixture
+def grep_ports_mock(mocker):
+    m = mocker.patch(TESTED + '.list_ports.grep')
+    m.return_value = [
+        DummyPortInfo('/dev/ttyX', 'Electron', 'USB VID:PID=2d04:c00a', '1234'),
+        DummyPortInfo('/dev/ttyX', 'Electron', 'USB VID:PID=2d04:c00a', '4321'),
     ]
     return m
 
@@ -236,27 +246,22 @@ async def test_conduit_err_callback(loop, serial_mock, transport_mock, expected_
     assert error_cb.call_args_list == [call(conduit, e) for e in expected_events]
 
 
-async def test_all_ports(list_ports_mock):
+async def test_all_ports(comports_mock):
     assert communication.all_ports()[1][0] == '/dev/ttyX'
 
 
-async def test_has_recognized_device(list_ports_mock):
-    dummy = list_ports_mock()
-    assert not communication.has_recognized_device(dummy[0])
-    assert communication.has_recognized_device(dummy[1])
+async def test_recognized_ports(grep_ports_mock):
+    dummy = grep_ports_mock()
+    recognized = [r for r in communication.recognized_ports()]
+    assert recognized == dummy
 
 
-async def test_recognized_ports(list_ports_mock):
-    dummy = list_ports_mock()
-    recognized = [r for r in communication.recognized_ports(dummy)]
-    assert recognized == [dummy[1]]
-
-
-async def test_detect_device(list_ports_mock):
-    dummy = list_ports_mock()
+async def test_detect_device(grep_ports_mock):
+    dummy = grep_ports_mock()
     assert communication.detect_device('dave') == 'dave'
-    assert communication.detect_device() == dummy[1].device
+    assert communication.detect_device() == dummy[0].device
+    assert communication.detect_device(serial_number='4321') == dummy[1].device
 
-    list_ports_mock.return_value = [dummy[0]]
+    grep_ports_mock.return_value = [dummy[0]]
     with pytest.raises(ValueError):
-        communication.detect_device()
+        communication.detect_device(serial_number='4321')

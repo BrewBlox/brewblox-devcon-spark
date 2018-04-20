@@ -1,1 +1,10 @@
-{"_default":{"1":{"controller_id":[2],"alias":"onewirebus"}}}
+{
+    "_default": {
+        "1": {
+            "controller_id": [
+                2
+            ],
+            "service_id": "onewirebus"
+        }
+    }
+}

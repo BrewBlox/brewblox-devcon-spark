@@ -18,7 +18,7 @@ def test_main(loop, mocker):
 
     main.main()
 
-    assert create_parser_mock.return_value.add_argument.call_count == 2
+    assert create_parser_mock.return_value.add_argument.call_count == 4
     create_mock.assert_called_once_with(parser=create_parser_mock.return_value)
     furnish_mock.assert_called_once_with(app_mock)
     run_mock.assert_called_once_with(app_mock)

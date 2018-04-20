@@ -89,27 +89,27 @@ async def test_transcoding(app, client, commander_mock, store):
 
     retval = await controller.write_value(
         id='alias',
-        type=obj_type,
-        size=0,
-        data=obj
+        object_type=obj_type,
+        object_size=0,
+        object_data=obj
     )
-    assert retval['data'] == obj
+    assert retval['object_data'] == obj
 
     # Test correct processing of lists of objects
     commander_mock.execute = CoroutineMock(return_value=dict(
         objects=[
             # Call dict twice to avoid populating the list with references to the same dict
-            dict(type=obj_type, data=encoded),
-            dict(type=obj_type, data=encoded),
+            dict(object_type=obj_type, object_data=encoded),
+            dict(object_type=obj_type, object_data=encoded),
         ]
     ))
     retval = await controller.write_value(
-        id='alias',
-        type=obj_type,
-        size=0,
-        data=obj
+        object_id='alias',
+        object_type=obj_type,
+        object_size=0,
+        object_data=obj
     )
-    assert retval['objects'] == [dict(type=obj_type, data=obj)] * 2
+    assert retval['objects'] == [dict(object_type=obj_type, object_data=obj)] * 2
 
 
 async def test_resolve_id(app, client, commander_mock, store):
