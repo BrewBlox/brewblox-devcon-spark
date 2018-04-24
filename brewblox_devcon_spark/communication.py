@@ -34,10 +34,6 @@ KNOWN_DEVICES = {
         id='Particle P1',
         desc=r'.*P1.*',
         hwid=r'USB VID\:PID=2B04\:C008.*'),
-    DeviceMatch(
-        id='Particle Electron',
-        desc=r'.*Electron.*',
-        hwid=r'USB VID\:PID=2d04\:c00a.*'),
 }
 
 

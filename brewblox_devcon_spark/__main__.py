@@ -18,7 +18,7 @@ def create_parser(default_name='spark'):
                         default='brewblox_sys_db.json')
     parser.add_argument('--device-port',
                         help='Spark device port. Automatically determined if not set. [%(default)s]')
-    parser.add_argument('--device-number',
+    parser.add_argument('--device-id',
                         help='Spark serial number. Any spark is valid if not set. '
                         'This will be ignored if --device-port is specified. [%(default)s]')
     return parser

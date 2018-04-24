@@ -29,7 +29,7 @@ def app_config() -> dict:
         'database': 'test_db.json',
         'system_database': 'brewblox_sys_db.json',
         'device_port': '/dev/TESTEH',
-        'device_number': '1234'
+        'device_id': '1234'
     }
 
 
@@ -43,7 +43,7 @@ def sys_args(app_config) -> list:
         '--database', app_config['database'],
         '--system-database', app_config['system_database'],
         '--device-port', app_config['device_port'],
-        '--device-number', app_config['device_number'],
+        '--device-id', app_config['device_id'],
     ]
 
 

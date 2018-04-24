@@ -90,7 +90,7 @@ class SparkController():
         await self._commander.bind(
             loop=app.loop,
             device=config['device_port'],
-            serial_number=config['device_number']
+            serial_number=config['device_id']
         )
 
     async def close(self, *args, **kwargs):
