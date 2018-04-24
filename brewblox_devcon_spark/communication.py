@@ -6,7 +6,7 @@ import asyncio
 import re
 from collections import namedtuple
 from functools import partial
-from typing import Callable, Generator, Iterable, Tuple
+from typing import Callable, Generator, Iterable, Any
 
 import serial
 from brewblox_devcon_spark import brewblox_logger
@@ -16,10 +16,10 @@ from serial.tools import list_ports
 LOGGER = LOGGER = brewblox_logger(__name__)
 DEFAULT_BAUD_RATE = 57600
 
-PortType_ = Tuple[str, str, str]
+PortType_ = Any
 MessageCallback_ = Callable[['SparkConduit', str], None]
 
-DeviceMatch = namedtuple('DeviceMatcher', ['id', 'desc', 'hwid'])
+DeviceMatch = namedtuple('DeviceMatch', ['id', 'desc', 'hwid'])
 
 KNOWN_DEVICES = {
     DeviceMatch(
@@ -34,10 +34,6 @@ KNOWN_DEVICES = {
         id='Particle P1',
         desc=r'.*P1.*',
         hwid=r'USB VID\:PID=2B04\:C008.*'),
-    DeviceMatch(
-        id='Particle Electron',
-        desc=r'.*Electron.*',
-        hwid=r'USB VID\:PID=2d04\:c00a.*'),
 }
 
 
@@ -86,11 +82,11 @@ class SparkConduit():
     def is_bound(self):
         return self._serial and self._serial.is_open
 
-    def bind(self, device: str=None, loop: asyncio.BaseEventLoop=None):
+    def bind(self, device: str=None, serial_number: str=None, loop: asyncio.BaseEventLoop=None):
         self.close()
         self._loop = loop or asyncio.get_event_loop()
 
-        self._device = detect_device(device)
+        self._device = detect_device(device, serial_number)
         self._protocol = SparkProtocol(
             on_event=partial(self._do_callback, 'on_event'),
             on_data=partial(self._do_callback, 'on_data'))
@@ -217,28 +213,28 @@ def all_ports() -> Iterable[PortType_]:
     return tuple(list_ports.comports())
 
 
-def has_recognized_device(port: PortType_) -> bool:
-    for known_device in KNOWN_DEVICES:
-        if re.match(known_device.hwid, port.hwid):
-            return True
-    return False
+def recognized_ports(
+    allowed: Iterable[DeviceMatch]=KNOWN_DEVICES,
+    serial_number: str=None
+) -> Generator[PortType_, None, None]:
 
+    # Construct a regex OR'ing all allowed hardware ID matches
+    # Example result: (?:HWID_REGEX_ONE|HWID_REGEX_TWO)
+    matcher = f'(?:{"|".join([dev.hwid for dev in allowed])})'
 
-def recognized_ports(ports: Iterable[PortType_]=None) -> Generator[PortType_, None, None]:
-    ports = ports if ports is not None else all_ports()
-    for port in ports:
-        if has_recognized_device(port):
+    for port in list_ports.grep(matcher):
+        if serial_number is None or serial_number == port.serial_number:
             yield port
 
 
-def detect_device(device: str=None) -> str:
+def detect_device(device: str=None, serial_number: str=None) -> str:
     if device is None:
         try:
-            port = next(recognized_ports())
+            port = next(recognized_ports(serial_number=serial_number))
             device = port.device
-            LOGGER.info(f'Automatically detected {port}')
+            LOGGER.info(f'Automatically detected {[v for v in port]}')
         except StopIteration:
             raise ValueError(
-                f'Could not find recognized device. Known={[{d for d in p} for p in all_ports()]}')
+                f'Could not find recognized device. Known={[{v for v in p} for p in all_ports()]}')
 
     return device

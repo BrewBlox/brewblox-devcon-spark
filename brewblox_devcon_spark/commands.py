@@ -13,9 +13,9 @@ LOGGER = LOGGER = brewblox_logger(__name__)
 
 OBJECT_ID_KEY = 'object_id'
 SYSTEM_ID_KEY = 'system_object_id'
-OBJECT_TYPE_KEY = 'type'
-OBJECT_SIZE_KEY = 'size'
-OBJECT_DATA_KEY = 'data'
+OBJECT_TYPE_KEY = 'object_type'
+OBJECT_SIZE_KEY = 'object_size'
+OBJECT_DATA_KEY = 'object_data'
 OBJECT_LIST_KEY = 'objects'
 
 PROFILE_ID_KEY = 'profile_id'

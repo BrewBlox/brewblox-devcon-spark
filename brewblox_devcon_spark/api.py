@@ -36,14 +36,14 @@ class ObjectApi(Api):
     async def create(self, service_id: str, obj_type: int, data: dict) -> dict:
         object = {
             'service_id': service_id,
-            'type': obj_type,
-            'data': data
+            'object_type': obj_type,
+            'object_data': data
         }
 
         await self._ctrl.create_object(
-            type=obj_type,
-            size=18,  # TODO(Bob): fix protocol
-            data=data
+            object_type=obj_type,
+            object_size=18,  # TODO(Bob): fix protocol
+            object_data=data
         )
 
         # TODO(Bob): get controller id from create object
@@ -65,16 +65,16 @@ class ObjectApi(Api):
     async def read(self, service_id: str, obj_type: int=0) -> dict:
         return await self._ctrl.read_value(
             object_id=service_id,
-            type=obj_type,
-            size=0
+            object_type=obj_type,
+            object_size=0
         )
 
     async def update(self, service_id: str, obj_type: int, data: dict) -> dict:
         return await self._ctrl.write_value(
             object_id=service_id,
-            type=obj_type,
-            size=0,
-            data=data
+            object_type=obj_type,
+            object_size=0,
+            object_data=data
         )
 
     async def delete(self, service_id: str) -> dict:
@@ -93,16 +93,16 @@ class SystemApi(Api):
     async def read(self, service_id: str) -> dict:
         return await self._ctrl.read_system_value(
             system_object_id=service_id,
-            type=0,
-            size=0
+            object_type=0,
+            object_size=0
         )
 
     async def update(self, service_id: str, obj_type: int, data: dict) -> dict:
         return await self._ctrl.write_system_value(
             system_object_id=service_id,
-            type=obj_type,
-            size=0,
-            data=data
+            object_type=obj_type,
+            object_size=0,
+            object_data=data
         )
 
 

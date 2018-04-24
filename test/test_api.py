@@ -96,7 +96,7 @@ async def test_create(app, client, object_args):
     object_args['id'] = 'other_obj'
     res = await client.post('/objects', json=object_args)
     assert res.status == 200
-    assert (await res.json())['type'] == object_args['type']
+    assert (await res.json())['object_type'] == object_args['type']
 
 
 async def test_read(app, client):

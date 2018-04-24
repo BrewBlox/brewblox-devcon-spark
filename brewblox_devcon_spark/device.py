@@ -69,24 +69,29 @@ class SparkController():
 
     async def start(self, app: Type[web.Application]):
         await self.close()
+        config = app['config']
 
         self._object_cache = MemoryDataStore()
         await self._object_cache.start(loop=app.loop)
 
         self._object_store = FileDataStore(
-            filename=app['config']['database'],
+            filename=config['database'],
             read_only=False
         )
         await self._object_store.start(loop=app.loop)
 
         self._system_store = FileDataStore(
-            filename=app['config']['system_database'],
+            filename=config['system_database'],
             read_only=True
         )
         await self._system_store.start(loop=app.loop)
 
         self._commander = SparkCommander(app.loop)
-        await self._commander.bind(loop=app.loop)
+        await self._commander.bind(
+            loop=app.loop,
+            device=config['device_port'],
+            serial_number=config['device_id']
+        )
 
     async def close(self, *args, **kwargs):
         [
