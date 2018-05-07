@@ -14,7 +14,6 @@ LOGGER = LOGGER = brewblox_logger(__name__)
 OBJECT_ID_KEY = 'object_id'
 SYSTEM_ID_KEY = 'system_object_id'
 OBJECT_TYPE_KEY = 'object_type'
-OBJECT_SIZE_KEY = 'object_size'
 OBJECT_DATA_KEY = 'object_data'
 OBJECT_LIST_KEY = 'objects'
 
@@ -259,7 +258,6 @@ class Command(ABC):
 _OBJECT_ID = Struct(OBJECT_ID_KEY / VariableLengthIDAdapter())
 _SYSTEM_ID = Struct(SYSTEM_ID_KEY / VariableLengthIDAdapter())
 _OBJECT_TYPE = Struct(OBJECT_TYPE_KEY / Byte)
-_OBJECT_SIZE = Struct(OBJECT_SIZE_KEY / Byte)
 _OBJECT_DATA = Struct(OBJECT_DATA_KEY / GreedyBytes)
 
 _PROFILE_ID = Struct(PROFILE_ID_KEY / Int8sb)
@@ -267,20 +265,20 @@ _PROFILE_ID = Struct(PROFILE_ID_KEY / Int8sb)
 
 class ReadValueCommand(Command):
     _OPCODE = OpcodeEnum.READ_VALUE
-    _REQUEST = _OBJECT_ID + _OBJECT_TYPE + _OBJECT_SIZE
-    _RESPONSE = _OBJECT_TYPE + _OBJECT_SIZE + _OBJECT_DATA
+    _REQUEST = _OBJECT_ID + _OBJECT_TYPE
+    _RESPONSE = _OBJECT_ID + _OBJECT_TYPE + _OBJECT_DATA
 
 
 class WriteValueCommand(Command):
     _OPCODE = OpcodeEnum.WRITE_VALUE
-    _REQUEST = _OBJECT_ID + _OBJECT_TYPE + _OBJECT_SIZE + _OBJECT_DATA
-    _RESPONSE = _OBJECT_TYPE + _OBJECT_SIZE + _OBJECT_DATA
+    _REQUEST = _OBJECT_ID + _OBJECT_TYPE + _OBJECT_DATA
+    _RESPONSE = _OBJECT_ID + _OBJECT_TYPE + _OBJECT_DATA
 
 
 class CreateObjectCommand(Command):
     _OPCODE = OpcodeEnum.CREATE_OBJECT
-    _REQUEST = _OBJECT_TYPE + _OBJECT_SIZE + _OBJECT_DATA
-    _RESPONSE = None
+    _REQUEST = _OBJECT_TYPE + _OBJECT_DATA
+    _RESPONSE = _OBJECT_ID
 
 
 class DeleteObjectCommand(Command):
@@ -293,9 +291,7 @@ class ListObjectsCommand(Command):
     _OPCODE = OpcodeEnum.LIST_OBJECTS
     _REQUEST = _PROFILE_ID
     _RESPONSE = Struct(
-        Padding(1),  # FIXME Protocol error?
-        OBJECT_LIST_KEY / Optional(Sequence(_OBJECT_ID + _OBJECT_TYPE + _OBJECT_SIZE + _OBJECT_DATA)),
-        Padding(1),
+        OBJECT_LIST_KEY / Optional(Sequence(_OBJECT_ID + _OBJECT_TYPE + _OBJECT_DATA)),
         Terminated
     )
 
@@ -335,8 +331,7 @@ class LogValuesCommand(Command):
     ) + Optional(_OBJECT_ID)
 
     _RESPONSE = Struct(
-        OBJECT_LIST_KEY / Optional(Sequence(Padding(1) + _OBJECT_ID + _OBJECT_TYPE + _OBJECT_SIZE + _OBJECT_DATA)),
-        Padding(1),
+        OBJECT_LIST_KEY / Optional(Sequence(Padding(1) + _OBJECT_ID + _OBJECT_TYPE + _OBJECT_DATA)),
         Terminated
     )
 
@@ -368,11 +363,11 @@ class ListProfilesCommand(Command):
 
 class ReadSystemValueCommand(Command):
     _OPCODE = OpcodeEnum.READ_SYSTEM_VALUE
-    _REQUEST = _SYSTEM_ID + _OBJECT_TYPE + _OBJECT_SIZE
-    _RESPONSE = _OBJECT_TYPE + _OBJECT_SIZE + _OBJECT_DATA
+    _REQUEST = _SYSTEM_ID + _OBJECT_TYPE
+    _RESPONSE = _SYSTEM_ID + _OBJECT_TYPE + _OBJECT_DATA
 
 
 class WriteSystemValueCommand(Command):
     _OPCODE = OpcodeEnum.WRITE_SYSTEM_VALUE
-    _REQUEST = _SYSTEM_ID + _OBJECT_TYPE + _OBJECT_SIZE + _OBJECT_DATA
-    _RESPONSE = _OBJECT_TYPE + _OBJECT_SIZE + _OBJECT_DATA
+    _REQUEST = _SYSTEM_ID + _OBJECT_TYPE + _OBJECT_DATA
+    _RESPONSE = _SYSTEM_ID + _OBJECT_TYPE + _OBJECT_DATA

@@ -13,7 +13,6 @@ def write_value_args():
     return dict(
         object_id=[127, 7],
         object_type=6,
-        object_size=10,
         object_data=bytes([0x0F]*10))
 
 
@@ -28,8 +27,8 @@ def write_value_req(write_value_args):
 def write_value_resp(write_value_args):
     return dict(
         errcode=commands.ErrorcodeEnum.OK,
+        object_id=write_value_args['object_id'],
         object_type=write_value_args['object_type'],
-        object_size=write_value_args['object_size'],
         object_data=write_value_args['object_data']
     )
 
