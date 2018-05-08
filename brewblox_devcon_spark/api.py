@@ -2,20 +2,15 @@
 Defines the REST API for the device
 """
 
-from typing import Type, List
+from typing import List, Type
 
 from aiohttp import web
+
 from brewblox_devcon_spark import brewblox_logger, device
-from brewblox_devcon_spark.device import (
-    OBJECT_ID_KEY,
-    SYSTEM_ID_KEY,
-    PROFILE_ID_KEY,
-    SERVICE_ID_KEY,
-    CONTROLLER_ID_KEY,
-    OBJECT_TYPE_KEY,
-    OBJECT_DATA_KEY,
-    OBJECT_LIST_KEY
-)
+from brewblox_devcon_spark.device import (CONTROLLER_ID_KEY, OBJECT_DATA_KEY,
+                                          OBJECT_ID_KEY, OBJECT_LIST_KEY,
+                                          OBJECT_TYPE_KEY, PROFILE_ID_KEY,
+                                          SERVICE_ID_KEY, SYSTEM_ID_KEY)
 
 API_ID_KEY = 'id'
 API_TYPE_KEY = 'type'
@@ -206,6 +201,10 @@ class ProfileApi(Api):
         return {
             API_ID_KEY: profile_id
         }
+
+    async def all(self) -> dict:
+        response = await self._ctrl.list_profiles()
+        return response
 
 
 class AliasApi(Api):
@@ -550,6 +549,23 @@ async def profile_activate(request: web.Request) -> web.Response:
         await ProfileApi(request.app).activate(
             int(request.match_info[API_ID_KEY])
         )
+    )
+
+
+@routes.get('/profiles')
+async def profiles_all(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: List all profiles
+    tags:
+    - Spark
+    - Objects
+    operationId: controller.spark.profiles.all
+    produces:
+    - application/json
+    """
+    return web.json_response(
+        await ProfileApi(request.app).all()
     )
 
 

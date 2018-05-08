@@ -7,23 +7,16 @@ from typing import Callable, List, Type, Union
 
 import dpath
 from aiohttp import web
-
 from brewblox_codec_spark import codec
+
 from brewblox_devcon_spark import brewblox_logger, commands
 from brewblox_devcon_spark.commander import SparkCommander
+from brewblox_devcon_spark.commands import (FLAGS_KEY, OBJECT_DATA_KEY,  # noqa
+                                            OBJECT_ID_KEY, OBJECT_LIST_KEY,
+                                            OBJECT_TYPE_KEY, PROFILE_ID_KEY,
+                                            PROFILE_LIST_KEY, SYSTEM_ID_KEY)
 from brewblox_devcon_spark.datastore import (DataStore, FileDataStore,
                                              MemoryDataStore)
-
-from brewblox_devcon_spark.commands import (  # noqa
-    OBJECT_ID_KEY,
-    SYSTEM_ID_KEY,
-    OBJECT_TYPE_KEY,
-    OBJECT_DATA_KEY,
-    OBJECT_LIST_KEY,
-    PROFILE_ID_KEY,
-    PROFILE_LIST_KEY,
-    FLAGS_KEY
-)
 
 CONTROLLER_KEY = 'controller.spark'
 
@@ -183,7 +176,7 @@ class SparkController():
     async def _id_resolved(self, resolver: Callable, content: dict) -> dict:
         async def resolve_key(key: str, store: DataStore):
             for path, id in dpath.util.search(content, f'**/{key}', yielded=True):
-                dpath.util.set(content, path, await resolver(self, store, content[key]))
+                dpath.util.set(content, path, await resolver(self, store, id))
 
         await resolve_key(OBJECT_ID_KEY, self._object_store)
         await resolve_key(SYSTEM_ID_KEY, self._system_store)
@@ -242,10 +235,10 @@ class SparkController():
     read_system_value = partialmethod(_execute, commands.ReadSystemValueCommand)
     write_system_value = partialmethod(_execute, commands.WriteSystemValueCommand)
 
-    async def create_alias(self, **kwargs) -> dict:
+    async def create_alias(self, obj: dict) -> dict:
         return await self._object_store.insert_unique(
             SERVICE_ID_KEY,
-            kwargs
+            obj
         )
 
     async def update_alias(self, existing_id: str, new_id: str) -> dict:
@@ -255,11 +248,12 @@ class SparkController():
             {SERVICE_ID_KEY: new_id}
         )
 
-    async def update_store_object(self, service_id: str, obj) -> dict:
+    async def update_store_object(self, service_id: str, obj: dict) -> dict:
         return await self._object_store.update_unique(
-            SERVICE_ID_KEY,
-            service_id,
-            obj
+            id_key=SERVICE_ID_KEY,
+            id_val=service_id,
+            obj=obj,
+            unique_key=SERVICE_ID_KEY
         )
 
     async def delete_store_object(self, service_id: str):

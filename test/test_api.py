@@ -3,8 +3,8 @@ Tests brewblox_devcon_spark.api
 """
 
 import pytest
-from asynctest import CoroutineMock
-from brewblox_devcon_spark import api, commander, datastore, device
+
+from brewblox_devcon_spark import api, commander_sim, datastore, device
 
 TESTED = api.__name__
 
@@ -28,19 +28,6 @@ def object_args():
 
 
 @pytest.fixture
-def commander_mock(mocker, loop):
-    cmder = commander.SparkCommander(loop=loop)
-
-    def reply(command):
-        pass
-        # command type
-        # return from table
-
-    cmder.execute = CoroutineMock(side_effect=reply)
-    return cmder
-
-
-@pytest.fixture
 def object_store():
     return datastore.MemoryDataStore()
 
@@ -56,9 +43,9 @@ def object_cache():
 
 
 @pytest.fixture
-def controller_mock(mocker, commander_mock, object_store, system_store, object_cache):
+def controller_mock(mocker, object_store, system_store, object_cache):
     controller = device.SparkController('sparky')
-    controller._commander = commander_mock
+
     controller._object_store = object_store
     controller._system_store = system_store
     controller._object_cache = object_cache
@@ -72,6 +59,9 @@ async def app(app, controller_mock, object_store, system_store, loop):
     """App + controller routes"""
     api.setup(app)
 
+    controller_mock._commander = commander_sim.SimulationCommander(loop)
+    await controller_mock._commander.bind()
+
     await object_store.start(loop=loop)
     await object_store.insert(dict(service_id='testobj', controller_id=[1, 2, 3]))
 
@@ -81,18 +71,19 @@ async def app(app, controller_mock, object_store, system_store, loop):
     return app
 
 
-async def test_do(app, client, commander_mock, object_args):
-    commander_mock.execute.return_value = {}
-
+async def test_do(app, client, object_args):
     command = dict(command='create_object', data=object_args)
 
     res = await client.post('/_debug/do', json=command)
     assert res.status == 200
 
 
-async def test_create(app, client, object_args, commander_mock):
+async def test_create(app, client, object_args):
     res = await client.post('/objects', json=object_args)
-    assert res.status == 500  # testobj already exists
+
+    # Allowed to create a new object, but we don't get provided ID
+    assert res.status == 200
+    assert (await res.json())['id'] != object_args['id']
 
     object_args['id'] = 'other_obj'
     res = await client.post('/objects', json=object_args)
@@ -104,7 +95,7 @@ async def test_read(app, client):
     assert res.status == 200
 
     retval = await res.json()
-    assert retval['type'] == 'testobj'
+    assert retval['id'] == 'testobj'
 
 
 async def test_update(app, client, object_args):
@@ -160,14 +151,11 @@ async def test_profile_activate(app, client):
     assert res.status == 200
 
 
-async def test_command_exception(app, client, commander_mock):
-    commander_mock.execute.side_effect = RuntimeError('test error')
-
-    res = await client.post('/profiles')
-    assert res.status == 500
-
+async def test_profile_all(app, client):
+    res = await client.get('/profiles')
+    assert res.status == 200
     retval = await res.json()
-    assert 'test error' in retval['error']
+    assert retval['profiles']
 
 
 async def test_with_controller_id(app, client, object_args):
@@ -179,7 +167,7 @@ async def test_with_controller_id(app, client, object_args):
 
     # ID is parsed, but unknown, so a new ID is generated
     retval = await res.json()
-    assert retval['id'] == '7-8-9'
+    assert retval['object_id'] == '7-8-9'
 
     # We should be able to read it
     res = await client.get('/objects/7-8-9')
@@ -202,7 +190,7 @@ async def test_alias_update(app, client):
     res = await client.get('/objects/newname')
     assert res.status == 500
 
-    res = await client.put('/aliases/testobj', json=dict(new_id='newname'))
+    res = await client.put('/aliases/testobj', json={'id': 'newname'})
     assert res.status == 200
 
     res = await client.get('/objects/newname')
