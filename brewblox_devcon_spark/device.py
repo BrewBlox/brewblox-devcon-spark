@@ -193,7 +193,11 @@ class SparkController():
     _controller_id_resolved = partialmethod(_id_resolved, resolve_controller_id)
     _service_id_resolved = partialmethod(_id_resolved, resolve_service_id)
 
-    async def _execute(self, command_type: type(commands.Command), **content) -> dict:
+    async def _execute(self, command_type: type(commands.Command), _content: dict = None, **kwargs) -> dict:
+        # Allow a combination of a dict containing arguments, and loose kwargs
+        content = _content or dict()
+        content.update(kwargs)
+
         try:
 
             # pre-processing
@@ -251,9 +255,15 @@ class SparkController():
             {SERVICE_ID_KEY: new_id}
         )
 
-    async def update_object(self, service_id: str, obj) -> dict:
+    async def update_store_object(self, service_id: str, obj) -> dict:
         return await self._object_store.update_unique(
             SERVICE_ID_KEY,
             service_id,
             obj
+        )
+
+    async def delete_store_object(self, service_id: str):
+        return await self._object_store.delete(
+            SERVICE_ID_KEY,
+            service_id
         )

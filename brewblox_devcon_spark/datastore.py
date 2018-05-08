@@ -127,6 +127,14 @@ class DataStore(ABC):
 
         return await self._do_with_db(func)
 
+    async def delete(self, id_key: str, id_val: Any):
+        """
+        Deletes all documents in data store where document[id_key] == id_val.
+        """
+        return await self._do_with_db(
+            lambda db: db.remove(Query()[id_key] == id_val)
+        )
+
 
 class MemoryDataStore(DataStore):
 

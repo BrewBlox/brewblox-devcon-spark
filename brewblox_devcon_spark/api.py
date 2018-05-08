@@ -48,39 +48,51 @@ class Api():
 
 class ObjectApi(Api):
 
-    async def create(self, service_id: str, obj_type: int, data: dict) -> dict:
-        response = await self._ctrl.create_object(**{
-            OBJECT_TYPE_KEY: obj_type,
-            OBJECT_DATA_KEY: data
+    async def create(self, input_id: str, input_type: int, input_data: dict) -> dict:
+        """
+        Creates a new object on the controller.
+
+        Updates the data store with the newly created object.
+        Returns read() output after creation.
+        """
+        response = await self._ctrl.create_object({
+            OBJECT_TYPE_KEY: input_type,
+            OBJECT_DATA_KEY: input_data
         })
 
         created_id = response[OBJECT_ID_KEY]
 
         try:
+
             # Update service ID with user-determined service ID
             # Add object type to data store
-            await self._ctrl.update_object(
+            await self._ctrl.update_store_object(
                 created_id,
                 {
-                    SERVICE_ID_KEY: service_id,
-                    OBJECT_TYPE_KEY: obj_type
+                    SERVICE_ID_KEY: input_id,
+                    OBJECT_TYPE_KEY: input_type
                 }
             )
-            created_id = service_id
+
+            # Data store was updated
+            # We can now say a new object was created with user-determined ID
+            created_id = input_id
+
         except Exception as ex:
             # Failed to update, we'll stick with auto-assigned ID
             LOGGER.warn(f'Failed to update datastore after create: {ex}')
 
-        return {
-            API_ID_KEY: created_id,
-            API_TYPE_KEY: obj_type,
-            API_DATA_KEY: data
-        }
+        return await self.read(created_id)
 
-    async def read(self, service_id: str, obj_type: int=0) -> dict:
-        response = await self._ctrl.read_value(**{
-            OBJECT_ID_KEY: service_id,
-            OBJECT_TYPE_KEY: obj_type
+    async def read(self, input_id: str, input_type: int=0) -> dict:
+        """
+        Reads object on the controller.
+
+        TODO(Bob): Use the object cache
+        """
+        response = await self._ctrl.read_value({
+            OBJECT_ID_KEY: input_id,
+            OBJECT_TYPE_KEY: input_type
         })
 
         return {
@@ -89,11 +101,14 @@ class ObjectApi(Api):
             API_DATA_KEY: response[OBJECT_DATA_KEY]
         }
 
-    async def update(self, service_id: str, obj_type: int, data: dict) -> dict:
-        response = await self._ctrl.write_value(**{
-            OBJECT_ID_KEY: service_id,
-            OBJECT_TYPE_KEY: obj_type,
-            OBJECT_DATA_KEY: data
+    async def update(self, input_id: str, input_type: int, input_data: dict) -> dict:
+        """
+        Writes new values to existing object on controller
+        """
+        response = await self._ctrl.write_value({
+            OBJECT_ID_KEY: input_id,
+            OBJECT_TYPE_KEY: input_type,
+            OBJECT_DATA_KEY: input_data
         })
 
         return {
@@ -102,17 +117,25 @@ class ObjectApi(Api):
             API_DATA_KEY: response[OBJECT_DATA_KEY]
         }
 
-    async def delete(self, service_id: str) -> dict:
-        await self._ctrl.delete_object(**{
-            OBJECT_ID_KEY: service_id
+    async def delete(self, input_id: str) -> dict:
+        """
+        Deletes object from controller and data store
+        """
+
+        await self._ctrl.delete_object({
+            OBJECT_ID_KEY: input_id
         })
 
+        await self._ctrl.delete_store_object(
+            input_id
+        )
+
         return {
-            API_ID_KEY: service_id
+            API_ID_KEY: input_id
         }
 
     async def all(self) -> dict:
-        response = await self._ctrl.list_objects(**{
+        response = await self._ctrl.list_objects({
             PROFILE_ID_KEY: self._ctrl.active_profile
         })
 
@@ -130,10 +153,10 @@ class ObjectApi(Api):
 
 class SystemApi(Api):
 
-    async def read(self, service_id: str) -> dict:
-        response = await self._ctrl.read_system_value(**{
-            SYSTEM_ID_KEY: service_id,
-            OBJECT_TYPE_KEY: 0
+    async def read(self, input_id: str, input_type: int=0) -> dict:
+        response = await self._ctrl.read_system_value({
+            SYSTEM_ID_KEY: input_id,
+            OBJECT_TYPE_KEY: input_type
         })
 
         return {
@@ -142,11 +165,11 @@ class SystemApi(Api):
             API_DATA_KEY: response[OBJECT_DATA_KEY]
         }
 
-    async def update(self, service_id: str, obj_type: int, data: dict) -> dict:
-        response = await self._ctrl.write_system_value(**{
-            SYSTEM_ID_KEY: service_id,
-            OBJECT_TYPE_KEY: obj_type,
-            OBJECT_DATA_KEY: data
+    async def update(self, input_id: str, input_type: int, input_data: dict) -> dict:
+        response = await self._ctrl.write_system_value({
+            SYSTEM_ID_KEY: input_id,
+            OBJECT_TYPE_KEY: input_type,
+            OBJECT_DATA_KEY: input_data
         })
 
         return {
@@ -166,7 +189,7 @@ class ProfileApi(Api):
         }
 
     async def delete(self, profile_id: int) -> dict:
-        await self._ctrl.delete_profile(**{
+        await self._ctrl.delete_profile({
             PROFILE_ID_KEY: profile_id
         })
 
@@ -175,7 +198,7 @@ class ProfileApi(Api):
         }
 
     async def activate(self, profile_id: int) -> dict:
-        await self._ctrl.activate_profile(**{
+        await self._ctrl.activate_profile({
             PROFILE_ID_KEY: profile_id
         })
         self._ctrl.active_profile = profile_id
@@ -188,7 +211,7 @@ class ProfileApi(Api):
 class AliasApi(Api):
 
     async def create(self, service_id: str, controller_id: List[int]) -> dict:
-        return await self._ctrl.create_alias(**{
+        return await self._ctrl.create_alias({
             SERVICE_ID_KEY: service_id,
             CONTROLLER_ID_KEY: controller_id
         })

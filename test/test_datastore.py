@@ -128,6 +128,21 @@ async def test_update_unique(stores, obj):
             await store.update_unique('service_id', 2, obj, 'service_id')
 
 
+async def test_delete(stores, obj):
+    for store in stores:
+        await store.insert_multiple([obj]*10)
+        await store.delete('service_id', obj['service_id'])
+
+        await store.insert_unique('service_id', obj)
+        await store.insert_unique('service_id', {'service_id': 'waffles'})
+
+        await store.delete('service_id', 'steve')
+        await store.delete('service_id', 'waffles')
+
+        assert await store.find_by_key('service_id', obj['service_id'])
+        assert not await store.find_by_key('service_id', 'steve')
+
+
 async def test_spam(stores, obj):
     """
     Tests coherence of database write actions when running many non-sequential async tasks
