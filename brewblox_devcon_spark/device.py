@@ -11,6 +11,7 @@ from brewblox_codec_spark import codec
 
 from brewblox_devcon_spark import brewblox_logger, commands
 from brewblox_devcon_spark.commander import SparkCommander
+from brewblox_devcon_spark.commander_sim import SimulationCommander
 from brewblox_devcon_spark.commands import (FLAGS_KEY, OBJECT_DATA_KEY,  # noqa
                                             OBJECT_ID_KEY, OBJECT_LIST_KEY,
                                             OBJECT_TYPE_KEY, PROFILE_ID_KEY,
@@ -91,7 +92,11 @@ class SparkController():
         )
         await self._system_store.start(loop=app.loop)
 
-        self._commander = SparkCommander(app.loop)
+        if config['simulation']:
+            self._commander = SimulationCommander(app.loop)
+        else:
+            self._commander = SparkCommander(app.loop)
+
         await self._commander.bind(
             loop=app.loop,
             device=config['device_port'],

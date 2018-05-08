@@ -18,11 +18,6 @@ _SIMULATION_OBJECT = {
 }
 
 
-_SIMULATION_OBJECT_LIST = {
-    OBJECT_LIST_KEY: [_SIMULATION_OBJECT.copy() for i in range(5)]
-}
-
-
 _id_counter = count()
 
 
@@ -45,15 +40,18 @@ def create_object(request):
 
 
 def list_objects(request):
-    return _SIMULATION_OBJECT_LIST.copy()
+    return {
+        OBJECT_LIST_KEY: [
+            {**_SIMULATION_OBJECT.copy(), OBJECT_ID_KEY: [1, 2, i]}
+            for i in range(5)]
+    }
 
 
 def create_profile(request):
     return {PROFILE_ID_KEY: next(_id_counter)}
 
 
-def log_values(request):
-    return _SIMULATION_OBJECT_LIST.copy()
+log_values = list_objects
 
 
 def list_profiles(request):

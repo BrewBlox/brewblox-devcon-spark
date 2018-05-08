@@ -134,16 +134,13 @@ class ObjectApi(Api):
             PROFILE_ID_KEY: self._ctrl.active_profile
         })
 
-        return {
-            API_ID_KEY: self._ctrl.active_profile,
-            API_LIST_KEY: [
-                {
-                    API_ID_KEY: obj[OBJECT_ID_KEY],
-                    API_TYPE_KEY: obj[OBJECT_TYPE_KEY],
-                    API_DATA_KEY: obj[OBJECT_DATA_KEY]
-                } for obj in response.get(OBJECT_LIST_KEY, [])
-            ]
-        }
+        return [
+            {
+                API_ID_KEY: obj[OBJECT_ID_KEY],
+                API_TYPE_KEY: obj[OBJECT_TYPE_KEY],
+                API_DATA_KEY: obj[OBJECT_DATA_KEY]
+            } for obj in response.get(OBJECT_LIST_KEY, [])
+        ]
 
 
 class SystemApi(Api):
@@ -243,7 +240,7 @@ async def do_command(request: web.Request) -> web.Response:
                     example: list_objects
                 data:
                     type: object
-                    example: {{"profile_id":0}}
+                    example: {"profile_id":0}
     """
     request_args = await request.json()
 
