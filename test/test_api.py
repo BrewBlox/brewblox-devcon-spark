@@ -31,13 +31,12 @@ def object_args():
 def commander_mock(mocker, loop):
     cmder = commander.SparkCommander(loop=loop)
 
-    def echo(command):
-        retval = command.decoded_request
-        retval['command'] = command.name
-        return retval
+    def reply(command):
+        pass
+        # command type
+        # return from table
 
-    cmder.execute = CoroutineMock()
-    cmder.execute.side_effect = echo
+    cmder.execute = CoroutineMock(side_effect=reply)
     return cmder
 
 
@@ -83,20 +82,21 @@ async def app(app, controller_mock, object_store, system_store, loop):
 
 
 async def test_do(app, client, commander_mock, object_args):
+    commander_mock.execute.return_value = {}
+
     command = dict(command='create_object', data=object_args)
 
     res = await client.post('/_debug/do', json=command)
     assert res.status == 200
 
 
-async def test_create(app, client, object_args):
+async def test_create(app, client, object_args, commander_mock):
     res = await client.post('/objects', json=object_args)
     assert res.status == 500  # testobj already exists
 
     object_args['id'] = 'other_obj'
     res = await client.post('/objects', json=object_args)
     assert res.status == 200
-    assert (await res.json())['object_type'] == object_args['type']
 
 
 async def test_read(app, client):
@@ -104,15 +104,14 @@ async def test_read(app, client):
     assert res.status == 200
 
     retval = await res.json()
-    assert retval['command'] == 'READ_VALUE'
-    assert retval['object_id'] == 'testobj'
+    assert retval['type'] == 'testobj'
 
 
 async def test_update(app, client, object_args):
     res = await client.put('/objects/testobj', json=object_args)
     assert res.status == 200
     retval = await res.json()
-    assert retval['command'] == 'WRITE_VALUE'
+    assert retval
 
 
 async def test_delete(app, client):
@@ -120,15 +119,14 @@ async def test_delete(app, client):
     res = await client.delete('/objects/testobj')
     assert res.status == 200
     retval = await res.json()
-    assert retval['command'] == 'DELETE_OBJECT'
-    assert retval['object_id'] == 'testobj'
+    assert retval['id'] == 'testobj'
 
 
 async def test_all(app, client):
     res = await client.get('/objects')
     assert res.status == 200
     retval = await res.json()
-    assert retval['command'] == 'LIST_OBJECTS'
+    assert retval
 
 
 async def test_system_read(app, client):
@@ -136,23 +134,17 @@ async def test_system_read(app, client):
     assert res.status == 200
 
     retval = await res.json()
-    assert retval['command'] == 'READ_SYSTEM_VALUE'
-    assert retval['system_object_id'] == 'sysobj'
+    assert retval['id'] == 'sysobj'
 
 
 async def test_system_update(app, client, object_args):
     res = await client.put('/system/sysobj', json=object_args)
     assert res.status == 200
-    retval = await res.json()
-    assert retval['command'] == 'WRITE_SYSTEM_VALUE'
 
 
 async def test_profile_create(app, client):
     res = await client.post('/profiles')
     assert res.status == 200
-
-    retval = await res.json()
-    assert retval['command'] == 'CREATE_PROFILE'
 
 
 async def test_profile_delete(app, client):
@@ -160,15 +152,12 @@ async def test_profile_delete(app, client):
     assert res.status == 200
 
     retval = await res.json()
-    assert retval['command'] == 'DELETE_PROFILE'
+    assert retval
 
 
 async def test_profile_activate(app, client):
     res = await client.post('/profiles/1')
     assert res.status == 200
-
-    retval = await res.json()
-    assert retval['command'] == 'ACTIVATE_PROFILE'
 
 
 async def test_command_exception(app, client, commander_mock):
@@ -190,7 +179,7 @@ async def test_with_controller_id(app, client, object_args):
 
     # ID is parsed, but unknown, so a new ID is generated
     retval = await res.json()
-    assert retval['object_id'] == '7-8-9'
+    assert retval['id'] == '7-8-9'
 
     # We should be able to read it
     res = await client.get('/objects/7-8-9')
