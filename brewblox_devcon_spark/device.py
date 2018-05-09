@@ -19,8 +19,6 @@ from brewblox_devcon_spark.commands import (FLAGS_KEY, OBJECT_DATA_KEY,  # noqa
 from brewblox_devcon_spark.datastore import (DataStore, FileDataStore,
                                              MemoryDataStore)
 
-CONTROLLER_KEY = 'controller.spark'
-
 SERVICE_ID_KEY = 'service_id'
 CONTROLLER_ID_KEY = 'controller_id'
 
@@ -31,11 +29,11 @@ LOGGER = LOGGER = brewblox_logger(__name__)
 
 
 def get_controller(app) -> 'SparkController':
-    return app[CONTROLLER_KEY]
+    return app[SparkController.__name__]
 
 
 def setup(app: Type[web.Application]):
-    app[CONTROLLER_KEY] = SparkController(name=app['config']['name'], app=app)
+    app[SparkController.__name__] = SparkController(name=app['config']['name'], app=app)
 
 
 class ControllerException(Exception):

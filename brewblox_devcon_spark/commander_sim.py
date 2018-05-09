@@ -3,7 +3,7 @@ Monkey patches commander.SparkCommander to not require an actual connection.
 """
 
 from brewblox_devcon_spark import commander, commands
-from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,  # noqa
+from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                             PROFILE_ID_KEY, PROFILE_LIST_KEY,
                                             SYSTEM_ID_KEY)
