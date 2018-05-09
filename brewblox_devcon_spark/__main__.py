@@ -23,7 +23,7 @@ def create_parser(default_name='spark'):
                         help='Spark serial number. Any spark is valid if not set. '
                         'This will be ignored if --device-port is specified. [%(default)s]')
     parser.add_argument('--simulation',
-                        help='Start in simulator mode. Will not connect to an actual device. [%(default)s]',
+                        help='Start in simulator mode. Will not connect to a physical device. [%(default)s]',
                         action='store_true')
     return parser
 
