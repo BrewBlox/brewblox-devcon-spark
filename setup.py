@@ -23,6 +23,7 @@ setup(
         'construct==2.9.39',
         'deprecated==1.2.0',
         'protobuf==3.5.1',
+        'tinydb==3.8.1.post1',
         'aiotinydb==1.1.0',
     ],
     python_requires='>=3.6',

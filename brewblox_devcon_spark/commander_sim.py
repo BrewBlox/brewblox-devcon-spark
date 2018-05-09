@@ -2,94 +2,119 @@
 Monkey patches commander.SparkCommander to not require an actual connection.
 """
 
-from itertools import count
-
 from brewblox_devcon_spark import commander, commands
-from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
+from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,  # noqa
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                             PROFILE_ID_KEY, PROFILE_LIST_KEY,
                                             SYSTEM_ID_KEY)
+from functools import partialmethod
 
 
-_SIMULATION_OBJECT = {
-    OBJECT_ID_KEY: [1, 2, 3],
-    OBJECT_TYPE_KEY: 6,
-    OBJECT_DATA_KEY: b'\x0f\n\x05\n\x01\xff\x10(\x12\x06\x08\xf2\xc0\x01\x10\x01'
-}
+class SimulationResponder():
 
+    def __init__(self):
+        self._generators = {
+            commands.ReadValueCommand: self._read_value,
+            commands.WriteValueCommand: self._write_value,
+            commands.CreateObjectCommand: self._create_object,
+            commands.ListObjectsCommand: self._list_objects,
+            commands.CreateProfileCommand: self._create_profile,
+            commands.ActivateProfileCommand: self._activate_profile,
+            commands.LogValuesCommand: self._log_values,
+            commands.ListProfilesCommand: self._list_profiles,
+            commands.ReadSystemValueCommand: self._read_system_value,
+            commands.WriteSystemValueCommand: self._write_system_value
+        }
 
-_id_counter = count()
+        self._current_id = [0, 0]
+        self._num_profiles = 0
+        self._active_profile = 0
 
+        self._system_objects = {
+            "2": {
+                SYSTEM_ID_KEY: [2],
+                OBJECT_TYPE_KEY: 10,
+                OBJECT_DATA_KEY: b'\x08\n\x00\x12\x01\xaa\x12\x01\xbb'
+            }
+        }
 
-def empty_response(request):
-    return dict()
+        self._objects = {}
 
+    def respond(self, command):
+        func = self._generators.get(type(command)) or self._empty_response
+        return func(command.decoded_request)
 
-def read_value(request):
-    obj = _SIMULATION_OBJECT.copy()
-    obj[OBJECT_ID_KEY] = request[OBJECT_ID_KEY]
-    return obj
+    def _object_id(self, controller_id: list):
+        return '~'.join([str(v) for v in controller_id])
 
+    def _next_controller_id(self):
+        self._current_id[-1] = (self._current_id[-1] + 1) % 128
 
-def write_value(request):
-    return request
+        if self._current_id[-1] == 0:
+            self._current_id.append(1)
 
+        return self._current_id[:]
 
-def create_object(request):
-    return {OBJECT_ID_KEY: [1, next(_id_counter)]}
+    def _empty_response(self, request):
+        return dict()
 
+    def _read_value(self, request):
+        strkey = self._object_id(request[OBJECT_ID_KEY])
+        return self._objects[strkey].copy()
 
-def list_objects(request):
-    return {
-        OBJECT_LIST_KEY: [
-            {**_SIMULATION_OBJECT.copy(), OBJECT_ID_KEY: [1, 2, i]}
-            for i in range(5)]
-    }
+    def _write_value(self, request):
+        strkey = self._object_id(request[OBJECT_ID_KEY])
+        self._objects[strkey] = request.copy()
+        return request.copy()
 
+    def _create_object(self, request):
+        id = self._next_controller_id()
+        obj = request.copy()
+        obj[OBJECT_ID_KEY] = id
+        self._objects[self._object_id(id)] = obj
+        print(self._objects)
+        return {OBJECT_ID_KEY: id[:]}
 
-def create_profile(request):
-    return {PROFILE_ID_KEY: next(_id_counter)}
+    def _list_objects(self, request):
+        return {OBJECT_LIST_KEY: [o.copy() for o in self._objects.values()]}
 
+    def _create_profile(self, request):
+        self._num_profiles += 1
+        return {PROFILE_ID_KEY: self._num_profiles}
 
-log_values = list_objects
+    def _activate_profile(self, request):
+        if request[PROFILE_ID_KEY] > self._num_profiles:
+            raise commands.CommandException('Unknown profile ID')
 
+        self._active_profile = request[PROFILE_ID_KEY]
+        return dict()
 
-def list_profiles(request):
-    return {
-        PROFILE_ID_KEY: 6,
-        PROFILE_LIST_KEY: [1, 2, 3, 4]
-    }
+    _log_values = partialmethod(_list_objects)
 
+    def _list_profiles(self, request):
+        return {
+            PROFILE_ID_KEY: self._active_profile,
+            PROFILE_LIST_KEY: [i for i in range(self._num_profiles)]
+        }
 
-def read_system_value(request):
-    obj = _SIMULATION_OBJECT.copy()
-    del obj[OBJECT_ID_KEY]
-    obj[SYSTEM_ID_KEY] = request[SYSTEM_ID_KEY]
-    return obj
+    def _read_system_value(self, request):
+        strkey = self._object_id(request[SYSTEM_ID_KEY])
+        return self._system_objects[strkey].copy()
 
-
-def write_system_value(request):
-    return request
-
-
-_SIMULATION_GENERATORS = {
-    commands.ReadValueCommand: read_value,
-    commands.WriteValueCommand: write_value,
-    commands.CreateObjectCommand: create_object,
-    commands.ListObjectsCommand: list_objects,
-    commands.CreateProfileCommand: create_profile,
-    commands.LogValuesCommand: log_values,
-    commands.ListProfilesCommand: list_profiles,
-    commands.ReadSystemValueCommand: read_system_value,
-    commands.WriteSystemValueCommand: write_system_value
-}
+    def _write_system_value(self, request):
+        strkey = self._object_id(request[SYSTEM_ID_KEY])
+        self._system_objects[strkey] = request.copy()
+        return request.copy()
 
 
 class SimulationCommander(commander.SparkCommander):
+
+    def __init__(self, *args, **kwargs):
+        self._responder = SimulationResponder()
+        super().__init__(*args, **kwargs)
 
     async def bind(self, *args, **kwargs):
         pass
 
     async def execute(self, command: commands.Command) -> dict:
-        func = _SIMULATION_GENERATORS.get(type(command), empty_response)
-        return func(command.decoded_request)
+        return self._responder.respond(command)

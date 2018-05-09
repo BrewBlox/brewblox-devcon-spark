@@ -242,15 +242,14 @@ class SparkController():
 
     async def create_alias(self, obj: dict) -> dict:
         return await self._object_store.insert_unique(
-            SERVICE_ID_KEY,
-            obj
+            id_key=SERVICE_ID_KEY,
+            obj=obj
         )
 
     async def update_alias(self, existing_id: str, new_id: str) -> dict:
-        return await self._object_store.update_unique(
-            SERVICE_ID_KEY,
-            existing_id,
-            {SERVICE_ID_KEY: new_id}
+        return await self.update_store_object(
+            service_id=existing_id,
+            obj={SERVICE_ID_KEY: new_id}
         )
 
     async def update_store_object(self, service_id: str, obj: dict) -> dict:
@@ -263,6 +262,6 @@ class SparkController():
 
     async def delete_store_object(self, service_id: str):
         return await self._object_store.delete(
-            SERVICE_ID_KEY,
-            service_id
+            id_key=SERVICE_ID_KEY,
+            id_val=service_id
         )
