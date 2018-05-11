@@ -4,7 +4,7 @@ Example of how to import and use the brewblox service
 
 from brewblox_service import service
 
-from brewblox_devcon_spark import api, brewblox_logger, device
+from brewblox_devcon_spark import api, brewblox_logger, device, broadcaster
 
 LOGGER = brewblox_logger(__name__)
 
@@ -25,6 +25,10 @@ def create_parser(default_name='spark'):
     parser.add_argument('--simulation',
                         help='Start in simulator mode. Will not connect to a physical device. [%(default)s]',
                         action='store_true')
+    parser.add_argument('--broadcast-interval',
+                        help='Interval (in seconds) between broadcasts of controller state. [%(default)s]',
+                        type=int,
+                        default=5)
     return parser
 
 
@@ -33,6 +37,7 @@ def main():
 
     device.setup(app)
     api.setup(app)
+    broadcaster.setup(app)
 
     service.furnish(app)
 

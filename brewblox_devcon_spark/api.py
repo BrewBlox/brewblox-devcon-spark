@@ -129,7 +129,7 @@ class ObjectApi(Api):
             API_ID_KEY: input_id
         }
 
-    async def all(self) -> dict:
+    async def all(self) -> list:
         response = await self._ctrl.list_objects({
             PROFILE_ID_KEY: self._ctrl.active_profile
         })
@@ -141,6 +141,16 @@ class ObjectApi(Api):
                 API_DATA_KEY: obj[OBJECT_DATA_KEY]
             } for obj in response.get(OBJECT_LIST_KEY, [])
         ]
+
+    async def all_data(self) -> dict:
+        response = await self._ctrl.list_objects({
+            PROFILE_ID_KEY: self._ctrl.active_profile
+        })
+
+        return {
+            obj[OBJECT_ID_KEY]: obj[OBJECT_DATA_KEY]
+            for obj in response.get(OBJECT_LIST_KEY, [])
+        }
 
 
 class SystemApi(Api):
@@ -405,6 +415,23 @@ async def object_all(request: web.Request) -> web.Response:
     """
     return web.json_response(
         await ObjectApi(request.app).all()
+    )
+
+
+@routes.get('/data')
+async def object_all_data(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Gets data from all objects
+    tags:
+    - Spark
+    - Objects
+    operationId: controller.spark.objects.all_data
+    produces:
+    - application/json
+    """
+    return web.json_response(
+        await ObjectApi(request.app).all_data()
     )
 
 
