@@ -17,28 +17,40 @@ TESTED = commander.__name__
 @pytest.fixture
 def conduit_mock(mocker):
     m = mocker.patch(TESTED + '.communication.SparkConduit')
+    m.return_value.bind = CoroutineMock()
     m.return_value.write = CoroutineMock()
     m.return_value.write_encoded = CoroutineMock()
     return m.return_value
 
 
 @pytest.fixture
-async def sparky(conduit_mock, loop):
-    return commander.SparkCommander(loop)
+def app(app, conduit_mock):
+    commander.setup(app)
+    return app
 
 
-async def test_init(conduit_mock, sparky, loop):
-    await sparky.close()
-    assert conduit_mock.close.call_count == 1
+@pytest.fixture
+async def sparky(app, client):
+    return commander.get_commander(app)
 
-    await sparky.bind(loop=loop)
+
+async def test_init(conduit_mock, app, client):
+    # The commander feature is up and running
     assert conduit_mock.bind.call_count == 1
 
-    await sparky.close()
-    await sparky.close()
+    spock = commander.SparkCommander()
+
+    await spock.close()
+    assert conduit_mock.close.call_count == 1
+
+    await spock.start(app)
+    assert conduit_mock.bind.call_count == 2
+
+    await spock.close()
+    await spock.close()
     assert conduit_mock.close.call_count == 3
 
-    assert str(sparky)
+    assert str(spock)
 
 
 async def test_process_response(conduit_mock, sparky):
@@ -127,12 +139,12 @@ async def test_timestamped_response():
     assert not res.fresh
 
 
-async def test_queue_cleanup(mocker, conduit_mock, sparky):
+async def test_queue_cleanup(mocker, conduit_mock, sparky, app, client):
     mocker.patch(TESTED + '.CLEANUP_INTERVAL', timedelta(milliseconds=10))
     fresh_mock = PropertyMock(return_value=True)
     type(commander.TimestampedQueue()).fresh = fresh_mock
 
-    await sparky.bind()
+    await sparky.start(app)
     await sparky._process_response(conduit_mock, '05 00 |00 00 00')
 
     # Still fresh

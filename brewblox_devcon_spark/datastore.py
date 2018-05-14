@@ -4,14 +4,15 @@ Offers block metadata CRUD
 
 
 import asyncio
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from concurrent.futures import CancelledError
 from datetime import timedelta
 from typing import Any, Callable, List
 
+from aiohttp import web
 from aiotinydb import AIOImmutableJSONStorage, AIOJSONStorage, AIOTinyDB
 from aiotinydb.middleware import CachingMiddleware
-from brewblox_service import brewblox_logger
+from brewblox_service import brewblox_logger, features
 from deprecated import deprecated
 from tinydb import Query, TinyDB
 from tinydb.storages import MemoryStorage
@@ -26,24 +27,49 @@ DATABASE_RETRY_INTERVAL = timedelta(seconds=1)
 LOGGER = brewblox_logger(__name__)
 
 
-class DataStore(ABC):
+def setup(app: web.Application):
+    config = app['config']
+
+    object_cache = MemoryDataStore(
+        app=app
+    )
+
+    object_store = FileDataStore(
+        app=app,
+        filename=config['database'],
+        read_only=False
+    )
+
+    system_store = FileDataStore(
+        app=app,
+        filename=config['system_database'],
+        read_only=True
+    )
+
+    features.add(app, object_cache, 'object_cache')
+    features.add(app, object_store, 'object_store')
+    features.add(app, system_store, 'system_store')
+
+
+def get_object_cache(app) -> 'DataStore':
+    return features.get(app, name='object_cache')
+
+
+def get_object_store(app) -> 'DataStore':
+    return features.get(app, name='object_store')
+
+
+def get_system_store(app) -> 'DataStore':
+    return features.get(app, name='system_store')
+
+
+class DataStore(features.ServiceFeature):
+
+    def __init__(self, app: web.Application=None):
+        super().__init__(app)
 
     def __str__(self):
         return f'<{type(self).__name__}>'
-
-    async def start(self, loop: asyncio.BaseEventLoop):
-        """
-        Implementing classes may require a startup function.
-        They can (optionally) override this.
-        """
-        pass
-
-    async def close(self):
-        """
-        Implementing classes may require a shutdown function.
-        They can (optionally) override this.
-        """
-        pass
 
     @abstractmethod
     async def _do_with_db(self, func: DB_FUNC_TYPE_) -> ACTION_RETURN_TYPE_:
@@ -137,9 +163,15 @@ class DataStore(ABC):
 
 class MemoryDataStore(DataStore):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, app: web.Application=None):
+        super().__init__(app)
         self._db = TinyDB(storage=CachingMiddleware(MemoryStorage))
+
+    async def start(self, *_):
+        pass
+
+    async def close(self, *_):
+        pass
 
     async def _do_with_db(self, func: DB_FUNC_TYPE_):
         return func(self._db)
@@ -168,8 +200,8 @@ class FileDataStore(DataStore):
 
     ######################################################################
 
-    def __init__(self, filename: str, read_only: bool, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, app: web.Application, filename: str, read_only: bool):
+        super().__init__(app)
 
         self._filename: str = filename
 
@@ -183,14 +215,12 @@ class FileDataStore(DataStore):
     def __str__(self):
         return f'<{type(self).__name__} for {self._filename}>'
 
-    # Overrides DataStore
-    async def start(self, loop: asyncio.BaseEventLoop):
-        self._loop = loop
-        self._pending_actions = asyncio.Queue()
-        self._runner = loop.create_task(self._run())
+    async def start(self, app: web.Application):
+        self._loop = app.loop
+        self._pending_actions = asyncio.Queue(loop=self._loop)
+        self._runner = self._loop.create_task(self._run())
 
-    # Overrides DataStore
-    async def close(self):
+    async def close(self, *_):
         if self._runner:
             self._runner.cancel()
             await asyncio.wait([self._runner])

@@ -26,27 +26,21 @@ def database_test_file():
 
 
 @pytest.fixture
-async def file_store(app, client, database_test_file, loop):
-    store = datastore.FileDataStore(
+def file_store(app, database_test_file):
+    return datastore.FileDataStore(
+        app=app,
         filename=database_test_file,
         read_only=False,
     )
-    await store.start(loop=loop)
-    await store.purge()
-    yield store
-    await store.close()
 
 
 @pytest.fixture
-async def memory_store(app, client, loop):
-    store = datastore.MemoryDataStore()
-    await store.start(loop=loop)
-    yield store
-    await store.close()
+def memory_store(app):
+    return datastore.MemoryDataStore(app)
 
 
 @pytest.fixture
-async def stores(file_store, memory_store):
+def stores(file_store, memory_store, client):
     return [file_store, memory_store]
 
 
@@ -64,14 +58,14 @@ def obj():
     }
 
 
-async def test_basics(client, stores, loop):
+async def test_basics(stores, app):
     for store in stores:
         assert str(store)
 
         await store.close()
         await store.close()
 
-        await store.start(loop)
+        await store.start(app)
         await store.close()
 
 
@@ -141,6 +135,13 @@ async def test_delete(stores, obj):
 
         assert await store.find_by_key('service_id', obj['service_id'])
         assert not await store.find_by_key('service_id', 'steve')
+
+
+async def test_purge(stores, obj):
+    for store in stores:
+        await store.insert_multiple([obj]*10)
+        await store.purge()
+        assert len(await store.all()) == 0
 
 
 async def test_spam(stores, obj):

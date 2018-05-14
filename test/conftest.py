@@ -8,8 +8,10 @@ import logging
 import os
 
 import pytest
-from brewblox_service import service
 from brewblox_devcon_spark.__main__ import create_parser
+from brewblox_service import brewblox_logger, service, features
+
+LOGGER = brewblox_logger(__name__)
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -63,6 +65,11 @@ def client(app, aiohttp_client, loop):
 
     Any tests wishing to add custom behavior to app can override the fixture
     """
+    LOGGER.debug('Available features:')
+    for name, impl in app.get(features.FEATURES_KEY, {}).items():
+        LOGGER.debug(f'Feature "{name}" = {impl}')
+    LOGGER.debug(app.on_startup)
+
     return loop.run_until_complete(aiohttp_client(app))
 
 

@@ -2,9 +2,9 @@
 Example of how to import and use the brewblox service
 """
 
-from brewblox_service import service, events, brewblox_logger
-
-from brewblox_devcon_spark import api, device, broadcaster
+from brewblox_devcon_spark import (api, broadcaster, commander, commander_sim,
+                                   datastore, device)
+from brewblox_service import brewblox_logger, events, service
 
 LOGGER = brewblox_logger(__name__)
 
@@ -35,6 +35,12 @@ def create_parser(default_name='spark'):
 def main():
     app = service.create_app(parser=create_parser())
 
+    if app['config']['simulation']:
+        commander_sim.setup(app)
+    else:
+        commander.setup(app)
+
+    datastore.setup(app)
     device.setup(app)
     api.setup(app)
     events.setup(app)

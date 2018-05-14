@@ -8,8 +8,9 @@ from collections import defaultdict
 from concurrent.futures import CancelledError
 from datetime import datetime, timedelta
 
+from aiohttp import web
 from brewblox_devcon_spark import commands, communication
-from brewblox_service import brewblox_logger
+from brewblox_service import brewblox_logger, features
 
 LOGGER = brewblox_logger(__name__)
 
@@ -40,6 +41,14 @@ CLEANUP_INTERVAL = timedelta(seconds=60)
 # In this scenario, the response will only be t=10 old, as it was stored at t=100
 RESPONSE_VALID_DURATION = timedelta(seconds=5)
 REQUEST_TIMEOUT = timedelta(seconds=5)
+
+
+def setup(app: web.Application):
+    features.add(app, SparkCommander(app))
+
+
+def get_commander(app: web.Application):
+    return features.get(app, SparkCommander)
 
 
 class TimestampedQueue():
@@ -76,12 +85,13 @@ class TimestampedResponse():
         return self._timestamp + RESPONSE_VALID_DURATION > datetime.utcnow()
 
 
-class SparkCommander():
+class SparkCommander(features.ServiceFeature):
 
-    def __init__(self, loop: asyncio.BaseEventLoop):
-        self._loop = loop or asyncio.get_event_loop()
-        self._requests = defaultdict(TimestampedQueue)
+    def __init__(self, app: web.Application=None):
+        super().__init__(app)
+
         self._cleanup_task: asyncio.Task = None
+        self._requests = defaultdict(TimestampedQueue)
 
         # TODO(Bob): handle events
         self._conduit = communication.SparkConduit(
@@ -90,19 +100,27 @@ class SparkCommander():
     def __str__(self):
         return f'<{type(self).__name__} for {self._conduit}>'
 
-    async def bind(self, *args, **kwargs):
-        self._conduit.bind(*args, **kwargs)
-        self._cleanup_task = self._loop.create_task(self._cleanup())
+    async def start(self, app: web.Application):
+        config = app['config']
+        loop = app.loop
 
-    async def close(self):
+        await self._conduit.bind(
+            loop=loop,
+            device=config['device_port'],
+            serial_number=config['device_id']
+        )
+        self._cleanup_task = loop.create_task(self._cleanup())
+
+    async def close(self, *_):
         self._conduit.close()
 
-        if self._cleanup_task:
-            try:
-                self._cleanup_task.cancel()
-                await self._cleanup_task
-            except CancelledError:
-                pass
+        try:
+            self._cleanup_task.cancel()
+            await self._cleanup_task
+        except Exception:
+            pass
+        finally:
+            self._cleanup_task = None
 
     async def _cleanup(self):
         while True:
