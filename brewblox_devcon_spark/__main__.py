@@ -2,8 +2,9 @@
 Example of how to import and use the brewblox service
 """
 
-from brewblox_devcon_spark import api, brewblox_logger, device
 from brewblox_service import service
+
+from brewblox_devcon_spark import api, brewblox_logger, device
 
 LOGGER = brewblox_logger(__name__)
 
@@ -21,6 +22,9 @@ def create_parser(default_name='spark'):
     parser.add_argument('--device-id',
                         help='Spark serial number. Any spark is valid if not set. '
                         'This will be ignored if --device-port is specified. [%(default)s]')
+    parser.add_argument('--simulation',
+                        help='Start in simulator mode. Will not connect to a physical device. [%(default)s]',
+                        action='store_true')
     return parser
 
 

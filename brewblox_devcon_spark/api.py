@@ -2,10 +2,20 @@
 Defines the REST API for the device
 """
 
-from typing import Type, List
+from typing import List, Type
 
 from aiohttp import web
+
 from brewblox_devcon_spark import brewblox_logger, device
+from brewblox_devcon_spark.device import (CONTROLLER_ID_KEY, OBJECT_DATA_KEY,
+                                          OBJECT_ID_KEY, OBJECT_LIST_KEY,
+                                          OBJECT_TYPE_KEY, PROFILE_ID_KEY,
+                                          SERVICE_ID_KEY, SYSTEM_ID_KEY)
+
+API_ID_KEY = 'id'
+API_TYPE_KEY = 'type'
+API_DATA_KEY = 'data'
+API_LIST_KEY = 'objects'
 
 LOGGER = LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -21,7 +31,7 @@ async def controller_error_middleware(request: web.Request, handler: web.Request
     try:
         return await handler(request)
     except Exception as ex:
-        LOGGER.debug(f'REST error: {ex}')
+        LOGGER.debug(f'REST error: {ex}', exc_info=True)
         return web.json_response({'error': str(ex)}, status=500)
 
 
@@ -33,104 +43,174 @@ class Api():
 
 class ObjectApi(Api):
 
-    async def create(self, service_id: str, obj_type: int, data: dict) -> dict:
-        object = {
-            'service_id': service_id,
-            'object_type': obj_type,
-            'object_data': data
-        }
+    async def create(self, input_id: str, input_type: int, input_data: dict) -> dict:
+        """
+        Creates a new object on the controller.
 
-        await self._ctrl.create_object(
-            object_type=obj_type,
-            object_size=18,  # TODO(Bob): fix protocol
-            object_data=data
-        )
+        Updates the data store with the newly created object.
+        Returns read() output after creation.
+        """
+        response = await self._ctrl.create_object({
+            OBJECT_TYPE_KEY: input_type,
+            OBJECT_DATA_KEY: input_data
+        })
 
-        # TODO(Bob): get controller id from create object
-        controller_id = [1, 2, 3]
+        created_id = response[OBJECT_ID_KEY]
 
         try:
-            await self._ctrl.create_alias(
-                # service ID already is in object
-                controller_id=controller_id,
-                **object
+
+            # Update service ID with user-determined service ID
+            # Add object type to data store
+            await self._ctrl.update_store_object(
+                created_id,
+                {
+                    SERVICE_ID_KEY: input_id,
+                    OBJECT_TYPE_KEY: input_type
+                }
             )
+
+            # Data store was updated
+            # We can now say a new object was created with user-determined ID
+            created_id = input_id
+
         except Exception as ex:
-            # TODO(Bob): uncomment when create returns an object
-            # await self.delete(id=controller_id)
-            raise ex
+            # Failed to update, we'll stick with auto-assigned ID
+            LOGGER.warn(f'Failed to update datastore after create: {ex}')
 
-        return object
+        return await self.read(created_id)
 
-    async def read(self, service_id: str, obj_type: int=0) -> dict:
-        return await self._ctrl.read_value(
-            object_id=service_id,
-            object_type=obj_type,
-            object_size=0
+    async def read(self, input_id: str, input_type: int=0) -> dict:
+        """
+        Reads object on the controller.
+
+        TODO(Bob): Use the object cache
+        """
+        response = await self._ctrl.read_value({
+            OBJECT_ID_KEY: input_id,
+            OBJECT_TYPE_KEY: input_type
+        })
+
+        return {
+            API_ID_KEY: response[OBJECT_ID_KEY],
+            API_TYPE_KEY: response[OBJECT_TYPE_KEY],
+            API_DATA_KEY: response[OBJECT_DATA_KEY]
+        }
+
+    async def update(self, input_id: str, input_type: int, input_data: dict) -> dict:
+        """
+        Writes new values to existing object on controller
+        """
+        response = await self._ctrl.write_value({
+            OBJECT_ID_KEY: input_id,
+            OBJECT_TYPE_KEY: input_type,
+            OBJECT_DATA_KEY: input_data
+        })
+
+        return {
+            API_ID_KEY: response[OBJECT_ID_KEY],
+            API_TYPE_KEY: response[OBJECT_TYPE_KEY],
+            API_DATA_KEY: response[OBJECT_DATA_KEY]
+        }
+
+    async def delete(self, input_id: str) -> dict:
+        """
+        Deletes object from controller and data store
+        """
+
+        await self._ctrl.delete_object({
+            OBJECT_ID_KEY: input_id
+        })
+
+        await self._ctrl.delete_store_object(
+            input_id
         )
 
-    async def update(self, service_id: str, obj_type: int, data: dict) -> dict:
-        return await self._ctrl.write_value(
-            object_id=service_id,
-            object_type=obj_type,
-            object_size=0,
-            object_data=data
-        )
-
-    async def delete(self, service_id: str) -> dict:
-        return await self._ctrl.delete_object(
-            object_id=service_id
-        )
+        return {
+            API_ID_KEY: input_id
+        }
 
     async def all(self) -> dict:
-        return await self._ctrl.list_objects(
-            profile_id=self._ctrl.active_profile
-        )
+        response = await self._ctrl.list_objects({
+            PROFILE_ID_KEY: self._ctrl.active_profile
+        })
+
+        return [
+            {
+                API_ID_KEY: obj[OBJECT_ID_KEY],
+                API_TYPE_KEY: obj[OBJECT_TYPE_KEY],
+                API_DATA_KEY: obj[OBJECT_DATA_KEY]
+            } for obj in response.get(OBJECT_LIST_KEY, [])
+        ]
 
 
 class SystemApi(Api):
 
-    async def read(self, service_id: str) -> dict:
-        return await self._ctrl.read_system_value(
-            system_object_id=service_id,
-            object_type=0,
-            object_size=0
-        )
+    async def read(self, input_id: str, input_type: int=0) -> dict:
+        response = await self._ctrl.read_system_value({
+            SYSTEM_ID_KEY: input_id,
+            OBJECT_TYPE_KEY: input_type
+        })
 
-    async def update(self, service_id: str, obj_type: int, data: dict) -> dict:
-        return await self._ctrl.write_system_value(
-            system_object_id=service_id,
-            object_type=obj_type,
-            object_size=0,
-            object_data=data
-        )
+        return {
+            API_ID_KEY: response[SYSTEM_ID_KEY],
+            API_TYPE_KEY: response[OBJECT_TYPE_KEY],
+            API_DATA_KEY: response[OBJECT_DATA_KEY]
+        }
+
+    async def update(self, input_id: str, input_type: int, input_data: dict) -> dict:
+        response = await self._ctrl.write_system_value({
+            SYSTEM_ID_KEY: input_id,
+            OBJECT_TYPE_KEY: input_type,
+            OBJECT_DATA_KEY: input_data
+        })
+
+        return {
+            API_ID_KEY: response[SYSTEM_ID_KEY],
+            API_TYPE_KEY: response[OBJECT_TYPE_KEY],
+            API_DATA_KEY: response[OBJECT_DATA_KEY]
+        }
 
 
 class ProfileApi(Api):
 
     async def create(self) -> dict:
-        return await self._ctrl.create_profile()
+        response = await self._ctrl.create_profile()
+
+        return {
+            API_ID_KEY: response[PROFILE_ID_KEY]
+        }
 
     async def delete(self, profile_id: int) -> dict:
-        return await self._ctrl.delete_profile(
-            profile_id=profile_id
-        )
+        await self._ctrl.delete_profile({
+            PROFILE_ID_KEY: profile_id
+        })
+
+        return {
+            API_ID_KEY: profile_id
+        }
 
     async def activate(self, profile_id: int) -> dict:
-        retval = await self._ctrl.activate_profile(
-            profile_id=profile_id
-        )
+        await self._ctrl.activate_profile({
+            PROFILE_ID_KEY: profile_id
+        })
         self._ctrl.active_profile = profile_id
-        return retval
+
+        return {
+            API_ID_KEY: profile_id
+        }
+
+    async def all(self) -> dict:
+        response = await self._ctrl.list_profiles()
+        return response
 
 
 class AliasApi(Api):
 
     async def create(self, service_id: str, controller_id: List[int]) -> dict:
-        return await self._ctrl.create_alias(
-            service_id=service_id,
-            controller_id=controller_id
-        )
+        return await self._ctrl.create_alias({
+            SERVICE_ID_KEY: service_id,
+            CONTROLLER_ID_KEY: controller_id
+        })
 
     async def update(self, existing_id: str, new_id: str) -> dict:
         return await self._ctrl.update_alias(existing_id, new_id)
@@ -163,10 +243,11 @@ async def do_command(request: web.Request) -> web.Response:
                     example: {"profile_id":0}
     """
     request_args = await request.json()
+
     command = request_args['command']
     data = request_args['data']
-    controller = device.get_controller(request.app)
-    func = getattr(controller, command)
+
+    func = getattr(device.get_controller(request.app), command)
     return web.json_response(await func(**data))
 
 
@@ -204,9 +285,9 @@ async def object_create(request: web.Request) -> web.Response:
 
     return web.json_response(
         await ObjectApi(request.app).create(
-            request_args['id'],
-            request_args['type'],
-            request_args['data']
+            request_args[API_ID_KEY],
+            request_args[API_TYPE_KEY],
+            request_args[API_DATA_KEY]
         )
     )
 
@@ -233,7 +314,7 @@ async def object_read(request: web.Request) -> web.Response:
     """
     return web.json_response(
         await ObjectApi(request.app).read(
-            request.match_info['id']
+            request.match_info[API_ID_KEY]
         )
     )
 
@@ -276,9 +357,9 @@ async def object_update(request: web.Request) -> web.Response:
 
     return web.json_response(
         await ObjectApi(request.app).update(
-            request.match_info['id'],
-            request_args['type'],
-            request_args['data'],
+            request.match_info[API_ID_KEY],
+            request_args[API_TYPE_KEY],
+            request_args[API_DATA_KEY],
         )
     )
 
@@ -305,7 +386,7 @@ async def object_delete(request: web.Request) -> web.Response:
     """
     return web.json_response(
         await ObjectApi(request.app).delete(
-            request.match_info['id']
+            request.match_info[API_ID_KEY]
         )
     )
 
@@ -349,7 +430,7 @@ async def system_read(request: web.Request) -> web.Response:
     """
     return web.json_response(
         await SystemApi(request.app).read(
-            request.match_info['id']
+            request.match_info[API_ID_KEY]
         )
     )
 
@@ -392,9 +473,9 @@ async def system_update(request: web.Request) -> web.Response:
 
     return web.json_response(
         await SystemApi(request.app).update(
-            request.match_info['id'],
-            request_args['type'],
-            request_args['data']
+            request.match_info[API_ID_KEY],
+            request_args[API_TYPE_KEY],
+            request_args[API_DATA_KEY]
         )
     )
 
@@ -437,7 +518,7 @@ async def profile_delete(request: web.Request) -> web.Response:
     """
     return web.json_response(
         await ProfileApi(request.app).delete(
-            int(request.match_info['id'])
+            int(request.match_info[API_ID_KEY])
         )
     )
 
@@ -463,8 +544,25 @@ async def profile_activate(request: web.Request) -> web.Response:
     """
     return web.json_response(
         await ProfileApi(request.app).activate(
-            int(request.match_info['id'])
+            int(request.match_info[API_ID_KEY])
         )
+    )
+
+
+@routes.get('/profiles')
+async def profiles_all(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: List all profiles
+    tags:
+    - Spark
+    - Objects
+    operationId: controller.spark.profiles.all
+    produces:
+    - application/json
+    """
+    return web.json_response(
+        await ProfileApi(request.app).all()
     )
 
 
@@ -501,13 +599,13 @@ async def alias_create(request: web.Request) -> web.Response:
 
     return web.json_response(
         await AliasApi(request.app).create(
-            request_args['service_id'],
-            request_args['controller_id']
+            request_args[SERVICE_ID_KEY],
+            request_args[CONTROLLER_ID_KEY]
         )
     )
 
 
-@routes.put('/aliases/{current_id}')
+@routes.put('/aliases/{id}')
 async def alias_update(request: web.Request) -> web.Response:
     """
     ---
@@ -520,7 +618,7 @@ async def alias_update(request: web.Request) -> web.Response:
     - application/json
     parameters:
     -
-        name: current_id
+        name: id
         in: path
         required: true
         schema:
@@ -533,14 +631,14 @@ async def alias_update(request: web.Request) -> web.Response:
         schema:
             type: object
             properties:
-                new_id:
+                id:
                     type: str
                     example: onewirebus
                     required: true
     """
     return web.json_response(
         await AliasApi(request.app).update(
-            request.match_info['current_id'],
-            (await request.json())['new_id']
+            request.match_info[API_ID_KEY],
+            (await request.json())[API_ID_KEY]
         )
     )

@@ -72,7 +72,7 @@ async def test_process_response_error(mocker, conduit_mock, sparky):
 
 
 async def test_command(conduit_mock, sparky):
-    await sparky._process_response(conduit_mock, '05 00 |00 00 00')
+    await sparky._process_response(conduit_mock, '05 00 |00')
 
     command = commands.ListObjectsCommand().from_args(profile_id=0)
     resp = await sparky.execute(command)

@@ -2,9 +2,11 @@
 Tests brewblox_devcon_spark.api
 """
 
+import os
+
 import pytest
-from asynctest import CoroutineMock
-from brewblox_devcon_spark import api, commander, datastore, device
+
+from brewblox_devcon_spark import api, device
 
 TESTED = api.__name__
 
@@ -28,61 +30,31 @@ def object_args():
 
 
 @pytest.fixture
-def commander_mock(mocker, loop):
-    cmder = commander.SparkCommander(loop=loop)
+def database_test_file():
+    def remove(f):
+        try:
+            os.remove(f)
+        except FileNotFoundError:
+            pass
 
-    def echo(command):
-        retval = command.decoded_request
-        retval['command'] = command.name
-        return retval
-
-    cmder.execute = CoroutineMock()
-    cmder.execute.side_effect = echo
-    return cmder
-
-
-@pytest.fixture
-def object_store():
-    return datastore.MemoryDataStore()
+    f = 'api_test_file.json'
+    remove(f)
+    yield f
+    remove(f)
 
 
 @pytest.fixture
-def system_store():
-    return datastore.MemoryDataStore()
-
-
-@pytest.fixture
-def object_cache():
-    return datastore.MemoryDataStore()
-
-
-@pytest.fixture
-def controller_mock(mocker, commander_mock, object_store, system_store, object_cache):
-    controller = device.SparkController('sparky')
-    controller._commander = commander_mock
-    controller._object_store = object_store
-    controller._system_store = system_store
-    controller._object_cache = object_cache
-
-    mocker.patch(device.__name__ + '.get_controller').return_value = controller
-    return controller
-
-
-@pytest.fixture
-async def app(app, controller_mock, object_store, system_store, loop):
+async def app(app, database_test_file, loop):
     """App + controller routes"""
+    app['config']['simulation'] = True
+    app['config']['database'] = database_test_file
+    device.setup(app)
     api.setup(app)
-
-    await object_store.start(loop=loop)
-    await object_store.insert(dict(service_id='testobj', controller_id=[1, 2, 3]))
-
-    await system_store.start(loop=loop)
-    await system_store.insert(dict(service_id='sysobj', controller_id=[3, 2, 1]))
 
     return app
 
 
-async def test_do(app, client, commander_mock, object_args):
+async def test_do(app, client, object_args):
     command = dict(command='create_object', data=object_args)
 
     res = await client.post('/_debug/do', json=command)
@@ -90,69 +62,95 @@ async def test_do(app, client, commander_mock, object_args):
 
 
 async def test_create(app, client, object_args):
+    # Create object
     res = await client.post('/objects', json=object_args)
-    assert res.status == 500  # testobj already exists
+    assert res.status == 200
+    assert (await res.json())['id'] == object_args['id']
+
+    # Allowed to recreate, but we don't get provided ID
+    res = await client.post('/objects', json=object_args)
+    assert res.status == 200
+    assert (await res.json())['id'] != object_args['id']
 
     object_args['id'] = 'other_obj'
     res = await client.post('/objects', json=object_args)
     assert res.status == 200
-    assert (await res.json())['object_type'] == object_args['type']
+    assert (await res.json())['id'] == 'other_obj'
 
 
-async def test_read(app, client):
+async def test_create_spam(app, client, object_args):
+    for i in range(150):
+        res = await client.post('/objects', json=object_args)
+        assert res.status == 200
+
+
+async def test_read(app, client, object_args):
+    res = await client.get('/objects/testobj')
+    assert res.status == 500  # Object does not exist
+
+    await client.post('/objects', json=object_args)
+
     res = await client.get('/objects/testobj')
     assert res.status == 200
 
     retval = await res.json()
-    assert retval['command'] == 'READ_VALUE'
-    assert retval['object_id'] == 'testobj'
+    assert retval['id'] == 'testobj'
 
 
 async def test_update(app, client, object_args):
+    await client.post('/objects', json=object_args)
     res = await client.put('/objects/testobj', json=object_args)
     assert res.status == 200
     retval = await res.json()
-    assert retval['command'] == 'WRITE_VALUE'
+    assert retval
 
 
-async def test_delete(app, client):
+async def test_delete(app, client, object_args):
+    await client.post('/objects', json=object_args)
 
     res = await client.delete('/objects/testobj')
     assert res.status == 200
     retval = await res.json()
-    assert retval['command'] == 'DELETE_OBJECT'
-    assert retval['object_id'] == 'testobj'
+    assert retval['id'] == 'testobj'
+
+    res = await client.get('/objects/testobj')
+    assert res.status == 500
 
 
-async def test_all(app, client):
+async def test_all(app, client, object_args):
     res = await client.get('/objects')
     assert res.status == 200
     retval = await res.json()
-    assert retval['command'] == 'LIST_OBJECTS'
+    assert retval == []
 
-
-async def test_system_read(app, client):
-    res = await client.get('/system/sysobj')
+    await client.post('/objects', json=object_args)
+    res = await client.get('/objects')
     assert res.status == 200
-
     retval = await res.json()
-    assert retval['command'] == 'READ_SYSTEM_VALUE'
-    assert retval['system_object_id'] == 'sysobj'
+    assert len(retval) == 1
+
+
+async def test_system_read(app, client, object_args):
+    # No system objects found
+    # TODO(Bob): add preset system objects to simulator
+    res = await client.get('/system/onewirebus')
+    assert res.status == 200
 
 
 async def test_system_update(app, client, object_args):
-    res = await client.put('/system/sysobj', json=object_args)
+    # No system objects found
+    # TODO(Bob): add preset system objects to simulator
+    res = await client.put('/system/onewirebus', json=object_args)
     assert res.status == 200
-    retval = await res.json()
-    assert retval['command'] == 'WRITE_SYSTEM_VALUE'
 
 
 async def test_profile_create(app, client):
     res = await client.post('/profiles')
     assert res.status == 200
-
     retval = await res.json()
-    assert retval['command'] == 'CREATE_PROFILE'
+    assert retval['id']
+    second = await (await client.post('/profiles')).json()
+    assert second['id'] != retval['id']
 
 
 async def test_profile_delete(app, client):
@@ -160,41 +158,29 @@ async def test_profile_delete(app, client):
     assert res.status == 200
 
     retval = await res.json()
-    assert retval['command'] == 'DELETE_PROFILE'
+    assert retval
 
 
 async def test_profile_activate(app, client):
     res = await client.post('/profiles/1')
+    assert res.status == 500  # profile doesn't exist
+
+    created = await (await client.post('/profiles')).json()
+    res = await client.post(f'/profiles/{created["id"]}')
     assert res.status == 200
 
-    retval = await res.json()
-    assert retval['command'] == 'ACTIVATE_PROFILE'
 
-
-async def test_command_exception(app, client, commander_mock):
-    commander_mock.execute.side_effect = RuntimeError('test error')
-
-    res = await client.post('/profiles')
-    assert res.status == 500
-
-    retval = await res.json()
-    assert 'test error' in retval['error']
-
-
-async def test_with_controller_id(app, client, object_args):
-    object_args['object_id'] = [7, 8, 9]
-
-    command = dict(command='write_value', data=object_args)
-    res = await client.post('/_debug/do', json=command)
+async def test_profile_all(app, client):
+    res = await client.get('/profiles')
     assert res.status == 200
-
-    # ID is parsed, but unknown, so a new ID is generated
     retval = await res.json()
-    assert retval['object_id'] == '7-8-9'
+    assert retval['profiles'] == []
 
-    # We should be able to read it
-    res = await client.get('/objects/7-8-9')
-    assert res.status == 200
+    await client.post('/profiles')
+    await client.post('/profiles')
+
+    retval = await (await client.get('/profiles')).json()
+    assert len(retval['profiles']) == 2
 
 
 async def test_alias_create(app, client):
@@ -209,11 +195,13 @@ async def test_alias_create(app, client):
     assert res.status == 500
 
 
-async def test_alias_update(app, client):
+async def test_alias_update(app, client, object_args):
+    await client.post('/objects', json=object_args)
+
     res = await client.get('/objects/newname')
     assert res.status == 500
 
-    res = await client.put('/aliases/testobj', json=dict(new_id='newname'))
+    res = await client.put('/aliases/testobj', json={'id': 'newname'})
     assert res.status == 200
 
     res = await client.get('/objects/newname')

@@ -29,7 +29,8 @@ def app_config() -> dict:
         'database': 'test_db.json',
         'system_database': 'brewblox_sys_db.json',
         'device_port': '/dev/TESTEH',
-        'device_id': '1234'
+        'device_id': '1234',
+        'simulation': False,
     }
 
 

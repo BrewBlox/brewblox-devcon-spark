@@ -7,14 +7,18 @@ from typing import Callable, List, Type, Union
 
 import dpath
 from aiohttp import web
-
 from brewblox_codec_spark import codec
+
 from brewblox_devcon_spark import brewblox_logger, commands
 from brewblox_devcon_spark.commander import SparkCommander
+from brewblox_devcon_spark.commander_sim import SimulationCommander
+from brewblox_devcon_spark.commands import (FLAGS_KEY, OBJECT_DATA_KEY,  # noqa
+                                            OBJECT_ID_KEY, OBJECT_LIST_KEY,
+                                            OBJECT_TYPE_KEY, PROFILE_ID_KEY,
+                                            PROFILE_LIST_KEY, SYSTEM_ID_KEY)
 from brewblox_devcon_spark.datastore import (DataStore, FileDataStore,
                                              MemoryDataStore)
 
-CONTROLLER_KEY = 'controller.spark'
 SERVICE_ID_KEY = 'service_id'
 CONTROLLER_ID_KEY = 'controller_id'
 
@@ -25,11 +29,11 @@ LOGGER = LOGGER = brewblox_logger(__name__)
 
 
 def get_controller(app) -> 'SparkController':
-    return app[CONTROLLER_KEY]
+    return app[SparkController.__name__]
 
 
 def setup(app: Type[web.Application]):
-    app[CONTROLLER_KEY] = SparkController(name=app['config']['name'], app=app)
+    app[SparkController.__name__] = SparkController(name=app['config']['name'], app=app)
 
 
 class ControllerException(Exception):
@@ -86,7 +90,11 @@ class SparkController():
         )
         await self._system_store.start(loop=app.loop)
 
-        self._commander = SparkCommander(app.loop)
+        if config['simulation']:
+            self._commander = SimulationCommander(app.loop)
+        else:
+            self._commander = SparkCommander(app.loop)
+
         await self._commander.bind(
             loop=app.loop,
             device=config['device_port'],
@@ -105,21 +113,18 @@ class SparkController():
         ]
 
     async def _data_processed(self, processor_func: Callable, content: dict) -> dict:
-        data_key = commands.OBJECT_DATA_KEY
-        type_key = commands.OBJECT_TYPE_KEY
-
         # Looks for codec data, and converts it
         # A type ID is always present in the same dict as the data
-        for path, data in dpath.util.search(content, f'**/{data_key}', yielded=True):
+        for path, data in dpath.util.search(content, f'**/{OBJECT_DATA_KEY}', yielded=True):
 
             # find path to dict containing both type and data
             parent = '/'.join(path.split('/')[:-1])
 
             # get the type from the dict that contained data
-            obj_type = dpath.util.get(content, f'{parent}/{type_key}')
+            obj_type = dpath.util.get(content, f'{parent}/{OBJECT_TYPE_KEY}')
 
             # convert data, and replace in dict
-            dpath.util.set(content, f'{parent}/{data_key}', processor_func(obj_type, data))
+            dpath.util.set(content, f'{parent}/{OBJECT_DATA_KEY}', processor_func(obj_type, data))
 
         return content
 
@@ -172,22 +177,23 @@ class SparkController():
         return service_id
 
     async def _id_resolved(self, resolver: Callable, content: dict) -> dict:
-        object_key = commands.OBJECT_ID_KEY
-        system_key = commands.SYSTEM_ID_KEY
-
         async def resolve_key(key: str, store: DataStore):
             for path, id in dpath.util.search(content, f'**/{key}', yielded=True):
-                dpath.util.set(content, path, await resolver(self, store, content[key]))
+                dpath.util.set(content, path, await resolver(self, store, id))
 
-        await resolve_key(object_key, self._object_store)
-        await resolve_key(system_key, self._system_store)
+        await resolve_key(OBJECT_ID_KEY, self._object_store)
+        await resolve_key(SYSTEM_ID_KEY, self._system_store)
 
         return content
 
     _controller_id_resolved = partialmethod(_id_resolved, resolve_controller_id)
     _service_id_resolved = partialmethod(_id_resolved, resolve_service_id)
 
-    async def _execute(self, command_type: type(commands.Command), **content) -> dict:
+    async def _execute(self, command_type: type(commands.Command), _content: dict = None, **kwargs) -> dict:
+        # Allow a combination of a dict containing arguments, and loose kwargs
+        content = _content or dict()
+        content.update(kwargs)
+
         try:
 
             # pre-processing
@@ -232,15 +238,28 @@ class SparkController():
     read_system_value = partialmethod(_execute, commands.ReadSystemValueCommand)
     write_system_value = partialmethod(_execute, commands.WriteSystemValueCommand)
 
-    async def create_alias(self, **kwargs) -> dict:
+    async def create_alias(self, obj: dict) -> dict:
         return await self._object_store.insert_unique(
-            SERVICE_ID_KEY,
-            kwargs
+            id_key=SERVICE_ID_KEY,
+            obj=obj
         )
 
     async def update_alias(self, existing_id: str, new_id: str) -> dict:
+        return await self.update_store_object(
+            service_id=existing_id,
+            obj={SERVICE_ID_KEY: new_id}
+        )
+
+    async def update_store_object(self, service_id: str, obj: dict) -> dict:
         return await self._object_store.update_unique(
-            SERVICE_ID_KEY,
-            existing_id,
-            {SERVICE_ID_KEY: new_id}
+            id_key=SERVICE_ID_KEY,
+            id_val=service_id,
+            obj=obj,
+            unique_key=SERVICE_ID_KEY
+        )
+
+    async def delete_store_object(self, service_id: str):
+        return await self._object_store.delete(
+            id_key=SERVICE_ID_KEY,
+            id_val=service_id
         )

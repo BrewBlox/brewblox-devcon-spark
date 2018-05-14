@@ -64,6 +64,13 @@ async def test_start_close(app, client, commander_mock):
     # should not trigger errors in app cleanup
     await controller.close()
 
+    app['config']['simulation'] = True
+    await controller.start(app)
+    assert commander_mock.bind.call_count == 3
+
+    c = device.SparkController(name='hoopla')
+    await c.start(app)
+
 
 async def test_transcoding(app, client, commander_mock, store):
     controller = device.get_controller(app)
