@@ -17,8 +17,8 @@ setup(
     keywords='brewing brewpi brewblox embedded controller spark service',
     packages=find_packages(exclude=['test']),
     install_requires=[
-        'brewblox-service~=0.8',
-        'nesdict~=0.2.0',
+        'brewblox-service~=0.9',
+        'dpath~=1.4.2',
         'pyserial-asyncio==0.4',
         'construct==2.9.39',
         'deprecated==1.2.0',

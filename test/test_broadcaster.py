@@ -22,7 +22,7 @@ def mock_api(mocker):
 
 @pytest.fixture
 def mock_publisher(mocker):
-    m = mocker.patch(TESTED + '.events.EventPublisher')
+    m = mocker.patch(TESTED + '.events.get_publisher')
     m.return_value.publish = CoroutineMock()
     return m.return_value
 
