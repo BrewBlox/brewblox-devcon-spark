@@ -2,9 +2,9 @@
 Example of how to import and use the brewblox service
 """
 
-from brewblox_service import service
+from brewblox_service import service, events, brewblox_logger
 
-from brewblox_devcon_spark import api, brewblox_logger, device, broadcaster
+from brewblox_devcon_spark import api, device, broadcaster
 
 LOGGER = brewblox_logger(__name__)
 
@@ -37,6 +37,7 @@ def main():
 
     device.setup(app)
     api.setup(app)
+    events.setup(app)
     broadcaster.setup(app)
 
     service.furnish(app)

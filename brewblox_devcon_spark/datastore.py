@@ -11,11 +11,10 @@ from typing import Any, Callable, List
 
 from aiotinydb import AIOImmutableJSONStorage, AIOJSONStorage, AIOTinyDB
 from aiotinydb.middleware import CachingMiddleware
+from brewblox_service import brewblox_logger
 from deprecated import deprecated
 from tinydb import Query, TinyDB
 from tinydb.storages import MemoryStorage
-
-from brewblox_devcon_spark import brewblox_logger
 
 OBJECT_TYPE_ = dict
 ACTION_RETURN_TYPE_ = Any

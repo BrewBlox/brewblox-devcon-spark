@@ -6,14 +6,14 @@ import asyncio
 import re
 from collections import namedtuple
 from functools import partial
-from typing import Callable, Generator, Iterable, Any
+from typing import Any, Callable, Generator, Iterable
 
 import serial
-from brewblox_devcon_spark import brewblox_logger
+from brewblox_service import brewblox_logger
 from serial.aio import SerialTransport
 from serial.tools import list_ports
 
-LOGGER = LOGGER = brewblox_logger(__name__)
+LOGGER = brewblox_logger(__name__)
 DEFAULT_BAUD_RATE = 57600
 
 PortType_ = Any

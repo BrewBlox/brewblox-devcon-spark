@@ -8,7 +8,8 @@ from collections import defaultdict
 from concurrent.futures import CancelledError
 from datetime import datetime, timedelta
 
-from brewblox_devcon_spark import commands, communication, brewblox_logger
+from brewblox_devcon_spark import commands, communication
+from brewblox_service import brewblox_logger
 
 LOGGER = brewblox_logger(__name__)
 
@@ -81,9 +82,6 @@ class SparkCommander():
         self._loop = loop or asyncio.get_event_loop()
         self._requests = defaultdict(TimestampedQueue)
         self._cleanup_task: asyncio.Task = None
-
-        # Note: only used for debug functions
-        self._index = commands.CommandIndex()
 
         # TODO(Bob): handle events
         self._conduit = communication.SparkConduit(

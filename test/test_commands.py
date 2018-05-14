@@ -33,35 +33,6 @@ def write_value_resp(write_value_args):
     )
 
 
-def test_index():
-    index = commands.CommandIndex()
-    for cmd_name in [
-        'READ_VALUE',
-        'WRITE_VALUE',
-        'CREATE_OBJECT',
-        'DELETE_OBJECT',
-        'LIST_OBJECTS',
-        'FREE_SLOT',
-        'CREATE_PROFILE',
-        'DELETE_PROFILE',
-        'ACTIVATE_PROFILE',
-        'LOG_VALUES',
-        'RESET',
-        'FREE_SLOT_ROOT',
-        'LIST_PROFILES',
-        'READ_SYSTEM_VALUE',
-        'WRITE_SYSTEM_VALUE',
-    ]:
-        command = index.identify(cmd_name)
-        assert command.name == cmd_name
-        assert command.opcode
-        assert command.request
-        assert command.response
-
-    with pytest.raises(KeyError):
-        index.identify('UNUSED')
-
-
 def test_variable_id_length(write_value_args):
 
     command = commands.WriteValueCommand().from_args(**write_value_args)

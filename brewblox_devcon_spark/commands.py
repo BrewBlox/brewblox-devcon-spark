@@ -1,14 +1,21 @@
-import inspect
-import sys
+"""
+Definitions for all commands that can be sent to the Spark.
+
+The Command base class offers the functionality to convert dicts to and from byte strings,
+based on the defined construct Struct.
+
+Each child class of Command defines how the syntax for itself looks like.
+"""
+
 from abc import ABC
 from binascii import hexlify
 
-from brewblox_devcon_spark import brewblox_logger
+from brewblox_service import brewblox_logger
 from construct import (Adapter, Byte, Const, Enum, FlagsEnum, GreedyBytes,
                        Int8sb, Optional, Padding, RepeatUntil, Sequence,
                        Struct, Terminated)
 
-LOGGER = LOGGER = brewblox_logger(__name__)
+LOGGER = brewblox_logger(__name__)
 
 
 OBJECT_ID_KEY = 'object_id'
@@ -96,26 +103,6 @@ class VariableLengthIDAdapter(Adapter):
 
 class CommandException(Exception):
     pass
-
-
-class CommandIndex():
-
-    def __init__(self):
-        current_module = sys.modules[__name__]
-        self._commands = dict()
-
-        for name, val in inspect.getmembers(current_module, inspect.isclass):
-            if issubclass(val, Command) and val is not Command:
-                # Quick sanity check that there are no copy-pasta errors after adding / changing commands
-                assert val._OPCODE not in self._commands, f'Multiple definition of {val._OPCODE}'
-                self._commands[val._OPCODE] = val
-
-    def identify(self, opcode: str) -> 'Command':
-        try:
-            command = self._commands[opcode]
-            return command()
-        except KeyError:
-            raise KeyError(f'No command found for opcode [{opcode}]')
 
 
 class Command(ABC):

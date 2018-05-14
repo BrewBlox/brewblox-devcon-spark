@@ -5,19 +5,19 @@ Defines the REST API for the device
 from typing import List, Type
 
 from aiohttp import web
-
-from brewblox_devcon_spark import brewblox_logger, device
 from brewblox_devcon_spark.device import (CONTROLLER_ID_KEY, OBJECT_DATA_KEY,
                                           OBJECT_ID_KEY, OBJECT_LIST_KEY,
                                           OBJECT_TYPE_KEY, PROFILE_ID_KEY,
-                                          SERVICE_ID_KEY, SYSTEM_ID_KEY)
+                                          SERVICE_ID_KEY, SYSTEM_ID_KEY,
+                                          get_controller)
+from brewblox_service import brewblox_logger
 
 API_ID_KEY = 'id'
 API_TYPE_KEY = 'type'
 API_DATA_KEY = 'data'
 API_LIST_KEY = 'objects'
 
-LOGGER = LOGGER = brewblox_logger(__name__)
+LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
 
 
@@ -38,7 +38,7 @@ async def controller_error_middleware(request: web.Request, handler: web.Request
 class Api():
 
     def __init__(self, app: web.Application):
-        self._ctrl = device.get_controller(app)
+        self._ctrl = get_controller(app)
 
 
 class ObjectApi(Api):
@@ -257,7 +257,7 @@ async def do_command(request: web.Request) -> web.Response:
     command = request_args['command']
     data = request_args['data']
 
-    func = getattr(device.get_controller(request.app), command)
+    func = getattr(get_controller(request.app), command)
     return web.json_response(await func(**data))
 
 

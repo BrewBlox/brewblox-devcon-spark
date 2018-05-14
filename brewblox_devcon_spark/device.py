@@ -8,8 +8,7 @@ from typing import Callable, List, Union
 import dpath
 from aiohttp import web
 from brewblox_codec_spark import codec
-
-from brewblox_devcon_spark import brewblox_logger, commands
+from brewblox_devcon_spark import commands
 from brewblox_devcon_spark.commander import SparkCommander
 from brewblox_devcon_spark.commander_sim import SimulationCommander
 from brewblox_devcon_spark.commands import (FLAGS_KEY, OBJECT_DATA_KEY,  # noqa
@@ -18,6 +17,7 @@ from brewblox_devcon_spark.commands import (FLAGS_KEY, OBJECT_DATA_KEY,  # noqa
                                             PROFILE_LIST_KEY, SYSTEM_ID_KEY)
 from brewblox_devcon_spark.datastore import (DataStore, FileDataStore,
                                              MemoryDataStore)
+from brewblox_service import brewblox_logger, features
 
 SERVICE_ID_KEY = 'service_id'
 CONTROLLER_ID_KEY = 'controller_id'
@@ -29,20 +29,21 @@ LOGGER = brewblox_logger(__name__)
 
 
 def get_controller(app: web.Application) -> 'SparkController':
-    return app[SparkController.__name__]
+    return features.get(app, SparkController)
 
 
 def setup(app: web.Application):
-    app[SparkController.__name__] = SparkController(name=app['config']['name'], app=app)
+    features.add(app, SparkController(name=app['config']['name'], app=app))
 
 
 class ControllerException(Exception):
     pass
 
 
-class SparkController():
+class SparkController(features.ServiceFeature):
 
-    def __init__(self, name: str, app=None):
+    def __init__(self, name: str, app: web.Application=None):
+        super().__init__(app)
 
         self._name = name
         self._active_profile = 0
@@ -51,9 +52,6 @@ class SparkController():
         self._object_store: FileDataStore = None
         self._system_store: FileDataStore = None
         self._object_cache: MemoryDataStore = None
-
-        if app:
-            self.setup(app)
 
     @property
     def name(self):
@@ -66,10 +64,6 @@ class SparkController():
     @active_profile.setter
     def active_profile(self, profile_id: int):
         self._active_profile = profile_id
-
-    def setup(self, app: web.Application):
-        app.on_startup.append(self.start)
-        app.on_cleanup.append(self.close)
 
     async def start(self, app: web.Application):
         await self.close()
