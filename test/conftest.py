@@ -31,6 +31,7 @@ def app_config() -> dict:
         'device_port': '/dev/TESTEH',
         'device_id': '1234',
         'simulation': False,
+        'broadcast_interval': 5,
     }
 
 
@@ -45,6 +46,7 @@ def sys_args(app_config) -> list:
         '--system-database', app_config['system_database'],
         '--device-port', app_config['device_port'],
         '--device-id', app_config['device_id'],
+        '--broadcast-interval', str(app_config['broadcast_interval']),
     ]
 
 

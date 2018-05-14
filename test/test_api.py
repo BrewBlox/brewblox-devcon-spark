@@ -130,6 +130,20 @@ async def test_all(app, client, object_args):
     assert len(retval) == 1
 
 
+async def test_all_data(app, client, object_args):
+    res = await client.get('/data')
+    assert res.status == 200
+    retval = await res.json()
+    assert retval == {}
+
+    await client.post('/objects', json=object_args)
+    res = await client.get('/data')
+    assert res.status == 200
+    retval = await res.json()
+    assert len(retval) == 1
+    assert retval[object_args['id']]
+
+
 async def test_system_read(app, client, object_args):
     # No system objects found
     # TODO(Bob): add preset system objects to simulator

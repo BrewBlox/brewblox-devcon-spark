@@ -3,7 +3,7 @@ Offers a functional interface to the device functionality
 """
 
 from functools import partialmethod
-from typing import Callable, List, Type, Union
+from typing import Callable, List, Union
 
 import dpath
 from aiohttp import web
@@ -25,14 +25,14 @@ CONTROLLER_ID_KEY = 'controller_id'
 OBJ_TYPE_TYPE_ = Union[int, str]
 OBJ_DATA_TYPE_ = Union[bytes, dict]
 
-LOGGER = LOGGER = brewblox_logger(__name__)
+LOGGER = brewblox_logger(__name__)
 
 
-def get_controller(app) -> 'SparkController':
+def get_controller(app: web.Application) -> 'SparkController':
     return app[SparkController.__name__]
 
 
-def setup(app: Type[web.Application]):
+def setup(app: web.Application):
     app[SparkController.__name__] = SparkController(name=app['config']['name'], app=app)
 
 
@@ -67,11 +67,11 @@ class SparkController():
     def active_profile(self, profile_id: int):
         self._active_profile = profile_id
 
-    def setup(self, app: Type[web.Application]):
+    def setup(self, app: web.Application):
         app.on_startup.append(self.start)
         app.on_cleanup.append(self.close)
 
-    async def start(self, app: Type[web.Application]):
+    async def start(self, app: web.Application):
         await self.close()
         config = app['config']
 
