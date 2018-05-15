@@ -34,6 +34,7 @@ def app_config() -> dict:
         'device_id': '1234',
         'simulation': False,
         'broadcast_interval': 5,
+        'broadcast_exchange': 'brewcast',
     }
 
 
@@ -49,6 +50,7 @@ def sys_args(app_config) -> list:
         '--device-port', app_config['device_port'],
         '--device-id', app_config['device_id'],
         '--broadcast-interval', str(app_config['broadcast_interval']),
+        '--broadcast-exchange', app_config['broadcast_exchange'],
     ]
 
 

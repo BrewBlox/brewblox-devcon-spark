@@ -5,14 +5,13 @@ Intermittently broadcasts controller state to the eventbus
 
 import asyncio
 from concurrent.futures import CancelledError
+from contextlib import suppress
 
 from aiohttp import web
 from brewblox_devcon_spark.api import ObjectApi
 from brewblox_service import brewblox_logger, events, features
 
 LOGGER = brewblox_logger(__name__)
-
-BREWBLOX_EXCHANGE = 'brewblox'
 
 
 def get_broadcaster(app: web.Application):
@@ -27,7 +26,7 @@ class Broadcaster(features.ServiceFeature):
 
     def __init__(self, app: web.Application=None):
         super().__init__(app)
-        self._task = None
+        self._task: asyncio.Task = None
 
     def __str__(self):
         return f'{type(self).__name__}'
@@ -36,20 +35,18 @@ class Broadcaster(features.ServiceFeature):
         await self.close()
         self._task = app.loop.create_task(self._broadcast(app))
 
-    async def close(self, *args, **kwargs):
-        try:
+    async def close(self, *_):
+        with suppress(AttributeError, CancelledError):
             self._task.cancel()
             await self._task
-        except (AttributeError, CancelledError):
-            pass
-        finally:
-            self._task = None
+        self._task = None
 
     async def _broadcast(self, app: web.Application):
         api = ObjectApi(app)
         publisher = events.get_publisher(app)
         name = app['config']['name']
         interval = app['config']['broadcast_interval']
+        exchange = app['config']['broadcast_exchange']
         last_broadcast_ok = True
 
         LOGGER.info(f'{self} now broadcasting')
@@ -64,7 +61,7 @@ class Broadcaster(features.ServiceFeature):
                     continue
 
                 await publisher.publish(
-                    exchange=BREWBLOX_EXCHANGE,
+                    exchange=exchange,
                     routing=name,
                     message=state
                 )

@@ -6,6 +6,7 @@ import asyncio
 from binascii import hexlify, unhexlify
 from collections import defaultdict
 from concurrent.futures import CancelledError
+from contextlib import suppress
 from datetime import datetime, timedelta
 
 from aiohttp import web
@@ -90,37 +91,30 @@ class SparkCommander(features.ServiceFeature):
     def __init__(self, app: web.Application=None):
         super().__init__(app)
 
-        self._cleanup_task: asyncio.Task = None
         self._requests = defaultdict(TimestampedQueue)
-
-        # TODO(Bob): handle events
-        self._conduit = communication.SparkConduit(
-            on_data=self._process_response)
+        self._conduit: communication.SparkConduit = None
+        self._cleanup_task: asyncio.Task = None
 
     def __str__(self):
         return f'<{type(self).__name__} for {self._conduit}>'
 
     async def start(self, app: web.Application):
-        config = app['config']
-        loop = app.loop
+        await self.close()
 
-        await self._conduit.bind(
-            loop=loop,
-            device=config['device_port'],
-            serial_number=config['device_id']
-        )
-        self._cleanup_task = loop.create_task(self._cleanup())
+        self._conduit = communication.get_conduit(app)
+        self._conduit.add_data_callback(self._process_response)
+        self._cleanup_task = app.loop.create_task(self._cleanup())
 
     async def close(self, *_):
-        self._conduit.close()
+        with suppress(AttributeError):
+            self._conduit.remove_data_callback(self._process_response)
 
-        try:
+        with suppress(Exception):
             self._cleanup_task.cancel()
             await self._cleanup_task
-        except Exception:
-            pass
-        finally:
-            self._cleanup_task = None
+
+        self._conduit = None
+        self._cleanup_task = None
 
     async def _cleanup(self):
         while True:
@@ -136,11 +130,11 @@ class SparkCommander(features.ServiceFeature):
                 for key in stale:
                     del self._requests[key]
 
-            except CancelledError:  # pragma: no cover
+            except CancelledError:
                 LOGGER.debug(f'{self} cleanup task shutdown')
                 break
 
-            except Exception as ex:  # pragma: no cover
+            except Exception as ex:
                 LOGGER.warn(f'{self} cleanup task error: {ex}')
 
     async def _process_response(self, conduit, msg: str):

@@ -8,7 +8,6 @@ from unittest.mock import PropertyMock
 
 import pytest
 from asynctest import CoroutineMock
-
 from brewblox_devcon_spark import commander, commands
 
 TESTED = commander.__name__
@@ -16,7 +15,7 @@ TESTED = commander.__name__
 
 @pytest.fixture
 def conduit_mock(mocker):
-    m = mocker.patch(TESTED + '.communication.SparkConduit')
+    m = mocker.patch(TESTED + '.communication.get_conduit')
     m.return_value.bind = CoroutineMock()
     m.return_value.write = CoroutineMock()
     m.return_value.write_encoded = CoroutineMock()
@@ -35,20 +34,12 @@ async def sparky(app, client):
 
 
 async def test_init(conduit_mock, app, client):
-    # The commander feature is up and running
-    assert conduit_mock.bind.call_count == 1
-
     spock = commander.SparkCommander()
 
     await spock.close()
-    assert conduit_mock.close.call_count == 1
-
     await spock.start(app)
-    assert conduit_mock.bind.call_count == 2
-
     await spock.close()
     await spock.close()
-    assert conduit_mock.close.call_count == 3
 
     assert str(spock)
 
@@ -139,7 +130,7 @@ async def test_timestamped_response():
     assert not res.fresh
 
 
-async def test_queue_cleanup(mocker, conduit_mock, sparky, app, client):
+async def test_queue_cleanup(mocker, conduit_mock, sparky, app):
     mocker.patch(TESTED + '.CLEANUP_INTERVAL', timedelta(milliseconds=10))
     fresh_mock = PropertyMock(return_value=True)
     type(commander.TimestampedQueue()).fresh = fresh_mock
@@ -155,3 +146,16 @@ async def test_queue_cleanup(mocker, conduit_mock, sparky, app, client):
     fresh_mock.return_value = False
     await asyncio.sleep(0.1)
     assert len(sparky._requests) == 0
+
+
+async def test_queue_cleanup_error(mocker, sparky, app):
+    mocker.patch(TESTED + '.CLEANUP_INTERVAL', timedelta(milliseconds=10))
+    logger_spy = mocker.spy(commander, 'LOGGER')
+
+    # Trigger an error
+    sparky._requests = None
+
+    await sparky.start(app)
+    await asyncio.sleep(0.1)
+    assert logger_spy.warn.call_count > 0
+    assert not sparky._cleanup_task.done()

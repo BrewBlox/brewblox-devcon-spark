@@ -29,6 +29,9 @@ def create_parser(default_name='spark'):
                         help='Interval (in seconds) between broadcasts of controller state. [%(default)s]',
                         type=int,
                         default=5)
+    parser.add_argument('--broadcast-exchange',
+                        help='Eventbus exchange to which controller state should be broadcasted. [%(default)s]',
+                        default='brewcast')
     return parser
 
 
