@@ -108,11 +108,16 @@ def bound_collector(loop):
 
 
 @pytest.fixture
-async def bound_conduit(loop, serial_mock, transport_mock, bound_collector):
-    conduit = communication.SparkConduit(
-        on_event=bound_collector.async_on_event,
-        on_data=bound_collector.async_on_data)
-    conduit.bind('port', loop)
+def app(app, serial_mock, transport_mock):
+    communication.setup(app)
+    return app
+
+
+@pytest.fixture
+async def bound_conduit(app, client, bound_collector):
+    conduit = communication.get_conduit(app)
+    conduit.add_event_callback(bound_collector.async_on_event)
+    conduit.add_data_callback(bound_collector.async_on_data)
 
     return conduit
 
@@ -180,10 +185,7 @@ async def test_coerce_partial(loop, serial_data):
 
 
 async def test_unbound_conduit(loop, serial_mock, transport_mock):
-    coll = Collector(loop)
-    conduit = communication.SparkConduit(
-        on_event=coll.async_on_event,
-        on_data=coll.async_on_data)
+    conduit = communication.SparkConduit()
 
     # test pre-bind behavior
     assert not conduit.is_bound
@@ -193,13 +195,12 @@ async def test_unbound_conduit(loop, serial_mock, transport_mock):
 
 async def test_conduit_close(bound_conduit):
     assert bound_conduit.is_bound
-    bound_conduit.close()
+    await bound_conduit.close()
     assert not bound_conduit.is_bound
-    bound_conduit.close()
+    await bound_conduit.close()
 
 
 async def test_conduit_callbacks(bound_collector, bound_conduit):
-    # bind, and test callbacks provided in init
     _send_chunks(bound_conduit._protocol)
     await bound_collector.verify()
 
@@ -210,40 +211,45 @@ async def test_conduit_write(bound_collector, bound_conduit, serial_mock):
     serial_mock.write.assert_called_once_with(b'stuff\n')
 
 
-async def test_conduit_callback_change(loop, bound_collector, bound_conduit):
+async def test_conduit_callback_multiple(loop, bound_collector, bound_conduit):
     # Change callback handler
     coll2 = Collector(loop)
-    bound_conduit.on_event = coll2.async_on_event
-    bound_conduit.on_data = coll2.async_on_data
+    bound_conduit.add_event_callback(coll2.async_on_event)
+    bound_conduit.add_data_callback(coll2.async_on_data)
 
     # Coll2 should receive all callbacks now
     _send_chunks(bound_conduit._protocol)
-    await bound_collector.verify([], [])
+    await bound_collector.verify()
     await coll2.verify()
 
 
-async def test_conduit_none_callback(bound_collector, bound_conduit):
-    bound_conduit.on_event = None
+async def test_conduit_remove_callbacks(bound_collector, bound_conduit):
+    # Safe to call repeatedly
+    bound_conduit.remove_event_callback(bound_collector.async_on_event)
+    bound_conduit.remove_event_callback(bound_collector.async_on_event)
 
     # Should not raise any errors
-    _send_chunks(bound_conduit._protocol)
-
     # No events received, but still getting data
+    _send_chunks(bound_conduit._protocol)
     await bound_collector.verify_events([])
     await bound_collector.verify_data()
 
+    bound_conduit.remove_data_callback(bound_collector.async_on_data)
+    bound_conduit.remove_data_callback(bound_collector.async_on_data)
 
-async def test_conduit_err_callback(loop, serial_mock, transport_mock, expected_events):
+    # Now also not getting data
+    _send_chunks(bound_conduit._protocol)
+    await bound_collector.verify_events([])
+    await bound_collector.verify_data([])
+
+
+async def test_conduit_err_callback(bound_conduit, expected_events):
     error_cb = CoroutineMock(side_effect=RuntimeError('boom!'))
-    conduit = communication.SparkConduit(
-        on_event=error_cb,
-        on_data=None
-    )
-    conduit.bind('port', loop)
+    bound_conduit.add_event_callback(error_cb)
 
     # no errors should be thrown
-    _send_chunks(conduit._protocol)
-    assert error_cb.call_args_list == [call(conduit, e) for e in expected_events]
+    _send_chunks(bound_conduit._protocol)
+    assert error_cb.call_args_list == [call(bound_conduit, e) for e in expected_events]
 
 
 async def test_all_ports(comports_mock):

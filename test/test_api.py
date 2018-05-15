@@ -6,7 +6,7 @@ import os
 
 import pytest
 
-from brewblox_devcon_spark import api, device
+from brewblox_devcon_spark import api, device, commander_sim, datastore
 
 TESTED = api.__name__
 
@@ -46,8 +46,10 @@ def database_test_file():
 @pytest.fixture
 async def app(app, database_test_file, loop):
     """App + controller routes"""
-    app['config']['simulation'] = True
     app['config']['database'] = database_test_file
+
+    commander_sim.setup(app)
+    datastore.setup(app)
     device.setup(app)
     api.setup(app)
 

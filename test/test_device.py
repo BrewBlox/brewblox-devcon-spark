@@ -3,73 +3,49 @@ Tests brewblox_devcon_spark.device
 """
 
 import pytest
-from brewblox_devcon_spark import device, commander, datastore
-from brewblox_codec_spark import codec
 from asynctest import CoroutineMock
-
+from brewblox_codec_spark import codec
+from brewblox_devcon_spark import commander, datastore, device
+from brewblox_service import features
 
 TESTED = device.__name__
 
 
 @pytest.fixture
-def commander_mock(mocker, loop):
-    cmder = commander.SparkCommander(loop=loop)
+def commander_mock(mocker):
+    cmder = commander.SparkCommander(app=None)
 
     def echo(command):
         retval = command.decoded_request
         retval['command'] = command.name
         return retval
 
-    cmder.bind = CoroutineMock()
+    cmder.start = CoroutineMock()
     cmder.close = CoroutineMock()
     cmder.execute = CoroutineMock(side_effect=echo)
     return cmder
 
 
 @pytest.fixture
-async def store(loop):
-    store = datastore.MemoryDataStore()
-    await store.start(loop=loop)
-    return store
-
-
-@pytest.fixture
-async def app(app, commander_mock, store, mocker):
+def app(app, commander_mock):
     """App + controller routes"""
-    mocker.patch(TESTED + '.SparkCommander').return_value = commander_mock
-    mocker.patch(TESTED + '.FileDataStore').return_value = store
+    features.add(app, commander_mock, name=commander.SparkCommander)
+
+    features.add(app, datastore.MemoryDataStore(), name='object_store')
+    features.add(app, datastore.MemoryDataStore(), name='object_cache')
+    features.add(app, datastore.MemoryDataStore(), name='system_store')
+
     device.setup(app)
     return app
 
 
+@pytest.fixture
+async def store(app, client):
+    return datastore.get_object_store(app)
+
+
 def test_setup(app, app_config):
     assert device.get_controller(app).name == app_config['name']
-
-
-async def test_start_close(app, client, commander_mock):
-    assert commander_mock.bind.call_count == 1
-    assert commander_mock.close.call_count == 0
-
-    controller = device.get_controller(app)
-
-    await controller.close()
-    await controller.close()
-
-    await controller.start(app)
-    assert commander_mock.bind.call_count == 2
-
-    await controller.start(app)
-    assert commander_mock.bind.call_count == 3
-
-    # should not trigger errors in app cleanup
-    await controller.close()
-
-    app['config']['simulation'] = True
-    await controller.start(app)
-    assert commander_mock.bind.call_count == 3
-
-    c = device.SparkController(name='hoopla')
-    await c.start(app)
 
 
 async def test_transcoding(app, client, commander_mock, store):

@@ -2,24 +2,38 @@
 Tests brewblox_devcon_spark.__main__.py
 """
 
+import pytest
 from brewblox_devcon_spark import __main__ as main
-
+from brewblox_devcon_spark import commander, commander_sim, datastore, device, broadcaster
+from brewblox_service import events
 
 TESTED = main.__name__
 
 
-def test_main(loop, mocker):
-    create_parser_mock = mocker.patch(TESTED + '.service.create_parser')
-    create_mock = mocker.patch(TESTED + '.service.create_app')
-    device_setup_mock = mocker.patch(TESTED + '.device.setup')
-    furnish_mock = mocker.patch(TESTED + '.service.furnish')
-    run_mock = mocker.patch(TESTED + '.service.run')
-    app_mock = create_mock.return_value
+def test_main(mocker, app):
+    mocker.patch(TESTED + '.service.run')
+    mocker.patch(TESTED + '.service.create_app').return_value = app
 
     main.main()
 
-    assert create_parser_mock.return_value.add_argument.call_count > 1
-    create_mock.assert_called_once_with(parser=create_parser_mock.return_value)
-    furnish_mock.assert_called_once_with(app_mock)
-    run_mock.assert_called_once_with(app_mock)
-    device_setup_mock.assert_called_once_with(app_mock)
+    assert all([
+        commander.get_commander(app),
+        datastore.get_object_store(app),
+        device.get_controller(app),
+        events.get_listener(app),
+        broadcaster.get_broadcaster(app)
+    ])
+
+
+@pytest.mark.parametrize('simulation', [True, False])
+def test_simulation(simulation, mocker, app):
+    app['config']['simulation'] = simulation
+    mocker.patch(TESTED + '.service.run')
+    mocker.patch(TESTED + '.service.create_app').return_value = app
+
+    main.main()
+
+    assert simulation == isinstance(
+        commander.get_commander(app),
+        commander_sim.SimulationCommander
+    )

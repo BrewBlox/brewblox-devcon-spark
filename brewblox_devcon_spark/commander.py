@@ -6,10 +6,12 @@ import asyncio
 from binascii import hexlify, unhexlify
 from collections import defaultdict
 from concurrent.futures import CancelledError
+from contextlib import suppress
 from datetime import datetime, timedelta
 
+from aiohttp import web
 from brewblox_devcon_spark import commands, communication
-from brewblox_service import brewblox_logger
+from brewblox_service import brewblox_logger, features
 
 LOGGER = brewblox_logger(__name__)
 
@@ -40,6 +42,14 @@ CLEANUP_INTERVAL = timedelta(seconds=60)
 # In this scenario, the response will only be t=10 old, as it was stored at t=100
 RESPONSE_VALID_DURATION = timedelta(seconds=5)
 REQUEST_TIMEOUT = timedelta(seconds=5)
+
+
+def setup(app: web.Application):
+    features.add(app, SparkCommander(app))
+
+
+def get_commander(app: web.Application):
+    return features.get(app, SparkCommander)
 
 
 class TimestampedQueue():
@@ -76,33 +86,35 @@ class TimestampedResponse():
         return self._timestamp + RESPONSE_VALID_DURATION > datetime.utcnow()
 
 
-class SparkCommander():
+class SparkCommander(features.ServiceFeature):
 
-    def __init__(self, loop: asyncio.BaseEventLoop):
-        self._loop = loop or asyncio.get_event_loop()
+    def __init__(self, app: web.Application=None):
+        super().__init__(app)
+
         self._requests = defaultdict(TimestampedQueue)
+        self._conduit: communication.SparkConduit = None
         self._cleanup_task: asyncio.Task = None
-
-        # TODO(Bob): handle events
-        self._conduit = communication.SparkConduit(
-            on_data=self._process_response)
 
     def __str__(self):
         return f'<{type(self).__name__} for {self._conduit}>'
 
-    async def bind(self, *args, **kwargs):
-        self._conduit.bind(*args, **kwargs)
-        self._cleanup_task = self._loop.create_task(self._cleanup())
+    async def start(self, app: web.Application):
+        await self.close()
 
-    async def close(self):
-        self._conduit.close()
+        self._conduit = communication.get_conduit(app)
+        self._conduit.add_data_callback(self._process_response)
+        self._cleanup_task = app.loop.create_task(self._cleanup())
 
-        if self._cleanup_task:
-            try:
-                self._cleanup_task.cancel()
-                await self._cleanup_task
-            except CancelledError:
-                pass
+    async def close(self, *_):
+        with suppress(AttributeError):
+            self._conduit.remove_data_callback(self._process_response)
+
+        with suppress(Exception):
+            self._cleanup_task.cancel()
+            await self._cleanup_task
+
+        self._conduit = None
+        self._cleanup_task = None
 
     async def _cleanup(self):
         while True:
@@ -118,11 +130,11 @@ class SparkCommander():
                 for key in stale:
                     del self._requests[key]
 
-            except CancelledError:  # pragma: no cover
+            except CancelledError:
                 LOGGER.debug(f'{self} cleanup task shutdown')
                 break
 
-            except Exception as ex:  # pragma: no cover
+            except Exception as ex:
                 LOGGER.warn(f'{self} cleanup task error: {ex}')
 
     async def _process_response(self, conduit, msg: str):

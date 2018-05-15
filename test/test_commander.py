@@ -8,7 +8,6 @@ from unittest.mock import PropertyMock
 
 import pytest
 from asynctest import CoroutineMock
-
 from brewblox_devcon_spark import commander, commands
 
 TESTED = commander.__name__
@@ -16,29 +15,33 @@ TESTED = commander.__name__
 
 @pytest.fixture
 def conduit_mock(mocker):
-    m = mocker.patch(TESTED + '.communication.SparkConduit')
+    m = mocker.patch(TESTED + '.communication.get_conduit')
+    m.return_value.bind = CoroutineMock()
     m.return_value.write = CoroutineMock()
     m.return_value.write_encoded = CoroutineMock()
     return m.return_value
 
 
 @pytest.fixture
-async def sparky(conduit_mock, loop):
-    return commander.SparkCommander(loop)
+def app(app, conduit_mock):
+    commander.setup(app)
+    return app
 
 
-async def test_init(conduit_mock, sparky, loop):
-    await sparky.close()
-    assert conduit_mock.close.call_count == 1
+@pytest.fixture
+async def sparky(app, client):
+    return commander.get_commander(app)
 
-    await sparky.bind(loop=loop)
-    assert conduit_mock.bind.call_count == 1
 
-    await sparky.close()
-    await sparky.close()
-    assert conduit_mock.close.call_count == 3
+async def test_init(conduit_mock, app, client):
+    spock = commander.SparkCommander()
 
-    assert str(sparky)
+    await spock.close()
+    await spock.start(app)
+    await spock.close()
+    await spock.close()
+
+    assert str(spock)
 
 
 async def test_process_response(conduit_mock, sparky):
@@ -127,12 +130,12 @@ async def test_timestamped_response():
     assert not res.fresh
 
 
-async def test_queue_cleanup(mocker, conduit_mock, sparky):
+async def test_queue_cleanup(mocker, conduit_mock, sparky, app):
     mocker.patch(TESTED + '.CLEANUP_INTERVAL', timedelta(milliseconds=10))
     fresh_mock = PropertyMock(return_value=True)
     type(commander.TimestampedQueue()).fresh = fresh_mock
 
-    await sparky.bind()
+    await sparky.start(app)
     await sparky._process_response(conduit_mock, '05 00 |00 00 00')
 
     # Still fresh
@@ -143,3 +146,16 @@ async def test_queue_cleanup(mocker, conduit_mock, sparky):
     fresh_mock.return_value = False
     await asyncio.sleep(0.1)
     assert len(sparky._requests) == 0
+
+
+async def test_queue_cleanup_error(mocker, sparky, app):
+    mocker.patch(TESTED + '.CLEANUP_INTERVAL', timedelta(milliseconds=10))
+    logger_spy = mocker.spy(commander, 'LOGGER')
+
+    # Trigger an error
+    sparky._requests = None
+
+    await sparky.start(app)
+    await asyncio.sleep(0.1)
+    assert logger_spy.warn.call_count > 0
+    assert not sparky._cleanup_task.done()

@@ -5,11 +5,13 @@ Implements a protocol and a conduit for async serial communication.
 import asyncio
 import re
 from collections import namedtuple
+from contextlib import suppress
 from functools import partial
-from typing import Any, Callable, Generator, Iterable
+from typing import Any, Callable, Generator, Iterable, List
 
 import serial
-from brewblox_service import brewblox_logger
+from aiohttp import web
+from brewblox_service import brewblox_logger, features
 from serial.aio import SerialTransport
 from serial.tools import list_ports
 
@@ -41,20 +43,27 @@ async def _default_on_message(conduit: 'SparkConduit', message: str):
     LOGGER.info(f'Unhandled message: conduit={conduit}, message={message}')
 
 
-class SparkConduit():
+def setup(app: web.Application):
+    features.add(app, SparkConduit(app))
 
-    def __init__(self,
-                 on_event: MessageCallback_=None,
-                 on_data: MessageCallback_=None):
+
+def get_conduit(app: web.Application) -> 'SparkConduit':
+    return features.get(app, SparkConduit)
+
+
+class SparkConduit(features.ServiceFeature):
+
+    def __init__(self, app: web.Application=None):
+        super().__init__(app)
+
         # Communication
         self._device = None
         self._protocol = None
         self._serial = None
         self._transport = None
 
-        # Callback handling
-        self.on_event = on_event
-        self.on_data = on_data
+        self._event_callbacks = set()
+        self._data_callbacks = set()
 
         # Asyncio
         self._loop = None
@@ -62,41 +71,42 @@ class SparkConduit():
     def __str__(self):
         return f'<{type(self).__name__} for {self._device}>'
 
-    @property
-    def on_event(self) -> MessageCallback_:
-        return self._on_event
+    def add_event_callback(self, cb: MessageCallback_):
+        cb and self._event_callbacks.add(cb)
 
-    @on_event.setter
-    def on_event(self, f: MessageCallback_):
-        self._on_event = f if f else _default_on_message
+    def remove_event_callback(self, cb: MessageCallback_):
+        with suppress(KeyError):
+            self._event_callbacks.remove(cb)
 
-    @property
-    def on_data(self) -> MessageCallback_:
-        return self._on_data
+    def add_data_callback(self, cb: MessageCallback_):
+        cb and self._data_callbacks.add(cb)
 
-    @on_data.setter
-    def on_data(self, f: MessageCallback_):
-        self._on_data = f if f else _default_on_message
+    def remove_data_callback(self, cb: MessageCallback_):
+        with suppress(KeyError):
+            self._data_callbacks.remove(cb)
 
     @property
     def is_bound(self):
         return self._serial and self._serial.is_open
 
-    def bind(self, device: str=None, serial_number: str=None, loop: asyncio.BaseEventLoop=None):
-        self.close()
-        self._loop = loop or asyncio.get_event_loop()
+    async def start(self, app: web.Application):
+        await self.close()
 
-        self._device = detect_device(device, serial_number)
+        self._loop = app.loop
+        config = app['config']
+
+        self._device = detect_device(config['device_port'], config['device_id'])
         self._protocol = SparkProtocol(
-            on_event=partial(self._do_callback, 'on_event'),
-            on_data=partial(self._do_callback, 'on_data'))
+            on_event=partial(self._do_callbacks, self._event_callbacks),
+            on_data=partial(self._do_callbacks, self._data_callbacks),
+        )
+
         self._serial = serial.serial_for_url(self._device, baudrate=DEFAULT_BAUD_RATE)
         self._transport = SerialTransport(self._loop, self._protocol, self._serial)
 
         LOGGER.info(f'Conduit bound to {self._transport}')
-        return self._transport is not None
 
-    def close(self):
+    async def close(self, *_):
         if self._transport:
             self._transport.close()
 
@@ -115,8 +125,7 @@ class SparkConduit():
         assert self._serial, 'Serial unbound or not available'
         return self._serial.write(data)
 
-    def _do_callback(self, cb_attr: str, message: str):
-        LOGGER.debug(f'{self} {cb_attr}({message})')
+    def _do_callbacks(self, callbacks: List[MessageCallback_], message: str):
 
         def check_result(fut):
             try:
@@ -124,11 +133,9 @@ class SparkConduit():
             except Exception as ex:
                 LOGGER.warn(f'Unhandled exception in callback {self}, message={message}, ex={ex}')
 
-        # Retrieve the callback function every time to allow changing it
-        func = getattr(self, cb_attr)
-        # Schedule the callback for execution
-        task = asyncio.ensure_future(func(self, message), loop=self._loop)
-        task.add_done_callback(check_result)
+        for cb in callbacks or [_default_on_message]:
+            task = asyncio.ensure_future(cb(self, message), loop=self._loop)
+            task.add_done_callback(check_result)
 
 
 class SparkProtocol(asyncio.Protocol):

@@ -8,15 +8,11 @@ from typing import Callable, List, Union
 import dpath
 from aiohttp import web
 from brewblox_codec_spark import codec
-from brewblox_devcon_spark import commands
-from brewblox_devcon_spark.commander import SparkCommander
-from brewblox_devcon_spark.commander_sim import SimulationCommander
+from brewblox_devcon_spark import commands, commander, datastore
 from brewblox_devcon_spark.commands import (FLAGS_KEY, OBJECT_DATA_KEY,  # noqa
                                             OBJECT_ID_KEY, OBJECT_LIST_KEY,
                                             OBJECT_TYPE_KEY, PROFILE_ID_KEY,
                                             PROFILE_LIST_KEY, SYSTEM_ID_KEY)
-from brewblox_devcon_spark.datastore import (DataStore, FileDataStore,
-                                             MemoryDataStore)
 from brewblox_service import brewblox_logger, features
 
 SERVICE_ID_KEY = 'service_id'
@@ -48,10 +44,10 @@ class SparkController(features.ServiceFeature):
         self._name = name
         self._active_profile = 0
 
-        self._commander: SparkCommander = None
-        self._object_store: FileDataStore = None
-        self._system_store: FileDataStore = None
-        self._object_cache: MemoryDataStore = None
+        self._commander: commander.SparkCommander = None
+        self._object_store: datastore.DataStore = None
+        self._system_store: datastore.DataStore = None
+        self._object_cache: datastore.DataStore = None
 
     @property
     def name(self):
@@ -66,45 +62,13 @@ class SparkController(features.ServiceFeature):
         self._active_profile = profile_id
 
     async def start(self, app: web.Application):
-        await self.close()
-        config = app['config']
+        self._commander = commander.get_commander(app)
+        self._object_store = datastore.get_object_store(app)
+        self._system_store = datastore.get_system_store(app)
+        self._object_cache = datastore.get_object_cache(app)
 
-        self._object_cache = MemoryDataStore()
-        await self._object_cache.start(loop=app.loop)
-
-        self._object_store = FileDataStore(
-            filename=config['database'],
-            read_only=False
-        )
-        await self._object_store.start(loop=app.loop)
-
-        self._system_store = FileDataStore(
-            filename=config['system_database'],
-            read_only=True
-        )
-        await self._system_store.start(loop=app.loop)
-
-        if config['simulation']:
-            self._commander = SimulationCommander(app.loop)
-        else:
-            self._commander = SparkCommander(app.loop)
-
-        await self._commander.bind(
-            loop=app.loop,
-            device=config['device_port'],
-            serial_number=config['device_id']
-        )
-
-    async def close(self, *args, **kwargs):
-        [
-            await s.close() for s in [
-                self._commander,
-                self._object_store,
-                self._object_cache,
-                self._system_store
-            ]
-            if s is not None
-        ]
+    async def close(self, app: web.Application):
+        pass
 
     async def _data_processed(self, processor_func: Callable, content: dict) -> dict:
         # Looks for codec data, and converts it
@@ -125,7 +89,7 @@ class SparkController(features.ServiceFeature):
     _data_encoded = partialmethod(_data_processed, codec.encode)
     _data_decoded = partialmethod(_data_processed, codec.decode)
 
-    async def resolve_controller_id(self, store: DataStore, input_id: Union[str, List[int]]) -> List[int]:
+    async def resolve_controller_id(self, store: datastore.DataStore, input_id: Union[str, List[int]]) -> List[int]:
         """
         Finds the controller ID matching service ID input.
         If input is a list of ints, it assumes it already is a controller ID
@@ -138,7 +102,7 @@ class SparkController(features.ServiceFeature):
         assert len(objects) == 1, f'Multiple definition of Service ID [{input_id}] found: {objects}'
         return objects[0][CONTROLLER_ID_KEY]
 
-    async def resolve_service_id(self, store: DataStore, input_id: Union[str, List[int]]) -> str:
+    async def resolve_service_id(self, store: datastore.DataStore, input_id: Union[str, List[int]]) -> str:
         """
         Finds the service ID matching controller ID input.
         If input is a string, it assumes it already is a service ID.
@@ -171,7 +135,7 @@ class SparkController(features.ServiceFeature):
         return service_id
 
     async def _id_resolved(self, resolver: Callable, content: dict) -> dict:
-        async def resolve_key(key: str, store: DataStore):
+        async def resolve_key(key: str, store: datastore.DataStore):
             for path, id in dpath.util.search(content, f'**/{key}', yielded=True):
                 dpath.util.set(content, path, await resolver(self, store, id))
 

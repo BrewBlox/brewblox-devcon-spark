@@ -30,6 +30,7 @@ def mock_publisher(mocker):
 @pytest.fixture
 async def app(app, mock_api, mock_publisher):
     app['config']['broadcast_interval'] = 0.01
+    app['config']['broadcast_exchange'] = 'testcast'
     broadcaster.setup(app)
     return app
 
@@ -56,7 +57,7 @@ async def test_broadcast(mock_api, mock_publisher, client):
     mock_api.all_data.return_value = objects
     await asyncio.sleep(0.1)
 
-    assert call(exchange='brewblox', routing='test_app', message=objects) in mock_publisher.publish.mock_calls
+    assert call(exchange='testcast', routing='test_app', message=objects) in mock_publisher.publish.mock_calls
 
 
 async def test_error(app, client, mock_api, mock_publisher):

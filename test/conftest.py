@@ -8,8 +8,10 @@ import logging
 import os
 
 import pytest
-from brewblox_service import service
 from brewblox_devcon_spark.__main__ import create_parser
+from brewblox_service import brewblox_logger, service, features
+
+LOGGER = brewblox_logger(__name__)
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -32,6 +34,7 @@ def app_config() -> dict:
         'device_id': '1234',
         'simulation': False,
         'broadcast_interval': 5,
+        'broadcast_exchange': 'brewcast',
     }
 
 
@@ -47,6 +50,7 @@ def sys_args(app_config) -> list:
         '--device-port', app_config['device_port'],
         '--device-id', app_config['device_id'],
         '--broadcast-interval', str(app_config['broadcast_interval']),
+        '--broadcast-exchange', app_config['broadcast_exchange'],
     ]
 
 
@@ -63,6 +67,11 @@ def client(app, aiohttp_client, loop):
 
     Any tests wishing to add custom behavior to app can override the fixture
     """
+    LOGGER.debug('Available features:')
+    for name, impl in app.get(features.FEATURES_KEY, {}).items():
+        LOGGER.debug(f'Feature "{name}" = {impl}')
+    LOGGER.debug(app.on_startup)
+
     return loop.run_until_complete(aiohttp_client(app))
 
 

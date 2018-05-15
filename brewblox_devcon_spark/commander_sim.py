@@ -3,11 +3,18 @@ Monkey patches commander.SparkCommander to not require an actual connection.
 """
 
 from brewblox_devcon_spark import commander, commands
+from aiohttp import web
+from brewblox_service import features
 from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                             PROFILE_ID_KEY, PROFILE_LIST_KEY,
                                             SYSTEM_ID_KEY)
 from functools import partialmethod
+
+
+def setup(app: web.Application):
+    # Register as a SparkCommander, so features.get(app, SparkCommander) still works
+    features.add(app, SimulationCommander(app), name=commander.SparkCommander)
 
 
 class SimulationResponder():
@@ -109,11 +116,14 @@ class SimulationResponder():
 
 class SimulationCommander(commander.SparkCommander):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, app: web.Application):
+        super().__init__(app)
         self._responder = SimulationResponder()
-        super().__init__(*args, **kwargs)
 
-    async def bind(self, *args, **kwargs):
+    async def start(self, *_):
+        pass
+
+    async def close(self, *_):
         pass
 
     async def execute(self, command: commands.Command) -> dict:
