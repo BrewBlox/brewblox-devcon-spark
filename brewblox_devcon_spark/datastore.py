@@ -167,10 +167,10 @@ class MemoryDataStore(DataStore):
         super().__init__(app)
         self._db = TinyDB(storage=CachingMiddleware(MemoryStorage))
 
-    async def start(self, *_):
+    async def startup(self, *_):
         pass
 
-    async def close(self, *_):
+    async def shutdown(self, *_):
         pass
 
     async def _do_with_db(self, func: DB_FUNC_TYPE_):
@@ -215,12 +215,12 @@ class FileDataStore(DataStore):
     def __str__(self):
         return f'<{type(self).__name__} for {self._filename}>'
 
-    async def start(self, app: web.Application):
+    async def startup(self, app: web.Application):
         self._loop = app.loop
         self._pending_actions = asyncio.Queue(loop=self._loop)
         self._runner = self._loop.create_task(self._run())
 
-    async def close(self, *_):
+    async def shutdown(self, *_):
         if self._runner:
             self._runner.cancel()
             await asyncio.wait([self._runner])

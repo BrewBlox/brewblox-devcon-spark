@@ -120,10 +120,10 @@ class SimulationCommander(commander.SparkCommander):
         super().__init__(app)
         self._responder = SimulationResponder()
 
-    async def start(self, *_):
+    async def startup(self, *_):
         pass
 
-    async def close(self, *_):
+    async def shutdown(self, *_):
         pass
 
     async def execute(self, command: commands.Command) -> dict:

@@ -193,11 +193,11 @@ async def test_unbound_conduit(loop, serial_mock, transport_mock):
         await conduit.write('stuff')
 
 
-async def test_conduit_close(bound_conduit):
+async def test_conduit_shutdown(bound_conduit):
     assert bound_conduit.is_bound
-    await bound_conduit.close()
+    await bound_conduit.shutdown()
     assert not bound_conduit.is_bound
-    await bound_conduit.close()
+    await bound_conduit.shutdown()
 
 
 async def test_conduit_callbacks(bound_collector, bound_conduit):

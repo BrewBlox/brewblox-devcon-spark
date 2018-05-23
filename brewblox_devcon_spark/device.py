@@ -61,13 +61,13 @@ class SparkController(features.ServiceFeature):
     def active_profile(self, profile_id: int):
         self._active_profile = profile_id
 
-    async def start(self, app: web.Application):
+    async def startup(self, app: web.Application):
         self._commander = commander.get_commander(app)
         self._object_store = datastore.get_object_store(app)
         self._system_store = datastore.get_system_store(app)
         self._object_cache = datastore.get_object_cache(app)
 
-    async def close(self, app: web.Application):
+    async def shutdown(self, *_):
         pass
 
     async def _data_processed(self, processor_func: Callable, content: dict) -> dict:

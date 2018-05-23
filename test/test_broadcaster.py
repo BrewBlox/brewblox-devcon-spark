@@ -35,14 +35,14 @@ async def app(app, mock_api, mock_publisher):
     return app
 
 
-async def test_startup_close(app, client):
+async def test_startup_shutdown(app, client):
     assert broadcaster.get_broadcaster(app)
     b = broadcaster.Broadcaster()
-    await b.start(app)
-    await b.start(app)
-    await b.close(app)
-    await b.start(app)
-    await b.close(app)
+    await b.startup(app)
+    await b.startup(app)
+    await b.shutdown(app)
+    await b.startup(app)
+    await b.shutdown(app)
 
 
 async def test_noop_broadcast(mock_api, mock_publisher, client):

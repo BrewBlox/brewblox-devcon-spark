@@ -31,11 +31,11 @@ class Broadcaster(features.ServiceFeature):
     def __str__(self):
         return f'{type(self).__name__}'
 
-    async def start(self, app: web.Application):
-        await self.close()
+    async def startup(self, app: web.Application):
+        await self.shutdown()
         self._task = app.loop.create_task(self._broadcast(app))
 
-    async def close(self, *_):
+    async def shutdown(self, *_):
         with suppress(AttributeError, CancelledError):
             self._task.cancel()
             await self._task
