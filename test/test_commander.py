@@ -36,10 +36,10 @@ async def sparky(app, client):
 async def test_init(conduit_mock, app, client):
     spock = commander.SparkCommander()
 
-    await spock.close()
-    await spock.start(app)
-    await spock.close()
-    await spock.close()
+    await spock.shutdown()
+    await spock.startup(app)
+    await spock.shutdown()
+    await spock.shutdown()
 
     assert str(spock)
 
@@ -135,7 +135,7 @@ async def test_queue_cleanup(mocker, conduit_mock, sparky, app):
     fresh_mock = PropertyMock(return_value=True)
     type(commander.TimestampedQueue()).fresh = fresh_mock
 
-    await sparky.start(app)
+    await sparky.startup(app)
     await sparky._process_response(conduit_mock, '05 00 |00 00 00')
 
     # Still fresh
@@ -155,7 +155,7 @@ async def test_queue_cleanup_error(mocker, sparky, app):
     # Trigger an error
     sparky._requests = None
 
-    await sparky.start(app)
+    await sparky.startup(app)
     await asyncio.sleep(0.1)
     assert logger_spy.warn.call_count > 0
     assert not sparky._cleanup_task.done()

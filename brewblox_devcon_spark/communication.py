@@ -89,8 +89,8 @@ class SparkConduit(features.ServiceFeature):
     def is_bound(self):
         return self._serial and self._serial.is_open
 
-    async def start(self, app: web.Application):
-        await self.close()
+    async def startup(self, app: web.Application):
+        await self.shutdown()
 
         self._loop = app.loop
         config = app['config']
@@ -106,7 +106,7 @@ class SparkConduit(features.ServiceFeature):
 
         LOGGER.info(f'Conduit bound to {self._transport}')
 
-    async def close(self, *_):
+    async def shutdown(self, *_):
         if self._transport:
             self._transport.close()
 

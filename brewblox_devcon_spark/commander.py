@@ -98,14 +98,14 @@ class SparkCommander(features.ServiceFeature):
     def __str__(self):
         return f'<{type(self).__name__} for {self._conduit}>'
 
-    async def start(self, app: web.Application):
-        await self.close()
+    async def startup(self, app: web.Application):
+        await self.shutdown()
 
         self._conduit = communication.get_conduit(app)
         self._conduit.add_data_callback(self._process_response)
         self._cleanup_task = app.loop.create_task(self._cleanup())
 
-    async def close(self, *_):
+    async def shutdown(self, *_):
         with suppress(AttributeError):
             self._conduit.remove_data_callback(self._process_response)
 

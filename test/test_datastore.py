@@ -62,11 +62,11 @@ async def test_basics(stores, app):
     for store in stores:
         assert str(store)
 
-        await store.close()
-        await store.close()
+        await store.shutdown()
+        await store.shutdown()
 
-        await store.start(app)
-        await store.close()
+        await store.startup(app)
+        await store.shutdown()
 
 
 async def test_insert(stores, obj):
