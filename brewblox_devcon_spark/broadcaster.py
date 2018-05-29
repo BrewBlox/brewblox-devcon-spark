@@ -8,7 +8,7 @@ from concurrent.futures import CancelledError
 from contextlib import suppress
 
 from aiohttp import web
-from brewblox_devcon_spark.api import ObjectApi
+from brewblox_devcon_spark.api.object_api import ObjectApi
 from brewblox_service import brewblox_logger, events, features
 
 LOGGER = brewblox_logger(__name__)

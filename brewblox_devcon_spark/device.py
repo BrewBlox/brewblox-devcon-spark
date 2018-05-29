@@ -3,7 +3,7 @@ Offers a functional interface to the device functionality
 """
 
 from functools import partialmethod
-from typing import Callable, List, Union
+from typing import Callable, List, Union, Type
 
 import dpath
 from aiohttp import web
@@ -97,10 +97,12 @@ class SparkController(features.ServiceFeature):
         if isinstance(input_id, list) and all([isinstance(i, int) for i in input_id]):
             return input_id
 
-        objects = await store.find_by_key(SERVICE_ID_KEY, input_id)
-        assert objects, f'Service ID [{input_id}] not found in {store}'
-        assert len(objects) == 1, f'Multiple definition of Service ID [{input_id}] found: {objects}'
-        return objects[0][CONTROLLER_ID_KEY]
+        obj = await store.find_unique(SERVICE_ID_KEY, input_id)
+
+        if not obj:
+            raise AssertionError(f'Service ID [{input_id}] not found in {store}')
+
+        return obj[CONTROLLER_ID_KEY]
 
     async def resolve_service_id(self, store: datastore.DataStore, input_id: Union[str, List[int]]) -> str:
         """
@@ -115,7 +117,7 @@ class SparkController(features.ServiceFeature):
         try:
             # Get first item from data store with correct controller ID,
             # and that has a service ID defined
-            objects = await store.find_by_key(CONTROLLER_ID_KEY, input_id)
+            objects = await store.find(CONTROLLER_ID_KEY, input_id)
             service_id = next(o.get(SERVICE_ID_KEY) for o in objects)
         except StopIteration:
             # If service ID not found, create alias
@@ -128,7 +130,7 @@ class SparkController(features.ServiceFeature):
                         CONTROLLER_ID_KEY: input_id
                     }
                 )
-            except AssertionError:
+            except datastore.NotUniqueError:
                 # We give up. Just use the raw controller ID.
                 service_id = input_id
 
@@ -147,9 +149,9 @@ class SparkController(features.ServiceFeature):
     _controller_id_resolved = partialmethod(_id_resolved, resolve_controller_id)
     _service_id_resolved = partialmethod(_id_resolved, resolve_service_id)
 
-    async def _execute(self, command_type: type(commands.Command), _content: dict = None, **kwargs) -> dict:
+    async def _execute(self, command_type: Type[commands.Command], content_: dict = None, **kwargs) -> dict:
         # Allow a combination of a dict containing arguments, and loose kwargs
-        content = _content or dict()
+        content = content_ or dict()
         content.update(kwargs)
 
         try:
@@ -195,29 +197,3 @@ class SparkController(features.ServiceFeature):
     list_profiles = partialmethod(_execute, commands.ListProfilesCommand)
     read_system_value = partialmethod(_execute, commands.ReadSystemValueCommand)
     write_system_value = partialmethod(_execute, commands.WriteSystemValueCommand)
-
-    async def create_alias(self, obj: dict) -> dict:
-        return await self._object_store.insert_unique(
-            id_key=SERVICE_ID_KEY,
-            obj=obj
-        )
-
-    async def update_alias(self, existing_id: str, new_id: str) -> dict:
-        return await self.update_store_object(
-            service_id=existing_id,
-            obj={SERVICE_ID_KEY: new_id}
-        )
-
-    async def update_store_object(self, service_id: str, obj: dict) -> dict:
-        return await self._object_store.update_unique(
-            id_key=SERVICE_ID_KEY,
-            id_val=service_id,
-            obj=obj,
-            unique_key=SERVICE_ID_KEY
-        )
-
-    async def delete_store_object(self, service_id: str):
-        return await self._object_store.delete(
-            id_key=SERVICE_ID_KEY,
-            id_val=service_id
-        )

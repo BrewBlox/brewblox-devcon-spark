@@ -5,10 +5,9 @@ Tests brewblox_devcon_spark.api
 import os
 
 import pytest
-
-from brewblox_devcon_spark import api, device, commander_sim, datastore
-
-TESTED = api.__name__
+from brewblox_devcon_spark import commander_sim, datastore, device
+from brewblox_devcon_spark.api import (alias_api, conflict_api, debug_api,
+                                       object_api, profile_api, system_api)
 
 
 @pytest.fixture
@@ -51,7 +50,13 @@ async def app(app, database_test_file, loop):
     commander_sim.setup(app)
     datastore.setup(app)
     device.setup(app)
-    api.setup(app)
+
+    debug_api.setup(app)
+    alias_api.setup(app)
+    conflict_api.setup(app)
+    object_api.setup(app)
+    profile_api.setup(app)
+    system_api.setup(app)
 
     return app
 
@@ -221,4 +226,53 @@ async def test_alias_update(app, client, object_args):
     assert res.status == 200
 
     res = await client.get('/objects/newname')
+    assert res.status == 200
+
+
+async def test_conflict_all(app, client):
+    objects = [
+        {'service_id': 'sid', 'controller_id': [8, 9, 10]},
+        {'service_id': 'sid', 'controller_id': [10, 9, 8]}
+    ]
+
+    store = datastore.get_object_store(app)
+    await store.insert_multiple(objects)
+
+    res = await client.get('/conflicts')
+    assert res.status == 200
+    assert (await res.json()) == dict()
+
+    res = await client.get('/objects/sid')
+    assert res.status == 500
+
+    res = await client.get('/conflicts')
+    assert res.status == 200
+    assert (await res.json()) == {
+        'service_id': {
+            'sid': objects
+        }
+    }
+
+
+async def test_conflict_resolve(app, client, object_args):
+    store = datastore.get_object_store(app)
+    argid = object_args['id']
+
+    await client.post('/objects', json=object_args)
+    await store.insert({'service_id': argid, 'dummy': True})
+
+    res = await client.get('/objects/' + argid)
+    assert res.status == 500
+
+    res = await client.get('/conflicts')
+    objects = (await res.json())['service_id'][argid]
+    assert len(objects) == 2
+
+    # Pick the one that's not the dummy
+    real = [o for o in objects if 'dummy' not in o][0]
+
+    res = await client.post('/conflicts', json={'id_key': 'service_id', 'data': real})
+    assert res.status == 200
+
+    res = await client.get('/objects/' + argid)
     assert res.status == 200

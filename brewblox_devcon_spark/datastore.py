@@ -7,7 +7,7 @@ import asyncio
 from abc import abstractmethod
 from concurrent.futures import CancelledError
 from datetime import timedelta
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Dict
 
 from aiohttp import web
 from aiotinydb import AIOImmutableJSONStorage, AIOJSONStorage, AIOTinyDB
@@ -16,15 +16,29 @@ from brewblox_service import brewblox_logger, features
 from deprecated import deprecated
 from tinydb import Query, TinyDB
 from tinydb.storages import MemoryStorage
+from collections import defaultdict
 
+ID_TYPE_ = Any
 OBJECT_TYPE_ = dict
 ACTION_RETURN_TYPE_ = Any
 DB_FUNC_TYPE_ = Callable[[TinyDB], ACTION_RETURN_TYPE_]
 
 ACTION_TIMEOUT = timedelta(seconds=5)
 DATABASE_RETRY_INTERVAL = timedelta(seconds=1)
+CONFLICT_TABLE = 'conflicts'
 
 LOGGER = brewblox_logger(__name__)
+
+
+# There's a bug in AIOTinyDB.table(), where it ignores provided table name
+# See: https://github.com/ASMfreaK/aiotinydb/pull/2
+# Overridden functionality is to do a sanity check before forwarding call
+# Temporary fix is to skip the override, and directly call super()
+AIOTinyDB.table = TinyDB.table
+
+
+class NotUniqueError(Exception):
+    pass
 
 
 def setup(app: web.Application):
@@ -84,81 +98,166 @@ class DataStore(features.ServiceFeature):
         """
         pass  # pragma: no cover
 
+    def _handle_conflict(self, db: TinyDB, id_key: str, id_val: ID_TYPE_):
+        """
+        Makes note of the newly discovered ID conflict
+        Raises a NotUniqueError
+        """
+        conflicts = db.table(CONFLICT_TABLE)
+        LOGGER.warn(f'Conflict discovered for {id_key}=={id_val}')
+        conflicts.upsert({id_key: id_val}, Query()[id_key] == id_val)
+
+        raise NotUniqueError(f'ID conflict for "{id_key}"=="{id_val}"')
+
     @deprecated('Debugging function')
     async def all(self) -> List[OBJECT_TYPE_]:
-        return await self._do_with_db(lambda db: db.all())
+        def func(db: TinyDB):
+            return db.all()
+
+        return await self._do_with_db(func)
 
     async def purge(self):
         """
         Clears the entire database.
         """
-        return await self._do_with_db(lambda db: db.purge())
+        def func(db: TinyDB):
+            db.purge_tables()
 
-    async def find_by_key(self, id_key: str, id_val: Any) -> List[OBJECT_TYPE_]:
+        return await self._do_with_db(func)
+
+    async def find(self, id_key: str, id_val: ID_TYPE_) -> List[OBJECT_TYPE_]:
         """
         Returns all documents where document[id_key] == id_val
         """
-        return await self._do_with_db(lambda db: db.search(Query()[id_key] == id_val))
+        def func(db: TinyDB):
+            return db.search(Query()[id_key] == id_val)
+
+        return await self._do_with_db(func)
 
     async def insert(self, obj: dict):
         """
         Inserts document in data store. Does not verify uniqueness of any of its keys.
         """
-        return await self._do_with_db(lambda db: db.insert(obj))
+        def func(db: TinyDB):
+            db.insert(obj)
+
+        return await self._do_with_db(func)
 
     async def insert_multiple(self, objects: List):
         """
         Inserts multiple documents in data store. Does not verify uniqueness.
         """
-        return await self._do_with_db(lambda db: db.insert_multiple(objects))
+        def func(db: TinyDB):
+            db.insert_multiple(objects)
+
+        return await self._do_with_db(func)
+
+    async def update(self, id_key: str, id_val: ID_TYPE_, obj: dict):
+        """
+        Replaces all documents in data store where document[id_key] == id_val.
+        """
+        def func(db: TinyDB):
+            db.update(obj, Query()[id_key] == id_val)
+
+        return await self._do_with_db(func)
+
+    async def delete(self, id_key: str, id_val: ID_TYPE_):
+        """
+        Deletes all documents in data store where document[id_key] == id_val.
+        """
+        def func(db: TinyDB):
+            db.remove(Query()[id_key] == id_val)
+
+        return await self._do_with_db(func)
+
+    async def find_unique(self, id_key: str, id_val: ID_TYPE_) -> OBJECT_TYPE_:
+        """
+        Returns a single document where document[id_key] == id_val.
+        Raises a NotUniqueError and logs the conflict if multiple documents are found.
+        """
+        def func(db: TinyDB):
+            vals = db.search(Query()[id_key] == id_val)
+
+            if len(vals) > 1:
+                self._handle_conflict(db, id_key, id_val)
+
+            return vals[0] if vals else None
+
+        return await self._do_with_db(func)
 
     async def insert_unique(self, id_key: str, obj: dict):
         """
         Inserts document in data store.
         Asserts that no other document has the same value for the id_key.
+        Raises a NotUniqueError and logs the conflict if multiple documents are found.
         """
-        def func(db):
+        def func(db: TinyDB):
             id = obj[id_key]
-            assert not db.contains(Query()[id_key] == id), f'{id} already exists'
+
+            if db.contains(Query()[id_key] == id):
+                self._handle_conflict(db, id_key, id)
+
             db.insert(obj)
 
         return await self._do_with_db(func)
 
-    async def update(self, id_key: str, id_val: Any, obj: dict):
-        """
-        Replaces all documents in data store where document[id_key] == id_val.
-        """
-        return await self._do_with_db(
-            lambda db: db.update(obj, Query()[id_key] == id_val)
-        )
-
-    async def update_unique(self, id_key: str, id_val: Any, obj: dict, unique_key: str=None):
+    async def update_unique(self, id_key: str, id_val: ID_TYPE_, obj: dict):
         """
         Replaces a document in data store where document[id_key] == id_val.
         Creates new document if it did not yet exist.
         Asserts that only one document will be updated.
         Asserts that no other documents exist where document[unique_key] == obj[unique_key]
         """
-        def func(db):
-            query = Query()[id_key] == id_val
-            assert db.count(query) <= 1, f'Multiple documents with {id_key}={id_val} exist'
-            # Check for documents that already use the to be inserted unique key
-            if unique_key is not None:
-                unique_id = obj[unique_key]
-                assert not db.contains(Query()[unique_key] == unique_id), \
-                    f'A document already exists with {unique_key}={unique_id}'
+        def func(db: TinyDB):
+            old_query = (Query()[id_key] == id_val)
 
-            db.upsert(obj, query)
+            if not db.count(old_query) <= 1:
+                self._handle_conflict(db, id_key, id_val)
+
+            if id_key in obj:
+                new_id = obj[id_key]
+                new_query = (Query()[id_key] == new_id)
+
+                if id_val != new_id and db.contains(new_query):
+                    # Raise before we create a conflict
+                    raise NotUniqueError(f'A document with {id_key}={new_id} already exists')
+
+            db.upsert(obj, old_query)
 
         return await self._do_with_db(func)
 
-    async def delete(self, id_key: str, id_val: Any):
+    async def known_conflicts(self) -> Dict[str, Dict[ID_TYPE_, List[OBJECT_TYPE_]]]:
         """
-        Deletes all documents in data store where document[id_key] == id_val.
+        Returns all conflicting items for each known conflict.
+
+        This will not return conflicting items that have not yet been discovered (not queried).
         """
-        return await self._do_with_db(
-            lambda db: db.remove(Query()[id_key] == id_val)
-        )
+        def func(db: TinyDB):
+            conflicts = db.table(CONFLICT_TABLE).all()
+            formatted = defaultdict(dict)
+
+            for c in conflicts:
+                for id_key, id_val in c.items():
+                    formatted[id_key].update({id_val: db.search(Query()[id_key] == id_val)})
+
+            return formatted
+
+        return await self._do_with_db(func)
+
+    async def resolve_conflict(self, id_key: str, obj: dict):
+        """
+        Deletes all objects where document[id_key] == obj[id_key].
+        Inserts obj in datastore.
+        """
+        def func(db: TinyDB):
+            query = (Query()[id_key] == obj[id_key])
+            db.remove(query)
+            db.insert(obj)
+
+            # Resolve the conflict
+            db.table(CONFLICT_TABLE).remove(query)
+
+        return await self._do_with_db(func)
 
 
 class MemoryDataStore(DataStore):
