@@ -215,7 +215,7 @@ async def test_alias_create(app, client):
     assert res.status == 200
 
     res = await client.post('/aliases', json=new_alias)
-    assert res.status == 500
+    assert res.status == 409
 
 
 async def test_alias_update(app, client, object_args):
@@ -245,7 +245,7 @@ async def test_conflict_all(app, client):
     assert (await res.json()) == dict()
 
     res = await client.get('/objects/sid')
-    assert res.status == 409
+    assert res.status == 428
 
     res = await client.get('/conflicts')
     assert res.status == 200
@@ -264,7 +264,7 @@ async def test_conflict_resolve(app, client, object_args):
     await store.insert({'service_id': argid, 'dummy': True})
 
     res = await client.get('/objects/' + argid)
-    assert res.status == 409
+    assert res.status == 428
 
     res = await client.get('/conflicts')
     objects = (await res.json())['service_id'][argid]

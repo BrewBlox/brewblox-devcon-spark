@@ -5,7 +5,7 @@ Catches Python error, and returns appropriate error codes
 
 from aiohttp import web
 from brewblox_service import brewblox_logger
-from brewblox_devcon_spark.datastore import ConflictDetectedError
+from brewblox_devcon_spark.datastore import ConflictDetectedError, NotUniqueError
 
 LOGGER = brewblox_logger(__name__)
 
@@ -25,10 +25,16 @@ async def controller_error_middleware(request: web.Request, handler: web.Request
     try:
         return await handler(request)
 
-    except ConflictDetectedError as ex:
+    except NotUniqueError as ex:
         return web.json_response(
             error_response(request.app, ex),
             status=409  # Conflict
+        )
+
+    except ConflictDetectedError as ex:
+        return web.json_response(
+            error_response(request.app, ex),
+            status=428  # Precondition required (user must resolve conflict)
         )
 
     except Exception as ex:
