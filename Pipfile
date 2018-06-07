@@ -10,8 +10,8 @@ pyserial-asyncio = "*"
 construct = "*"
 deprecated = "*"
 protobuf = "*"
-tinydb = "==3.8.1.post1"
-aiotinydb = "==1.1.0"
+tinydb = "*"
+aiotinydb = "*"
 
 [dev-packages]
 pytest-sugar = "*"

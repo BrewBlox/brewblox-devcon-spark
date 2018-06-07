@@ -30,13 +30,6 @@ CONFLICT_TABLE = 'conflicts'
 LOGGER = brewblox_logger(__name__)
 
 
-# There's a bug in AIOTinyDB.table(), where it ignores provided table name
-# See: https://github.com/ASMfreaK/aiotinydb/pull/2
-# Overridden functionality is to do a sanity check before forwarding call
-# Temporary fix is to skip the override, and directly call super()
-AIOTinyDB.table = TinyDB.table
-
-
 class ConflictError(Exception):
     pass
 
