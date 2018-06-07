@@ -23,6 +23,7 @@ class ObjectApi():
     def __init__(self, app: web.Application):
         self._ctrl = device.get_controller(app)
         self._store = datastore.get_object_store(app)
+        self._cache = datastore.get_object_cache(app)
 
     async def create(self, input_id: str, input_type: int, input_data: dict) -> dict:
         """
@@ -58,18 +59,22 @@ class ObjectApi():
             # Failed to update, we'll stick with auto-assigned ID
             LOGGER.warn(f'Failed to update datastore after create: {ex}')
 
-        return await self.read(created_id)
+        return await self.read(created_id, refresh=True)
 
-    async def read(self, input_id: str, input_type: int=0) -> dict:
+    async def read(self, input_id: str, input_type: int=0, refresh=False) -> dict:
         """
-        Reads object on the controller.
+        Reads a controller object.
 
-        TODO(Bob): Use the object cache
+        Defaults to using the object cache.
+        Gets values from controller if refresh is truthy, or no value was read from cache.
         """
-        response = await self._ctrl.read_value({
-            OBJECT_ID_KEY: input_id,
-            OBJECT_TYPE_KEY: input_type
-        })
+        response = None
+
+        if not refresh:
+            response = await self._cache.find_unique(OBJECT_ID_KEY, input_id)
+
+        if not response:
+            response = await self._refresh(input_id, input_type)
 
         return {
             API_ID_KEY: response[OBJECT_ID_KEY],
@@ -79,13 +84,17 @@ class ObjectApi():
 
     async def update(self, input_id: str, input_type: int, input_data: dict) -> dict:
         """
-        Writes new values to existing object on controller
+        Writes new values to existing object on controller.
+
+        Updates object cache.
         """
         response = await self._ctrl.write_value({
             OBJECT_ID_KEY: input_id,
             OBJECT_TYPE_KEY: input_type,
             OBJECT_DATA_KEY: input_data
         })
+
+        await self._cache.update_unique(OBJECT_ID_KEY, input_id, response)
 
         return {
             API_ID_KEY: response[OBJECT_ID_KEY],
@@ -95,9 +104,8 @@ class ObjectApi():
 
     async def delete(self, input_id: str) -> dict:
         """
-        Deletes object from controller and data store
+        Deletes object from controller and datastore.
         """
-
         await self._ctrl.delete_object({
             OBJECT_ID_KEY: input_id
         })
@@ -107,32 +115,79 @@ class ObjectApi():
             id_val=input_id
         )
 
+        await self._cache.delete(
+            id_key=OBJECT_ID_KEY,
+            id_val=input_id
+        )
+
         return {
             API_ID_KEY: input_id
         }
 
-    async def all(self) -> list:
-        response = await self._ctrl.list_objects({
-            PROFILE_ID_KEY: self._ctrl.active_profile
-        })
+    async def all(self, refresh=False) -> list:
+        """
+        Gets all objects, including type.
+
+        Reads object cache by default.
+        """
+        response = None
+
+        if not refresh:
+            response = await self._cache.all()
+
+        if not response:
+            response = await self._refresh_all()
 
         return [
             {
                 API_ID_KEY: obj[OBJECT_ID_KEY],
                 API_TYPE_KEY: obj[OBJECT_TYPE_KEY],
                 API_DATA_KEY: obj[OBJECT_DATA_KEY]
-            } for obj in response.get(OBJECT_LIST_KEY, [])
+            } for obj in response
         ]
 
-    async def all_data(self) -> dict:
-        response = await self._ctrl.list_objects({
-            PROFILE_ID_KEY: self._ctrl.active_profile
-        })
+    async def all_data(self, refresh=False) -> dict:
+        """
+        Gets all objects, formatted as {id: data, ...}
+
+        Reads object cache by default.
+        """
+        response = None
+
+        if not refresh:
+            response = await self._cache.all()
+
+        if not response:
+            response = await self._refresh_all()
 
         return {
             obj[OBJECT_ID_KEY]: obj[OBJECT_DATA_KEY]
-            for obj in response.get(OBJECT_LIST_KEY, [])
+            for obj in response
         }
+
+    async def _refresh(self, input_id: str, input_type: int=0) -> dict:
+        """
+        Updates a single object in the cache.
+        """
+        response = await self._ctrl.read_value({
+            OBJECT_ID_KEY: input_id,
+            OBJECT_TYPE_KEY: input_type
+        })
+
+        await self._cache.update_unique(OBJECT_ID_KEY, input_id, response)
+        return response
+
+    async def _refresh_all(self) -> dict:
+        """
+        Replaces all objects in the cache with those read from controller.
+        """
+        response = await self._ctrl.list_objects({
+            PROFILE_ID_KEY: self._ctrl.active_profile
+        })
+        response_objects = response.get(OBJECT_LIST_KEY, [])
+
+        await self._cache.replace_all(response_objects)
+        return response_objects
 
 
 @routes.post('/objects')
@@ -160,10 +215,20 @@ async def object_create(request: web.Request) -> web.Response:
                     example: temp_sensor_1
                 type:
                     type: int
-                    example: 2
+                    example: 6
                 data:
                     type: object
-                    example: {"command":2, "data":4136}
+                    example:
+                        {
+                            "settings": {
+                                "address": "FF",
+                                "offset": 0
+                            },
+                            "state": {
+                                "value": 12345,
+                                "connected": true
+                            }
+                        }
     """
     request_args = await request.json()
 
@@ -195,10 +260,18 @@ async def object_read(request: web.Request) -> web.Response:
         description: Service ID of object
         schema:
             type: string
+    -
+        in: query
+        name: refresh
+        schema:
+            type: string
+            example: "true"
+            required: false
     """
     return web.json_response(
         await ObjectApi(request.app).read(
-            request.match_info[API_ID_KEY]
+            request.match_info[API_ID_KEY],
+            refresh=request.query.get('refresh')
         )
     )
 
@@ -286,9 +359,19 @@ async def object_all(request: web.Request) -> web.Response:
     operationId: controller.spark.objects.all
     produces:
     - application/json
+    parameters:
+    -
+        in: query
+        name: refresh
+        schema:
+            type: string
+            example: "true"
+            required: false
     """
     return web.json_response(
-        await ObjectApi(request.app).all()
+        await ObjectApi(request.app).all(
+            refresh=request.query.get('refresh')
+        )
     )
 
 
@@ -303,7 +386,17 @@ async def object_all_data(request: web.Request) -> web.Response:
     operationId: controller.spark.objects.all_data
     produces:
     - application/json
+    parameters:
+    -
+        in: query
+        name: refresh
+        schema:
+            type: string
+            example: "true"
+            required: false
     """
     return web.json_response(
-        await ObjectApi(request.app).all_data()
+        await ObjectApi(request.app).all_data(
+            refresh=request.query.get('refresh')
+        )
     )

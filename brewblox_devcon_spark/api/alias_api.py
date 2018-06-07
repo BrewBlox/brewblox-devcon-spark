@@ -10,7 +10,8 @@ from typing import List
 from aiohttp import web
 from brewblox_devcon_spark import datastore
 from brewblox_devcon_spark.api import API_ID_KEY
-from brewblox_devcon_spark.device import CONTROLLER_ID_KEY, SERVICE_ID_KEY
+from brewblox_devcon_spark.device import (CONTROLLER_ID_KEY, OBJECT_ID_KEY,
+                                          SERVICE_ID_KEY)
 from brewblox_service import brewblox_logger
 
 LOGGER = brewblox_logger(__name__)
@@ -25,6 +26,7 @@ class AliasApi():
 
     def __init__(self, app: web.Application):
         self._store = datastore.get_object_store(app)
+        self._cache = datastore.get_object_cache(app)
 
     async def create(self, service_id: str, controller_id: List[int]) -> dict:
         await self._store.insert_unique(
@@ -40,6 +42,12 @@ class AliasApi():
             id_key=SERVICE_ID_KEY,
             id_val=existing_id,
             obj={SERVICE_ID_KEY: new_id}
+        )
+
+        await self._cache.update_unique(
+            id_key=OBJECT_ID_KEY,
+            id_val=existing_id,
+            obj={OBJECT_ID_KEY: new_id}
         )
 
 

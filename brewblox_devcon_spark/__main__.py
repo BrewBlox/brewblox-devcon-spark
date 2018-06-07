@@ -6,7 +6,7 @@ from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
                                    datastore, device)
 from brewblox_devcon_spark.api import (alias_api, conflict_api, debug_api,
                                        error_response, object_api, profile_api,
-                                       system_api)
+                                       system_api, updater)
 from brewblox_service import brewblox_logger, events, service
 
 LOGGER = brewblox_logger(__name__)
@@ -35,6 +35,10 @@ def create_parser(default_name='spark'):
     parser.add_argument('--broadcast-exchange',
                         help='Eventbus exchange to which controller state should be broadcasted. [%(default)s]',
                         default='brewcast')
+    parser.add_argument('--update-interval',
+                        help='Interval (in seconds) between update of controller values cache. [%(default)s]',
+                        type=int,
+                        default=2)
     return parser
 
 
@@ -56,6 +60,7 @@ def main():
     object_api.setup(app)
     profile_api.setup(app)
     system_api.setup(app)
+    updater.setup(app)
 
     events.setup(app)
     broadcaster.setup(app)

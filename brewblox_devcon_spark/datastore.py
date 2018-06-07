@@ -13,7 +13,6 @@ from aiohttp import web
 from aiotinydb import AIOImmutableJSONStorage, AIOJSONStorage, AIOTinyDB
 from aiotinydb.middleware import CachingMiddleware
 from brewblox_service import brewblox_logger, features
-from deprecated import deprecated
 from tinydb import Query, TinyDB
 from tinydb.storages import MemoryStorage
 from collections import defaultdict
@@ -110,7 +109,6 @@ class DataStore(features.ServiceFeature):
 
         raise ConflictDetectedError(f'ID conflict for "{id_key}"=="{id_val}"')
 
-    @deprecated('Debugging function')
     async def all(self) -> List[OBJECT_TYPE_]:
         def db_action(db: TinyDB):
             return db.all()
@@ -153,12 +151,22 @@ class DataStore(features.ServiceFeature):
 
         return await self._do_with_db(db_action)
 
+    async def replace_all(self, objects: List):
+        """
+        Clears the datastore, and inserts all objects.
+        """
+        def db_action(db: TinyDB):
+            db.purge()
+            db.insert_multiple(objects)
+
+        return await self._do_with_db(db_action)
+
     async def update(self, id_key: str, id_val: ID_TYPE_, obj: dict):
         """
         Replaces all documents in data store where document[id_key] == id_val.
         """
         def db_action(db: TinyDB):
-            db.update(obj, Query()[id_key] == id_val)
+            db.upsert(obj, Query()[id_key] == id_val)
 
         return await self._do_with_db(db_action)
 
