@@ -30,14 +30,15 @@ CONFLICT_TABLE = 'conflicts'
 LOGGER = brewblox_logger(__name__)
 
 
-# There's a bug in AIOTinyDB.table(), where it ignores provided table name
-# See: https://github.com/ASMfreaK/aiotinydb/pull/2
-# Overridden functionality is to do a sanity check before forwarding call
-# Temporary fix is to skip the override, and directly call super()
-AIOTinyDB.table = TinyDB.table
+class ConflictError(Exception):
+    pass
 
 
-class NotUniqueError(Exception):
+class NotUniqueError(ConflictError):
+    pass
+
+
+class ConflictDetectedError(ConflictError):
     pass
 
 
@@ -107,7 +108,7 @@ class DataStore(features.ServiceFeature):
         LOGGER.warn(f'Conflict discovered for {id_key}=={id_val}')
         conflicts.upsert({id_key: id_val}, Query()[id_key] == id_val)
 
-        raise NotUniqueError(f'ID conflict for "{id_key}"=="{id_val}"')
+        raise ConflictDetectedError(f'ID conflict for "{id_key}"=="{id_val}"')
 
     @deprecated('Debugging function')
     async def all(self) -> List[OBJECT_TYPE_]:
@@ -194,7 +195,12 @@ class DataStore(features.ServiceFeature):
         def db_action(db: TinyDB):
             id = obj[id_key]
 
-            if db.contains(Query()[id_key] == id):
+            count = db.count(Query()[id_key] == id)
+
+            if count == 1:
+                raise NotUniqueError(f'A document with {id_key}={id} already exists')
+
+            if count > 1:
                 self._handle_conflict(db, id_key, id)
 
             db.insert(obj)
@@ -211,7 +217,7 @@ class DataStore(features.ServiceFeature):
         def db_action(db: TinyDB):
             old_query = (Query()[id_key] == id_val)
 
-            if not db.count(old_query) <= 1:
+            if db.count(old_query) > 1:
                 self._handle_conflict(db, id_key, id_val)
 
             if id_key in obj:
@@ -219,7 +225,6 @@ class DataStore(features.ServiceFeature):
                 new_query = (Query()[id_key] == new_id)
 
                 if id_val != new_id and db.contains(new_query):
-                    # Raise before we create a conflict
                     raise NotUniqueError(f'A document with {id_key}={new_id} already exists')
 
             db.upsert(obj, old_query)
