@@ -72,13 +72,13 @@ async def test_basics(stores, app):
 async def test_insert(stores, obj):
     for store in stores:
         await store.insert(obj)
-        assert await store.find_by_key('service_id', obj['service_id']) == [obj]
+        assert await store.find('service_id', obj['service_id']) == [obj]
 
 
 async def test_insert_multiple(stores, obj):
     for store in stores:
         await store.insert_multiple([obj]*100)
-        assert len(await store.find_by_key('service_id', obj['service_id'])) == 100
+        assert len(await store.find('service_id', obj['service_id'])) == 100
 
 
 async def test_insert_unique(stores, obj):
@@ -86,14 +86,14 @@ async def test_insert_unique(stores, obj):
         await store.insert_unique('service_id', obj)
 
         # already exists
-        with pytest.raises(AssertionError):
+        with pytest.raises(datastore.NotUniqueError):
             await store.insert_unique('service_id', obj)
 
         # obj[pancakes] does not exist
         with pytest.raises(KeyError):
             await store.insert_unique('pancakes', obj)
 
-        assert await store.find_by_key('service_id', obj['service_id']) == [obj]
+        assert await store.find('service_id', obj['service_id']) == [obj]
 
 
 async def test_update(stores):
@@ -101,11 +101,11 @@ async def test_update(stores):
         await store.insert_multiple([{'id': i} for i in range(10)])
         await store.update('id', 6, {'something': 'different'})
 
-        obj = await store.find_by_key('id', 6)
+        obj = await store.find('id', 6)
         assert obj[0]['something'] == 'different'
 
         await store.update('id', 6, {'id': 101})
-        assert not await store.find_by_key('id', 6)
+        assert not await store.find('id', 6)
 
 
 async def test_update_unique(stores, obj):
@@ -115,11 +115,8 @@ async def test_update_unique(stores, obj):
 
         await store.update_unique('service_id', 8, {'something': 'different'})
 
-        with pytest.raises(AssertionError):
-            await store.update_unique('service_id', obj['service_id'], obj, None)
-
-        with pytest.raises(AssertionError):
-            await store.update_unique('service_id', 2, obj, 'service_id')
+        with pytest.raises(datastore.NotUniqueError):
+            await store.update_unique('service_id', obj['service_id'], obj)
 
 
 async def test_delete(stores, obj):
@@ -133,8 +130,8 @@ async def test_delete(stores, obj):
         await store.delete('service_id', 'steve')
         await store.delete('service_id', 'waffles')
 
-        assert await store.find_by_key('service_id', obj['service_id'])
-        assert not await store.find_by_key('service_id', 'steve')
+        assert await store.find('service_id', obj['service_id'])
+        assert not await store.find('service_id', 'steve')
 
 
 async def test_purge(stores, obj):
@@ -160,3 +157,29 @@ async def test_exception_handling(stores, mocker):
     for store in stores:
         with pytest.raises(ArithmeticError):
             await store._do_with_db(lambda db: 1 / 0)
+
+
+async def test_find_unique(stores, obj):
+    for store in stores:
+        await store.insert_multiple([obj]*2)
+
+        with pytest.raises(datastore.NotUniqueError):
+            await store.find_unique('service_id', obj['service_id'])
+
+
+async def test_known_conflicts(stores, obj):
+    for store in stores:
+        await store.insert_multiple([obj]*2)
+        await store.insert_unique('service_id', {'service_id': 'waffles'})
+
+        # Nobody noticed the conflicts yet
+        assert not await store.known_conflicts()
+
+        with pytest.raises(datastore.NotUniqueError):
+            await store.find_unique('service_id', obj['service_id'])
+
+        assert await store.known_conflicts() == {
+            'service_id': {
+                obj['service_id']: [obj]*2
+            }
+        }
