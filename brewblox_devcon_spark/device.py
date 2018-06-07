@@ -2,13 +2,15 @@
 Offers a functional interface to the device functionality
 """
 
+import random
+import string
 from functools import partialmethod
-from typing import Callable, List, Union, Type
+from typing import Callable, List, Type, Union
 
 import dpath
 from aiohttp import web
 from brewblox_codec_spark import codec
-from brewblox_devcon_spark import commands, commander, datastore
+from brewblox_devcon_spark import commander, commands, datastore
 from brewblox_devcon_spark.commands import (FLAGS_KEY, OBJECT_DATA_KEY,  # noqa
                                             OBJECT_ID_KEY, OBJECT_LIST_KEY,
                                             OBJECT_TYPE_KEY, PROFILE_ID_KEY,
@@ -34,6 +36,13 @@ def setup(app: web.Application):
 
 class ControllerException(Exception):
     pass
+
+
+def random_string():
+    return ''.join([
+        random.choice(string.ascii_letters + string.digits)
+        for n in range(32)
+    ])
 
 
 class SparkController(features.ServiceFeature):
@@ -100,7 +109,7 @@ class SparkController(features.ServiceFeature):
         obj = await store.find_unique(SERVICE_ID_KEY, input_id)
 
         if not obj:
-            raise AssertionError(f'Service ID [{input_id}] not found in {store}')
+            raise ValueError(f'Service ID [{input_id}] not found in {store}')
 
         return obj[CONTROLLER_ID_KEY]
 
@@ -120,19 +129,15 @@ class SparkController(features.ServiceFeature):
             objects = await store.find(CONTROLLER_ID_KEY, input_id)
             service_id = next(o.get(SERVICE_ID_KEY) for o in objects)
         except StopIteration:
-            # If service ID not found, create alias
-            service_id = '-'.join([str(i) for i in input_id])
-            try:
-                await store.insert_unique(
-                    SERVICE_ID_KEY,
-                    {
-                        SERVICE_ID_KEY: service_id,
-                        CONTROLLER_ID_KEY: input_id
-                    }
-                )
-            except datastore.ConflictError:
-                # We give up. Just use the raw controller ID.
-                service_id = input_id
+            # If service ID not found, randomly generate one
+            service_id = random_string()
+            await store.insert_unique(
+                SERVICE_ID_KEY,
+                {
+                    SERVICE_ID_KEY: service_id,
+                    CONTROLLER_ID_KEY: input_id
+                }
+            )
 
         return service_id
 

@@ -2,13 +2,14 @@
 Tests brewblox_devcon_spark.api
 """
 
+import asyncio
 import os
 
 import pytest
 from brewblox_devcon_spark import commander_sim, datastore, device
 from brewblox_devcon_spark.api import (alias_api, conflict_api, debug_api,
                                        error_response, object_api, profile_api,
-                                       system_api)
+                                       system_api, updater)
 
 
 @pytest.fixture
@@ -133,10 +134,14 @@ async def test_all(app, client, object_args):
     assert retval == []
 
     await client.post('/objects', json=object_args)
-    res = await client.get('/objects')
-    assert res.status == 200
-    retval = await res.json()
-    assert len(retval) == 1
+
+    for res in [
+        await client.get('/objects'),
+        await client.get('/objects', params={'refresh': 'true'})
+    ]:
+        assert res.status == 200
+        retval = await res.json()
+        assert len(retval) == 1
 
 
 async def test_all_data(app, client, object_args):
@@ -146,11 +151,15 @@ async def test_all_data(app, client, object_args):
     assert retval == {}
 
     await client.post('/objects', json=object_args)
-    res = await client.get('/data')
-    assert res.status == 200
-    retval = await res.json()
-    assert len(retval) == 1
-    assert retval[object_args['id']]
+
+    for res in [
+        await client.get('/data'),
+        await client.get('/data', params={'refresh': 'true'})
+    ]:
+        assert res.status == 200
+        retval = await res.json()
+        assert len(retval) == 1
+        assert retval[object_args['id']]
 
 
 async def test_system_read(app, client, object_args):
@@ -263,7 +272,8 @@ async def test_conflict_resolve(app, client, object_args):
     await client.post('/objects', json=object_args)
     await store.insert({'service_id': argid, 'dummy': True})
 
-    res = await client.get('/objects/' + argid)
+    # refresh to discover datastore conflict
+    res = await client.get('/objects/' + argid, params={'refresh': 'true'})
     assert res.status == 428
 
     res = await client.get('/conflicts')
@@ -271,10 +281,40 @@ async def test_conflict_resolve(app, client, object_args):
     assert len(objects) == 2
 
     # Pick the one that's not the dummy
-    real = [o for o in objects if 'dummy' not in o][0]
+    real = next(o for o in objects if 'dummy' not in o)
 
     res = await client.post('/conflicts', json={'id_key': 'service_id', 'data': real})
     assert res.status == 200
 
     res = await client.get('/objects/' + argid)
     assert res.status == 200
+
+
+async def test_cache_updater(app, client, object_args, mocker):
+    logger_spy = mocker.spy(updater, 'LOGGER')
+    store = datastore.get_object_store(app)
+    argid = object_args['id']
+    u = updater.CacheUpdater()
+
+    await u.startup(app)
+    await u.startup(app)
+    await u.shutdown(app)
+    await u.shutdown(app)
+
+    app['config']['update_interval'] = 0.0001
+    await u.startup(app)
+
+    await asyncio.sleep(0.01)
+
+    # Should survive a conflict
+    await client.post('/objects', json=object_args)
+    await store.insert({'service_id': argid, 'dummy': True})
+
+    await asyncio.sleep(0.01)
+    await u.shutdown(app)
+
+    del app['config']['update_interval']
+    await u.startup(app)
+    await asyncio.sleep(0.01)
+    assert logger_spy.error.call_count == 1
+    await u.shutdown(app)

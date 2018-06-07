@@ -95,7 +95,10 @@ async def test_transcoding(app, client, commander_mock, store):
     assert retval['objects'] == [dict(object_type=obj_type, object_data=obj)] * 2
 
 
-async def test_resolve_id(app, client, commander_mock, store):
+async def test_resolve_id(app, client, commander_mock, store, mocker):
+    random_mock = mocker.patch(TESTED + '.random_string')
+    random_mock.return_value = 'totally random string'
+
     await store.insert_multiple([
         {
             'service_id': 'alias',
@@ -115,6 +118,4 @@ async def test_resolve_id(app, client, commander_mock, store):
     assert await ctrl.resolve_service_id(ctrl._object_store, [1, 2, 3]) == 'alias'
     assert await ctrl.resolve_service_id(ctrl._object_store, 'testey') == 'testey'
     # Service ID not found: create placeholder
-    assert await ctrl.resolve_service_id(ctrl._object_store, [6, 6, 6]) == '6-6-6'
-    # Placeholder service ID already taken - degrade to controller ID
-    assert await ctrl.resolve_service_id(ctrl._object_store, [4, 2]) == [4, 2]
+    assert await ctrl.resolve_service_id(ctrl._object_store, [6, 6, 6]) == 'totally random string'

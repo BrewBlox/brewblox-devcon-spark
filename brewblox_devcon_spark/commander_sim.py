@@ -2,14 +2,18 @@
 Monkey patches commander.SparkCommander to not require an actual connection.
 """
 
-from brewblox_devcon_spark import commander, commands
+from functools import partialmethod
+
 from aiohttp import web
-from brewblox_service import features
+from brewblox_devcon_spark import commander, commands
 from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                             PROFILE_ID_KEY, PROFILE_LIST_KEY,
                                             SYSTEM_ID_KEY)
-from functools import partialmethod
+from brewblox_service import brewblox_logger, features
+
+
+LOGGER = brewblox_logger(__name__)
 
 
 def setup(app: web.Application):
@@ -79,7 +83,6 @@ class SimulationResponder():
         obj = request.copy()
         obj[OBJECT_ID_KEY] = id
         self._objects[self._object_id(id)] = obj
-        print(self._objects)
         return {OBJECT_ID_KEY: id[:]}
 
     def _list_objects(self, request):

@@ -5,7 +5,6 @@ Intermittently broadcasts controller state to the eventbus
 
 import asyncio
 from concurrent.futures import CancelledError
-from contextlib import suppress
 
 from aiohttp import web
 from brewblox_devcon_spark.api.object_api import ObjectApi
@@ -36,20 +35,25 @@ class Broadcaster(features.ServiceFeature):
         self._task = app.loop.create_task(self._broadcast(app))
 
     async def shutdown(self, *_):
-        with suppress(AttributeError, CancelledError):
+        if self._task:
             self._task.cancel()
-            await self._task
-        self._task = None
+            await asyncio.wait([self._task])
+            self._task = None
 
     async def _broadcast(self, app: web.Application):
-        api = ObjectApi(app)
-        publisher = events.get_publisher(app)
-        name = app['config']['name']
-        interval = app['config']['broadcast_interval']
-        exchange = app['config']['broadcast_exchange']
-        last_broadcast_ok = True
+        LOGGER.info(f'Starting {self}')
 
-        LOGGER.info(f'{self} now broadcasting')
+        try:
+            api = ObjectApi(app)
+            publisher = events.get_publisher(app)
+            name = app['config']['name']
+            interval = app['config']['broadcast_interval']
+            exchange = app['config']['broadcast_exchange']
+            last_broadcast_ok = True
+
+        except Exception as ex:
+            LOGGER.error(f'{type(ex).__name__}: {str(ex)}', exc_info=True)
+            raise ex
 
         while True:
             try:
