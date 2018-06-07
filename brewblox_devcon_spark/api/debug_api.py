@@ -12,17 +12,7 @@ routes = web.RouteTableDef()
 
 
 def setup(app: web.Application):
-    app.middlewares.append(controller_error_middleware)
     app.router.add_routes(routes)
-
-
-@web.middleware
-async def controller_error_middleware(request: web.Request, handler: web.RequestHandler) -> web.Response:
-    try:
-        return await handler(request)
-    except Exception as ex:
-        LOGGER.debug(f'REST error: {ex}', exc_info=True)
-        return web.json_response({'error': str(ex)}, status=500)
 
 
 @routes.post('/_debug/do')

@@ -27,7 +27,7 @@ def app_config() -> dict:
         'name': 'test_app',
         'host': 'localhost',
         'port': 1234,
-        'debug': False,
+        'debug': True,
         'database': 'test_db.json',
         'system_database': 'brewblox_sys_db.json',
         'device_port': '/dev/TESTEH',
@@ -42,6 +42,7 @@ def app_config() -> dict:
 def sys_args(app_config) -> list:
     return [
         'app_name',
+        '--debug',
         '--name', app_config['name'],
         '--host', app_config['host'],
         '--port', str(app_config['port']),

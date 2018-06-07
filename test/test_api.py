@@ -7,7 +7,8 @@ import os
 import pytest
 from brewblox_devcon_spark import commander_sim, datastore, device
 from brewblox_devcon_spark.api import (alias_api, conflict_api, debug_api,
-                                       object_api, profile_api, system_api)
+                                       error_response, object_api, profile_api,
+                                       system_api)
 
 
 @pytest.fixture
@@ -51,6 +52,7 @@ async def app(app, database_test_file, loop):
     datastore.setup(app)
     device.setup(app)
 
+    error_response.setup(app)
     debug_api.setup(app)
     alias_api.setup(app)
     conflict_api.setup(app)
@@ -243,7 +245,7 @@ async def test_conflict_all(app, client):
     assert (await res.json()) == dict()
 
     res = await client.get('/objects/sid')
-    assert res.status == 500
+    assert res.status == 409
 
     res = await client.get('/conflicts')
     assert res.status == 200
@@ -262,7 +264,7 @@ async def test_conflict_resolve(app, client, object_args):
     await store.insert({'service_id': argid, 'dummy': True})
 
     res = await client.get('/objects/' + argid)
-    assert res.status == 500
+    assert res.status == 409
 
     res = await client.get('/conflicts')
     objects = (await res.json())['service_id'][argid]

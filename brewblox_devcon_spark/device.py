@@ -130,7 +130,7 @@ class SparkController(features.ServiceFeature):
                         CONTROLLER_ID_KEY: input_id
                     }
                 )
-            except datastore.NotUniqueError:
+            except datastore.ConflictError:
                 # We give up. Just use the raw controller ID.
                 service_id = input_id
 
@@ -178,9 +178,8 @@ class SparkController(features.ServiceFeature):
             return retval
 
         except Exception as ex:
-            message = f'Failed to execute {command_type()}: {type(ex).__name__}: {ex}'
-            LOGGER.error(message, exc_info=True)
-            raise ControllerException(message)
+            LOGGER.error(f'Failed to execute {command_type()}: {type(ex).__name__}: {ex}')
+            raise ex
 
     read_value = partialmethod(_execute, commands.ReadValueCommand)
     write_value = partialmethod(_execute, commands.WriteValueCommand)

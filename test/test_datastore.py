@@ -95,6 +95,12 @@ async def test_insert_unique(stores, obj):
 
         assert await store.find('service_id', obj['service_id']) == [obj]
 
+        # Add another obj to create a conflict
+        await store.insert(obj)
+
+        with pytest.raises(datastore.ConflictDetectedError):
+            await store.insert_unique('service_id', obj)
+
 
 async def test_update(stores):
     for store in stores:
@@ -115,7 +121,7 @@ async def test_update_unique(stores, obj):
 
         await store.update_unique('service_id', 8, {'something': 'different'})
 
-        with pytest.raises(datastore.NotUniqueError):
+        with pytest.raises(datastore.ConflictDetectedError):
             await store.update_unique('service_id', obj['service_id'], obj)
 
 
@@ -163,7 +169,7 @@ async def test_find_unique(stores, obj):
     for store in stores:
         await store.insert_multiple([obj]*2)
 
-        with pytest.raises(datastore.NotUniqueError):
+        with pytest.raises(datastore.ConflictDetectedError):
             await store.find_unique('service_id', obj['service_id'])
 
 
@@ -175,7 +181,7 @@ async def test_known_conflicts(stores, obj):
         # Nobody noticed the conflicts yet
         assert not await store.known_conflicts()
 
-        with pytest.raises(datastore.NotUniqueError):
+        with pytest.raises(datastore.ConflictDetectedError):
             await store.find_unique('service_id', obj['service_id'])
 
         assert await store.known_conflicts() == {

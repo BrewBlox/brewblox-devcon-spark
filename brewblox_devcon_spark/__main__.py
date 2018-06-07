@@ -5,7 +5,8 @@ Example of how to import and use the brewblox service
 from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
                                    datastore, device)
 from brewblox_devcon_spark.api import (alias_api, conflict_api, debug_api,
-                                       object_api, profile_api, system_api)
+                                       error_response, object_api, profile_api,
+                                       system_api)
 from brewblox_service import brewblox_logger, events, service
 
 LOGGER = brewblox_logger(__name__)
@@ -48,6 +49,7 @@ def main():
     datastore.setup(app)
     device.setup(app)
 
+    error_response.setup(app)
     debug_api.setup(app)
     alias_api.setup(app)
     conflict_api.setup(app)
