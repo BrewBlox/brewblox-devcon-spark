@@ -86,7 +86,7 @@ class DataStore(features.ServiceFeature):
         return f'<{type(self).__name__}>'
 
     @abstractmethod
-    async def _do_with_db(self, func: DB_FUNC_TYPE_) -> ACTION_RETURN_TYPE_:
+    async def _do_with_db(self, db_action: DB_FUNC_TYPE_) -> ACTION_RETURN_TYPE_:
         """
         Should be overridden: governs how database calls are processed.
         Various functions in DataStore supply the logic,
@@ -94,7 +94,7 @@ class DataStore(features.ServiceFeature):
 
         Overriding functions should behave like they called:
 
-            return func(my_database)
+            return db_action(my_database)
         """
         pass  # pragma: no cover
 
@@ -111,71 +111,71 @@ class DataStore(features.ServiceFeature):
 
     @deprecated('Debugging function')
     async def all(self) -> List[OBJECT_TYPE_]:
-        def func(db: TinyDB):
+        def db_action(db: TinyDB):
             return db.all()
 
-        return await self._do_with_db(func)
+        return await self._do_with_db(db_action)
 
     async def purge(self):
         """
         Clears the entire database.
         """
-        def func(db: TinyDB):
+        def db_action(db: TinyDB):
             db.purge_tables()
 
-        return await self._do_with_db(func)
+        return await self._do_with_db(db_action)
 
     async def find(self, id_key: str, id_val: ID_TYPE_) -> List[OBJECT_TYPE_]:
         """
         Returns all documents where document[id_key] == id_val
         """
-        def func(db: TinyDB):
+        def db_action(db: TinyDB):
             return db.search(Query()[id_key] == id_val)
 
-        return await self._do_with_db(func)
+        return await self._do_with_db(db_action)
 
     async def insert(self, obj: dict):
         """
         Inserts document in data store. Does not verify uniqueness of any of its keys.
         """
-        def func(db: TinyDB):
+        def db_action(db: TinyDB):
             db.insert(obj)
 
-        return await self._do_with_db(func)
+        return await self._do_with_db(db_action)
 
     async def insert_multiple(self, objects: List):
         """
         Inserts multiple documents in data store. Does not verify uniqueness.
         """
-        def func(db: TinyDB):
+        def db_action(db: TinyDB):
             db.insert_multiple(objects)
 
-        return await self._do_with_db(func)
+        return await self._do_with_db(db_action)
 
     async def update(self, id_key: str, id_val: ID_TYPE_, obj: dict):
         """
         Replaces all documents in data store where document[id_key] == id_val.
         """
-        def func(db: TinyDB):
+        def db_action(db: TinyDB):
             db.update(obj, Query()[id_key] == id_val)
 
-        return await self._do_with_db(func)
+        return await self._do_with_db(db_action)
 
     async def delete(self, id_key: str, id_val: ID_TYPE_):
         """
         Deletes all documents in data store where document[id_key] == id_val.
         """
-        def func(db: TinyDB):
+        def db_action(db: TinyDB):
             db.remove(Query()[id_key] == id_val)
 
-        return await self._do_with_db(func)
+        return await self._do_with_db(db_action)
 
     async def find_unique(self, id_key: str, id_val: ID_TYPE_) -> OBJECT_TYPE_:
         """
         Returns a single document where document[id_key] == id_val.
         Raises a NotUniqueError and logs the conflict if multiple documents are found.
         """
-        def func(db: TinyDB):
+        def db_action(db: TinyDB):
             vals = db.search(Query()[id_key] == id_val)
 
             if len(vals) > 1:
@@ -183,7 +183,7 @@ class DataStore(features.ServiceFeature):
 
             return vals[0] if vals else None
 
-        return await self._do_with_db(func)
+        return await self._do_with_db(db_action)
 
     async def insert_unique(self, id_key: str, obj: dict):
         """
@@ -191,7 +191,7 @@ class DataStore(features.ServiceFeature):
         Asserts that no other document has the same value for the id_key.
         Raises a NotUniqueError and logs the conflict if multiple documents are found.
         """
-        def func(db: TinyDB):
+        def db_action(db: TinyDB):
             id = obj[id_key]
 
             if db.contains(Query()[id_key] == id):
@@ -199,7 +199,7 @@ class DataStore(features.ServiceFeature):
 
             db.insert(obj)
 
-        return await self._do_with_db(func)
+        return await self._do_with_db(db_action)
 
     async def update_unique(self, id_key: str, id_val: ID_TYPE_, obj: dict):
         """
@@ -208,7 +208,7 @@ class DataStore(features.ServiceFeature):
         Asserts that only one document will be updated.
         Asserts that no other documents exist where document[unique_key] == obj[unique_key]
         """
-        def func(db: TinyDB):
+        def db_action(db: TinyDB):
             old_query = (Query()[id_key] == id_val)
 
             if not db.count(old_query) <= 1:
@@ -224,7 +224,7 @@ class DataStore(features.ServiceFeature):
 
             db.upsert(obj, old_query)
 
-        return await self._do_with_db(func)
+        return await self._do_with_db(db_action)
 
     async def known_conflicts(self) -> Dict[str, Dict[ID_TYPE_, List[OBJECT_TYPE_]]]:
         """
@@ -232,7 +232,7 @@ class DataStore(features.ServiceFeature):
 
         This will not return conflicting items that have not yet been discovered (not queried).
         """
-        def func(db: TinyDB):
+        def db_action(db: TinyDB):
             conflicts = db.table(CONFLICT_TABLE).all()
             formatted = defaultdict(dict)
 
@@ -242,14 +242,14 @@ class DataStore(features.ServiceFeature):
 
             return formatted
 
-        return await self._do_with_db(func)
+        return await self._do_with_db(db_action)
 
     async def resolve_conflict(self, id_key: str, obj: dict):
         """
         Deletes all objects where document[id_key] == obj[id_key].
         Inserts obj in datastore.
         """
-        def func(db: TinyDB):
+        def db_action(db: TinyDB):
             query = (Query()[id_key] == obj[id_key])
             db.remove(query)
             db.insert(obj)
@@ -257,7 +257,7 @@ class DataStore(features.ServiceFeature):
             # Resolve the conflict
             db.table(CONFLICT_TABLE).remove(query)
 
-        return await self._do_with_db(func)
+        return await self._do_with_db(db_action)
 
 
 class MemoryDataStore(DataStore):
@@ -272,8 +272,8 @@ class MemoryDataStore(DataStore):
     async def shutdown(self, *_):
         pass
 
-    async def _do_with_db(self, func: DB_FUNC_TYPE_):
-        return func(self._db)
+    async def _do_with_db(self, db_action: DB_FUNC_TYPE_):
+        return db_action(self._db)
 
 
 class FileDataStore(DataStore):
@@ -284,13 +284,13 @@ class FileDataStore(DataStore):
         Actions allow separation of call and result retrieval.
         """
 
-        def __init__(self, func: Callable, loop: asyncio.BaseEventLoop):
+        def __init__(self, db_action: Callable, loop: asyncio.BaseEventLoop):
             self._future: asyncio.Future = loop.create_future()
-            self._func: Callable = func
+            self._db_action: Callable = db_action
 
         def do(self, db):
             try:
-                self._future.set_result(self._func(db))
+                self._future.set_result(self._db_action(db))
             except Exception as ex:
                 self._future.set_exception(ex)
 
@@ -326,9 +326,9 @@ class FileDataStore(DataStore):
             self._runner = None
 
     # Overrides DataStore
-    async def _do_with_db(self, func: DB_FUNC_TYPE_) -> ACTION_RETURN_TYPE_:
+    async def _do_with_db(self, db_action: DB_FUNC_TYPE_) -> ACTION_RETURN_TYPE_:
         assert self._pending_actions is not None, f'{self} not started before functions were called'
-        action = FileDataStore.Action(func, self._loop)
+        action = FileDataStore.Action(db_action, self._loop)
         await self._pending_actions.put(action)
         return await action.wait_result()
 
