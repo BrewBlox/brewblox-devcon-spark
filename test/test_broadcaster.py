@@ -77,3 +77,16 @@ async def test_error(app, client, mock_api, mock_publisher):
     await asyncio.sleep(0.1)
     assert not b._task.done()
     assert mock_publisher.publish.call_count > 0
+
+
+async def test_startup_error(app, client, mocker):
+    logger_spy = mocker.spy(broadcaster, 'LOGGER')
+
+    del app['config']['broadcast_interval']
+
+    b = broadcaster.Broadcaster()
+
+    await b.startup(app)
+    await asyncio.sleep(0.01)
+    assert logger_spy.error.call_count == 1
+    await b.shutdown(app)

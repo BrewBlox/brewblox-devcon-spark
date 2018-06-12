@@ -45,10 +45,6 @@ class ConflictDetectedError(ConflictError):
 def setup(app: web.Application):
     config = app['config']
 
-    object_cache = MemoryDataStore(
-        app=app
-    )
-
     object_store = FileDataStore(
         app=app,
         filename=config['database'],
@@ -61,13 +57,8 @@ def setup(app: web.Application):
         read_only=True
     )
 
-    features.add(app, object_cache, 'object_cache')
     features.add(app, object_store, 'object_store')
     features.add(app, system_store, 'system_store')
-
-
-def get_object_cache(app) -> 'DataStore':
-    return features.get(app, name='object_cache')
 
 
 def get_object_store(app) -> 'DataStore':
