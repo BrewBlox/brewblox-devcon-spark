@@ -79,7 +79,6 @@ class SimulationResponder():
         obj = request.copy()
         obj[OBJECT_ID_KEY] = id
         self._objects[self._object_id(id)] = obj
-        print(self._objects)
         return {OBJECT_ID_KEY: id[:]}
 
     def _list_objects(self, request):

@@ -271,7 +271,7 @@ async def test_conflict_resolve(app, client, object_args):
     assert len(objects) == 2
 
     # Pick the one that's not the dummy
-    real = [o for o in objects if 'dummy' not in o][0]
+    real = next(o for o in objects if 'dummy' not in o)
 
     res = await client.post('/conflicts', json={'id_key': 'service_id', 'data': real})
     assert res.status == 200

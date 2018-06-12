@@ -63,8 +63,6 @@ class ObjectApi():
     async def read(self, input_id: str, input_type: int=0) -> dict:
         """
         Reads object on the controller.
-
-        TODO(Bob): Use the object cache
         """
         response = await self._ctrl.read_value({
             OBJECT_ID_KEY: input_id,
@@ -160,10 +158,20 @@ async def object_create(request: web.Request) -> web.Response:
                     example: temp_sensor_1
                 type:
                     type: int
-                    example: 2
+                    example: 6
                 data:
                     type: object
-                    example: {"command":2, "data":4136}
+                    example:
+                        {
+                            "settings": {
+                                "address": "FF",
+                                "offset": 0
+                            },
+                            "state": {
+                                "value": 12345,
+                                "connected": true
+                            }
+                        }
     """
     request_args = await request.json()
 
