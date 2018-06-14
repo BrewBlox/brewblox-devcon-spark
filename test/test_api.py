@@ -2,6 +2,7 @@
 Tests brewblox_devcon_spark.api
 """
 
+import asyncio
 import os
 
 import pytest
@@ -88,9 +89,15 @@ async def test_create(app, client, object_args):
 
 
 async def test_create_spam(app, client, object_args):
-    for i in range(150):
-        res = await client.post('/objects', json=object_args)
-        assert res.status == 200
+    num_items = 50
+    coros = [client.post('/objects', json=object_args) for _ in range(num_items)]
+    responses = await asyncio.gather(*coros)
+    assert [res.status for res in responses] == [200]*num_items
+
+    res = await client.get('/objects')
+    assert res.status == 200
+    retval = await res.json()
+    assert len(retval) == num_items
 
 
 async def test_read(app, client, object_args):
@@ -104,6 +111,14 @@ async def test_read(app, client, object_args):
 
     retval = await res.json()
     assert retval['id'] == 'testobj'
+
+
+async def test_read_spam(app, client, object_args):
+    await client.post('/objects', json=object_args)
+
+    coros = [client.get('/objects/testobj') for _ in range(100)]
+    responses = await asyncio.gather(*coros)
+    assert [res.status for res in responses] == [200]*100
 
 
 async def test_update(app, client, object_args):

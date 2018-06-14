@@ -55,7 +55,7 @@ class SimulationResponder():
         return '~'.join([str(v) for v in controller_id])
 
     def _next_controller_id(self):
-        self._current_id[-1] = (self._current_id[-1] + 1) % 128
+        self._current_id[-1] = (self._current_id[-1] + 1) % 32
 
         if self._current_id[-1] == 0:
             self._current_id.append(1)
