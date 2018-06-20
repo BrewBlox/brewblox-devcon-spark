@@ -6,7 +6,7 @@ import glob
 import logging
 from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
-from typing import Any, Callable, List, Tuple, Optional
+from typing import Any, Callable, Generator, List, Optional, Tuple
 
 import dpath
 from brewblox_codec_spark.proto import brewblox_pb2
@@ -40,13 +40,12 @@ def modify_if_present(obj: dict, path: str, func: Callable) -> dict:
         >>> output = modify_if_present(
                         obj=input,
                         path='nested/collection/value',
-                        func=lambda v: v +1
+                        func=lambda v: v + 1
                     )
         >>> print(output)
         {'nested': { 'collection': { 'value': 1 }}}
         >>> print(input)
         {'nested': { 'collection': { 'value': 1 }}}
-
     """
     for key, val in dpath.util.search(obj, path, yielded=True):
         dpath.util.set(obj, key, func(val))
@@ -54,12 +53,12 @@ def modify_if_present(obj: dict, path: str, func: Callable) -> dict:
     return obj
 
 
-def _get_field(msg: Message, path: str):
+def _get_field(msg: Message, path: str) -> Message:
     """
     Returns the nested Protobuf field associated with the message and path string.
     """
     descriptor = msg.DESCRIPTOR
-    path_list = path = [s for s in path.split('/') if s]  # drops empty sections
+    path_list = [s for s in path.split('/') if s]  # drops empty sections
 
     for p in path_list[:-1]:
         descriptor = descriptor.fields_by_name[p].message_type
@@ -69,7 +68,10 @@ def _get_field(msg: Message, path: str):
     return field
 
 
-def _find_option_fields(desc: DescriptorBase, path=''):
+def _find_option_fields(desc: DescriptorBase, path='') -> Generator[Tuple[DescriptorBase, str], None, None]:
+    """
+    Yields all nested fields in the base descriptor that have Protobuf options.
+    """
     if desc.has_options:
         yield desc, _field_options(desc), path
 
@@ -87,7 +89,12 @@ def _find_option_fields(desc: DescriptorBase, path=''):
     raise StopIteration()
 
 
-def _cached_option_fields(desc: DescriptorBase):
+def _cached_option_fields(desc: DescriptorBase) -> Generator[Tuple[DescriptorBase, str], None, None]:
+    """
+    Caches _find_option_fields().
+    Field definitions are assumed to be immutable at runtime,
+    and do not require cache invalidation.
+    """
     if desc not in DESC_CACHE:
         DESC_CACHE[desc] = [t for t in _find_option_fields(desc)]
 
@@ -101,7 +108,28 @@ def _field_options(
     return field.GetOptions().Extensions[provider]
 
 
-def _apply_changes(obj: dict, changes: List[Tuple[str, Optional[str], Any]]):
+def _apply_changes(obj: dict, changes: List[Tuple[str, Optional[str], Any]]) -> dict:
+    """
+    Modifies the `obj` dict with `changes`.
+    Each change is a tuple containing:
+    * path:     Current /-separated path to value.
+    * new_path: Desired /-separated path to modified value.
+                If this is none, `path` will be updated.
+    * val:      The new value.
+
+    Example:
+        >>> obj = {'val1': 1, 'val2': 2}
+        >>> changes = [
+            ('val1', None, 11),
+            ('val2', 'newval2', 22)
+        ]
+        >>> _apply_changes(obj, changes)
+        >>> print(obj)
+        {
+            'val1': 11,
+            'newval2': 22
+        }
+    """
     for (path, new_path, val) in changes:
         if new_path:
             dpath.util.delete(obj, glob.escape(path))
@@ -114,8 +142,13 @@ def _apply_changes(obj: dict, changes: List[Tuple[str, Optional[str], Any]]):
 
 def encode_quantity(message: Message, obj: dict) -> dict:
     """
-    Converts input values with a post-fixed unit notation to controller values.
-    Controller units are determined by Protobuf options.
+    Modifies `obj` based on Protobuf options and post-fixed unit notations in dict keys.
+
+    Supported Protobuf options:
+    * unit:     convert post-fixed unit notation to Protobuf unit
+    * scale:    multiply value with scale after unit conversion
+
+    The output is a dict where values use controller units.
 
     Example:
         >>> values = {
@@ -126,7 +159,7 @@ def encode_quantity(message: Message, obj: dict) -> dict:
         }
 
         >>> encode_quantity(
-            OneWireTempSensor_pb2.OneWireTempSensor,
+            OneWireTempSensor_pb2.OneWireTempSensor(),
             values
         )
 
@@ -142,11 +175,10 @@ def encode_quantity(message: Message, obj: dict) -> dict:
         >>> print(values)
         {
             'settings': {
-                'address': 'FF',  # No unit notation -> not converted
+                'address': 'FF',  # No options -> not converted
                 'offset': 2844    # Converted to delta_degC, scaled * 256, and rounded to int
             }
         }
-
     """
     changes = []
     query = f'**/*{glob.escape(UNIT_START_CHAR)}*{glob.escape(UNIT_END_CHAR)}'
@@ -160,14 +192,22 @@ def encode_quantity(message: Message, obj: dict) -> dict:
         field = _get_field(message, base_path)
         options = _field_options(field)
 
+        is_list = isinstance(val, (list, set))
+
+        if not is_list:
+            val = [val]
+
         if getattr(options, 'unit', None):
             input_unit = path[start_idx+1:end_idx]
-            val = Quantity(val, input_unit).to(options.unit).magnitude
+            val = [Quantity(v, input_unit).to(options.unit).magnitude for v in val]
 
-        val *= getattr(options, 'scale', 1)
+        val = [v * getattr(options, 'scale', 1) for v in val]
 
         if field.cpp_type in json_format._INT_TYPES:
-            val = int(round(val))
+            val = [int(round(v)) for v in val]
+
+        if not is_list:
+            val = val[0]
 
         changes.append((path, base_path, val))
 
@@ -178,6 +218,42 @@ def encode_quantity(message: Message, obj: dict) -> dict:
 
 
 def decode_quantity(message: Message, obj: dict) -> dict:
+    """
+    Modifies `obj` based on brewblox protobuf options.
+    Supported options:
+    * scale:   divides value by scale before unit conversion
+    * unit:    postfixes dict key with the unit defined in the Protobuf spec
+
+    Example:
+        >>> values = {
+            'settings': {
+                'address': 'FF',
+                'offset': 2844
+            }
+        }
+
+        >>> decode_quantity(
+            OneWireTempSensor_pb2.OneWireTempSensor(),
+            values
+        )
+
+        # From OneWireTempSensor.proto:
+        #
+        # message OneWireTempSensor {
+        #   message Settings {
+        #     bytes address = 1;
+        #     sint32 offset = 2 [(brewblox).unit = "delta_degC", (brewblox).scale = 256];
+        #   }
+        # ...
+
+        >>> print(values)
+        {
+            'settings': {
+                'address': 'FF',               # No options -> not converted
+                'offset[delta_degC]': 11.11    # scaled / 256, and postfixed with unit
+            }
+        }
+    """
     changes = []
 
     for field, options, path in _cached_option_fields(message.DESCRIPTOR):
@@ -190,13 +266,20 @@ def decode_quantity(message: Message, obj: dict) -> dict:
                 val = dpath.util.get(obj, path)
                 new_path = None
 
+                is_list = isinstance(val, (list, set))
+
+                if not is_list:
+                    val = [val]
+
                 if scale:
-                    val /= scale
+                    val = [v / scale for v in val]
 
                 if unit:
-                    q = Quantity(val, options.unit)
-                    new_path = f'{path}{UNIT_START_CHAR}{q.units}{UNIT_END_CHAR}'
-                    val = q.magnitude
+                    new_path = f'{path}{UNIT_START_CHAR}{options.unit}{UNIT_END_CHAR}'
+                    val = [Quantity(v, options.unit).magnitude for v in val]
+
+                if not is_list:
+                    val = val[0]
 
                 changes.append((path, new_path, val))
 

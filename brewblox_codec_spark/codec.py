@@ -6,8 +6,7 @@ Offers encoding and decoding of objects.
 import logging
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from functools import wraps
-from typing import Union, Any
+from typing import Union
 
 from brewblox_codec_spark import path_extension
 from brewblox_codec_spark.modifiers import (b64_to_hex, decode_quantity,
@@ -22,9 +21,9 @@ from google.protobuf.message import Message
 LOGGER = logging.getLogger(__name__)
 
 
-OBJ_TYPE_TYPE_ = Union[int, str]
-ENCODE_DATA_TYPE_ = dict
-DECODE_DATA_TYPE_ = Union[bytes, list]
+ObjType_ = Union[int, str]
+Decoded_ = dict
+Encoded_ = Union[bytes, list]
 
 # We import path_extension for its side effects
 # "use" the import to avoid pep8 complaints
@@ -32,12 +31,12 @@ DECODE_DATA_TYPE_ = Union[bytes, list]
 LOGGER.debug(f'Extending path with {path_extension.PROTO_PATH}')
 
 
-def encode(obj_type: OBJ_TYPE_TYPE_, values: ENCODE_DATA_TYPE_) -> bytes:
+def encode(obj_type: ObjType_, values: Decoded_) -> Encoded_:
     assert isinstance(values, dict), f'Unable to encode [{type(values).__name__}] values'
-    return _transcoder(obj_type).encode(values)
+    return _transcoder(obj_type).encode(deepcopy(values))
 
 
-def decode(obj_type: OBJ_TYPE_TYPE_, encoded: DECODE_DATA_TYPE_) -> dict:
+def decode(obj_type: ObjType_, encoded: Encoded_) -> Decoded_:
     assert isinstance(encoded, (bytes, list)), f'Unable to decode [{type(encoded).__name__}] values'
     return _transcoder(obj_type).decode(encoded)
 
@@ -49,27 +48,14 @@ def _transcoder(obj_type: str) -> 'Transcoder':
         raise KeyError(f'No codec found for object type [{obj_type}]')
 
 
-def copied_input(func):
-    """
-    Ensures input dict remains unchanged after pre-processing.
-    This decorator can safely be used by multiple inheriting functions.
-    It will only copy once.
-    """
-    @wraps(func)
-    def lazy_copy(self, values: dict):
-        safe_values = deepcopy(values)
-        return func(self, safe_values)
-    return lazy_copy
-
-
 class Transcoder(ABC):
 
     @abstractmethod
-    def encode(self, values: dict) -> bytes:
+    def encode(self, values: Decoded_) -> Encoded_:
         pass
 
     @abstractmethod
-    def decode(encoded: Any) -> dict:
+    def decode(encoded: Encoded_) -> Decoded_:
         pass
 
 
@@ -79,8 +65,7 @@ class ProtobufTranscoder(Transcoder):
     def message(self) -> Message:
         return self.__class__._MESSAGE()
 
-    @copied_input
-    def encode(self, values: dict) -> bytes:
+    def encode(self, values: Decoded_) -> Encoded_:
         LOGGER.debug(f'encoding {values} to {self.__class__._MESSAGE}')
         obj = json_format.ParseDict(values, self.message)
         data = obj.SerializeToString()
@@ -91,7 +76,7 @@ class ProtobufTranscoder(Transcoder):
 
         return delimiter + data
 
-    def decode(self, encoded: Union[bytes, list]) -> dict:
+    def decode(self, encoded: Encoded_) -> Decoded_:
         # Supports binary input as both a byte string, or as a list of ints
         if isinstance(encoded, list):
             encoded = bytes(encoded)
@@ -110,12 +95,11 @@ class ProtobufTranscoder(Transcoder):
 
 class QuantifiedTranscoder(ProtobufTranscoder):
 
-    @copied_input
-    def encode(self, values: dict) -> bytes:
-        modified = encode_quantity(self.message, values)
-        return super().encode(modified)
+    def encode(self, values: Decoded_) -> Encoded_:
+        encode_quantity(self.message, values)
+        return super().encode(values)
 
-    def decode(self, encoded: Union[bytes, list]) -> dict:
+    def decode(self, encoded: Encoded_) -> Decoded_:
         decoded = super().decode(encoded)
         decode_quantity(self.message, decoded)
         return decoded
@@ -124,8 +108,7 @@ class QuantifiedTranscoder(ProtobufTranscoder):
 class OneWireBusTranscoder(QuantifiedTranscoder):
     _MESSAGE = OneWireBus_pb2.OneWireBus
 
-    @copied_input
-    def encode(self, values: dict) -> bytes:
+    def encode(self, values: Decoded_) -> Encoded_:
         modify_if_present(
             obj=values,
             path='/address',
@@ -133,7 +116,7 @@ class OneWireBusTranscoder(QuantifiedTranscoder):
         )
         return super().encode(values)
 
-    def decode(self, encoded: Union[bytes, list]) -> dict:
+    def decode(self, encoded: Encoded_) -> Decoded_:
         decoded = super().decode(encoded)
         modify_if_present(
             obj=decoded,
@@ -146,8 +129,7 @@ class OneWireBusTranscoder(QuantifiedTranscoder):
 class OneWireTempSensorTranscoder(QuantifiedTranscoder):
     _MESSAGE = OneWireTempSensor_pb2.OneWireTempSensor
 
-    @copied_input
-    def encode(self, values: dict) -> bytes:
+    def encode(self, values: Decoded_) -> Encoded_:
         modify_if_present(
             obj=values,
             path='/settings/address',
@@ -155,7 +137,7 @@ class OneWireTempSensorTranscoder(QuantifiedTranscoder):
         )
         return super().encode(values)
 
-    def decode(self, encoded: Union[bytes, list]) -> dict:
+    def decode(self, encoded: Encoded_) -> Decoded_:
         decoded = super().decode(encoded)
         modify_if_present(
             obj=decoded,
