@@ -6,6 +6,7 @@ import asyncio
 import os
 
 import pytest
+from brewblox_codec_spark import codec
 from brewblox_devcon_spark import commander_sim, datastore, device
 from brewblox_devcon_spark.api import (alias_api, conflict_api, debug_api,
                                        error_response, object_api, profile_api,
@@ -51,6 +52,7 @@ async def app(app, database_test_file, loop):
 
     commander_sim.setup(app)
     datastore.setup(app)
+    codec.setup(app)
     device.setup(app)
 
     error_response.setup(app)

@@ -5,7 +5,7 @@ Offers a functional interface to the device functionality
 import random
 import string
 from functools import partialmethod
-from typing import Callable, List, Type, Union
+from typing import Callable, Coroutine, List, Type, Union
 
 import dpath
 from aiohttp import web
@@ -56,6 +56,7 @@ class SparkController(features.ServiceFeature):
         self._commander: commander.SparkCommander = None
         self._object_store: datastore.DataStore = None
         self._system_store: datastore.DataStore = None
+        self._codec: codec.Codec = None
 
     @property
     def name(self):
@@ -73,11 +74,12 @@ class SparkController(features.ServiceFeature):
         self._commander = commander.get_commander(app)
         self._object_store = datastore.get_object_store(app)
         self._system_store = datastore.get_system_store(app)
+        self._codec = codec.get_codec(app)
 
     async def shutdown(self, *_):
         pass
 
-    async def _data_processed(self, processor_func: Callable, content: dict) -> dict:
+    async def _data_processed(self, processor_func: Coroutine, content: dict) -> dict:
         # Looks for codec data, and converts it
         # A type ID is always present in the same dict as the data
         for path, data in dpath.util.search(content, f'**/{OBJECT_DATA_KEY}', yielded=True):
@@ -89,12 +91,17 @@ class SparkController(features.ServiceFeature):
             obj_type = dpath.util.get(content, f'{parent}/{OBJECT_TYPE_KEY}')
 
             # convert data, and replace in dict
-            dpath.util.set(content, f'{parent}/{OBJECT_DATA_KEY}', processor_func(obj_type, data))
+            dpath.util.set(content, f'{parent}/{OBJECT_DATA_KEY}', await processor_func(obj_type, data))
 
         return content
 
-    _data_encoded = partialmethod(_data_processed, codec.encode)
-    _data_decoded = partialmethod(_data_processed, codec.decode)
+    async def _data_encoded(self, content: dict) -> dict:
+        processor_func = self._codec.encode
+        return await self._data_processed(processor_func, content)
+
+    async def _data_decoded(self, content: dict) -> dict:
+        processor_func = self._codec.decode
+        return await self._data_processed(processor_func, content)
 
     async def resolve_controller_id(self, store: datastore.DataStore, input_id: Union[str, List[int]]) -> List[int]:
         """
@@ -152,7 +159,7 @@ class SparkController(features.ServiceFeature):
     _controller_id_resolved = partialmethod(_id_resolved, resolve_controller_id)
     _service_id_resolved = partialmethod(_id_resolved, resolve_service_id)
 
-    async def _execute(self, command_type: Type[commands.Command], content_: dict = None, **kwargs) -> dict:
+    async def _execute(self, command_type: Type[commands.Command], content_: dict=None, **kwargs) -> dict:
         # Allow a combination of a dict containing arguments, and loose kwargs
         content = content_ or dict()
         content.update(kwargs)

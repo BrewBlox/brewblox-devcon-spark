@@ -2,6 +2,7 @@
 Example of how to import and use the brewblox service
 """
 
+from brewblox_codec_spark import codec
 from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
                                    communication, datastore, device)
 from brewblox_devcon_spark.api import (alias_api, conflict_api, debug_api,
@@ -35,6 +36,9 @@ def create_parser(default_name='spark'):
     parser.add_argument('--broadcast-exchange',
                         help='Eventbus exchange to which controller state should be broadcasted. [%(default)s]',
                         default='brewcast')
+    parser.add_argument('--codec-settings',
+                        help='Backing file for the codec user settings. [%(default)s]',
+                        default='codec_settings.json')
     return parser
 
 
@@ -47,6 +51,7 @@ def main():
         communication.setup(app)
         commander.setup(app)
 
+    codec.setup(app)
     datastore.setup(app)
     device.setup(app)
 

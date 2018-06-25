@@ -35,6 +35,7 @@ def app(app, commander_mock):
     features.add(app, datastore.MemoryDataStore(), name='object_cache')
     features.add(app, datastore.MemoryDataStore(), name='system_store')
 
+    codec.setup(app)
     device.setup(app)
     return app
 
@@ -67,8 +68,9 @@ async def test_transcoding(app, client, commander_mock, store):
             connected=True
         )
     )
-    encoded = codec.encode(obj_type, obj)
-    obj = codec.decode(obj_type, encoded)
+    c = codec.get_codec(app)
+    encoded = await c.encode(obj_type, obj)
+    obj = await c.decode(obj_type, encoded)
 
     retval = await controller.write_value(
         id='alias',
