@@ -1,0 +1,4 @@
+@system brewblox using cgs
+    degC
+    delta_degC
+@end

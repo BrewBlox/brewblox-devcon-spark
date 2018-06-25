@@ -36,9 +36,9 @@ def create_parser(default_name='spark'):
     parser.add_argument('--broadcast-exchange',
                         help='Eventbus exchange to which controller state should be broadcasted. [%(default)s]',
                         default='brewcast')
-    parser.add_argument('--codec-settings',
-                        help='Backing file for the codec user settings. [%(default)s]',
-                        default='codec_settings.json')
+    parser.add_argument('--unit-system-file',
+                        help='User configuration for units [%(default)s]',
+                        default='celsius_system.txt')
     return parser
 
 

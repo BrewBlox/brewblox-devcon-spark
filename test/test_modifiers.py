@@ -9,12 +9,7 @@ from brewblox_codec_spark.proto import OneWireTempSensor_pb2
 
 @pytest.fixture(scope='module')
 def mod():
-    return modifiers.Modifier({
-        'units': {
-            'delta_degC': 'delta_degF',
-            'degC': 'degF',
-        }
-    })
+    return modifiers.Modifier('fahrenheit_system.txt')
 
 
 def encode_temp_sensor_data():

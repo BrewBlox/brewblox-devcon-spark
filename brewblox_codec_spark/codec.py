@@ -3,7 +3,6 @@ Generic entry point for all codecs.
 Offers encoding and decoding of objects.
 """
 
-import json
 from copy import deepcopy
 
 from aiohttp import web
@@ -29,9 +28,7 @@ class Codec(features.ServiceFeature):
         self._mod: Modifier = None
 
     async def startup(self, app: web.Application):
-        with open(app['config']['codec_settings']) as f:
-            settings = json.load(f)
-            self._mod = Modifier(settings)
+        self._mod = Modifier(app['config']['unit_system_file'])
 
     async def shutdown(self, *_):
         pass

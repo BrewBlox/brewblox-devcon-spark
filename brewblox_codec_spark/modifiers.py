@@ -23,10 +23,11 @@ class Modifier():
     _unit_end_char: str = ']'
     _brewblox_provider: DescriptorBase = brewblox_pb2.brewblox
 
-    def __init__(self, settings: dict):
+    def __init__(self, unit_filename: str):
         self._ureg: UnitRegistry = UnitRegistry()
+        self._ureg.load_definitions(unit_filename)
+        self._ureg.default_system = 'brewblox'
         self._desc_cache: dict = {}
-        self._settings: dict = settings
 
     @staticmethod
     def modify_if_present(obj: dict, path: str, func: Callable) -> dict:
@@ -279,11 +280,11 @@ class Modifier():
                         val = [v / scale for v in val]
 
                     if unit:
-                        preferred = self._preferred_unit(options.unit)
-                        new_path = f'{path}{self._unit_start_char}{preferred}{self._unit_end_char}'
+                        base_unit = self._quantity(options.unit).to_base_units().units
+                        new_path = f'{path}{self._unit_start_char}{base_unit}{self._unit_end_char}'
                         val = [
                             self._quantity(v, options.unit)
-                            .to(preferred)
+                            .to_base_units()
                             .magnitude
                             for v in val
                         ]
