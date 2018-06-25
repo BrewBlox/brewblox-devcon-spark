@@ -6,7 +6,7 @@ package blox;
 
 message SetPointSimple {
     message Settings {
-        sint32 value = 1 [(brewblox).unit = "degC", (brewblox).scale = 8];
+        sint32 value = 1 [(brewblox).unit = "degC", (brewblox).scale = 256];
     }
     
     Settings settings = 1;
