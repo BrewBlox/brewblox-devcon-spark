@@ -20,7 +20,7 @@ def create_parser(default_name='spark'):
                         default='brewblox_db.json')
     parser.add_argument('--system-database',
                         help='Backing file for the system object database. [%(default)s]',
-                        default='brewblox_sys_db.json')
+                        default='config/brewblox_sys_db.json')
     parser.add_argument('--device-port',
                         help='Spark device port. Automatically determined if not set. [%(default)s]')
     parser.add_argument('--device-id',
@@ -37,8 +37,7 @@ def create_parser(default_name='spark'):
                         help='Eventbus exchange to which controller state should be broadcasted. [%(default)s]',
                         default='brewcast')
     parser.add_argument('--unit-system-file',
-                        help='User configuration for units [%(default)s]',
-                        default='celsius_system.txt')
+                        help='User configuration for units [%(default)s]')
     return parser
 
 

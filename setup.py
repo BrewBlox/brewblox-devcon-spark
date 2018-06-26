@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
     name='brewblox-devcon-spark',
@@ -25,6 +25,7 @@ setup(
         'protobuf==3.5.1',
         'tinydb~=3.9',
         'aiotinydb~=1.2',
+        'pint~=0.8',
     ],
     python_requires='>=3.6',
     extras_require={'dev': ['tox']},

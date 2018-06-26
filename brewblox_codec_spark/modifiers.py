@@ -25,8 +25,9 @@ class Modifier():
 
     def __init__(self, unit_filename: str):
         self._ureg: UnitRegistry = UnitRegistry()
-        self._ureg.load_definitions(unit_filename)
-        self._ureg.default_system = 'brewblox'
+        if unit_filename:
+            self._ureg.load_definitions(unit_filename)
+            self._ureg.default_system = 'brewblox'
         self._desc_cache: dict = {}
 
     @staticmethod

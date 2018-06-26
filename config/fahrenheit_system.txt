@@ -1,4 +1,4 @@
-@system brewblox using cgs
+@system brewblox using US
     degF
     delta_degF
 @end
