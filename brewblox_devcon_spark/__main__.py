@@ -38,11 +38,21 @@ def create_parser(default_name='spark'):
                         default='brewcast')
     parser.add_argument('--unit-system-file',
                         help='User configuration for units [%(default)s]')
+    parser.add_argument('--list-devices',
+                        action='store_true',
+                        help='List connected devices and exit. [%(default)s]')
     return parser
 
 
 def main():
     app = service.create_app(parser=create_parser())
+
+    if app['config']['list_devices']:
+        LOGGER.info('Listing connected devices: ')
+        for dev in [[v for v in p] for p in communication.all_ports()]:
+            LOGGER.info(f'>> {" | ".join(dev)}')
+        # Exit application
+        return
 
     if app['config']['simulation']:
         commander_sim.setup(app)
