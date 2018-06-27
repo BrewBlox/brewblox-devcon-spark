@@ -9,7 +9,7 @@ import os
 
 import pytest
 from brewblox_devcon_spark.__main__ import create_parser
-from brewblox_service import brewblox_logger, service, features
+from brewblox_service import brewblox_logger, features, service
 
 LOGGER = brewblox_logger(__name__)
 
@@ -29,12 +29,13 @@ def app_config() -> dict:
         'port': 1234,
         'debug': True,
         'database': 'test_db.json',
-        'system_database': 'brewblox_sys_db.json',
+        'system_database': 'config/brewblox_sys_db.json',
         'device_port': '/dev/TESTEH',
         'device_id': '1234',
         'simulation': False,
         'broadcast_interval': 5,
         'broadcast_exchange': 'brewcast',
+        'unit_system_file': 'config/celsius_system.txt'
     }
 
 
@@ -52,6 +53,7 @@ def sys_args(app_config) -> list:
         '--device-id', app_config['device_id'],
         '--broadcast-interval', str(app_config['broadcast_interval']),
         '--broadcast-exchange', app_config['broadcast_exchange'],
+        '--unit-system-file', app_config['unit_system_file'],
     ]
 
 

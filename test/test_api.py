@@ -6,6 +6,7 @@ import asyncio
 import os
 
 import pytest
+from brewblox_codec_spark import codec
 from brewblox_devcon_spark import commander_sim, datastore, device
 from brewblox_devcon_spark.api import (alias_api, conflict_api, debug_api,
                                        error_response, object_api, profile_api,
@@ -51,6 +52,7 @@ async def app(app, database_test_file, loop):
 
     commander_sim.setup(app)
     datastore.setup(app)
+    codec.setup(app)
     device.setup(app)
 
     error_response.setup(app)
@@ -88,7 +90,7 @@ async def test_create(app, client, object_args):
     assert (await res.json())['id'] == 'other_obj'
 
 
-async def test_create_spam(app, client, object_args):
+async def test_create_performance(app, client, object_args):
     num_items = 50
     coros = [client.post('/objects', json=object_args) for _ in range(num_items)]
     responses = await asyncio.gather(*coros)
@@ -113,7 +115,7 @@ async def test_read(app, client, object_args):
     assert retval['id'] == 'testobj'
 
 
-async def test_read_spam(app, client, object_args):
+async def test_read_performance(app, client, object_args):
     await client.post('/objects', json=object_args)
 
     coros = [client.get('/objects/testobj') for _ in range(100)]

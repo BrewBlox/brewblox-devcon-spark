@@ -11,12 +11,13 @@ env:
     - DOCKER_REPO=brewblox/brewblox-devcon-spark
     - GITHUB_REPO=BrewBlox/brewblox-devcon-spark
 
-install: pip install tox brewblox-tools~=0.2.0
+install: pip install tox brewblox-tools~=0.3.0
 
 script: tox
 
 before_deploy:
-  bbt-distcopy .tox/dist/ docker/pkg/ rpi-docker/pkg/
+  bbt-distcopy .tox/dist/ docker/dist/
+  bbt-distcopy config/ docker/config/
   && docker login -u "$DOCKER_USER" -p "$DOCKER_PASSWORD"
   && docker run --rm --privileged multiarch/qemu-user-static:register --reset
 
@@ -29,11 +30,13 @@ deploy:
     script:
       bbt-deploy-docker
       --image docker
+      --file amd/Dockerfile
       --name "$DOCKER_REPO"
       --tags latest $(git describe --tags)
       &&
       bbt-deploy-docker
-      --image rpi-docker
+      --image docker
+      --file arm/Dockerfile
       --name "$DOCKER_REPO"
       --tags rpi-latest rpi-$(git describe --tags)
     skip_cleanup: true
@@ -45,11 +48,13 @@ deploy:
     script:
       bbt-deploy-docker
       --image docker
+      --file amd/Dockerfile
       --name "$DOCKER_REPO"
       --tags "$TRAVIS_BRANCH"
       &&
       bbt-deploy-docker
-      --image rpi-docker
+      --image docker
+      --file arm/Dockerfile
       --name "$DOCKER_REPO"
       --tags rpi-$TRAVIS_BRANCH
     skip_cleanup: true

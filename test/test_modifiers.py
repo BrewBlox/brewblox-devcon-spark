@@ -2,19 +2,17 @@
 Tests brewblox_codec_spark.modifiers
 """
 
-import logging
-
 import pytest
-from brewblox_codec_spark import modifiers, path_extension
+from brewblox_codec_spark import modifiers
 from brewblox_codec_spark.proto import OneWireTempSensor_pb2
 
-# We import path_extension for its side effects
-# "use" the import to avoid pep8 complaints
-# Alternative (adding noqa mark), would also prevent IDE suggestions
-logging.debug(f'Extending path with {path_extension.PROTO_PATH}')
+
+@pytest.fixture(scope='module')
+def mod():
+    return modifiers.Modifier('config/fahrenheit_system.txt')
 
 
-def encode_temp_sensor_data():
+def generate_encoding_data():
     return {
         'settings': {
             'address': 'address',
@@ -23,7 +21,7 @@ def encode_temp_sensor_data():
     }
 
 
-def decode_temp_sensor_data():
+def generate_decoding_data():
     return {
         'settings': {
             'address': 'address',
@@ -32,26 +30,26 @@ def decode_temp_sensor_data():
     }
 
 
-def test_modify_if_present():
-    input = encode_temp_sensor_data()
-    output = modifiers.modify_if_present(input, 'settings/address', lambda s: s[::-1])
+def test_modify_if_present(mod):
+    input = generate_encoding_data()
+    output = mod.modify_if_present(input, 'settings/address', lambda s: s[::-1])
 
     assert output['settings']['address'] == 'sserdda'
     assert id(input) == id(output)
-    assert input != encode_temp_sensor_data()
+    assert input != generate_encoding_data()
 
 
-def test_encode_quantity():
-    vals = encode_temp_sensor_data()
-    modifiers.encode_quantity(OneWireTempSensor_pb2.OneWireTempSensor(), vals)
+def test_encode_quantity(mod):
+    vals = generate_encoding_data()
+    mod.encode_quantity(OneWireTempSensor_pb2.OneWireTempSensor(), vals)
 
     # converted to delta_degC
     # scaled * 256
     # rounded to int
-    assert vals == decode_temp_sensor_data()
+    assert vals == generate_decoding_data()
 
 
-def test_decode_quantity():
+def test_decode_quantity(mod):
     vals = {
         'settings': {
             'address': 'address',
@@ -59,6 +57,6 @@ def test_decode_quantity():
         }
     }
 
-    modifiers.decode_quantity(OneWireTempSensor_pb2.OneWireTempSensor(), vals)
+    mod.decode_quantity(OneWireTempSensor_pb2.OneWireTempSensor(), vals)
     print(vals['settings'])
-    assert vals['settings']['offset[delta_degC]'] == pytest.approx(2844 / 256, 0.1)
+    assert vals['settings']['offset[delta_degF]'] == pytest.approx(20, 0.1)
