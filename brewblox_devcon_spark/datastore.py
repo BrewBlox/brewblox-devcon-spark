@@ -232,6 +232,8 @@ class DataStore(features.ServiceFeature):
             conflicts = db.table(CONFLICT_TABLE).all()
             formatted = defaultdict(dict)
 
+            LOGGER.info(f'conflicts: {conflicts}')
+
             for c in conflicts:
                 for id_key, id_val in c.items():
                     formatted[id_key].update({id_val: db.search(Query()[id_key] == id_val)})
