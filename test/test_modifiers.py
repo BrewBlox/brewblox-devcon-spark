@@ -12,7 +12,7 @@ def mod():
     return modifiers.Modifier('config/fahrenheit_system.txt')
 
 
-def encode_temp_sensor_data():
+def generate_encoding_data():
     return {
         'settings': {
             'address': 'address',
@@ -21,7 +21,7 @@ def encode_temp_sensor_data():
     }
 
 
-def decode_temp_sensor_data():
+def generate_decoding_data():
     return {
         'settings': {
             'address': 'address',
@@ -31,22 +31,22 @@ def decode_temp_sensor_data():
 
 
 def test_modify_if_present(mod):
-    input = encode_temp_sensor_data()
+    input = generate_encoding_data()
     output = mod.modify_if_present(input, 'settings/address', lambda s: s[::-1])
 
     assert output['settings']['address'] == 'sserdda'
     assert id(input) == id(output)
-    assert input != encode_temp_sensor_data()
+    assert input != generate_encoding_data()
 
 
 def test_encode_quantity(mod):
-    vals = encode_temp_sensor_data()
+    vals = generate_encoding_data()
     mod.encode_quantity(OneWireTempSensor_pb2.OneWireTempSensor(), vals)
 
     # converted to delta_degC
     # scaled * 256
     # rounded to int
-    assert vals == decode_temp_sensor_data()
+    assert vals == generate_decoding_data()
 
 
 def test_decode_quantity(mod):

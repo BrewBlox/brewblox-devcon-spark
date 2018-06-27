@@ -90,7 +90,7 @@ async def test_create(app, client, object_args):
     assert (await res.json())['id'] == 'other_obj'
 
 
-async def test_create_spam(app, client, object_args):
+async def test_create_performance(app, client, object_args):
     num_items = 50
     coros = [client.post('/objects', json=object_args) for _ in range(num_items)]
     responses = await asyncio.gather(*coros)
@@ -115,7 +115,7 @@ async def test_read(app, client, object_args):
     assert retval['id'] == 'testobj'
 
 
-async def test_read_spam(app, client, object_args):
+async def test_read_performance(app, client, object_args):
     await client.post('/objects', json=object_args)
 
     coros = [client.get('/objects/testobj') for _ in range(100)]
