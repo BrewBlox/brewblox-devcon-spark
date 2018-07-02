@@ -182,7 +182,7 @@ class SparkConduit(features.ServiceFeature):
                 await asyncio.sleep(RETRY_INTERVAL_S)
 
             finally:
-                self._address = None
+                # Keep last known address
                 self._transport = None
                 self._protocol = None
 
