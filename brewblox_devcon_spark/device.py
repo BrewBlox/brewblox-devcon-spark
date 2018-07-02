@@ -188,7 +188,7 @@ class SparkController(features.ServiceFeature):
             return retval
 
         except Exception as ex:
-            LOGGER.error(f'Failed to execute {command_type()}: {type(ex).__name__}: {ex}')
+            LOGGER.debug(f'Failed to execute {command_type()}: {type(ex).__name__}: "{ex}"', exc_info=True)
             raise ex
 
     read_value = partialmethod(_execute, commands.ReadValueCommand)

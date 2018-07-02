@@ -148,7 +148,7 @@ class SparkCommander(features.ServiceFeature):
 
     async def execute(self, command: commands.Command) -> dict:
         encoded_request = command.encoded_request
-        assert await self._conduit.write_encoded(hexlify(encoded_request))
+        await self._conduit.write_encoded(hexlify(encoded_request))
 
         while True:
             # Wait for a request resolution (matched by request)

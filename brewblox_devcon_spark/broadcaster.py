@@ -77,5 +77,5 @@ class Broadcaster(features.ServiceFeature):
 
             except Exception as ex:
                 if last_broadcast_ok:
-                    LOGGER.warn(f'{self} encountered an error: {type(ex).__name__}={ex}')
+                    LOGGER.warn(f'{self} encountered an error: {type(ex).__name__}="{ex}"')
                     last_broadcast_ok = False

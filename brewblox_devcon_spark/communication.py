@@ -44,6 +44,19 @@ KNOWN_DEVICES = {
 }
 
 
+# SerialTransport does not correctly catch and process exceptions when disconnecting USB
+# Monkey patch it until the issue is fixed
+def _read_ready_wrapper(self):
+    try:
+        self._old_read_ready()
+    except serial.serialutil.SerialException:
+        self.close()
+
+
+SerialTransport._old_read_ready = SerialTransport._read_ready
+SerialTransport._read_ready = _read_ready_wrapper
+
+
 async def _default_on_message(conduit: 'SparkConduit', message: str):
     LOGGER.info(f'Unhandled message: conduit={conduit}, message={message}')
 
@@ -67,6 +80,7 @@ async def connect_serial(app: web.Application,
     protocol = factory()
     ser = serial.serial_for_url(address, baudrate=DEFAULT_BAUD_RATE)
     transport = SerialTransport(app.loop, protocol, ser)
+    transport.serial.rts = False
     return address, transport, protocol
 
 
@@ -101,7 +115,7 @@ class SparkConduit(features.ServiceFeature):
 
     @property
     def connected(self):
-        return bool(self._transport and not self._transport.is_closing())
+        return bool(self._transport)
 
     def add_event_callback(self, cb: MessageCallback_):
         cb and self._event_callbacks.add(cb)
