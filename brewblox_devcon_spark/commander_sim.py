@@ -2,19 +2,20 @@
 Monkey patches commander.SparkCommander to not require an actual connection.
 """
 
-from brewblox_devcon_spark import commander, commands
+from functools import partialmethod
+
 from aiohttp import web
-from brewblox_service import features
+from brewblox_devcon_spark import commander, commands
 from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                             PROFILE_ID_KEY, PROFILE_LIST_KEY,
                                             SYSTEM_ID_KEY)
-from functools import partialmethod
+from brewblox_service import features
 
 
 def setup(app: web.Application):
     # Register as a SparkCommander, so features.get(app, SparkCommander) still works
-    features.add(app, SimulationCommander(app), name=commander.SparkCommander)
+    features.add(app, SimulationCommander(app), key=commander.SparkCommander)
 
 
 class SimulationResponder():

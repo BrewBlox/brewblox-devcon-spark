@@ -7,6 +7,7 @@ import os
 
 import pytest
 from brewblox_devcon_spark import datastore
+from brewblox_service import scheduler
 
 TESTED = datastore.__name__
 
@@ -27,6 +28,7 @@ def database_test_file():
 
 @pytest.fixture
 def file_store(app, database_test_file):
+    scheduler.setup(app)
     return datastore.FileDataStore(
         app=app,
         filename=database_test_file,

@@ -47,7 +47,7 @@ def random_string():
 
 class SparkController(features.ServiceFeature):
 
-    def __init__(self, name: str, app: web.Application=None):
+    def __init__(self, name: str, app: web.Application):
         super().__init__(app)
 
         self._name = name

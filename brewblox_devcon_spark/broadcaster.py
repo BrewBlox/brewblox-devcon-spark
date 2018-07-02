@@ -8,7 +8,7 @@ from concurrent.futures import CancelledError
 
 from aiohttp import web
 from brewblox_devcon_spark.api.object_api import ObjectApi
-from brewblox_service import brewblox_logger, events, features
+from brewblox_service import brewblox_logger, events, features, scheduler
 
 LOGGER = brewblox_logger(__name__)
 
@@ -23,7 +23,7 @@ def setup(app: web.Application):
 
 class Broadcaster(features.ServiceFeature):
 
-    def __init__(self, app: web.Application=None):
+    def __init__(self, app: web.Application):
         super().__init__(app)
         self._task: asyncio.Task = None
 
@@ -32,23 +32,21 @@ class Broadcaster(features.ServiceFeature):
 
     async def startup(self, app: web.Application):
         await self.shutdown()
-        self._task = app.loop.create_task(self._broadcast(app))
+        self._task = await scheduler.create_task(app, self._broadcast())
 
     async def shutdown(self, *_):
-        if self._task:
-            self._task.cancel()
-            await asyncio.wait([self._task])
+        await scheduler.cancel_task(self.app, self._task)
         self._task = None
 
-    async def _broadcast(self, app: web.Application):
+    async def _broadcast(self):
         LOGGER.info(f'Starting {self}')
 
         try:
-            api = ObjectApi(app)
-            publisher = events.get_publisher(app)
-            name = app['config']['name']
-            interval = app['config']['broadcast_interval']
-            exchange = app['config']['broadcast_exchange']
+            api = ObjectApi(self.app)
+            publisher = events.get_publisher(self.app)
+            name = self.app['config']['name']
+            interval = self.app['config']['broadcast_interval']
+            exchange = self.app['config']['broadcast_exchange']
             last_broadcast_ok = True
 
         except Exception as ex:

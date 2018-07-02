@@ -6,12 +6,11 @@ import asyncio
 from binascii import hexlify, unhexlify
 from collections import defaultdict
 from concurrent.futures import CancelledError
-from contextlib import suppress
 from datetime import datetime, timedelta
 
 from aiohttp import web
 from brewblox_devcon_spark import commands, communication
-from brewblox_service import brewblox_logger, features
+from brewblox_service import brewblox_logger, features, scheduler
 
 LOGGER = brewblox_logger(__name__)
 
@@ -88,7 +87,7 @@ class TimestampedResponse():
 
 class SparkCommander(features.ServiceFeature):
 
-    def __init__(self, app: web.Application=None):
+    def __init__(self, app: web.Application):
         super().__init__(app)
 
         self._requests = defaultdict(TimestampedQueue)
@@ -100,20 +99,16 @@ class SparkCommander(features.ServiceFeature):
 
     async def startup(self, app: web.Application):
         await self.shutdown()
-
         self._conduit = communication.get_conduit(app)
         self._conduit.add_data_callback(self._process_response)
-        self._cleanup_task = app.loop.create_task(self._cleanup())
+        self._cleanup_task = await scheduler.create_task(app, self._cleanup())
 
     async def shutdown(self, *_):
-        with suppress(AttributeError):
+        if self._conduit:
             self._conduit.remove_data_callback(self._process_response)
+            self._conduit = None
 
-        with suppress(Exception):
-            self._cleanup_task.cancel()
-            await self._cleanup_task
-
-        self._conduit = None
+        await scheduler.cancel_task(self.app, self._cleanup_task)
         self._cleanup_task = None
 
     async def _cleanup(self):

@@ -11,6 +11,7 @@ from brewblox_devcon_spark import commander_sim, datastore, device
 from brewblox_devcon_spark.api import (alias_api, conflict_api, debug_api,
                                        error_response, object_api, profile_api,
                                        system_api)
+from brewblox_service import scheduler
 
 
 @pytest.fixture
@@ -50,6 +51,7 @@ async def app(app, database_test_file, loop):
     """App + controller routes"""
     app['config']['database'] = database_test_file
 
+    scheduler.setup(app)
     commander_sim.setup(app)
     datastore.setup(app)
     codec.setup(app)

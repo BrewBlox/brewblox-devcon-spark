@@ -9,6 +9,7 @@ from unittest.mock import PropertyMock
 import pytest
 from asynctest import CoroutineMock
 from brewblox_devcon_spark import commander, commands
+from brewblox_service import scheduler
 
 TESTED = commander.__name__
 
@@ -24,6 +25,7 @@ def conduit_mock(mocker):
 
 @pytest.fixture
 def app(app, conduit_mock):
+    scheduler.setup(app)
     commander.setup(app)
     return app
 
@@ -34,7 +36,7 @@ async def sparky(app, client):
 
 
 async def test_init(conduit_mock, app, client):
-    spock = commander.SparkCommander()
+    spock = commander.SparkCommander(app)
 
     await spock.shutdown()
     await spock.startup(app)

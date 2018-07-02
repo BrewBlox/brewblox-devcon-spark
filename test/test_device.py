@@ -5,39 +5,36 @@ Tests brewblox_devcon_spark.device
 import pytest
 from asynctest import CoroutineMock
 from brewblox_codec_spark import codec
-from brewblox_devcon_spark import commander, datastore, device
-from brewblox_service import features
+from brewblox_devcon_spark import commander, commander_sim, datastore, device
+from brewblox_service import features, scheduler
 
 TESTED = device.__name__
 
 
 @pytest.fixture
-def commander_mock(mocker):
-    cmder = commander.SparkCommander(app=None)
+def app(app):
+    """App + controller routes"""
+    cmder = commander_sim.SimulationCommander(app)
 
     def echo(command):
         retval = command.decoded_request
         retval['command'] = command.name
         return retval
 
-    cmder.start = CoroutineMock()
-    cmder.close = CoroutineMock()
-    cmder.execute = CoroutineMock(side_effect=echo)
-    return cmder
+    features.add(app, cmder, key=commander.SparkCommander)
+    features.add(app, datastore.MemoryDataStore(app), key='object_store')
+    features.add(app, datastore.MemoryDataStore(app), key='object_cache')
+    features.add(app, datastore.MemoryDataStore(app), key='system_store')
 
-
-@pytest.fixture
-def app(app, commander_mock):
-    """App + controller routes"""
-    features.add(app, commander_mock, name=commander.SparkCommander)
-
-    features.add(app, datastore.MemoryDataStore(), name='object_store')
-    features.add(app, datastore.MemoryDataStore(), name='object_cache')
-    features.add(app, datastore.MemoryDataStore(), name='system_store')
-
+    scheduler.setup(app)
     codec.setup(app)
     device.setup(app)
     return app
+
+
+@pytest.fixture
+def commander_mock(app):
+    return features.get(app, commander.SparkCommander)
 
 
 @pytest.fixture
@@ -73,7 +70,7 @@ async def test_transcoding(app, client, commander_mock, store):
     obj = await c.decode(obj_type, encoded)
 
     retval = await controller.write_value(
-        id='alias',
+        object_id='alias',
         object_type=obj_type,
         object_size=0,
         object_data=obj
@@ -97,7 +94,7 @@ async def test_transcoding(app, client, commander_mock, store):
     assert retval['objects'] == [dict(object_type=obj_type, object_data=obj)] * 2
 
 
-async def test_resolve_id(app, client, commander_mock, store, mocker):
+async def test_resolve_id(app, client, store, mocker):
     random_mock = mocker.patch(TESTED + '.random_string')
     random_mock.return_value = 'totally random string'
     await store.insert_multiple([

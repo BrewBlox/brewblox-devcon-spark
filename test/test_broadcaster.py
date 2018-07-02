@@ -3,12 +3,12 @@ Tests brewblox_devcon_spark.broadcaster
 """
 
 import asyncio
-
-from asynctest import CoroutineMock
 from unittest.mock import call
 
 import pytest
+from asynctest import CoroutineMock
 from brewblox_devcon_spark import broadcaster
+from brewblox_service import scheduler
 
 TESTED = broadcaster.__name__
 
@@ -31,13 +31,14 @@ def mock_publisher(mocker):
 async def app(app, mock_api, mock_publisher):
     app['config']['broadcast_interval'] = 0.01
     app['config']['broadcast_exchange'] = 'testcast'
+    scheduler.setup(app)
     broadcaster.setup(app)
     return app
 
 
 async def test_startup_shutdown(app, client):
     assert broadcaster.get_broadcaster(app)
-    b = broadcaster.Broadcaster()
+    b = broadcaster.Broadcaster(app)
     await b.startup(app)
     await b.startup(app)
     await b.shutdown(app)
@@ -84,7 +85,7 @@ async def test_startup_error(app, client, mocker):
 
     del app['config']['broadcast_interval']
 
-    b = broadcaster.Broadcaster()
+    b = broadcaster.Broadcaster(app)
 
     await b.startup(app)
     await asyncio.sleep(0.01)
