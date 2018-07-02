@@ -8,8 +8,7 @@ from collections import namedtuple
 from concurrent.futures import CancelledError
 from contextlib import suppress
 from functools import partial
-from typing import (Any, Awaitable, Callable, Coroutine, Generator, Iterable,
-                    List, Tuple)
+from typing import Any, Awaitable, Callable, Generator, Iterable, List, Tuple
 
 import serial
 from aiohttp import web
@@ -23,8 +22,9 @@ DEFAULT_URL_PORT = 6666
 RETRY_INTERVAL_S = 1
 
 PortType_ = Any
-MessageCallback_ = Callable[['SparkConduit', str], Coroutine]
+MessageCallback_ = Callable[['SparkConduit', str], Awaitable]
 ProtocolFactory_ = Callable[[], asyncio.Protocol]
+ConnectionResult_ = Tuple[Any, asyncio.Transport, asyncio.Protocol]
 
 DeviceMatch = namedtuple('DeviceMatch', ['id', 'desc', 'hwid'])
 
@@ -58,7 +58,7 @@ def get_conduit(app: web.Application) -> 'SparkConduit':
 
 async def connect_serial(app: web.Application,
                          factory: ProtocolFactory_
-                         ) -> Tuple[Any, asyncio.Transport, asyncio.Protocol]:
+                         ) -> Awaitable[ConnectionResult_]:
     config = app['config']
     port = config['device_port']
     id = config['device_id']
@@ -72,7 +72,7 @@ async def connect_serial(app: web.Application,
 
 async def connect_tcp(app: web.Application,
                       factory: ProtocolFactory_
-                      ) -> Tuple[Any, asyncio.Transport, asyncio.Protocol]:
+                      ) -> Awaitable[ConnectionResult_]:
     address = app['config']['device_url']
     transport, protocol = await app.loop.create_connection(
         factory,
@@ -159,7 +159,7 @@ class SparkConduit(features.ServiceFeature):
         for cb in callbacks or [_default_on_message]:
             self.app.loop.create_task(call_cb(cb, message))
 
-    async def _maintain_connection(self, connect_func):
+    async def _maintain_connection(self, connect_func: Callable[[], Awaitable[ConnectionResult_]]):
         while True:
             try:
                 self._address, self._transport, self._protocol = await connect_func()
@@ -171,10 +171,8 @@ class SparkConduit(features.ServiceFeature):
                 LOGGER.info(f'Disconnected {self}')
 
             except CancelledError:
-                try:
+                with suppress(Exception):
                     await self._transport.close()
-                except Exception:
-                    pass
                 break
 
             except Exception as ex:
@@ -204,7 +202,7 @@ class SparkProtocol(asyncio.Protocol):
         return self._connection_made_event.wait()
 
     @property
-    def disconnected(self) -> Coroutine:
+    def disconnected(self) -> Awaitable:
         return self._connection_lost_event.wait()
 
     def connection_made(self, transport):
@@ -212,7 +210,8 @@ class SparkProtocol(asyncio.Protocol):
 
     def connection_lost(self, exc):
         self._connection_lost_event.set()
-        LOGGER.debug(f'Protocol connection error: {exc}')
+        if exc:
+            LOGGER.warning(f'Protocol connection error: {exc}')
 
     def data_received(self, data):
         self._buffer += data.decode()

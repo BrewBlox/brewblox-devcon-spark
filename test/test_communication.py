@@ -321,6 +321,10 @@ async def test_reconnect(app, client, mocker, tcp_create_connection_mock):
     await asyncio.sleep(0.01)
     assert tcp_create_connection_mock.call_count == 1
 
-    spock._protocol.connection_lost(None)
+    spock._protocol.connection_lost(ConnectionError('boo!'))
     await asyncio.sleep(0.01)
     assert tcp_create_connection_mock.call_count == 2
+
+    spock._protocol.connection_lost(None)
+    await asyncio.sleep(0.01)
+    assert tcp_create_connection_mock.call_count == 3
