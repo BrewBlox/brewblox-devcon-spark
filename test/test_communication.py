@@ -104,6 +104,26 @@ def transport_mock(mocker):
 
 
 @pytest.fixture
+def tcp_create_connection_mock(app, mocker):
+    app['config']['device_url'] = 'enterprise'
+
+    tcp_transport_mock = Mock()
+    tcp_transport_mock.is_closing.return_value = False
+
+    def connect(factory, address, port):
+        """Mocks behavior of loop.create_connection()"""
+        protocol = factory()
+        protocol.connection_made(tcp_transport_mock)
+        return tcp_transport_mock, protocol
+
+    create_connection_mock = mocker.patch.object(
+        app.loop, 'create_connection',
+        CoroutineMock(side_effect=connect)
+    )
+    return create_connection_mock
+
+
+@pytest.fixture
 def bound_collector(loop):
     return Collector(loop)
 
@@ -266,3 +286,41 @@ async def test_detect_device(grep_ports_mock):
     grep_ports_mock.return_value = [dummy[0]]
     with pytest.raises(ValueError):
         communication.detect_device(serial_number='4321')
+
+
+async def test_tcp_connection(app, client, mocker, tcp_create_connection_mock):
+    spock = communication.SparkConduit(app)
+
+    await spock.startup(app)
+    await asyncio.sleep(0.01)
+
+    assert spock.connected
+    assert tcp_create_connection_mock.call_count == 1
+
+
+async def test_connect_error(app, client, mocker, tcp_create_connection_mock):
+    mocker.patch(TESTED + '.RETRY_INTERVAL_S', 0.001)
+    tcp_create_connection_mock.side_effect = ConnectionRefusedError
+
+    spock = communication.SparkConduit(app)
+    await spock.startup(app)
+
+    await asyncio.sleep(0.01)
+    assert not spock.connected
+    await spock.shutdown(app)
+
+    assert tcp_create_connection_mock.call_count > 1
+
+
+async def test_reconnect(app, client, mocker, tcp_create_connection_mock):
+    mocker.patch(TESTED + '.RETRY_INTERVAL_S', 0.001)
+
+    spock = communication.SparkConduit(app)
+    await spock.startup(app)
+
+    await asyncio.sleep(0.01)
+    assert tcp_create_connection_mock.call_count == 1
+
+    spock._protocol.connection_lost(None)
+    await asyncio.sleep(0.01)
+    assert tcp_create_connection_mock.call_count == 2

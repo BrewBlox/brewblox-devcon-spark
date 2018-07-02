@@ -212,8 +212,7 @@ class SparkProtocol(asyncio.Protocol):
 
     def connection_lost(self, exc):
         self._connection_lost_event.set()
-        if exc:
-            LOGGER.warn(f'Protocol connection error: {exc}')
+        LOGGER.debug(f'Protocol connection error: {exc}')
 
     def data_received(self, data):
         self._buffer += data.decode()
