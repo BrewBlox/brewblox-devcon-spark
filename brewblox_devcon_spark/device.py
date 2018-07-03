@@ -9,13 +9,14 @@ from typing import Callable, Coroutine, List, Type, Union
 
 import dpath
 from aiohttp import web
+from brewblox_service import brewblox_logger, features
+
 from brewblox_codec_spark import codec
 from brewblox_devcon_spark import commander, commands, datastore
 from brewblox_devcon_spark.commands import (FLAGS_KEY, OBJECT_DATA_KEY,  # noqa
                                             OBJECT_ID_KEY, OBJECT_LIST_KEY,
                                             OBJECT_TYPE_KEY, PROFILE_ID_KEY,
                                             PROFILE_LIST_KEY, SYSTEM_ID_KEY)
-from brewblox_service import brewblox_logger, features
 
 SERVICE_ID_KEY = 'service_id'
 CONTROLLER_ID_KEY = 'controller_id'
@@ -188,7 +189,7 @@ class SparkController(features.ServiceFeature):
             return retval
 
         except Exception as ex:
-            LOGGER.debug(f'Failed to execute {command_type()}: {type(ex).__name__}: "{ex}"', exc_info=True)
+            LOGGER.debug(f'Failed to execute {command_type()}: {type(ex).__name__}({ex})', exc_info=True)
             raise ex
 
     read_value = partialmethod(_execute, commands.ReadValueCommand)

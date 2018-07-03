@@ -7,8 +7,9 @@ import asyncio
 from concurrent.futures import CancelledError
 
 from aiohttp import web
-from brewblox_devcon_spark.api.object_api import ObjectApi
 from brewblox_service import brewblox_logger, events, features, scheduler
+
+from brewblox_devcon_spark.api.object_api import ObjectApi
 
 LOGGER = brewblox_logger(__name__)
 
@@ -77,5 +78,5 @@ class Broadcaster(features.ServiceFeature):
 
             except Exception as ex:
                 if last_broadcast_ok:
-                    LOGGER.warn(f'{self} encountered an error: {type(ex).__name__}="{ex}"')
+                    LOGGER.warn(f'{self} encountered an error: {type(ex).__name__}({ex})')
                     last_broadcast_ok = False

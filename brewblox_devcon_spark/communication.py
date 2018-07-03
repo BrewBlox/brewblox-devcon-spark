@@ -90,9 +90,9 @@ class SparkConduit(features.ServiceFeature):
 
         self._connection_task: asyncio.Task = None
 
-        self._address = None
-        self._transport = None
-        self._protocol = None
+        self._address: Any = None
+        self._transport: asyncio.Transport = None
+        self._protocol: 'SparkProtocol' = None
 
         self._event_callbacks = set()
         self._data_callbacks = set()
@@ -101,7 +101,7 @@ class SparkConduit(features.ServiceFeature):
         return f'<{type(self).__name__} for {self._address}>'
 
     @property
-    def connected(self):
+    def connected(self) -> bool:
         return bool(self._transport and not self._transport.is_closing())
 
     def add_event_callback(self, cb: MessageCallback_):
