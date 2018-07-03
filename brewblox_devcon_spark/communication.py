@@ -13,8 +13,8 @@ from typing import Any, Awaitable, Callable, Generator, Iterable, List, Tuple
 import serial
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, scheduler
-from serial.aio import SerialTransport
 from serial.tools import list_ports
+from serial_asyncio import SerialTransport
 
 LOGGER = brewblox_logger(__name__)
 DEFAULT_BAUD_RATE = 57600
@@ -42,19 +42,6 @@ KNOWN_DEVICES = {
         desc=r'.*P1.*',
         hwid=r'USB VID\:PID=2B04\:C008.*'),
 }
-
-
-# SerialTransport does not correctly catch and process exceptions when disconnecting USB
-# Monkey patch it until the issue is fixed
-def _read_ready_wrapper(self):
-    try:
-        self._old_read_ready()
-    except serial.serialutil.SerialException:
-        self.close()
-
-
-SerialTransport._old_read_ready = SerialTransport._read_ready
-SerialTransport._read_ready = _read_ready_wrapper
 
 
 async def _default_on_message(conduit: 'SparkConduit', message: str):
@@ -115,7 +102,7 @@ class SparkConduit(features.ServiceFeature):
 
     @property
     def connected(self):
-        return bool(self._transport)
+        return bool(self._transport and not self._transport.is_closing())
 
     def add_event_callback(self, cb: MessageCallback_):
         cb and self._event_callbacks.add(cb)
