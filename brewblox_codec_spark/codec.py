@@ -6,12 +6,20 @@ Offers encoding and decoding of objects.
 from copy import deepcopy
 
 from aiohttp import web
+from brewblox_service import brewblox_logger, features
+
+from brewblox_codec_spark import _path_extension
 from brewblox_codec_spark.modifiers import Modifier
 from brewblox_codec_spark.transcoders import (Decoded_, Encoded_, ObjType_,
                                               Transcoder)
-from brewblox_service import brewblox_logger, features
 
 LOGGER = brewblox_logger(__name__)
+
+
+# We import _path_extension for its side effects
+# "use" the import to avoid pep8 complaints
+# Alternative (adding noqa mark), would also prevent IDE suggestions
+LOGGER.debug(f'Extending path with {_path_extension.PROTO_PATH}')
 
 
 def setup(app: web.Application):

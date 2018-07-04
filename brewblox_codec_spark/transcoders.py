@@ -6,26 +6,21 @@ Object-specific transcoders
 from abc import ABC, abstractmethod
 from typing import Union
 
-from brewblox_codec_spark import path_extension
-from brewblox_codec_spark.modifiers import Modifier
-from brewblox_codec_spark.proto import OneWireBus_pb2, OneWireTempSensor_pb2
 from brewblox_service import brewblox_logger
 from google.protobuf import json_format
 from google.protobuf.internal import decoder as internal_decoder
 from google.protobuf.internal import encoder as internal_encoder
 from google.protobuf.message import Message
 
+import OneWireBus_pb2
+import OneWireTempSensor_pb2
+from brewblox_codec_spark.modifiers import Modifier
+
 ObjType_ = Union[int, str]
 Decoded_ = dict
 Encoded_ = Union[bytes, list]
 
 LOGGER = brewblox_logger(__name__)
-
-
-# We import path_extension for its side effects
-# "use" the import to avoid pep8 complaints
-# Alternative (adding noqa mark), would also prevent IDE suggestions
-LOGGER.debug(f'Extending path with {path_extension.PROTO_PATH}')
 
 
 class Transcoder(ABC):
