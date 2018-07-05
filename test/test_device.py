@@ -4,11 +4,25 @@ Tests brewblox_devcon_spark.device
 
 import pytest
 from asynctest import CoroutineMock
-from brewblox_codec_spark import codec
-from brewblox_devcon_spark import commander, commander_sim, datastore, device
 from brewblox_service import features, scheduler
 
+from brewblox_codec_spark import codec
+from brewblox_devcon_spark import commander, commander_sim, datastore, device
+
 TESTED = device.__name__
+
+
+def generate_obj():
+    return 'OneWireTempSensor', dict(
+        settings=dict(
+            address='ff',
+            offset=20
+        ),
+        state=dict(
+            value=12345,
+            connected=True
+        )
+    )
 
 
 @pytest.fixture
@@ -53,45 +67,45 @@ async def test_transcoding(app, client, commander_mock, store):
         'controller_id': [1, 2, 3]
     })
 
-    # OneWireTempSensor
-    obj_type = 6
-    obj = dict(
-        settings=dict(
-            address='ff',
-            offset=20
-        ),
-        state=dict(
-            value=12345,
-            connected=True
-        )
-    )
     c = codec.get_codec(app)
-    encoded = await c.encode(obj_type, obj)
-    obj = await c.decode(obj_type, encoded)
+    encoded_type, encoded = await c.encode(*generate_obj())
+    decoded_type, decoded = await c.decode(encoded_type, encoded)
 
     retval = await controller.write_value(
         object_id='alias',
-        object_type=obj_type,
+        object_type=decoded_type,
         object_size=0,
-        object_data=obj
+        object_data=decoded
     )
-    assert retval['object_data'] == obj
+    assert retval['object_data'] == decoded
+
+
+async def test_list_transcoding(app, client, commander_mock, store):
+    controller = device.get_controller(app)
+    c = codec.get_codec(app)
+
+    await store.insert({
+        'service_id': 'alias',
+        'controller_id': [1, 2, 3]
+    })
+
+    encoded_type, encoded = await c.encode(*generate_obj())
+    decoded_type, decoded = await c.decode(encoded_type, encoded)
 
     # Test correct processing of lists of objects
     commander_mock.execute = CoroutineMock(return_value=dict(
         objects=[
             # Call dict twice to avoid populating the list with references to the same dict
-            dict(object_type=obj_type, object_data=encoded),
-            dict(object_type=obj_type, object_data=encoded),
+            dict(object_type=encoded_type, object_data=encoded) for _ in range(2)
         ]
     ))
     retval = await controller.write_value(
         object_id='alias',
-        object_type=obj_type,
+        object_type=decoded_type,
         object_size=0,
-        object_data=obj
+        object_data=decoded
     )
-    assert retval['objects'] == [dict(object_type=obj_type, object_data=obj)] * 2
+    assert retval['objects'] == [dict(object_type=decoded_type, object_data=decoded)] * 2
 
 
 async def test_resolve_id(app, client, store, mocker):
@@ -110,10 +124,10 @@ async def test_resolve_id(app, client, store, mocker):
 
     ctrl = device.get_controller(app)
 
-    assert await ctrl.resolve_controller_id(ctrl._object_store, 'alias') == [1, 2, 3]
-    assert await ctrl.resolve_controller_id(ctrl._object_store, [8, 4, 0]) == [8, 4, 0]
+    assert await ctrl.find_controller_id(ctrl._object_store, 'alias') == [1, 2, 3]
+    assert await ctrl.find_controller_id(ctrl._object_store, [8, 4, 0]) == [8, 4, 0]
 
-    assert await ctrl.resolve_service_id(ctrl._object_store, [1, 2, 3]) == 'alias'
-    assert await ctrl.resolve_service_id(ctrl._object_store, 'testey') == 'testey'
+    assert await ctrl.find_service_id(ctrl._object_store, [1, 2, 3]) == 'alias'
+    assert await ctrl.find_service_id(ctrl._object_store, 'testey') == 'testey'
     # Service ID not found: create placeholder
-    assert await ctrl.resolve_service_id(ctrl._object_store, [6, 6, 6]) == 'totally random string'
+    assert await ctrl.find_service_id(ctrl._object_store, [6, 6, 6]) == 'totally random string'

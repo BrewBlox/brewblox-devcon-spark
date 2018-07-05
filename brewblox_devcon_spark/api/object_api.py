@@ -3,12 +3,13 @@ REST API for Spark objects
 """
 
 from aiohttp import web
+from brewblox_service import brewblox_logger
+
 from brewblox_devcon_spark import datastore, device
 from brewblox_devcon_spark.api import API_DATA_KEY, API_ID_KEY, API_TYPE_KEY
 from brewblox_devcon_spark.device import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                           OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                           PROFILE_ID_KEY, SERVICE_ID_KEY)
-from brewblox_service import brewblox_logger
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -157,8 +158,8 @@ async def object_create(request: web.Request) -> web.Response:
                     type: string
                     example: temp_sensor_1
                 type:
-                    type: int
-                    example: 6
+                    type: string
+                    example: OneWireTempSensor
                 data:
                     type: object
                     example:

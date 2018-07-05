@@ -5,7 +5,7 @@ Offers a functional interface to the device functionality
 import random
 import string
 from functools import partialmethod
-from typing import Callable, Coroutine, List, Type, Union
+from typing import Awaitable, Callable, List, Type, Union
 
 import dpath
 from aiohttp import web
@@ -20,9 +20,6 @@ from brewblox_devcon_spark.commands import (FLAGS_KEY, OBJECT_DATA_KEY,  # noqa
 
 SERVICE_ID_KEY = 'service_id'
 CONTROLLER_ID_KEY = 'controller_id'
-
-OBJ_TYPE_TYPE_ = Union[int, str]
-OBJ_DATA_TYPE_ = Union[bytes, dict]
 
 LOGGER = brewblox_logger(__name__)
 
@@ -64,7 +61,7 @@ class SparkController(features.ServiceFeature):
         return self._name
 
     @property
-    def active_profile(self):
+    def active_profile(self) -> int:
         return self._active_profile
 
     @active_profile.setter
@@ -80,31 +77,40 @@ class SparkController(features.ServiceFeature):
     async def shutdown(self, *_):
         pass
 
-    async def _data_processed(self, processor_func: Coroutine, content: dict) -> dict:
+    async def _process_data(self,
+                            processor_func: codec.TranscodeFunc_,
+                            content: dict
+                            ) -> Awaitable[dict]:
         # Looks for codec data, and converts it
         # A type ID is always present in the same dict as the data
-        for path, data in dpath.util.search(content, f'**/{OBJECT_DATA_KEY}', yielded=True):
+        for path in [p for (p, _) in dpath.util.search(content, f'**/{OBJECT_DATA_KEY}', yielded=True)]:
 
             # find path to dict containing both type and data
-            parent = '/'.join(path.split('/')[:-1])
+            parent_key = '/'.join(path.split('/')[:-1])
+            parent = content if not parent_key else dpath.util.get(content, parent_key)
 
-            # get the type from the dict that contained data
-            obj_type = dpath.util.get(content, f'{parent}/{OBJECT_TYPE_KEY}')
+            new_type, new_data = await processor_func(
+                parent[OBJECT_TYPE_KEY],
+                parent[OBJECT_DATA_KEY]
+            )
 
-            # convert data, and replace in dict
-            dpath.util.set(content, f'{parent}/{OBJECT_DATA_KEY}', await processor_func(obj_type, data))
+            parent[OBJECT_TYPE_KEY] = new_type
+            parent[OBJECT_DATA_KEY] = new_data
 
         return content
 
-    async def _data_encoded(self, content: dict) -> dict:
+    async def _encode_data(self, content: dict) -> Awaitable[dict]:
         processor_func = self._codec.encode
-        return await self._data_processed(processor_func, content)
+        return await self._process_data(processor_func, content)
 
-    async def _data_decoded(self, content: dict) -> dict:
+    async def _decode_data(self, content: dict) -> Awaitable[dict]:
         processor_func = self._codec.decode
-        return await self._data_processed(processor_func, content)
+        return await self._process_data(processor_func, content)
 
-    async def resolve_controller_id(self, store: datastore.DataStore, input_id: Union[str, List[int]]) -> List[int]:
+    async def find_controller_id(self,
+                                 store: datastore.DataStore,
+                                 input_id: Union[str, List[int]]
+                                 ) -> Awaitable[List[int]]:
         """
         Finds the controller ID matching service ID input.
         If input is a list of ints, it assumes it already is a controller ID
@@ -119,7 +125,10 @@ class SparkController(features.ServiceFeature):
 
         return obj[CONTROLLER_ID_KEY]
 
-    async def resolve_service_id(self, store: datastore.DataStore, input_id: Union[str, List[int]]) -> str:
+    async def find_service_id(self,
+                              store: datastore.DataStore,
+                              input_id: Union[str, List[int]]
+                              ) -> Awaitable[str]:
         """
         Finds the service ID matching controller ID input.
         If input is a string, it assumes it already is a service ID.
@@ -147,7 +156,7 @@ class SparkController(features.ServiceFeature):
 
         return service_id
 
-    async def _id_resolved(self, resolver: Callable, content: dict) -> dict:
+    async def _resolve_id(self, resolver: Callable, content: dict) -> Awaitable[dict]:
         async def resolve_key(key: str, store: datastore.DataStore):
             for path, id in dpath.util.search(content, f'**/{key}', yielded=True):
                 dpath.util.set(content, path, await resolver(self, store, id))
@@ -157,10 +166,14 @@ class SparkController(features.ServiceFeature):
 
         return content
 
-    _controller_id_resolved = partialmethod(_id_resolved, resolve_controller_id)
-    _service_id_resolved = partialmethod(_id_resolved, resolve_service_id)
+    _resolve_controller_id = partialmethod(_resolve_id, find_controller_id)
+    _resolve_service_id = partialmethod(_resolve_id, find_service_id)
 
-    async def _execute(self, command_type: Type[commands.Command], content_: dict=None, **kwargs) -> dict:
+    async def _execute(self,
+                       command_type: Type[commands.Command],
+                       content_: dict=None,
+                       **kwargs
+                       ) -> Awaitable[dict]:
         # Allow a combination of a dict containing arguments, and loose kwargs
         content = content_ or dict()
         content.update(kwargs)
@@ -169,8 +182,8 @@ class SparkController(features.ServiceFeature):
 
             # pre-processing
             for afunc in [
-                self._controller_id_resolved,
-                self._data_encoded,
+                self._resolve_controller_id,
+                self._encode_data,
             ]:
                 content = await afunc(content)
 
@@ -181,8 +194,8 @@ class SparkController(features.ServiceFeature):
 
             # post-processing
             for afunc in [
-                self._service_id_resolved,
-                self._data_decoded,
+                self._resolve_service_id,
+                self._decode_data,
             ]:
                 retval = await afunc(retval)
 

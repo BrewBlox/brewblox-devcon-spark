@@ -3,10 +3,11 @@ REST API for Spark system objects
 """
 
 from aiohttp import web
+from brewblox_service import brewblox_logger
+
 from brewblox_devcon_spark.api import API_DATA_KEY, API_ID_KEY, API_TYPE_KEY
 from brewblox_devcon_spark.device import (OBJECT_DATA_KEY, OBJECT_TYPE_KEY,
                                           SYSTEM_ID_KEY, get_controller)
-from brewblox_service import brewblox_logger
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -102,8 +103,8 @@ async def system_update(request: web.Request) -> web.Response:
             type: object
             properties:
                 type:
-                    type: int
-                    example: 10
+                    type: string
+                    example: OneWireBus
                 data:
                     type: object
                     example: { "command": { "opcode":2, "data":4136 } }

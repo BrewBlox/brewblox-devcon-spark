@@ -4,7 +4,7 @@ Object-specific transcoders
 
 
 from abc import ABC, abstractmethod
-from typing import Union
+from typing import Iterable, Union
 
 from brewblox_service import brewblox_logger
 from google.protobuf import json_format
@@ -27,6 +27,14 @@ class Transcoder(ABC):
 
     def __init__(self, mods: Modifier):
         self.mod = mods
+
+    @classmethod
+    def type_int(cls) -> int:
+        return cls._TYPE_INT
+
+    @classmethod
+    def type_str(cls) -> str:
+        return cls._MESSAGE.__name__
 
     @abstractmethod
     def encode(self, values: Decoded_) -> Encoded_:
@@ -92,6 +100,7 @@ class QuantifiedTranscoder(ProtobufTranscoder):
 
 class OneWireBusTranscoder(QuantifiedTranscoder):
     _MESSAGE = OneWireBus_pb2.OneWireBus
+    _TYPE_INT = 256
 
     def encode(self, values: Decoded_) -> Encoded_:
         self.mod.modify_if_present(
@@ -113,6 +122,7 @@ class OneWireBusTranscoder(QuantifiedTranscoder):
 
 class OneWireTempSensorTranscoder(QuantifiedTranscoder):
     _MESSAGE = OneWireTempSensor_pb2.OneWireTempSensor
+    _TYPE_INT = 257
 
     def encode(self, values: Decoded_) -> Encoded_:
         self.mod.modify_if_present(
@@ -132,8 +142,15 @@ class OneWireTempSensorTranscoder(QuantifiedTranscoder):
         return decoded
 
 
-_TYPE_MAPPING = {
-    0: OneWireBusTranscoder,
-    10: OneWireBusTranscoder,
-    6: OneWireTempSensorTranscoder,
-}
+def _generate_mapping(vals: Iterable[Transcoder]):
+    for trc in vals:
+        yield trc.type_int(), trc
+        yield trc.type_str(), trc
+
+
+_TRANSCODERS = [
+    OneWireBusTranscoder,
+    OneWireTempSensorTranscoder
+]
+
+_TYPE_MAPPING = {k: v for k, v in _generate_mapping(_TRANSCODERS)}
