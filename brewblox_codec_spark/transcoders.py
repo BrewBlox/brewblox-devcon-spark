@@ -3,7 +3,7 @@ Object-specific transcoders
 """
 
 
-from abc import ABC, abstractmethod
+from abc import ABC, abstractclassmethod, abstractmethod
 from typing import Iterable, Union
 
 from brewblox_service import brewblox_logger
@@ -28,13 +28,13 @@ class Transcoder(ABC):
     def __init__(self, mods: Modifier):
         self.mod = mods
 
-    @classmethod
+    @abstractclassmethod
     def type_int(cls) -> int:
-        return cls._TYPE_INT
+        pass
 
-    @classmethod
+    @abstractclassmethod
     def type_str(cls) -> str:
-        return cls._MESSAGE.__name__
+        pass
 
     @abstractmethod
     def encode(self, values: Decoded_) -> Encoded_:
@@ -53,6 +53,14 @@ class Transcoder(ABC):
 
 
 class ProtobufTranscoder(Transcoder):
+
+    @classmethod
+    def type_int(cls) -> int:
+        return cls._TYPE_INT
+
+    @classmethod
+    def type_str(cls) -> str:
+        return cls._MESSAGE.__name__
 
     @property
     def message(self) -> Message:
