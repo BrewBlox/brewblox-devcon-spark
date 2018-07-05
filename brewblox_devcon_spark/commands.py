@@ -12,8 +12,8 @@ from binascii import hexlify
 
 from brewblox_service import brewblox_logger
 from construct import (Adapter, Byte, Const, Enum, FlagsEnum, GreedyBytes,
-                       Int8sb, Optional, Padding, RepeatUntil, Sequence,
-                       Struct, Terminated)
+                       Int8sb, Int16ub, Optional, Padding, RepeatUntil,
+                       Sequence, Struct, Terminated)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -244,7 +244,7 @@ class Command(ABC):
 # Reoccurring data types - can be used as a macro
 _OBJECT_ID = Struct(OBJECT_ID_KEY / VariableLengthIDAdapter())
 _SYSTEM_ID = Struct(SYSTEM_ID_KEY / VariableLengthIDAdapter())
-_OBJECT_TYPE = Struct(OBJECT_TYPE_KEY / Byte)
+_OBJECT_TYPE = Struct(OBJECT_TYPE_KEY / Int16ub)
 _OBJECT_DATA = Struct(OBJECT_DATA_KEY / GreedyBytes)
 
 _PROFILE_ID = Struct(PROFILE_ID_KEY / Int8sb)

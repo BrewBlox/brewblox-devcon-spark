@@ -8,8 +8,9 @@ from unittest.mock import PropertyMock
 
 import pytest
 from asynctest import CoroutineMock
-from brewblox_devcon_spark import commander, commands
 from brewblox_service import scheduler
+
+from brewblox_devcon_spark import commander, commands
 
 TESTED = commander.__name__
 
@@ -98,7 +99,7 @@ async def test_stale_reply(conduit_mock, sparky):
     # error code
     stale = commander.TimestampedResponse(b'\xff\x00')
     stale._timestamp -= timedelta(minutes=1)
-    fresh = commander.TimestampedResponse(b'\x00\x00\x00')
+    fresh = commander.TimestampedResponse(b'\x00\x00\x00\x00')
 
     q = sparky._requests[b'\x05\x00'].queue
     await q.put(stale)
