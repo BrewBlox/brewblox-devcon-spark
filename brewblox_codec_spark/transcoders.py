@@ -2,6 +2,7 @@
 Object-specific transcoders
 """
 
+from brewblox_codec_spark import _path_extension  # isort:skip
 
 from abc import ABC, abstractclassmethod, abstractmethod
 from typing import Iterable, Union
@@ -20,6 +21,7 @@ ObjType_ = Union[int, str]
 Decoded_ = dict
 Encoded_ = Union[bytes, list]
 
+_path_extension.avoid_lint_errors()
 LOGGER = brewblox_logger(__name__)
 
 

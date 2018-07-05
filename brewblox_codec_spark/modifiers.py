@@ -2,6 +2,8 @@
 Input/output modification functions for transcoding
 """
 
+from brewblox_codec_spark import _path_extension  # isort:skip
+
 import glob
 from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
@@ -16,6 +18,7 @@ from pint import UnitRegistry, quantity
 
 import brewblox_pb2
 
+_path_extension.avoid_lint_errors()
 LOGGER = brewblox_logger(__name__)
 
 
