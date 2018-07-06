@@ -166,7 +166,7 @@ async def object_create(request: web.Request) -> web.Response:
                         {
                             "settings": {
                                 "address": "FF",
-                                "offset": 0
+                                "offset[delta_degF]": 20
                             },
                             "state": {
                                 "value": 12345,
@@ -240,11 +240,16 @@ async def object_update(request: web.Request) -> web.Response:
             type: object
             properties:
                 type:
-                    type: int
-                    example: 2
+                    type: string
+                    example: OneWireTempSensor
                 data:
                     type: object
-                    example: {"command":2, "data":4136}
+                    example: {
+                            "settings": {
+                                "address": "FF",
+                                "offset[delta_degF]": 20
+                            }
+                        }
     """
     request_args = await request.json()
 

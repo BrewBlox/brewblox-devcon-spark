@@ -43,6 +43,7 @@ class SimulationResponder():
             "2": {
                 SYSTEM_ID_KEY: [2],
                 OBJECT_TYPE_KEY: 256,
+                # data: {'command':{}, 'address':['aa','bb']}
                 OBJECT_DATA_KEY: b'\x08\n\x00\x12\x01\xaa\x12\x01\xbb'
             }
         }
