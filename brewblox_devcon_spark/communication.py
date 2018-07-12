@@ -18,7 +18,6 @@ from serial_asyncio import SerialTransport
 
 LOGGER = brewblox_logger(__name__)
 DEFAULT_BAUD_RATE = 57600
-DEFAULT_URL_PORT = 6666
 RETRY_INTERVAL_S = 1
 
 PortType_ = Any
@@ -75,10 +74,11 @@ async def connect_tcp(app: web.Application,
                       factory: ProtocolFactory_
                       ) -> Awaitable[ConnectionResult_]:
     address = app['config']['device_url']
+    port = app['config']['device_url_port']
     transport, protocol = await app.loop.create_connection(
         factory,
         address,
-        DEFAULT_URL_PORT
+        port
     )
     return address, transport, protocol
 
