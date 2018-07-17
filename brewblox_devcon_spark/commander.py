@@ -3,14 +3,14 @@ Command-based device communication
 """
 
 import asyncio
-from binascii import hexlify, unhexlify
 from collections import defaultdict
 from concurrent.futures import CancelledError
 from datetime import datetime, timedelta
 
 from aiohttp import web
-from brewblox_devcon_spark import commands, communication
 from brewblox_service import brewblox_logger, features, scheduler
+
+from brewblox_devcon_spark import commands, communication
 
 LOGGER = brewblox_logger(__name__)
 
@@ -134,9 +134,7 @@ class SparkCommander(features.ServiceFeature):
 
     async def _process_response(self, conduit, msg: str):
         try:
-            raw_request, raw_response = [
-                unhexlify(part)
-                for part in msg.replace(' ', '').split(RESPONSE_SEPARATOR)]
+            raw_request, raw_response = msg.replace(' ', '').split(RESPONSE_SEPARATOR)
 
             # Match the request queue
             # key is the encoded request
@@ -148,7 +146,7 @@ class SparkCommander(features.ServiceFeature):
 
     async def execute(self, command: commands.Command) -> dict:
         encoded_request = command.encoded_request
-        await self._conduit.write_encoded(hexlify(encoded_request))
+        await self._conduit.write(encoded_request)
 
         while True:
             # Wait for a request resolution (matched by request)
@@ -160,8 +158,8 @@ class SparkCommander(features.ServiceFeature):
                 LOGGER.warn(f'Discarding stale response: {response}')
                 continue
 
-            # Create new command to avoid changing the 'command' argument
-            response_cmd = type(command)().from_encoded(encoded_request, response.content)
+            # Create a new command of the same type to contain response
+            response_cmd = type(command).from_encoded(encoded_request, response.content)
             decoded = response_cmd.decoded_response
 
             # If the call failed, its response will be an exception

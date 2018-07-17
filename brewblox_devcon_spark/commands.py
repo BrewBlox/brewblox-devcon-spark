@@ -8,15 +8,20 @@ Each child class of Command defines how the syntax for itself looks like.
 """
 
 from abc import ABC
-from binascii import hexlify
+from binascii import hexlify, unhexlify
 
 from brewblox_service import brewblox_logger
-from construct import (Adapter, Byte, Const, Container, Enum, FlagsEnum,
-                       GreedyBytes, GreedyRange, Int8sb, Int16ub,
+from construct import (Adapter, Byte, Const, Container, Default, Enum,
+                       FlagsEnum, GreedyBytes, GreedyRange, Int8sb, Int16ub,
                        ListContainer, Optional, Padding, RepeatUntil, Sequence,
                        Struct, Terminated)
 
 LOGGER = brewblox_logger(__name__)
+
+HexStr_ = str
+
+
+VALUE_SEPARATOR = ','
 
 
 OBJECT_ID_KEY = 'object_id'
@@ -115,116 +120,192 @@ class Command(ABC):
     The constructor will fail if these are not defined.
 
     Required class variables:
-        _OPCODE
-        _REQUEST
-        _RESPONSE
+        _OPCODE: OpcodeEnum
+        _REQUEST: Struct
+        _RESPONSE: Struct
+        _VALUES: Tuple[str, Struct]
 
-    Opcode must always be set, request and response can be None.
+    _OPCODE must always be set, _REQUEST, _RESPONSE, and _VALUES can be None.
 
-    Request or response being None does not mean the controller will literally send nothing.
-    Opcode/error code are always sent, and will be part of the decoded request/response.
+    _REQUEST or _RESPONSE being None does not mean the controller will literally send or receive nothing.
+    opcode is always sent, and errcode is always received.
+
+    _VALUES must be formatted as Tuple[str, Struct]. The string indicates the key in the decoded response.
+
+    Example:
+
+        class ExampleCommand(Command):
+            _OPCODE = OpcodeEnum.UNUSED
+            _REQUEST = Struct('first_arg' / Int8sb) + Struct('second_arg' / Int8sb)
+            _RESPONSE = None
+            _VALUES = ('response_list', Int8sb)
+
+        decoded = {
+            'first_arg': 1,
+            'second_arg': 2,
+            'response_list': [4, 5, 6]
+        }
     """
 
-    def __init__(self):
-        opcode = self.__class__._OPCODE
-        self._opcode = Struct('opcode' / Const(OpcodeEnum.encmapping[opcode], Byte))
+    def __init__(self, encoded=(None, None), decoded=(None, None)):
+        self._encoded_request, self._encoded_response = encoded
+        self._decoded_request, self._decoded_response = decoded
+
+        self._check_sanity()
+
+        # `opcode` is defined as a private variable in request.
+        # it will be included in `self.encoded_request`, but not in `self.decoded_request`.
+        # `opcode` values are linked to the class, and will never deviate from the class-defined value.
+        opcode_val = self.__class__._OPCODE
+        opcode = Struct('_opcode' / Const(OpcodeEnum.encmapping[opcode_val], Byte))
+
+        # `errcode` is defined as a private variable in response.
+        # It will be included in `self.encoded_response`, but not in `self.decoded_response`.
+        # `errcode` value is linked to the call, but defaults to OK when calling `Command.from_decoded()`.
+        errcode = Struct('_errcode' / Default(ErrorcodeEnum, ErrorcodeEnum.OK))
 
         request = self.__class__._REQUEST or Struct()
-        self._request = self.opcode + request
+        self._request = opcode + request
 
-        self._status = Struct('errcode' / ErrorcodeEnum)
         response = self.__class__._RESPONSE or Struct()
-        self._response = self.status + response
+        self._response = errcode + response
 
-        # Initialize empty
-        self._set_data()
+        values = self.__class__._VALUES or (None, None)
+        self._values_key = values[0]
+        self._values_type = values[1]
+
+    def _check_sanity(self):
+        # Croak on accidental calls to `Command().from_args()`
+        if all([
+            self._encoded_request is None,
+            self._encoded_response is None,
+            self._decoded_request is None,
+            self._decoded_response is None,
+        ]):
+            raise ValueError('Command has neither encoded or decoded values')
+
+        # self.decoded_response() short-circuit returns self._decoded_response, regardless of _errorcode value
+        # Constructing commands from decoded values is already an edge case.
+        # Calling from_decoded() with an active error would be an edge case of an edge case.
+        # Verdict: just don't do it.
+        if '_errcode' in (self._decoded_response or {}):
+            raise NotImplementedError('Creating a decoded command with an active error is not supported')
 
     def __str__(self):
         return f'<{type(self).__name__} [{self.name}]>'
 
-    def _set_data(self,
-                  encoded: tuple=(None, None),
-                  decoded: tuple=(None, None)):
-        self._encoded_request: bytes = encoded[0]
-        self._encoded_response: bytes = encoded[1]
+    @classmethod
+    def from_args(cls, **kwargs) -> 'Command':
+        cmd = cls(decoded=(kwargs, None))
+        LOGGER.debug(f'{cmd} from args: {kwargs}')
+        return cmd
 
-        self._decoded_request: dict = decoded[0]
-        self._decoded_response: dict = decoded[1]
+    @classmethod
+    def from_encoded(cls, request: str=None, response: str=None) -> 'Command':
+        cmd = cls(encoded=(request, response))
+        LOGGER.debug(f'{cmd} from encoded: {request} | {response}')
+        return cmd
 
-    def _pretty_raw(self, raw: bytes) -> str:
-        return hexlify(raw) if raw is not None else None
-
-    def from_args(self, **kwargs):
-        self._set_data(decoded=(kwargs, None))
-        LOGGER.debug(f'{self} from args: {kwargs}')
-        return self
-
-    def from_encoded(self, request: bytes=None, response: bytes=None):
-        self._set_data(encoded=(request, response))
-        LOGGER.debug(f'{self} from encoded: {self._pretty_raw(request)} | {self._pretty_raw(response)}')
-        return self
-
-    def from_decoded(self, request: dict=None, response: dict=None):
-        self._set_data(decoded=(request, response))
-        LOGGER.debug(f'{self} from decoded: {request} | {response}')
-        return self
+    @classmethod
+    def from_decoded(cls, request: dict=None, response: dict=None) -> 'Command':
+        cmd = cls(decoded=(request, response))
+        LOGGER.debug(f'{cmd} from decoded: {request} | {response}')
+        return cmd
 
     @property
-    def name(self):
-        return self.__class__._OPCODE
+    def name(self) -> str:
+        return str(self.__class__._OPCODE)
 
     @property
-    def opcode(self):
-        return self._opcode
-
-    @property
-    def request(self):
+    def request(self) -> Struct:
         return self._request
 
     @property
-    def status(self):
-        return self._status
-
-    @property
-    def response(self):
+    def response(self) -> Struct:
         return self._response
 
     @property
-    def encoded_request(self):
-        if self._should_convert(self._encoded_request, self._decoded_request):
-            self._encoded_request = self.request.build(self._decoded_request)
+    def values_key(self) -> str:
+        return self._values_key
 
+    @property
+    def values(self) -> Struct:
+        return self._values_type
+
+    @property
+    def encoded_request(self) -> HexStr_:
+        if self._encoded_request is not None:
+            return self._encoded_request
+
+        self._encoded_request = self._build(self.request, self._decoded_request)
         return self._encoded_request
 
     @property
-    def encoded_response(self):
-        if self._should_convert(self._encoded_response, self._decoded_response):
-            self._encoded_response = self.response.build(self._decoded_response)
+    def encoded_response(self) -> HexStr_:
+        if self._encoded_response is not None:
+            return self._encoded_response
 
+        response = self._build(self.response, self._decoded_response)
+        if response and self.values:
+            values = [
+                self._build(self.values, v)
+                for v in self._decoded_response.get(self.values_key, [])
+            ]
+            response = VALUE_SEPARATOR.join([response] + values)
+
+        self._encoded_response = response
         return self._encoded_response
 
     @property
-    def decoded_request(self):
-        if self._should_convert(self._decoded_request, self._encoded_request):
-            self._decoded_request = self._parse(self.request, self._encoded_request)
+    def decoded_request(self) -> dict:
+        if self._decoded_request is not None:
+            return self._decoded_request
 
+        self._decoded_request = self._parse(self.request, self._encoded_request)
         return self._decoded_request
 
     @property
-    def decoded_response(self):
-        if self._should_convert(self._decoded_response, self._encoded_response):
-            self._decoded_response = (self._parse_error()
-                                      or self._parse(self.response, self._encoded_response))
+    def decoded_response(self) -> dict:
+        if self._decoded_response is not None:
+            return self._decoded_response
+
+        if self._encoded_response is None:
+            return None
+
+        combined = self._encoded_response.split(VALUE_SEPARATOR)
+        errcode = self._parse(ErrorcodeEnum, combined[0])
+
+        if int(errcode) < 0:
+            self._decoded_response = CommandException(
+                f'{self.name} failed with code {errcode}')
+        else:
+            response = self._parse(self.response, combined[0])
+            if self.values:
+                response[self.values_key] = [
+                    self._parse(self.values, v)
+                    for v in combined[1:]
+                ]
+            self._decoded_response = response
 
         return self._decoded_response
 
-    def _parse(self, struct: Struct, encoded: bytes) -> dict:
+    def _build(self, struct: Struct, decoded: dict) -> HexStr_:
+        if decoded is None:
+            return None
+        return hexlify(struct.build(decoded)).decode()
+
+    def _parse(self, struct: Struct, encoded: HexStr_) -> dict:
         """
         Parses struct, and returns a serializable Python object.
-        Internal construct items (key starts with '_') are filtered.
         """
+        if encoded is None:
+            return None
 
         def normalize(val):
+            """
+            Recursively converts construct Container values to serializable Python objects.
+            Private items (key starts with '_') are filtered.
+            """
             if isinstance(val, ListContainer):
                 return [normalize(v) for v in val]
             elif isinstance(val, Container):
@@ -236,18 +317,7 @@ class Command(ABC):
             else:
                 return val
 
-        return normalize(struct.parse(encoded))
-
-    def _should_convert(self, dest, src) -> bool:
-        return dest is None and src is not None
-
-    def _parse_error(self):
-        status = self.status.parse(self._encoded_response).errcode
-
-        if int(status) < 0:
-            return CommandException(f'{self.name} failed with code {status}')
-        else:
-            return None
+        return normalize(struct.parse(unhexlify(encoded)))
 
 
 # Reoccurring data types - can be used as a macro
@@ -264,24 +334,28 @@ class ReadValueCommand(Command):
     _OPCODE = OpcodeEnum.READ_VALUE
     _REQUEST = _OBJECT_ID + _OBJECT_TYPE
     _RESPONSE = _OBJECT_ID + _OBJECT_TYPE + _OBJECT_DATA
+    _VALUES = None
 
 
 class WriteValueCommand(Command):
     _OPCODE = OpcodeEnum.WRITE_VALUE
     _REQUEST = _OBJECT_ID + _OBJECT_TYPE + _OBJECT_DATA
     _RESPONSE = _OBJECT_ID + _OBJECT_TYPE + _OBJECT_DATA
+    _VALUES = None
 
 
 class CreateObjectCommand(Command):
     _OPCODE = OpcodeEnum.CREATE_OBJECT
     _REQUEST = _OBJECT_TYPE + _OBJECT_DATA
     _RESPONSE = _OBJECT_ID
+    _VALUES = None
 
 
 class DeleteObjectCommand(Command):
     _OPCODE = OpcodeEnum.DELETE_OBJECT
     _REQUEST = _OBJECT_ID
     _RESPONSE = None
+    _VALUES = None
 
 
 class ListObjectsCommand(Command):
@@ -291,30 +365,35 @@ class ListObjectsCommand(Command):
         OBJECT_LIST_KEY / Optional(Sequence(_OBJECT_ID + _OBJECT_TYPE + _OBJECT_DATA)),
         Terminated
     )
+    _VALUES = None
 
 
 class FreeSlotCommand(Command):
     _OPCODE = OpcodeEnum.FREE_SLOT
     _REQUEST = _OBJECT_ID
     _RESPONSE = None
+    _VALUES = None
 
 
 class CreateProfileCommand(Command):
     _OPCODE = OpcodeEnum.CREATE_PROFILE
     _REQUEST = None
     _RESPONSE = _PROFILE_ID
+    _VALUES = None
 
 
 class DeleteProfileCommand(Command):
     _OPCODE = OpcodeEnum.DELETE_PROFILE
     _REQUEST = _PROFILE_ID
     _RESPONSE = None
+    _VALUES = None
 
 
 class ActivateProfileCommand(Command):
     _OPCODE = OpcodeEnum.ACTIVATE_PROFILE
     _REQUEST = _PROFILE_ID
     _RESPONSE = None
+    _VALUES = None
 
 
 class LogValuesCommand(Command):
@@ -331,6 +410,7 @@ class LogValuesCommand(Command):
         OBJECT_LIST_KEY / Optional(Sequence(Padding(1) + _OBJECT_ID + _OBJECT_TYPE + _OBJECT_DATA)),
         Terminated
     )
+    _VALUES = None
 
 
 class ResetCommand(Command):
@@ -342,12 +422,14 @@ class ResetCommand(Command):
                               default=0)
     )
     _RESPONSE = None
+    _VALUES = None
 
 
 class FreeSlotRootCommand(Command):
     _OPCODE = OpcodeEnum.FREE_SLOT_ROOT
     _REQUEST = _SYSTEM_ID
     _RESPONSE = None
+    _VALUES = None
 
 
 class ListProfilesCommand(Command):
@@ -356,15 +438,18 @@ class ListProfilesCommand(Command):
     _RESPONSE = _PROFILE_ID + Struct(
         PROFILE_LIST_KEY / GreedyRange(_PROFILE_DATA)
     )
+    _VALUES = None
 
 
 class ReadSystemValueCommand(Command):
     _OPCODE = OpcodeEnum.READ_SYSTEM_VALUE
     _REQUEST = _SYSTEM_ID + _OBJECT_TYPE
     _RESPONSE = _SYSTEM_ID + _OBJECT_TYPE + _OBJECT_DATA
+    _VALUES = None
 
 
 class WriteSystemValueCommand(Command):
     _OPCODE = OpcodeEnum.WRITE_SYSTEM_VALUE
     _REQUEST = _SYSTEM_ID + _OBJECT_TYPE + _OBJECT_DATA
     _RESPONSE = _SYSTEM_ID + _OBJECT_TYPE + _OBJECT_DATA
+    _VALUES = None
