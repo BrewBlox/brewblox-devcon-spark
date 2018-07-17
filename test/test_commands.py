@@ -2,7 +2,10 @@
 Tests brewblox_devcon_spark.commands
 """
 
+from binascii import unhexlify
+
 import pytest
+
 from brewblox_devcon_spark import commands
 
 TESTED = commands.__name__
@@ -102,3 +105,13 @@ def test_pretty_raw():
 
     assert command._pretty_raw(bytes([0xde, 0xad])) == b'dead'
     assert command._pretty_raw(None) is None
+
+
+def test_decode_nested():
+    command = commands.ListProfilesCommand()
+    command.from_encoded(None, unhexlify(b'00ff00010203'))
+    assert command.decoded_response == {
+        'errcode': 'OK',
+        'profile_id': -1,
+        'profiles': [0, 1, 2, 3]
+    }

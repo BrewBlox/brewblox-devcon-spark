@@ -11,9 +11,10 @@ from abc import ABC
 from binascii import hexlify
 
 from brewblox_service import brewblox_logger
-from construct import (Adapter, Byte, Const, Enum, FlagsEnum, GreedyBytes,
-                       Int8sb, Int16ub, Optional, Padding, RepeatUntil,
-                       Sequence, Struct, Terminated)
+from construct import (Adapter, Byte, Const, Container, Enum, FlagsEnum,
+                       GreedyBytes, GreedyRange, Int8sb, Int16ub,
+                       ListContainer, Optional, Padding, RepeatUntil, Sequence,
+                       Struct, Terminated)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -212,22 +213,30 @@ class Command(ABC):
     @property
     def decoded_response(self):
         if self._should_convert(self._decoded_response, self._encoded_response):
-            self._decoded_response = \
-                self._parse_error() or \
-                self._parse(self.response, self._encoded_response)
+            self._decoded_response = (self._parse_error()
+                                      or self._parse(self.response, self._encoded_response))
 
         return self._decoded_response
 
     def _parse(self, struct: Struct, encoded: bytes) -> dict:
         """
-        Parses struct, and returns a dict.
+        Parses struct, and returns a serializable Python object.
         Internal construct items (key starts with '_') are filtered.
         """
-        return {
-            k: v
-            for k, v in dict(struct.parse(encoded)).items()
-            if not k.startswith('_')
-        }
+
+        def normalize(val):
+            if isinstance(val, ListContainer):
+                return [normalize(v) for v in val]
+            elif isinstance(val, Container):
+                return {
+                    k: normalize(v)
+                    for k, v in dict(val).items()
+                    if not k.startswith('_')
+                }
+            else:
+                return val
+
+        return normalize(struct.parse(encoded))
 
     def _should_convert(self, dest, src) -> bool:
         return dest is None and src is not None
@@ -247,7 +256,8 @@ _SYSTEM_ID = Struct(SYSTEM_ID_KEY / VariableLengthIDAdapter())
 _OBJECT_TYPE = Struct(OBJECT_TYPE_KEY / Int16ub)
 _OBJECT_DATA = Struct(OBJECT_DATA_KEY / GreedyBytes)
 
-_PROFILE_ID = Struct(PROFILE_ID_KEY / Int8sb)
+_PROFILE_DATA = Int8sb
+_PROFILE_ID = Struct(PROFILE_ID_KEY / _PROFILE_DATA)
 
 
 class ReadValueCommand(Command):
@@ -344,7 +354,7 @@ class ListProfilesCommand(Command):
     _OPCODE = OpcodeEnum.LIST_PROFILES
     _REQUEST = None
     _RESPONSE = _PROFILE_ID + Struct(
-        PROFILE_LIST_KEY / Sequence(_PROFILE_ID)
+        PROFILE_LIST_KEY / GreedyRange(_PROFILE_DATA)
     )
 
 
