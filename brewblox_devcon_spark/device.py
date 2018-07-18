@@ -4,19 +4,19 @@ Offers a functional interface to the device functionality
 
 import random
 import string
+from contextlib import suppress
 from functools import partialmethod
 from typing import Awaitable, Callable, Type, Union
 
-import dpath
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
 
 from brewblox_codec_spark import codec
 from brewblox_devcon_spark import commander, commands, datastore
-from brewblox_devcon_spark.commands import (FLAGS_KEY, OBJECT_DATA_KEY,  # noqa
+from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY,  # noqa
                                             OBJECT_ID_KEY, OBJECT_LIST_KEY,
-                                            OBJECT_TYPE_KEY, PROFILE_ID_KEY,
-                                            PROFILE_LIST_KEY, SYSTEM_ID_KEY)
+                                            OBJECT_TYPE_KEY, PROFILE_LIST_KEY,
+                                            SYSTEM_ID_KEY)
 
 SERVICE_ID_KEY = 'service_id'
 CONTROLLER_ID_KEY = 'controller_id'
@@ -81,21 +81,18 @@ class SparkController(features.ServiceFeature):
                             processor_func: codec.TranscodeFunc_,
                             content: dict
                             ) -> Awaitable[dict]:
-        # Looks for codec data, and converts it
-        # A type ID is always present in the same dict as the data
-        for path in [p for (p, _) in dpath.util.search(content, f'**/{OBJECT_DATA_KEY}', yielded=True)]:
+        containers = [content]
+        with suppress(KeyError):
+            containers += content[OBJECT_LIST_KEY]
 
-            # find path to dict containing both type and data
-            parent_key = '/'.join(path.split('/')[:-1])
-            parent = content if not parent_key else dpath.util.get(content, parent_key)
-
-            new_type, new_data = await processor_func(
-                parent[OBJECT_TYPE_KEY],
-                parent[OBJECT_DATA_KEY]
-            )
-
-            parent[OBJECT_TYPE_KEY] = new_type
-            parent[OBJECT_DATA_KEY] = new_data
+        for cont in containers:
+            with suppress(KeyError):
+                new_type, new_data = await processor_func(
+                    cont[OBJECT_TYPE_KEY],
+                    cont[OBJECT_DATA_KEY]
+                )
+                cont[OBJECT_TYPE_KEY] = new_type
+                cont[OBJECT_DATA_KEY] = new_data
 
         return content
 
@@ -158,8 +155,13 @@ class SparkController(features.ServiceFeature):
 
     async def _resolve_id(self, resolver: Callable, content: dict) -> Awaitable[dict]:
         async def resolve_key(key: str, store: datastore.DataStore):
-            for path, id in dpath.util.search(content, f'**/{key}', yielded=True):
-                dpath.util.set(content, path, await resolver(self, store, id))
+            containers = [content]
+            with suppress(KeyError):
+                containers += content[OBJECT_LIST_KEY]
+
+            for cont in containers:
+                with suppress(KeyError):
+                    cont[key] = await resolver(self, store, cont[key])
 
         await resolve_key(OBJECT_ID_KEY, self._object_store)
         await resolve_key(SYSTEM_ID_KEY, self._system_store)
@@ -205,18 +207,17 @@ class SparkController(features.ServiceFeature):
             LOGGER.debug(f'Failed to execute {command_type}: {type(ex).__name__}({ex})', exc_info=True)
             raise ex
 
-    read_value = partialmethod(_execute, commands.ReadValueCommand)
-    write_value = partialmethod(_execute, commands.WriteValueCommand)
+    read_object = partialmethod(_execute, commands.ReadObjectCommand)
+    write_object = partialmethod(_execute, commands.WriteObjectCommand)
     create_object = partialmethod(_execute, commands.CreateObjectCommand)
     delete_object = partialmethod(_execute, commands.DeleteObjectCommand)
-    list_objects = partialmethod(_execute, commands.ListObjectsCommand)
-    free_slot = partialmethod(_execute, commands.FreeSlotCommand)
-    create_profile = partialmethod(_execute, commands.CreateProfileCommand)
-    delete_profile = partialmethod(_execute, commands.DeleteProfileCommand)
-    activate_profile = partialmethod(_execute, commands.ActivateProfileCommand)
-    log_values = partialmethod(_execute, commands.LogValuesCommand)
-    reset = partialmethod(_execute, commands.ResetCommand)
-    free_slot_root = partialmethod(_execute, commands.FreeSlotRootCommand)
-    list_profiles = partialmethod(_execute, commands.ListProfilesCommand)
-    read_system_value = partialmethod(_execute, commands.ReadSystemValueCommand)
-    write_system_value = partialmethod(_execute, commands.WriteSystemValueCommand)
+    read_system_object = partialmethod(_execute, commands.ReadSystemObjectCommand)
+    write_system_object = partialmethod(_execute, commands.WriteSystemObjectCommand)
+    read_active_profiles = partialmethod(_execute, commands.ReadActiveProfilesCommand)
+    write_active_profiles = partialmethod(_execute, commands.WriteActiveProfilesCommand)
+    list_active_objects = partialmethod(_execute, commands.ListActiveObjectsCommand)
+    list_saved_objects = partialmethod(_execute, commands.ListSavedObjectsCommand)
+    list_system_objects = partialmethod(_execute, commands.ListSystemObjectsCommand)
+    clear_profile = partialmethod(_execute, commands.ClearProfileCommand)
+    factory_reset = partialmethod(_execute, commands.FactoryResetCommand)
+    restart = partialmethod(_execute, commands.RestartCommand)

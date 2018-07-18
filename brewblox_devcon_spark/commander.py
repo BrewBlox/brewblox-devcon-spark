@@ -134,7 +134,7 @@ class SparkCommander(features.ServiceFeature):
 
     async def _process_response(self, conduit, msg: str):
         try:
-            raw_request, raw_response = msg.replace(' ', '').split(RESPONSE_SEPARATOR)
+            raw_request, raw_response = msg.upper().replace(' ', '').split(RESPONSE_SEPARATOR)
 
             # Match the request queue
             # key is the encoded request
@@ -145,7 +145,7 @@ class SparkCommander(features.ServiceFeature):
             LOGGER.error(f'Response error in {self} : {ex}', exc_info=True)
 
     async def execute(self, command: commands.Command) -> dict:
-        encoded_request = command.encoded_request
+        encoded_request = command.encoded_request.upper()
         await self._conduit.write(encoded_request)
 
         while True:

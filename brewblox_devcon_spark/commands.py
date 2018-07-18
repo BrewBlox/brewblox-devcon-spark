@@ -9,12 +9,12 @@ Each child class of Command defines how the syntax for itself looks like.
 
 from abc import ABC
 from binascii import hexlify, unhexlify
+from functools import reduce
+from typing import List
 
 from brewblox_service import brewblox_logger
-from construct import (Byte, Const, Container, Default, Enum, FlagsEnum,
-                       GreedyBytes, GreedyRange, Int8sb, Int8ub, Int16ub,
-                       ListContainer, Optional, Padding, Sequence, Struct,
-                       Terminated)
+from construct import (Adapter, Byte, Const, Container, Default, Enum,
+                       GreedyBytes, Int8sb, Int16ub, ListContainer, Struct)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -23,36 +23,29 @@ HexStr_ = str
 
 VALUE_SEPARATOR = ','
 
-
 OBJECT_ID_KEY = 'object_id'
 SYSTEM_ID_KEY = 'system_object_id'
 OBJECT_TYPE_KEY = 'object_type'
 OBJECT_DATA_KEY = 'object_data'
 OBJECT_LIST_KEY = 'objects'
-
-PROFILE_ID_KEY = 'profile_id'
 PROFILE_LIST_KEY = 'profiles'
-
-FLAGS_KEY = 'flags'
 
 
 OpcodeEnum = Enum(Byte,
-                  READ_VALUE=1,  # read a value
-                  WRITE_VALUE=2,  # write a value
-                  CREATE_OBJECT=3,  # add object in a container
-                  DELETE_OBJECT=4,  # delete the object at the specified location
-                  LIST_OBJECTS=5,  # list objects in a container
-                  FREE_SLOT=6,  # retrieves the next free slot in a container
-                  CREATE_PROFILE=7,  # create a new profile
-                  DELETE_PROFILE=8,  # delete a profile
-                  ACTIVATE_PROFILE=9,  # activate a profile
-                  LOG_VALUES=10,  # log values from the selected container
-                  RESET=11,  # reset the device
-                  FREE_SLOT_ROOT=12,  # find the next free slot in the root container
-                  UNUSED=13,  # unused
-                  LIST_PROFILES=14,  # list the define profile IDs and the active profile
-                  READ_SYSTEM_VALUE=15,  # read the value of a system object
-                  WRITE_SYSTEM_VALUE=16,  # write the value of a system object
+                  READ_OBJECT=1,
+                  WRITE_OBJECT=2,
+                  CREATE_OBJECT=3,
+                  DELETE_OBJECT=4,
+                  READ_SYSTEM_OBJECT=5,
+                  WRITE_SYSTEM_OBJECT=6,
+                  READ_ACTIVE_PROFILES=7,
+                  WRITE_ACTIVE_PROFILES=8,
+                  LIST_ACTIVE_OBJECTS=9,
+                  LIST_SAVED_OBJECTS=10,
+                  LIST_SYSTEM_OBJECTS=11,
+                  CLEAR_PROFILE=12,
+                  FACTORY_RESET=13,
+                  RESTART=14,
                   )
 
 ErrorcodeEnum = Enum(Int8sb,
@@ -77,6 +70,17 @@ ErrorcodeEnum = Enum(Int8sb,
                      INVALID_PROFILE=-68,
                      INVALID_ID=-69
                      )
+
+
+class ProfileListAdapter(Adapter):
+    def __init__(self):
+        super().__init__(Byte)
+
+    def _encode(self, obj: List[int], context, path) -> int:
+        return reduce(lambda result, idx: result | 1 << idx, obj, 0)
+
+    def _decode(self, obj: int, context, path) -> List[int]:
+        return [i for i in range(8) if 1 << i & obj]
 
 
 class CommandException(Exception):
@@ -293,33 +297,33 @@ class Command(ABC):
 
 
 # Reoccurring data types - can be used as a macro
-_OBJECT_ID = Struct(OBJECT_ID_KEY / Int8ub)
-_SYSTEM_ID = Struct(SYSTEM_ID_KEY / Int8ub)
+_PROFILE_LIST = Struct(PROFILE_LIST_KEY / ProfileListAdapter())
+_OBJECT_ID = Struct(OBJECT_ID_KEY / Int16ub)
+_SYSTEM_ID = Struct(SYSTEM_ID_KEY / Int16ub)
 _OBJECT_TYPE = Struct(OBJECT_TYPE_KEY / Int16ub)
 _OBJECT_DATA = Struct(OBJECT_DATA_KEY / GreedyBytes)
+_OBJECT = _OBJECT_ID + _PROFILE_LIST + _OBJECT_TYPE + _OBJECT_DATA
+_SYSTEM_OBJECT = _SYSTEM_ID + _OBJECT_TYPE + _OBJECT_DATA
 
-_PROFILE_DATA = Int8sb
-_PROFILE_ID = Struct(PROFILE_ID_KEY / _PROFILE_DATA)
 
-
-class ReadValueCommand(Command):
-    _OPCODE = OpcodeEnum.READ_VALUE
+class ReadObjectCommand(Command):
+    _OPCODE = OpcodeEnum.READ_OBJECT
     _REQUEST = _OBJECT_ID + _OBJECT_TYPE
-    _RESPONSE = _OBJECT_ID + _OBJECT_TYPE + _OBJECT_DATA
+    _RESPONSE = _OBJECT
     _VALUES = None
 
 
-class WriteValueCommand(Command):
-    _OPCODE = OpcodeEnum.WRITE_VALUE
-    _REQUEST = _OBJECT_ID + _OBJECT_TYPE + _OBJECT_DATA
-    _RESPONSE = _OBJECT_ID + _OBJECT_TYPE + _OBJECT_DATA
+class WriteObjectCommand(Command):
+    _OPCODE = OpcodeEnum.WRITE_OBJECT
+    _REQUEST = _OBJECT
+    _RESPONSE = _OBJECT
     _VALUES = None
 
 
 class CreateObjectCommand(Command):
     _OPCODE = OpcodeEnum.CREATE_OBJECT
-    _REQUEST = _OBJECT_TYPE + _OBJECT_DATA
-    _RESPONSE = _OBJECT_ID
+    _REQUEST = Default(_OBJECT_ID, 0) + _PROFILE_LIST + _OBJECT_TYPE + _OBJECT_DATA
+    _RESPONSE = _OBJECT
     _VALUES = None
 
 
@@ -330,98 +334,71 @@ class DeleteObjectCommand(Command):
     _VALUES = None
 
 
-class ListObjectsCommand(Command):
-    _OPCODE = OpcodeEnum.LIST_OBJECTS
-    _REQUEST = _PROFILE_ID
-    _RESPONSE = Struct(
-        OBJECT_LIST_KEY / Optional(Sequence(_OBJECT_ID + _OBJECT_TYPE + _OBJECT_DATA)),
-        Terminated
-    )
-    _VALUES = None
-
-
-class FreeSlotCommand(Command):
-    _OPCODE = OpcodeEnum.FREE_SLOT
-    _REQUEST = _OBJECT_ID
-    _RESPONSE = None
-    _VALUES = None
-
-
-class CreateProfileCommand(Command):
-    _OPCODE = OpcodeEnum.CREATE_PROFILE
-    _REQUEST = None
-    _RESPONSE = _PROFILE_ID
-    _VALUES = None
-
-
-class DeleteProfileCommand(Command):
-    _OPCODE = OpcodeEnum.DELETE_PROFILE
-    _REQUEST = _PROFILE_ID
-    _RESPONSE = None
-    _VALUES = None
-
-
-class ActivateProfileCommand(Command):
-    _OPCODE = OpcodeEnum.ACTIVATE_PROFILE
-    _REQUEST = _PROFILE_ID
-    _RESPONSE = None
-    _VALUES = None
-
-
-class LogValuesCommand(Command):
-    _OPCODE = OpcodeEnum.LOG_VALUES
-
-    _REQUEST = Struct(
-        FLAGS_KEY / FlagsEnum(Byte,
-                              id_chain=1,
-                              system_container=2,
-                              default=0)
-    ) + Optional(_OBJECT_ID)
-
-    _RESPONSE = Struct(
-        OBJECT_LIST_KEY / Optional(Sequence(Padding(1) + _OBJECT_ID + _OBJECT_TYPE + _OBJECT_DATA)),
-        Terminated
-    )
-    _VALUES = None
-
-
-class ResetCommand(Command):
-    _OPCODE = OpcodeEnum.RESET
-    _REQUEST = Struct(
-        FLAGS_KEY / FlagsEnum(Byte,
-                              erase_eeprom=1,
-                              hard_reset=2,
-                              default=0)
-    )
-    _RESPONSE = None
-    _VALUES = None
-
-
-class FreeSlotRootCommand(Command):
-    _OPCODE = OpcodeEnum.FREE_SLOT_ROOT
-    _REQUEST = _SYSTEM_ID
-    _RESPONSE = None
-    _VALUES = None
-
-
-class ListProfilesCommand(Command):
-    _OPCODE = OpcodeEnum.LIST_PROFILES
-    _REQUEST = None
-    _RESPONSE = _PROFILE_ID + Struct(
-        PROFILE_LIST_KEY / GreedyRange(_PROFILE_DATA)
-    )
-    _VALUES = None
-
-
-class ReadSystemValueCommand(Command):
-    _OPCODE = OpcodeEnum.READ_SYSTEM_VALUE
+class ReadSystemObjectCommand(Command):
+    _OPCODE = OpcodeEnum.READ_SYSTEM_OBJECT
     _REQUEST = _SYSTEM_ID + _OBJECT_TYPE
-    _RESPONSE = _SYSTEM_ID + _OBJECT_TYPE + _OBJECT_DATA
+    _RESPONSE = _SYSTEM_OBJECT
     _VALUES = None
 
 
-class WriteSystemValueCommand(Command):
-    _OPCODE = OpcodeEnum.WRITE_SYSTEM_VALUE
-    _REQUEST = _SYSTEM_ID + _OBJECT_TYPE + _OBJECT_DATA
-    _RESPONSE = _SYSTEM_ID + _OBJECT_TYPE + _OBJECT_DATA
+class WriteSystemObjectCommand(Command):
+    _OPCODE = OpcodeEnum.WRITE_SYSTEM_OBJECT
+    _REQUEST = _SYSTEM_OBJECT
+    _RESPONSE = _SYSTEM_OBJECT
+    _VALUES = None
+
+
+class ReadActiveProfilesCommand(Command):
+    _OPCODE = OpcodeEnum.READ_ACTIVE_PROFILES
+    _REQUEST = None
+    _RESPONSE = _PROFILE_LIST
+    _VALUES = None
+
+
+class WriteActiveProfilesCommand(Command):
+    _OPCODE = OpcodeEnum.WRITE_ACTIVE_PROFILES
+    _REQUEST = _PROFILE_LIST
+    _RESPONSE = _PROFILE_LIST
+    _VALUES = None
+
+
+class ListActiveObjectsCommand(Command):
+    _OPCODE = OpcodeEnum.LIST_ACTIVE_OBJECTS
+    _REQUEST = None
+    _RESPONSE = _PROFILE_LIST
+    _VALUES = (OBJECT_LIST_KEY, _OBJECT)
+
+
+class ListSavedObjectsCommand(Command):
+    _OPCODE = OpcodeEnum.LIST_SAVED_OBJECTS
+    _REQUEST = None
+    _RESPONSE = _PROFILE_LIST
+    _VALUES = (OBJECT_LIST_KEY, _OBJECT)
+
+
+class ListSystemObjectsCommand(Command):
+    _OPCODE = OpcodeEnum.LIST_SYSTEM_OBJECTS
+    _REQUEST = None
+    _RESPONSE = None
+    _VALUES = (OBJECT_LIST_KEY, _SYSTEM_OBJECT)
+
+
+class ClearProfileCommand(Command):
+    _OPCODE = OpcodeEnum.CLEAR_PROFILE
+    _REQUEST = _PROFILE_LIST
+    _RESPONSE = None
+    _VALUES = None
+
+
+class FactoryResetCommand(Command):
+    _OPCODE = OpcodeEnum.FACTORY_RESET
+    _REQUEST = None
+    _RESPONSE = None
+    _VALUES = None
+
+
+class RestartCommand(Command):
+    _OPCODE = OpcodeEnum.RESTART
+    _REQUEST = None
+    _RESPONSE = None
     _VALUES = None

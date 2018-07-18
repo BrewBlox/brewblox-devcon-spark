@@ -72,14 +72,13 @@ async def test_process_response_error(mocker, conduit_mock, sparky):
 
 
 async def test_command(conduit_mock, sparky):
-    await sparky._process_response(conduit_mock, '05 00 |00')
+    await sparky._process_response(conduit_mock, '0a | 00 00')
 
-    command = commands.ListObjectsCommand.from_args(profile_id=0)
-    print('encoded', command.encoded_request)
+    command = commands.ListSavedObjectsCommand.from_args()
     resp = await sparky.execute(command)
-    assert resp['objects'] is None
+    assert resp['objects'] is []
 
-    conduit_mock.write.assert_called_once_with('0500')
+    conduit_mock.write.assert_called_once_with('0A')
 
 
 async def test_error_command(conduit_mock, sparky):

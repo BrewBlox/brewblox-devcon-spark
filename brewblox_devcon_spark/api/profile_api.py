@@ -3,12 +3,15 @@ REST API for Spark profiles
 """
 
 from aiohttp import web
-from brewblox_devcon_spark.api import API_ID_KEY
-from brewblox_devcon_spark.device import PROFILE_ID_KEY, get_controller
 from brewblox_service import brewblox_logger
+
+from brewblox_devcon_spark.device import PROFILE_LIST_KEY, get_controller
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
+
+
+PROFILE_ID_KEY = None
 
 
 def setup(app: web.Application):
@@ -20,121 +23,56 @@ class ProfileApi():
     def __init__(self, app: web.Application):
         self._ctrl = get_controller(app)
 
-    async def create(self) -> dict:
-        response = await self._ctrl.create_profile()
+    async def read_active(self) -> list:
+        result = await self._ctrl.read_active_profiles()
+        return result[PROFILE_LIST_KEY]
 
-        return {
-            API_ID_KEY: response[PROFILE_ID_KEY]
-        }
-
-    async def delete(self, profile_id: int) -> dict:
-        await self._ctrl.delete_profile({
-            PROFILE_ID_KEY: profile_id
+    async def write_active(self, profiles: list) -> list:
+        resp = await self._ctrl.write_active_profiles({
+            PROFILE_LIST_KEY: profiles
         })
 
-        return {
-            API_ID_KEY: profile_id
-        }
-
-    async def activate(self, profile_id: int) -> dict:
-        await self._ctrl.activate_profile({
-            PROFILE_ID_KEY: profile_id
-        })
-
-        # Set active profile on the controller
-        # This is used by other APIs
-        self._ctrl.active_profile = profile_id
-
-        return {
-            API_ID_KEY: profile_id
-        }
-
-    async def all(self) -> dict:
-        response = await self._ctrl.list_profiles()
-        return response
-
-
-@routes.post('/profiles')
-async def profile_create(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Create profile
-    tags:
-    - Spark
-    - Profiles
-    operationId: controller.spark.profiles.create
-    produces:
-    - application/json
-    """
-    return web.json_response(
-        await ProfileApi(request.app).create()
-    )
-
-
-@routes.delete('/profiles/{id}')
-async def profile_delete(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Delete profile
-    tags:
-    - Spark
-    - Profiles
-    operationId: controller.spark.profiles.delete
-    produces:
-    - application/json
-    parameters:
-    -
-        name: id
-        in: path
-        required: true
-        schema:
-            type: int
-    """
-    return web.json_response(
-        await ProfileApi(request.app).delete(
-            int(request.match_info[API_ID_KEY])
-        )
-    )
-
-
-@routes.post('/profiles/{id}')
-async def profile_activate(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Activate profile
-    tags:
-    - Spark
-    - Profiles
-    operationId: controller.spark.profiles.activate
-    produces:
-    - application/json
-    parameters:
-    -
-        name: id
-        in: path
-        required: true
-        schema:
-            type: int
-    """
-    return web.json_response(
-        await ProfileApi(request.app).activate(
-            int(request.match_info[API_ID_KEY])
-        )
-    )
+        return resp[PROFILE_LIST_KEY]
 
 
 @routes.get('/profiles')
-async def profiles_all(request: web.Request) -> web.Response:
+async def read_profiles(request: web.Request) -> web.Response:
     """
     ---
-    summary: List all profiles
+    summary: Get active profiles
     tags:
     - Spark
-    - Objects
-    operationId: controller.spark.profiles.all
+    - Profiles
+    operationId: controller.spark.profiles.read
     produces:
     - application/json
     """
     return web.json_response(
-        await ProfileApi(request.app).all()
+        await ProfileApi(request.app).read_active()
+    )
+
+
+@routes.post('/profiles')
+async def write_profiles(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Set active profiles
+    tags:
+    - Spark
+    - Profiles
+    operationId: controller.spark.profiles.write
+    produces:
+    - application/json
+    parameters:
+    -
+        name: body
+        in: body
+        required: true
+        schema:
+            type: list
+            example: [1, 5, 8]
+    """
+    request_args = await request.json()
+    return web.json_response(
+        await ProfileApi(request.app).write_active(request_args)
     )

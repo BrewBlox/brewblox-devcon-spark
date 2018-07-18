@@ -9,18 +9,6 @@ from brewblox_devcon_spark import commands
 TESTED = commands.__name__
 
 
-class NewListProfilesCommand(commands.Command):
-    """
-    Temporary implementation of command with new-style values.
-    This allows testing value encoding/decoding.
-    TODO(Bob): remove when actual commands are switched to new style.
-    """
-    _OPCODE = commands.OpcodeEnum.LIST_OBJECTS
-    _REQUEST = commands._PROFILE_ID
-    _RESPONSE = commands._PROFILE_ID
-    _VALUES = (commands.PROFILE_LIST_KEY, commands._PROFILE_DATA)
-
-
 @pytest.fixture
 def write_value_args():
     return dict(
@@ -75,22 +63,22 @@ def test_decode_nested():
     }
 
 
-def test_values():
-    command = NewListProfilesCommand
-    encoded = '00ff,00,01,02,03'
-    decoded = {
-        'profile_id': -1,
-        'profiles': [0, 1, 2, 3]
-    }
+# def test_values():
+#     command = NewListProfilesCommand
+#     encoded = '00ff,00,01,02,03'
+#     decoded = {
+#         'profile_id': -1,
+#         'profiles': [0, 1, 2, 3]
+#     }
 
-    for cmd in [
-        command.from_encoded(None, encoded),
-        command.from_decoded(None, decoded)
-    ]:
-        assert cmd.encoded_request is None
-        assert cmd.decoded_request is None
-        assert cmd.encoded_response == encoded
-        assert cmd.decoded_response == decoded
+#     for cmd in [
+#         command.from_encoded(None, encoded),
+#         command.from_decoded(None, decoded)
+#     ]:
+#         assert cmd.encoded_request is None
+#         assert cmd.decoded_request is None
+#         assert cmd.encoded_response == encoded
+#         assert cmd.decoded_response == decoded
 
 
 def test_error():
