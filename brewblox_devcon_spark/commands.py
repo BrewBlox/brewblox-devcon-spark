@@ -11,10 +11,10 @@ from abc import ABC
 from binascii import hexlify, unhexlify
 
 from brewblox_service import brewblox_logger
-from construct import (Adapter, Byte, Const, Container, Default, Enum,
-                       FlagsEnum, GreedyBytes, GreedyRange, Int8sb, Int16ub,
-                       ListContainer, Optional, Padding, RepeatUntil, Sequence,
-                       Struct, Terminated)
+from construct import (Byte, Const, Container, Default, Enum, FlagsEnum,
+                       GreedyBytes, GreedyRange, Int8sb, Int8ub, Int16ub,
+                       ListContainer, Optional, Padding, Sequence, Struct,
+                       Terminated)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -77,34 +77,6 @@ ErrorcodeEnum = Enum(Int8sb,
                      INVALID_PROFILE=-68,
                      INVALID_ID=-69
                      )
-
-
-class VariableLengthIDAdapter(Adapter):
-    """Adapter for the brewblox ID schema
-
-    Individual IDs are 7 bit, with the first bit reserved for a nesting flag.
-    Range is 0-127 / 0x0-0x7F
-
-    If the first bit is set, it indicates that the current byte is a container ID,
-    and more IDs are to follow.
-    Example:
-        bytes: [1000 0011] [0000 0111]
-
-    Here a container with ID 3 contains an object with ID 7
-    """
-
-    def __init__(self):
-        # Predicate: repeat until ID does not contain a nesting flag
-        super().__init__(RepeatUntil(lambda obj, lst, ctx: obj & 0x80 == 0x00, Byte))
-
-    def _encode(self, obj, context, path):
-        # Add a nesting flag to all but the last object
-        return [b | 0x80 for b in obj[:-1]] + [obj[-1]]
-
-    def _decode(self, obj, context, path):
-        # Remove all nesting flags
-        # No need to worry about whether it's the last ID
-        return [b & 0x7F for b in obj]
 
 
 class CommandException(Exception):
@@ -321,8 +293,8 @@ class Command(ABC):
 
 
 # Reoccurring data types - can be used as a macro
-_OBJECT_ID = Struct(OBJECT_ID_KEY / VariableLengthIDAdapter())
-_SYSTEM_ID = Struct(SYSTEM_ID_KEY / VariableLengthIDAdapter())
+_OBJECT_ID = Struct(OBJECT_ID_KEY / Int8ub)
+_SYSTEM_ID = Struct(SYSTEM_ID_KEY / Int8ub)
 _OBJECT_TYPE = Struct(OBJECT_TYPE_KEY / Int16ub)
 _OBJECT_DATA = Struct(OBJECT_DATA_KEY / GreedyBytes)
 

@@ -64,7 +64,7 @@ async def test_transcoding(app, client, commander_mock, store):
     controller = device.get_controller(app)
     await store.insert({
         'service_id': 'alias',
-        'controller_id': [1, 2, 3]
+        'controller_id': 200
     })
 
     c = codec.get_codec(app)
@@ -86,7 +86,7 @@ async def test_list_transcoding(app, client, commander_mock, store):
 
     await store.insert({
         'service_id': 'alias',
-        'controller_id': [1, 2, 3]
+        'controller_id': 56
     })
 
     encoded_type, encoded = await c.encode(*generate_obj())
@@ -114,20 +114,20 @@ async def test_resolve_id(app, client, store, mocker):
     await store.insert_multiple([
         {
             'service_id': 'alias',
-            'controller_id': [1, 2, 3]
+            'controller_id': 123
         },
         {
             'service_id': '4-2',
-            'controller_id': [2, 4]
+            'controller_id': 24
         }
     ])
 
     ctrl = device.get_controller(app)
 
-    assert await ctrl.find_controller_id(ctrl._object_store, 'alias') == [1, 2, 3]
-    assert await ctrl.find_controller_id(ctrl._object_store, [8, 4, 0]) == [8, 4, 0]
+    assert await ctrl.find_controller_id(ctrl._object_store, 'alias') == 123
+    assert await ctrl.find_controller_id(ctrl._object_store, 840) == 840
 
-    assert await ctrl.find_service_id(ctrl._object_store, [1, 2, 3]) == 'alias'
+    assert await ctrl.find_service_id(ctrl._object_store, 123) == 'alias'
     assert await ctrl.find_service_id(ctrl._object_store, 'testey') == 'testey'
     # Service ID not found: create placeholder
-    assert await ctrl.find_service_id(ctrl._object_store, [6, 6, 6]) == 'totally random string'
+    assert await ctrl.find_service_id(ctrl._object_store, 66) == 'totally random string'

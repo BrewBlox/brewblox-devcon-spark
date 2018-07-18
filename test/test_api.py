@@ -253,8 +253,8 @@ async def test_alias_update(app, client, object_args):
 
 async def test_conflict_all(app, client):
     objects = [
-        {'service_id': 'sid', 'controller_id': [8, 9, 10]},
-        {'service_id': 'sid', 'controller_id': [10, 9, 8]}
+        {'service_id': 'sid', 'controller_id': 8},
+        {'service_id': 'sid', 'controller_id': 9}
     ]
 
     store = datastore.get_object_store(app)

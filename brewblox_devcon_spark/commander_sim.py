@@ -35,13 +35,13 @@ class SimulationResponder():
             commands.WriteSystemValueCommand: self._write_system_value
         }
 
-        self._current_id = [0, 0]
+        self._current_id = 1
         self._num_profiles = 0
         self._active_profile = 0
 
         self._system_objects = {
-            "2": {
-                SYSTEM_ID_KEY: [2],
+            2: {
+                SYSTEM_ID_KEY: 2,
                 OBJECT_TYPE_KEY: 256,
                 # data: {'command':{}, 'address':['aa','bb']}
                 OBJECT_DATA_KEY: b'\x08\n\x00\x12\x01\xaa\x12\x01\xbb'
@@ -54,35 +54,26 @@ class SimulationResponder():
         func = self._generators.get(type(command)) or self._empty_response
         return func(command.decoded_request)
 
-    def _object_id(self, controller_id: list):
-        return '~'.join([str(v) for v in controller_id])
-
     def _next_controller_id(self):
-        self._current_id[-1] = (self._current_id[-1] + 1) % 32
-
-        if self._current_id[-1] == 0:
-            self._current_id.append(1)
-
-        return self._current_id[:]
+        self._current_id += 1
+        return self._current_id
 
     def _empty_response(self, request):
         return dict()
 
     def _read_value(self, request):
-        strkey = self._object_id(request[OBJECT_ID_KEY])
-        return self._objects[strkey].copy()
+        return self._objects[request[OBJECT_ID_KEY]].copy()
 
     def _write_value(self, request):
-        strkey = self._object_id(request[OBJECT_ID_KEY])
-        self._objects[strkey] = request.copy()
+        self._objects[request[OBJECT_ID_KEY]] = request.copy()
         return request.copy()
 
     def _create_object(self, request):
         id = self._next_controller_id()
         obj = request.copy()
         obj[OBJECT_ID_KEY] = id
-        self._objects[self._object_id(id)] = obj
-        return {OBJECT_ID_KEY: id[:]}
+        self._objects[id] = obj
+        return {OBJECT_ID_KEY: id}
 
     def _list_objects(self, request):
         return {OBJECT_LIST_KEY: [o.copy() for o in self._objects.values()]}
@@ -107,12 +98,10 @@ class SimulationResponder():
         }
 
     def _read_system_value(self, request):
-        strkey = self._object_id(request[SYSTEM_ID_KEY])
-        return self._system_objects[strkey].copy()
+        return self._system_objects[request[SYSTEM_ID_KEY]].copy()
 
     def _write_system_value(self, request):
-        strkey = self._object_id(request[SYSTEM_ID_KEY])
-        self._system_objects[strkey] = request.copy()
+        self._system_objects[request[SYSTEM_ID_KEY]] = request.copy()
         return request.copy()
 
 

@@ -8,10 +8,11 @@ Users are free to change the associated service ID.
 from typing import List
 
 from aiohttp import web
+from brewblox_service import brewblox_logger
+
 from brewblox_devcon_spark import datastore
 from brewblox_devcon_spark.api import API_ID_KEY
 from brewblox_devcon_spark.device import CONTROLLER_ID_KEY, SERVICE_ID_KEY
-from brewblox_service import brewblox_logger
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -68,8 +69,8 @@ async def alias_create(request: web.Request) -> web.Response:
                     example: onewirebus
                     required: true
                 controller_id:
-                    type: list
-                    example: [2]
+                    type: int
+                    example: 2
                     required: true
     """
     request_args = await request.json()

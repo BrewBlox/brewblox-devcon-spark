@@ -24,7 +24,7 @@ class NewListProfilesCommand(commands.Command):
 @pytest.fixture
 def write_value_args():
     return dict(
-        object_id=[127, 7],
+        object_id=42,
         object_type=6,
         object_data=bytes([0x0F]*10))
 
@@ -41,20 +41,6 @@ def write_value_resp(write_value_args):
 def test_command_error():
     with pytest.raises(ValueError):
         commands.WriteValueCommand()
-
-
-def test_variable_id_length(write_value_args):
-    command = commands.WriteValueCommand.from_args(**write_value_args)
-    encoded = command.encoded_request
-
-    # nesting flag was added
-    assert encoded[2:6] == 'ff07'
-
-    # assert symmetrical encoding / decoding
-    command = commands.WriteValueCommand.from_encoded(request=encoded)
-    decoded = command.decoded_request
-    assert decoded['object_id'] == write_value_args['object_id']
-    assert decoded['object_data'] == write_value_args['object_data']
 
 
 def test_command_from_decoded(write_value_args):

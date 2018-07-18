@@ -5,7 +5,7 @@ Offers a functional interface to the device functionality
 import random
 import string
 from functools import partialmethod
-from typing import Awaitable, Callable, List, Type, Union
+from typing import Awaitable, Callable, Type, Union
 
 import dpath
 from aiohttp import web
@@ -109,13 +109,13 @@ class SparkController(features.ServiceFeature):
 
     async def find_controller_id(self,
                                  store: datastore.DataStore,
-                                 input_id: Union[str, List[int]]
-                                 ) -> Awaitable[List[int]]:
+                                 input_id: Union[str, int]
+                                 ) -> Awaitable[int]:
         """
         Finds the controller ID matching service ID input.
-        If input is a list of ints, it assumes it already is a controller ID
+        If input is an int, it assumes it already is a controller ID
         """
-        if isinstance(input_id, list) and all([isinstance(i, int) for i in input_id]):
+        if isinstance(input_id, int):
             return input_id
 
         obj = await store.find_unique(SERVICE_ID_KEY, input_id)
@@ -127,7 +127,7 @@ class SparkController(features.ServiceFeature):
 
     async def find_service_id(self,
                               store: datastore.DataStore,
-                              input_id: Union[str, List[int]]
+                              input_id: Union[str, int]
                               ) -> Awaitable[str]:
         """
         Finds the service ID matching controller ID input.
