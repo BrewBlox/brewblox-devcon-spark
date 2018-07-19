@@ -38,7 +38,7 @@ class SimulationResponder():
             commands.RestartCommand: self._restart,
         }
 
-        self._current_id = 1
+        self._current_id = 0
         self._active_profiles = []
 
         self._system_objects = {
@@ -62,12 +62,15 @@ class SimulationResponder():
         return self._current_id
 
     def _read_object(self, request):
-        return deepcopy(self._objects[request[OBJECT_ID_KEY]])
+        try:
+            return deepcopy(self._objects[request[OBJECT_ID_KEY]])
+        except KeyError:
+            raise commands.CommandException(f'{request} not found')
 
     def _write_object(self, request):
         key = request[OBJECT_ID_KEY]
         if key not in self._objects:
-            raise KeyError(f'{key} not found')
+            raise commands.CommandException(f'{key} not found')
 
         self._objects[key] = deepcopy(request)
         return deepcopy(request)
@@ -80,7 +83,7 @@ class SimulationResponder():
             key = self._next_controller_id()
             obj[OBJECT_ID_KEY] = key
         elif key in self._objects:
-            raise KeyError(f'Object {key} already exists')
+            raise commands.CommandException(f'Object {key} already exists')
 
         self._objects[key] = obj
         return deepcopy(obj)
@@ -90,12 +93,15 @@ class SimulationResponder():
         del self._objects[key]
 
     def _read_system_object(self, request):
-        return deepcopy(self._system_objects[request[SYSTEM_ID_KEY]])
+        try:
+            return deepcopy(self._system_objects[request[SYSTEM_ID_KEY]])
+        except KeyError:
+            raise commands.CommandException(f'System object not found for {request}')
 
     def _write_system_object(self, request):
         key = request[SYSTEM_ID_KEY]
         if key not in self._system_objects:
-            raise KeyError(f'{key} not found')
+            raise commands.CommandException(f'{key} not found')
 
         self._system_objects[key] = deepcopy(request)
         return deepcopy(request)
@@ -123,7 +129,7 @@ class SimulationResponder():
 
     def _clear_profile(self, request):
         cleared_profiles = request[PROFILE_LIST_KEY]
-        for obj in self._objects:
+        for obj in self._objects.values():
             obj_profiles = obj[PROFILE_LIST_KEY]
             obj[PROFILE_LIST_KEY] = [p for p in obj_profiles if p not in cleared_profiles]
 

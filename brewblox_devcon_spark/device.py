@@ -13,13 +13,26 @@ from brewblox_service import brewblox_logger, features
 
 from brewblox_codec_spark import codec
 from brewblox_devcon_spark import commander, commands, datastore
-from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY,  # noqa
-                                            OBJECT_ID_KEY, OBJECT_LIST_KEY,
-                                            OBJECT_TYPE_KEY, PROFILE_LIST_KEY,
-                                            SYSTEM_ID_KEY)
+from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
+                                            OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
+                                            PROFILE_LIST_KEY, SYSTEM_ID_KEY)
 
 SERVICE_ID_KEY = 'service_id'
 CONTROLLER_ID_KEY = 'controller_id'
+ServiceId_ = str
+ControllerId_ = int
+
+# Keys are imported from commands for use in this module
+# but also to allow other modules (eg. API) to import them from here
+# "use" them here to avoid lint errors
+_FORWARDED = (
+    OBJECT_ID_KEY,
+    OBJECT_DATA_KEY,
+    OBJECT_TYPE_KEY,
+    OBJECT_LIST_KEY,
+    PROFILE_LIST_KEY,
+    SYSTEM_ID_KEY
+)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -49,8 +62,6 @@ class SparkController(features.ServiceFeature):
         super().__init__(app)
 
         self._name = name
-        self._active_profile = 0
-
         self._commander: commander.SparkCommander = None
         self._object_store: datastore.DataStore = None
         self._system_store: datastore.DataStore = None
@@ -59,14 +70,6 @@ class SparkController(features.ServiceFeature):
     @property
     def name(self):
         return self._name
-
-    @property
-    def active_profile(self) -> int:
-        return self._active_profile
-
-    @active_profile.setter
-    def active_profile(self, profile_id: int):
-        self._active_profile = profile_id
 
     async def startup(self, app: web.Application):
         self._commander = commander.get_commander(app)
@@ -106,13 +109,13 @@ class SparkController(features.ServiceFeature):
 
     async def find_controller_id(self,
                                  store: datastore.DataStore,
-                                 input_id: Union[str, int]
-                                 ) -> Awaitable[int]:
+                                 input_id: Union[ServiceId_, ControllerId_]
+                                 ) -> Awaitable[ControllerId_]:
         """
         Finds the controller ID matching service ID input.
         If input is an int, it assumes it already is a controller ID
         """
-        if isinstance(input_id, int):
+        if isinstance(input_id, ControllerId_):
             return input_id
 
         obj = await store.find_unique(SERVICE_ID_KEY, input_id)
@@ -124,13 +127,13 @@ class SparkController(features.ServiceFeature):
 
     async def find_service_id(self,
                               store: datastore.DataStore,
-                              input_id: Union[str, int]
-                              ) -> Awaitable[str]:
+                              input_id: Union[ServiceId_, ControllerId_]
+                              ) -> Awaitable[ServiceId_]:
         """
         Finds the service ID matching controller ID input.
         If input is a string, it assumes it already is a service ID.
         """
-        if isinstance(input_id, str):
+        if isinstance(input_id, ServiceId_):
             return input_id
 
         service_id = None

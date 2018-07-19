@@ -3,7 +3,6 @@ Tests brewblox_devcon_spark.device
 """
 
 import pytest
-from asynctest import CoroutineMock
 from brewblox_service import features, scheduler
 
 from brewblox_codec_spark import codec
@@ -13,33 +12,26 @@ TESTED = device.__name__
 
 
 def generate_obj():
-    return 'OneWireTempSensor', dict(
-        settings=dict(
-            address='ff',
-            offset=20
-        ),
-        state=dict(
-            value=12345,
-            connected=True
-        )
-    )
+    return 'OneWireTempSensor', {
+        'settings': {
+            'address': 'ff',
+            'offset[delta_degC]': 20
+        },
+        'state': {
+            'value[delta_degC]': 123,
+            'connected': True
+        }
+    }
 
 
 @pytest.fixture
 def app(app):
     """App + controller routes"""
-    cmder = commander_sim.SimulationCommander(app)
-
-    def echo(command):
-        retval = command.decoded_request
-        retval['command'] = command.name
-        return retval
-
-    features.add(app, cmder, key=commander.SparkCommander)
     features.add(app, datastore.MemoryDataStore(app), key='object_store')
     features.add(app, datastore.MemoryDataStore(app), key='object_cache')
     features.add(app, datastore.MemoryDataStore(app), key='system_store')
 
+    commander_sim.setup(app)
     scheduler.setup(app)
     codec.setup(app)
     device.setup(app)
@@ -47,8 +39,13 @@ def app(app):
 
 
 @pytest.fixture
-def commander_mock(app):
+def cmder(app):
     return features.get(app, commander.SparkCommander)
+
+
+@pytest.fixture
+def ctrl(app):
+    return device.get_controller(app)
 
 
 @pytest.fixture
@@ -60,52 +57,55 @@ def test_setup(app, app_config):
     assert device.get_controller(app).name == app_config['name']
 
 
-async def test_transcoding(app, client, commander_mock, store):
-    controller = device.get_controller(app)
+async def test_transcoding(app, client, cmder, store, ctrl, mocker):
+    c = codec.get_codec(app)
+    obj_type, obj_data = generate_obj()
+    enc_type, enc_data = await c.encode(obj_type, obj_data)
+
+    object_args = {
+        'object_id': 'alias',
+        'profiles': [1],
+        'object_type': obj_type,
+        'object_data': obj_data
+    }
+
     await store.insert({
         'service_id': 'alias',
         'controller_id': 200
     })
 
+    encode_spy = mocker.spy(c, 'encode')
+    decode_spy = mocker.spy(c, 'decode')
+
+    retval = await ctrl.create_object(object_args)
+    assert retval['object_data']['settings']['address'] == 'ff'
+
+    encode_spy.assert_called_once_with(obj_type, obj_data)
+    decode_spy.assert_called_once_with(enc_type, enc_data)
+
+
+async def test_list_transcoding(app, client, cmder, store, ctrl, mocker):
+    obj_type, obj_data = generate_obj()
+
+    for i in range(5):
+        await store.insert({
+            'service_id': f'obj{i}',
+            'controller_id': 10 + i
+        })
+
+        await ctrl.create_object({
+            'object_id': f'obj{i}',
+            'profiles': [1],
+            'object_type': obj_type,
+            'object_data': obj_data
+        })
+
     c = codec.get_codec(app)
-    encoded_type, encoded = await c.encode(*generate_obj())
-    decoded_type, decoded = await c.decode(encoded_type, encoded)
+    decode_spy = mocker.spy(c, 'decode')
 
-    retval = await controller.write_value(
-        object_id='alias',
-        object_type=decoded_type,
-        object_size=0,
-        object_data=decoded
-    )
-    assert retval['object_data'] == decoded
-
-
-async def test_list_transcoding(app, client, commander_mock, store):
-    controller = device.get_controller(app)
-    c = codec.get_codec(app)
-
-    await store.insert({
-        'service_id': 'alias',
-        'controller_id': 56
-    })
-
-    encoded_type, encoded = await c.encode(*generate_obj())
-    decoded_type, decoded = await c.decode(encoded_type, encoded)
-
-    # Test correct processing of lists of objects
-    commander_mock.execute = CoroutineMock(return_value=dict(
-        objects=[
-            # Call dict twice to avoid populating the list with references to the same dict
-            dict(object_type=encoded_type, object_data=encoded) for _ in range(2)
-        ]
-    ))
-    retval = await controller.write_value(
-        object_id='alias',
-        object_type=decoded_type,
-        object_size=0,
-        object_data=decoded
-    )
-    assert retval['objects'] == [dict(object_type=decoded_type, object_data=decoded)] * 2
+    retval = await ctrl.list_saved_objects()
+    assert len(retval['objects']) == 5
+    assert decode_spy.call_count == 5
 
 
 async def test_resolve_id(app, client, store, mocker):

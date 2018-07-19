@@ -110,8 +110,8 @@ async def test_create(app, client, object_args):
 async def test_create_performance(app, client, object_args):
     num_items = 50
     coros = [client.post('/objects', json=object_args) for _ in range(num_items)]
-    retvponses = await asyncio.gather(*coros)
-    assert [retv.status for retv in retvponses] == [200]*num_items
+    responses = await asyncio.gather(*coros)
+    assert [retv.status for retv in responses] == [200]*num_items
 
     retv = await client.get('/objects')
     assert retv.status == 200
@@ -136,8 +136,8 @@ async def test_read_performance(app, client, object_args):
     await client.post('/objects', json=object_args)
 
     coros = [client.get('/objects/testobj') for _ in range(100)]
-    retvponses = await asyncio.gather(*coros)
-    assert [retv.status for retv in retvponses] == [200]*100
+    responses = await asyncio.gather(*coros)
+    assert [retv.status for retv in responses] == [200]*100
 
 
 async def test_update(app, client, object_args):
@@ -228,7 +228,7 @@ async def test_profiles(app, client):
 async def test_alias_create(app, client):
     new_alias = dict(
         service_id='name',
-        controller_id=[4, 5, 6]
+        controller_id=456
     )
     retv = await client.post('/aliases', json=new_alias)
     assert retv.status == 200

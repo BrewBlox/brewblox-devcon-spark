@@ -28,9 +28,7 @@ class ObjectApi():
     async def create(self, input_id: str, profiles: list, input_type: int, input_data: dict) -> dict:
         """
         Creates a new object on the controller.
-
         Updates the data store with the newly created object.
-        Returns read() output after creation.
         """
         created = await self._ctrl.create_object({
             PROFILE_LIST_KEY: profiles,
@@ -42,7 +40,6 @@ class ObjectApi():
 
         try:
             # Update service ID with user-determined service ID
-            # Add object type to data store
             await self._store.update_unique(
                 id_key=SERVICE_ID_KEY,
                 id_val=created_id,

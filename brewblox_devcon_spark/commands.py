@@ -14,7 +14,7 @@ from typing import List
 
 from brewblox_service import brewblox_logger
 from construct import (Adapter, Byte, Const, Container, Default, Enum,
-                       GreedyBytes, Int8sb, Int16ub, ListContainer, Struct)
+                       GreedyBytes, Int8sb, Int16ub, Struct)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -282,9 +282,7 @@ class Command(ABC):
             Recursively converts construct Container values to serializable Python objects.
             Private items (key starts with '_') are filtered.
             """
-            if isinstance(val, ListContainer):
-                return [normalize(v) for v in val]
-            elif isinstance(val, Container):
+            if isinstance(val, Container):
                 return {
                     k: normalize(v)
                     for k, v in dict(val).items()

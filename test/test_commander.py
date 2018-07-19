@@ -76,14 +76,14 @@ async def test_command(conduit_mock, sparky):
 
     command = commands.ListSavedObjectsCommand.from_args()
     resp = await sparky.execute(command)
-    assert resp['objects'] is []
+    assert resp['objects'] == []
 
     conduit_mock.write.assert_called_once_with('0A')
 
 
 async def test_error_command(conduit_mock, sparky):
-    command = commands.ListObjectsCommand.from_args(profile_id=0)
-    await sparky._process_response(conduit_mock, '05 00 |FF 00 00')
+    command = commands.ListSavedObjectsCommand.from_args()
+    await sparky._process_response(conduit_mock, '0A | FF 00 ')
 
     with pytest.raises(commands.CommandException):
         await sparky.execute(command)
@@ -93,13 +93,13 @@ async def test_stale_reply(conduit_mock, sparky):
     # error code
     stale = commander.TimestampedResponse('ff00')
     stale._timestamp -= timedelta(minutes=1)
-    fresh = commander.TimestampedResponse('00000000')
+    fresh = commander.TimestampedResponse('0000')
 
-    q = sparky._requests['0500'].queue
+    q = sparky._requests['0A'].queue
     await q.put(stale)
     await q.put(fresh)
 
-    command = commands.ListObjectsCommand.from_args(profile_id=0)
+    command = commands.ListSavedObjectsCommand.from_args()
     assert await sparky.execute(command)
 
 
