@@ -316,24 +316,7 @@ async def object_delete(request: web.Request) -> web.Response:
 async def all_objects(request: web.Request) -> web.Response:
     """
     ---
-    summary: List all known objects
-    tags:
-    - Spark
-    - Objects
-    operationId: controller.spark.objects.all
-    produces:
-    - application/json
-    """
-    return web.json_response(
-        await ObjectApi(request.app).list_saved()
-    )
-
-
-@routes.get('/active')
-async def active_objects(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Lists all active objects
+    summary: List all active objects
     tags:
     - Spark
     - Objects
@@ -343,4 +326,21 @@ async def active_objects(request: web.Request) -> web.Response:
     """
     return web.json_response(
         await ObjectApi(request.app).list_active()
+    )
+
+
+@routes.get('/saved')
+async def active_objects(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Lists all saved objects
+    tags:
+    - Spark
+    - Objects
+    operationId: controller.spark.objects.saved
+    produces:
+    - application/json
+    """
+    return web.json_response(
+        await ObjectApi(request.app).list_saved()
     )

@@ -113,7 +113,7 @@ async def test_create_performance(app, client, object_args):
     responses = await asyncio.gather(*coros)
     assert [retv.status for retv in responses] == [200]*num_items
 
-    retv = await client.get('/objects')
+    retv = await client.get('/saved')
     assert retv.status == 200
     retd = await retv.json()
     assert len(retd) == num_items
@@ -161,33 +161,33 @@ async def test_delete(app, client, object_args):
 
 
 async def test_all(app, client, object_args):
-    retv = await client.get('/objects')
+    retv = await client.get('/saved')
     assert retv.status == 200
     retd = await retv.json()
     assert retd == []
 
     await client.post('/objects', json=object_args)
-    retv = await client.get('/objects')
+    retv = await client.get('/saved')
     assert retv.status == 200
     retd = await retv.json()
     assert len(retd) == 1
 
 
 async def test_active(app, client, object_args):
-    retv = await client.get('/active')
+    retv = await client.get('/objects')
     assert retv.status == 200
     retd = await retv.json()
     assert retd == []
 
     await client.post('/objects', json=object_args)
-    retv = await client.get('/active')
+    retv = await client.get('/objects')
     assert retv.status == 200
     retd = await retv.json()
     assert retd == []
 
     await client.post('/profiles', json=[1])
 
-    retv = await client.get('/active')
+    retv = await client.get('/objects')
     retd = await retv.json()
     assert len(retd) == 1
     assert retd[0]['id'] == object_args['id']
