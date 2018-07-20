@@ -84,18 +84,18 @@ class SparkController(features.ServiceFeature):
                             processor_func: codec.TranscodeFunc_,
                             content: dict
                             ) -> Awaitable[dict]:
-        containers = [content]
+        objects_to_process = [content]
         with suppress(KeyError):
-            containers += content[OBJECT_LIST_KEY]
+            objects_to_process += content[OBJECT_LIST_KEY]
 
-        for cont in containers:
+        for obj in objects_to_process:
             with suppress(KeyError):
                 new_type, new_data = await processor_func(
-                    cont[OBJECT_TYPE_KEY],
-                    cont[OBJECT_DATA_KEY]
+                    obj[OBJECT_TYPE_KEY],
+                    obj[OBJECT_DATA_KEY]
                 )
-                cont[OBJECT_TYPE_KEY] = new_type
-                cont[OBJECT_DATA_KEY] = new_data
+                obj[OBJECT_TYPE_KEY] = new_type
+                obj[OBJECT_DATA_KEY] = new_data
 
         return content
 
@@ -158,13 +158,13 @@ class SparkController(features.ServiceFeature):
 
     async def _resolve_id(self, resolver: Callable, content: dict) -> Awaitable[dict]:
         async def resolve_key(key: str, store: datastore.DataStore):
-            containers = [content]
+            objects_to_process = [content]
             with suppress(KeyError):
-                containers += content[OBJECT_LIST_KEY]
+                objects_to_process += content[OBJECT_LIST_KEY]
 
-            for cont in containers:
+            for obj in objects_to_process:
                 with suppress(KeyError):
-                    cont[key] = await resolver(self, store, cont[key])
+                    obj[key] = await resolver(self, store, obj[key])
 
         await resolve_key(OBJECT_ID_KEY, self._object_store)
         await resolve_key(SYSTEM_ID_KEY, self._system_store)

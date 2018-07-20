@@ -313,7 +313,7 @@ async def object_delete(request: web.Request) -> web.Response:
 
 
 @routes.get('/objects')
-async def all_objects(request: web.Request) -> web.Response:
+async def active_objects(request: web.Request) -> web.Response:
     """
     ---
     summary: List all active objects
@@ -329,8 +329,8 @@ async def all_objects(request: web.Request) -> web.Response:
     )
 
 
-@routes.get('/saved')
-async def active_objects(request: web.Request) -> web.Response:
+@routes.get('/saved_objects')
+async def saved_objects(request: web.Request) -> web.Response:
     """
     ---
     summary: Lists all saved objects

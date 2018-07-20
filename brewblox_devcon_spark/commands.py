@@ -140,6 +140,7 @@ class Command(ABC):
         # `errcode` is defined as a private variable in response.
         # It will be included in `self.encoded_response`, but not in `self.decoded_response`.
         # `errcode` value is linked to the call, but defaults to OK when calling `Command.from_decoded()`.
+        # When decoding, errors will be converted to Python exceptions
         errcode = Struct('_errcode' / Default(ErrorcodeEnum, ErrorcodeEnum.OK))
 
         request = self.__class__._REQUEST or Struct()
