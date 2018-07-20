@@ -10,6 +10,7 @@ from aiohttp import web
 from brewblox_service import brewblox_logger, events, features, scheduler
 
 from brewblox_devcon_spark.api.object_api import ObjectApi
+from brewblox_devcon_spark.device import OBJECT_DATA_KEY, OBJECT_ID_KEY
 
 LOGGER = brewblox_logger(__name__)
 
@@ -65,7 +66,10 @@ class Broadcaster(features.ServiceFeature):
         while True:
             try:
                 await asyncio.sleep(interval)
-                state = await api.list_active()
+                state = {
+                    obj[OBJECT_ID_KEY]: obj[OBJECT_DATA_KEY]
+                    for obj in await api.list_active()
+                }
 
                 # Don't broadcast when empty
                 if not state:
