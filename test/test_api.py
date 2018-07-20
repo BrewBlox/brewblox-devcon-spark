@@ -195,14 +195,14 @@ async def test_active(app, client, object_args):
 
 async def test_system_read(app, client, object_args):
     # No system objects found
-    # TODO(Bob): add pretvet system objects to simulator
+    # TODO(Bob): add preset system objects to simulator
     retv = await client.get('/system/onewirebus')
     assert retv.status == 200
 
 
 async def test_system_update(app, client, object_args):
     # No system objects found
-    # TODO(Bob): add pretvet system objects to simulator
+    # TODO(Bob): add preset system objects to simulator
     retv = await client.put('/system/onewirebus', json=object_args)
     assert retv.status == 200
 
