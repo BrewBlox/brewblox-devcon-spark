@@ -25,7 +25,12 @@ class ObjectApi():
         self._ctrl = device.get_controller(app)
         self._store = datastore.get_object_store(app)
 
-    async def create(self, input_id: str, profiles: list, input_type: int, input_data: dict) -> dict:
+    async def create(self,
+                     input_id: str,
+                     profiles: list,
+                     input_type: int,
+                     input_data: dict
+                     ) -> dict:
         """
         Creates a new object on the controller.
         Updates the data store with the newly created object.
@@ -63,7 +68,10 @@ class ObjectApi():
             API_DATA_KEY: created[OBJECT_DATA_KEY],
         }
 
-    async def read(self, input_id: str, input_type: int=0) -> dict:
+    async def read(self,
+                   input_id: str,
+                   input_type: str=None
+                   ) -> dict:
         """
         Reads object on the controller.
         """
@@ -79,7 +87,12 @@ class ObjectApi():
             API_DATA_KEY: response[OBJECT_DATA_KEY]
         }
 
-    async def write(self, input_id: str, profiles: list, input_type: int, input_data: dict) -> dict:
+    async def write(self,
+                    input_id: str,
+                    profiles: list,
+                    input_type: str,
+                    input_data: dict
+                    ) -> dict:
         """
         Writes new values to existing object on controller
         """

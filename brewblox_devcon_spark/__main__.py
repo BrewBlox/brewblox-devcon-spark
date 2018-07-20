@@ -37,7 +37,8 @@ def create_parser(default_name='spark'):
                         help='Start in simulator mode. Will not connect to a physical device. [%(default)s]',
                         action='store_true')
     parser.add_argument('--broadcast-interval',
-                        help='Interval (in seconds) between broadcasts of controller state. [%(default)s]',
+                        help='Interval (in seconds) between broadcasts of controller state.'
+                        'Set to a value <= 0 to disable broadcasting. [%(default)s]',
                         type=int,
                         default=5)
     parser.add_argument('--broadcast-exchange',

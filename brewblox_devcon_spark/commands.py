@@ -268,6 +268,7 @@ class Command(ABC):
     def _build(self, struct: Struct, decoded: dict) -> HexStr_:
         if decoded is None:
             return None
+        LOGGER.debug(struct)
         return hexlify(struct.build(decoded)).decode()
 
     def _parse(self, struct: Struct, encoded: HexStr_) -> dict:

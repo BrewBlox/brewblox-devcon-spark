@@ -31,6 +31,10 @@ class Broadcaster(features.ServiceFeature):
     def __str__(self):
         return f'{type(self).__name__}'
 
+    @property
+    def active(self):
+        return bool(self._task and not self._task.done())
+
     async def startup(self, app: web.Application):
         await self.shutdown()
         self._task = await scheduler.create_task(app, self._broadcast())
@@ -50,6 +54,10 @@ class Broadcaster(features.ServiceFeature):
             exchange = self.app['config']['broadcast_exchange']
             last_broadcast_ok = True
 
+            if interval <= 0:
+                LOGGER.info(f'Exiting {self} (disabled by user)')
+                return
+
         except Exception as ex:
             LOGGER.error(f'{type(ex).__name__}: {str(ex)}', exc_info=True)
             raise ex
@@ -57,7 +65,7 @@ class Broadcaster(features.ServiceFeature):
         while True:
             try:
                 await asyncio.sleep(interval)
-                state = await api.all_data()
+                state = await api.list_active()
 
                 # Don't broadcast when empty
                 if not state:
