@@ -1,9 +1,7 @@
 {
     "_default": {
         "1": {
-            "controller_id": [
-                2
-            ],
+            "controller_id": 2,
             "service_id": "onewirebus"
         }
     }

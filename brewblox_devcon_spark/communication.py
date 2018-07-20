@@ -5,21 +5,25 @@ Implements a protocol and a conduit for async serial communication.
 import asyncio
 import re
 from collections import namedtuple
+from concurrent.futures import CancelledError
 from contextlib import suppress
 from functools import partial
-from typing import Any, Callable, Generator, Iterable, List
+from typing import Any, Awaitable, Callable, Generator, Iterable, List, Tuple
 
 import serial
 from aiohttp import web
-from brewblox_service import brewblox_logger, features
-from serial.aio import SerialTransport
+from brewblox_service import brewblox_logger, features, scheduler
 from serial.tools import list_ports
+from serial_asyncio import SerialTransport
 
 LOGGER = brewblox_logger(__name__)
 DEFAULT_BAUD_RATE = 57600
+RETRY_INTERVAL_S = 1
 
 PortType_ = Any
-MessageCallback_ = Callable[['SparkConduit', str], None]
+MessageCallback_ = Callable[['SparkConduit', str], Awaitable]
+ProtocolFactory_ = Callable[[], asyncio.Protocol]
+ConnectionResult_ = Tuple[Any, asyncio.Transport, asyncio.Protocol]
 
 DeviceMatch = namedtuple('DeviceMatch', ['id', 'desc', 'hwid'])
 
@@ -51,25 +55,54 @@ def get_conduit(app: web.Application) -> 'SparkConduit':
     return features.get(app, SparkConduit)
 
 
+async def connect_serial(app: web.Application,
+                         factory: ProtocolFactory_
+                         ) -> Awaitable[ConnectionResult_]:
+    config = app['config']
+    port = config['device_port']
+    id = config['device_id']
+
+    address = detect_device(port, id)
+    protocol = factory()
+    ser = serial.serial_for_url(address, baudrate=DEFAULT_BAUD_RATE)
+    transport = SerialTransport(app.loop, protocol, ser)
+    transport.serial.rts = False
+    return address, transport, protocol
+
+
+async def connect_tcp(app: web.Application,
+                      factory: ProtocolFactory_
+                      ) -> Awaitable[ConnectionResult_]:
+    address = app['config']['device_url']
+    port = app['config']['device_url_port']
+    transport, protocol = await app.loop.create_connection(
+        factory,
+        address,
+        port
+    )
+    return address, transport, protocol
+
+
 class SparkConduit(features.ServiceFeature):
 
-    def __init__(self, app: web.Application=None):
+    def __init__(self, app: web.Application):
         super().__init__(app)
 
-        # Communication
-        self._device = None
-        self._protocol = None
-        self._serial = None
-        self._transport = None
+        self._connection_task: asyncio.Task = None
+
+        self._address: Any = None
+        self._transport: asyncio.Transport = None
+        self._protocol: 'SparkProtocol' = None
 
         self._event_callbacks = set()
         self._data_callbacks = set()
 
-        # Asyncio
-        self._loop = None
-
     def __str__(self):
-        return f'<{type(self).__name__} for {self._device}>'
+        return f'<{type(self).__name__} for {self._address}>'
+
+    @property
+    def connected(self) -> bool:
+        return bool(self._transport and not self._transport.is_closing())
 
     def add_event_callback(self, cb: MessageCallback_):
         cb and self._event_callbacks.add(cb)
@@ -85,71 +118,101 @@ class SparkConduit(features.ServiceFeature):
         with suppress(KeyError):
             self._data_callbacks.remove(cb)
 
-    @property
-    def is_bound(self):
-        return self._serial and self._serial.is_open
-
     async def startup(self, app: web.Application):
         await self.shutdown()
 
-        self._loop = app.loop
-        config = app['config']
+        def factory():
+            return SparkProtocol(
+                on_event=partial(self._do_callbacks, self._event_callbacks),
+                on_data=partial(self._do_callbacks, self._data_callbacks)
+            )
 
-        self._device = detect_device(config['device_port'], config['device_id'])
-        self._protocol = SparkProtocol(
-            on_event=partial(self._do_callbacks, self._event_callbacks),
-            on_data=partial(self._do_callbacks, self._data_callbacks),
+        if app['config']['device_url']:
+            connect_func = partial(connect_tcp, self.app, factory)
+        else:
+            connect_func = partial(connect_serial, self.app, factory)
+
+        self._connection_task = await scheduler.create_task(
+            self.app,
+            self._maintain_connection(connect_func)
         )
 
-        self._serial = serial.serial_for_url(self._device, baudrate=DEFAULT_BAUD_RATE)
-        self._transport = SerialTransport(self._loop, self._protocol, self._serial)
-
-        LOGGER.info(f'Conduit bound to {self._transport}')
-
     async def shutdown(self, *_):
-        if self._transport:
-            self._transport.close()
-
-        self._loop = None
-        self._device = None
-        self._protocol = None
-        self._serial = None
-        self._transport = None
+        await scheduler.cancel_task(self.app, self._connection_task)
+        self._connection_task = None
 
     async def write(self, data: str):
         return await self.write_encoded(data.encode())
 
     async def write_encoded(self, data: bytes):
+        if not self.connected:
+            raise ConnectionError(f'{self} not connected')
         LOGGER.debug(f'{self} writing: {data}')
-        data += b'\n'
-        assert self._serial, 'Serial unbound or not available'
-        return self._serial.write(data)
+        self._transport.write(data + b'\n')
 
     def _do_callbacks(self, callbacks: List[MessageCallback_], message: str):
-
-        def check_result(fut):
+        async def call_cb(cb: MessageCallback_, message: str):
             try:
-                fut.result()
+                await cb(self, message)
             except Exception as ex:
-                LOGGER.warn(f'Unhandled exception in callback {self}, message={message}, ex={ex}')
+                LOGGER.warn(f'Unhandled exception in {cb}, message={message}, ex={ex}')
 
         for cb in callbacks or [_default_on_message]:
-            task = asyncio.ensure_future(cb(self, message), loop=self._loop)
-            task.add_done_callback(check_result)
+            self.app.loop.create_task(call_cb(cb, message))
+
+    async def _maintain_connection(self, connect_func: Callable[[], Awaitable[ConnectionResult_]]):
+        while True:
+            try:
+                self._address, self._transport, self._protocol = await connect_func()
+
+                await self._protocol.connected
+                LOGGER.info(f'Connected {self}')
+
+                await self._protocol.disconnected
+                LOGGER.info(f'Disconnected {self}')
+
+            except CancelledError:
+                with suppress(Exception):
+                    await self._transport.close()
+                break
+
+            except Exception as ex:
+                LOGGER.debug(f'Connection failed: {ex}')
+                await asyncio.sleep(RETRY_INTERVAL_S)
+
+            finally:
+                # Keep last known address
+                self._transport = None
+                self._protocol = None
 
 
 class SparkProtocol(asyncio.Protocol):
     def __init__(self,
                  on_event: Callable[[str], None],
-                 on_data: Callable[[str], None]):
+                 on_data: Callable[[str], None]
+                 ):
         super().__init__()
+        self._connection_made_event = asyncio.Event()
+        self._connection_lost_event = asyncio.Event()
         self._on_event = on_event
         self._on_data = on_data
         self._buffer = ''
 
+    @property
+    def connected(self) -> Awaitable:
+        return self._connection_made_event.wait()
+
+    @property
+    def disconnected(self) -> Awaitable:
+        return self._connection_lost_event.wait()
+
     def connection_made(self, transport):
-        transport.serial.rts = False
-        LOGGER.debug(f'Serial connection made: {transport}')
+        self._connection_made_event.set()
+
+    def connection_lost(self, exc):
+        self._connection_lost_event.set()
+        if exc:
+            LOGGER.warning(f'Protocol connection error: {exc}')
 
     def data_received(self, data):
         self._buffer += data.decode()
@@ -164,9 +227,6 @@ class SparkProtocol(asyncio.Protocol):
         # Data is newline-separated
         for data in self._coerce_message_from_buffer(start='^', end='\n'):
             self._on_data(data)
-
-    def connection_lost(self, exc):
-        LOGGER.warn(f'Protocol connection lost, error: {exc}')
 
     def _coerce_message_from_buffer(self, start: str, end: str, filter_expr: str=None):
         """ Filters separate messages from the buffer.

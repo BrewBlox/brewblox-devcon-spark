@@ -3,15 +3,14 @@ Command-based device communication
 """
 
 import asyncio
-from binascii import hexlify, unhexlify
 from collections import defaultdict
 from concurrent.futures import CancelledError
-from contextlib import suppress
 from datetime import datetime, timedelta
 
 from aiohttp import web
+from brewblox_service import brewblox_logger, features, scheduler
+
 from brewblox_devcon_spark import commands, communication
-from brewblox_service import brewblox_logger, features
 
 LOGGER = brewblox_logger(__name__)
 
@@ -88,7 +87,7 @@ class TimestampedResponse():
 
 class SparkCommander(features.ServiceFeature):
 
-    def __init__(self, app: web.Application=None):
+    def __init__(self, app: web.Application):
         super().__init__(app)
 
         self._requests = defaultdict(TimestampedQueue)
@@ -100,20 +99,16 @@ class SparkCommander(features.ServiceFeature):
 
     async def startup(self, app: web.Application):
         await self.shutdown()
-
         self._conduit = communication.get_conduit(app)
         self._conduit.add_data_callback(self._process_response)
-        self._cleanup_task = app.loop.create_task(self._cleanup())
+        self._cleanup_task = await scheduler.create_task(app, self._cleanup())
 
     async def shutdown(self, *_):
-        with suppress(AttributeError):
+        if self._conduit:
             self._conduit.remove_data_callback(self._process_response)
+            self._conduit = None
 
-        with suppress(Exception):
-            self._cleanup_task.cancel()
-            await self._cleanup_task
-
-        self._conduit = None
+        await scheduler.cancel_task(self.app, self._cleanup_task)
         self._cleanup_task = None
 
     async def _cleanup(self):
@@ -139,9 +134,7 @@ class SparkCommander(features.ServiceFeature):
 
     async def _process_response(self, conduit, msg: str):
         try:
-            raw_request, raw_response = [
-                unhexlify(part)
-                for part in msg.replace(' ', '').split(RESPONSE_SEPARATOR)]
+            raw_request, raw_response = msg.upper().replace(' ', '').split(RESPONSE_SEPARATOR)
 
             # Match the request queue
             # key is the encoded request
@@ -152,8 +145,8 @@ class SparkCommander(features.ServiceFeature):
             LOGGER.error(f'Response error in {self} : {ex}', exc_info=True)
 
     async def execute(self, command: commands.Command) -> dict:
-        encoded_request = command.encoded_request
-        assert await self._conduit.write_encoded(hexlify(encoded_request))
+        encoded_request = command.encoded_request.upper()
+        await self._conduit.write(encoded_request)
 
         while True:
             # Wait for a request resolution (matched by request)
@@ -165,8 +158,8 @@ class SparkCommander(features.ServiceFeature):
                 LOGGER.warn(f'Discarding stale response: {response}')
                 continue
 
-            # Create new command to avoid changing the 'command' argument
-            response_cmd = type(command)().from_encoded(encoded_request, response.content)
+            # Create a new command of the same type to contain response
+            response_cmd = type(command).from_encoded(encoded_request, response.content)
             decoded = response_cmd.decoded_response
 
             # If the call failed, its response will be an exception

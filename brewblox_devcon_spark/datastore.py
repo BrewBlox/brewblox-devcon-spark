@@ -5,18 +5,18 @@ Offers block metadata CRUD
 
 import asyncio
 from abc import abstractmethod
+from collections import defaultdict
 from concurrent.futures import CancelledError
 from datetime import timedelta
-from typing import Any, Callable, List, Dict
+from typing import Any, Callable, Dict, List
 
 from aiohttp import web
 from aiotinydb import AIOImmutableJSONStorage, AIOJSONStorage, AIOTinyDB
 from aiotinydb.middleware import CachingMiddleware
-from brewblox_service import brewblox_logger, features
+from brewblox_service import brewblox_logger, features, scheduler
 from deprecated import deprecated
 from tinydb import Query, TinyDB
 from tinydb.storages import MemoryStorage
-from collections import defaultdict
 
 ID_TYPE_ = Any
 OBJECT_TYPE_ = dict
@@ -62,16 +62,16 @@ def setup(app: web.Application):
 
 
 def get_object_store(app) -> 'DataStore':
-    return features.get(app, name='object_store')
+    return features.get(app, key='object_store')
 
 
 def get_system_store(app) -> 'DataStore':
-    return features.get(app, name='system_store')
+    return features.get(app, key='system_store')
 
 
 class DataStore(features.ServiceFeature):
 
-    def __init__(self, app: web.Application=None):
+    def __init__(self, app: web.Application):
         super().__init__(app)
 
     def __str__(self):
@@ -260,7 +260,7 @@ class DataStore(features.ServiceFeature):
 
 class MemoryDataStore(DataStore):
 
-    def __init__(self, app: web.Application=None):
+    def __init__(self, app: web.Application):
         super().__init__(app)
         self._db = TinyDB(storage=CachingMiddleware(MemoryStorage))
 
@@ -307,26 +307,24 @@ class FileDataStore(DataStore):
 
         self._pending_actions: asyncio.Queue = None
         self._runner: asyncio.Task = None
-        self._loop: asyncio.BaseEventLoop = None
 
     def __str__(self):
         return f'<{type(self).__name__} for {self._filename}>'
 
     async def startup(self, app: web.Application):
-        self._loop = app.loop
-        self._pending_actions = asyncio.Queue(loop=self._loop)
-        self._runner = self._loop.create_task(self._run())
+        self._pending_actions = asyncio.Queue(loop=app.loop)
+        self._runner = await scheduler.create_task(app, self._run())
 
     async def shutdown(self, *_):
-        if self._runner:
-            self._runner.cancel()
-            await asyncio.wait([self._runner])
-            self._runner = None
+        await scheduler.cancel_task(self.app, self._runner)
+        self._runner = None
 
     # Overrides DataStore
     async def _do_with_db(self, db_action: DB_FUNC_TYPE_) -> ACTION_RETURN_TYPE_:
-        assert self._pending_actions is not None, f'{self} not started before functions were called'
-        action = FileDataStore.Action(db_action, self._loop)
+        if self._pending_actions is None:
+            raise AssertionError(f'{self} not started before functions were called')
+
+        action = FileDataStore.Action(db_action, self.app.loop)
         await self._pending_actions.put(action)
         return await action.wait_result()
 

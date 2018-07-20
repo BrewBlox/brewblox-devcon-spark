@@ -7,8 +7,7 @@ COPY ./config /app/config
 
 EXPOSE 5000
 
-RUN pip3 install /app/dist/* || true \
-    && pip3 install brewblox-devcon-spark \
+RUN pip3 install /app/dist/* \
     && pip3 show brewblox-devcon-spark
 
 ENTRYPOINT ["python3", "-m", "brewblox_devcon_spark"]

@@ -3,8 +3,9 @@ REST API for resolving ID conflicts in the datastore
 """
 
 from aiohttp import web
-from brewblox_devcon_spark import datastore
 from brewblox_service import brewblox_logger
+
+from brewblox_devcon_spark import datastore
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -65,7 +66,7 @@ async def conflict_resolve(request: web.Request) -> web.Response:
                     example: service_id
                 data:
                     type: object
-                    example: {"service_id": "flappy", "controller_id": [1, 2, 3]}
+                    example: {"service_id": "flappy", "controller_id": 2}
     """
     request_args = await request.json()
 

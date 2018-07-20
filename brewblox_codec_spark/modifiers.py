@@ -2,19 +2,23 @@
 Input/output modification functions for transcoding
 """
 
+from brewblox_codec_spark import _path_extension  # isort:skip
+
 import glob
 from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
 from typing import Any, Callable, Generator, List, Optional, Tuple
 
 import dpath
-from brewblox_codec_spark.proto import brewblox_pb2
 from brewblox_service import brewblox_logger
 from google.protobuf import json_format
 from google.protobuf.descriptor import DescriptorBase, FieldDescriptor
 from google.protobuf.message import Message
 from pint import UnitRegistry, quantity
 
+import brewblox_pb2
+
+_path_extension.avoid_lint_errors()
 LOGGER = brewblox_logger(__name__)
 
 

@@ -3,10 +3,11 @@ REST API for Spark system objects
 """
 
 from aiohttp import web
+from brewblox_service import brewblox_logger
+
 from brewblox_devcon_spark.api import API_DATA_KEY, API_ID_KEY, API_TYPE_KEY
 from brewblox_devcon_spark.device import (OBJECT_DATA_KEY, OBJECT_TYPE_KEY,
                                           SYSTEM_ID_KEY, get_controller)
-from brewblox_service import brewblox_logger
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -22,7 +23,7 @@ class SystemApi():
         self._ctrl = get_controller(app)
 
     async def read(self, input_id: str, input_type: int=0) -> dict:
-        response = await self._ctrl.read_system_value({
+        response = await self._ctrl.read_system_object({
             SYSTEM_ID_KEY: input_id,
             OBJECT_TYPE_KEY: input_type
         })
@@ -33,8 +34,8 @@ class SystemApi():
             API_DATA_KEY: response[OBJECT_DATA_KEY]
         }
 
-    async def update(self, input_id: str, input_type: int, input_data: dict) -> dict:
-        response = await self._ctrl.write_system_value({
+    async def write(self, input_id: str, input_type: int, input_data: dict) -> dict:
+        response = await self._ctrl.write_system_object({
             SYSTEM_ID_KEY: input_id,
             OBJECT_TYPE_KEY: input_type,
             OBJECT_DATA_KEY: input_data
@@ -75,7 +76,7 @@ async def system_read(request: web.Request) -> web.Response:
 
 
 @routes.put('/system/{id}')
-async def system_update(request: web.Request) -> web.Response:
+async def system_write(request: web.Request) -> web.Response:
     """
     ---
     summary: Update system object
@@ -102,8 +103,8 @@ async def system_update(request: web.Request) -> web.Response:
             type: object
             properties:
                 type:
-                    type: int
-                    example: 10
+                    type: string
+                    example: OneWireBus
                 data:
                     type: object
                     example: { "command": { "opcode":2, "data":4136 } }
@@ -111,7 +112,7 @@ async def system_update(request: web.Request) -> web.Response:
     request_args = await request.json()
 
     return web.json_response(
-        await SystemApi(request.app).update(
+        await SystemApi(request.app).write(
             request.match_info[API_ID_KEY],
             request_args[API_TYPE_KEY],
             request_args[API_DATA_KEY]

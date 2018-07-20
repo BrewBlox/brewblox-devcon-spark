@@ -3,18 +3,17 @@ Tests brewblox_devcon_spark.communication
 """
 
 import asyncio
-import logging
-from unittest.mock import Mock, call
 from collections import namedtuple
+from unittest.mock import Mock, call
+
 import pytest
 from asynctest import CoroutineMock
-
 from brewblox_devcon_spark import communication
+from brewblox_service import scheduler
 
 DummyPortInfo = namedtuple('DummyPortInfo', ['device', 'description', 'hwid', 'serial_number'])
 
 TESTED = communication.__name__
-LOGGER = logging.getLogger(__name__)
 
 
 class Collector():
@@ -29,10 +28,10 @@ class Collector():
         self.data.put_nowait(d)
 
     async def async_on_event(self, conduit, e):
-        await self.events.put_nowait(e)
+        await self.events.put(e)
 
     async def async_on_data(self, conduit, d):
-        await self.data.put_nowait(d)
+        await self.data.put(d)
 
     async def _verify(self, actual: asyncio.Queue, expected: list, items_left: bool):
         await asyncio.sleep(0.001)
@@ -99,7 +98,29 @@ def serial_mock(mocker):
 
 @pytest.fixture
 def transport_mock(mocker):
-    return mocker.patch(TESTED + '.SerialTransport').return_value
+    m = mocker.patch(TESTED + '.SerialTransport').return_value
+    m.is_closing.return_value = False
+    return m
+
+
+@pytest.fixture
+def tcp_create_connection_mock(app, mocker):
+    app['config']['device_url'] = 'enterprise'
+
+    tcp_transport_mock = Mock()
+    tcp_transport_mock.is_closing.return_value = False
+
+    def connect(factory, address, port):
+        """Mocks behavior of loop.create_connection()"""
+        protocol = factory()
+        protocol.connection_made(tcp_transport_mock)
+        return tcp_transport_mock, protocol
+
+    create_connection_mock = mocker.patch.object(
+        app.loop, 'create_connection',
+        CoroutineMock(side_effect=connect)
+    )
+    return create_connection_mock
 
 
 @pytest.fixture
@@ -109,6 +130,8 @@ def bound_collector(loop):
 
 @pytest.fixture
 def app(app, serial_mock, transport_mock):
+    app['config']['device_url'] = None
+    scheduler.setup(app)
     communication.setup(app)
     return app
 
@@ -156,8 +179,6 @@ async def test_protocol_funcs(loop):
     p = communication.SparkProtocol(coll.on_event, coll.on_data)
 
     p.connection_made(transport_mock)
-    assert transport_mock.serial.rts is False
-
     p.connection_lost('exception')
 
 
@@ -184,20 +205,13 @@ async def test_coerce_partial(loop, serial_data):
     await coll.verify(['spaced message'], ['0A''00''01''28C80E9A0300009C'])
 
 
-async def test_unbound_conduit(loop, serial_mock, transport_mock):
-    conduit = communication.SparkConduit()
+async def test_unbound_conduit(app, client, serial_mock, transport_mock):
+    conduit = communication.SparkConduit(app)
 
     # test pre-bind behavior
-    assert not conduit.is_bound
-    with pytest.raises(AssertionError):
+    assert not conduit.connected
+    with pytest.raises(ConnectionError):
         await conduit.write('stuff')
-
-
-async def test_conduit_shutdown(bound_conduit):
-    assert bound_conduit.is_bound
-    await bound_conduit.shutdown()
-    assert not bound_conduit.is_bound
-    await bound_conduit.shutdown()
 
 
 async def test_conduit_callbacks(bound_collector, bound_conduit):
@@ -205,10 +219,10 @@ async def test_conduit_callbacks(bound_collector, bound_conduit):
     await bound_collector.verify()
 
 
-async def test_conduit_write(bound_collector, bound_conduit, serial_mock):
+async def test_conduit_write(bound_collector, bound_conduit, transport_mock):
     # write should be ok
     await bound_conduit.write('stuff')
-    serial_mock.write.assert_called_once_with(b'stuff\n')
+    transport_mock.write.assert_called_once_with(b'stuff\n')
 
 
 async def test_conduit_callback_multiple(loop, bound_collector, bound_conduit):
@@ -249,6 +263,7 @@ async def test_conduit_err_callback(bound_conduit, expected_events):
 
     # no errors should be thrown
     _send_chunks(bound_conduit._protocol)
+    await asyncio.sleep(0.01)
     assert error_cb.call_args_list == [call(bound_conduit, e) for e in expected_events]
 
 
@@ -271,3 +286,45 @@ async def test_detect_device(grep_ports_mock):
     grep_ports_mock.return_value = [dummy[0]]
     with pytest.raises(ValueError):
         communication.detect_device(serial_number='4321')
+
+
+async def test_tcp_connection(app, client, mocker, tcp_create_connection_mock):
+    spock = communication.SparkConduit(app)
+
+    await spock.startup(app)
+    await asyncio.sleep(0.01)
+
+    assert spock.connected
+    assert tcp_create_connection_mock.call_count == 1
+
+
+async def test_connect_error(app, client, mocker, tcp_create_connection_mock):
+    mocker.patch(TESTED + '.RETRY_INTERVAL_S', 0.001)
+    tcp_create_connection_mock.side_effect = ConnectionRefusedError
+
+    spock = communication.SparkConduit(app)
+    await spock.startup(app)
+
+    await asyncio.sleep(0.01)
+    assert not spock.connected
+    await spock.shutdown(app)
+
+    assert tcp_create_connection_mock.call_count > 1
+
+
+async def test_reconnect(app, client, mocker, tcp_create_connection_mock):
+    mocker.patch(TESTED + '.RETRY_INTERVAL_S', 0.001)
+
+    spock = communication.SparkConduit(app)
+    await spock.startup(app)
+
+    await asyncio.sleep(0.01)
+    assert tcp_create_connection_mock.call_count == 1
+
+    spock._protocol.connection_lost(ConnectionError('boo!'))
+    await asyncio.sleep(0.01)
+    assert tcp_create_connection_mock.call_count == 2
+
+    spock._protocol.connection_lost(None)
+    await asyncio.sleep(0.01)
+    assert tcp_create_connection_mock.call_count == 3

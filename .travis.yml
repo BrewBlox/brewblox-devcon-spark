@@ -16,10 +16,10 @@ install: pip install tox brewblox-tools~=0.3.0
 script: tox
 
 before_deploy:
-  bbt-distcopy .tox/dist/ docker/dist/
-  bbt-distcopy config/ docker/config/
-  && docker login -u "$DOCKER_USER" -p "$DOCKER_PASSWORD"
-  && docker run --rm --privileged multiarch/qemu-user-static:register --reset
+  bbt-distcopy .tox/dist/ docker/dist/;
+  bbt-distcopy config/ docker/config/;
+  docker login -u "$DOCKER_USER" -p "$DOCKER_PASSWORD";
+  docker run --rm --privileged multiarch/qemu-user-static:register --reset;
 
 deploy:
   # Note: Docker Hub deployment is intentionally done before PyPi deployment
@@ -29,12 +29,14 @@ deploy:
   - provider: script
     script:
       bbt-deploy-docker
+      --no-cache
       --image docker
       --file amd/Dockerfile
       --name "$DOCKER_REPO"
       --tags latest $(git describe --tags)
       &&
       bbt-deploy-docker
+      --no-cache
       --image docker
       --file arm/Dockerfile
       --name "$DOCKER_REPO"
@@ -47,12 +49,14 @@ deploy:
   - provider: script
     script:
       bbt-deploy-docker
+      --no-cache
       --image docker
       --file amd/Dockerfile
       --name "$DOCKER_REPO"
       --tags "$TRAVIS_BRANCH"
       &&
       bbt-deploy-docker
+      --no-cache
       --image docker
       --file arm/Dockerfile
       --name "$DOCKER_REPO"
@@ -64,21 +68,12 @@ deploy:
       all_branches: true
       condition: $TRAVIS_BRANCH != master
 
-  # Deploy to PyPi on tagged commits
+  # Deploy to PyPi on any push to an upstream branch
   - provider: pypi
     user: $PYPI_USER
     password: $PYPI_PASSWORD
+    skip_existing: true
     skip_cleanup: true
     on:
-      tags: true
-
-  # Deploy dev version to PyPi on any push to an upstream development branch
-  - provider: pypi
-    user: $PYPI_USER
-    password: $PYPI_PASSWORD
-    skip_cleanup: true
-    on:
-      tags: false
       repo: $GITHUB_REPO
       all_branches: true
-      condition: $TRAVIS_BRANCH != master

@@ -8,6 +8,8 @@ from unittest.mock import PropertyMock
 
 import pytest
 from asynctest import CoroutineMock
+from brewblox_service import scheduler
+
 from brewblox_devcon_spark import commander, commands
 
 TESTED = commander.__name__
@@ -18,12 +20,13 @@ def conduit_mock(mocker):
     m = mocker.patch(TESTED + '.communication.get_conduit')
     m.return_value.bind = CoroutineMock()
     m.return_value.write = CoroutineMock()
-    m.return_value.write_encoded = CoroutineMock()
     return m.return_value
 
 
 @pytest.fixture
-def app(app, conduit_mock):
+def app(app, conduit_mock, mocker):
+    mocker.patch(TESTED + '.REQUEST_TIMEOUT', timedelta(seconds=1))
+    scheduler.setup(app)
     commander.setup(app)
     return app
 
@@ -34,7 +37,7 @@ async def sparky(app, client):
 
 
 async def test_init(conduit_mock, app, client):
-    spock = commander.SparkCommander()
+    spock = commander.SparkCommander(app)
 
     await spock.shutdown()
     await spock.startup(app)
@@ -50,7 +53,7 @@ async def test_process_response(conduit_mock, sparky):
     await sparky._process_response(conduit_mock, '05 00 |00 00 00')
     await asyncio.sleep(0.0001)
     assert len(sparky._requests) == 1
-    assert sparky._requests[b'\x05\x00'].queue.qsize() == 1
+    assert sparky._requests['0500'].queue.qsize() == 1
 
 
 async def test_process_response_error(mocker, conduit_mock, sparky):
@@ -61,32 +64,26 @@ async def test_process_response_error(mocker, conduit_mock, sparky):
     assert len(sparky._requests) == 0
     assert logger_mock.error.call_count == 1
 
-    # Not a hex string
-    await sparky._process_response(conduit_mock, 'pancakes|tasty')
-
-    assert len(sparky._requests) == 0
-    assert logger_mock.error.call_count == 2
-
     # Valid hex, not an opcode
     # process_response does not validate - it will be cleaned up later
     await sparky._process_response(conduit_mock, 'BB|AA')
     assert len(sparky._requests) == 1
-    assert logger_mock.error.call_count == 2
+    assert logger_mock.error.call_count == 1
 
 
 async def test_command(conduit_mock, sparky):
-    await sparky._process_response(conduit_mock, '05 00 |00')
+    await sparky._process_response(conduit_mock, '0a | 00 00')
 
-    command = commands.ListObjectsCommand().from_args(profile_id=0)
+    command = commands.ListSavedObjectsCommand.from_args()
     resp = await sparky.execute(command)
-    assert resp['objects'] is None
+    assert resp['objects'] == []
 
-    conduit_mock.write_encoded.assert_called_once_with(b'0500')
+    conduit_mock.write.assert_called_once_with('0A')
 
 
 async def test_error_command(conduit_mock, sparky):
-    command = commands.ListObjectsCommand().from_args(profile_id=0)
-    await sparky._process_response(conduit_mock, '05 00 |FF 00 00')
+    command = commands.ListSavedObjectsCommand.from_args()
+    await sparky._process_response(conduit_mock, '0A | FF 00 ')
 
     with pytest.raises(commands.CommandException):
         await sparky.execute(command)
@@ -94,15 +91,15 @@ async def test_error_command(conduit_mock, sparky):
 
 async def test_stale_reply(conduit_mock, sparky):
     # error code
-    stale = commander.TimestampedResponse(b'\xff\x00')
+    stale = commander.TimestampedResponse('ff00')
     stale._timestamp -= timedelta(minutes=1)
-    fresh = commander.TimestampedResponse(b'\x00\x00\x00')
+    fresh = commander.TimestampedResponse('0000')
 
-    q = sparky._requests[b'\x05\x00'].queue
+    q = sparky._requests['0A'].queue
     await q.put(stale)
     await q.put(fresh)
 
-    command = commands.ListObjectsCommand().from_args(profile_id=0)
+    command = commands.ListSavedObjectsCommand.from_args()
     assert await sparky.execute(command)
 
 

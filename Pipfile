@@ -4,7 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-brewblox-service = "~=0.10.0"
+
+brewblox-service = "~=0.11.0"
 dpath = "*"
 pyserial-asyncio = "*"
 construct = "*"

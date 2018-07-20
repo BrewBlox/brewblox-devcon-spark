@@ -3,18 +3,13 @@ Tests brewblox_devcon_spark.__main__.py
 """
 
 import pytest
+from brewblox_service import events, service
+
 from brewblox_devcon_spark import __main__ as main
 from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
                                    datastore, device)
-from brewblox_service import events, service
 
 TESTED = main.__name__
-
-
-# @pytest.fixture
-# def sys_args(sys_args) -> list:
-#     sys_args.append('--list-devices')
-#     return sys_args
 
 
 @pytest.fixture
