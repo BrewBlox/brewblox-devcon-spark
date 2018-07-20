@@ -3,6 +3,7 @@ Tests brewblox_devcon_spark.commands
 """
 
 import pytest
+from construct import Struct
 
 from brewblox_devcon_spark import commands
 
@@ -71,3 +72,18 @@ def test_error():
 
     with pytest.raises(NotImplementedError):
         commands.DeleteObjectCommand.from_decoded(None, {'_errcode': -1})
+
+
+def test_profile_adapter():
+    s = Struct('profiles' / commands.ProfileListAdapter())
+
+    for left, right in [
+        ([], b'\x00'),
+        ([0, 1], b'\x03'),
+        ([i for i in range(8)], b'\xFF')
+    ]:
+        assert s.build({'profiles': left}) == right
+        assert s.parse(right) == {'profiles': left}
+
+    with pytest.raises(ValueError):
+        s.build({'profiles': [8]})

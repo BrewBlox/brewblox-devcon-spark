@@ -77,6 +77,8 @@ class ProfileListAdapter(Adapter):
         super().__init__(Byte)
 
     def _encode(self, obj: List[int], context, path) -> int:
+        if next((i for i in obj if i >= 8), None):
+            raise ValueError(f'Invalid profile(s) in {obj}. Values must be 0-7.')
         return reduce(lambda result, idx: result | 1 << idx, obj, 0)
 
     def _decode(self, obj: int, context, path) -> List[int]:
@@ -268,8 +270,8 @@ class Command(ABC):
     def _build(self, struct: Struct, decoded: dict) -> HexStr_:
         if decoded is None:
             return None
-        LOGGER.debug(struct)
-        return hexlify(struct.build(decoded)).decode()
+        built_val = struct.build(decoded)
+        return hexlify(built_val).decode()
 
     def _parse(self, struct: Struct, encoded: HexStr_) -> dict:
         """
@@ -304,10 +306,13 @@ _OBJECT_DATA = Struct(OBJECT_DATA_KEY / GreedyBytes)
 _OBJECT = _OBJECT_ID + _PROFILE_LIST + _OBJECT_TYPE + _OBJECT_DATA
 _SYSTEM_OBJECT = _SYSTEM_ID + _OBJECT_TYPE + _OBJECT_DATA
 
+# Special cases
+_CREATE_ID = Struct(OBJECT_ID_KEY / Default(Int16ub, 0))  # 0 == assigned by controller
+
 
 class ReadObjectCommand(Command):
     _OPCODE = OpcodeEnum.READ_OBJECT
-    _REQUEST = _OBJECT_ID + _OBJECT_TYPE
+    _REQUEST = _OBJECT_ID
     _RESPONSE = _OBJECT
     _VALUES = None
 
@@ -321,7 +326,7 @@ class WriteObjectCommand(Command):
 
 class CreateObjectCommand(Command):
     _OPCODE = OpcodeEnum.CREATE_OBJECT
-    _REQUEST = Default(_OBJECT_ID, 0) + _PROFILE_LIST + _OBJECT_TYPE + _OBJECT_DATA
+    _REQUEST = _CREATE_ID + _PROFILE_LIST + _OBJECT_TYPE + _OBJECT_DATA
     _RESPONSE = _OBJECT
     _VALUES = None
 

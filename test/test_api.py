@@ -19,7 +19,7 @@ from brewblox_devcon_spark.api import (alias_api, conflict_api, debug_api,
 def object_args():
     return dict(
         id='testobj',
-        profiles=[1, 4, 8],
+        profiles=[1, 4, 7],
         type='OneWireTempSensor',
         data=dict(
             settings=dict(
@@ -213,7 +213,7 @@ async def test_profiles(app, client):
     retd = await retv.json()
     assert retd == []
 
-    active = [1, 6, 8]
+    active = [1, 6, 7]
     retv = await client.post('/profiles', json=active)
     assert retv.status == 200
     retd = await retv.json()

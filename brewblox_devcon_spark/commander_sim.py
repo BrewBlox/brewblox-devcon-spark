@@ -2,8 +2,6 @@
 Monkey patches commander.SparkCommander to not require an actual connection.
 """
 
-from copy import deepcopy
-
 from aiohttp import web
 from brewblox_service import features
 
@@ -52,10 +50,16 @@ class SimulationResponder():
 
         self._objects = {}
 
-    def respond(self, command):
-        func = self._generators[type(command)]
-        retv = func(command.decoded_request)
-        return retv if retv is not None else dict()
+    def respond(self, cmd) -> commands.Command:
+        # Encode + decode request
+        args = cmd.from_encoded(cmd.encoded_request, None).decoded_request
+
+        func = self._generators[type(cmd)]
+        retv = func(args)
+
+        # Encode + decode response
+        encoding_cmd = cmd.from_decoded(cmd.decoded_request, retv or dict())
+        return cmd.from_encoded(encoding_cmd.encoded_request, encoding_cmd.encoded_response)
 
     def _next_controller_id(self):
         self._current_id += 1
@@ -63,7 +67,7 @@ class SimulationResponder():
 
     def _read_object(self, request):
         try:
-            return deepcopy(self._objects[request[OBJECT_ID_KEY]])
+            return self._objects[request[OBJECT_ID_KEY]]
         except KeyError:
             raise commands.CommandException(f'{request} not found')
 
@@ -72,12 +76,12 @@ class SimulationResponder():
         if key not in self._objects:
             raise commands.CommandException(f'{key} not found')
 
-        self._objects[key] = deepcopy(request)
-        return deepcopy(request)
+        self._objects[key] = request
+        return request
 
     def _create_object(self, request):
         key = request.get(OBJECT_ID_KEY)
-        obj = deepcopy(request)
+        obj = request
 
         if not key:
             key = self._next_controller_id()
@@ -86,7 +90,7 @@ class SimulationResponder():
             raise commands.CommandException(f'Object {key} already exists')
 
         self._objects[key] = obj
-        return deepcopy(obj)
+        return obj
 
     def _delete_object(self, request):
         key = request[OBJECT_ID_KEY]
@@ -94,7 +98,7 @@ class SimulationResponder():
 
     def _read_system_object(self, request):
         try:
-            return deepcopy(self._system_objects[request[SYSTEM_ID_KEY]])
+            return self._system_objects[request[SYSTEM_ID_KEY]]
         except KeyError:
             raise commands.CommandException(f'System object not found for {request}')
 
@@ -103,29 +107,33 @@ class SimulationResponder():
         if key not in self._system_objects:
             raise commands.CommandException(f'{key} not found')
 
-        self._system_objects[key] = deepcopy(request)
-        return deepcopy(request)
+        self._system_objects[key] = request
+        return request
 
     def _read_active_profiles(self, request):
-        return {PROFILE_LIST_KEY: deepcopy(self._active_profiles)}
+        return {PROFILE_LIST_KEY: self._active_profiles}
 
     def _write_active_profiles(self, request):
-        self._active_profiles = deepcopy(request[PROFILE_LIST_KEY])
+        self._active_profiles = request[PROFILE_LIST_KEY]
         return self._read_active_profiles(request)
 
     def _list_active_objects(self, request):
         return {
+            PROFILE_LIST_KEY: self._active_profiles,
             OBJECT_LIST_KEY: [
-                deepcopy(obj) for obj in self._objects.values()
+                obj for obj in self._objects.values()
                 if set(obj[PROFILE_LIST_KEY]) & set(self._active_profiles)
             ]
         }
 
     def _list_saved_objects(self, request):
-        return {OBJECT_LIST_KEY: [deepcopy(obj) for obj in self._objects.values()]}
+        return {
+            PROFILE_LIST_KEY: self._active_profiles,
+            OBJECT_LIST_KEY: [obj for obj in self._objects.values()]
+        }
 
     def _list_system_objects(self, request):
-        return {OBJECT_LIST_KEY: [deepcopy(obj) for obj in self._system_objects.values()]}
+        return {OBJECT_LIST_KEY: [obj for obj in self._system_objects.values()]}
 
     def _clear_profile(self, request):
         cleared_profiles = request[PROFILE_LIST_KEY]
@@ -153,4 +161,4 @@ class SimulationCommander(commander.SparkCommander):
         pass
 
     async def execute(self, command: commands.Command) -> dict:
-        return self._responder.respond(command)
+        return self._responder.respond(command).decoded_response

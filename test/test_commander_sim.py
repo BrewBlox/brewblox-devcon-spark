@@ -34,7 +34,7 @@ def object_args():
 def sys_object_args():
     return {
         SYSTEM_ID_KEY: 2,
-        OBJECT_DATA_KEY: 256
+        OBJECT_TYPE_KEY: 256
     }
 
 
@@ -67,7 +67,7 @@ async def test_crud(app, loop, object_args, sim):
     }
     assert await sim.execute(read_cmd.from_args(**read_args)) == created
 
-    created[PROFILE_LIST_KEY] = [0, 1, 8]
+    created[PROFILE_LIST_KEY] = [0, 1, 7]
     assert await sim.execute(write_cmd.from_args(**created)) == created
     assert await sim.execute(read_cmd.from_args(**read_args)) == created
 
@@ -126,9 +126,11 @@ async def test_profiles(app, loop, sim, object_args):
         PROFILE_LIST_KEY: []
     }
     assert await sim.execute(active_cmd.from_args()) == {
+        PROFILE_LIST_KEY: [],
         OBJECT_LIST_KEY: []
     }
     assert await sim.execute(saved_cmd.from_args()) == {
+        PROFILE_LIST_KEY: [],
         OBJECT_LIST_KEY: [created]
     }
 
@@ -137,9 +139,11 @@ async def test_profiles(app, loop, sim, object_args):
     assert await sim.execute(set_profile_cmd.from_args(**active)) == active
     assert await sim.execute(get_profile_cmd.from_args()) == active
     assert await sim.execute(active_cmd.from_args()) == {
+        PROFILE_LIST_KEY: [1],
         OBJECT_LIST_KEY: [created]
     }
     assert await sim.execute(saved_cmd.from_args()) == {
+        PROFILE_LIST_KEY: [1],
         OBJECT_LIST_KEY: [created]
     }
 
@@ -148,6 +152,7 @@ async def test_profiles(app, loop, sim, object_args):
     await sim.execute(clear_cmd.from_args(**active))
     assert await sim.execute(get_profile_cmd.from_args()) == active
     assert await sim.execute(active_cmd.from_args()) == {
+        PROFILE_LIST_KEY: [1],
         OBJECT_LIST_KEY: []
     }
 

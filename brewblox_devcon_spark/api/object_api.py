@@ -68,16 +68,12 @@ class ObjectApi():
             API_DATA_KEY: created[OBJECT_DATA_KEY],
         }
 
-    async def read(self,
-                   input_id: str,
-                   input_type: str=None
-                   ) -> dict:
+    async def read(self, input_id: str) -> dict:
         """
         Reads object on the controller.
         """
         response = await self._ctrl.read_object({
-            OBJECT_ID_KEY: input_id,
-            OBJECT_TYPE_KEY: input_type
+            OBJECT_ID_KEY: input_id
         })
 
         return {
