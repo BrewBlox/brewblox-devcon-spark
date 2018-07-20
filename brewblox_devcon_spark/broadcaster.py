@@ -9,8 +9,8 @@ from concurrent.futures import CancelledError
 from aiohttp import web
 from brewblox_service import brewblox_logger, events, features, scheduler
 
-from brewblox_devcon_spark.api.object_api import ObjectApi
-from brewblox_devcon_spark.device import OBJECT_DATA_KEY, OBJECT_ID_KEY
+from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
+                                                  ObjectApi)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -67,7 +67,7 @@ class Broadcaster(features.ServiceFeature):
             try:
                 await asyncio.sleep(interval)
                 state = {
-                    obj[OBJECT_ID_KEY]: obj[OBJECT_DATA_KEY]
+                    obj[API_ID_KEY]: obj[API_DATA_KEY]
                     for obj in await api.list_active()
                 }
 

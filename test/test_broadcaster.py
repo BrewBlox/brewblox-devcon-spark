@@ -10,7 +10,7 @@ from asynctest import CoroutineMock
 from brewblox_service import scheduler
 
 from brewblox_devcon_spark import broadcaster
-from brewblox_devcon_spark.device import OBJECT_DATA_KEY, OBJECT_ID_KEY
+from brewblox_devcon_spark.api.object_api import API_DATA_KEY, API_ID_KEY
 
 TESTED = broadcaster.__name__
 
@@ -73,8 +73,8 @@ async def test_disabled(disabled_app, mock_api, mock_publisher, client):
 
 async def test_broadcast(mock_api, mock_publisher, client):
     object_list = [
-        {OBJECT_ID_KEY: 'testey', OBJECT_DATA_KEY: {'var': 1}},
-        {OBJECT_ID_KEY: 'testface', OBJECT_DATA_KEY: {'val': 2}}
+        {API_ID_KEY: 'testey', API_DATA_KEY: {'var': 1}},
+        {API_ID_KEY: 'testface', API_DATA_KEY: {'val': 2}}
     ]
     objects = {'testey': {'var': 1}, 'testface': {'val': 2}}
     mock_api.list_active.return_value = object_list
@@ -96,8 +96,8 @@ async def test_error(app, client, mock_api, mock_publisher):
     # Error over, resume normal work
     mock_api.list_active.side_effect = None
     mock_api.list_active.return_value = [
-        {OBJECT_ID_KEY: 'testey', OBJECT_DATA_KEY: {'var': 1}},
-        {OBJECT_ID_KEY: 'testface', OBJECT_DATA_KEY: {'val': 2}}
+        {API_ID_KEY: 'testey', API_DATA_KEY: {'var': 1}},
+        {API_ID_KEY: 'testface', API_DATA_KEY: {'val': 2}}
     ]
 
     await asyncio.sleep(0.1)
