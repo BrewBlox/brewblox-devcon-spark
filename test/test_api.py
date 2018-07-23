@@ -70,6 +70,12 @@ async def app(app, database_test_file, loop):
     return app
 
 
+async def response(request):
+    retv = await request
+    assert retv.status == 200
+    return await retv.json()
+
+
 async def test_do(app, client):
     command = dict(command='create_object', data={
         'object_type': 'OneWireTempSensor',
@@ -92,19 +98,16 @@ async def test_do(app, client):
 
 async def test_create(app, client, object_args):
     # Create object
-    retv = await client.post('/objects', json=object_args)
-    assert retv.status == 200
-    assert (await retv.json())['id'] == object_args['id']
+    retd = await response(client.post('/objects', json=object_args))
+    assert retd['id'] == object_args['id']
 
     # Allowed to recreate, but we don't get provided ID
-    retv = await client.post('/objects', json=object_args)
-    assert retv.status == 200
-    assert (await retv.json())['id'] != object_args['id']
+    retd = await response(client.post('/objects', json=object_args))
+    assert retd['id'] != object_args['id']
 
     object_args['id'] = 'other_obj'
-    retv = await client.post('/objects', json=object_args)
-    assert retv.status == 200
-    assert (await retv.json())['id'] == 'other_obj'
+    retd = await response(client.post('/objects', json=object_args))
+    assert retd['id'] == 'other_obj'
 
 
 async def test_create_performance(app, client, object_args):
@@ -113,9 +116,7 @@ async def test_create_performance(app, client, object_args):
     responses = await asyncio.gather(*coros)
     assert [retv.status for retv in responses] == [200]*num_items
 
-    retv = await client.get('/saved_objects')
-    assert retv.status == 200
-    retd = await retv.json()
+    retd = await response(client.get('/saved_objects'))
     assert len(retd) == num_items
 
 
@@ -125,10 +126,7 @@ async def test_read(app, client, object_args):
 
     await client.post('/objects', json=object_args)
 
-    retv = await client.get('/objects/testobj')
-    assert retv.status == 200
-
-    retd = await retv.json()
+    retd = await response(client.get('/objects/testobj'))
     assert retd['id'] == 'testobj'
 
 
@@ -142,18 +140,13 @@ async def test_read_performance(app, client, object_args):
 
 async def test_update(app, client, object_args):
     await client.post('/objects', json=object_args)
-    retv = await client.put('/objects/testobj', json=object_args)
-    assert retv.status == 200
-    retd = await retv.json()
-    assert retd
+    assert await response(client.put('/objects/testobj', json=object_args))
 
 
 async def test_delete(app, client, object_args):
     await client.post('/objects', json=object_args)
 
-    retv = await client.delete('/objects/testobj')
-    assert retv.status == 200
-    retd = await retv.json()
+    retd = await response(client.delete('/objects/testobj'))
     assert retd['id'] == 'testobj'
 
     retv = await client.get('/objects/testobj')
@@ -161,34 +154,24 @@ async def test_delete(app, client, object_args):
 
 
 async def test_all(app, client, object_args):
-    retv = await client.get('/saved_objects')
-    assert retv.status == 200
-    retd = await retv.json()
-    assert retd == []
+    assert await response(client.get('/saved_objects')) == []
 
     await client.post('/objects', json=object_args)
-    retv = await client.get('/saved_objects')
-    assert retv.status == 200
-    retd = await retv.json()
+    retd = await response(client.get('/saved_objects'))
     assert len(retd) == 1
 
 
 async def test_active(app, client, object_args):
-    retv = await client.get('/objects')
-    assert retv.status == 200
-    retd = await retv.json()
+    retd = await response(client.get('/objects'))
     assert retd == []
 
     await client.post('/objects', json=object_args)
-    retv = await client.get('/objects')
-    assert retv.status == 200
-    retd = await retv.json()
+    retd = await response(client.get('/objects'))
     assert retd == []
 
     await client.post('/profiles', json=[1])
 
-    retv = await client.get('/objects')
-    retd = await retv.json()
+    retd = await response(client.get('/objects'))
     assert len(retd) == 1
     assert retd[0]['id'] == object_args['id']
 
@@ -196,33 +179,51 @@ async def test_active(app, client, object_args):
 async def test_system_read(app, client, object_args):
     # No system objects found
     # TODO(Bob): add preset system objects to simulator
-    retv = await client.get('/system/onewirebus')
-    assert retv.status == 200
+    await response(client.get('/system/onewirebus'))
 
 
 async def test_system_update(app, client, object_args):
     # No system objects found
     # TODO(Bob): add preset system objects to simulator
-    retv = await client.put('/system/onewirebus', json=object_args)
-    assert retv.status == 200
+    await response(client.put('/system/onewirebus', json=object_args))
 
 
 async def test_profiles(app, client):
-    retv = await client.get('/profiles')
-    assert retv.status == 200
-    retd = await retv.json()
+    retd = await response(client.get('/profiles'))
     assert retd == []
 
     active = [1, 6, 7]
-    retv = await client.post('/profiles', json=active)
-    assert retv.status == 200
-    retd = await retv.json()
+    retd = await response(client.post('/profiles', json=active))
     assert retd == active
 
-    retv = await client.get('/profiles')
-    assert retv.status == 200
-    retd = await retv.json()
+    retd = await response(client.get('/profiles'))
     assert retd == active
+
+
+@pytest.mark.parametrize('input_id', [
+    'flabber',
+    'FLABBER',
+    'f',
+    'a;ljfoihoewr*&(%&^&*%*&^(*&^(',
+    'l1214235234231',
+    'yes!'*50,
+])
+async def test_validate_service_id(input_id):
+    alias_api.validate_service_id(input_id)
+
+
+@pytest.mark.parametrize('input_id', [
+    '1',
+    '1adsjlfdsf',
+    'pancakes[delicious]',
+    '[',
+    'f]abbergasted',
+    '',
+    'yes!'*51,
+])
+async def test_validate_service_id_error(input_id):
+    with pytest.raises(ValueError):
+        alias_api.validate_service_id(input_id)
 
 
 async def test_alias_create(app, client):
@@ -259,16 +260,14 @@ async def test_conflict_all(app, client):
     store = datastore.get_object_store(app)
     await store.insert_multiple(objects)
 
-    retv = await client.get('/conflicts')
-    assert retv.status == 200
-    assert (await retv.json()) == dict()
+    retd = await response(client.get('/conflicts'))
+    assert retd == {}
 
     retv = await client.get('/objects/sid')
     assert retv.status == 428
 
-    retv = await client.get('/conflicts')
-    assert retv.status == 200
-    assert (await retv.json()) == {
+    retd = await response(client.get('/conflicts'))
+    assert retd == {
         'service_id': {
             'sid': objects
         }

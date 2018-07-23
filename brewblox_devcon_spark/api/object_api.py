@@ -6,7 +6,8 @@ from aiohttp import web
 from brewblox_service import brewblox_logger
 
 from brewblox_devcon_spark import datastore, device
-from brewblox_devcon_spark.api import API_DATA_KEY, API_ID_KEY, API_TYPE_KEY
+from brewblox_devcon_spark.api import (API_DATA_KEY, API_ID_KEY, API_TYPE_KEY,
+                                       alias_api)
 from brewblox_devcon_spark.device import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                           OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                           PROFILE_LIST_KEY, SERVICE_ID_KEY)
@@ -22,8 +23,8 @@ def setup(app: web.Application):
 class ObjectApi():
 
     def __init__(self, app: web.Application):
-        self._ctrl = device.get_controller(app)
-        self._store = datastore.get_object_store(app)
+        self._ctrl: device.SparkController = device.get_controller(app)
+        self._store: datastore.DataStore = datastore.get_object_store(app)
 
     async def create(self,
                      input_id: str,
@@ -35,6 +36,8 @@ class ObjectApi():
         Creates a new object on the controller.
         Updates the data store with the newly created object.
         """
+        alias_api.validate_service_id(input_id)
+
         created = await self._ctrl.create_object({
             PROFILE_LIST_KEY: profiles,
             OBJECT_TYPE_KEY: input_type,
