@@ -5,7 +5,7 @@ Controller IDs are defined by the Spark, and are immutable.
 Users are free to change the associated service ID.
 """
 
-from typing import List
+import re
 
 from aiohttp import web
 from brewblox_service import brewblox_logger
@@ -17,9 +17,25 @@ from brewblox_devcon_spark.device import CONTROLLER_ID_KEY, SERVICE_ID_KEY
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
 
+SERVICE_ID_PATTERN = re.compile(
+    '^[a-z]{1}[^\[\]]{0,199}$',
+    re.IGNORECASE
+)
+"""
+Service ID should adhere to the following rules:
+- Starts with a letter
+- May not contain square brackets: '[' or ']'
+- At most 200 characters
+"""
+
 
 def setup(app: web.Application):
     app.router.add_routes(routes)
+
+
+def validate_service_id(id: str):
+    if not re.match(SERVICE_ID_PATTERN, id):
+        raise ValueError('Invalid Service ID')
 
 
 class AliasApi():
@@ -27,7 +43,8 @@ class AliasApi():
     def __init__(self, app: web.Application):
         self._store = datastore.get_object_store(app)
 
-    async def create(self, service_id: str, controller_id: List[int]) -> dict:
+    async def create(self, service_id: str, controller_id: int) -> dict:
+        validate_service_id(service_id)
         await self._store.insert_unique(
             id_key=SERVICE_ID_KEY,
             obj={
@@ -37,6 +54,7 @@ class AliasApi():
         )
 
     async def update(self, existing_id: str, new_id: str) -> dict:
+        validate_service_id(new_id)
         await self._store.update_unique(
             id_key=SERVICE_ID_KEY,
             id_val=existing_id,
