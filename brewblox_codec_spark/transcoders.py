@@ -9,8 +9,6 @@ from typing import Iterable, Union
 
 from brewblox_service import brewblox_logger
 from google.protobuf import json_format
-from google.protobuf.internal import decoder as internal_decoder
-from google.protobuf.internal import encoder as internal_encoder
 from google.protobuf.message import Message
 
 import OneWireBus_pb2
@@ -72,12 +70,7 @@ class ProtobufTranscoder(Transcoder):
         LOGGER.debug(f'encoding {values} to {self.__class__._MESSAGE}')
         obj = json_format.ParseDict(values, self.message)
         data = obj.SerializeToString()
-
-        # We're using delimited Protobuf messages
-        # This means that messages are always prefixed with a varint indicating their encoded length
-        delimiter = internal_encoder._VarintBytes(len(data))
-
-        return delimiter + data
+        return data
 
     def decode(self, encoded: Encoded_) -> Decoded_:
         # Supports binary input as both a byte string, or as a list of ints
@@ -85,12 +78,7 @@ class ProtobufTranscoder(Transcoder):
             encoded = bytes(encoded)
 
         obj = self.message
-        # We're using delimited Protobuf messages
-        # This means that messages are always prefixed with a varint indicating their encoded length
-        # This is not strictly part of the Protobuf spec, so we need to slice it off before parsing
-        (size, position) = internal_decoder._DecodeVarint(encoded, 0)
-        obj.ParseFromString(encoded[position:position+size])
-
+        obj.ParseFromString(encoded)
         decoded = json_format.MessageToDict(obj)
         LOGGER.debug(f'decoded {self.__class__._MESSAGE} to {decoded}')
         return decoded
