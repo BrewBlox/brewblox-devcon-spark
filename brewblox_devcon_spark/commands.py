@@ -350,10 +350,10 @@ class Command(ABC):
         byte_val = unhexlify(encoded)
 
         if crc:
-            if CRC8.calculate(byte_val) != b'\x00':
-                raise CRCFailure(f'{self} failed CRC check')
-            else:
+            if CRC8.calculate(byte_val) == b'\x00':
                 byte_val = byte_val[:-1]
+            else:
+                raise CRCFailure(f'{self} failed CRC check')
 
         return normalize(struct.parse(byte_val))
 
