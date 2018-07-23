@@ -70,7 +70,7 @@ class ProtobufTranscoder(Transcoder):
         LOGGER.debug(f'encoding {values} to {self.__class__._MESSAGE}')
         obj = json_format.ParseDict(values, self.message)
         data = obj.SerializeToString()
-        return data
+        return data + b'\x00'
 
     def decode(self, encoded: Encoded_) -> Decoded_:
         # Supports binary input as both a byte string, or as a list of ints
@@ -78,7 +78,7 @@ class ProtobufTranscoder(Transcoder):
             encoded = bytes(encoded)
 
         obj = self.message
-        obj.ParseFromString(encoded)
+        obj.ParseFromString(encoded[:-1])
         decoded = json_format.MessageToDict(obj)
         LOGGER.debug(f'decoded {self.__class__._MESSAGE} to {decoded}')
         return decoded
