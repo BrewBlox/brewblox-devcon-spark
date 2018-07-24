@@ -3,6 +3,7 @@ Tests brewblox_devcon_spark.device
 """
 
 import pytest
+from asynctest import CoroutineMock
 from brewblox_service import features, scheduler
 
 from brewblox_codec_spark import codec
@@ -108,7 +109,7 @@ async def test_list_transcoding(app, client, cmder, store, ctrl, mocker):
     assert decode_spy.call_count == 5
 
 
-async def test_resolve_id(app, client, store, mocker):
+async def test_resolve_id(app, client, store, mocker, ctrl):
     random_mock = mocker.patch(TESTED + '.random_string')
     random_mock.return_value = 'totally random string'
     await store.insert_multiple([
@@ -122,8 +123,6 @@ async def test_resolve_id(app, client, store, mocker):
         }
     ])
 
-    ctrl = device.get_controller(app)
-
     assert await ctrl.find_controller_id(ctrl._object_store, 'alias') == 123
     assert await ctrl.find_controller_id(ctrl._object_store, 840) == 840
 
@@ -131,3 +130,34 @@ async def test_resolve_id(app, client, store, mocker):
     assert await ctrl.find_service_id(ctrl._object_store, 'testey') == 'testey'
     # Service ID not found: create placeholder
     assert await ctrl.find_service_id(ctrl._object_store, 66) == 'totally random string'
+
+
+async def test_resolve_links(app, client, store, mocker, ctrl):
+    finder_func = CoroutineMock(side_effect=lambda store, val: '|'+str(val))
+
+    data = {
+        device.OBJECT_DATA_KEY: {
+            'testval': 1,
+            'link_input': 2,
+            'link_output': 'moo',
+            'nested': {
+                'link_flappy': 'floppy',
+                'meaning_of_life': 42
+            }
+        }
+    }
+
+    output = await ctrl._resolve_links(finder_func, data)
+
+    assert output == data
+    assert data == {
+        device.OBJECT_DATA_KEY: {
+            'testval': 1,
+            'link_input': '|2',
+            'link_output': '|moo',
+            'nested': {
+                'link_flappy': '|floppy',
+                'meaning_of_life': 42
+            }
+        }
+    }
