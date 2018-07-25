@@ -50,7 +50,7 @@ async def test_init(conduit_mock, app, client):
 async def test_process_response(conduit_mock, sparky):
     assert len(sparky._requests) == 0
 
-    await sparky._process_response(conduit_mock, '05 00 |00 00 00')
+    await sparky._process_response(conduit_mock, '05 00 |00 00 00 00')
     await asyncio.sleep(0.0001)
     assert len(sparky._requests) == 1
     assert sparky._requests['0500'].queue.qsize() == 1
@@ -72,18 +72,18 @@ async def test_process_response_error(mocker, conduit_mock, sparky):
 
 
 async def test_command(conduit_mock, sparky):
-    await sparky._process_response(conduit_mock, '0a | 00 00')
+    await sparky._process_response(conduit_mock, '0a 36 | 00 00 00')
 
     command = commands.ListSavedObjectsCommand.from_args()
     resp = await sparky.execute(command)
     assert resp['objects'] == []
 
-    conduit_mock.write.assert_called_once_with('0A')
+    conduit_mock.write.assert_called_once_with('0A36')
 
 
 async def test_error_command(conduit_mock, sparky):
     command = commands.ListSavedObjectsCommand.from_args()
-    await sparky._process_response(conduit_mock, '0A | FF 00 ')
+    await sparky._process_response(conduit_mock, '0A 36 | FF 00 ')
 
     with pytest.raises(commands.CommandException):
         await sparky.execute(command)
@@ -91,11 +91,11 @@ async def test_error_command(conduit_mock, sparky):
 
 async def test_stale_reply(conduit_mock, sparky):
     # error code
-    stale = commander.TimestampedResponse('ff00')
+    stale = commander.TimestampedResponse('ff0000')
     stale._timestamp -= timedelta(minutes=1)
-    fresh = commander.TimestampedResponse('0000')
+    fresh = commander.TimestampedResponse('000000')
 
-    q = sparky._requests['0A'].queue
+    q = sparky._requests['0A36'].queue
     await q.put(stale)
     await q.put(fresh)
 
