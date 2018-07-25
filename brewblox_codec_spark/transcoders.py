@@ -86,19 +86,19 @@ class ProtobufTranscoder(Transcoder):
         return decoded
 
 
-class QuantifiedTranscoder(ProtobufTranscoder):
+class OptionsTranscoder(ProtobufTranscoder):
 
     def encode(self, values: Decoded_) -> Encoded_:
-        self.mod.encode_quantity(self.create_message(), values)
+        self.mod.encode_options(self.create_message(), values)
         return super().encode(values)
 
     def decode(self, encoded: Encoded_) -> Decoded_:
         decoded = super().decode(encoded)
-        self.mod.decode_quantity(self.create_message(), decoded)
+        self.mod.decode_options(self.create_message(), decoded)
         return decoded
 
 
-class OneWireBusTranscoder(QuantifiedTranscoder):
+class OneWireBusTranscoder(OptionsTranscoder):
     _MESSAGE = OneWireBus_pb2.OneWireBus
     _TYPE_INT = 256
 
@@ -120,7 +120,7 @@ class OneWireBusTranscoder(QuantifiedTranscoder):
         return decoded
 
 
-class OneWireTempSensorTranscoder(QuantifiedTranscoder):
+class OneWireTempSensorTranscoder(OptionsTranscoder):
     _MESSAGE = OneWireTempSensor_pb2.OneWireTempSensor
     _TYPE_INT = 257
 

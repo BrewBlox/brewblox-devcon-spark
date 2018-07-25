@@ -6,7 +6,7 @@ import random
 import string
 from contextlib import suppress
 from functools import partialmethod
-from typing import Awaitable, Callable, Type, Union
+from typing import Any, Awaitable, Callable, List, Type, Union
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
@@ -19,8 +19,10 @@ from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
 
 SERVICE_ID_KEY = 'service_id'
 CONTROLLER_ID_KEY = 'controller_id'
+OBJECT_LINK_POSTFIX = '<>'
 ServiceId_ = str
 ControllerId_ = int
+FindIdFunc_ = Callable[[datastore.DataStore, Any], Awaitable[Any]]
 
 # Keys are imported from commands for use in this module
 # but also to allow other modules (eg. API) to import them from here
@@ -80,13 +82,17 @@ class SparkController(features.ServiceFeature):
     async def shutdown(self, *_):
         pass
 
+    def _get_content_objects(self, content: dict) -> List[dict]:
+        objects_to_process = [content]
+        with suppress(KeyError):
+            objects_to_process += content[OBJECT_LIST_KEY]
+        return objects_to_process
+
     async def _process_data(self,
                             processor_func: codec.TranscodeFunc_,
                             content: dict
                             ) -> Awaitable[dict]:
-        objects_to_process = [content]
-        with suppress(KeyError):
-            objects_to_process += content[OBJECT_LIST_KEY]
+        objects_to_process = self._get_content_objects(content)
 
         for obj in objects_to_process:
             with suppress(KeyError):
@@ -156,27 +162,47 @@ class SparkController(features.ServiceFeature):
 
         return service_id
 
-    async def _resolve_id(self, resolver: Callable, content: dict) -> Awaitable[dict]:
-        async def resolve_key(key: str, store: datastore.DataStore):
-            objects_to_process = [content]
-            with suppress(KeyError):
-                objects_to_process += content[OBJECT_LIST_KEY]
+    async def _resolve_id(self, finder_func: FindIdFunc_, content: dict) -> Awaitable[dict]:
+        objects_to_process = self._get_content_objects(content)
 
+        async def resolve_key(key: str, store: datastore.DataStore):
             for obj in objects_to_process:
                 with suppress(KeyError):
-                    obj[key] = await resolver(self, store, obj[key])
+                    obj[key] = await finder_func(self, store, obj[key])
 
         await resolve_key(OBJECT_ID_KEY, self._object_store)
         await resolve_key(SYSTEM_ID_KEY, self._system_store)
-
         return content
 
     _resolve_controller_id = partialmethod(_resolve_id, find_controller_id)
     _resolve_service_id = partialmethod(_resolve_id, find_service_id)
 
+    async def _resolve_links(self,
+                             finder_func: FindIdFunc_,
+                             content: dict
+                             ) -> Awaitable[dict]:
+        store = self._object_store
+        objects_to_process = self._get_content_objects(content)
+
+        async def traverse(data):
+            for k, v in data.items():
+                if isinstance(v, dict):
+                    await traverse(v)
+                elif str(k).endswith(OBJECT_LINK_POSTFIX):
+                    data[k] = await finder_func(store, v)
+
+        for obj in objects_to_process:
+            with suppress(KeyError):
+                await traverse(obj[OBJECT_DATA_KEY])
+
+        return content
+
+    _resolve_controller_links = partialmethod(_resolve_links, find_controller_id)
+    _resolve_service_links = partialmethod(_resolve_links, find_service_id)
+
     async def _execute(self,
                        command_type: Type[commands.Command],
-                       content_: dict=None,
+                       content_: dict = None,
                        **kwargs
                        ) -> Awaitable[dict]:
         # Allow a combination of a dict containing arguments, and loose kwargs
@@ -188,6 +214,7 @@ class SparkController(features.ServiceFeature):
             # pre-processing
             for afunc in [
                 self._resolve_controller_id,
+                self._resolve_controller_links,
                 self._encode_data,
             ]:
                 content = await afunc(content)
@@ -199,8 +226,9 @@ class SparkController(features.ServiceFeature):
 
             # post-processing
             for afunc in [
-                self._resolve_service_id,
                 self._decode_data,
+                self._resolve_service_links,
+                self._resolve_service_id,
             ]:
                 retval = await afunc(retval)
 

@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='SetPointSimple.proto',
   package='blox',
   syntax='proto3',
-  serialized_pb=_b('\n\x14SetPointSimple.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"l\n\x0eSetPointSimple\x12/\n\x08settings\x18\x01 \x01(\x0b\x32\x1d.blox.SetPointSimple.Settings\x1a)\n\x08Settings\x12\x1d\n\x05value\x18\x01 \x01(\x11\x42\x0e\x9a?\x06\n\x04\x64\x65gC\x9a?\x02\x10\x08\"K\n\x18SetPointSimple_Persisted\x12/\n\x08settings\x18\x01 \x01(\x0b\x32\x1d.blox.SetPointSimple.Settingsb\x06proto3')
+  serialized_pb=_b('\n\x14SetPointSimple.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"m\n\x0eSetPointSimple\x12/\n\x08settings\x18\x01 \x01(\x0b\x32\x1d.blox.SetPointSimple.Settings\x1a*\n\x08Settings\x12\x1e\n\x05value\x18\x01 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\"K\n\x18SetPointSimple_Persisted\x12/\n\x08settings\x18\x01 \x01(\x0b\x32\x1d.blox.SetPointSimple.Settingsb\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,])
 
@@ -40,7 +40,7 @@ _SETPOINTSIMPLE_SETTINGS = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\006\n\004degC\232?\002\020\010')), file=DESCRIPTOR),
+      options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\006\n\004degC\232?\003\020\200\002')), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -54,7 +54,7 @@ _SETPOINTSIMPLE_SETTINGS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=113,
-  serialized_end=154,
+  serialized_end=155,
 )
 
 _SETPOINTSIMPLE = _descriptor.Descriptor(
@@ -84,7 +84,7 @@ _SETPOINTSIMPLE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=46,
-  serialized_end=154,
+  serialized_end=155,
 )
 
 
@@ -114,8 +114,8 @@ _SETPOINTSIMPLE_PERSISTED = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=156,
-  serialized_end=231,
+  serialized_start=157,
+  serialized_end=232,
 )
 
 _SETPOINTSIMPLE_SETTINGS.containing_type = _SETPOINTSIMPLE
@@ -149,5 +149,5 @@ _sym_db.RegisterMessage(SetPointSimple_Persisted)
 
 
 _SETPOINTSIMPLE_SETTINGS.fields_by_name['value'].has_options = True
-_SETPOINTSIMPLE_SETTINGS.fields_by_name['value']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\006\n\004degC\232?\002\020\010'))
+_SETPOINTSIMPLE_SETTINGS.fields_by_name['value']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\006\n\004degC\232?\003\020\200\002'))
 # @@protoc_insertion_point(module_scope)

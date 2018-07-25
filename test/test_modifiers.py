@@ -3,6 +3,7 @@ Tests brewblox_codec_spark.modifiers
 """
 
 import pytest
+
 from brewblox_codec_spark import modifiers
 from brewblox_codec_spark.proto import OneWireTempSensor_pb2
 
@@ -39,9 +40,9 @@ def test_modify_if_present(mod):
     assert input != generate_encoding_data()
 
 
-def test_encode_quantity(mod):
+def test_encode_options(mod):
     vals = generate_encoding_data()
-    mod.encode_quantity(OneWireTempSensor_pb2.OneWireTempSensor(), vals)
+    mod.encode_options(OneWireTempSensor_pb2.OneWireTempSensor(), vals)
 
     # converted to delta_degC
     # scaled * 256
@@ -49,7 +50,7 @@ def test_encode_quantity(mod):
     assert vals == generate_decoding_data()
 
 
-def test_decode_quantity(mod):
+def test_decode_options(mod):
     vals = {
         'settings': {
             'address': 'address',
@@ -57,6 +58,6 @@ def test_decode_quantity(mod):
         }
     }
 
-    mod.decode_quantity(OneWireTempSensor_pb2.OneWireTempSensor(), vals)
+    mod.decode_options(OneWireTempSensor_pb2.OneWireTempSensor(), vals)
     print(vals['settings'])
     assert vals['settings']['offset[delta_degF]'] == pytest.approx(20, 0.1)

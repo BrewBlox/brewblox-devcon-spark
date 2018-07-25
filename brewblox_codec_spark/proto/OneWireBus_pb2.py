@@ -18,8 +18,8 @@ _sym_db = _symbol_database.Default()
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='OneWireBus.proto',
   package='blox',
-  syntax='proto2',
-  serialized_pb=_b('\n\x10OneWireBus.proto\x12\x04\x62lox\"v\n\nOneWireBus\x12)\n\x07\x63ommand\x18\x01 \x01(\x0b\x32\x18.blox.OneWireBus.Command\x12\x0f\n\x07\x61\x64\x64ress\x18\x02 \x03(\x0c\x1a,\n\x07\x43ommand\x12\x13\n\x06opcode\x18\x01 \x01(\r:\x03\x31\x30\x30\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\r\"<\n\x0fOneWireBusWrite\x12)\n\x07\x63ommand\x18\x01 \x01(\x0b\x32\x18.blox.OneWireBus.Command')
+  syntax='proto3',
+  serialized_pb=_b('\n\x10OneWireBus.proto\x12\x04\x62lox\"q\n\nOneWireBus\x12)\n\x07\x63ommand\x18\x01 \x01(\x0b\x32\x18.blox.OneWireBus.Command\x12\x0f\n\x07\x61\x64\x64ress\x18\x02 \x03(\x0c\x1a\'\n\x07\x43ommand\x12\x0e\n\x06opcode\x18\x01 \x01(\r\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\r\"<\n\x0fOneWireBusWrite\x12)\n\x07\x63ommand\x18\x01 \x01(\x0b\x32\x18.blox.OneWireBus.Commandb\x06proto3')
 )
 
 
@@ -35,7 +35,7 @@ _ONEWIREBUS_COMMAND = _descriptor.Descriptor(
     _descriptor.FieldDescriptor(
       name='opcode', full_name='blox.OneWireBus.Command.opcode', index=0,
       number=1, type=13, cpp_type=3, label=1,
-      has_default_value=True, default_value=100,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
@@ -54,12 +54,12 @@ _ONEWIREBUS_COMMAND = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
+  syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
   serialized_start=100,
-  serialized_end=144,
+  serialized_end=139,
 )
 
 _ONEWIREBUS = _descriptor.Descriptor(
@@ -91,12 +91,12 @@ _ONEWIREBUS = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
+  syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
   serialized_start=26,
-  serialized_end=144,
+  serialized_end=139,
 )
 
 
@@ -122,12 +122,12 @@ _ONEWIREBUSWRITE = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
+  syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=146,
-  serialized_end=206,
+  serialized_start=141,
+  serialized_end=201,
 )
 
 _ONEWIREBUS_COMMAND.containing_type = _ONEWIREBUS
