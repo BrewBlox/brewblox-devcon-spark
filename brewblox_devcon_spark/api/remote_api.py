@@ -8,6 +8,7 @@ they write the object data to the controller.
 
 
 import asyncio
+import glob
 from concurrent.futures import CancelledError
 from contextlib import suppress
 from functools import partial
@@ -38,10 +39,16 @@ async def _receive(app: web.Application,
     obj = await ctrl.read_object({OBJECT_ID_KEY: service_id})
     existing = obj[OBJECT_DATA_KEY]
 
-    for remote_path, local_path in translations.items():
-        with suppress(KeyError):
-            val = dpath.util.get(incoming, remote_path)
-            dpath.util.new(existing, local_path, val)
+    LOGGER.info(f'existing={existing}\nincoming={incoming}')
+
+    if translations:
+        for remote_path, local_path in translations.items():
+            with suppress(KeyError):
+                val = dpath.util.get(incoming, glob.escape(remote_path))
+                dpath.util.new(existing, local_path, val)
+    else:
+        # No translations -> use the remote object in its entirety
+        obj[OBJECT_DATA_KEY] = incoming
 
     await ctrl.write_object(obj)
 

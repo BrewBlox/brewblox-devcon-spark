@@ -8,8 +8,9 @@ import logging
 import os
 
 import pytest
-from brewblox_devcon_spark.__main__ import create_parser
 from brewblox_service import brewblox_logger, features, service
+
+from brewblox_devcon_spark.__main__ import create_parser
 
 LOGGER = brewblox_logger(__name__)
 
@@ -35,26 +36,28 @@ def app_config() -> dict:
         'simulation': False,
         'broadcast_interval': 5,
         'broadcast_exchange': 'brewcast',
-        'unit_system_file': 'config/celsius_system.txt'
+        'unit_system_file': 'config/celsius_system.txt',
+        'sync_exchange': 'syncast',
     }
 
 
 @pytest.fixture
 def sys_args(app_config) -> list:
-    return [
+    return [str(v) for v in [
         'app_name',
         '--debug',
         '--name', app_config['name'],
         '--host', app_config['host'],
-        '--port', str(app_config['port']),
+        '--port', app_config['port'],
         '--database', app_config['database'],
         '--system-database', app_config['system_database'],
         '--device-port', app_config['device_port'],
         '--device-id', app_config['device_id'],
-        '--broadcast-interval', str(app_config['broadcast_interval']),
+        '--broadcast-interval', app_config['broadcast_interval'],
         '--broadcast-exchange', app_config['broadcast_exchange'],
         '--unit-system-file', app_config['unit_system_file'],
-    ]
+        '--sync-exchange', app_config['sync_exchange'],
+    ]]
 
 
 @pytest.fixture
@@ -78,10 +81,10 @@ def client(app, aiohttp_client, loop):
     return loop.run_until_complete(aiohttp_client(app))
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(autouse=True)
 def remove_test_db():
     """
-    Automatically removes the test database file after a full run.
+    Automatically removes the test database file.
     """
     yield None
     try:

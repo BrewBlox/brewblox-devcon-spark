@@ -3,7 +3,6 @@ Tests brewblox_devcon_spark.api
 """
 
 import asyncio
-import os
 
 import pytest
 from brewblox_service import scheduler
@@ -13,46 +12,35 @@ from brewblox_devcon_spark import commander_sim, datastore, device
 from brewblox_devcon_spark.api import (alias_api, conflict_api, debug_api,
                                        error_response, object_api, profile_api,
                                        system_api)
+from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
+                                                  API_TYPE_KEY,
+                                                  OBJECT_DATA_KEY,
+                                                  OBJECT_TYPE_KEY,
+                                                  PROFILE_LIST_KEY)
 
 
 @pytest.fixture
 def object_args():
-    return dict(
-        id='testobj',
-        profiles=[1, 4, 7],
-        type='OneWireTempSensor',
-        data=dict(
-            settings=dict(
-                address='FF',
-                offset=20
-            ),
-            state=dict(
-                value=12345,
-                connected=True
-            )
-        )
-    )
+    return {
+        API_ID_KEY: 'testobj',
+        PROFILE_LIST_KEY: [1, 4, 7],
+        API_TYPE_KEY: 'OneWireTempSensor',
+        API_DATA_KEY: {
+            'settings': {
+                'address': 'FF',
+                'offset': 20
+            },
+            'state': {
+                'value': 12345,
+                'connected': True
+            }
+        }
+    }
 
 
 @pytest.fixture
-def database_test_file():
-    def remove(f):
-        try:
-            os.remove(f)
-        except FileNotFoundError:
-            pass
-
-    f = 'api_test_file.json'
-    remove(f)
-    yield f
-    remove(f)
-
-
-@pytest.fixture
-async def app(app, database_test_file, loop):
+async def app(app, loop):
     """App + controller routes"""
-    app['config']['database'] = database_test_file
-
     scheduler.setup(app)
     commander_sim.setup(app)
     datastore.setup(app)
@@ -78,9 +66,9 @@ async def response(request):
 
 async def test_do(app, client):
     command = dict(command='create_object', data={
-        'object_type': 'OneWireTempSensor',
-        'profiles': [1, 2, 3],
-        'object_data': {
+        OBJECT_TYPE_KEY: 'OneWireTempSensor',
+        PROFILE_LIST_KEY: [1, 2, 3],
+        OBJECT_DATA_KEY: {
             'settings': {
                 'address': 'FF',
                 'offset': 20
@@ -99,15 +87,15 @@ async def test_do(app, client):
 async def test_create(app, client, object_args):
     # Create object
     retd = await response(client.post('/objects', json=object_args))
-    assert retd['id'] == object_args['id']
+    assert retd[API_ID_KEY] == object_args[API_ID_KEY]
 
     # Allowed to recreate, but we don't get provided ID
     retd = await response(client.post('/objects', json=object_args))
-    assert retd['id'] != object_args['id']
+    assert retd[API_ID_KEY] != object_args[API_ID_KEY]
 
-    object_args['id'] = 'other_obj'
+    object_args[API_ID_KEY] = 'other_obj'
     retd = await response(client.post('/objects', json=object_args))
-    assert retd['id'] == 'other_obj'
+    assert retd[API_ID_KEY] == 'other_obj'
 
 
 async def test_create_performance(app, client, object_args):
@@ -127,7 +115,7 @@ async def test_read(app, client, object_args):
     await client.post('/objects', json=object_args)
 
     retd = await response(client.get('/objects/testobj'))
-    assert retd['id'] == 'testobj'
+    assert retd[API_ID_KEY] == 'testobj'
 
 
 async def test_read_performance(app, client, object_args):
@@ -147,7 +135,7 @@ async def test_delete(app, client, object_args):
     await client.post('/objects', json=object_args)
 
     retd = await response(client.delete('/objects/testobj'))
-    assert retd['id'] == 'testobj'
+    assert retd[API_ID_KEY] == 'testobj'
 
     retv = await client.get('/objects/testobj')
     assert retv.status == 500
@@ -173,7 +161,7 @@ async def test_active(app, client, object_args):
 
     retd = await response(client.get('/objects'))
     assert len(retd) == 1
-    assert retd[0]['id'] == object_args['id']
+    assert retd[0][API_ID_KEY] == object_args[API_ID_KEY]
 
 
 async def test_system_read(app, client, object_args):
@@ -276,7 +264,7 @@ async def test_conflict_all(app, client):
 
 async def test_conflict_resolve(app, client, object_args):
     store = datastore.get_object_store(app)
-    argid = object_args['id']
+    argid = object_args[API_ID_KEY]
 
     await client.post('/objects', json=object_args)
     await store.insert({'service_id': argid, 'dummy': True})
