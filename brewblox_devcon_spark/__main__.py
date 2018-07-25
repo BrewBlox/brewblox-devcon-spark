@@ -9,7 +9,7 @@ from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
                                    communication, datastore, device)
 from brewblox_devcon_spark.api import (alias_api, conflict_api, debug_api,
                                        error_response, object_api, profile_api,
-                                       system_api)
+                                       remote_api, system_api)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -44,6 +44,9 @@ def create_parser(default_name='spark'):
     parser.add_argument('--broadcast-exchange',
                         help='Eventbus exchange to which controller state should be broadcasted. [%(default)s]',
                         default='brewcast')
+    parser.add_argument('--sync-exchange',
+                        help='Eventbus exchange used to synchronize remote blocks. [%(default)s]',
+                        default='syncast')
     parser.add_argument('--unit-system-file',
                         help='User configuration for units [%(default)s]')
     parser.add_argument('--list-devices',
@@ -83,6 +86,7 @@ def main():
     object_api.setup(app)
     profile_api.setup(app)
     system_api.setup(app)
+    remote_api.setup(app)
 
     service.furnish(app)
     service.run(app)

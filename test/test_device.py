@@ -28,10 +28,7 @@ def generate_obj():
 @pytest.fixture
 def app(app):
     """App + controller routes"""
-    features.add(app, datastore.MemoryDataStore(app), key='object_store')
-    features.add(app, datastore.MemoryDataStore(app), key='object_cache')
-    features.add(app, datastore.MemoryDataStore(app), key='system_store')
-
+    datastore.setup(app)
     commander_sim.setup(app)
     scheduler.setup(app)
     codec.setup(app)

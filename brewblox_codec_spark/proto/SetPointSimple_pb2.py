@@ -20,22 +20,22 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='SetPointSimple.proto',
   package='blox',
   syntax='proto3',
-  serialized_pb=_b('\n\x14SetPointSimple.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"m\n\x0eSetPointSimple\x12/\n\x08settings\x18\x01 \x01(\x0b\x32\x1d.blox.SetPointSimple.Settings\x1a*\n\x08Settings\x12\x1e\n\x05value\x18\x01 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\"K\n\x18SetPointSimple_Persisted\x12/\n\x08settings\x18\x01 \x01(\x0b\x32\x1d.blox.SetPointSimple.Settingsb\x06proto3')
+  serialized_pb=_b('\n\x14SetPointSimple.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"2\n\x0eSetPointSimple\x12 \n\x07setting\x18\x01 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,])
 
 
 
 
-_SETPOINTSIMPLE_SETTINGS = _descriptor.Descriptor(
-  name='Settings',
-  full_name='blox.SetPointSimple.Settings',
+_SETPOINTSIMPLE = _descriptor.Descriptor(
+  name='SetPointSimple',
+  full_name='blox.SetPointSimple',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='value', full_name='blox.SetPointSimple.Settings.value', index=0,
+      name='setting', full_name='blox.SetPointSimple.setting', index=0,
       number=1, type=17, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -53,101 +53,21 @@ _SETPOINTSIMPLE_SETTINGS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=113,
-  serialized_end=155,
-)
-
-_SETPOINTSIMPLE = _descriptor.Descriptor(
-  name='SetPointSimple',
-  full_name='blox.SetPointSimple',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='settings', full_name='blox.SetPointSimple.settings', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[_SETPOINTSIMPLE_SETTINGS, ],
-  enum_types=[
-  ],
-  options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
   serialized_start=46,
-  serialized_end=155,
+  serialized_end=96,
 )
 
-
-_SETPOINTSIMPLE_PERSISTED = _descriptor.Descriptor(
-  name='SetPointSimple_Persisted',
-  full_name='blox.SetPointSimple_Persisted',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='settings', full_name='blox.SetPointSimple_Persisted.settings', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=157,
-  serialized_end=232,
-)
-
-_SETPOINTSIMPLE_SETTINGS.containing_type = _SETPOINTSIMPLE
-_SETPOINTSIMPLE.fields_by_name['settings'].message_type = _SETPOINTSIMPLE_SETTINGS
-_SETPOINTSIMPLE_PERSISTED.fields_by_name['settings'].message_type = _SETPOINTSIMPLE_SETTINGS
 DESCRIPTOR.message_types_by_name['SetPointSimple'] = _SETPOINTSIMPLE
-DESCRIPTOR.message_types_by_name['SetPointSimple_Persisted'] = _SETPOINTSIMPLE_PERSISTED
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 SetPointSimple = _reflection.GeneratedProtocolMessageType('SetPointSimple', (_message.Message,), dict(
-
-  Settings = _reflection.GeneratedProtocolMessageType('Settings', (_message.Message,), dict(
-    DESCRIPTOR = _SETPOINTSIMPLE_SETTINGS,
-    __module__ = 'SetPointSimple_pb2'
-    # @@protoc_insertion_point(class_scope:blox.SetPointSimple.Settings)
-    ))
-  ,
   DESCRIPTOR = _SETPOINTSIMPLE,
   __module__ = 'SetPointSimple_pb2'
   # @@protoc_insertion_point(class_scope:blox.SetPointSimple)
   ))
 _sym_db.RegisterMessage(SetPointSimple)
-_sym_db.RegisterMessage(SetPointSimple.Settings)
-
-SetPointSimple_Persisted = _reflection.GeneratedProtocolMessageType('SetPointSimple_Persisted', (_message.Message,), dict(
-  DESCRIPTOR = _SETPOINTSIMPLE_PERSISTED,
-  __module__ = 'SetPointSimple_pb2'
-  # @@protoc_insertion_point(class_scope:blox.SetPointSimple_Persisted)
-  ))
-_sym_db.RegisterMessage(SetPointSimple_Persisted)
 
 
-_SETPOINTSIMPLE_SETTINGS.fields_by_name['value'].has_options = True
-_SETPOINTSIMPLE_SETTINGS.fields_by_name['value']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\006\n\004degC\232?\003\020\200\002'))
+_SETPOINTSIMPLE.fields_by_name['setting'].has_options = True
+_SETPOINTSIMPLE.fields_by_name['setting']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\006\n\004degC\232?\003\020\200\002'))
 # @@protoc_insertion_point(module_scope)
