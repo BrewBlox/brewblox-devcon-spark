@@ -7,7 +7,7 @@ from brewblox_codec_spark import _path_extension  # isort:skip
 import glob
 from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
-from typing import Any, Callable, Generator, List, Optional, Tuple
+from typing import Any, Callable, Generator, Iterator, List, Optional, Tuple
 
 import dpath
 from brewblox_service import brewblox_logger
@@ -25,6 +25,8 @@ LOGGER = brewblox_logger(__name__)
 class Modifier():
     _unit_start_char: str = '['
     _unit_end_char: str = ']'
+    _link_start_char: str = '<'
+    _link_end_char: str = '>'
     _brewblox_provider: DescriptorBase = brewblox_pb2.brewblox
 
     def __init__(self, unit_filename: str):
@@ -149,7 +151,7 @@ class Modifier():
         except KeyError:
             return unit
 
-    def encode_quantity(self, message: Message, obj: dict) -> dict:
+    def encode_options(self, message: Message, obj: dict) -> dict:
         """
         Modifies `obj` based on Protobuf options and post-fixed unit notations in dict keys.
 
@@ -167,7 +169,7 @@ class Modifier():
                 }
             }
 
-            >>> encode_quantity(
+            >>> encode_options(
                 OneWireTempSensor_pb2.OneWireTempSensor(),
                 values
             )
@@ -190,13 +192,23 @@ class Modifier():
             }
         """
         changes = []
-        query = f'**/*{glob.escape(self._unit_start_char)}*{glob.escape(self._unit_end_char)}'
+        end_chars = self._unit_end_char + self._link_end_char
+        # query = f'**/*{glob.escape(self._unit_start_char)}*{glob.escape(self._unit_end_char)}'
 
-        for path, val in dpath.util.search(obj, query, yielded=True):
-            start_idx = path.find(self._unit_start_char)
-            end_idx = path.find(self._unit_end_char)
+        def find_option_keys(it: Iterator[Tuple[str, Any]], path='') -> Iterator[Tuple[str, Any]]:
+            # Yields path, val
+            for k, v in it:
+                subpath = f'{path}/{k}'
+                if isinstance(v, list):
+                    yield from find_option_keys(enumerate(v), subpath)
+                elif isinstance(v, dict):
+                    yield from find_option_keys(v.items(), subpath)
+                elif str(k)[-1] in end_chars:
+                    yield subpath, v
 
-            base_path = path[:start_idx]
+        def encode_units(path, val):
+            # strip end char, then split
+            base_path, input_unit = path[:-1].split(self._unit_start_char)
 
             field = self._get_field(message, base_path)
             options = self._field_options(field)
@@ -207,7 +219,6 @@ class Modifier():
                 val = [val]
 
             if getattr(options, 'unit', None):
-                input_unit = path[start_idx+1:end_idx]
                 val = [self._quantity(v, input_unit).to(options.unit).magnitude for v in val]
 
             val = [v * getattr(options, 'scale', 1) for v in val]
@@ -220,12 +231,23 @@ class Modifier():
 
             changes.append((path, base_path, val))
 
+        def encode_link(path, val):
+            # Link is already resolved, now strip the name mangling
+            base_path = next(path.split(self._link_start_char))
+            changes.append((path, base_path, val))
+
+        for path, val in find_option_keys(obj.items()):
+            if path.endswith(self._unit_end_char):
+                encode_units(path, val)
+            elif path.endswith(self._link_end_char):
+                encode_link(path, val)
+
         # Changes include deleting the original path (that included unit)
         # This must be done outside the dpath search loop
         self._apply_changes(obj, changes)
         return obj
 
-    def decode_quantity(self, message: Message, obj: dict) -> dict:
+    def decode_options(self, message: Message, obj: dict) -> dict:
         """
         Modifies `obj` based on brewblox protobuf options.
         Supported options:
@@ -240,7 +262,7 @@ class Modifier():
                 }
             }
 
-            >>> decode_quantity(
+            >>> decode_options(
                 OneWireTempSensor_pb2.OneWireTempSensor(),
                 values
             )
@@ -270,7 +292,8 @@ class Modifier():
             try:
                 scale = getattr(options, 'scale', None)
                 unit = getattr(options, 'unit', None)
-                modified = any([scale, unit])
+                link = getattr(options, 'link', None)
+                modified = any([scale, unit, link])
 
                 if modified:
                     val = dpath.util.get(obj, path)
@@ -293,6 +316,9 @@ class Modifier():
                             .magnitude
                             for v in val
                         ]
+
+                    if link:
+                        new_path = f'{path}{self._link_start_char}{self._link_end_char}'
 
                     if not is_list:
                         val = val[0]

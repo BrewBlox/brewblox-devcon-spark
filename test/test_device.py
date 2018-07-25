@@ -135,10 +135,10 @@ async def test_resolve_links(app, client, store, mocker, ctrl):
     data = {
         device.OBJECT_DATA_KEY: {
             'testval': 1,
-            'link_input': 2,
-            'link_output': 'moo',
+            'input<>': 2,
+            'output<>': 'moo',
             'nested': {
-                'link_flappy': 'floppy',
+                'flappy<>': 'floppy',
                 'meaning_of_life': 42
             }
         }
@@ -150,10 +150,10 @@ async def test_resolve_links(app, client, store, mocker, ctrl):
     assert data == {
         device.OBJECT_DATA_KEY: {
             'testval': 1,
-            'link_input': '|2',
-            'link_output': '|moo',
+            'input<>': '|2',
+            'output<>': '|moo',
             'nested': {
-                'link_flappy': '|floppy',
+                'flappy<>': '|floppy',
                 'meaning_of_life': 42
             }
         }

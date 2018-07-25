@@ -9,8 +9,6 @@ from typing import Iterable, Union
 
 from brewblox_service import brewblox_logger
 from google.protobuf import json_format
-from google.protobuf.internal import decoder as internal_decoder
-from google.protobuf.internal import encoder as internal_encoder
 from google.protobuf.message import Message
 
 import OneWireBus_pb2
@@ -19,7 +17,7 @@ from brewblox_codec_spark.modifiers import Modifier
 
 ObjType_ = Union[int, str]
 Decoded_ = dict
-Encoded_ = Union[bytes, list]
+Encoded_ = bytes
 
 _path_extension.avoid_lint_errors()
 LOGGER = brewblox_logger(__name__)
@@ -64,51 +62,43 @@ class ProtobufTranscoder(Transcoder):
     def type_str(cls) -> str:
         return cls._MESSAGE.__name__
 
-    @property
-    def message(self) -> Message:
+    def create_message(self) -> Message:
         return self.__class__._MESSAGE()
 
     def encode(self, values: Decoded_) -> Encoded_:
         LOGGER.debug(f'encoding {values} to {self.__class__._MESSAGE}')
-        obj = json_format.ParseDict(values, self.message)
+        obj = json_format.ParseDict(values, self.create_message())
         data = obj.SerializeToString()
-
-        # We're using delimited Protobuf messages
-        # This means that messages are always prefixed with a varint indicating their encoded length
-        delimiter = internal_encoder._VarintBytes(len(data))
-
-        return delimiter + data
+        return data + b'\x00'  # Include null terminator
 
     def decode(self, encoded: Encoded_) -> Decoded_:
-        # Supports binary input as both a byte string, or as a list of ints
-        if isinstance(encoded, list):
-            encoded = bytes(encoded)
+        # Remove null terminator
+        encoded = encoded[:-1]
 
-        obj = self.message
-        # We're using delimited Protobuf messages
-        # This means that messages are always prefixed with a varint indicating their encoded length
-        # This is not strictly part of the Protobuf spec, so we need to slice it off before parsing
-        (size, position) = internal_decoder._DecodeVarint(encoded, 0)
-        obj.ParseFromString(encoded[position:position+size])
-
-        decoded = json_format.MessageToDict(obj)
+        obj = self.create_message()
+        obj.ParseFromString(encoded)
+        decoded = json_format.MessageToDict(
+            message=obj,
+            preserving_proto_field_name=True,
+            including_default_value_fields=True
+        )
         LOGGER.debug(f'decoded {self.__class__._MESSAGE} to {decoded}')
         return decoded
 
 
-class QuantifiedTranscoder(ProtobufTranscoder):
+class OptionsTranscoder(ProtobufTranscoder):
 
     def encode(self, values: Decoded_) -> Encoded_:
-        self.mod.encode_quantity(self.message, values)
+        self.mod.encode_options(self.create_message(), values)
         return super().encode(values)
 
     def decode(self, encoded: Encoded_) -> Decoded_:
         decoded = super().decode(encoded)
-        self.mod.decode_quantity(self.message, decoded)
+        self.mod.decode_options(self.create_message(), decoded)
         return decoded
 
 
-class OneWireBusTranscoder(QuantifiedTranscoder):
+class OneWireBusTranscoder(OptionsTranscoder):
     _MESSAGE = OneWireBus_pb2.OneWireBus
     _TYPE_INT = 256
 
@@ -130,7 +120,7 @@ class OneWireBusTranscoder(QuantifiedTranscoder):
         return decoded
 
 
-class OneWireTempSensorTranscoder(QuantifiedTranscoder):
+class OneWireTempSensorTranscoder(OptionsTranscoder):
     _MESSAGE = OneWireTempSensor_pb2.OneWireTempSensor
     _TYPE_INT = 257
 

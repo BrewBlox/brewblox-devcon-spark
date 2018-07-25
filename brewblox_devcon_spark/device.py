@@ -19,7 +19,7 @@ from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
 
 SERVICE_ID_KEY = 'service_id'
 CONTROLLER_ID_KEY = 'controller_id'
-OBJECT_LINK_PREFIX = 'link_'
+OBJECT_LINK_POSTFIX = '<>'
 ServiceId_ = str
 ControllerId_ = int
 FindIdFunc_ = Callable[[datastore.DataStore, Any], Awaitable[Any]]
@@ -188,7 +188,7 @@ class SparkController(features.ServiceFeature):
             for k, v in data.items():
                 if isinstance(v, dict):
                     await traverse(v)
-                elif str(k).startswith(OBJECT_LINK_PREFIX):
+                elif str(k).endswith(OBJECT_LINK_POSTFIX):
                     data[k] = await finder_func(store, v)
 
         for obj in objects_to_process:
