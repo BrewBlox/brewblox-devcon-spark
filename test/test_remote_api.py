@@ -4,6 +4,7 @@ Tests brewblox_devcon_spark.api.remote_api
 
 import asyncio
 from copy import deepcopy
+from unittest.mock import call
 
 import pytest
 from asynctest import CoroutineMock
@@ -141,8 +142,14 @@ async def test_master(app, client, created, mock_publisher, object_args):
         'interval': 0.01
     })
 
+    read_obj = await device.get_controller(app).read_object(
+        {OBJECT_ID_KEY: object_args[OBJECT_ID_KEY]})
+
     await asyncio.sleep(0.05)
-    assert mock_publisher.publish.call_count > 0
+    assert mock_publisher.publish.call_args_list[-1] == call(
+        exchange=app['config']['sync_exchange'],
+        routing='testface',
+        message=read_obj[OBJECT_DATA_KEY])
 
     # test reconnecting
     mock_publisher.reset_mock
