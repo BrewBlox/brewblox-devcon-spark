@@ -50,7 +50,12 @@ def test_command_from_encoded(object_args):
 
 def test_values(object_args):
     command = commands.ListActiveObjectsCommand
-    encoded = '000e,002a0200060f0f0f0f0f0f0f0f0f0f,002a0200060f0f0f0f0f0f0f0f0f0f,002a0200060f0f0f0f0f0f0f0f0f0f'
+    encoded = ','.join([
+        '000e2a',
+        '002a0200060f0f0f0f0f0f0f0f0f0f55',
+        '002a0200060f0f0f0f0f0f0f0f0f0f55',
+        '002a0200060f0f0f0f0f0f0f0f0f0f55',
+    ])
     decoded = {
         'profiles': [1, 2, 3],
         'objects': [object_args]*3
@@ -67,6 +72,10 @@ def test_values(object_args):
 
 
 def test_error():
+    cmd = commands.WriteObjectCommand.from_encoded(None, 'fff3')
+    assert isinstance(cmd.decoded_response, commands.CommandException)
+
+    # Also without CRC
     cmd = commands.WriteObjectCommand.from_encoded(None, 'ff')
     assert isinstance(cmd.decoded_response, commands.CommandException)
 
@@ -87,3 +96,12 @@ def test_profile_adapter():
 
     with pytest.raises(ValueError):
         s.build({'profiles': [8]})
+
+
+def test_crc_failure():
+    cmd = commands.WriteObjectCommand.from_encoded(None, '00F3')
+    assert isinstance(cmd.decoded_response, commands.CRCFailure)
+
+    cmd = commands.WriteObjectCommand.from_encoded('0A00')
+    with pytest.raises(commands.CRCFailure):
+        cmd.decoded_request
