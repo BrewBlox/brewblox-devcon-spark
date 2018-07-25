@@ -136,11 +136,16 @@ async def test_slave_all(app, client, created, object_args, dummy_listener):
 
 
 async def test_master(app, client, created, mock_publisher, object_args):
-    await client.post('/remote/master', json={
+    key = '.'.join([
+        app['config']['name'],
+        object_args[OBJECT_ID_KEY]
+    ])
+    retv = await client.post('/remote/master', json={
         'id': object_args[OBJECT_ID_KEY],
-        'key': 'testface',
         'interval': 0.01
     })
+    assert retv.status == 200
+    assert (await retv.json())['key'] == key
 
     read_obj = await device.get_controller(app).read_object(
         {OBJECT_ID_KEY: object_args[OBJECT_ID_KEY]})
@@ -148,7 +153,7 @@ async def test_master(app, client, created, mock_publisher, object_args):
     await asyncio.sleep(0.05)
     assert mock_publisher.publish.call_args_list[-1] == call(
         exchange=app['config']['sync_exchange'],
-        routing='testface',
+        routing=key,
         message=read_obj[OBJECT_DATA_KEY])
 
     # test reconnecting

@@ -100,7 +100,11 @@ class RemoteApi():
         )
         LOGGER.info(f'Added remote subscription. key = {key}, local object = {service_id}')
 
-    async def add_master(self, service_id: str, key: str, interval: int):
+    async def add_master(self, service_id: str, interval: int):
+        key = '.'.join([
+            self.app['config']['name'],
+            service_id
+        ])
         await scheduler.create_task(self.app,
                                     _broadcast(self.app,
                                                service_id,
@@ -109,6 +113,7 @@ class RemoteApi():
                                                interval
                                                ))
         LOGGER.info(f'Added remote publisher. key = {key}, local object = {service_id}')
+        return {'key': key}
 
 
 @routes.post('/remote/slave')
@@ -188,7 +193,6 @@ async def master_create(request: web.Request) -> web.Response:
     return web.json_response(
         await RemoteApi(request.app).add_master(
             request_args['id'],
-            request_args['key'],
             request_args['interval']
         )
     )
