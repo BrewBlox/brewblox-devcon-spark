@@ -29,14 +29,14 @@ deploy:
     script:
       bbt-deploy-docker
       --no-cache
-      --image docker
+      --context docker
       --file amd/Dockerfile
       --name ${DOCKER_REPO}
       --tags latest $(git describe --tags)
       &&
       bbt-deploy-docker
       --no-cache
-      --image docker
+      --context docker
       --file arm/Dockerfile
       --name ${DOCKER_REPO}
       --tags rpi-latest rpi-$(git describe --tags)
@@ -49,14 +49,14 @@ deploy:
     script:
       bbt-deploy-docker
       --no-cache
-      --image docker
+      --context docker
       --file amd/Dockerfile
       --name ${DOCKER_REPO}
       --tags ${TRAVIS_BRANCH}
       &&
       bbt-deploy-docker
       --no-cache
-      --image docker
+      --context docker
       --file arm/Dockerfile
       --name ${DOCKER_REPO}
       --tags rpi-${TRAVIS_BRANCH}
