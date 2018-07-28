@@ -47,16 +47,12 @@ async def app(app, loop, mocker, items):
 
 @pytest.fixture
 async def app_store(app):
-    s = simplestore.get_store(app)
-    assert s
-    return s
+    return simplestore.MultiIndexDict()
 
 
 @pytest.fixture
-async def flusher(app):
-    f = simplestore.get_flusher(app)
-    assert f
-    return f
+async def file_store(app):
+    return simplestore.get_store(app)
 
 
 def test_get_set(store, items):
@@ -134,14 +130,16 @@ def test_iterate(store, items):
     assert [(left, right, value) for ((left, right), value) in store.items()] == items
 
 
-def test_load(app, app_store, mocker, items):
-    assert len(app_store) == len(items)
+def test_read_file(app, file_store, mocker, items):
+    assert len(file_store) == len(items)
     left, right, value = items[0]
-    assert app_store[left, right] == value
+    assert file_store[left, right] == value
 
 
-async def test_flush_lifecycle(app, client, store, test_db):
-    floosh = simplestore.Flusher(app, store, test_db)
+async def test_flush_lifecycle(app, client, store, test_db, mocker):
+    floosh = simplestore.MultiIndexFileDict(app, test_db)
+    save_spy = mocker.spy(floosh, 'write_file')
+
     assert not floosh.active
     await floosh.startup(app)
     assert floosh.active
@@ -151,36 +149,48 @@ async def test_flush_lifecycle(app, client, store, test_db):
     await floosh.startup(app)
     await floosh.shutdown(app)
 
+    # Can insert/delete when not running, but will not save
+    del floosh[next(k for k in floosh)]
+    floosh['tic', 'tac'] = 'toe'
+    assert save_spy.call_count == 0
 
-async def test_flush_noload(app, client, store, mocker):
+
+async def test_no_file(app, client, store, mocker):
     open_mock = mocker.patch(TESTED + '.open')
     open_mock.side_effect = FileNotFoundError
     set_spy = mocker.spy(store, '__setitem__')
 
-    simplestore.Flusher(app, store, 'filey')
+    simplestore.MultiIndexFileDict(app, 'filey')
     assert open_mock.call_count == 1
     assert set_spy.call_count == 0
 
 
-async def test_flush(app, client, app_store, flusher, items, mocker):
-    save_spy = mocker.spy(flusher, '_save_objects')
+async def test_write(app, client, file_store, items, mocker):
+    save_spy = mocker.spy(file_store, 'write_file')
 
     left, right, value = 'Huey', 'Dewey', 'Louie'
-    app_store[left, right] = value
-    assert app_store[left, right]
+    file_store[left, right] = value
+    assert file_store[left, right]
     items.append((left, right, value))
 
     await asyncio.sleep(0.1)
-    assert save_spy.call_count > 0
+    assert save_spy.call_count == 1
+
+    save_spy.reset_mock()
+    await asyncio.sleep(0.1)
+    assert save_spy.call_count == 0
+
+    del file_store[left, right]
+    await asyncio.sleep(0.1)
+    assert save_spy.call_count == 1
 
 
-async def test_flush_error(app, client, app_store, flusher, mocker):
-    save_mock = mocker.patch.object(flusher, '_save_objects')
+async def test_write_error(app, client, file_store, mocker):
+    save_mock = mocker.patch.object(file_store, 'write_file')
     save_mock.side_effect = RuntimeError
 
-    left, right, value = 'Huey', 'Dewey', 'Louie'
-    app_store[left, right] = value
+    file_store['leftey', 'rightey'] = 'floppy'
 
     await asyncio.sleep(0.1)
     assert save_mock.call_count > 0
-    assert flusher.active
+    assert file_store.active

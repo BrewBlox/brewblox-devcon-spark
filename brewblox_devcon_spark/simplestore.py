@@ -21,17 +21,11 @@ MIN_FLUSH_INTERVAL_S = 10
 
 
 def setup(app: web.Application):
-    store = MultiIndexDict()
-    features.add(app, store)
-    features.add(app, Flusher(app, store, app['config']['database']))
+    features.add(app, MultiIndexFileDict(app, app['config']['database']))
 
 
 def get_store(app: web.Application):
-    return features.get(app, MultiIndexDict)
-
-
-def get_flusher(app: web.Application):
-    return features.get(app, Flusher)
+    return features.get(app, MultiIndexFileDict)
 
 
 class MultiIndexError(Exception):
@@ -49,10 +43,6 @@ class MultiIndexDict(MutableMapping):
     def __init__(self, *args, **kwargs):
         self._left_view: Dict[Hashable, MultiIndexObject] = dict()
         self._right_view: Dict[Hashable, MultiIndexObject] = dict()
-        super().__init__(*args, **kwargs)
-
-    def __str__(self):
-        return f'<{type(self).__name__}>'
 
     def __bool__(self):
         # TODO(Bob): brewblox/brewblox-service#90
@@ -105,26 +95,32 @@ class MultiIndexDict(MutableMapping):
         return obj.left_key, obj.right_key
 
 
-class Flusher(features.ServiceFeature):
-    def __init__(self,
-                 app: web.Application,
-                 store: MultiIndexDict,
-                 filename: str
-                 ):
-        super().__init__(app)
+class MultiIndexFileDict(features.ServiceFeature, MultiIndexDict):
+    def __init__(self, app: web.Application, filename: str):
+        features.ServiceFeature.__init__(self, app)
+        MultiIndexDict.__init__(self)
 
-        self._store: MultiIndexDict = store
         self._filename: str = filename
         self._flush_task: asyncio.Task = None
         self._flush_event: asyncio.Event = None
 
         try:
-            self._load_objects()
+            self.read_file()
         except FileNotFoundError:
             LOGGER.warn(f'Unable to load objects from {self._filename}')
 
     def __str__(self):
         return f'<{type(self).__name__} for {self._filename}>'
+
+    def __setitem__(self, keys, item):
+        MultiIndexDict.__setitem__(self, keys, item)
+        if self._flush_event:
+            self._flush_event.set()
+
+    def __delitem__(self, keys):
+        MultiIndexDict.__delitem__(self, keys)
+        if self._flush_event:
+            self._flush_event.set()
 
     @property
     def active(self):
@@ -139,15 +135,15 @@ class Flusher(features.ServiceFeature):
         self._flush_event = None
         await scheduler.cancel_task(app, self._flush_task)
 
-    def _load_objects(self):
+    def read_file(self):
         with open(self._filename) as f:
             persisted = json.load(f)
 
         for obj in persisted:
-            self._store[obj['keys']] = obj['data']
+            MultiIndexDict.__setitem__(self, obj['keys'], obj['data'])
 
-    async def _save_objects(self):
-        persisted = [{'keys': keys, 'data': content} for keys, content in self._store.items()]
+    async def write_file(self):
+        persisted = [{'keys': keys, 'data': content} for keys, content in self.items()]
         async with aiofiles.open(self._filename, mode='w') as f:
             await f.write(json.dumps(persisted))
             await f.flush()
@@ -157,10 +153,12 @@ class Flusher(features.ServiceFeature):
         while True:
             try:
                 await asyncio.sleep(MIN_FLUSH_INTERVAL_S)
-                await self._save_objects()
+                await self._flush_event.wait()
+                await self.write_file()
+                self._flush_event.clear()
 
             except CancelledError:
-                await self._save_objects()
+                await self.write_file()
                 break
 
             except Exception as ex:
