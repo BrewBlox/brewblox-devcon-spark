@@ -3,35 +3,21 @@ Tests datastore.py
 """
 
 import asyncio
-import os
 
 import pytest
-from brewblox_devcon_spark import datastore
 from brewblox_service import scheduler
+
+from brewblox_devcon_spark import datastore
 
 TESTED = datastore.__name__
 
 
 @pytest.fixture
-def database_test_file():
-    def remove(f):
-        try:
-            os.remove(f)
-        except FileNotFoundError:
-            pass
-
-    f = 'test_file.json'
-    remove(f)
-    yield f
-    remove(f)
-
-
-@pytest.fixture
-def file_store(app, database_test_file):
+def file_store(app):
     scheduler.setup(app)
     return datastore.FileDataStore(
         app=app,
-        filename=database_test_file,
+        filename=app['config']['database'],
         read_only=False,
     )
 

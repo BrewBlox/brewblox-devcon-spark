@@ -4,19 +4,34 @@ Supports lookups where either left or right value is unknown.
 When looking up objects with both left and right key, asserts that keys point to the same object.
 """
 
+import asyncio
+import json
+from collections.abc import MutableMapping
+from concurrent.futures import CancelledError
 from typing import Any, Dict, Hashable, Tuple
 
-from brewblox_service import brewblox_logger
+import aiofiles
+from aiohttp import web
+from brewblox_service import brewblox_logger, features, scheduler
 from dataclasses import dataclass
 
 LOGGER = brewblox_logger(__name__)
 
+MIN_FLUSH_INTERVAL_S = 10
 
-@dataclass(frozen=True)
-class StoreObject():
-    service_id: str
-    controller_id: int
-    remote_status: str
+
+def setup(app: web.Application):
+    store = MultiIndexDict()
+    features.add(app, store)
+    features.add(app, Flusher(app, store, app['config']['database']))
+
+
+def get_store(app: web.Application):
+    return features.get(app, MultiIndexDict)
+
+
+def get_flusher(app: web.Application):
+    return features.get(app, Flusher)
 
 
 class MultiIndexError(Exception):
@@ -30,42 +45,28 @@ class MultiIndexObject():
     content: Any
 
 
-class IntermediateIndex():
-    def __init__(self, parent: 'MultiIndexDict', left_key: Any):
-        self._parent = parent
-        self._left_key = left_key
+class MultiIndexDict(MutableMapping):
+    def __init__(self, *args, **kwargs):
+        self._left_view: Dict[Hashable, MultiIndexObject] = dict()
+        self._right_view: Dict[Hashable, MultiIndexObject] = dict()
+        super().__init__(*args, **kwargs)
 
-    def __getitem__(self, right_key):
-        return self._parent.get(self._left_key, right_key)
+    def __str__(self):
+        return f'<{type(self).__name__}>'
 
-    def __setitem__(self, right_key, item):
-        return self._parent.set(self._left_key, right_key, item)
-
-    def __delitem__(self, right_key):
-        return self._parent.delete(self._left_key, right_key)
-
-
-class MultiIndexDict():
-    def __init__(self):
-        self._left_view: Dict[MultiIndexObject] = dict()
-        self._right_view: Dict[MultiIndexObject] = dict()
-
-    def __raise_key_missing(self, *args, **kwargs):
-        raise MultiIndexError('Missing right-hand index key')
-
-    __setitem__ = __raise_key_missing
-    __delitem__ = __raise_key_missing
+    def __bool__(self):
+        # TODO(Bob): brewblox/brewblox-service#90
+        return True
 
     def __len__(self):
         return len(self._left_view)
 
     def __iter__(self):
-        return ((o.left_key, o.right_key, o.content) for o in self._left_view.values())
+        return ((o.left_key, o.right_key) for o in self._left_view.values())
 
-    def __getitem__(self, left_key) -> IntermediateIndex:
-        return IntermediateIndex(self, left_key)
+    def _getobj(self, keys: Tuple[Hashable, Hashable]) -> Any:
+        left_key, right_key = keys
 
-    def _getobj(self, left_key, right_key) -> MultiIndexObject:
         if (left_key, right_key) == (None, None):
             raise MultiIndexError('None/None lookup not allowed')
 
@@ -80,13 +81,11 @@ class MultiIndexDict():
                 raise MultiIndexError(f'Keys [{left_key}][{right_key}] yielded different objects')
             return left
 
-    def get(self, left_key, right_key, default=None):
-        try:
-            return self._getobj(left_key, right_key).content
-        except KeyError:
-            return default
+    def __getitem__(self, keys):
+        return self._getobj(keys).content
 
-    def set(self, left_key, right_key, item):
+    def __setitem__(self, keys: Tuple[Hashable, Hashable], item):
+        left_key, right_key = keys
         if (left_key, right_key) == (None, None):
             raise MultiIndexError('None/None insertion not allowed')
         left = self._left_view.get(left_key)
@@ -95,23 +94,75 @@ class MultiIndexDict():
             raise MultiIndexError(f'Mapping mismatch: [{left_key}][{right_key}] == {left} / {right}')
         self._left_view[left_key] = self._right_view[right_key] = MultiIndexObject(left_key, right_key, item)
 
-    def pop(self, left_key, right_key):
-        obj = self._getobj(left_key, right_key)
-        self._left_view.pop(obj.left_key)
-        self._right_view.pop(obj.right_key)
-        return obj.content
-
-    def delete(self, left_key, right_key):
-        obj = self._getobj(left_key, right_key)
-        left = self._left_view.pop(obj.left_key)
-        self._right_view.pop(obj.right_key)
-        del left
-
-    def __contains__(self, keys: Tuple[Hashable, Hashable]):
+    def __delitem__(self, keys: Tuple[Hashable, Hashable]):
         left_key, right_key = keys
+        obj = self._getobj(keys)
+        del self._left_view[obj.left_key]
+        del self._right_view[obj.right_key]
+
+    def bothkeys(self, keys: Tuple[Hashable, Hashable]):
+        obj = self._getobj(keys)
+        return obj.left_key, obj.right_key
+
+
+class Flusher(features.ServiceFeature):
+    def __init__(self,
+                 app: web.Application,
+                 store: MultiIndexDict,
+                 filename: str
+                 ):
+        super().__init__(app)
+
+        self._store: MultiIndexDict = store
+        self._filename: str = filename
+        self._flush_task: asyncio.Task = None
+        self._flush_event: asyncio.Event = None
+
         try:
-            self._getobj(left_key, right_key)
-        except KeyError:
-            return False
-        else:
-            return True
+            self._load_objects()
+        except FileNotFoundError:
+            LOGGER.warn(f'Unable to load objects from {self._filename}')
+
+    def __str__(self):
+        return f'<{type(self).__name__} for {self._filename}>'
+
+    @property
+    def active(self):
+        return self._flush_task and not self._flush_task.done()
+
+    async def startup(self, app: web.Application):
+        await self.shutdown(app)
+        self._flush_event = asyncio.Event()
+        self._flush_task = await scheduler.create_task(app, self._autoflush())
+
+    async def shutdown(self, app: web.Application):
+        self._flush_event = None
+        await scheduler.cancel_task(app, self._flush_task)
+
+    def _load_objects(self):
+        with open(self._filename) as f:
+            persisted = json.load(f)
+
+        for obj in persisted:
+            self._store[obj['keys']] = obj['data']
+
+    async def _save_objects(self):
+        persisted = [{'keys': keys, 'data': content} for keys, content in self._store.items()]
+        async with aiofiles.open(self._filename, mode='w') as f:
+            await f.write(json.dumps(persisted))
+            await f.flush()
+
+    async def _autoflush(self):
+        LOGGER.info(f'Starting {self}')
+        while True:
+            try:
+                await asyncio.sleep(MIN_FLUSH_INTERVAL_S)
+                await self._save_objects()
+
+            except CancelledError:
+                await self._save_objects()
+                break
+
+            except Exception as ex:
+                LOGGER.warn(f'{self} {type(ex).__name__}({ex})')
+                continue
