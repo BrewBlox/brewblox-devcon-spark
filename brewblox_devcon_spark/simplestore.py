@@ -19,7 +19,7 @@ Keys_ = Tuple[Hashable, Hashable]
 
 LOGGER = brewblox_logger(__name__)
 
-MIN_FLUSH_INTERVAL_S = 10
+FLUSH_DELAY_S = 5
 
 
 def setup(app: web.Application):
@@ -142,6 +142,7 @@ class MultiIndexFileDict(features.ServiceFeature, MultiIndexDict):
         try:
             self.read_file()
         except FileNotFoundError:
+            LOGGER.warn(f'{self} file not found.')
             pass
         except Exception:
             LOGGER.error(f'{self} unable to read objects.')
@@ -184,8 +185,8 @@ class MultiIndexFileDict(features.ServiceFeature, MultiIndexDict):
     async def _autoflush(self):
         while True:
             try:
-                await asyncio.sleep(MIN_FLUSH_INTERVAL_S)
                 await self._changed_event.wait()
+                await asyncio.sleep(FLUSH_DELAY_S)
                 await self.write_file()
                 self._changed_event.clear()
 

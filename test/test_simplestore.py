@@ -39,7 +39,7 @@ def store():
 @pytest.fixture
 async def app(app, loop, mocker, items):
     mocker.patch(TESTED + '.open', mock_open(read_data=as_items_json(items)))
-    mocker.patch(TESTED + '.MIN_FLUSH_INTERVAL_S', 0.01)
+    mocker.patch(TESTED + '.FLUSH_DELAY_S', 0.01)
     scheduler.setup(app)
     simplestore.setup(app)
     return app
