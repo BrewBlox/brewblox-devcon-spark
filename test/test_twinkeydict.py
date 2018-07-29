@@ -56,6 +56,10 @@ async def readonly_store(app):
 
 
 def test_get_set(store, items):
+    assert not store
+    store['tri', 'ang'] = 'le'
+    assert store
+
     for left, right, value in items:
         store[left, right] = value
 

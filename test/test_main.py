@@ -26,13 +26,13 @@ def test_main(mocker, app):
 
     main.main()
 
-    assert all([
+    assert None not in [
         commander.get_commander(app),
         twinkeydict.get_object_store(app),
         device.get_controller(app),
         events.get_listener(app),
         broadcaster.get_broadcaster(app)
-    ])
+    ]
 
 
 def test_list_devices(mocker, list_device_app):
