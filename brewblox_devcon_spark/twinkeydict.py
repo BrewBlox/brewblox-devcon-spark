@@ -53,7 +53,60 @@ class TwinKeyObject():
 
 
 class TwinKeyDict(MutableMapping):
-    def __init__(self, *args, **kwargs):
+    """
+    Key/Key/Value mapping, supporting lookups with incomplete data.
+
+    Left and right keys must be unique in their own set.
+    (1, 2) and (2, 1) keysets can coexist, but (1, 2) and (1, 3) can't.
+
+    The collections.abc.MutableMapping interface is fully implemented,
+    giving it meaningful implementations for:
+    __getitem__, __setitem__, __delitem__, __iter__, __len__, __contains__,
+    __eq__, __ne__, pop, popitem, clear, update, setdefault, keys, items,
+    values, get, and set.
+    Additionally, the rename, left_key, and right_key functions are available.
+
+    None is reserved as a wildcard lookup operator. Any insert must always provide both keys,
+    but a __getitem__ or __contains__ call only has to specify either key.
+
+    When two keys are provided, but they point to different objects, a TwinKeyError is raised.
+
+    Example syntax:
+        >>> twinkey = TwinKeyDict()
+
+        # Setting and getting using both keys
+        >>> twinkey['fritz', 'froggles'] = 'frabjous'
+        >>> twinkey['fritz', 'froggles']
+        'frabjous'
+
+        # Partial lookup
+        >>> twinkey[None, 'froggles']
+        'frabjous'
+        >>> ('fritz', None) in twinkey
+        True
+
+        # Getting mixed keys causes an error
+        >>> twinkey[1, 2] = 4
+        >>> twinkey['fritz', 2]
+        Traceback (most recent call last):
+        ...
+        brewblox_devcon_spark.twinkeydict.TwinKeyError: Keys [fritz, 2] point to different objects
+
+        # Using left or right key to get the other key
+        >>> twinkey.right_key('fritz')
+        'froggles'
+        >>> twinkey.left_key('froggles')
+        'fritz'
+
+        # Iterating
+        >>> for k, v in twinkey.items():
+        ...    print(k, v)
+        ...
+        ('fritz', 'froggles') 'frabjous'
+        (1, 2) 4
+    """
+
+    def __init__(self):
         self._left_view: Dict[Hashable, TwinKeyObject] = dict()
         self._right_view: Dict[Hashable, TwinKeyObject] = dict()
 
@@ -84,7 +137,7 @@ class TwinKeyDict(MutableMapping):
 
         obj = self._left_view[left_key]
         if right_key != obj.right_key:
-            raise TwinKeyError(f'Keys [{left_key}][{right_key}] point to different objects')
+            raise TwinKeyError(f'Keys [{left_key}, {right_key}] point to different objects')
         return obj
 
     def __getitem__(self, keys: Keys_) -> Any:
@@ -132,6 +185,29 @@ class TwinKeyDict(MutableMapping):
 
 
 class TwinKeyFileDict(features.ServiceFeature, TwinKeyDict):
+    """
+    TwinKeyDict subclass to periodically flush contained objects to file.
+
+    Will attempt to read the backing file once during __init__,
+    and then add hooks to the __setitem__ and __delitem__ functions.
+
+    Whenever an item is added or deleted, TwinKeyFileDict will flush the file a few seconds later.
+    This optimizes for the scenario where data is updated in batches.
+    The collection is also saved to file when the application is shut down.
+
+    Note: modifications of objects inside the dict are not tracked.
+    Calling code may choose to explicitly flush to file by calling `write_file()`.
+
+    Example:
+        >>> twinkey = TwinKeyFileDict(app, 'myfile.json')
+        # Will be flushed to file
+        >>> twinkey[1, 2] = {'subkey': 1}
+        # Will not trigger a flush
+        >>> twinkey[1, 2]['subkey'] = 2
+        # Can safely be called whenever
+        >>> await twinkey.write_file()
+    """
+
     def __init__(self, app: web.Application, filename: str, read_only: bool=False):
         features.ServiceFeature.__init__(self, app)
         TwinKeyDict.__init__(self)
