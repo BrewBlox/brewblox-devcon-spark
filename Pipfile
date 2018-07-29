@@ -10,8 +10,6 @@ pyserial-asyncio = "*"
 construct = "*"
 deprecated = "*"
 protobuf = "*"
-tinydb = "*"
-aiotinydb = "*"
 pint = "*"
 dataclasses = "*"
 

@@ -25,7 +25,7 @@ def log_enabled():
 @pytest.fixture(autouse=True)
 def test_db():
     """
-    Automatically removes the test database file.
+    Creates a temporary database file that will be automatically removed.
     """
     f = NamedTemporaryFile(mode='w+t', encoding='utf8')
     f.write('[]')

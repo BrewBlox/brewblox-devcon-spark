@@ -72,10 +72,6 @@ def test_get_set(store, items):
         assert (left, None) in store
         assert (None, right) in store
 
-        assert store.bothkeys((left, right)) == (left, right)
-        assert store.bothkeys((left, None)) == (left, right)
-        assert store.bothkeys((None, right)) == (left, right)
-
     assert store.get(('flip', 'flop'), 'default') == 'default'
 
     store['left', 'right'] = 'update'

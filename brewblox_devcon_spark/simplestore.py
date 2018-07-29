@@ -8,7 +8,7 @@ import asyncio
 import json
 from collections.abc import MutableMapping
 from concurrent.futures import CancelledError
-from typing import Any, Dict, Hashable, Tuple
+from typing import Any, Dict, Hashable, Iterator, Tuple
 
 import aiofiles
 from aiohttp import web
@@ -57,17 +57,17 @@ class MultiIndexDict(MutableMapping):
         self._left_view: Dict[Hashable, MultiIndexObject] = dict()
         self._right_view: Dict[Hashable, MultiIndexObject] = dict()
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         # TODO(Bob): brewblox/brewblox-service#90
         return True
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._left_view)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Keys_]:
         return ((o.left_key, o.right_key) for o in self._left_view.values())
 
-    def _getobj(self, keys: Keys_) -> Any:
+    def _getobj(self, keys: Keys_) -> MultiIndexObject:
         left_key, right_key = keys
 
         if (left_key, right_key) == (None, None):
@@ -84,17 +84,19 @@ class MultiIndexDict(MutableMapping):
                 raise MultiIndexError(f'Keys [{left_key}][{right_key}] yielded different objects')
             return left
 
-    def __getitem__(self, keys: Keys_):
+    def __getitem__(self, keys: Keys_) -> Any:
         return self._getobj(keys).content
 
     def __setitem__(self, keys: Keys_, item):
         left_key, right_key = keys
         if left_key is None or right_key is None:
             raise MultiIndexError('None keys not allowed')
+
         left = self._left_view.get(left_key)
         right = self._right_view.get(right_key)
         if left is not right:
-            raise MultiIndexError(f'Mapping mismatch: [{left_key}] == {left} / [{right_key}] == {right}')
+            raise MultiIndexError(f'Mapping mismatch on existing items: {left} / {right}')
+
         obj = MultiIndexObject(left_key, right_key, item)
         self._left_view[left_key] = obj
         self._right_view[right_key] = obj
@@ -105,14 +107,10 @@ class MultiIndexDict(MutableMapping):
         del self._left_view[obj.left_key]
         del self._right_view[obj.right_key]
 
-    def bothkeys(self, keys: Keys_):
-        obj = self._getobj(keys)
-        return obj.left_key, obj.right_key
-
-    def left_key(self, right_key: Hashable):
+    def left_key(self, right_key: Hashable) -> Hashable:
         return self._right_view[right_key].left_key
 
-    def right_key(self, left_key: Hashable):
+    def right_key(self, left_key: Hashable) -> Hashable:
         return self._left_view[left_key].right_key
 
     def rename(self, keys: Keys_, new_keys: Keys_):
@@ -139,70 +137,57 @@ class MultiIndexFileDict(features.ServiceFeature, MultiIndexDict):
         self._filename: str = filename
         self._read_only: bool = read_only
         self._flush_task: asyncio.Task = None
-        self._flush_event: asyncio.Event = None
+        self._changed_event: asyncio.Event = None
 
         try:
             self.read_file()
         except FileNotFoundError:
             pass
         except Exception:
-            LOGGER.warn(f'Unable to load objects from {self._filename}')
+            LOGGER.error(f'{self} unable to read objects.')
             raise
 
     def __str__(self):
         return f'<{type(self).__name__} for {self._filename}>'
 
     def __setitem__(self, keys, item):
-        if self._read_only:
-            raise TypeError(f'{self} is read-only')
+        self._check_writable()
         MultiIndexDict.__setitem__(self, keys, item)
-        if self._flush_event:
-            self._flush_event.set()
+        if self._changed_event:
+            self._changed_event.set()
 
     def __delitem__(self, keys):
-        if self._read_only:
-            raise TypeError(f'{self} is read-only')
+        self._check_writable()
         MultiIndexDict.__delitem__(self, keys)
-        if self._flush_event:
-            self._flush_event.set()
+        if self._changed_event:
+            self._changed_event.set()
 
     @property
     def active(self):
         return self._flush_task and not self._flush_task.done()
 
-    async def startup(self, app: web.Application):
-        await self.shutdown(app)
-        if not self._read_only:
-            self._flush_event = asyncio.Event()
-            self._flush_task = await scheduler.create_task(app, self._autoflush())
-
-    async def shutdown(self, app: web.Application):
-        self._flush_event = None
-        await scheduler.cancel_task(app, self._flush_task)
+    def _check_writable(self):
+        if self._read_only:
+            raise TypeError(f'{self} is read-only')
 
     def read_file(self):
         with open(self._filename) as f:
-            persisted = json.load(f)
-
-        for obj in persisted:
-            MultiIndexDict.__setitem__(self, obj['keys'], obj['data'])
+            for obj in json.load(f):
+                MultiIndexDict.__setitem__(self, obj['keys'], obj['data'])
 
     async def write_file(self):
-        if self._read_only:
-            raise TypeError(f'{self} is read-only')
+        self._check_writable()
         persisted = [{'keys': keys, 'data': content} for keys, content in self.items()]
         async with aiofiles.open(self._filename, mode='w') as f:
             await f.write(json.dumps(persisted))
-            await f.flush()
 
     async def _autoflush(self):
-        LOGGER.info(f'Starting {self}')
         while True:
             try:
                 await asyncio.sleep(MIN_FLUSH_INTERVAL_S)
-                await self._flush_event.wait()
+                await self._changed_event.wait()
                 await self.write_file()
-                self._flush_event.clear()
+                self._changed_event.clear()
 
             except CancelledError:
                 await self.write_file()
@@ -211,3 +196,13 @@ class MultiIndexFileDict(features.ServiceFeature, MultiIndexDict):
             except Exception as ex:
                 LOGGER.warn(f'{self} {type(ex).__name__}({ex})')
                 continue
+
+    async def startup(self, app: web.Application):
+        await self.shutdown(app)
+        if not self._read_only:
+            self._changed_event = asyncio.Event()
+            self._flush_task = await scheduler.create_task(app, self._autoflush())
+
+    async def shutdown(self, app: web.Application):
+        self._changed_event = None
+        await scheduler.cancel_task(app, self._flush_task)
