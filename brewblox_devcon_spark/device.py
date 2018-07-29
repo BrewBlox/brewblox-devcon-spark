@@ -12,7 +12,7 @@ from aiohttp import web
 from brewblox_service import brewblox_logger, features
 
 from brewblox_codec_spark import codec
-from brewblox_devcon_spark import commander, commands, datastore
+from brewblox_devcon_spark import commander, commands, simplestore
 from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                             PROFILE_LIST_KEY, SYSTEM_ID_KEY)
@@ -22,7 +22,7 @@ CONTROLLER_ID_KEY = 'controller_id'
 OBJECT_LINK_POSTFIX = '<>'
 ServiceId_ = str
 ControllerId_ = int
-FindIdFunc_ = Callable[[datastore.DataStore, Any], Awaitable[Any]]
+FindIdFunc_ = Callable[[simplestore.MultiIndexDict, Any], Awaitable[Any]]
 
 # Keys are imported from commands for use in this module
 # but also to allow other modules (eg. API) to import them from here
@@ -65,8 +65,8 @@ class SparkController(features.ServiceFeature):
 
         self._name = name
         self._commander: commander.SparkCommander = None
-        self._object_store: datastore.DataStore = None
-        self._system_store: datastore.DataStore = None
+        self._object_store: simplestore.MultiIndexDict = None
+        self._system_store: simplestore.MultiIndexDict = None
         self._codec: codec.Codec = None
 
     @property
@@ -75,8 +75,8 @@ class SparkController(features.ServiceFeature):
 
     async def startup(self, app: web.Application):
         self._commander = commander.get_commander(app)
-        self._object_store = datastore.get_object_store(app)
-        self._system_store = datastore.get_system_store(app)
+        self._object_store = simplestore.get_object_store(app)
+        self._system_store = simplestore.get_system_store(app)
         self._codec = codec.get_codec(app)
 
     async def shutdown(self, *_):
@@ -114,7 +114,7 @@ class SparkController(features.ServiceFeature):
         return await self._process_data(processor_func, content)
 
     async def find_controller_id(self,
-                                 store: datastore.DataStore,
+                                 store: simplestore.MultiIndexDict,
                                  input_id: Union[ServiceId_, ControllerId_]
                                  ) -> Awaitable[ControllerId_]:
         """
@@ -124,15 +124,13 @@ class SparkController(features.ServiceFeature):
         if isinstance(input_id, ControllerId_):
             return input_id
 
-        obj = await store.find_unique(SERVICE_ID_KEY, input_id)
-
-        if not obj:
+        try:
+            return store.right_key(input_id)
+        except KeyError:
             raise ValueError(f'Service ID [{input_id}] not found in {store}')
 
-        return obj[CONTROLLER_ID_KEY]
-
     async def find_service_id(self,
-                              store: datastore.DataStore,
+                              store: simplestore.MultiIndexDict,
                               input_id: Union[ServiceId_, ControllerId_]
                               ) -> Awaitable[ServiceId_]:
         """
@@ -142,30 +140,19 @@ class SparkController(features.ServiceFeature):
         if isinstance(input_id, ServiceId_):
             return input_id
 
-        service_id = None
-
         try:
-            # Get first item from data store with correct controller ID,
-            # and that has a service ID defined
-            objects = await store.find(CONTROLLER_ID_KEY, input_id)
-            service_id = next(o.get(SERVICE_ID_KEY) for o in objects)
-        except StopIteration:
+            service_id = store.left_key(input_id)
+        except KeyError:
             # If service ID not found, randomly generate one
             service_id = random_string()
-            await store.insert_unique(
-                SERVICE_ID_KEY,
-                {
-                    SERVICE_ID_KEY: service_id,
-                    CONTROLLER_ID_KEY: input_id
-                }
-            )
+            store[service_id, input_id] = dict()
 
         return service_id
 
     async def _resolve_id(self, finder_func: FindIdFunc_, content: dict) -> Awaitable[dict]:
         objects_to_process = self._get_content_objects(content)
 
-        async def resolve_key(key: str, store: datastore.DataStore):
+        async def resolve_key(key: str, store: simplestore.MultiIndexDict):
             for obj in objects_to_process:
                 with suppress(KeyError):
                     obj[key] = await finder_func(self, store, obj[key])

@@ -10,7 +10,7 @@ import re
 from aiohttp import web
 from brewblox_service import brewblox_logger
 
-from brewblox_devcon_spark import datastore
+from brewblox_devcon_spark import simplestore
 from brewblox_devcon_spark.api import API_ID_KEY
 from brewblox_devcon_spark.device import CONTROLLER_ID_KEY, SERVICE_ID_KEY
 
@@ -41,25 +41,15 @@ def validate_service_id(id: str):
 class AliasApi():
 
     def __init__(self, app: web.Application):
-        self._store = datastore.get_object_store(app)
+        self._store = simplestore.get_object_store(app)
 
     async def create(self, service_id: str, controller_id: int) -> dict:
         validate_service_id(service_id)
-        await self._store.insert_unique(
-            id_key=SERVICE_ID_KEY,
-            obj={
-                SERVICE_ID_KEY: service_id,
-                CONTROLLER_ID_KEY: controller_id
-            }
-        )
+        self._store[service_id, controller_id] = dict()
 
     async def update(self, existing_id: str, new_id: str) -> dict:
         validate_service_id(new_id)
-        await self._store.update_unique(
-            id_key=SERVICE_ID_KEY,
-            id_val=existing_id,
-            obj={SERVICE_ID_KEY: new_id}
-        )
+        self._store.rename((existing_id, None), (new_id, None))
 
 
 @routes.post('/aliases')

@@ -7,7 +7,7 @@ from asynctest import CoroutineMock
 from brewblox_service import features, scheduler
 
 from brewblox_codec_spark import codec
-from brewblox_devcon_spark import commander, commander_sim, datastore, device
+from brewblox_devcon_spark import commander, commander_sim, device, simplestore
 
 TESTED = device.__name__
 
@@ -28,7 +28,7 @@ def generate_obj():
 @pytest.fixture
 def app(app):
     """App + controller routes"""
-    datastore.setup(app)
+    simplestore.setup(app)
     commander_sim.setup(app)
     scheduler.setup(app)
     codec.setup(app)
@@ -48,7 +48,7 @@ def ctrl(app):
 
 @pytest.fixture
 async def store(app, client):
-    return datastore.get_object_store(app)
+    return simplestore.get_object_store(app)
 
 
 def test_setup(app, app_config):
@@ -67,10 +67,7 @@ async def test_transcoding(app, client, cmder, store, ctrl, mocker):
         'object_data': obj_data
     }
 
-    await store.insert({
-        'service_id': 'alias',
-        'controller_id': 200
-    })
+    store['alias', 200] = dict()
 
     encode_spy = mocker.spy(c, 'encode')
     decode_spy = mocker.spy(c, 'decode')
@@ -86,10 +83,7 @@ async def test_list_transcoding(app, client, cmder, store, ctrl, mocker):
     obj_type, obj_data = generate_obj()
 
     for i in range(5):
-        await store.insert({
-            'service_id': f'obj{i}',
-            'controller_id': 10 + i
-        })
+        store[f'obj{i}', 10+i] = dict()
 
         await ctrl.create_object({
             'object_id': f'obj{i}',
@@ -109,24 +103,17 @@ async def test_list_transcoding(app, client, cmder, store, ctrl, mocker):
 async def test_resolve_id(app, client, store, mocker, ctrl):
     random_mock = mocker.patch(TESTED + '.random_string')
     random_mock.return_value = 'totally random string'
-    await store.insert_multiple([
-        {
-            'service_id': 'alias',
-            'controller_id': 123
-        },
-        {
-            'service_id': '4-2',
-            'controller_id': 24
-        }
-    ])
 
-    assert await ctrl.find_controller_id(ctrl._object_store, 'alias') == 123
-    assert await ctrl.find_controller_id(ctrl._object_store, 840) == 840
+    store['alias', 123] = dict()
+    store['4-2', 24] = dict()
 
-    assert await ctrl.find_service_id(ctrl._object_store, 123) == 'alias'
-    assert await ctrl.find_service_id(ctrl._object_store, 'testey') == 'testey'
+    assert await ctrl.find_controller_id(store, 'alias') == 123
+    assert await ctrl.find_controller_id(store, 840) == 840
+
+    assert await ctrl.find_service_id(store, 123) == 'alias'
+    assert await ctrl.find_service_id(store, 'testey') == 'testey'
     # Service ID not found: create placeholder
-    assert await ctrl.find_service_id(ctrl._object_store, 66) == 'totally random string'
+    assert await ctrl.find_service_id(store, 66) == 'totally random string'
 
 
 async def test_resolve_links(app, client, store, mocker, ctrl):

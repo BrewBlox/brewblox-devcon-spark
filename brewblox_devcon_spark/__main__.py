@@ -6,10 +6,10 @@ from brewblox_service import brewblox_logger, events, scheduler, service
 
 from brewblox_codec_spark import codec
 from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
-                                   communication, datastore, device)
-from brewblox_devcon_spark.api import (alias_api, conflict_api, debug_api,
-                                       error_response, object_api, profile_api,
-                                       remote_api, system_api)
+                                   communication, device, simplestore)
+from brewblox_devcon_spark.api import (alias_api, debug_api, error_response,
+                                       object_api, profile_api, remote_api,
+                                       system_api)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -75,14 +75,13 @@ def main():
     events.setup(app)
 
     codec.setup(app)
-    datastore.setup(app)
+    simplestore.setup(app)
     device.setup(app)
     broadcaster.setup(app)
 
     error_response.setup(app)
     debug_api.setup(app)
     alias_api.setup(app)
-    conflict_api.setup(app)
     object_api.setup(app)
     profile_api.setup(app)
     system_api.setup(app)

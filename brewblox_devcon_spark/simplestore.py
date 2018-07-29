@@ -15,17 +15,30 @@ from aiohttp import web
 from brewblox_service import brewblox_logger, features, scheduler
 from dataclasses import dataclass
 
+Keys_ = Tuple[Hashable, Hashable]
+
 LOGGER = brewblox_logger(__name__)
 
 MIN_FLUSH_INTERVAL_S = 10
 
 
 def setup(app: web.Application):
-    features.add(app, MultiIndexFileDict(app, app['config']['database']))
+    config = app['config']
+    features.add(app,
+                 MultiIndexFileDict(app, config['database']),
+                 key='simple_object_store')
+
+    features.add(app,
+                 MultiIndexFileDict(app, config['system_database'], read_only=True),
+                 key='simple_system_store')
 
 
-def get_store(app: web.Application):
-    return features.get(app, MultiIndexFileDict)
+def get_object_store(app) -> 'MultiIndexDict':
+    return features.get(app, key='simple_object_store')
+
+
+def get_system_store(app) -> 'MultiIndexDict':
+    return features.get(app, key='simple_system_store')
 
 
 class MultiIndexError(Exception):
@@ -54,7 +67,7 @@ class MultiIndexDict(MutableMapping):
     def __iter__(self):
         return ((o.left_key, o.right_key) for o in self._left_view.values())
 
-    def _getobj(self, keys: Tuple[Hashable, Hashable]) -> Any:
+    def _getobj(self, keys: Keys_) -> Any:
         left_key, right_key = keys
 
         if (left_key, right_key) == (None, None):
@@ -71,53 +84,84 @@ class MultiIndexDict(MutableMapping):
                 raise MultiIndexError(f'Keys [{left_key}][{right_key}] yielded different objects')
             return left
 
-    def __getitem__(self, keys):
+    def __getitem__(self, keys: Keys_):
         return self._getobj(keys).content
 
-    def __setitem__(self, keys: Tuple[Hashable, Hashable], item):
+    def __setitem__(self, keys: Keys_, item):
         left_key, right_key = keys
-        if (left_key, right_key) == (None, None):
-            raise MultiIndexError('None/None insertion not allowed')
+        if left_key is None or right_key is None:
+            raise MultiIndexError('None keys not allowed')
         left = self._left_view.get(left_key)
         right = self._right_view.get(right_key)
         if left is not right:
-            raise MultiIndexError(f'Mapping mismatch: [{left_key}][{right_key}] == {left} / {right}')
-        self._left_view[left_key] = self._right_view[right_key] = MultiIndexObject(left_key, right_key, item)
+            raise MultiIndexError(f'Mapping mismatch: [{left_key}] == {left} / [{right_key}] == {right}')
+        obj = MultiIndexObject(left_key, right_key, item)
+        self._left_view[left_key] = obj
+        self._right_view[right_key] = obj
 
-    def __delitem__(self, keys: Tuple[Hashable, Hashable]):
+    def __delitem__(self, keys: Keys_):
         left_key, right_key = keys
         obj = self._getobj(keys)
         del self._left_view[obj.left_key]
         del self._right_view[obj.right_key]
 
-    def bothkeys(self, keys: Tuple[Hashable, Hashable]):
+    def bothkeys(self, keys: Keys_):
         obj = self._getobj(keys)
         return obj.left_key, obj.right_key
 
+    def left_key(self, right_key: Hashable):
+        return self._right_view[right_key].left_key
+
+    def right_key(self, left_key: Hashable):
+        return self._left_view[left_key].right_key
+
+    def rename(self, keys: Keys_, new_keys: Keys_):
+        if new_keys in self:
+            raise MultiIndexError(f'Already contains {new_keys}')
+
+        obj = self._getobj(keys)
+        left, right = new_keys
+        left = left if left is not None else obj.left_key
+        right = right if right is not None else obj.right_key
+
+        try:
+            del self[keys]
+            self[left, right] = obj.content
+        except MultiIndexError:  # pragma: no cover
+            self[obj.left_key, obj.right_key] = obj.content
+
 
 class MultiIndexFileDict(features.ServiceFeature, MultiIndexDict):
-    def __init__(self, app: web.Application, filename: str):
+    def __init__(self, app: web.Application, filename: str, read_only: bool=False):
         features.ServiceFeature.__init__(self, app)
         MultiIndexDict.__init__(self)
 
         self._filename: str = filename
+        self._read_only: bool = read_only
         self._flush_task: asyncio.Task = None
         self._flush_event: asyncio.Event = None
 
         try:
             self.read_file()
         except FileNotFoundError:
+            pass
+        except Exception:
             LOGGER.warn(f'Unable to load objects from {self._filename}')
+            raise
 
     def __str__(self):
         return f'<{type(self).__name__} for {self._filename}>'
 
     def __setitem__(self, keys, item):
+        if self._read_only:
+            raise TypeError(f'{self} is read-only')
         MultiIndexDict.__setitem__(self, keys, item)
         if self._flush_event:
             self._flush_event.set()
 
     def __delitem__(self, keys):
+        if self._read_only:
+            raise TypeError(f'{self} is read-only')
         MultiIndexDict.__delitem__(self, keys)
         if self._flush_event:
             self._flush_event.set()
@@ -128,8 +172,9 @@ class MultiIndexFileDict(features.ServiceFeature, MultiIndexDict):
 
     async def startup(self, app: web.Application):
         await self.shutdown(app)
-        self._flush_event = asyncio.Event()
-        self._flush_task = await scheduler.create_task(app, self._autoflush())
+        if not self._read_only:
+            self._flush_event = asyncio.Event()
+            self._flush_task = await scheduler.create_task(app, self._autoflush())
 
     async def shutdown(self, app: web.Application):
         self._flush_event = None
@@ -143,6 +188,8 @@ class MultiIndexFileDict(features.ServiceFeature, MultiIndexDict):
             MultiIndexDict.__setitem__(self, obj['keys'], obj['data'])
 
     async def write_file(self):
+        if self._read_only:
+            raise TypeError(f'{self} is read-only')
         persisted = [{'keys': keys, 'data': content} for keys, content in self.items()]
         async with aiofiles.open(self._filename, mode='w') as f:
             await f.write(json.dumps(persisted))
