@@ -8,6 +8,7 @@ import asyncio
 import json
 from collections.abc import MutableMapping
 from concurrent.futures import CancelledError
+from contextlib import suppress
 from typing import Any, Dict, Hashable, Iterator, Tuple
 
 import aiofiles
@@ -25,41 +26,43 @@ FLUSH_DELAY_S = 5
 def setup(app: web.Application):
     config = app['config']
     features.add(app,
-                 MultiIndexFileDict(app, config['database']),
-                 key='simple_object_store')
-
+                 TwinKeyFileDict(app, config['database']),
+                 key='object_store')
     features.add(app,
-                 MultiIndexFileDict(app, config['system_database'], read_only=True),
-                 key='simple_system_store')
+                 TwinKeyFileDict(app, config['system_database'], read_only=True),
+                 key='system_store')
 
 
-def get_object_store(app) -> 'MultiIndexDict':
-    return features.get(app, key='simple_object_store')
+def get_object_store(app) -> 'TwinKeyDict':
+    return features.get(app, key='object_store')
 
 
-def get_system_store(app) -> 'MultiIndexDict':
-    return features.get(app, key='simple_system_store')
+def get_system_store(app) -> 'TwinKeyDict':
+    return features.get(app, key='system_store')
 
 
-class MultiIndexError(Exception):
+class TwinKeyError(Exception):
     pass
 
 
 @dataclass(frozen=True)
-class MultiIndexObject():
+class TwinKeyObject():
     left_key: Hashable
     right_key: Hashable
     content: Any
 
 
-class MultiIndexDict(MutableMapping):
+class TwinKeyDict(MutableMapping):
     def __init__(self, *args, **kwargs):
-        self._left_view: Dict[Hashable, MultiIndexObject] = dict()
-        self._right_view: Dict[Hashable, MultiIndexObject] = dict()
+        self._left_view: Dict[Hashable, TwinKeyObject] = dict()
+        self._right_view: Dict[Hashable, TwinKeyObject] = dict()
 
     def __bool__(self) -> bool:
         # TODO(Bob): brewblox/brewblox-service#90
         return True
+
+    def __repr__(self) -> str:
+        return str(self._left_view.values())
 
     def __len__(self) -> int:
         return len(self._left_view)
@@ -67,42 +70,39 @@ class MultiIndexDict(MutableMapping):
     def __iter__(self) -> Iterator[Keys_]:
         return ((o.left_key, o.right_key) for o in self._left_view.values())
 
-    def _getobj(self, keys: Keys_) -> MultiIndexObject:
+    def _getobj(self, keys: Keys_) -> TwinKeyObject:
         left_key, right_key = keys
 
         if (left_key, right_key) == (None, None):
-            raise MultiIndexError('None/None lookup not allowed')
+            raise TwinKeyError('[None, None] lookup not allowed')
 
         if left_key is None:
             return self._right_view[right_key]
-        elif right_key is None:
+
+        if right_key is None:
             return self._left_view[left_key]
-        else:
-            left = self._left_view[left_key]
-            right = self._right_view[right_key]
-            if left is not right:
-                raise MultiIndexError(f'Keys [{left_key}][{right_key}] yielded different objects')
-            return left
+
+        obj = self._left_view[left_key]
+        if right_key != obj.right_key:
+            raise TwinKeyError(f'Keys [{left_key}][{right_key}] point to different objects')
+        return obj
 
     def __getitem__(self, keys: Keys_) -> Any:
         return self._getobj(keys).content
 
     def __setitem__(self, keys: Keys_, item):
+        if None in keys:
+            raise TwinKeyError('None keys not allowed')
+
+        with suppress(KeyError):
+            # Checks whether key combo either matches, or does not exist
+            self._getobj(keys)
+
         left_key, right_key = keys
-        if left_key is None or right_key is None:
-            raise MultiIndexError('None keys not allowed')
-
-        left = self._left_view.get(left_key)
-        right = self._right_view.get(right_key)
-        if left is not right:
-            raise MultiIndexError(f'Mapping mismatch on existing items: {left} / {right}')
-
-        obj = MultiIndexObject(left_key, right_key, item)
-        self._left_view[left_key] = obj
-        self._right_view[right_key] = obj
+        obj = TwinKeyObject(left_key, right_key, item)
+        self._left_view[left_key] = self._right_view[right_key] = obj
 
     def __delitem__(self, keys: Keys_):
-        left_key, right_key = keys
         obj = self._getobj(keys)
         del self._left_view[obj.left_key]
         del self._right_view[obj.right_key]
@@ -113,26 +113,28 @@ class MultiIndexDict(MutableMapping):
     def right_key(self, left_key: Hashable) -> Hashable:
         return self._left_view[left_key].right_key
 
-    def rename(self, keys: Keys_, new_keys: Keys_):
+    def rename(self, old_keys: Keys_, new_keys: Keys_):
         if new_keys in self:
-            raise MultiIndexError(f'Already contains {new_keys}')
+            raise TwinKeyError(f'Already contains {new_keys}')
 
-        obj = self._getobj(keys)
-        left, right = new_keys
-        left = left if left is not None else obj.left_key
-        right = right if right is not None else obj.right_key
+        obj = self._getobj(old_keys)
+        new_left, new_right = new_keys
+        if new_left is None:
+            new_left = obj.left_key
+        if new_right is None:
+            new_right = obj.right_key
 
         try:
-            del self[keys]
-            self[left, right] = obj.content
-        except MultiIndexError:  # pragma: no cover
+            del self[old_keys]
+            self[new_left, new_right] = obj.content
+        except TwinKeyError:  # pragma: no cover
             self[obj.left_key, obj.right_key] = obj.content
 
 
-class MultiIndexFileDict(features.ServiceFeature, MultiIndexDict):
+class TwinKeyFileDict(features.ServiceFeature, TwinKeyDict):
     def __init__(self, app: web.Application, filename: str, read_only: bool=False):
         features.ServiceFeature.__init__(self, app)
-        MultiIndexDict.__init__(self)
+        TwinKeyDict.__init__(self)
 
         self._filename: str = filename
         self._read_only: bool = read_only
@@ -143,7 +145,6 @@ class MultiIndexFileDict(features.ServiceFeature, MultiIndexDict):
             self.read_file()
         except FileNotFoundError:
             LOGGER.warn(f'{self} file not found.')
-            pass
         except Exception:
             LOGGER.error(f'{self} unable to read objects.')
             raise
@@ -153,13 +154,13 @@ class MultiIndexFileDict(features.ServiceFeature, MultiIndexDict):
 
     def __setitem__(self, keys, item):
         self._check_writable()
-        MultiIndexDict.__setitem__(self, keys, item)
+        TwinKeyDict.__setitem__(self, keys, item)
         if self._changed_event:
             self._changed_event.set()
 
     def __delitem__(self, keys):
         self._check_writable()
-        MultiIndexDict.__delitem__(self, keys)
+        TwinKeyDict.__delitem__(self, keys)
         if self._changed_event:
             self._changed_event.set()
 
@@ -174,7 +175,7 @@ class MultiIndexFileDict(features.ServiceFeature, MultiIndexDict):
     def read_file(self):
         with open(self._filename) as f:
             for obj in json.load(f):
-                MultiIndexDict.__setitem__(self, obj['keys'], obj['data'])
+                TwinKeyDict.__setitem__(self, obj['keys'], obj['data'])
 
     async def write_file(self):
         self._check_writable()
@@ -196,7 +197,6 @@ class MultiIndexFileDict(features.ServiceFeature, MultiIndexDict):
 
             except Exception as ex:
                 LOGGER.warn(f'{self} {type(ex).__name__}({ex})')
-                continue
 
     async def startup(self, app: web.Application):
         await self.shutdown(app)

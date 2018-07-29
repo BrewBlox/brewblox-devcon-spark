@@ -5,7 +5,7 @@ REST API for Spark objects
 from aiohttp import web
 from brewblox_service import brewblox_logger
 
-from brewblox_devcon_spark import device, simplestore
+from brewblox_devcon_spark import device, twinkeydict
 from brewblox_devcon_spark.api import (API_DATA_KEY, API_ID_KEY, API_TYPE_KEY,
                                        alias_api)
 from brewblox_devcon_spark.device import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
@@ -24,7 +24,7 @@ class ObjectApi():
 
     def __init__(self, app: web.Application):
         self._ctrl: device.SparkController = device.get_controller(app)
-        self._store: simplestore.MultiIndexDict = simplestore.get_object_store(app)
+        self._store: twinkeydict.TwinKeyDict = twinkeydict.get_object_store(app)
 
     async def create(self,
                      input_id: str,

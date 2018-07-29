@@ -9,9 +9,9 @@ from unittest.mock import mock_open
 import pytest
 from brewblox_service import scheduler
 
-from brewblox_devcon_spark import simplestore
+from brewblox_devcon_spark import twinkeydict
 
-TESTED = simplestore.__name__
+TESTED = twinkeydict.__name__
 
 
 @pytest.fixture
@@ -33,7 +33,7 @@ def as_items_json(items):
 
 @pytest.fixture
 def store():
-    return simplestore.MultiIndexDict()
+    return twinkeydict.TwinKeyDict()
 
 
 @pytest.fixture
@@ -41,18 +41,18 @@ async def app(app, loop, mocker, items):
     mocker.patch(TESTED + '.open', mock_open(read_data=as_items_json(items)))
     mocker.patch(TESTED + '.FLUSH_DELAY_S', 0.01)
     scheduler.setup(app)
-    simplestore.setup(app)
+    twinkeydict.setup(app)
     return app
 
 
 @pytest.fixture
 async def file_store(app):
-    return simplestore.get_object_store(app)
+    return twinkeydict.get_object_store(app)
 
 
 @pytest.fixture
 async def readonly_store(app):
-    return simplestore.get_system_store(app)
+    return twinkeydict.get_system_store(app)
 
 
 def test_get_set(store, items):
@@ -78,23 +78,23 @@ def test_get_set(store, items):
     assert store['left', 'right'] == 'update'
 
     # __getitem__ mismatched keys
-    with pytest.raises(simplestore.MultiIndexError):
+    with pytest.raises(twinkeydict.TwinKeyError):
         assert store['same', 'right'] == 'no'
 
     # __setitem__ mismatched keys
-    with pytest.raises(simplestore.MultiIndexError):
+    with pytest.raises(twinkeydict.TwinKeyError):
         store['left', 2] = 'mismatch'
 
     # get mismatched keys
-    with pytest.raises(simplestore.MultiIndexError):
+    with pytest.raises(twinkeydict.TwinKeyError):
         store.get(('left', 2))
 
     # get None/None
-    with pytest.raises(simplestore.MultiIndexError):
+    with pytest.raises(twinkeydict.TwinKeyError):
         assert store[None, None] == 'no'
 
     # set None/None
-    with pytest.raises(simplestore.MultiIndexError):
+    with pytest.raises(twinkeydict.TwinKeyError):
         store[None, None] = 'pancakes'
 
 
@@ -130,10 +130,10 @@ def test_rename(store):
     store.rename(('blobber', 'blibber'), ('something', 'different'))
     assert store['something', 'different']
 
-    with pytest.raises(simplestore.MultiIndexError):
+    with pytest.raises(twinkeydict.TwinKeyError):
         store.rename(('something', 'different'), (None, None))
 
-    with pytest.raises(simplestore.MultiIndexError):
+    with pytest.raises(twinkeydict.TwinKeyError):
         store.rename((None, None), ('something', 'different'))
 
     assert store['something', 'different']
@@ -155,7 +155,7 @@ def test_read_file(app, file_store, mocker, items):
 
 
 async def test_flush_lifecycle(app, client, store, test_db, mocker):
-    floosh = simplestore.MultiIndexFileDict(app, test_db)
+    floosh = twinkeydict.TwinKeyFileDict(app, test_db)
     save_spy = mocker.spy(floosh, 'write_file')
 
     assert not floosh.active
@@ -177,7 +177,7 @@ async def test_no_file(app, client, mocker):
     open_mock = mocker.patch(TESTED + '.open')
     open_mock.side_effect = FileNotFoundError
 
-    storey = simplestore.MultiIndexFileDict(app, 'filey')
+    storey = twinkeydict.TwinKeyFileDict(app, 'filey')
     assert open_mock.call_count == 1
     assert len(storey) == 0
 
@@ -187,7 +187,7 @@ async def test_load_error(app, client, mocker):
     open_mock.side_effect = RuntimeError
 
     with pytest.raises(RuntimeError):
-        simplestore.MultiIndexFileDict(app, 'filey')
+        twinkeydict.TwinKeyFileDict(app, 'filey')
     assert open_mock.call_count == 1
 
 

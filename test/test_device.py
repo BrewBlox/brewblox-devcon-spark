@@ -7,7 +7,7 @@ from asynctest import CoroutineMock
 from brewblox_service import features, scheduler
 
 from brewblox_codec_spark import codec
-from brewblox_devcon_spark import commander, commander_sim, device, simplestore
+from brewblox_devcon_spark import commander, commander_sim, device, twinkeydict
 
 TESTED = device.__name__
 
@@ -28,7 +28,7 @@ def generate_obj():
 @pytest.fixture
 def app(app):
     """App + controller routes"""
-    simplestore.setup(app)
+    twinkeydict.setup(app)
     commander_sim.setup(app)
     scheduler.setup(app)
     codec.setup(app)
@@ -48,7 +48,7 @@ def ctrl(app):
 
 @pytest.fixture
 async def store(app, client):
-    return simplestore.get_object_store(app)
+    return twinkeydict.get_object_store(app)
 
 
 def test_setup(app, app_config):

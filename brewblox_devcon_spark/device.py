@@ -12,7 +12,7 @@ from aiohttp import web
 from brewblox_service import brewblox_logger, features
 
 from brewblox_codec_spark import codec
-from brewblox_devcon_spark import commander, commands, simplestore
+from brewblox_devcon_spark import commander, commands, twinkeydict
 from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                             PROFILE_LIST_KEY, SYSTEM_ID_KEY)
@@ -22,7 +22,7 @@ CONTROLLER_ID_KEY = 'controller_id'
 OBJECT_LINK_POSTFIX = '<>'
 ServiceId_ = str
 ControllerId_ = int
-FindIdFunc_ = Callable[[simplestore.MultiIndexDict, Any], Awaitable[Any]]
+FindIdFunc_ = Callable[[twinkeydict.TwinKeyDict, Any], Awaitable[Any]]
 
 # Keys are imported from commands for use in this module
 # but also to allow other modules (eg. API) to import them from here
@@ -65,8 +65,8 @@ class SparkController(features.ServiceFeature):
 
         self._name = name
         self._commander: commander.SparkCommander = None
-        self._object_store: simplestore.MultiIndexDict = None
-        self._system_store: simplestore.MultiIndexDict = None
+        self._object_store: twinkeydict.TwinKeyDict = None
+        self._system_store: twinkeydict.TwinKeyDict = None
         self._codec: codec.Codec = None
 
     @property
@@ -75,8 +75,8 @@ class SparkController(features.ServiceFeature):
 
     async def startup(self, app: web.Application):
         self._commander = commander.get_commander(app)
-        self._object_store = simplestore.get_object_store(app)
-        self._system_store = simplestore.get_system_store(app)
+        self._object_store = twinkeydict.get_object_store(app)
+        self._system_store = twinkeydict.get_system_store(app)
         self._codec = codec.get_codec(app)
 
     async def shutdown(self, *_):
@@ -114,7 +114,7 @@ class SparkController(features.ServiceFeature):
         return await self._process_data(processor_func, content)
 
     async def find_controller_id(self,
-                                 store: simplestore.MultiIndexDict,
+                                 store: twinkeydict.TwinKeyDict,
                                  input_id: Union[ServiceId_, ControllerId_]
                                  ) -> Awaitable[ControllerId_]:
         """
@@ -130,7 +130,7 @@ class SparkController(features.ServiceFeature):
             raise ValueError(f'Service ID [{input_id}] not found in {store}')
 
     async def find_service_id(self,
-                              store: simplestore.MultiIndexDict,
+                              store: twinkeydict.TwinKeyDict,
                               input_id: Union[ServiceId_, ControllerId_]
                               ) -> Awaitable[ServiceId_]:
         """
@@ -152,7 +152,7 @@ class SparkController(features.ServiceFeature):
     async def _resolve_id(self, finder_func: FindIdFunc_, content: dict) -> Awaitable[dict]:
         objects_to_process = self._get_content_objects(content)
 
-        async def resolve_key(key: str, store: simplestore.MultiIndexDict):
+        async def resolve_key(key: str, store: twinkeydict.TwinKeyDict):
             for obj in objects_to_process:
                 with suppress(KeyError):
                     obj[key] = await finder_func(self, store, obj[key])
