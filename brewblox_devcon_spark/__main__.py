@@ -27,7 +27,7 @@ def create_parser(default_name='spark'):
     parser.add_argument('--device-url-port',
                         help='Spark port when accessing a device over WiFi. [%(default)s]',
                         type=int,
-                        default=6666)
+                        default=8332)
     parser.add_argument('--device-url',
                         help='Spark device URL. Takes precedence over serial connections. [%(default)s]')
     parser.add_argument('--device-id',
@@ -39,7 +39,7 @@ def create_parser(default_name='spark'):
     parser.add_argument('--broadcast-interval',
                         help='Interval (in seconds) between broadcasts of controller state.'
                         'Set to a value <= 0 to disable broadcasting. [%(default)s]',
-                        type=int,
+                        type=float,
                         default=5)
     parser.add_argument('--broadcast-exchange',
                         help='Eventbus exchange to which controller state should be broadcasted. [%(default)s]',

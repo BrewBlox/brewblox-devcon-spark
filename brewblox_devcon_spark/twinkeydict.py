@@ -111,8 +111,7 @@ class TwinKeyDict(MutableMapping):
         self._right_view: Dict[Hashable, TwinKeyObject] = dict()
 
     def __bool__(self) -> bool:
-        # TODO(Bob): brewblox/brewblox-service#90
-        return True
+        return bool(self._left_view)
 
     def __repr__(self) -> str:
         return str(self._left_view.values())
@@ -177,11 +176,8 @@ class TwinKeyDict(MutableMapping):
         if new_right is None:
             new_right = obj.right_key
 
-        try:
-            del self[old_keys]
-            self[new_left, new_right] = obj.content
-        except TwinKeyError:  # pragma: no cover
-            self[obj.left_key, obj.right_key] = obj.content
+        del self[old_keys]
+        self[new_left, new_right] = obj.content
 
 
 class TwinKeyFileDict(features.ServiceFeature, TwinKeyDict):
