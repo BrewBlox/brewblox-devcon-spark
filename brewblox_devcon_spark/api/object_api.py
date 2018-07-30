@@ -5,12 +5,12 @@ REST API for Spark objects
 from aiohttp import web
 from brewblox_service import brewblox_logger
 
-from brewblox_devcon_spark import datastore, device
+from brewblox_devcon_spark import device, twinkeydict
 from brewblox_devcon_spark.api import (API_DATA_KEY, API_ID_KEY, API_TYPE_KEY,
                                        alias_api)
 from brewblox_devcon_spark.device import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                           OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
-                                          PROFILE_LIST_KEY, SERVICE_ID_KEY)
+                                          PROFILE_LIST_KEY)
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -24,7 +24,7 @@ class ObjectApi():
 
     def __init__(self, app: web.Application):
         self._ctrl: device.SparkController = device.get_controller(app)
-        self._store: datastore.DataStore = datastore.get_object_store(app)
+        self._store: twinkeydict.TwinKeyDict = twinkeydict.get_object_store(app)
 
     async def create(self,
                      input_id: str,
@@ -48,13 +48,7 @@ class ObjectApi():
 
         try:
             # Update service ID with user-determined service ID
-            await self._store.update_unique(
-                id_key=SERVICE_ID_KEY,
-                id_val=created_id,
-                obj={
-                    SERVICE_ID_KEY: input_id
-                }
-            )
+            self._store.rename((created_id, None), (input_id, None))
 
             # Data store was updated
             # We can now say a new object was created with user-determined ID
@@ -62,7 +56,7 @@ class ObjectApi():
 
         except Exception as ex:
             # Failed to update, we'll stick with auto-assigned ID
-            LOGGER.warn(f'Failed to update datastore after create: {ex}')
+            LOGGER.warn(f'Failed to update datastore after create: {type(ex).__name__}({ex})')
 
         return {
             API_ID_KEY: created_id,
@@ -118,10 +112,7 @@ class ObjectApi():
             OBJECT_ID_KEY: input_id
         })
 
-        await self._store.delete(
-            id_key=SERVICE_ID_KEY,
-            id_val=input_id
-        )
+        del self._store[input_id, None]
 
         return {
             API_ID_KEY: input_id

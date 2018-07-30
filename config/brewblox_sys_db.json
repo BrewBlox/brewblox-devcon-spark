@@ -1,8 +1,9 @@
-{
-    "_default": {
-        "1": {
-            "controller_id": 2,
-            "service_id": "onewirebus"
-        }
+[
+    {
+        "keys": [
+            "onewirebus",
+            2
+        ],
+        "data": {}
     }
-}
+]

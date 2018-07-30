@@ -8,10 +8,9 @@ import pytest
 from brewblox_service import scheduler
 
 from brewblox_codec_spark import codec
-from brewblox_devcon_spark import commander_sim, datastore, device
-from brewblox_devcon_spark.api import (alias_api, conflict_api, debug_api,
-                                       error_response, object_api, profile_api,
-                                       system_api)
+from brewblox_devcon_spark import commander_sim, device, twinkeydict
+from brewblox_devcon_spark.api import (alias_api, debug_api, error_response,
+                                       object_api, profile_api, system_api)
 from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
                                                   API_TYPE_KEY,
                                                   OBJECT_DATA_KEY,
@@ -43,14 +42,13 @@ async def app(app, loop):
     """App + controller routes"""
     scheduler.setup(app)
     commander_sim.setup(app)
-    datastore.setup(app)
+    twinkeydict.setup(app)
     codec.setup(app)
     device.setup(app)
 
     error_response.setup(app)
     debug_api.setup(app)
     alias_api.setup(app)
-    conflict_api.setup(app)
     object_api.setup(app)
     profile_api.setup(app)
     system_api.setup(app)
@@ -99,8 +97,25 @@ async def test_create(app, client, object_args):
 
 
 async def test_create_performance(app, client, object_args):
+    def custom(num):
+        return {
+            API_ID_KEY: f'id{num}',
+            PROFILE_LIST_KEY: [1, 4, 7],
+            API_TYPE_KEY: 'OneWireTempSensor',
+            API_DATA_KEY: {
+                'settings': {
+                    'address': 'FF',
+                    'offset': 20
+                },
+                'state': {
+                    'value': 12345,
+                    'connected': True
+                }
+            }
+        }
+
     num_items = 50
-    coros = [client.post('/objects', json=object_args) for _ in range(num_items)]
+    coros = [client.post('/objects', json=custom(i))for i in range(num_items)]
     responses = await asyncio.gather(*coros)
     assert [retv.status for retv in responses] == [200]*num_items
 
@@ -223,7 +238,7 @@ async def test_alias_create(app, client):
     assert retv.status == 200
 
     retv = await client.post('/aliases', json=new_alias)
-    assert retv.status == 409
+    assert retv.status == 200
 
 
 async def test_alias_update(app, client, object_args):
@@ -236,51 +251,4 @@ async def test_alias_update(app, client, object_args):
     assert retv.status == 200
 
     retv = await client.get('/objects/newname')
-    assert retv.status == 200
-
-
-async def test_conflict_all(app, client):
-    objects = [
-        {'service_id': 'sid', 'controller_id': 8},
-        {'service_id': 'sid', 'controller_id': 9}
-    ]
-
-    store = datastore.get_object_store(app)
-    await store.insert_multiple(objects)
-
-    retd = await response(client.get('/conflicts'))
-    assert retd == {}
-
-    retv = await client.get('/objects/sid')
-    assert retv.status == 428
-
-    retd = await response(client.get('/conflicts'))
-    assert retd == {
-        'service_id': {
-            'sid': objects
-        }
-    }
-
-
-async def test_conflict_resolve(app, client, object_args):
-    store = datastore.get_object_store(app)
-    argid = object_args[API_ID_KEY]
-
-    await client.post('/objects', json=object_args)
-    await store.insert({'service_id': argid, 'dummy': True})
-
-    retv = await client.get('/objects/' + argid)
-    assert retv.status == 428
-
-    retv = await client.get('/conflicts')
-    objects = (await retv.json())['service_id'][argid]
-    assert len(objects) == 2
-
-    # Pick the one that's not the dummy
-    real = next(o for o in objects if 'dummy' not in o)
-
-    retv = await client.post('/conflicts', json={'id_key': 'service_id', 'data': real})
-    assert retv.status == 200
-
-    retv = await client.get('/objects/' + argid)
     assert retv.status == 200

@@ -6,10 +6,10 @@ from brewblox_service import brewblox_logger, events, scheduler, service
 
 from brewblox_codec_spark import codec
 from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
-                                   communication, datastore, device)
-from brewblox_devcon_spark.api import (alias_api, conflict_api, debug_api,
-                                       error_response, object_api, profile_api,
-                                       remote_api, system_api)
+                                   communication, device, twinkeydict)
+from brewblox_devcon_spark.api import (alias_api, debug_api, error_response,
+                                       object_api, profile_api, remote_api,
+                                       system_api)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -27,7 +27,7 @@ def create_parser(default_name='spark'):
     parser.add_argument('--device-url-port',
                         help='Spark port when accessing a device over WiFi. [%(default)s]',
                         type=int,
-                        default=6666)
+                        default=8332)
     parser.add_argument('--device-url',
                         help='Spark device URL. Takes precedence over serial connections. [%(default)s]')
     parser.add_argument('--device-id',
@@ -39,7 +39,7 @@ def create_parser(default_name='spark'):
     parser.add_argument('--broadcast-interval',
                         help='Interval (in seconds) between broadcasts of controller state.'
                         'Set to a value <= 0 to disable broadcasting. [%(default)s]',
-                        type=int,
+                        type=float,
                         default=5)
     parser.add_argument('--broadcast-exchange',
                         help='Eventbus exchange to which controller state should be broadcasted. [%(default)s]',
@@ -75,14 +75,13 @@ def main():
     events.setup(app)
 
     codec.setup(app)
-    datastore.setup(app)
+    twinkeydict.setup(app)
     device.setup(app)
     broadcaster.setup(app)
 
     error_response.setup(app)
     debug_api.setup(app)
     alias_api.setup(app)
-    conflict_api.setup(app)
     object_api.setup(app)
     profile_api.setup(app)
     system_api.setup(app)

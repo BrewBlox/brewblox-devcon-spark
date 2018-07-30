@@ -5,7 +5,7 @@ Any fixtures declared here are available to all test functions in this directory
 
 
 import logging
-import os
+from tempfile import NamedTemporaryFile
 
 import pytest
 from brewblox_service import brewblox_logger, features, service
@@ -22,14 +22,25 @@ def log_enabled():
     logging.getLogger().setLevel(logging.DEBUG)
 
 
+@pytest.fixture(autouse=True)
+def test_db():
+    """
+    Creates a temporary database file that will be automatically removed.
+    """
+    f = NamedTemporaryFile(mode='w+t', encoding='utf8')
+    f.write('[]')
+    f.flush()
+    yield f.name
+
+
 @pytest.fixture
-def app_config() -> dict:
+def app_config(test_db) -> dict:
     return {
         'name': 'test_app',
         'host': 'localhost',
         'port': 1234,
         'debug': True,
-        'database': 'test_db.json',
+        'database': test_db,
         'system_database': 'config/brewblox_sys_db.json',
         'device_port': '/dev/TESTEH',
         'device_id': '1234',
@@ -79,15 +90,3 @@ def client(app, aiohttp_client, loop):
     LOGGER.debug(app.on_startup)
 
     return loop.run_until_complete(aiohttp_client(app))
-
-
-@pytest.fixture(autouse=True)
-def remove_test_db():
-    """
-    Automatically removes the test database file.
-    """
-    yield None
-    try:
-        os.remove('test_db.json')
-    except FileNotFoundError:
-        pass
