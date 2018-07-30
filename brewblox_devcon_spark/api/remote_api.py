@@ -39,7 +39,7 @@ async def _receive(app: web.Application,
     obj = await ctrl.read_object({OBJECT_ID_KEY: service_id})
     existing = obj[OBJECT_DATA_KEY]
 
-    LOGGER.info(f'existing={existing}\nincoming={incoming}')
+    LOGGER.debug(f'existing={existing}\nincoming={incoming}')
 
     if translations:
         for remote_path, local_path in translations.items():
@@ -182,9 +182,6 @@ async def master_create(request: web.Request) -> web.Response:
                 id:
                     type: string
                     example: local_sensor_1
-                key:
-                    type: string
-                    example: remote_sensor_couple_1
                 interval:
                     type: int
                     example: 5
