@@ -87,9 +87,9 @@ async def test_create(app, client, object_args):
     retd = await response(client.post('/objects', json=object_args))
     assert retd[API_ID_KEY] == object_args[API_ID_KEY]
 
-    # Allowed to recreate, but we don't get provided ID
-    retd = await response(client.post('/objects', json=object_args))
-    assert retd[API_ID_KEY] != object_args[API_ID_KEY]
+    # Conflict error: name already taken
+    retv = await client.post('/objects', json=object_args)
+    assert retv.status == 409
 
     object_args[API_ID_KEY] = 'other_obj'
     retd = await response(client.post('/objects', json=object_args))

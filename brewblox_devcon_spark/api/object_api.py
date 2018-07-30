@@ -33,33 +33,26 @@ class ObjectApi():
                      input_data: dict
                      ) -> dict:
         """
-        Creates a new object on the controller.
-        Updates the data store with the newly created object.
+        Creates a new object in the datastore and controller.
         """
         alias_api.validate_service_id(input_id)
-
-        created = await self._ctrl.create_object({
-            PROFILE_LIST_KEY: profiles,
-            OBJECT_TYPE_KEY: input_type,
-            OBJECT_DATA_KEY: input_data
-        })
-
-        created_id = created[OBJECT_ID_KEY]
+        placeholder = object()
+        self._store[input_id, placeholder] = 'PLACEHOLDER'
 
         try:
-            # Update service ID with user-determined service ID
-            self._store.rename((created_id, None), (input_id, None))
+            created = await self._ctrl.create_object({
+                PROFILE_LIST_KEY: profiles,
+                OBJECT_TYPE_KEY: input_type,
+                OBJECT_DATA_KEY: input_data
+            })
 
-            # Data store was updated
-            # We can now say a new object was created with user-determined ID
-            created_id = input_id
+        finally:
+            del self._store[input_id, placeholder]
 
-        except Exception as ex:
-            # Failed to update, we'll stick with auto-assigned ID
-            LOGGER.warn(f'Failed to update datastore after create: {type(ex).__name__}({ex})')
+        self._store.rename((created[OBJECT_ID_KEY], None), (input_id, None))
 
         return {
-            API_ID_KEY: created_id,
+            API_ID_KEY: input_id,
             PROFILE_LIST_KEY: created[PROFILE_LIST_KEY],
             API_TYPE_KEY: created[OBJECT_TYPE_KEY],
             API_DATA_KEY: created[OBJECT_DATA_KEY],
