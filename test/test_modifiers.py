@@ -18,6 +18,9 @@ def generate_encoding_data():
         'settings': {
             'address': 'address',
             'offset[delta_degF]': 20
+        },
+        'state': {
+            'value[degF]': 10
         }
     }
 
@@ -27,6 +30,9 @@ def generate_decoding_data():
         'settings': {
             'address': 'address',
             'offset': 2844
+        },
+        'state': {
+            'value': -3129
         }
     }
 
@@ -55,9 +61,13 @@ def test_decode_options(mod):
         'settings': {
             'address': 'address',
             'offset': 2844
+        },
+        'state': {
+            'value': -3129
         }
     }
 
     mod.decode_options(OneWireTempSensor_pb2.OneWireTempSensor(), vals)
-    print(vals['settings'])
+    print(vals)
     assert vals['settings']['offset[delta_degF]'] == pytest.approx(20, 0.1)
+    assert vals['state']['value[degF]'] == pytest.approx(10, 0.1)

@@ -176,7 +176,7 @@ class SparkController(features.ServiceFeature):
                 if isinstance(v, dict):
                     await traverse(v)
                 elif str(k).endswith(OBJECT_LINK_POSTFIX):
-                    data[k] = await finder_func(store, v)
+                    data[k] = await finder_func(self, store, v)
 
         for obj in objects_to_process:
             with suppress(KeyError):
