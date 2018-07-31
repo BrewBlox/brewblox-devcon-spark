@@ -13,7 +13,7 @@ TESTED = device.__name__
 
 
 def generate_obj():
-    return 'OneWireTempSensor', {
+    return 'Example', {
         'settings': {
             'address': 'ff',
             'offset[delta_degC]': 20
@@ -21,7 +21,12 @@ def generate_obj():
         'state': {
             'value[delta_degC]': 123,
             'connected': True
-        }
+        },
+        'link<>': 30,
+        'additionalLinks': [
+            {'connection<>': 1},
+            {'connection<>': 2},
+        ]
     }
 
 
@@ -117,7 +122,7 @@ async def test_resolve_id(app, client, store, mocker, ctrl):
 
 
 async def test_resolve_links(app, client, store, mocker, ctrl):
-    finder_func = CoroutineMock(side_effect=lambda store, val: '|'+str(val))
+    finder_func = CoroutineMock(side_effect=lambda _, store, val: '|'+str(val))
 
     data = {
         device.OBJECT_DATA_KEY: {

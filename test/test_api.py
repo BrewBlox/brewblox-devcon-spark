@@ -14,6 +14,7 @@ from brewblox_devcon_spark.api import (alias_api, debug_api, error_response,
 from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
                                                   API_TYPE_KEY,
                                                   OBJECT_DATA_KEY,
+                                                  OBJECT_ID_KEY,
                                                   OBJECT_TYPE_KEY,
                                                   PROFILE_LIST_KEY)
 
@@ -64,6 +65,7 @@ async def response(request):
 
 async def test_do(app, client):
     command = dict(command='create_object', data={
+        OBJECT_ID_KEY: 0,
         OBJECT_TYPE_KEY: 'OneWireTempSensor',
         PROFILE_LIST_KEY: [1, 2, 3],
         OBJECT_DATA_KEY: {

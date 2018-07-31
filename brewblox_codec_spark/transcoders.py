@@ -11,6 +11,7 @@ from brewblox_service import brewblox_logger
 from google.protobuf import json_format
 from google.protobuf.message import Message
 
+import Example_pb2
 import OneWireBus_pb2
 import OneWireTempSensor_pb2
 from brewblox_codec_spark.modifiers import Modifier
@@ -142,6 +143,11 @@ class OneWireTempSensorTranscoder(OptionsTranscoder):
         return decoded
 
 
+class ExampleTranscoder(OneWireTempSensorTranscoder):
+    _MESSAGE = Example_pb2.Example
+    _TYPE_INT = 9001
+
+
 def _generate_mapping(vals: Iterable[Transcoder]):
     for trc in vals:
         yield trc.type_int(), trc
@@ -150,7 +156,8 @@ def _generate_mapping(vals: Iterable[Transcoder]):
 
 _TRANSCODERS = [
     OneWireBusTranscoder,
-    OneWireTempSensorTranscoder
+    OneWireTempSensorTranscoder,
+    ExampleTranscoder,
 ]
 
 _TYPE_MAPPING = {k: v for k, v in _generate_mapping(_TRANSCODERS)}
