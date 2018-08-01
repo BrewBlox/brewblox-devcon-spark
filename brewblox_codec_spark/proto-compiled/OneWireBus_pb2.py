@@ -12,6 +12,7 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
+import brewblox_pb2 as brewblox__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
@@ -19,8 +20,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x10OneWireBus.proto\x12\x04\x62lox\"q\n\nOneWireBus\x12)\n\x07\x63ommand\x18\x01 \x01(\x0b\x32\x18.blox.OneWireBus.Command\x12\x0f\n\x07\x61\x64\x64ress\x18\x02 \x03(\x0c\x1a\'\n\x07\x43ommand\x12\x0e\n\x06opcode\x18\x01 \x01(\r\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\r\"<\n\x0fOneWireBusWrite\x12)\n\x07\x63ommand\x18\x01 \x01(\x0b\x32\x18.blox.OneWireBus.Commandb\x06proto3')
-)
+  serialized_pb=_b('\n\x10OneWireBus.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"}\n\nOneWireBus\x12)\n\x07\x63ommand\x18\x01 \x01(\x0b\x32\x18.blox.OneWireBus.Command\x12\x1b\n\x07\x61\x64\x64ress\x18\x02 \x03(\x0c\x42\n\x9a?\x02 \x01\x9a?\x02(\x01\x1a\'\n\x07\x43ommand\x12\x0e\n\x06opcode\x18\x01 \x01(\r\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\rb\x06proto3')
+  ,
+  dependencies=[brewblox__pb2.DESCRIPTOR,])
 
 
 
@@ -58,8 +60,8 @@ _ONEWIREBUS_COMMAND = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=100,
-  serialized_end=139,
+  serialized_start=128,
+  serialized_end=167,
 )
 
 _ONEWIREBUS = _descriptor.Descriptor(
@@ -82,7 +84,7 @@ _ONEWIREBUS = _descriptor.Descriptor(
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
+      serialized_options=_b('\232?\002 \001\232?\002(\001'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -95,46 +97,13 @@ _ONEWIREBUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=26,
-  serialized_end=139,
-)
-
-
-_ONEWIREBUSWRITE = _descriptor.Descriptor(
-  name='OneWireBusWrite',
-  full_name='blox.OneWireBusWrite',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='command', full_name='blox.OneWireBusWrite.command', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=141,
-  serialized_end=201,
+  serialized_start=42,
+  serialized_end=167,
 )
 
 _ONEWIREBUS_COMMAND.containing_type = _ONEWIREBUS
 _ONEWIREBUS.fields_by_name['command'].message_type = _ONEWIREBUS_COMMAND
-_ONEWIREBUSWRITE.fields_by_name['command'].message_type = _ONEWIREBUS_COMMAND
 DESCRIPTOR.message_types_by_name['OneWireBus'] = _ONEWIREBUS
-DESCRIPTOR.message_types_by_name['OneWireBusWrite'] = _ONEWIREBUSWRITE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 OneWireBus = _reflection.GeneratedProtocolMessageType('OneWireBus', (_message.Message,), dict(
@@ -152,12 +121,6 @@ OneWireBus = _reflection.GeneratedProtocolMessageType('OneWireBus', (_message.Me
 _sym_db.RegisterMessage(OneWireBus)
 _sym_db.RegisterMessage(OneWireBus.Command)
 
-OneWireBusWrite = _reflection.GeneratedProtocolMessageType('OneWireBusWrite', (_message.Message,), dict(
-  DESCRIPTOR = _ONEWIREBUSWRITE,
-  __module__ = 'OneWireBus_pb2'
-  # @@protoc_insertion_point(class_scope:blox.OneWireBusWrite)
-  ))
-_sym_db.RegisterMessage(OneWireBusWrite)
 
-
+_ONEWIREBUS.fields_by_name['address']._options = None
 # @@protoc_insertion_point(module_scope)

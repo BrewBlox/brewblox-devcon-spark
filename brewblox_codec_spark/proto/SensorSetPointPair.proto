@@ -5,14 +5,6 @@ import 'brewblox.proto';
 package blox;
 
 message SensorSetPointPair {
-  message Links {
-    bytes sensor = 1;
-    bytes setpoint = 2;
-  }
-  
-  Links links = 3;
-}
-
-message SensorSetPointPair_Persisted {
-  SensorSetPointPair.Links links = 3;
+    sint32 sensor = 1 [(brewblox).link = "Sensor"];
+    sint32 setpoint = 2 [(brewblox).link = "SetPointSimple"];
 }

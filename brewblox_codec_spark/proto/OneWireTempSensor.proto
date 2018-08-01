@@ -5,19 +5,15 @@ import 'brewblox.proto';
 package blox;
 
 message OneWireTempSensor {
-  message Settings {
-    bytes address = 1;
-    sint32 offset = 2 [(brewblox).unit = "delta_degC", (brewblox).scale = 256];
-  }
-  message State {
-    sint32 value = 1 [(brewblox).unit = "degC", (brewblox).scale = 256];
-    bool connected = 2;
-  }
-  
-  Settings settings = 1;
-  State state = 2;
-}
-
-message OneWireTempSensor_Persisted {
-  OneWireTempSensor.Settings settings = 1;
+    message Settings {
+        bytes address = 1 [(brewblox).hexed = true];
+        sint32 offset = 2 [(brewblox).unit = "delta_degC", (brewblox).scale = 256];
+    }
+    message State {
+        sint32 value = 1 [(brewblox).unit = "degC", (brewblox).scale = 256];
+        bool connected = 2;
+    }
+    
+    Settings settings = 1;
+    State state = 2;
 }

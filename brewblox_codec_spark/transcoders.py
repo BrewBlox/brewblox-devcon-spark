@@ -103,66 +103,15 @@ class OneWireBusTranscoder(OptionsTranscoder):
     _MESSAGE = OneWireBus_pb2.OneWireBus
     _TYPE_INT = 256
 
-    def encode(self, values: Decoded_) -> Encoded_:
-        self.mod.modify_if_present(
-            obj=values,
-            path='/address',
-            func=lambda addr: [self.mod.hex_to_b64(a) for a in addr]
-        )
-        return super().encode(values)
-
-    def decode(self, encoded: Encoded_) -> Decoded_:
-        decoded = super().decode(encoded)
-        self.mod.modify_if_present(
-            obj=decoded,
-            path='/address',
-            func=lambda addr: [self.mod.b64_to_hex(a) for a in addr]
-        )
-        return decoded
-
 
 class OneWireTempSensorTranscoder(OptionsTranscoder):
     _MESSAGE = OneWireTempSensor_pb2.OneWireTempSensor
     _TYPE_INT = 257
 
-    def encode(self, values: Decoded_) -> Encoded_:
-        self.mod.modify_if_present(
-            obj=values,
-            path='/settings/address',
-            func=self.mod.hex_to_b64
-        )
-        return super().encode(values)
-
-    def decode(self, encoded: Encoded_) -> Decoded_:
-        decoded = super().decode(encoded)
-        self.mod.modify_if_present(
-            obj=decoded,
-            path='/settings/address',
-            func=self.mod.b64_to_hex
-        )
-        return decoded
-
 
 class EdgeCaseTranscoder(OptionsTranscoder):
     _MESSAGE = EdgeCase_pb2.EdgeCase
     _TYPE_INT = 9001
-
-    def encode(self, values: Decoded_) -> Encoded_:
-        self.mod.modify_if_present(
-            obj=values,
-            path='/settings/address',
-            func=self.mod.hex_to_b64
-        )
-        return super().encode(values)
-
-    def decode(self, encoded: Encoded_) -> Decoded_:
-        decoded = super().decode(encoded)
-        self.mod.modify_if_present(
-            obj=decoded,
-            path='/settings/address',
-            func=self.mod.b64_to_hex
-        )
-        return decoded
 
 
 def _generate_mapping(vals: Iterable[Transcoder]):

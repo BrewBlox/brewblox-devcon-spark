@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\tPid.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"\xd4\x05\n\x03Pid\x12$\n\x08settings\x18\x01 \x01(\x0b\x32\x12.blox.Pid.Settings\x12\x1e\n\x05state\x18\x02 \x01(\x0b\x32\x0f.blox.Pid.State\x12\x1e\n\x05links\x18\x03 \x01(\x0b\x32\x0f.blox.Pid.Links\x12&\n\tfiltering\x18\x04 \x01(\x0b\x32\x13.blox.Pid.Filtering\x1aj\n\x08Settings\x12\x1b\n\x02kp\x18\x01 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12\x17\n\x02ti\x18\x02 \x01(\rB\x0b\x9a?\x08\n\x06second\x12\x17\n\x02td\x18\x03 \x01(\rB\x0b\x9a?\x08\n\x06second\x12\x0f\n\x07\x65nabled\x18\x04 \x01(\x08\x1a\xfa\x02\n\x05State\x12#\n\ninputValue\x18\x01 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12%\n\x0cinputSetting\x18\x02 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12$\n\x0boutputValue\x18\x03 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12&\n\routputSetting\x18\x04 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12 \n\x01p\x18\x05 \x01(\x11\x42\x15\x9a?\x0c\n\ndelta_degC\x9a?\x03\x10\x80\x02\x12 \n\x01i\x18\x06 \x01(\x11\x42\x15\x9a?\x0c\n\ndelta_degC\x9a?\x03\x10\x80\x02\x12)\n\x01\x64\x18\x07 \x01(\x11\x42\x1e\x9a?\x15\n\x13\x64\x65lta_degC / second\x9a?\x03\x10\x80\x02\x12%\n\nderivative\x18\x08 \x01(\x11\x42\x11\x9a?\x06\n\x04\x64\x65gC\x9a?\x05\x10\x80\x80\x80\x08\x12!\n\x08integral\x18\t \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12\x1e\n\x05\x65rror\x18\n \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x1a&\n\x05Links\x12\r\n\x05input\x18\x01 \x01(\x0c\x12\x0e\n\x06output\x18\x02 \x01(\x0c\x1a.\n\tFiltering\x12\r\n\x05input\x18\x01 \x01(\r\x12\x12\n\nderivative\x18\x02 \x01(\r\"}\n\rPid_Persisted\x12$\n\x08settings\x18\x01 \x01(\x0b\x32\x12.blox.Pid.Settings\x12\x1e\n\x05links\x18\x03 \x01(\x0b\x32\x0f.blox.Pid.Links\x12&\n\tfiltering\x18\x04 \x01(\x0b\x32\x13.blox.Pid.Filteringb\x06proto3')
+  serialized_pb=_b('\n\tPid.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"\xed\x05\n\x03Pid\x12$\n\x08settings\x18\x01 \x01(\x0b\x32\x12.blox.Pid.Settings\x12\x1e\n\x05state\x18\x02 \x01(\x0b\x32\x0f.blox.Pid.State\x12\x1e\n\x05links\x18\x03 \x01(\x0b\x32\x0f.blox.Pid.Links\x12&\n\tfiltering\x18\x04 \x01(\x0b\x32\x13.blox.Pid.Filtering\x1aj\n\x08Settings\x12\x1b\n\x02kp\x18\x01 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12\x17\n\x02ti\x18\x02 \x01(\rB\x0b\x9a?\x08\n\x06second\x12\x17\n\x02td\x18\x03 \x01(\rB\x0b\x9a?\x08\n\x06second\x12\x0f\n\x07\x65nabled\x18\x04 \x01(\x08\x1a\xfa\x02\n\x05State\x12#\n\ninputValue\x18\x01 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12%\n\x0cinputSetting\x18\x02 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12$\n\x0boutputValue\x18\x03 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12&\n\routputSetting\x18\x04 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12 \n\x01p\x18\x05 \x01(\x11\x42\x15\x9a?\x0c\n\ndelta_degC\x9a?\x03\x10\x80\x02\x12 \n\x01i\x18\x06 \x01(\x11\x42\x15\x9a?\x0c\n\ndelta_degC\x9a?\x03\x10\x80\x02\x12)\n\x01\x64\x18\x07 \x01(\x11\x42\x1e\x9a?\x15\n\x13\x64\x65lta_degC / second\x9a?\x03\x10\x80\x02\x12%\n\nderivative\x18\x08 \x01(\x11\x42\x11\x9a?\x06\n\x04\x64\x65gC\x9a?\x05\x10\x80\x80\x80\x08\x12!\n\x08integral\x18\t \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12\x1e\n\x05\x65rror\x18\n \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x1a?\n\x05Links\x12\x19\n\x05input\x18\x01 \x01(\x11\x42\n\x9a?\x07\x1a\x05Input\x12\x1b\n\x06output\x18\x02 \x01(\x11\x42\x0b\x9a?\x08\x1a\x06Output\x1a.\n\tFiltering\x12\r\n\x05input\x18\x01 \x01(\r\x12\x12\n\nderivative\x18\x02 \x01(\rb\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,])
 
@@ -180,18 +180,18 @@ _PID_LINKS = _descriptor.Descriptor(
   fields=[
     _descriptor.FieldDescriptor(
       name='input', full_name='blox.Pid.Links.input', index=0,
-      number=1, type=12, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b(""),
+      number=1, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
+      serialized_options=_b('\232?\007\032\005Input'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='output', full_name='blox.Pid.Links.output', index=1,
-      number=2, type=12, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b(""),
+      number=2, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
+      serialized_options=_b('\232?\010\032\006Output'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -205,7 +205,7 @@ _PID_LINKS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=674,
-  serialized_end=712,
+  serialized_end=737,
 )
 
 _PID_FILTERING = _descriptor.Descriptor(
@@ -241,8 +241,8 @@ _PID_FILTERING = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=714,
-  serialized_end=760,
+  serialized_start=739,
+  serialized_end=785,
 )
 
 _PID = _descriptor.Descriptor(
@@ -293,52 +293,7 @@ _PID = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=36,
-  serialized_end=760,
-)
-
-
-_PID_PERSISTED = _descriptor.Descriptor(
-  name='Pid_Persisted',
-  full_name='blox.Pid_Persisted',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='settings', full_name='blox.Pid_Persisted.settings', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='links', full_name='blox.Pid_Persisted.links', index=1,
-      number=3, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='filtering', full_name='blox.Pid_Persisted.filtering', index=2,
-      number=4, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=762,
-  serialized_end=887,
+  serialized_end=785,
 )
 
 _PID_SETTINGS.containing_type = _PID
@@ -349,11 +304,7 @@ _PID.fields_by_name['settings'].message_type = _PID_SETTINGS
 _PID.fields_by_name['state'].message_type = _PID_STATE
 _PID.fields_by_name['links'].message_type = _PID_LINKS
 _PID.fields_by_name['filtering'].message_type = _PID_FILTERING
-_PID_PERSISTED.fields_by_name['settings'].message_type = _PID_SETTINGS
-_PID_PERSISTED.fields_by_name['links'].message_type = _PID_LINKS
-_PID_PERSISTED.fields_by_name['filtering'].message_type = _PID_FILTERING
 DESCRIPTOR.message_types_by_name['Pid'] = _PID
-DESCRIPTOR.message_types_by_name['Pid_Persisted'] = _PID_PERSISTED
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 Pid = _reflection.GeneratedProtocolMessageType('Pid', (_message.Message,), dict(
@@ -395,13 +346,6 @@ _sym_db.RegisterMessage(Pid.State)
 _sym_db.RegisterMessage(Pid.Links)
 _sym_db.RegisterMessage(Pid.Filtering)
 
-Pid_Persisted = _reflection.GeneratedProtocolMessageType('Pid_Persisted', (_message.Message,), dict(
-  DESCRIPTOR = _PID_PERSISTED,
-  __module__ = 'Pid_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Pid_Persisted)
-  ))
-_sym_db.RegisterMessage(Pid_Persisted)
-
 
 _PID_SETTINGS.fields_by_name['kp']._options = None
 _PID_SETTINGS.fields_by_name['ti']._options = None
@@ -416,4 +360,6 @@ _PID_STATE.fields_by_name['d']._options = None
 _PID_STATE.fields_by_name['derivative']._options = None
 _PID_STATE.fields_by_name['integral']._options = None
 _PID_STATE.fields_by_name['error']._options = None
+_PID_LINKS.fields_by_name['input']._options = None
+_PID_LINKS.fields_by_name['output']._options = None
 # @@protoc_insertion_point(module_scope)

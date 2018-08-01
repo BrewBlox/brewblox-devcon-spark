@@ -82,6 +82,9 @@ class Modifier():
 
         return obj
 
+    def _quantity(self, *args, **kwargs) -> quantity._Quantity:
+        return self._ureg.Quantity(*args, **kwargs)
+
     def _find_options(self, desc: DescriptorBase, obj) -> Iterator[OptionElement]:
         if not isinstance(obj, dict):
             raise StopIteration()
@@ -108,9 +111,6 @@ class Modifier():
         provider = provider or self._BREWBLOX_PROVIDER
         return field.GetOptions().Extensions[provider]
 
-    def _quantity(self, *args, **kwargs) -> quantity._Quantity:
-        return self._ureg.Quantity(*args, **kwargs)
-
     def encode_options(self, message: Message, obj: dict) -> dict:
         """
         Modifies `obj` based on Protobuf options and dict key postfixes.
@@ -119,15 +119,18 @@ class Modifier():
         * unit:     convert post-fixed unit notation ([UNIT]) to Protobuf unit
         * scale:    multiply value with scale after unit conversion
         * link:     strip link key postfix (<>)
+        * hexed:    convert hexadecimal string to base64 (protobuf input)
+        * readonly: strip value from protobuf input
 
         The output is a dict where values use controller units.
 
         Example:
             >>> values = {
                 'settings': {
-                    'address': 'FF',
+                    'address': 'aabbccdd',
                     'offset[delta_degF]': 20,
-                    'sensor<>': 10
+                    'sensor<>': 10,
+                    'output': 9000,
                 }
             }
 
@@ -140,24 +143,31 @@ class Modifier():
             #
             # message ExampleMessage {
             #   message Settings {
-            #     bytes address = 1;
+            #     bytes address = 1 [(brewblox).hexed = true];
             #     sint32 offset = 2 [(brewblox).unit = "delta_degC", (brewblox).scale = 256];
             #     uint16 sensor = 3 [(brewblox).link = "SensorType"];
+            #     sint32 output = 4 [(brewblox).readonly = true];
             #   }
             # ...
 
             >>> print(values)
             {
                 'settings': {
-                    'address': 'FF',  # No options -> not converted
-                    'offset': 2844,   # Converted to delta_degC, scaled * 256, and rounded to int
-                    'sensor': 10      # Link postfix stripped
+                    'address': 'qrvM3Q==',  # Converted from Hex to base64
+                    'offset': 2844,         # Converted to delta_degC, scaled * 256, and rounded to int
+                    'sensor': 10            # Link postfix stripped
+                                            # 'output' is readonly -> stripped from dict
                 }
             }
         """
         for element in self._find_options(message.DESCRIPTOR, obj):
             options = self._field_options(element.field)
             val = element.obj[element.key]
+            new_key = element.base_key
+
+            if options.readonly:
+                del element.obj[element.key]
+                continue
 
             is_list = isinstance(val, (list, set))
 
@@ -170,16 +180,19 @@ class Modifier():
             if options.scale:
                 val = [v * options.scale for v in val]
 
+            if options.hexed:
+                val = [self.hex_to_b64(v) for v in val]
+
             if element.field.cpp_type in json_format._INT_TYPES:
                 val = [int(round(v)) for v in val]
 
             if not is_list:
                 val = val[0]
 
-            if element.key != element.base_key:
+            if element.key != new_key:
                 del element.obj[element.key]
 
-            element.obj[element.base_key] = val
+            element.obj[new_key] = val
 
         return obj
 
@@ -187,16 +200,19 @@ class Modifier():
         """
         Modifies `obj` based on brewblox protobuf options.
         Supported options:
-        * scale:   divides value by scale before unit conversion
-        * unit:    postfixes dict key with the unit defined in the Protobuf spec
-        * link:    postfixes dict key with triangle brackets (<>)
+        * scale:        divides value by scale before unit conversion
+        * unit:         postfixes dict key with the unit defined in the Protobuf spec
+        * link:         postfixes dict key with triangle brackets (<>)
+        * hexed:        converts base64 decoder output to hexadecimal string
+        * readonly:     ignored: decoding means reading from controller
 
         Example:
             >>> values = {
                 'settings': {
-                    'address': 'FF',
+                    'address': 'qrvM3Q==',
                     'offset': 2844,
-                    'sensor': 10
+                    'sensor': 10,
+                    'output': 1234,
                 }
             }
 
@@ -209,9 +225,10 @@ class Modifier():
             #
             # message ExampleMessage {
             #   message Settings {
-            #     bytes address = 1;
+            #     bytes address = 1 [(brewblox).hexed = true];
             #     sint32 offset = 2 [(brewblox).unit = "delta_degC", (brewblox).scale = 256];
             #     uint16 sensor = 3 [(brewblox).link = "SensorType"];
+            #     sint32 output = 4 [(brewblox).readonly = true];
             #   }
             # ...
 
@@ -220,9 +237,10 @@ class Modifier():
             >>> print(values)
             {
                 'settings': {
-                    'address': 'FF',            # No options -> not converted
-                    'offset[delta_degF]': 20    # scaled / 256, converted to preference, postfixed with unit
-                    'sensor<>': 10              # Postfixed with link indicator
+                    'address': 'aabbccdd',      # Converted from base64 string to hex string
+                    'offset[delta_degF]': 20    # Scaled / 256, converted to preference, postfixed with unit
+                    'sensor<>': 10,             # Postfixed with link indicator
+                    'output': 1234,             # We're reading -> keep readonly values
                 }
             }
         """
@@ -241,6 +259,11 @@ class Modifier():
 
             if options.unit:
                 base_unit = str(self._quantity(options.unit).to_base_units().units)
+
+                # The Pint to_base_units() function doesn't retain delta units.
+                # If the base unit is degC, then quantity('delta_degF').to_base_units() yields degC.
+                # We catch UndefinedUnitError because not all base units have a delta.
+                # delta_degK, for example, does not exist.
                 if options.unit.lower().startswith('delta_'):
                     with suppress(UndefinedUnitError):
                         delta_base = 'delta_' + base_unit
@@ -256,8 +279,10 @@ class Modifier():
                 ]
 
             if options.link:
-                print(options.link)
                 new_key += '<>'
+
+            if options.hexed:
+                val = [self.b64_to_hex(v) for v in val]
 
             if not is_list:
                 val = val[0]
