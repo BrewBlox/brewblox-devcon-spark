@@ -8,9 +8,8 @@ import re
 from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
 from contextlib import suppress
-from typing import Callable, Iterator
+from typing import Iterator
 
-import dpath
 from brewblox_service import brewblox_logger
 from dataclasses import dataclass
 from google.protobuf import json_format
@@ -58,34 +57,18 @@ class Modifier():
     def b64_to_hex(s: str) -> str:
         return hexlify(b64decode(s)).decode()
 
-    @staticmethod
-    def modify_if_present(obj: dict, path: str, func: Callable) -> dict:
-        """
-        Replaces a value in a (possibly nested) dict.
-
-        If path is invalid, no values are changed.
-
-        Example:
-            >>> input = {'nested': { 'collection': { 'value': 0 }}}
-            >>> output = modify_if_present(
-                            obj=input,
-                            path='nested/collection/value',
-                            func=lambda v: v + 1
-                        )
-            >>> print(output)
-            {'nested': { 'collection': { 'value': 1 }}}
-            >>> print(input)
-            {'nested': { 'collection': { 'value': 1 }}}
-        """
-        val = dpath.util.get(obj, path)
-        dpath.util.new(obj, path, func(val))
-
-        return obj
-
     def _quantity(self, *args, **kwargs) -> quantity._Quantity:
         return self._ureg.Quantity(*args, **kwargs)
 
     def _find_options(self, desc: DescriptorBase, obj) -> Iterator[OptionElement]:
+        """
+        Recursively walks `obj`, and yields an `OptionElement` for each value
+        where the associated Protobuf message has an option.
+
+        The tree is walked depth-first, and iterates over a copy of the initial keyset.
+        This makes it safe for calling code to modify or delete the value relevant to them.
+        Any entries added to the parent object after an element is yielded will not be considered.
+        """
         if not isinstance(obj, dict):
             raise StopIteration()
 
@@ -263,7 +246,7 @@ class Modifier():
                 # The Pint to_base_units() function doesn't retain delta units.
                 # If the base unit is degC, then quantity('delta_degF').to_base_units() yields degC.
                 # We catch UndefinedUnitError because not all base units have a delta.
-                # delta_degK, for example, does not exist.
+                # 'delta_degK', for example, does not exist.
                 if options.unit.lower().startswith('delta_'):
                     with suppress(UndefinedUnitError):
                         delta_base = 'delta_' + base_unit

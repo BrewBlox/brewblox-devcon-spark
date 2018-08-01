@@ -41,15 +41,6 @@ def generate_decoding_data():
     }
 
 
-def test_modify_if_present(mod):
-    input = generate_encoding_data()
-    output = mod.modify_if_present(input, 'settings/address', lambda s: s[::-1])
-
-    assert output['settings']['address'] == 'ddccbbaa'
-    assert id(input) == id(output)
-    assert input != generate_encoding_data()
-
-
 def test_encode_options(mod):
     vals = generate_encoding_data()
     mod.encode_options(OneWireTempSensor_pb2.OneWireTempSensor(), vals)
