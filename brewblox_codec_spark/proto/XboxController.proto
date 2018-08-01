@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+import 'brewblox.proto';
+
+package blox;
+
+message XboxController {
+    message Buttons {
+        uint32 a = 1;
+        uint32 b = 2;
+        uint32 x = 3;
+        uint32 y = 4;
+        uint32 back = 5;
+        uint32 guide = 6;
+        uint32 start = 7;
+    }
+
+    message Stick {
+        sint32 x = 1;
+        sint32 y = 2;
+        uint32 click = 3;
+    }
+
+    message Pad {
+        uint32 up = 1;
+        uint32 down = 2;
+        uint32 left = 3;
+        uint32 right = 4;
+    }
+
+    Buttons buttons = 1;
+    Stick leftStick = 2;
+    Stick rightStick = 3;
+    Pad dPad = 4;
+
+    uint32 leftBumper = 5;
+    uint32 rightBumper = 6;
+    uint32 leftTrigger = 7;
+    uint32 rightTrigger = 8;
+}

@@ -13,7 +13,7 @@ TESTED = device.__name__
 
 
 def generate_obj():
-    return 'Example', {
+    return 'EdgeCase', {
         'settings': {
             'address': 'ff',
             'offset[delta_degC]': 20

@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import 'brewblox.proto';
+
 package blox;
 
 // Command encodes the next command to perform when the object is read
@@ -12,10 +14,5 @@ message OneWireBus {
     }
 
     Command command = 1;
-    repeated bytes address = 2;
-}
-
-// OneWire write does not include the volatile addresses
-message OneWireBusWrite {
-    OneWireBus.Command command = 1;
+    repeated bytes address = 2 [(brewblox).hexed = true, (brewblox).readonly = true];
 }

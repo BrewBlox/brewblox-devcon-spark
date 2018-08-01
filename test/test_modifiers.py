@@ -2,10 +2,14 @@
 Tests brewblox_codec_spark.modifiers
 """
 
+from brewblox_codec_spark import _path_extension  # isort:skip
+
 import pytest
 
+import OneWireTempSensor_pb2
 from brewblox_codec_spark import modifiers
-from brewblox_codec_spark.proto import OneWireTempSensor_pb2
+
+_path_extension.avoid_lint_errors()
 
 
 @pytest.fixture(scope='module')
@@ -16,7 +20,7 @@ def mod():
 def generate_encoding_data():
     return {
         'settings': {
-            'address': 'address',
+            'address': 'aabbccdd',
             'offset[delta_degF]': 20
         },
         'state': {
@@ -28,22 +32,13 @@ def generate_encoding_data():
 def generate_decoding_data():
     return {
         'settings': {
-            'address': 'address',
+            'address': 'qrvM3Q==',
             'offset': 2844
         },
         'state': {
             'value': -3129
         }
     }
-
-
-def test_modify_if_present(mod):
-    input = generate_encoding_data()
-    output = mod.modify_if_present(input, 'settings/address', lambda s: s[::-1])
-
-    assert output['settings']['address'] == 'sserdda'
-    assert id(input) == id(output)
-    assert input != generate_encoding_data()
 
 
 def test_encode_options(mod):
@@ -59,7 +54,7 @@ def test_encode_options(mod):
 def test_decode_options(mod):
     vals = {
         'settings': {
-            'address': 'address',
+            'address': 'qrvM3Q==',
             'offset': 2844
         },
         'state': {

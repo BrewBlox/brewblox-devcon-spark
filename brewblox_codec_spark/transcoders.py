@@ -11,9 +11,13 @@ from brewblox_service import brewblox_logger
 from google.protobuf import json_format
 from google.protobuf.message import Message
 
-import Example_pb2
+import EdgeCase_pb2
 import OneWireBus_pb2
 import OneWireTempSensor_pb2
+import Pid_pb2
+import SensorSetPointPair_pb2
+import SetPointSimple_pb2
+import XboxController_pb2
 from brewblox_codec_spark.modifiers import Modifier
 
 ObjType_ = Union[int, str]
@@ -103,49 +107,35 @@ class OneWireBusTranscoder(OptionsTranscoder):
     _MESSAGE = OneWireBus_pb2.OneWireBus
     _TYPE_INT = 256
 
-    def encode(self, values: Decoded_) -> Encoded_:
-        self.mod.modify_if_present(
-            obj=values,
-            path='/address',
-            func=lambda addr: [self.mod.hex_to_b64(a) for a in addr]
-        )
-        return super().encode(values)
-
-    def decode(self, encoded: Encoded_) -> Decoded_:
-        decoded = super().decode(encoded)
-        self.mod.modify_if_present(
-            obj=decoded,
-            path='/address',
-            func=lambda addr: [self.mod.b64_to_hex(a) for a in addr]
-        )
-        return decoded
-
 
 class OneWireTempSensorTranscoder(OptionsTranscoder):
     _MESSAGE = OneWireTempSensor_pb2.OneWireTempSensor
     _TYPE_INT = 257
 
-    def encode(self, values: Decoded_) -> Encoded_:
-        self.mod.modify_if_present(
-            obj=values,
-            path='/settings/address',
-            func=self.mod.hex_to_b64
-        )
-        return super().encode(values)
 
-    def decode(self, encoded: Encoded_) -> Decoded_:
-        decoded = super().decode(encoded)
-        self.mod.modify_if_present(
-            obj=decoded,
-            path='/settings/address',
-            func=self.mod.b64_to_hex
-        )
-        return decoded
+class SetPointSimpleTranscoder(OptionsTranscoder):
+    _MESSAGE = SetPointSimple_pb2.SetPointSimple
+    _TYPE_INT = 258
 
 
-class ExampleTranscoder(OneWireTempSensorTranscoder):
-    _MESSAGE = Example_pb2.Example
+class SensorSetPointPairTranscoder(OptionsTranscoder):
+    _MESSAGE = SensorSetPointPair_pb2.SensorSetPointPair
+    _TYPE_INT = 259
+
+
+class PidTranscoder(OptionsTranscoder):
+    _MESSAGE = Pid_pb2.Pid
+    _TYPE_INT = 260
+
+
+class EdgeCaseTranscoder(OptionsTranscoder):
+    _MESSAGE = EdgeCase_pb2.EdgeCase
     _TYPE_INT = 9001
+
+
+class XboxControllerTranscoder(OptionsTranscoder):
+    _MESSAGE = XboxController_pb2.XboxController
+    _TYPE_INT = 9002
 
 
 def _generate_mapping(vals: Iterable[Transcoder]):
@@ -157,7 +147,13 @@ def _generate_mapping(vals: Iterable[Transcoder]):
 _TRANSCODERS = [
     OneWireBusTranscoder,
     OneWireTempSensorTranscoder,
-    ExampleTranscoder,
+    SetPointSimpleTranscoder,
+    SensorSetPointPairTranscoder,
+    PidTranscoder,
+
+    # Debug/testing transcoders
+    EdgeCaseTranscoder,
+    XboxControllerTranscoder,
 ]
 
 _TYPE_MAPPING = {k: v for k, v in _generate_mapping(_TRANSCODERS)}
