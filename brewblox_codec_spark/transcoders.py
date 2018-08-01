@@ -14,6 +14,10 @@ from google.protobuf.message import Message
 import EdgeCase_pb2
 import OneWireBus_pb2
 import OneWireTempSensor_pb2
+import Pid_pb2
+import SensorSetPointPair_pb2
+import SetPointSimple_pb2
+import XboxController_pb2
 from brewblox_codec_spark.modifiers import Modifier
 
 ObjType_ = Union[int, str]
@@ -109,9 +113,29 @@ class OneWireTempSensorTranscoder(OptionsTranscoder):
     _TYPE_INT = 257
 
 
+class SetPointSimpleTranscoder(OptionsTranscoder):
+    _MESSAGE = SetPointSimple_pb2.SetPointSimple
+    _TYPE_INT = 258
+
+
+class SensorSetPointPairTranscoder(OptionsTranscoder):
+    _MESSAGE = SensorSetPointPair_pb2.SensorSetPointPair
+    _TYPE_INT = 259
+
+
+class PidTranscoder(OptionsTranscoder):
+    _MESSAGE = Pid_pb2.Pid
+    _TYPE_INT = 260
+
+
 class EdgeCaseTranscoder(OptionsTranscoder):
     _MESSAGE = EdgeCase_pb2.EdgeCase
     _TYPE_INT = 9001
+
+
+class XboxControllerTranscoder(OptionsTranscoder):
+    _MESSAGE = XboxController_pb2.XboxController
+    _TYPE_INT = 9002
 
 
 def _generate_mapping(vals: Iterable[Transcoder]):
@@ -123,7 +147,13 @@ def _generate_mapping(vals: Iterable[Transcoder]):
 _TRANSCODERS = [
     OneWireBusTranscoder,
     OneWireTempSensorTranscoder,
+    SetPointSimpleTranscoder,
+    SensorSetPointPairTranscoder,
+    PidTranscoder,
+
+    # Debug/testing transcoders
     EdgeCaseTranscoder,
+    XboxControllerTranscoder,
 ]
 
 _TYPE_MAPPING = {k: v for k, v in _generate_mapping(_TRANSCODERS)}
