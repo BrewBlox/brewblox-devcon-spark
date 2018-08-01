@@ -4,7 +4,8 @@ import 'brewblox.proto';
 
 package blox;
 
-message Example {
+// This messages allows testing edge cases that are possible, but not likely in real protobuf messages.
+message EdgeCase {
   message Settings {
     bytes address = 1;
     sint32 offset = 2 [(brewblox).unit = "delta_degC", (brewblox).scale = 256];

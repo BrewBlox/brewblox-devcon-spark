@@ -2,10 +2,14 @@
 Tests brewblox_codec_spark.modifiers
 """
 
+from brewblox_codec_spark import _path_extension  # isort:skip
+
 import pytest
 
+import OneWireTempSensor_pb2
 from brewblox_codec_spark import modifiers
-from brewblox_codec_spark.proto import OneWireTempSensor_pb2
+
+_path_extension.avoid_lint_errors()
 
 
 @pytest.fixture(scope='module')

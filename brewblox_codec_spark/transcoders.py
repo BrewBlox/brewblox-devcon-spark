@@ -11,7 +11,7 @@ from brewblox_service import brewblox_logger
 from google.protobuf import json_format
 from google.protobuf.message import Message
 
-import Example_pb2
+import EdgeCase_pb2
 import OneWireBus_pb2
 import OneWireTempSensor_pb2
 from brewblox_codec_spark.modifiers import Modifier
@@ -143,9 +143,26 @@ class OneWireTempSensorTranscoder(OptionsTranscoder):
         return decoded
 
 
-class ExampleTranscoder(OneWireTempSensorTranscoder):
-    _MESSAGE = Example_pb2.Example
+class EdgeCaseTranscoder(OptionsTranscoder):
+    _MESSAGE = EdgeCase_pb2.EdgeCase
     _TYPE_INT = 9001
+
+    def encode(self, values: Decoded_) -> Encoded_:
+        self.mod.modify_if_present(
+            obj=values,
+            path='/settings/address',
+            func=self.mod.hex_to_b64
+        )
+        return super().encode(values)
+
+    def decode(self, encoded: Encoded_) -> Decoded_:
+        decoded = super().decode(encoded)
+        self.mod.modify_if_present(
+            obj=decoded,
+            path='/settings/address',
+            func=self.mod.b64_to_hex
+        )
+        return decoded
 
 
 def _generate_mapping(vals: Iterable[Transcoder]):
@@ -157,7 +174,7 @@ def _generate_mapping(vals: Iterable[Transcoder]):
 _TRANSCODERS = [
     OneWireBusTranscoder,
     OneWireTempSensorTranscoder,
-    ExampleTranscoder,
+    EdgeCaseTranscoder,
 ]
 
 _TYPE_MAPPING = {k: v for k, v in _generate_mapping(_TRANSCODERS)}
