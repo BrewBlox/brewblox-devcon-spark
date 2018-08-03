@@ -47,32 +47,32 @@ async def test_init(conduit_mock, app, client):
     assert str(spock)
 
 
-async def test_process_response(conduit_mock, sparky):
+async def test_on_data(conduit_mock, sparky):
     assert len(sparky._requests) == 0
 
-    await sparky._process_response(conduit_mock, '05 00 |00 00 00 00')
+    await sparky._on_data(conduit_mock, '05 00 |00 00 00 00')
     await asyncio.sleep(0.0001)
     assert len(sparky._requests) == 1
     assert sparky._requests['0500'].queue.qsize() == 1
 
 
-async def test_process_response_error(mocker, conduit_mock, sparky):
+async def test_on_data_error(mocker, conduit_mock, sparky):
     logger_mock = mocker.spy(commander, 'LOGGER')
 
     # No response pipe
-    await sparky._process_response(conduit_mock, '1234')
+    await sparky._on_data(conduit_mock, '1234')
     assert len(sparky._requests) == 0
     assert logger_mock.error.call_count == 1
 
     # Valid hex, not an opcode
     # process_response does not validate - it will be cleaned up later
-    await sparky._process_response(conduit_mock, 'BB|AA')
+    await sparky._on_data(conduit_mock, 'BB|AA')
     assert len(sparky._requests) == 1
     assert logger_mock.error.call_count == 1
 
 
 async def test_command(conduit_mock, sparky):
-    await sparky._process_response(conduit_mock, '0a 36 | 00 00 00')
+    await sparky._on_data(conduit_mock, '0a 36 | 00 00 00')
 
     command = commands.ListSavedObjectsCommand.from_args()
     resp = await sparky.execute(command)
@@ -83,7 +83,7 @@ async def test_command(conduit_mock, sparky):
 
 async def test_error_command(conduit_mock, sparky):
     command = commands.ListSavedObjectsCommand.from_args()
-    await sparky._process_response(conduit_mock, '0A 36 | FF 00 ')
+    await sparky._on_data(conduit_mock, '0A 36 | FF 00 ')
 
     with pytest.raises(commands.CommandException):
         await sparky.execute(command)
@@ -133,7 +133,7 @@ async def test_queue_cleanup(mocker, conduit_mock, sparky, app):
     type(commander.TimestampedQueue()).fresh = fresh_mock
 
     await sparky.startup(app)
-    await sparky._process_response(conduit_mock, '05 00 |00 00 00')
+    await sparky._on_data(conduit_mock, '05 00 |00 00 00')
 
     # Still fresh
     await asyncio.sleep(0.1)

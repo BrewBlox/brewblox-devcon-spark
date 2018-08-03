@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 setup(
     name='brewblox-devcon-spark',
     use_scm_version={'local_scheme': lambda v: ''},
-    summary='Communication with Spark controllers',
+    description='Communication with Spark controllers',
     long_description=open('README.md').read(),
     url='https://github.com/BrewBlox/brewblox-devcon-spark',
     author='BrewPi',

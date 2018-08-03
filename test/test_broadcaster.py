@@ -9,7 +9,7 @@ import pytest
 from asynctest import CoroutineMock
 from brewblox_service import scheduler
 
-from brewblox_devcon_spark import broadcaster
+from brewblox_devcon_spark import broadcaster, status
 from brewblox_devcon_spark.api.object_api import API_DATA_KEY, API_ID_KEY
 
 TESTED = broadcaster.__name__
@@ -33,6 +33,7 @@ def mock_publisher(mocker):
 async def app(app, mock_api, mock_publisher):
     app['config']['broadcast_interval'] = 0.01
     app['config']['broadcast_exchange'] = 'testcast'
+    status.setup(app)
     scheduler.setup(app)
     broadcaster.setup(app)
     return app
@@ -42,6 +43,11 @@ async def app(app, mock_api, mock_publisher):
 async def disabled_app(app):
     app['config']['broadcast_interval'] = 0
     return app
+
+
+@pytest.fixture
+async def connected(app, client):
+    status.get_status(app).connected.set()
 
 
 async def test_startup_shutdown(app, client):
@@ -54,7 +60,7 @@ async def test_startup_shutdown(app, client):
     await b.shutdown(app)
 
 
-async def test_noop_broadcast(app, mock_api, mock_publisher, client):
+async def test_noop_broadcast(app, mock_api, mock_publisher, client, connected):
     """The mock by default emits an empty list. This should not be published."""
     b = broadcaster.get_broadcaster(app)
     await asyncio.sleep(0.1)
@@ -63,7 +69,7 @@ async def test_noop_broadcast(app, mock_api, mock_publisher, client):
     assert mock_publisher.publish.call_count == 0
 
 
-async def test_disabled(disabled_app, mock_api, mock_publisher, client):
+async def test_disabled(disabled_app, mock_api, mock_publisher, client, connected):
     b = broadcaster.get_broadcaster(disabled_app)
     await asyncio.sleep(0.1)
     assert not b.active
@@ -71,7 +77,7 @@ async def test_disabled(disabled_app, mock_api, mock_publisher, client):
     assert mock_publisher.publish.call_count == 0
 
 
-async def test_broadcast(mock_api, mock_publisher, client):
+async def test_broadcast(mock_api, mock_publisher, client, connected):
     object_list = [
         {API_ID_KEY: 'testey', API_DATA_KEY: {'var': 1}},
         {API_ID_KEY: 'testface', API_DATA_KEY: {'val': 2}}
@@ -83,7 +89,7 @@ async def test_broadcast(mock_api, mock_publisher, client):
     assert call(exchange='testcast', routing='test_app', message=objects) in mock_publisher.publish.mock_calls
 
 
-async def test_error(app, client, mock_api, mock_publisher):
+async def test_error(app, client, mock_api, mock_publisher, connected):
     b = broadcaster.get_broadcaster(app)
 
     # Don't exit after error
@@ -105,7 +111,7 @@ async def test_error(app, client, mock_api, mock_publisher):
     assert mock_publisher.publish.call_count > 0
 
 
-async def test_startup_error(app, client, mocker):
+async def test_startup_error(app, client, mocker, connected):
     logger_spy = mocker.spy(broadcaster, 'LOGGER')
 
     del app['config']['broadcast_interval']

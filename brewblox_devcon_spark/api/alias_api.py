@@ -12,7 +12,6 @@ from brewblox_service import brewblox_logger
 
 from brewblox_devcon_spark import twinkeydict
 from brewblox_devcon_spark.api import API_ID_KEY
-from brewblox_devcon_spark.device import CONTROLLER_ID_KEY, SERVICE_ID_KEY
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -85,8 +84,8 @@ async def alias_create(request: web.Request) -> web.Response:
 
     return web.json_response(
         await AliasApi(request.app).create(
-            request_args[SERVICE_ID_KEY],
-            request_args[CONTROLLER_ID_KEY]
+            request_args['service_id'],
+            request_args['controller_id']
         )
     )
 

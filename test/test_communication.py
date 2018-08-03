@@ -8,8 +8,9 @@ from unittest.mock import Mock, call
 
 import pytest
 from asynctest import CoroutineMock
-from brewblox_devcon_spark import communication
 from brewblox_service import scheduler
+
+from brewblox_devcon_spark import communication, status
 
 DummyPortInfo = namedtuple('DummyPortInfo', ['device', 'description', 'hwid', 'serial_number'])
 
@@ -131,6 +132,7 @@ def bound_collector(loop):
 @pytest.fixture
 def app(app, serial_mock, transport_mock):
     app['config']['device_url'] = None
+    status.setup(app)
     scheduler.setup(app)
     communication.setup(app)
     return app
@@ -139,8 +141,8 @@ def app(app, serial_mock, transport_mock):
 @pytest.fixture
 async def bound_conduit(app, client, bound_collector):
     conduit = communication.get_conduit(app)
-    conduit.add_event_callback(bound_collector.async_on_event)
-    conduit.add_data_callback(bound_collector.async_on_data)
+    conduit.event_callbacks.add(bound_collector.async_on_event)
+    conduit.data_callbacks.add(bound_collector.async_on_data)
 
     return conduit
 
@@ -228,8 +230,8 @@ async def test_conduit_write(bound_collector, bound_conduit, transport_mock):
 async def test_conduit_callback_multiple(loop, bound_collector, bound_conduit):
     # Change callback handler
     coll2 = Collector(loop)
-    bound_conduit.add_event_callback(coll2.async_on_event)
-    bound_conduit.add_data_callback(coll2.async_on_data)
+    bound_conduit.event_callbacks.add(coll2.async_on_event)
+    bound_conduit.data_callbacks.add(coll2.async_on_data)
 
     # Coll2 should receive all callbacks now
     _send_chunks(bound_conduit._protocol)
@@ -239,8 +241,8 @@ async def test_conduit_callback_multiple(loop, bound_collector, bound_conduit):
 
 async def test_conduit_remove_callbacks(bound_collector, bound_conduit):
     # Safe to call repeatedly
-    bound_conduit.remove_event_callback(bound_collector.async_on_event)
-    bound_conduit.remove_event_callback(bound_collector.async_on_event)
+    bound_conduit.event_callbacks.discard(bound_collector.async_on_event)
+    bound_conduit.event_callbacks.discard(bound_collector.async_on_event)
 
     # Should not raise any errors
     # No events received, but still getting data
@@ -248,8 +250,8 @@ async def test_conduit_remove_callbacks(bound_collector, bound_conduit):
     await bound_collector.verify_events([])
     await bound_collector.verify_data()
 
-    bound_conduit.remove_data_callback(bound_collector.async_on_data)
-    bound_conduit.remove_data_callback(bound_collector.async_on_data)
+    bound_conduit.data_callbacks.discard(bound_collector.async_on_data)
+    bound_conduit.data_callbacks.discard(bound_collector.async_on_data)
 
     # Now also not getting data
     _send_chunks(bound_conduit._protocol)
@@ -259,7 +261,7 @@ async def test_conduit_remove_callbacks(bound_collector, bound_conduit):
 
 async def test_conduit_err_callback(bound_conduit, expected_events):
     error_cb = CoroutineMock(side_effect=RuntimeError('boom!'))
-    bound_conduit.add_event_callback(error_cb)
+    bound_conduit.event_callbacks.add(error_cb)
 
     # no errors should be thrown
     _send_chunks(bound_conduit._protocol)

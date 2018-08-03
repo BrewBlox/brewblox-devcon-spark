@@ -31,6 +31,7 @@ def test_db():
     f.write('[]')
     f.flush()
     yield f.name
+    f.close()
 
 
 @pytest.fixture

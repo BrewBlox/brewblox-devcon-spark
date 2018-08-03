@@ -3,11 +3,12 @@ Tests brewblox_devcon_spark.device
 """
 
 import pytest
-from asynctest import CoroutineMock
 from brewblox_service import features, scheduler
 
 from brewblox_codec_spark import codec
-from brewblox_devcon_spark import commander, commander_sim, device, twinkeydict
+from brewblox_devcon_spark import (commander, commander_sim, device, status,
+                                   twinkeydict)
+from brewblox_devcon_spark.device import OBJECT_DATA_KEY, OBJECT_ID_KEY
 
 TESTED = device.__name__
 
@@ -33,6 +34,7 @@ def generate_obj():
 @pytest.fixture
 def app(app):
     """App + controller routes"""
+    status.setup(app)
     twinkeydict.setup(app)
     commander_sim.setup(app)
     scheduler.setup(app)
@@ -54,10 +56,6 @@ def ctrl(app):
 @pytest.fixture
 async def store(app, client):
     return twinkeydict.get_object_store(app)
-
-
-def test_setup(app, app_config):
-    assert device.get_controller(app).name == app_config['name']
 
 
 async def test_transcoding(app, client, cmder, store, ctrl, mocker):
@@ -106,47 +104,54 @@ async def test_list_transcoding(app, client, cmder, store, ctrl, mocker):
 
 
 async def test_resolve_id(app, client, store, mocker, ctrl):
-    random_mock = mocker.patch(TESTED + '.random_string')
-    random_mock.return_value = 'totally random string'
-
     store['alias', 123] = dict()
     store['4-2', 24] = dict()
 
-    assert await ctrl.find_controller_id(store, 'alias') == 123
-    assert await ctrl.find_controller_id(store, 840) == 840
+    resolver = device.SparkResolver(app)
 
-    assert await ctrl.find_service_id(store, 123) == 'alias'
-    assert await ctrl.find_service_id(store, 'testey') == 'testey'
+    assert await resolver.resolve_controller_id({OBJECT_ID_KEY: 'alias'}) == {OBJECT_ID_KEY: 123}
+    assert await resolver.resolve_controller_id({OBJECT_ID_KEY: 840}) == {OBJECT_ID_KEY: 840}
+
+    assert await resolver.resolve_service_id({OBJECT_ID_KEY: 123}) == {OBJECT_ID_KEY: 'alias'}
+    assert await resolver.resolve_service_id({OBJECT_ID_KEY: 'testey'}) == {OBJECT_ID_KEY: 'testey'}
+
     # Service ID not found: create placeholder
-    assert await ctrl.find_service_id(store, 66) == 'totally random string'
+    generated = await resolver.resolve_service_id({OBJECT_ID_KEY: 456})
+    assert generated[OBJECT_ID_KEY].startswith('generated|')
 
 
-async def test_resolve_links(app, client, store, mocker, ctrl):
-    finder_func = CoroutineMock(side_effect=lambda _, store, val: '|'+str(val))
+async def test_resolve_links(app, client, store):
+    store['eeney', 9001] = dict()
+    store['miney', 9002] = dict()
+    store['moo', 9003] = dict()
 
-    data = {
-        device.OBJECT_DATA_KEY: {
+    def create_data():
+        return {
+            OBJECT_DATA_KEY: {
+                'testval': 1,
+                'input<>': 'eeney',
+                'output<>': 'miney',
+                'nested': {
+                    'flappy<>': 'moo',
+                    'meaning_of_life': 42
+                }
+            }
+        }
+
+    resolver = device.SparkResolver(app)
+    output = await resolver.resolve_controller_links(create_data())
+
+    assert output == {
+        OBJECT_DATA_KEY: {
             'testval': 1,
-            'input<>': 2,
-            'output<>': 'moo',
+            'input<>': 9001,
+            'output<>': 9002,
             'nested': {
-                'flappy<>': 'floppy',
+                'flappy<>': 9003,
                 'meaning_of_life': 42
             }
         }
     }
 
-    output = await ctrl._resolve_links(finder_func, data)
-
-    assert output == data
-    assert data == {
-        device.OBJECT_DATA_KEY: {
-            'testval': 1,
-            'input<>': '|2',
-            'output<>': '|moo',
-            'nested': {
-                'flappy<>': '|floppy',
-                'meaning_of_life': 42
-            }
-        }
-    }
+    output = await resolver.resolve_service_links(output)
+    assert output == create_data()

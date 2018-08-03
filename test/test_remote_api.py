@@ -11,7 +11,7 @@ from asynctest import CoroutineMock
 from brewblox_service import scheduler
 
 from brewblox_codec_spark import codec
-from brewblox_devcon_spark import commander_sim, device, twinkeydict
+from brewblox_devcon_spark import commander_sim, device, status, twinkeydict
 from brewblox_devcon_spark.api import object_api, remote_api
 from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
                                                   API_TYPE_KEY,
@@ -74,6 +74,7 @@ def dummy_listener(mocker):
 async def app(app, mock_publisher, dummy_listener):
     """App + controller routes"""
 
+    status.setup(app)
     scheduler.setup(app)
     twinkeydict.setup(app)
     commander_sim.setup(app)
@@ -87,6 +88,7 @@ async def app(app, mock_publisher, dummy_listener):
 
 @pytest.fixture
 async def created(app, client, object_args):
+    status.get_status(app).connected.set()
     await client.post('/objects', json={
         API_ID_KEY: object_args[OBJECT_ID_KEY],
         PROFILE_LIST_KEY: object_args[PROFILE_LIST_KEY],

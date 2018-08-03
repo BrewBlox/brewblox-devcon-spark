@@ -95,21 +95,7 @@ class SparkCommander(features.ServiceFeature):
         self._cleanup_task: asyncio.Task = None
 
     def __str__(self):
-        return f'<{type(self).__name__} for {self._conduit}>'
-
-    async def startup(self, app: web.Application):
-        await self.shutdown()
-        self._conduit = communication.get_conduit(app)
-        self._conduit.add_data_callback(self._process_response)
-        self._cleanup_task = await scheduler.create_task(app, self._cleanup())
-
-    async def shutdown(self, *_):
-        if self._conduit:
-            self._conduit.remove_data_callback(self._process_response)
-            self._conduit = None
-
-        await scheduler.cancel_task(self.app, self._cleanup_task)
-        self._cleanup_task = None
+        return f'<{type(self).__name__} for {self._conduit} at {hex(id(self))}>'
 
     async def _cleanup(self):
         while True:
@@ -132,7 +118,7 @@ class SparkCommander(features.ServiceFeature):
             except Exception as ex:
                 LOGGER.warn(f'{self} cleanup task error: {ex}')
 
-    async def _process_response(self, conduit, msg: str):
+    async def _on_data(self, conduit, msg: str):
         try:
             raw_request, raw_response = msg.upper().replace(' ', '').split(RESPONSE_SEPARATOR)
 
@@ -168,3 +154,17 @@ class SparkCommander(features.ServiceFeature):
                 raise decoded
 
             return decoded
+
+    async def startup(self, app: web.Application):
+        await self.shutdown()
+        self._conduit = communication.get_conduit(app)
+        self._conduit.data_callbacks.add(self._on_data)
+        self._cleanup_task = await scheduler.create_task(app, self._cleanup())
+
+    async def shutdown(self, *_):
+        if self._conduit:
+            self._conduit.data_callbacks.discard(self._on_data)
+            self._conduit = None
+
+        await scheduler.cancel_task(self.app, self._cleanup_task)
+        self._cleanup_task = None
