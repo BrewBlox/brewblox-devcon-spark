@@ -16,6 +16,8 @@ from brewblox_service import brewblox_logger, features, scheduler
 from serial.tools import list_ports
 from serial_asyncio import SerialTransport
 
+from brewblox_devcon_spark import status
+
 LOGGER = brewblox_logger(__name__)
 DEFAULT_BAUD_RATE = 57600
 RETRY_INTERVAL_S = 1
@@ -104,19 +106,13 @@ class SparkConduit(features.ServiceFeature):
     def connected(self) -> bool:
         return bool(self._transport and not self._transport.is_closing())
 
-    def add_event_callback(self, cb: MessageCallback_):
-        cb and self._event_callbacks.add(cb)
+    @property
+    def event_callbacks(self):
+        return self._event_callbacks
 
-    def remove_event_callback(self, cb: MessageCallback_):
-        with suppress(KeyError):
-            self._event_callbacks.remove(cb)
-
-    def add_data_callback(self, cb: MessageCallback_):
-        cb and self._data_callbacks.add(cb)
-
-    def remove_data_callback(self, cb: MessageCallback_):
-        with suppress(KeyError):
-            self._data_callbacks.remove(cb)
+    @property
+    def data_callbacks(self):
+        return self._data_callbacks
 
     async def startup(self, app: web.Application):
         await self.shutdown()
@@ -163,13 +159,18 @@ class SparkConduit(features.ServiceFeature):
     async def _maintain_connection(self, connect_func: Callable[[], Awaitable[ConnectionResult_]]):
         while True:
             try:
+                spark_status = status.get_status(self.app)
                 self._address, self._transport, self._protocol = await connect_func()
 
                 await self._protocol.connected
                 LOGGER.info(f'Connected {self}')
+                spark_status.disconnected.clear()
+                spark_status.connected.set()
 
                 await self._protocol.disconnected
                 LOGGER.info(f'Disconnected {self}')
+                spark_status.connected.clear()
+                spark_status.disconnected.set()
 
             except CancelledError:
                 with suppress(Exception):

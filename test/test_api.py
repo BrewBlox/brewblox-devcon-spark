@@ -8,7 +8,7 @@ import pytest
 from brewblox_service import scheduler
 
 from brewblox_codec_spark import codec
-from brewblox_devcon_spark import commander_sim, device, twinkeydict
+from brewblox_devcon_spark import commander_sim, device, status, twinkeydict
 from brewblox_devcon_spark.api import (alias_api, debug_api, error_response,
                                        object_api, profile_api, system_api)
 from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
@@ -41,6 +41,7 @@ def object_args():
 @pytest.fixture
 async def app(app, loop):
     """App + controller routes"""
+    status.setup(app)
     scheduler.setup(app)
     commander_sim.setup(app)
     twinkeydict.setup(app)

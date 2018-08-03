@@ -9,6 +9,7 @@ from concurrent.futures import CancelledError
 from aiohttp import web
 from brewblox_service import brewblox_logger, events, features, scheduler
 
+from brewblox_devcon_spark import status
 from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
                                                   ObjectApi)
 
@@ -37,10 +38,10 @@ class Broadcaster(features.ServiceFeature):
         return bool(self._task and not self._task.done())
 
     async def startup(self, app: web.Application):
-        await self.shutdown()
+        await self.shutdown(app)
         self._task = await scheduler.create_task(app, self._broadcast())
 
-    async def shutdown(self, *_):
+    async def shutdown(self, _):
         await scheduler.cancel_task(self.app, self._task)
         self._task = None
 
@@ -49,6 +50,7 @@ class Broadcaster(features.ServiceFeature):
 
         try:
             api = ObjectApi(self.app)
+            spark_status = status.get_status(self.app)
             publisher = events.get_publisher(self.app)
             name = self.app['config']['name']
             interval = self.app['config']['broadcast_interval']
@@ -65,20 +67,21 @@ class Broadcaster(features.ServiceFeature):
 
         while True:
             try:
+                await spark_status.connected.wait()
                 await asyncio.sleep(interval)
-                state = {
+                current_objects = {
                     obj[API_ID_KEY]: obj[API_DATA_KEY]
                     for obj in await api.list_active()
                 }
 
                 # Don't broadcast when empty
-                if not state:
+                if not current_objects:
                     continue
 
                 await publisher.publish(
                     exchange=exchange,
                     routing=name,
-                    message=state
+                    message=current_objects
                 )
 
                 if not last_broadcast_ok:

@@ -6,7 +6,8 @@ from brewblox_service import brewblox_logger, events, scheduler, service
 
 from brewblox_codec_spark import codec
 from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
-                                   communication, device, twinkeydict)
+                                   communication, device, seeder, status,
+                                   twinkeydict)
 from brewblox_devcon_spark.api import (alias_api, debug_api, error_response,
                                        object_api, profile_api, remote_api,
                                        system_api)
@@ -52,20 +53,29 @@ def create_parser(default_name='spark'):
     parser.add_argument('--list-devices',
                         action='store_true',
                         help='List connected devices and exit. [%(default)s]')
+    parser.add_argument('--seed-objects',
+                        help='A file of objects that should be created on connection. [%(default)s]')
+    parser.add_argument('--seed-profiles',
+                        nargs='+',
+                        type=int,
+                        help='Profiles that should be made active on connection. [%(default)s]')
     return parser
 
 
 def main():
     app = service.create_app(parser=create_parser())
+    config = app['config']
 
-    if app['config']['list_devices']:
+    if config['list_devices']:
         LOGGER.info('Listing connected devices: ')
         for dev in [[v for v in p] for p in communication.all_ports()]:
             LOGGER.info(f'>> {" | ".join(dev)}')
         # Exit application
         return
 
-    if app['config']['simulation']:
+    status.setup(app)
+
+    if config['simulation']:
         commander_sim.setup(app)
     else:
         communication.setup(app)
@@ -86,6 +96,8 @@ def main():
     profile_api.setup(app)
     system_api.setup(app)
     remote_api.setup(app)
+
+    seeder.setup(app)
 
     service.furnish(app)
     service.run(app)

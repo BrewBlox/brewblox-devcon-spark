@@ -5,7 +5,7 @@ Monkey patches commander.SparkCommander to not require an actual connection.
 from aiohttp import web
 from brewblox_service import features
 
-from brewblox_devcon_spark import commander, commands
+from brewblox_devcon_spark import commander, commands, status
 from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                             PROFILE_LIST_KEY, SYSTEM_ID_KEY)
@@ -154,8 +154,8 @@ class SimulationCommander(commander.SparkCommander):
         super().__init__(app)
         self._responder = SimulationResponder()
 
-    async def startup(self, _):
-        pass
+    async def startup(self, app: web.Application):
+        status.get_status(app).connected.set()
 
     async def shutdown(self, _):
         pass
