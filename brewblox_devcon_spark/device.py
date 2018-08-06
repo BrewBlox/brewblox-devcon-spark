@@ -86,6 +86,9 @@ class SparkResolver():
         return content
 
     def _find_controller_id(self, store: twinkeydict.TwinKeyDict, input_id: ServiceId_) -> ControllerId_:
+        if not input_id:
+            return 0
+
         if isinstance(input_id, ControllerId_):
             return input_id
 
@@ -95,6 +98,9 @@ class SparkResolver():
             raise ValueError(f'Service ID [{input_id}] not found in {store}')
 
     def _find_service_id(self, store: twinkeydict.TwinKeyDict, input_id: ControllerId_) -> ServiceId_:
+        if not input_id:
+            return None
+
         if isinstance(input_id, ServiceId_):
             return input_id
 
