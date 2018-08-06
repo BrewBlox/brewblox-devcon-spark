@@ -5,12 +5,11 @@ Regulates actions that should be taken when the service connects to a controller
 
 import asyncio
 import json
-from contextlib import suppress
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, scheduler
 
-from brewblox_devcon_spark import status
+from brewblox_devcon_spark import status, twinkeydict
 from brewblox_devcon_spark.api import (API_DATA_KEY, API_ID_KEY,
                                        API_PROFILE_LIST_KEY, API_TYPE_KEY,
                                        object_api, profile_api)
@@ -59,15 +58,22 @@ class Seeder(features.ServiceFeature):
 
     async def _seed_objects(self):
         api = object_api.ObjectApi(self.app)
-        LOGGER.info(f'Seeding {len(self._seeds)} objects on controller')
         for seed in self._seeds:
-            with suppress(Exception):
+            try:
+                id = seed[API_ID_KEY]
                 await api.create(
-                    seed[API_ID_KEY],
+                    id,
                     seed[API_PROFILE_LIST_KEY],
                     seed[API_TYPE_KEY],
                     seed[API_DATA_KEY]
                 )
+                LOGGER.info(f'Seeded [{id}]')
+
+            except twinkeydict.TwinKeyError:
+                LOGGER.warn(f'Aborted seeding [{id}]: duplicate name, or already created')
+
+            except Exception as ex:
+                LOGGER.warn(f'Failed to seed object: {type(ex).__name__}({ex})')
 
     async def _seed_profiles(self):
         if self._profiles:
