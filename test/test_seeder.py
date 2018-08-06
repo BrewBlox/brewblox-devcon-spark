@@ -54,6 +54,9 @@ def seeds():
                 },
                 'leftTrigger': 42
             }
+        },
+        {
+            'id': 'MoonMoon'
         }
     ]
 

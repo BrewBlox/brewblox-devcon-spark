@@ -133,7 +133,8 @@ async def test_resolve_links(app, client, store):
                 'output<>': 'miney',
                 'nested': {
                     'flappy<>': 'moo',
-                    'meaning_of_life': 42
+                    'meaning_of_life': 42,
+                    'mystery<>': None
                 }
             }
         }
@@ -148,7 +149,8 @@ async def test_resolve_links(app, client, store):
             'output<>': 9002,
             'nested': {
                 'flappy<>': 9003,
-                'meaning_of_life': 42
+                'meaning_of_life': 42,
+                'mystery<>': 0
             }
         }
     }
