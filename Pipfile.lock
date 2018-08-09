@@ -51,13 +51,6 @@
             ],
             "version": "==3.3.2"
         },
-        "aiohttp-cors": {
-            "hashes": [
-                "sha256:0451ba59fdf6909d0e2cd21e4c0a43752bc0703d33fc78ae94d9d9321710193e",
-                "sha256:4d39c6d7100fd9764ed1caf8cebf0eb01bf5e3f24e2e073fda6234bc48b19f5d"
-            ],
-            "version": "==0.7.0"
-        },
         "aiohttp-swagger": {
             "hashes": [
                 "sha256:b9db24513c2092e4d5aecc897d7df01e7ba8ed2c23699536c20d1743e15f87e4"
@@ -80,10 +73,10 @@
         },
         "brewblox-service": {
             "hashes": [
-                "sha256:492bf15d3a05c23627129d4e488a3c4f032007fe778156b4ce3d138657433bac"
+                "sha256:68f5dd98f7fc1d5908e749345249c134988ea3fad0fd8d563308609888cbdd17"
             ],
             "index": "pypi",
-            "version": "==0.12.0"
+            "version": "==0.12.1"
         },
         "cchardet": {
             "hashes": [
