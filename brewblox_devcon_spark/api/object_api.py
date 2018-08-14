@@ -5,7 +5,7 @@ REST API for Spark objects
 from aiohttp import web
 from brewblox_service import brewblox_logger
 
-from brewblox_devcon_spark import device, twinkeydict
+from brewblox_devcon_spark import device, exceptions, twinkeydict
 from brewblox_devcon_spark.api import (API_DATA_KEY, API_ID_KEY, API_TYPE_KEY,
                                        alias_api)
 from brewblox_devcon_spark.device import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
@@ -36,8 +36,12 @@ class ObjectApi():
         Creates a new object in the datastore and controller.
         """
         alias_api.validate_service_id(input_id)
-        placeholder = object()
-        self._store[input_id, placeholder] = 'PLACEHOLDER'
+
+        try:
+            placeholder = object()
+            self._store[input_id, placeholder] = 'PLACEHOLDER'
+        except twinkeydict.TwinKeyError as ex:
+            raise exceptions.ExistingId() from ex
 
         try:
             created = await self._ctrl.create_object({

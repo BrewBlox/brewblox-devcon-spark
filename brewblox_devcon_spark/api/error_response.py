@@ -2,11 +2,12 @@
 Catches Python error, and returns appropriate error codes
 """
 
+import traceback
 
-from aiohttp import web
+from aiohttp import web, web_exceptions
 from brewblox_service import brewblox_logger
 
-from brewblox_devcon_spark.twinkeydict import TwinKeyError
+from brewblox_devcon_spark.exceptions import BrewBloxException
 
 LOGGER = brewblox_logger(__name__)
 
@@ -15,10 +16,18 @@ def setup(app: web.Application):
     app.middlewares.append(controller_error_middleware)
 
 
-def error_response(app: web.Application, ex: Exception) -> dict:
-    message = f'{type(ex).__name__}: {str(ex)}'
-    LOGGER.info(message, exc_info=app['config']['debug'])
-    return {'error': message}
+def error_response(request: web.Request, ex: Exception, status: int) -> web.Response:
+    app = request.app
+    message = f'{type(ex).__name__}({str(ex)})'
+    debug = app['config']['debug']
+    LOGGER.warn(f'[{request.url}] => {message}', exc_info=debug)
+
+    response = {'error': message}
+
+    if debug:
+        response['traceback'] = traceback.format_stack()
+
+    return web.json_response(response, status=status)
 
 
 @web.middleware
@@ -26,14 +35,11 @@ async def controller_error_middleware(request: web.Request, handler: web.Request
     try:
         return await handler(request)
 
-    except TwinKeyError as ex:
-        return web.json_response(
-            error_response(request.app, ex),
-            status=409  # Conflict
-        )
+    except web_exceptions.HTTPError:
+        raise  # pragma: no cover
+
+    except BrewBloxException as ex:
+        return error_response(request, ex, status=ex.status_code)
 
     except Exception as ex:
-        return web.json_response(
-            error_response(request.app, ex),
-            status=500  # Internal server error
-        )
+        return error_response(request, ex, status=500)

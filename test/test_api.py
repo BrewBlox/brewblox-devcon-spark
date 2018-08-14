@@ -8,7 +8,8 @@ import pytest
 from brewblox_service import scheduler
 
 from brewblox_codec_spark import codec
-from brewblox_devcon_spark import commander_sim, device, status, twinkeydict
+from brewblox_devcon_spark import (commander_sim, device, exceptions, status,
+                                   twinkeydict)
 from brewblox_devcon_spark.api import (alias_api, debug_api, error_response,
                                        object_api, profile_api, system_api)
 from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
@@ -58,6 +59,12 @@ async def app(app, loop):
     return app
 
 
+@pytest.fixture
+async def production_app(app, loop):
+    app['config']['debug'] = False
+    return app
+
+
 async def response(request):
     retv = await request
     assert retv.status == 200
@@ -65,24 +72,46 @@ async def response(request):
 
 
 async def test_do(app, client):
-    command = dict(command='create_object', data={
-        OBJECT_ID_KEY: 0,
-        OBJECT_TYPE_KEY: 'OneWireTempSensor',
-        PROFILE_LIST_KEY: [1, 2, 3],
-        OBJECT_DATA_KEY: {
-            'settings': {
-                'address': 'FF',
-                'offset': 20
-            },
-            'state': {
-                'value': 1234,
-                'connected': True
+    command = {
+        'command': 'create_object',
+        'data': {
+            OBJECT_ID_KEY: 0,
+            OBJECT_TYPE_KEY: 'OneWireTempSensor',
+            PROFILE_LIST_KEY: [1, 2, 3],
+            OBJECT_DATA_KEY: {
+                'settings': {
+                    'address': 'FF',
+                    'offset': 20
+                },
+                'state': {
+                    'value': 1234,
+                    'connected': True
+                }
             }
         }
-    })
+    }
 
-    retv = await client.post('/_debug/do', json=command)
-    assert retv.status == 200
+    await response(client.post('/_debug/do', json=command))
+
+    error_command = {
+        'command': 'create_object',
+        'data': {}
+    }
+
+    retv = await client.post('/_debug/do', json=error_command)
+    assert retv.status == 500
+    retd = await retv.text()
+    assert 'KeyError' in retd
+
+
+async def test_production_do(production_app, client):
+    error_command = {
+        'command': 'create_object',
+        'data': {}
+    }
+
+    retv = await client.post('/_debug/do', json=error_command)
+    assert retv.status == 500
 
 
 async def test_create(app, client, object_args):
@@ -226,9 +255,10 @@ async def test_validate_service_id(input_id):
     'f]abbergasted',
     '',
     'yes!'*51,
+    'brackey><',
 ])
 async def test_validate_service_id_error(input_id):
-    with pytest.raises(ValueError):
+    with pytest.raises(exceptions.InvalidId):
         alias_api.validate_service_id(input_id)
 
 
