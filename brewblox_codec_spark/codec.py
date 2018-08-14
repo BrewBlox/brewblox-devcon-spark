@@ -12,6 +12,7 @@ from brewblox_service import brewblox_logger, features
 from brewblox_codec_spark.modifiers import Modifier
 from brewblox_codec_spark.transcoders import (Decoded_, Encoded_, ObjType_,
                                               Transcoder)
+from brewblox_devcon_spark import exceptions
 
 TranscodeFunc_ = Callable[
     [ObjType_, Union[Encoded_, Decoded_]],
@@ -65,8 +66,11 @@ class Codec(features.ServiceFeature):
         if not isinstance(values, dict):
             raise TypeError(f'Unable to encode [{type(values).__name__}] values')
 
-        trc = Transcoder.get(obj_type, self._mod)
-        return trc.type_int(), trc.encode(deepcopy(values))
+        try:
+            trc = Transcoder.get(obj_type, self._mod)
+            return trc.type_int(), trc.encode(deepcopy(values))
+        except Exception as ex:
+            raise exceptions.EncodeException() from ex
 
     async def decode(self,
                      obj_type: ObjType_,
@@ -93,5 +97,8 @@ class Codec(features.ServiceFeature):
         if not isinstance(encoded, (bytes, list)):
             raise TypeError(f'Unable to decode [{type(encoded).__name__}] values')
 
-        trc = Transcoder.get(obj_type, self._mod)
-        return trc.type_str(), trc.decode(encoded)
+        try:
+            trc = Transcoder.get(obj_type, self._mod)
+            return trc.type_str(), trc.decode(encoded)
+        except Exception as ex:
+            raise exceptions.DecodeException() from ex

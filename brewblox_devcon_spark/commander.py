@@ -4,13 +4,13 @@ Command-based device communication
 
 import asyncio
 from collections import defaultdict
-from concurrent.futures import CancelledError
+from concurrent.futures import CancelledError, TimeoutError
 from datetime import datetime, timedelta
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, scheduler
 
-from brewblox_devcon_spark import commands, communication
+from brewblox_devcon_spark import commands, communication, exceptions
 
 LOGGER = brewblox_logger(__name__)
 
@@ -138,7 +138,11 @@ class SparkCommander(features.ServiceFeature):
             # Wait for a request resolution (matched by request)
             # Request will be resolved with a timestamped response
             queue = self._requests[encoded_request].queue
-            response = await asyncio.wait_for(queue.get(), timeout=REQUEST_TIMEOUT.seconds)
+
+            try:
+                response = await asyncio.wait_for(queue.get(), timeout=REQUEST_TIMEOUT.seconds)
+            except TimeoutError:
+                raise exceptions.CommandTimeout()
 
             if not response.fresh:
                 LOGGER.warn(f'Discarding stale response: {response}')

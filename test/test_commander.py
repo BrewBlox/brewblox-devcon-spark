@@ -10,7 +10,7 @@ import pytest
 from asynctest import CoroutineMock
 from brewblox_service import scheduler
 
-from brewblox_devcon_spark import commander, commands
+from brewblox_devcon_spark import commander, commands, exceptions
 
 TESTED = commander.__name__
 
@@ -85,8 +85,14 @@ async def test_error_command(conduit_mock, sparky):
     command = commands.ListSavedObjectsCommand.from_args()
     await sparky._on_data(conduit_mock, '0A 36 | FF 00 ')
 
-    with pytest.raises(commands.CommandException):
+    with pytest.raises(exceptions.CommandException):
         await sparky.execute(command)
+
+
+async def test_timeout_command(conduit_mock, sparky, mocker):
+    mocker.patch(TESTED + '.REQUEST_TIMEOUT', timedelta(microseconds=1))
+    with pytest.raises(exceptions.CommandTimeout):
+        await sparky.execute(commands.ListSavedObjectsCommand.from_args())
 
 
 async def test_stale_reply(conduit_mock, sparky):

@@ -157,7 +157,7 @@ async def test_create_performance(app, client, object_args):
 
 async def test_read(app, client, object_args):
     retv = await client.get('/objects/testobj')
-    assert retv.status == 500  # Object does not exist
+    assert retv.status == 400  # Object does not exist
 
     await client.post('/objects', json=object_args)
 
@@ -185,7 +185,7 @@ async def test_delete(app, client, object_args):
     assert retd[API_ID_KEY] == 'testobj'
 
     retv = await client.get('/objects/testobj')
-    assert retv.status == 500
+    assert retv.status == 400
 
 
 async def test_all(app, client, object_args):
@@ -278,7 +278,7 @@ async def test_alias_update(app, client, object_args):
     await client.post('/objects', json=object_args)
 
     retv = await client.get('/objects/newname')
-    assert retv.status == 500
+    assert retv.status == 400
 
     retv = await client.put('/aliases/testobj', json={'id': 'newname'})
     assert retv.status == 200

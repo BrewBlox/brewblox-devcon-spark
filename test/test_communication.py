@@ -10,7 +10,7 @@ import pytest
 from asynctest import CoroutineMock
 from brewblox_service import scheduler
 
-from brewblox_devcon_spark import communication, status
+from brewblox_devcon_spark import communication, exceptions, status
 
 DummyPortInfo = namedtuple('DummyPortInfo', ['device', 'description', 'hwid', 'serial_number'])
 
@@ -212,7 +212,7 @@ async def test_unbound_conduit(app, client, serial_mock, transport_mock):
 
     # test pre-bind behavior
     assert not conduit.connected
-    with pytest.raises(ConnectionError):
+    with pytest.raises(exceptions.NotConnected):
         await conduit.write('stuff')
 
 
@@ -286,7 +286,7 @@ async def test_detect_device(grep_ports_mock):
     assert communication.detect_device(serial_number='4321') == dummy[1].device
 
     grep_ports_mock.return_value = [dummy[0]]
-    with pytest.raises(ValueError):
+    with pytest.raises(exceptions.ConnectionImpossible):
         communication.detect_device(serial_number='4321')
 
 

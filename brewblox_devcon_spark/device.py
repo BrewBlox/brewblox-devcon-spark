@@ -12,7 +12,7 @@ from aiohttp import web
 from brewblox_service import brewblox_logger, features
 
 from brewblox_codec_spark import codec
-from brewblox_devcon_spark import commander, commands, twinkeydict
+from brewblox_devcon_spark import commander, commands, exceptions, twinkeydict
 from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                             PROFILE_LIST_KEY, SYSTEM_ID_KEY)
@@ -43,10 +43,6 @@ def get_controller(app: web.Application) -> 'SparkController':
 
 def setup(app: web.Application):
     features.add(app, SparkController(name=app['config']['name'], app=app))
-
-
-class ControllerException(Exception):
-    pass
 
 
 class SparkResolver():
@@ -95,7 +91,7 @@ class SparkResolver():
         try:
             return store.right_key(input_id)
         except KeyError:
-            raise ValueError(f'Service ID [{input_id}] not found in {store}')
+            raise exceptions.UnknownId(f'Service ID [{input_id}] not found in {store}')
 
     def _find_service_id(self, store: twinkeydict.TwinKeyDict, input_id: ControllerId_) -> ServiceId_:
         if not input_id:

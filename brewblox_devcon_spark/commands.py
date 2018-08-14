@@ -16,6 +16,8 @@ from brewblox_service import brewblox_logger
 from construct import (Adapter, Byte, Const, Container, Default, Enum,
                        GreedyBytes, Int8sb, Int16ub, Struct)
 
+from brewblox_devcon_spark import exceptions
+
 LOGGER = brewblox_logger(__name__)
 
 HexStr_ = str
@@ -127,14 +129,6 @@ class CRC8():
     def _crc_byte(cls, old_crc, byte):
         res = cls.CRC_TABLE[old_crc & 0xFF ^ byte & 0xFF]
         return res
-
-
-class CommandException(Exception):
-    pass
-
-
-class CRCFailure(CommandException):
-    pass
 
 
 class Command(ABC):
@@ -304,7 +298,7 @@ class Command(ABC):
 
         try:
             if int(errcode) < 0:
-                raise CommandException(f'{self.name} failed with code {errcode}')
+                raise exceptions.CommandException(f'{self.name} failed with code {errcode}')
 
             response = self._parse(self.response, combined[0])
             if self.values:
@@ -314,7 +308,7 @@ class Command(ABC):
                 ]
             self._decoded_response = response
 
-        except CommandException as ex:
+        except exceptions.CommandException as ex:
             self._decoded_response = ex
 
         return self._decoded_response
@@ -353,7 +347,7 @@ class Command(ABC):
             if CRC8.calculate(byte_val) == b'\x00':
                 byte_val = byte_val[:-1]
             else:
-                raise CRCFailure(f'{self} failed CRC check')
+                raise exceptions.CRCFailed(f'{self} failed CRC check')
 
         return normalize(struct.parse(byte_val))
 

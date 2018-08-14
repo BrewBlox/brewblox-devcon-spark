@@ -14,7 +14,7 @@ class BrewBloxException(Exception):
 
 
 class InvalidInput(BrewBloxException):
-    pass
+    status_code = 400  # HTTP bad request
 
 
 ##################################################################################################
@@ -48,15 +48,19 @@ class CommandException(BrewBloxException):
 
 
 class CommandParseException(CommandException):
-    pass
+    status_code = 424  # HTTP failed dependency
 
 
 class CommandBuildException(CommandException):
-    pass
+    status_code = 400  # HTTP bad request
 
 
 class CRCFailed(CommandException):
     pass
+
+
+class CommandTimeout(CommandException):
+    status_code = 424  # HTTP failed dependency
 
 
 ##################################################################################################
@@ -69,11 +73,15 @@ class CodecException(BrewBloxException):
 
 
 class EncodeException(CodecException):
-    pass
+    status_code = 400  # HTTP bad request
 
 
 class DecodeException(CodecException):
-    pass
+    status_code = 424  # HTTP failed dependency
+
+
+class UnknownCodecType(CodecException):
+    status_code = 422  # HTTP unprocessable entity
 
 
 ##################################################################################################
@@ -82,8 +90,12 @@ class DecodeException(CodecException):
 
 
 class ConnectionException(BrewBloxException):
-    pass
+    status_code = 424  # HTTP failed dependency
 
 
 class NotConnected(ConnectionException):
+    pass
+
+
+class ConnectionImpossible(ConnectionException):
     pass

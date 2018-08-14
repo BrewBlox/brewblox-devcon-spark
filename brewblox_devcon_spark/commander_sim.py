@@ -5,7 +5,7 @@ Monkey patches commander.SparkCommander to not require an actual connection.
 from aiohttp import web
 from brewblox_service import features
 
-from brewblox_devcon_spark import commander, commands, status
+from brewblox_devcon_spark import commander, commands, exceptions, status
 from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                             PROFILE_LIST_KEY, SYSTEM_ID_KEY)
@@ -69,12 +69,12 @@ class SimulationResponder():
         try:
             return self._objects[request[OBJECT_ID_KEY]]
         except KeyError:
-            raise commands.CommandException(f'{request} not found')
+            raise exceptions.CommandException(f'{request} not found')
 
     def _write_object(self, request):
         key = request[OBJECT_ID_KEY]
         if key not in self._objects:
-            raise commands.CommandException(f'{key} not found')
+            raise exceptions.CommandException(f'{key} not found')
 
         self._objects[key] = request
         return request
@@ -87,7 +87,7 @@ class SimulationResponder():
             key = self._next_controller_id()
             obj[OBJECT_ID_KEY] = key
         elif key in self._objects:
-            raise commands.CommandException(f'Object {key} already exists')
+            raise exceptions.CommandException(f'Object {key} already exists')
 
         self._objects[key] = obj
         return obj
@@ -100,12 +100,12 @@ class SimulationResponder():
         try:
             return self._system_objects[request[SYSTEM_ID_KEY]]
         except KeyError:
-            raise commands.CommandException(f'System object not found for {request}')
+            raise exceptions.CommandException(f'System object not found for {request}')
 
     def _write_system_object(self, request):
         key = request[SYSTEM_ID_KEY]
         if key not in self._system_objects:
-            raise commands.CommandException(f'{key} not found')
+            raise exceptions.CommandException(f'{key} not found')
 
         self._system_objects[key] = request
         return request
