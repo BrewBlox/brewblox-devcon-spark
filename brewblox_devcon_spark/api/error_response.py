@@ -25,7 +25,7 @@ def error_response(request: web.Request, ex: Exception, status: int) -> web.Resp
     response = {'error': message}
 
     if debug:
-        response['traceback'] = traceback.format_stack()
+        response['traceback'] = traceback.format_tb(ex.__traceback__)
 
     return web.json_response(response, status=status)
 

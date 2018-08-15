@@ -5,7 +5,8 @@ REST API for Spark system objects
 from aiohttp import web
 from brewblox_service import brewblox_logger
 
-from brewblox_devcon_spark.api import API_DATA_KEY, API_ID_KEY, API_TYPE_KEY
+from brewblox_devcon_spark.api import (API_DATA_KEY, API_ID_KEY, API_TYPE_KEY,
+                                       utils)
 from brewblox_devcon_spark.device import (OBJECT_DATA_KEY, OBJECT_TYPE_KEY,
                                           SYSTEM_ID_KEY, get_controller)
 
@@ -110,11 +111,12 @@ async def system_write(request: web.Request) -> web.Response:
                     example: { "command": { "opcode":2, "data":4136 } }
     """
     request_args = await request.json()
-
-    return web.json_response(
-        await SystemApi(request.app).write(
+    with utils.collecting_input():
+        args = (
             request.match_info[API_ID_KEY],
             request_args[API_TYPE_KEY],
-            request_args[API_DATA_KEY]
+            request_args[API_DATA_KEY],
         )
+    return web.json_response(
+        await SystemApi(request.app).write(*args)
     )

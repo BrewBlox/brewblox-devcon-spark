@@ -17,6 +17,10 @@ class InvalidInput(BrewBloxException):
     status_code = 400  # HTTP bad request
 
 
+class MissingInput(InvalidInput):
+    pass
+
+
 ##################################################################################################
 # ID exceptions
 ##################################################################################################

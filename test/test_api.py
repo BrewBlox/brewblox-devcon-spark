@@ -128,6 +128,15 @@ async def test_create(app, client, object_args):
     assert retd[API_ID_KEY] == 'other_obj'
 
 
+async def test_invalid_input(app, client, object_args):
+    del object_args['profiles']
+    retv = await client.post('/objects', json=object_args)
+    assert retv.status == 400
+    errtext = await retv.text()
+    assert 'MissingInput' in errtext
+    assert 'profiles' in errtext
+
+
 async def test_create_performance(app, client, object_args):
     def custom(num):
         return {
