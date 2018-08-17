@@ -5,9 +5,9 @@ REST API for Spark objects
 from aiohttp import web
 from brewblox_service import brewblox_logger
 
-from brewblox_devcon_spark import device, twinkeydict
+from brewblox_devcon_spark import device, exceptions, twinkeydict
 from brewblox_devcon_spark.api import (API_DATA_KEY, API_ID_KEY, API_TYPE_KEY,
-                                       alias_api)
+                                       alias_api, utils)
 from brewblox_devcon_spark.device import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                           OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                           PROFILE_LIST_KEY)
@@ -36,8 +36,12 @@ class ObjectApi():
         Creates a new object in the datastore and controller.
         """
         alias_api.validate_service_id(input_id)
-        placeholder = object()
-        self._store[input_id, placeholder] = 'PLACEHOLDER'
+
+        try:
+            placeholder = object()
+            self._store[input_id, placeholder] = 'PLACEHOLDER'
+        except twinkeydict.TwinKeyError as ex:
+            raise exceptions.ExistingId(ex) from ex
 
         try:
             created = await self._ctrl.create_object({
@@ -181,13 +185,16 @@ async def object_create(request: web.Request) -> web.Response:
     """
     request_args = await request.json()
 
-    return web.json_response(
-        await ObjectApi(request.app).create(
+    with utils.collecting_input():
+        args = (
             request_args[API_ID_KEY],
             request_args[PROFILE_LIST_KEY],
             request_args[API_TYPE_KEY],
-            request_args[API_DATA_KEY]
+            request_args[API_DATA_KEY],
         )
+
+    return web.json_response(
+        await ObjectApi(request.app).create(*args)
     )
 
 
@@ -262,13 +269,16 @@ async def object_write(request: web.Request) -> web.Response:
     """
     request_args = await request.json()
 
-    return web.json_response(
-        await ObjectApi(request.app).write(
+    with utils.collecting_input():
+        args = (
             request.match_info[API_ID_KEY],
             request_args[PROFILE_LIST_KEY],
             request_args[API_TYPE_KEY],
             request_args[API_DATA_KEY],
         )
+
+    return web.json_response(
+        await ObjectApi(request.app).write(*args)
     )
 
 

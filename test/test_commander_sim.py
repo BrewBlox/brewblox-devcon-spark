@@ -4,7 +4,8 @@ Tests brewblox_devcon_spark.commander_sim
 
 import pytest
 
-from brewblox_devcon_spark import commander, commander_sim, commands
+from brewblox_devcon_spark import (commander, commander_sim, commands,
+                                   exceptions)
 from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                             PROFILE_LIST_KEY, SYSTEM_ID_KEY)
@@ -49,7 +50,7 @@ async def test_create(app, loop, object_args, sim):
     assert other != created
 
     # Object ID already exists
-    with pytest.raises(commands.CommandException):
+    with pytest.raises(exceptions.CommandException):
         await sim.execute(cmd.from_args(**created))
 
 
@@ -73,10 +74,10 @@ async def test_crud(app, loop, object_args, sim):
 
     await sim.execute(delete_cmd.from_args(object_id=read_args[OBJECT_ID_KEY]))
 
-    with pytest.raises(commands.CommandException):
+    with pytest.raises(exceptions.CommandException):
         assert await sim.execute(write_cmd.from_args(**created))
 
-    with pytest.raises(commands.CommandException):
+    with pytest.raises(exceptions.CommandException):
         assert await sim.execute(read_cmd.from_args(**read_args))
 
 
@@ -94,14 +95,14 @@ async def test_system_objects(app, loop, sim, sys_object_args):
 
     assert await sim.execute(list_cmd.from_args()) == {OBJECT_LIST_KEY: [sys_obj]}
 
-    with pytest.raises(commands.CommandException):
+    with pytest.raises(exceptions.CommandException):
         wrong_obj = {
             SYSTEM_ID_KEY: 9001,
             OBJECT_TYPE_KEY: sys_obj[OBJECT_TYPE_KEY]
         }
         await sim.execute(read_cmd.from_args(**wrong_obj))
 
-    with pytest.raises(commands.CommandException):
+    with pytest.raises(exceptions.CommandException):
         wrong_obj = {
             SYSTEM_ID_KEY: 9001,
             OBJECT_TYPE_KEY: sys_obj[OBJECT_TYPE_KEY],

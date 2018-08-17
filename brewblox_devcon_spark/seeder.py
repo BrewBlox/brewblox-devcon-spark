@@ -9,7 +9,7 @@ import json
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, scheduler
 
-from brewblox_devcon_spark import status, twinkeydict
+from brewblox_devcon_spark import exceptions, status
 from brewblox_devcon_spark.api import (API_DATA_KEY, API_ID_KEY,
                                        API_PROFILE_LIST_KEY, API_TYPE_KEY,
                                        object_api, profile_api)
@@ -69,7 +69,7 @@ class Seeder(features.ServiceFeature):
                 )
                 LOGGER.info(f'Seeded [{id}]')
 
-            except twinkeydict.TwinKeyError:
+            except exceptions.ExistingId:
                 LOGGER.warn(f'Aborted seeding [{id}]: duplicate name, or already created')
 
             except Exception as ex:

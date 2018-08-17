@@ -10,20 +10,20 @@ import re
 from aiohttp import web
 from brewblox_service import brewblox_logger
 
-from brewblox_devcon_spark import twinkeydict
-from brewblox_devcon_spark.api import API_ID_KEY
+from brewblox_devcon_spark import exceptions, twinkeydict
+from brewblox_devcon_spark.api import API_ID_KEY, utils
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
 
 SERVICE_ID_PATTERN = re.compile(
-    '^[a-z]{1}[^\[\]]{0,199}$',
+    '^[a-z]{1}[^\[\]\<\>]{0,199}$',
     re.IGNORECASE
 )
-"""
-Service ID should adhere to the following rules:
+SERVICE_ID_RULES = """
+An object ID must adhere to the following rules:
 - Starts with a letter
-- May not contain square brackets: '[' or ']'
+- May not contain brackets: '[]<>'
 - At most 200 characters
 """
 
@@ -34,7 +34,7 @@ def setup(app: web.Application):
 
 def validate_service_id(id: str):
     if not re.match(SERVICE_ID_PATTERN, id):
-        raise ValueError('Invalid Service ID')
+        raise exceptions.InvalidId(SERVICE_ID_RULES)
 
 
 class AliasApi():
@@ -81,12 +81,14 @@ async def alias_create(request: web.Request) -> web.Response:
                     required: true
     """
     request_args = await request.json()
+    with utils.collecting_input():
+        args = (
+            request_args['service_id'],
+            request_args['controller_id'],
+        )
 
     return web.json_response(
-        await AliasApi(request.app).create(
-            request_args['service_id'],
-            request_args['controller_id']
-        )
+        await AliasApi(request.app).create(*args)
     )
 
 
@@ -121,9 +123,11 @@ async def alias_update(request: web.Request) -> web.Response:
                     example: onewirebus
                     required: true
     """
-    return web.json_response(
-        await AliasApi(request.app).update(
+    with utils.collecting_input():
+        args = (
             request.match_info[API_ID_KEY],
-            (await request.json())[API_ID_KEY]
+            (await request.json())[API_ID_KEY],
         )
+    return web.json_response(
+        await AliasApi(request.app).update(*args)
     )

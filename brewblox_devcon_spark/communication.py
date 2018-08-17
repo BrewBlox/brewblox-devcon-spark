@@ -16,7 +16,7 @@ from brewblox_service import brewblox_logger, features, scheduler
 from serial.tools import list_ports
 from serial_asyncio import SerialTransport
 
-from brewblox_devcon_spark import status
+from brewblox_devcon_spark import exceptions, status
 
 LOGGER = brewblox_logger(__name__)
 DEFAULT_BAUD_RATE = 57600
@@ -142,7 +142,7 @@ class SparkConduit(features.ServiceFeature):
 
     async def write_encoded(self, data: bytes):
         if not self.connected:
-            raise ConnectionError(f'{self} not connected')
+            raise exceptions.NotConnected(f'{self} not connected')
         LOGGER.debug(f'{self} writing: {data}')
         self._transport.write(data + b'\n')
 
@@ -302,7 +302,7 @@ def detect_device(device: str=None, serial_number: str=None) -> str:
             device = port.device
             LOGGER.info(f'Automatically detected {[v for v in port]}')
         except StopIteration:
-            raise ValueError(
+            raise exceptions.ConnectionImpossible(
                 f'Could not find recognized device. Known={[{v for v in p} for p in all_ports()]}')
 
     return device

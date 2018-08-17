@@ -5,7 +5,7 @@ Tests brewblox_devcon_spark.commands
 import pytest
 from construct import Struct
 
-from brewblox_devcon_spark import commands
+from brewblox_devcon_spark import commands, exceptions
 
 TESTED = commands.__name__
 
@@ -73,11 +73,11 @@ def test_values(object_args):
 
 def test_error():
     cmd = commands.WriteObjectCommand.from_encoded(None, 'fff3')
-    assert isinstance(cmd.decoded_response, commands.CommandException)
+    assert isinstance(cmd.decoded_response, exceptions.CommandException)
 
     # Also without CRC
     cmd = commands.WriteObjectCommand.from_encoded(None, 'ff')
-    assert isinstance(cmd.decoded_response, commands.CommandException)
+    assert isinstance(cmd.decoded_response, exceptions.CommandException)
 
     with pytest.raises(NotImplementedError):
         commands.DeleteObjectCommand.from_decoded(None, {'_errcode': -1})
@@ -100,8 +100,8 @@ def test_profile_adapter():
 
 def test_crc_failure():
     cmd = commands.WriteObjectCommand.from_encoded(None, '00F3')
-    assert isinstance(cmd.decoded_response, commands.CRCFailure)
+    assert isinstance(cmd.decoded_response, exceptions.CRCFailed)
 
     cmd = commands.WriteObjectCommand.from_encoded('0A00')
-    with pytest.raises(commands.CRCFailure):
+    with pytest.raises(exceptions.CRCFailed):
         cmd.decoded_request

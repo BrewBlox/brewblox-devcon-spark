@@ -18,6 +18,7 @@ from aiohttp import web
 from brewblox_service import brewblox_logger, events, scheduler
 
 from brewblox_devcon_spark import device, status
+from brewblox_devcon_spark.api import utils
 from brewblox_devcon_spark.device import OBJECT_DATA_KEY, OBJECT_ID_KEY
 
 LOGGER = brewblox_logger(__name__)
@@ -152,12 +153,14 @@ async def slave_create(request: web.Request) -> web.Response:
                         }
     """
     request_args = await request.json()
-    return web.json_response(
-        await RemoteApi(request.app).add_slave(
+    with utils.collecting_input():
+        args = (
             request_args['id'],
             request_args['key'],
-            request_args['translations']
+            request_args['translations'],
         )
+    return web.json_response(
+        await RemoteApi(request.app).add_slave(*args)
     )
 
 
@@ -189,9 +192,11 @@ async def master_create(request: web.Request) -> web.Response:
                     example: 5
     """
     request_args = await request.json()
-    return web.json_response(
-        await RemoteApi(request.app).add_master(
+    with utils.collecting_input():
+        args = (
             request_args['id'],
-            request_args['interval']
+            request_args['interval'],
         )
+    return web.json_response(
+        await RemoteApi(request.app).add_master(*args)
     )
