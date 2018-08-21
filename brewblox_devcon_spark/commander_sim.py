@@ -2,13 +2,17 @@
 Monkey patches commander.SparkCommander to not require an actual connection.
 """
 
+from itertools import count
+
 from aiohttp import web
 from brewblox_service import features
 
 from brewblox_devcon_spark import commander, commands, exceptions, status
 from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
-                                            PROFILE_LIST_KEY, SYSTEM_ID_KEY)
+                                            PROFILE_LIST_KEY)
+
+OBJECT_ID_START = 256
 
 
 def setup(app: web.Application):
@@ -24,31 +28,26 @@ class SimulationResponder():
             commands.WriteObjectCommand: self._write_object,
             commands.CreateObjectCommand: self._create_object,
             commands.DeleteObjectCommand: self._delete_object,
-            commands.ReadSystemObjectCommand: self._read_system_object,
-            commands.WriteSystemObjectCommand: self._write_system_object,
             commands.ReadActiveProfilesCommand: self._read_active_profiles,
             commands.WriteActiveProfilesCommand: self._write_active_profiles,
             commands.ListActiveObjectsCommand: self._list_active_objects,
             commands.ListSavedObjectsCommand: self._list_saved_objects,
-            commands.ListSystemObjectsCommand: self._list_system_objects,
             commands.ClearProfileCommand: self._clear_profile,
             commands.FactoryResetCommand: self._factory_reset,
             commands.RestartCommand: self._restart,
         }
 
-        self._current_id = 0
+        self._id_counter = count(start=OBJECT_ID_START)
         self._active_profiles = []
 
-        self._system_objects = {
-            2: {
-                SYSTEM_ID_KEY: 2,
+        self._objects = {
+            3: {  # OneWireBus
+                OBJECT_ID_KEY: 3,
                 OBJECT_TYPE_KEY: 256,
-                # data: {'command':{}, 'address':['aa','bb']}
-                OBJECT_DATA_KEY: b'\n\x00\x12\x01\xaa\x12\x01\xbb\x00'
+                PROFILE_LIST_KEY: [i for i in range(8)],
+                OBJECT_DATA_KEY: b'\x00'
             }
         }
-
-        self._objects = {}
 
     def respond(self, cmd) -> commands.Command:
         # Encode + decode request
@@ -60,10 +59,6 @@ class SimulationResponder():
         # Encode + decode response
         encoding_cmd = cmd.from_decoded(cmd.decoded_request, retv or dict())
         return cmd.from_encoded(encoding_cmd.encoded_request, encoding_cmd.encoded_response)
-
-    def _next_controller_id(self):
-        self._current_id += 1
-        return self._current_id
 
     def _read_object(self, request):
         try:
@@ -84,7 +79,7 @@ class SimulationResponder():
         obj = request
 
         if not key:
-            key = self._next_controller_id()
+            key = next(self._id_counter)
             obj[OBJECT_ID_KEY] = key
         elif key in self._objects:
             raise exceptions.CommandException(f'Object {key} already exists')
@@ -95,20 +90,6 @@ class SimulationResponder():
     def _delete_object(self, request):
         key = request[OBJECT_ID_KEY]
         del self._objects[key]
-
-    def _read_system_object(self, request):
-        try:
-            return self._system_objects[request[SYSTEM_ID_KEY]]
-        except KeyError:
-            raise exceptions.CommandException(f'System object not found for {request}')
-
-    def _write_system_object(self, request):
-        key = request[SYSTEM_ID_KEY]
-        if key not in self._system_objects:
-            raise exceptions.CommandException(f'{key} not found')
-
-        self._system_objects[key] = request
-        return request
 
     def _read_active_profiles(self, request):
         return {PROFILE_LIST_KEY: self._active_profiles}
@@ -122,7 +103,8 @@ class SimulationResponder():
             PROFILE_LIST_KEY: self._active_profiles,
             OBJECT_LIST_KEY: [
                 obj for obj in self._objects.values()
-                if set(obj[PROFILE_LIST_KEY]) & set(self._active_profiles)
+                if obj[OBJECT_ID_KEY] < OBJECT_ID_START
+                or set(obj[PROFILE_LIST_KEY]) & set(self._active_profiles)
             ]
         }
 
@@ -131,9 +113,6 @@ class SimulationResponder():
             PROFILE_LIST_KEY: self._active_profiles,
             OBJECT_LIST_KEY: [obj for obj in self._objects.values()]
         }
-
-    def _list_system_objects(self, request):
-        return {OBJECT_LIST_KEY: [obj for obj in self._system_objects.values()]}
 
     def _clear_profile(self, request):
         cleared_profiles = request[PROFILE_LIST_KEY]

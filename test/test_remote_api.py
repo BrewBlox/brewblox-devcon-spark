@@ -11,7 +11,7 @@ from asynctest import CoroutineMock
 from brewblox_service import scheduler
 
 from brewblox_codec_spark import codec
-from brewblox_devcon_spark import commander_sim, device, status, twinkeydict
+from brewblox_devcon_spark import commander_sim, datastore, device, status
 from brewblox_devcon_spark.api import object_api, remote_api
 from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
                                                   API_TYPE_KEY,
@@ -76,7 +76,7 @@ async def app(app, mock_publisher, dummy_listener):
 
     status.setup(app)
     scheduler.setup(app)
-    twinkeydict.setup(app)
+    datastore.setup(app)
     commander_sim.setup(app)
     codec.setup(app)
     device.setup(app)

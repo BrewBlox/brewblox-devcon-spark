@@ -9,7 +9,7 @@ import json
 from collections.abc import MutableMapping
 from concurrent.futures import CancelledError
 from contextlib import suppress
-from typing import Any, Dict, Hashable, Iterator, Tuple
+from typing import Any, Callable, Dict, Hashable, Iterator, Tuple
 
 import aiofiles
 from aiohttp import web
@@ -21,24 +21,6 @@ Keys_ = Tuple[Hashable, Hashable]
 LOGGER = brewblox_logger(__name__)
 
 FLUSH_DELAY_S = 5
-
-
-def setup(app: web.Application):
-    config = app['config']
-    features.add(app,
-                 TwinKeyFileDict(app, config['database']),
-                 key='object_store')
-    features.add(app,
-                 TwinKeyFileDict(app, config['system_database'], read_only=True),
-                 key='system_store')
-
-
-def get_object_store(app) -> 'TwinKeyDict':
-    return features.get(app, key='object_store')
-
-
-def get_system_store(app) -> 'TwinKeyDict':
-    return features.get(app, key='system_store')
 
 
 class TwinKeyError(Exception):
@@ -204,12 +186,18 @@ class TwinKeyFileDict(features.ServiceFeature, TwinKeyDict):
         >>> await twinkey.write_file()
     """
 
-    def __init__(self, app: web.Application, filename: str, read_only: bool=False):
+    def __init__(self,
+                 app: web.Application,
+                 filename: str,
+                 read_only: bool=False,
+                 filter: Callable[[Keys_, Any], bool]=lambda k, v: True
+                 ):
         features.ServiceFeature.__init__(self, app)
         TwinKeyDict.__init__(self)
 
         self._filename: str = filename
         self._read_only: bool = read_only
+        self._filter: Callable[[Keys_, Any], bool] = filter
         self._flush_task: asyncio.Task = None
         self._changed_event: asyncio.Event = None
 
@@ -251,7 +239,11 @@ class TwinKeyFileDict(features.ServiceFeature, TwinKeyDict):
 
     async def write_file(self):
         self._check_writable()
-        persisted = [{'keys': keys, 'data': content} for keys, content in self.items()]
+        persisted = [
+            {'keys': keys, 'data': content}
+            for keys, content in self.items()
+            if self._filter(keys, content)
+        ]
         async with aiofiles.open(self._filename, mode='w') as f:
             await f.write(json.dumps(persisted))
 

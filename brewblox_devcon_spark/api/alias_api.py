@@ -10,7 +10,7 @@ import re
 from aiohttp import web
 from brewblox_service import brewblox_logger
 
-from brewblox_devcon_spark import exceptions, twinkeydict
+from brewblox_devcon_spark import datastore, exceptions
 from brewblox_devcon_spark.api import API_ID_KEY, utils
 
 LOGGER = brewblox_logger(__name__)
@@ -40,7 +40,7 @@ def validate_service_id(id: str):
 class AliasApi():
 
     def __init__(self, app: web.Application):
-        self._store = twinkeydict.get_object_store(app)
+        self._store = datastore.get_datastore(app)
 
     async def create(self, service_id: str, controller_id: int) -> dict:
         validate_service_id(service_id)

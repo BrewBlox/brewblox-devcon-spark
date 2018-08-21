@@ -6,11 +6,10 @@ from brewblox_service import brewblox_logger, events, scheduler, service
 
 from brewblox_codec_spark import codec
 from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
-                                   communication, device, seeder, status,
-                                   twinkeydict)
+                                   communication, datastore, device, seeder,
+                                   status)
 from brewblox_devcon_spark.api import (alias_api, debug_api, error_response,
-                                       object_api, profile_api, remote_api,
-                                       system_api)
+                                       object_api, profile_api, remote_api)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -20,9 +19,6 @@ def create_parser(default_name='spark'):
     parser.add_argument('--database',
                         help='Backing file for the object database. [%(default)s]',
                         default='brewblox_db.json')
-    parser.add_argument('--system-database',
-                        help='Backing file for the system object database. [%(default)s]',
-                        default='config/brewblox_sys_db.json')
     parser.add_argument('--device-port',
                         help='Spark device port. Automatically determined if not set. [%(default)s]')
     parser.add_argument('--device-url-port',
@@ -85,7 +81,7 @@ def main():
     events.setup(app)
 
     codec.setup(app)
-    twinkeydict.setup(app)
+    datastore.setup(app)
     device.setup(app)
     broadcaster.setup(app)
 
@@ -94,7 +90,6 @@ def main():
     alias_api.setup(app)
     object_api.setup(app)
     profile_api.setup(app)
-    system_api.setup(app)
     remote_api.setup(app)
 
     seeder.setup(app)

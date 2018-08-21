@@ -10,8 +10,8 @@ import pytest
 from brewblox_service import scheduler
 
 from brewblox_codec_spark import codec
-from brewblox_devcon_spark import (commander_sim, device, seeder, status,
-                                   twinkeydict)
+from brewblox_devcon_spark import (commander_sim, datastore, device, seeder,
+                                   status)
 from brewblox_devcon_spark.api import object_api, profile_api
 
 TESTED = seeder.__name__
@@ -77,7 +77,7 @@ async def app(app, seeds_file):
 
     status.setup(app)
     scheduler.setup(app)
-    twinkeydict.setup(app)
+    datastore.setup(app)
     commander_sim.setup(app)
     codec.setup(app)
     device.setup(app)
@@ -97,6 +97,7 @@ async def test_seeding(app, client, seeds, spark_status):
     assert await profile_api.ProfileApi(app).read_active() == [1, 3, 7]
     read_ids = {obj['id'] for obj in await object_api.ObjectApi(app).list_active()}
     assert read_ids == {
+        'onewirebus',
         'tempsensor',
         'boxy'
     }
@@ -108,7 +109,7 @@ async def test_reseed(app, client, seeds, spark_status):
     papi = profile_api.ProfileApi(app)
 
     await oapi.delete('boxy')
-    assert len(await oapi.list_active()) == 1
+    assert len(await oapi.list_active()) == 1 + 1  # system objects
     await papi.write_active([1])
 
     # If no profiles are set, then nothing should be written to controller

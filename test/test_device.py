@@ -6,8 +6,8 @@ import pytest
 from brewblox_service import features, scheduler
 
 from brewblox_codec_spark import codec
-from brewblox_devcon_spark import (commander, commander_sim, device, status,
-                                   twinkeydict)
+from brewblox_devcon_spark import (commander, commander_sim, datastore, device,
+                                   status)
 from brewblox_devcon_spark.device import OBJECT_DATA_KEY, OBJECT_ID_KEY
 
 TESTED = device.__name__
@@ -35,7 +35,7 @@ def generate_obj():
 def app(app):
     """App + controller routes"""
     status.setup(app)
-    twinkeydict.setup(app)
+    datastore.setup(app)
     commander_sim.setup(app)
     scheduler.setup(app)
     codec.setup(app)
@@ -55,7 +55,7 @@ def ctrl(app):
 
 @pytest.fixture
 async def store(app, client):
-    return twinkeydict.get_object_store(app)
+    return datastore.get_datastore(app)
 
 
 async def test_transcoding(app, client, cmder, store, ctrl, mocker):
@@ -99,8 +99,8 @@ async def test_list_transcoding(app, client, cmder, store, ctrl, mocker):
     decode_spy = mocker.spy(c, 'decode')
 
     retval = await ctrl.list_saved_objects()
-    assert len(retval['objects']) == 5
-    assert decode_spy.call_count == 5
+    assert len(retval['objects']) == 5 + 1
+    assert decode_spy.call_count == 5 + 1
 
 
 async def test_resolve_id(app, client, store, mocker, ctrl):

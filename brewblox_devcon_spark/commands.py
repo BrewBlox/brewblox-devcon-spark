@@ -26,7 +26,6 @@ HexStr_ = str
 VALUE_SEPARATOR = ','
 
 OBJECT_ID_KEY = 'object_id'
-SYSTEM_ID_KEY = 'system_object_id'
 OBJECT_TYPE_KEY = 'object_type'
 OBJECT_DATA_KEY = 'object_data'
 OBJECT_LIST_KEY = 'objects'
@@ -355,11 +354,9 @@ class Command(ABC):
 # Reoccurring data types - can be used as a macro
 _PROFILE_LIST = Struct(PROFILE_LIST_KEY / ProfileListAdapter())
 _OBJECT_ID = Struct(OBJECT_ID_KEY / Int16ub)
-_SYSTEM_ID = Struct(SYSTEM_ID_KEY / Int16ub)
 _OBJECT_TYPE = Struct(OBJECT_TYPE_KEY / Int16ub)
 _OBJECT_DATA = Struct(OBJECT_DATA_KEY / GreedyBytes)
 _OBJECT = _OBJECT_ID + _PROFILE_LIST + _OBJECT_TYPE + _OBJECT_DATA
-_SYSTEM_OBJECT = _SYSTEM_ID + _OBJECT_TYPE + _OBJECT_DATA
 
 # Special cases
 _CREATE_ID = Struct(OBJECT_ID_KEY / Default(Int16ub, 0))  # 0 == assigned by controller
@@ -393,20 +390,6 @@ class DeleteObjectCommand(Command):
     _VALUES = None
 
 
-class ReadSystemObjectCommand(Command):
-    _OPCODE = OpcodeEnum.READ_SYSTEM_OBJECT
-    _REQUEST = _SYSTEM_ID + _OBJECT_TYPE
-    _RESPONSE = _SYSTEM_OBJECT
-    _VALUES = None
-
-
-class WriteSystemObjectCommand(Command):
-    _OPCODE = OpcodeEnum.WRITE_SYSTEM_OBJECT
-    _REQUEST = _SYSTEM_OBJECT
-    _RESPONSE = _SYSTEM_OBJECT
-    _VALUES = None
-
-
 class ReadActiveProfilesCommand(Command):
     _OPCODE = OpcodeEnum.READ_ACTIVE_PROFILES
     _REQUEST = None
@@ -433,13 +416,6 @@ class ListSavedObjectsCommand(Command):
     _REQUEST = None
     _RESPONSE = _PROFILE_LIST
     _VALUES = (OBJECT_LIST_KEY, _OBJECT)
-
-
-class ListSystemObjectsCommand(Command):
-    _OPCODE = OpcodeEnum.LIST_SYSTEM_OBJECTS
-    _REQUEST = None
-    _RESPONSE = None
-    _VALUES = (OBJECT_LIST_KEY, _SYSTEM_OBJECT)
 
 
 class ClearProfileCommand(Command):

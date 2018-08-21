@@ -2,13 +2,15 @@
 Tests brewblox_devcon_spark.commander_sim
 """
 
+from unittest.mock import ANY
+
 import pytest
 
 from brewblox_devcon_spark import (commander, commander_sim, commands,
                                    exceptions)
 from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
-                                            PROFILE_LIST_KEY, SYSTEM_ID_KEY)
+                                            PROFILE_LIST_KEY)
 
 
 @pytest.fixture
@@ -28,14 +30,6 @@ def object_args():
         PROFILE_LIST_KEY: [1, 3, 5],
         OBJECT_TYPE_KEY: 1,
         OBJECT_DATA_KEY: bytes([0x0F]*10)
-    }
-
-
-@pytest.fixture
-def sys_object_args():
-    return {
-        SYSTEM_ID_KEY: 2,
-        OBJECT_TYPE_KEY: 256
     }
 
 
@@ -81,36 +75,6 @@ async def test_crud(app, loop, object_args, sim):
         assert await sim.execute(read_cmd.from_args(**read_args))
 
 
-async def test_system_objects(app, loop, sim, sys_object_args):
-    read_cmd = commands.ReadSystemObjectCommand
-    write_cmd = commands.WriteSystemObjectCommand
-    list_cmd = commands.ListSystemObjectsCommand
-
-    sys_obj = await sim.execute(read_cmd.from_args(**sys_object_args))
-    assert OBJECT_DATA_KEY in sys_obj
-
-    sys_obj[OBJECT_DATA_KEY] = bytes([0xFF]*10)
-    assert await sim.execute(write_cmd.from_args(**sys_obj)) == sys_obj
-    assert await sim.execute(read_cmd.from_args(**sys_object_args)) == sys_obj
-
-    assert await sim.execute(list_cmd.from_args()) == {OBJECT_LIST_KEY: [sys_obj]}
-
-    with pytest.raises(exceptions.CommandException):
-        wrong_obj = {
-            SYSTEM_ID_KEY: 9001,
-            OBJECT_TYPE_KEY: sys_obj[OBJECT_TYPE_KEY]
-        }
-        await sim.execute(read_cmd.from_args(**wrong_obj))
-
-    with pytest.raises(exceptions.CommandException):
-        wrong_obj = {
-            SYSTEM_ID_KEY: 9001,
-            OBJECT_TYPE_KEY: sys_obj[OBJECT_TYPE_KEY],
-            OBJECT_DATA_KEY: sys_obj[OBJECT_DATA_KEY]
-        }
-        await sim.execute(write_cmd.from_args(**wrong_obj))
-
-
 async def test_profiles(app, loop, sim, object_args):
     create_cmd = commands.CreateObjectCommand
     read_cmd = commands.ReadObjectCommand
@@ -128,11 +92,11 @@ async def test_profiles(app, loop, sim, object_args):
     }
     assert await sim.execute(active_cmd.from_args()) == {
         PROFILE_LIST_KEY: [],
-        OBJECT_LIST_KEY: []
+        OBJECT_LIST_KEY: [ANY]
     }
     assert await sim.execute(saved_cmd.from_args()) == {
         PROFILE_LIST_KEY: [],
-        OBJECT_LIST_KEY: [created]
+        OBJECT_LIST_KEY: [ANY, created]
     }
 
     # Activate profile 1
@@ -141,11 +105,11 @@ async def test_profiles(app, loop, sim, object_args):
     assert await sim.execute(get_profile_cmd.from_args()) == active
     assert await sim.execute(active_cmd.from_args()) == {
         PROFILE_LIST_KEY: [1],
-        OBJECT_LIST_KEY: [created]
+        OBJECT_LIST_KEY: [ANY, created]
     }
     assert await sim.execute(saved_cmd.from_args()) == {
         PROFILE_LIST_KEY: [1],
-        OBJECT_LIST_KEY: [created]
+        OBJECT_LIST_KEY: [ANY, created]
     }
 
     # Clear profile 1
@@ -154,7 +118,7 @@ async def test_profiles(app, loop, sim, object_args):
     assert await sim.execute(get_profile_cmd.from_args()) == active
     assert await sim.execute(active_cmd.from_args()) == {
         PROFILE_LIST_KEY: [1],
-        OBJECT_LIST_KEY: []
+        OBJECT_LIST_KEY: [ANY]
     }
 
     read_args = {

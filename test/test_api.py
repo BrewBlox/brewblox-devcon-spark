@@ -8,10 +8,10 @@ import pytest
 from brewblox_service import scheduler
 
 from brewblox_codec_spark import codec
-from brewblox_devcon_spark import (commander_sim, device, exceptions, status,
-                                   twinkeydict)
+from brewblox_devcon_spark import (commander_sim, datastore, device,
+                                   exceptions, status)
 from brewblox_devcon_spark.api import (alias_api, debug_api, error_response,
-                                       object_api, profile_api, system_api)
+                                       object_api, profile_api)
 from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
                                                   API_TYPE_KEY,
                                                   OBJECT_DATA_KEY,
@@ -45,7 +45,7 @@ async def app(app, loop):
     status.setup(app)
     scheduler.setup(app)
     commander_sim.setup(app)
-    twinkeydict.setup(app)
+    datastore.setup(app)
     codec.setup(app)
     device.setup(app)
 
@@ -54,7 +54,6 @@ async def app(app, loop):
     alias_api.setup(app)
     object_api.setup(app)
     profile_api.setup(app)
-    system_api.setup(app)
 
     return app
 
@@ -161,7 +160,7 @@ async def test_create_performance(app, client, object_args):
     assert [retv.status for retv in responses] == [200]*num_items
 
     retd = await response(client.get('/saved_objects'))
-    assert len(retd) == num_items
+    assert len(retd) == num_items + 1  # system objects
 
 
 async def test_read(app, client, object_args):
@@ -198,38 +197,27 @@ async def test_delete(app, client, object_args):
 
 
 async def test_all(app, client, object_args):
-    assert await response(client.get('/saved_objects')) == []
+    retd = await response(client.get('/saved_objects'))
+    assert len(retd) == 1  # system object
 
     await client.post('/objects', json=object_args)
     retd = await response(client.get('/saved_objects'))
-    assert len(retd) == 1
+    assert len(retd) == 1 + 1  # system objects
 
 
 async def test_active(app, client, object_args):
     retd = await response(client.get('/objects'))
-    assert retd == []
+    assert len(retd) == 1
 
     await client.post('/objects', json=object_args)
     retd = await response(client.get('/objects'))
-    assert retd == []
+    assert len(retd) == 1
 
     await client.post('/profiles', json=[1])
 
     retd = await response(client.get('/objects'))
-    assert len(retd) == 1
-    assert retd[0][API_ID_KEY] == object_args[API_ID_KEY]
-
-
-async def test_system_read(app, client, object_args):
-    # No system objects found
-    # TODO(Bob): add preset system objects to simulator
-    await response(client.get('/system/onewirebus'))
-
-
-async def test_system_update(app, client, object_args):
-    # No system objects found
-    # TODO(Bob): add preset system objects to simulator
-    await response(client.put('/system/onewirebus', json=object_args))
+    assert len(retd) == 1 + 1  # system objects
+    assert retd[1][API_ID_KEY] == object_args[API_ID_KEY]
 
 
 async def test_profiles(app, client):
