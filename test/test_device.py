@@ -18,7 +18,7 @@ NUM_SYSTEM_OBJECTS = 4
 def generate_obj():
     return 'EdgeCase', {
         'settings': {
-            'address': 'ff',
+            'address': 'ff'.rjust(16, '0'),
             'offset[delta_degC]': 20
         },
         'state': {
@@ -81,8 +81,8 @@ async def test_transcoding(app, client, cmder, store, ctrl, mocker):
     retval = await ctrl.create_object(object_args)
     assert retval['object_data']['settings']['address'] == 'ff'.rjust(16, '0')
 
-    encode_spy.assert_called_once_with(obj_type, obj_data)
-    decode_spy.assert_called_once_with(enc_type, enc_data)
+    encode_spy.assert_any_call(obj_type, obj_data)
+    decode_spy.assert_any_call(enc_type, enc_data)
 
 
 async def test_list_transcoding(app, client, cmder, store, ctrl, mocker):
@@ -98,12 +98,8 @@ async def test_list_transcoding(app, client, cmder, store, ctrl, mocker):
             'object_data': obj_data
         })
 
-    c = codec.get_codec(app)
-    decode_spy = mocker.spy(c, 'decode')
-
     retval = await ctrl.list_stored_objects()
     assert len(retval['objects']) == 5 + NUM_SYSTEM_OBJECTS
-    assert decode_spy.call_count == 5 + NUM_SYSTEM_OBJECTS
 
 
 async def test_resolve_id(app, client, store, mocker, ctrl):

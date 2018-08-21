@@ -5,7 +5,8 @@ Tests brewblox_devcon_spark.commander_sim
 import pytest
 
 from brewblox_devcon_spark import (commander, commander_sim, commands,
-                                   exceptions)
+                                   exceptions, status)
+from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                             PROFILE_LIST_KEY)
@@ -13,7 +14,9 @@ from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
 
 @pytest.fixture
 def app(app):
+    status.setup(app)
     commander_sim.setup(app)
+    codec.setup(app)
     return app
 
 
@@ -26,12 +29,12 @@ def sim(app):
 def object_args():
     return {
         PROFILE_LIST_KEY: [0],
-        OBJECT_TYPE_KEY: 1,
-        OBJECT_DATA_KEY: bytes([0x0F]*10)
+        OBJECT_TYPE_KEY: 257,  # OneWireTempSensor
+        OBJECT_DATA_KEY: b'\x00'
     }
 
 
-async def test_create(app, loop, object_args, sim):
+async def test_create(app, client, object_args, sim):
     cmd = commands.CreateObjectCommand
 
     created = await sim.execute(cmd.from_args(**object_args))
@@ -46,7 +49,7 @@ async def test_create(app, loop, object_args, sim):
         await sim.execute(cmd.from_args(**created))
 
 
-async def test_crud(app, loop, object_args, sim):
+async def test_crud(app, client, object_args, sim):
     create_cmd = commands.CreateObjectCommand
     delete_cmd = commands.DeleteObjectCommand
     read_cmd = commands.ReadObjectCommand
@@ -73,7 +76,7 @@ async def test_crud(app, loop, object_args, sim):
         assert await sim.execute(read_cmd.from_args(**read_args))
 
 
-async def test_clear(app, loop, object_args, sim):
+async def test_clear(app, client, object_args, sim):
     create_cmd = commands.CreateObjectCommand
     list_cmd = commands.ListActiveObjectsCommand
     clear_cmd = commands.ClearObjectsCommand
@@ -86,7 +89,7 @@ async def test_clear(app, loop, object_args, sim):
     assert len(post[OBJECT_LIST_KEY]) == len(pre[OBJECT_LIST_KEY]) - 1
 
 
-async def test_noops(app, loop, sim):
+async def test_noops(app, client, sim):
     for cmd in [
         commands.FactoryResetCommand,
         commands.RebootCommand

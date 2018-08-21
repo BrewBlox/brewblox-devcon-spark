@@ -2,12 +2,16 @@
 Monkey patches commander.SparkCommander to not require an actual connection.
 """
 
+from contextlib import suppress
+from copy import deepcopy
 from itertools import count
+from typing import List
 
 from aiohttp import web
 from brewblox_service import features
 
 from brewblox_devcon_spark import commander, commands, exceptions, status
+from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                             PROFILE_LIST_KEY)
@@ -23,7 +27,7 @@ def setup(app: web.Application):
 class SimulationResponder():
 
     def __init__(self):
-        self._generators = {
+        self._handlers = {
             commands.ReadObjectCommand: self._read_object,
             commands.WriteObjectCommand: self._write_object,
             commands.CreateObjectCommand: self._create_object,
@@ -36,56 +40,90 @@ class SimulationResponder():
         }
 
         self._id_counter = count(start=OBJECT_ID_START)
+        self._codec: codec.Codec = None
         self._active_profiles = [0]
 
         def all_profiles():
             return [i for i in range(8)]
 
         self._objects = {
-            1: {  # SysInfo
+            1: {
                 OBJECT_ID_KEY: 1,
-                OBJECT_TYPE_KEY: 264,
+                OBJECT_TYPE_KEY: 'SysInfo',
                 PROFILE_LIST_KEY: all_profiles(),
-                OBJECT_DATA_KEY: b'\x00',
+                OBJECT_DATA_KEY: {},
             },
-            2: {  # Ticks
+            2: {
                 OBJECT_ID_KEY: 2,
-                OBJECT_TYPE_KEY: 262,
+                OBJECT_TYPE_KEY: 'Ticks',
                 PROFILE_LIST_KEY: all_profiles(),
-                OBJECT_DATA_KEY: b'\x00',
+                OBJECT_DATA_KEY: {},
             },
-            3: {  # OneWireBus
+            3: {
                 OBJECT_ID_KEY: 3,
-                OBJECT_TYPE_KEY: 256,
+                OBJECT_TYPE_KEY: 'OneWireBus',
                 PROFILE_LIST_KEY: all_profiles(),
-                OBJECT_DATA_KEY: b'\x00',
+                OBJECT_DATA_KEY: {},
             },
-            4: {  # Profiles
+            4: {
                 OBJECT_ID_KEY: 4,
-                OBJECT_TYPE_KEY: 263,
+                OBJECT_TYPE_KEY: 'Profiles',
                 PROFILE_LIST_KEY: all_profiles(),
-                OBJECT_DATA_KEY: b'\x08\x01\x00',  # active = 1 (profiles=[0])
+                OBJECT_DATA_KEY: {'active': [0]},
             }
         }
 
-    def respond(self, cmd) -> commands.Command:
+    async def startup(self, app: web.Application):
+        self._codec = codec.get_codec(app)
+
+    @staticmethod
+    def _get_content_objects(content: dict) -> List[dict]:
+        objects_to_process = [content]
+        with suppress(KeyError):
+            objects_to_process += content[OBJECT_LIST_KEY]
+        return objects_to_process
+
+    async def respond(self, cmd) -> commands.Command:
         # Encode + decode request
         args = cmd.from_encoded(cmd.encoded_request, None).decoded_request
 
-        func = self._generators[type(cmd)]
-        retv = func(args)
+        for obj in self._get_content_objects(args):
+            with suppress(KeyError):
+                dec_type, dec_data = await self._codec.decode(
+                    obj[OBJECT_TYPE_KEY],
+                    obj[OBJECT_DATA_KEY]
+                )
+                obj.update({
+                    OBJECT_TYPE_KEY: dec_type,
+                    OBJECT_DATA_KEY: dec_data
+                })
+
+        func = self._handlers[type(cmd)]
+        retv = await func(args)
+        retv = deepcopy(retv) if retv else dict()
+
+        for obj in self._get_content_objects(retv):
+            with suppress(KeyError):
+                enc_type, enc_data = await self._codec.encode(
+                    obj[OBJECT_TYPE_KEY],
+                    obj[OBJECT_DATA_KEY]
+                )
+                obj.update({
+                    OBJECT_TYPE_KEY: enc_type,
+                    OBJECT_DATA_KEY: enc_data
+                })
 
         # Encode + decode response
-        encoding_cmd = cmd.from_decoded(cmd.decoded_request, retv or dict())
+        encoding_cmd = cmd.from_decoded(cmd.decoded_request, retv)
         return cmd.from_encoded(encoding_cmd.encoded_request, encoding_cmd.encoded_response)
 
-    def _read_object(self, request):
+    async def _read_object(self, request):
         try:
             return self._objects[request[OBJECT_ID_KEY]]
         except KeyError:
             raise exceptions.CommandException(f'{request} not found')
 
-    def _write_object(self, request):
+    async def _write_object(self, request):
         key = request[OBJECT_ID_KEY]
         if key not in self._objects:
             raise exceptions.CommandException(f'{key} not found')
@@ -93,7 +131,7 @@ class SimulationResponder():
         self._objects[key] = request
         return request
 
-    def _create_object(self, request):
+    async def _create_object(self, request):
         key = request.get(OBJECT_ID_KEY)
         obj = request
 
@@ -106,11 +144,11 @@ class SimulationResponder():
         self._objects[key] = obj
         return obj
 
-    def _delete_object(self, request):
+    async def _delete_object(self, request):
         key = request[OBJECT_ID_KEY]
         del self._objects[key]
 
-    def _list_active_objects(self, request):
+    async def _list_active_objects(self, request):
         return {
             PROFILE_LIST_KEY: self._active_profiles,
             OBJECT_LIST_KEY: [
@@ -120,19 +158,19 @@ class SimulationResponder():
             ]
         }
 
-    def _list_stored_objects(self, request):
+    async def _list_stored_objects(self, request):
         return {
             PROFILE_LIST_KEY: self._active_profiles,
             OBJECT_LIST_KEY: [obj for obj in self._objects.values()]
         }
 
-    def _clear_objects(self, request):
+    async def _clear_objects(self, request):
         self._objects = {k: v for k, v in self._objects.items() if k < OBJECT_ID_START}
 
-    def _factory_reset(self, request):
+    async def _factory_reset(self, request):
         pass
 
-    def _reboot(self, request):
+    async def _reboot(self, request):
         pass
 
 
@@ -143,10 +181,11 @@ class SimulationCommander(commander.SparkCommander):
         self._responder = SimulationResponder()
 
     async def startup(self, app: web.Application):
+        await self._responder.startup(app)
         status.get_status(app).connected.set()
 
     async def shutdown(self, _):
         pass
 
     async def execute(self, command: commands.Command) -> dict:
-        return self._responder.respond(command).decoded_response
+        return (await self._responder.respond(command)).decoded_response

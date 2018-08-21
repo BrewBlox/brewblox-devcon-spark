@@ -140,6 +140,17 @@ class ProfilesTranscoder(OptionsTranscoder):
     _MESSAGE = Profiles_pb2.Profiles
     _TYPE_INT = 263
 
+    def encode(self, values: Decoded_) -> Encoded_:
+        values['active'] =\
+            self.mod.pack_bit_flags(values.get('active', []))
+        return super().encode(values)
+
+    def decode(self, encoded: Encoded_) -> Decoded_:
+        decoded = super().decode(encoded)
+        decoded['active'] =\
+            self.mod.unpack_bit_flags(decoded.get('active', 0))
+        return decoded
+
 
 class SysInfoTranscoder(OptionsTranscoder):
     _MESSAGE = SysInfo_pb2.SysInfo

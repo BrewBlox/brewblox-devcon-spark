@@ -7,7 +7,8 @@ from brewblox_devcon_spark.codec import _path_extension  # isort:skip
 import re
 from binascii import hexlify, unhexlify
 from contextlib import suppress
-from typing import Iterator
+from functools import reduce
+from typing import Iterator, List
 
 from brewblox_service import brewblox_logger
 from dataclasses import dataclass
@@ -55,6 +56,16 @@ class Modifier():
     @staticmethod
     def int_to_hex(i: int) -> str:
         return hexlify(int(i).to_bytes(8, 'big')).decode()
+
+    @staticmethod
+    def pack_bit_flags(flags: List[int]) -> int:
+        if next((i for i in flags if i >= 8), None):
+            raise ValueError(f'Invalid bit flags in {flags}. Values must be 0-7.')
+        return reduce(lambda result, idx: result | 1 << idx, flags, 0)
+
+    @staticmethod
+    def unpack_bit_flags(flags: int) -> List[int]:
+        return [i for i in range(8) if 1 << i & flags]
 
     def _quantity(self, *args, **kwargs) -> quantity._Quantity:
         return self._ureg.Quantity(*args, **kwargs)
