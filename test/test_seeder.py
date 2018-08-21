@@ -16,7 +16,7 @@ from brewblox_devcon_spark.codec import codec
 
 TESTED = seeder.__name__
 
-NUM_SYSTEM_OBJECTS = 1
+NUM_SYSTEM_OBJECTS = 4
 
 
 @pytest.fixture
@@ -27,10 +27,8 @@ def seeds():
             'profiles': [0],
             'type': 'OneWireTempSensor',
             'data': {
-                'settings': {
-                    'address': 'deadbeef',
-                    'offset[delta_degF]': 20
-                }
+                'address': 'deadbeef',
+                'offset[delta_degF]': 20,
             }
         },
         {
@@ -41,24 +39,25 @@ def seeds():
                 'buttons': {
                     'a': 1,
                     'x': 1,
-                    'guide': 1
+                    'guide': 1,
                 },
                 'leftStick': {
                     'x': 100,
                     'y': -500,
-                    'click': 1
+                    'click': 1,
                 },
                 'rightStick': {
-                    'x': 1000
+                    'x': 1000,
                 },
                 'dPad': {
-                    'up': 1
+                    'up': 1,
                 },
-                'leftTrigger': 42
+                'leftTrigger': 42,
             }
         },
         {
-            'id': 'MoonMoon'
+            # Invalid object
+            'id': 'MoonMoon',
         }
     ]
 
@@ -97,13 +96,8 @@ async def test_seeding(app, client, seeds, spark_status):
     assert not spark_status.disconnected.is_set()
     assert seeder.get_seeder(app)
 
-    # assert await profile_api.ProfileApi(app).read_active() == [1, 3, 7]
     read_ids = {obj['id'] for obj in await object_api.ObjectApi(app).list_active()}
-    assert read_ids == {
-        'onewirebus',
-        'tempsensor',
-        'boxy'
-    }
+    assert read_ids & {'tempsensor', 'boxy'}
 
 
 async def test_reseed(app, client, seeds, spark_status):

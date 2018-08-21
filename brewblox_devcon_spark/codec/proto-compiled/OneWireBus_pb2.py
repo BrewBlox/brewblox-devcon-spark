@@ -7,7 +7,6 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf import descriptor_pb2
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -20,6 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='OneWireBus.proto',
   package='blox',
   syntax='proto3',
+  serialized_options=None,
   serialized_pb=_b('\n\x10OneWireBus.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"}\n\nOneWireBus\x12)\n\x07\x63ommand\x18\x01 \x01(\x0b\x32\x18.blox.OneWireBus.Command\x12\x1b\n\x07\x61\x64\x64ress\x18\x02 \x03(\x06\x42\n\x9a?\x02 \x01\x9a?\x02(\x01\x1a\'\n\x07\x43ommand\x12\x0e\n\x06opcode\x18\x01 \x01(\r\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\rb\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,])
@@ -40,21 +40,21 @@ _ONEWIREBUS_COMMAND = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='data', full_name='blox.OneWireBus.Command.data', index=1,
       number=2, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -77,21 +77,21 @@ _ONEWIREBUS = _descriptor.Descriptor(
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='address', full_name='blox.OneWireBus.address', index=1,
       number=2, type=6, cpp_type=4, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\002 \001\232?\002(\001')), file=DESCRIPTOR),
+      serialized_options=_b('\232?\002 \001\232?\002(\001'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[_ONEWIREBUS_COMMAND, ],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -122,6 +122,5 @@ _sym_db.RegisterMessage(OneWireBus)
 _sym_db.RegisterMessage(OneWireBus.Command)
 
 
-_ONEWIREBUS.fields_by_name['address'].has_options = True
-_ONEWIREBUS.fields_by_name['address']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\002 \001\232?\002(\001'))
+_ONEWIREBUS.fields_by_name['address']._options = None
 # @@protoc_insertion_point(module_scope)

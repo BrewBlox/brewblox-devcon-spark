@@ -26,8 +26,22 @@ def cdc(app) -> codec.Codec:
 async def test_encode_system_objects(app, client, cdc):
     objects = [
         {
+            'type': 'SysInfo',
+            'data': {},
+        },
+        {
+            'type': 'Ticks',
+            'data': {},
+        },
+        {
             'type': 'OneWireBus',
-            'data': {}
+            'data': {},
+        },
+        {
+            'type': 'Profiles',
+            'data': {
+                'active': 1
+            },
         }
     ]
 

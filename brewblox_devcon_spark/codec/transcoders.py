@@ -15,8 +15,11 @@ import EdgeCase_pb2
 import OneWireBus_pb2
 import OneWireTempSensor_pb2
 import Pid_pb2
+import Profiles_pb2
 import SensorSetPointPair_pb2
 import SetPointSimple_pb2
+import SysInfo_pb2
+import Ticks_pb2
 import XboxController_pb2
 from brewblox_devcon_spark.codec.modifiers import Modifier
 
@@ -113,8 +116,8 @@ class OneWireTempSensorTranscoder(OptionsTranscoder):
     _TYPE_INT = 257
 
 
-class SetPointSimpleTranscoder(OptionsTranscoder):
-    _MESSAGE = SetPointSimple_pb2.SetPointSimple
+class PidTranscoder(OptionsTranscoder):
+    _MESSAGE = Pid_pb2.Pid
     _TYPE_INT = 258
 
 
@@ -123,9 +126,24 @@ class SensorSetPointPairTranscoder(OptionsTranscoder):
     _TYPE_INT = 259
 
 
-class PidTranscoder(OptionsTranscoder):
-    _MESSAGE = Pid_pb2.Pid
+class SetPointSimpleTranscoder(OptionsTranscoder):
+    _MESSAGE = SetPointSimple_pb2.SetPointSimple
     _TYPE_INT = 260
+
+
+class TicksTranscoder(OptionsTranscoder):
+    _MESSAGE = Ticks_pb2.Ticks
+    _TYPE_INT = 262
+
+
+class ProfilesTranscoder(OptionsTranscoder):
+    _MESSAGE = Profiles_pb2.Profiles
+    _TYPE_INT = 263
+
+
+class SysInfoTranscoder(OptionsTranscoder):
+    _MESSAGE = SysInfo_pb2.SysInfo
+    _TYPE_INT = 264
 
 
 class EdgeCaseTranscoder(OptionsTranscoder):
@@ -150,6 +168,9 @@ _TRANSCODERS = [
     SetPointSimpleTranscoder,
     SensorSetPointPairTranscoder,
     PidTranscoder,
+    ProfilesTranscoder,
+    SysInfoTranscoder,
+    TicksTranscoder,
 
     # Debug/testing transcoders
     EdgeCaseTranscoder,

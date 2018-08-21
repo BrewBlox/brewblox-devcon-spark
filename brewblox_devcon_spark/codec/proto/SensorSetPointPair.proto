@@ -5,6 +5,6 @@ import 'brewblox.proto';
 package blox;
 
 message SensorSetPointPair {
-    sint32 sensor = 1 [(brewblox).link = "Sensor"];
-    sint32 setpoint = 2 [(brewblox).link = "SetPointSimple"];
+  uint32 sensor = 1 [(brewblox).link = "Sensor"];
+  uint32 setpoint = 2 [(brewblox).link = "SetPoint"];
 }

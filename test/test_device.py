@@ -12,7 +12,7 @@ from brewblox_devcon_spark.device import OBJECT_DATA_KEY, OBJECT_ID_KEY
 
 TESTED = device.__name__
 
-NUM_SYSTEM_OBJECTS = 1
+NUM_SYSTEM_OBJECTS = 4
 
 
 def generate_obj():

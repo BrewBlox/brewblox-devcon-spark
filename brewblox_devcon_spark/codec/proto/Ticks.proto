@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+import 'brewblox.proto';
+
+package blox;
+
+message Ticks {
+    uint32 millisSinceBoot = 1 [(brewblox).readonly = true];
+    uint32 secondsSinceEpoch = 2;
+}

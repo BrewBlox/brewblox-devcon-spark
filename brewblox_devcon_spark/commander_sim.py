@@ -38,13 +38,34 @@ class SimulationResponder():
         self._id_counter = count(start=OBJECT_ID_START)
         self._active_profiles = [0]
 
+        def all_profiles():
+            return [i for i in range(8)]
+
         self._objects = {
+            1: {  # SysInfo
+                OBJECT_ID_KEY: 1,
+                OBJECT_TYPE_KEY: 264,
+                PROFILE_LIST_KEY: all_profiles(),
+                OBJECT_DATA_KEY: b'\x00',
+            },
+            2: {  # Ticks
+                OBJECT_ID_KEY: 2,
+                OBJECT_TYPE_KEY: 262,
+                PROFILE_LIST_KEY: all_profiles(),
+                OBJECT_DATA_KEY: b'\x00',
+            },
             3: {  # OneWireBus
                 OBJECT_ID_KEY: 3,
                 OBJECT_TYPE_KEY: 256,
-                PROFILE_LIST_KEY: [i for i in range(8)],
-                OBJECT_DATA_KEY: b'\x00'
+                PROFILE_LIST_KEY: all_profiles(),
+                OBJECT_DATA_KEY: b'\x00',
             },
+            4: {  # Profiles
+                OBJECT_ID_KEY: 4,
+                OBJECT_TYPE_KEY: 263,
+                PROFILE_LIST_KEY: all_profiles(),
+                OBJECT_DATA_KEY: b'\x08\x01\x00',  # active = 1 (profiles=[0])
+            }
         }
 
     def respond(self, cmd) -> commands.Command:

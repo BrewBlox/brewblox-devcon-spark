@@ -24,25 +24,19 @@ def k_mod():
 
 def generate_encoding_data():
     return {
-        'settings': {
-            'address': 'aabbccdd',
-            'offset[delta_degF]': 20
-        },
-        'state': {
-            'value[degF]': 10
-        }
+        'value[degF]': 10,
+        'connected': True,
+        'offset[delta_degF]': 20,
+        'address': 'aabbccdd',
     }
 
 
 def generate_decoding_data():
     return {
-        'settings': {
-            'address': 2864434397,
-            'offset': 2844
-        },
-        'state': {
-            'value': -3129
-        }
+        'value': -3129,
+        'connected': True,
+        'offset': 2844,
+        'address': 2864434397,
     }
 
 
@@ -57,34 +51,16 @@ def test_encode_options(mod):
 
 
 def test_decode_options(mod):
-    vals = {
-        'settings': {
-            'address': 2864434397,
-            'offset': 2844
-        },
-        'state': {
-            'value': -3129
-        }
-    }
-
+    vals = generate_decoding_data()
     mod.decode_options(OneWireTempSensor_pb2.OneWireTempSensor(), vals)
     print(vals)
-    assert vals['settings']['offset[delta_degF]'] == pytest.approx(20, 0.1)
-    assert vals['state']['value[degF]'] == pytest.approx(10, 0.1)
+    assert vals['offset[delta_degF]'] == pytest.approx(20, 0.1)
+    assert vals['value[degF]'] == pytest.approx(10, 0.1)
 
 
 def test_decode_no_system(k_mod):
-    vals = {
-        'settings': {
-            'address': 2864434397,
-            'offset': 2844
-        },
-        'state': {
-            'value': -3129
-        }
-    }
-
+    vals = generate_decoding_data()
     k_mod.decode_options(OneWireTempSensor_pb2.OneWireTempSensor(), vals)
     print(vals)
-    assert vals['settings']['offset[kelvin]'] > 0
-    assert vals['state']['value[kelvin]'] > 0
+    assert vals['offset[kelvin]'] > 0
+    assert vals['value[kelvin]'] > 0

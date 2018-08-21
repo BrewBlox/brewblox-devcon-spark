@@ -19,7 +19,7 @@ from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
                                                   PROFILE_LIST_KEY)
 from brewblox_devcon_spark.codec import codec
 
-NUM_SYSTEM_OBJECTS = 1
+NUM_SYSTEM_OBJECTS = 4
 
 
 @pytest.fixture
@@ -29,14 +29,10 @@ def object_args():
         PROFILE_LIST_KEY: [0],
         API_TYPE_KEY: 'OneWireTempSensor',
         API_DATA_KEY: {
-            'settings': {
-                'address': 'FF',
-                'offset': 20
-            },
-            'state': {
-                'value': 12345,
-                'connected': True
-            }
+            'value': 12345,
+            'connected': True,
+            'offset': 20,
+            'address': 'FF'
         }
     }
 
@@ -79,14 +75,10 @@ async def test_do(app, client):
             OBJECT_TYPE_KEY: 'OneWireTempSensor',
             PROFILE_LIST_KEY: [1, 2, 3],
             OBJECT_DATA_KEY: {
-                'settings': {
-                    'address': 'FF',
-                    'offset': 20
-                },
-                'state': {
-                    'value': 1234,
-                    'connected': True
-                }
+                'value': 12345,
+                'connected': True,
+                'offset': 20,
+                'address': 'FF'
             }
         }
     }
@@ -141,18 +133,9 @@ async def test_create_performance(app, client, object_args):
     def custom(num):
         return {
             API_ID_KEY: f'id{num}',
-            PROFILE_LIST_KEY: [0],
-            API_TYPE_KEY: 'OneWireTempSensor',
-            API_DATA_KEY: {
-                'settings': {
-                    'address': 'FF',
-                    'offset': 20
-                },
-                'state': {
-                    'value': 12345,
-                    'connected': True
-                }
-            }
+            PROFILE_LIST_KEY: object_args[PROFILE_LIST_KEY],
+            API_TYPE_KEY: object_args[API_TYPE_KEY],
+            API_DATA_KEY: object_args[API_DATA_KEY]
         }
 
     num_items = 50
