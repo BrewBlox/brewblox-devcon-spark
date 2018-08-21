@@ -79,13 +79,6 @@ In the sensor/heater example, the Spark with the heater would be configured to h
 
 Instead of directly reading a sensor, this dummy object is updated by the service whenever it receives an update from the master object (the real sensor).
 
-### ProfileApi ([profile_api.py](./brewblox_devcon_spark/api/profile_api.py))
-
-All objects on the Spark can be part of zero or more profiles.
-An object is only active when it belongs to an active profile.
-
-This API section allows reading and writing currently active profiles.
-
 ### AliasApi ([alias_api.py](./brewblox_devcon_spark/api/alias_api.py))
 
 All objects can have user-defined names. The AliasAPI allows users to set or change those names.

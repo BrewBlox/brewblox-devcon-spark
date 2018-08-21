@@ -7,24 +7,26 @@ import asyncio
 import pytest
 from brewblox_service import scheduler
 
-from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark import (commander_sim, datastore, device,
                                    exceptions, status)
 from brewblox_devcon_spark.api import (alias_api, debug_api, error_response,
-                                       object_api, profile_api)
+                                       object_api)
 from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
                                                   API_TYPE_KEY,
                                                   OBJECT_DATA_KEY,
                                                   OBJECT_ID_KEY,
                                                   OBJECT_TYPE_KEY,
                                                   PROFILE_LIST_KEY)
+from brewblox_devcon_spark.codec import codec
+
+NUM_SYSTEM_OBJECTS = 1
 
 
 @pytest.fixture
 def object_args():
     return {
         API_ID_KEY: 'testobj',
-        PROFILE_LIST_KEY: [1, 4, 7],
+        PROFILE_LIST_KEY: [0],
         API_TYPE_KEY: 'OneWireTempSensor',
         API_DATA_KEY: {
             'settings': {
@@ -53,7 +55,6 @@ async def app(app, loop):
     debug_api.setup(app)
     alias_api.setup(app)
     object_api.setup(app)
-    profile_api.setup(app)
 
     return app
 
@@ -140,7 +141,7 @@ async def test_create_performance(app, client, object_args):
     def custom(num):
         return {
             API_ID_KEY: f'id{num}',
-            PROFILE_LIST_KEY: [1, 4, 7],
+            PROFILE_LIST_KEY: [0],
             API_TYPE_KEY: 'OneWireTempSensor',
             API_DATA_KEY: {
                 'settings': {
@@ -159,8 +160,8 @@ async def test_create_performance(app, client, object_args):
     responses = await asyncio.gather(*coros)
     assert [retv.status for retv in responses] == [200]*num_items
 
-    retd = await response(client.get('/saved_objects'))
-    assert len(retd) == num_items + 1  # system objects
+    retd = await response(client.get('/objects'))
+    assert len(retd) == num_items + NUM_SYSTEM_OBJECTS
 
 
 async def test_read(app, client, object_args):
@@ -197,39 +198,22 @@ async def test_delete(app, client, object_args):
 
 
 async def test_all(app, client, object_args):
-    retd = await response(client.get('/saved_objects'))
-    assert len(retd) == 1  # system object
+    retd = await response(client.get('/stored_objects'))
+    assert len(retd) == NUM_SYSTEM_OBJECTS
 
     await client.post('/objects', json=object_args)
-    retd = await response(client.get('/saved_objects'))
-    assert len(retd) == 1 + 1  # system objects
+    retd = await response(client.get('/stored_objects'))
+    assert len(retd) == 1 + NUM_SYSTEM_OBJECTS
 
 
-async def test_active(app, client, object_args):
-    retd = await response(client.get('/objects'))
-    assert len(retd) == 1
+async def test_clear(app, client, object_args):
+    for i in range(5):
+        object_args[API_ID_KEY] = f'id{i}'
+        await client.post('/objects', json=object_args)
 
-    await client.post('/objects', json=object_args)
-    retd = await response(client.get('/objects'))
-    assert len(retd) == 1
-
-    await client.post('/profiles', json=[1])
-
-    retd = await response(client.get('/objects'))
-    assert len(retd) == 1 + 1  # system objects
-    assert retd[1][API_ID_KEY] == object_args[API_ID_KEY]
-
-
-async def test_profiles(app, client):
-    retd = await response(client.get('/profiles'))
-    assert retd == []
-
-    active = [1, 6, 7]
-    retd = await response(client.post('/profiles', json=active))
-    assert retd == active
-
-    retd = await response(client.get('/profiles'))
-    assert retd == active
+    assert len(await response(client.get('/objects'))) == 5 + NUM_SYSTEM_OBJECTS
+    await client.delete('/objects')
+    assert len(await response(client.get('/objects'))) == NUM_SYSTEM_OBJECTS
 
 
 @pytest.mark.parametrize('input_id', [

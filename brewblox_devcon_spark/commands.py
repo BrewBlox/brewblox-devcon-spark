@@ -14,7 +14,7 @@ from typing import List
 
 from brewblox_service import brewblox_logger
 from construct import (Adapter, Byte, Const, Container, Default, Enum,
-                       GreedyBytes, Int8sb, Int16ub, Struct)
+                       GreedyBytes, Int8ub, Int16ub, Struct)
 
 from brewblox_devcon_spark import exceptions
 
@@ -32,44 +32,52 @@ OBJECT_LIST_KEY = 'objects'
 PROFILE_LIST_KEY = 'profiles'
 
 
-OpcodeEnum = Enum(Byte,
+OpcodeEnum = Enum(Int8ub,
+                  NONE=0,
                   READ_OBJECT=1,
                   WRITE_OBJECT=2,
                   CREATE_OBJECT=3,
                   DELETE_OBJECT=4,
-                  READ_SYSTEM_OBJECT=5,
-                  WRITE_SYSTEM_OBJECT=6,
-                  READ_ACTIVE_PROFILES=7,
-                  WRITE_ACTIVE_PROFILES=8,
-                  LIST_ACTIVE_OBJECTS=9,
-                  LIST_SAVED_OBJECTS=10,
-                  LIST_SYSTEM_OBJECTS=11,
-                  CLEAR_PROFILE=12,
-                  FACTORY_RESET=13,
-                  RESTART=14,
+                  LIST_ACTIVE_OBJECTS=5,
+                  LIST_STORED_OBJECTS=6,
+                  CLEAR_OBJECTS=7,
+                  REBOOT=8,
+                  FACTORY_RESET=9,
                   )
 
-ErrorcodeEnum = Enum(Int8sb,
+ErrorcodeEnum = Enum(Int8ub,
                      OK=0,
-                     UNKNOWN_ERROR=-1,
-                     STREAM_ERROR=-2,
-                     PROFILE_NOT_ACTIVE=-3,
-                     INSUFFICIENT_PERSISTENT_STORAGE=-16,
-                     INSUFFICIENT_HEAP=-17,
+                     UNKNOWN_ERROR=1,
 
-                     OBJECT_NOT_WRITABLE=-32,
-                     OBJECT_NOT_READABLE=-33,
-                     OBJECT_NOT_CREATABLE=-34,
-                     OBJECT_NOT_DELETABLE=-35,
-                     OBJECT_NOT_CONTAINER=-37,
-                     CONTAINER_FULL=-38,
+                     # Object creation
+                     INSUFFICIENT_HEAP=4,
 
-                     INVALID_PARAMETER=-64,
-                     INVALID_OBJECT_ID=-65,
-                     INVALID_TYPE=-66,
-                     INVALID_SIZE=-67,
-                     INVALID_PROFILE=-68,
-                     INVALID_ID=-69
+                     # Generic stream errors
+                     STREAM_ERROR_UNSPECIFIED=8,
+                     OUTPUT_STREAM_WRITE_ERROR=9,
+                     INPUT_STREAM_READ_ERROR=10,
+                     INPUT_STREAM_DECODING_ERROR=11,
+                     OUTPUT_STREAM_ENCODING_ERROR=12,
+
+                     # Storage errors
+                     INSUFFICIENT_PERSISTENT_STORAGE=16,
+                     PERSISTED_OBJECT_NOT_FOUND=17,
+                     INVALID_PERSISTED_BLOCK_TYPE=18,
+                     COULD_NOT_READ_PERSISTED_BLOCK_SIZE=19,
+                     PERSISTED_BLOCK_STREAM_ERROR=20,
+                     PERSISTED_STORAGE_WRITE_ERROR=21,
+
+                     # Invalid actions
+                     OBJECT_NOT_WRITABLE=32,
+                     OBJECT_NOT_READABLE=33,
+                     OBJECT_NOT_CREATABLE=34,
+                     OBJECT_NOT_DELETABLE=35,
+
+                     # Invalid parameters
+                     INVALID_COMMAND=63,
+                     INVALID_OBJECT_ID=65,
+                     INVALID_OBJECT_TYPE=66,
+                     INVALID_OBJECT_PROFILES=68,
                      )
 
 
@@ -296,7 +304,7 @@ class Command(ABC):
         errcode = self._parse(ErrorcodeEnum, combined[0], False)
 
         try:
-            if int(errcode) < 0:
+            if int(errcode) != 0:
                 raise exceptions.CommandException(f'{self.name} failed with code {errcode}')
 
             response = self._parse(self.response, combined[0])
@@ -390,20 +398,6 @@ class DeleteObjectCommand(Command):
     _VALUES = None
 
 
-class ReadActiveProfilesCommand(Command):
-    _OPCODE = OpcodeEnum.READ_ACTIVE_PROFILES
-    _REQUEST = None
-    _RESPONSE = _PROFILE_LIST
-    _VALUES = None
-
-
-class WriteActiveProfilesCommand(Command):
-    _OPCODE = OpcodeEnum.WRITE_ACTIVE_PROFILES
-    _REQUEST = _PROFILE_LIST
-    _RESPONSE = _PROFILE_LIST
-    _VALUES = None
-
-
 class ListActiveObjectsCommand(Command):
     _OPCODE = OpcodeEnum.LIST_ACTIVE_OBJECTS
     _REQUEST = None
@@ -411,16 +405,16 @@ class ListActiveObjectsCommand(Command):
     _VALUES = (OBJECT_LIST_KEY, _OBJECT)
 
 
-class ListSavedObjectsCommand(Command):
-    _OPCODE = OpcodeEnum.LIST_SAVED_OBJECTS
+class ListStoredObjectsCommand(Command):
+    _OPCODE = OpcodeEnum.LIST_STORED_OBJECTS
     _REQUEST = None
     _RESPONSE = _PROFILE_LIST
     _VALUES = (OBJECT_LIST_KEY, _OBJECT)
 
 
-class ClearProfileCommand(Command):
-    _OPCODE = OpcodeEnum.CLEAR_PROFILE
-    _REQUEST = _PROFILE_LIST
+class ClearObjectsCommand(Command):
+    _OPCODE = OpcodeEnum.CLEAR_OBJECTS
+    _REQUEST = None
     _RESPONSE = None
     _VALUES = None
 
@@ -432,8 +426,8 @@ class FactoryResetCommand(Command):
     _VALUES = None
 
 
-class RestartCommand(Command):
-    _OPCODE = OpcodeEnum.RESTART
+class RebootCommand(Command):
+    _OPCODE = OpcodeEnum.REBOOT
     _REQUEST = None
     _RESPONSE = None
     _VALUES = None

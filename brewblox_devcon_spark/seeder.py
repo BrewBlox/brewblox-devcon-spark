@@ -12,7 +12,7 @@ from brewblox_service import brewblox_logger, features, scheduler
 from brewblox_devcon_spark import exceptions, status
 from brewblox_devcon_spark.api import (API_DATA_KEY, API_ID_KEY,
                                        API_PROFILE_LIST_KEY, API_TYPE_KEY,
-                                       object_api, profile_api)
+                                       object_api)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -32,7 +32,6 @@ class Seeder(features.ServiceFeature):
         config = app['config']
 
         self._task: asyncio.Task = None
-        self._profiles = config['seed_profiles']
         self._seeds = []
 
         if config['seed_objects']:
@@ -53,8 +52,9 @@ class Seeder(features.ServiceFeature):
         while True:
             await spark_status.connected.wait()
             await self._seed_objects()
-            await self._seed_profiles()
             await spark_status.disconnected.wait()
+
+    ##########
 
     async def _seed_objects(self):
         api = object_api.ObjectApi(self.app)
@@ -70,13 +70,7 @@ class Seeder(features.ServiceFeature):
                 LOGGER.info(f'Seeded [{id}]')
 
             except exceptions.ExistingId:
-                LOGGER.warn(f'Aborted seeding [{id}]: duplicate name, or already created')
+                LOGGER.warn(f'Skipped seeding [{id}]: duplicate name, or already created')
 
             except Exception as ex:
                 LOGGER.warn(f'Failed to seed object: {type(ex).__name__}({ex})')
-
-    async def _seed_profiles(self):
-        if self._profiles:
-            LOGGER.info(f'Seeding profiles as {self._profiles}')
-            api = profile_api.ProfileApi(self.app)
-            await api.write_active(self._profiles)

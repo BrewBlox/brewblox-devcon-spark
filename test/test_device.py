@@ -12,6 +12,8 @@ from brewblox_devcon_spark.device import OBJECT_DATA_KEY, OBJECT_ID_KEY
 
 TESTED = device.__name__
 
+NUM_SYSTEM_OBJECTS = 1
+
 
 def generate_obj():
     return 'EdgeCase', {
@@ -91,7 +93,7 @@ async def test_list_transcoding(app, client, cmder, store, ctrl, mocker):
 
         await ctrl.create_object({
             'object_id': f'obj{i}',
-            'profiles': [1],
+            'profiles': [0],
             'object_type': obj_type,
             'object_data': obj_data
         })
@@ -99,9 +101,9 @@ async def test_list_transcoding(app, client, cmder, store, ctrl, mocker):
     c = codec.get_codec(app)
     decode_spy = mocker.spy(c, 'decode')
 
-    retval = await ctrl.list_saved_objects()
-    assert len(retval['objects']) == 5 + 1
-    assert decode_spy.call_count == 5 + 1
+    retval = await ctrl.list_stored_objects()
+    assert len(retval['objects']) == 5 + NUM_SYSTEM_OBJECTS
+    assert decode_spy.call_count == 5 + NUM_SYSTEM_OBJECTS
 
 
 async def test_resolve_id(app, client, store, mocker, ctrl):

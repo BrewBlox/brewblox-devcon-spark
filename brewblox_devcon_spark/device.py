@@ -11,9 +11,9 @@ from typing import Any, Awaitable, Callable, List, Type
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
 
-from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark import (commander, commands, datastore, exceptions,
                                    twinkeydict)
+from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                             PROFILE_LIST_KEY)
@@ -212,10 +212,8 @@ class SparkController(features.ServiceFeature):
     write_object = partialmethod(_execute, commands.WriteObjectCommand)
     create_object = partialmethod(_execute, commands.CreateObjectCommand)
     delete_object = partialmethod(_execute, commands.DeleteObjectCommand)
-    read_active_profiles = partialmethod(_execute, commands.ReadActiveProfilesCommand)
-    write_active_profiles = partialmethod(_execute, commands.WriteActiveProfilesCommand)
     list_active_objects = partialmethod(_execute, commands.ListActiveObjectsCommand)
-    list_saved_objects = partialmethod(_execute, commands.ListSavedObjectsCommand)
-    clear_profile = partialmethod(_execute, commands.ClearProfileCommand)
+    list_stored_objects = partialmethod(_execute, commands.ListStoredObjectsCommand)
+    clear_objects = partialmethod(_execute, commands.ClearObjectsCommand)
     factory_reset = partialmethod(_execute, commands.FactoryResetCommand)
-    restart = partialmethod(_execute, commands.RestartCommand)
+    reboot = partialmethod(_execute, commands.RebootCommand)

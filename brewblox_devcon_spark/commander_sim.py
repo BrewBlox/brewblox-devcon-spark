@@ -28,17 +28,15 @@ class SimulationResponder():
             commands.WriteObjectCommand: self._write_object,
             commands.CreateObjectCommand: self._create_object,
             commands.DeleteObjectCommand: self._delete_object,
-            commands.ReadActiveProfilesCommand: self._read_active_profiles,
-            commands.WriteActiveProfilesCommand: self._write_active_profiles,
             commands.ListActiveObjectsCommand: self._list_active_objects,
-            commands.ListSavedObjectsCommand: self._list_saved_objects,
-            commands.ClearProfileCommand: self._clear_profile,
+            commands.ListStoredObjectsCommand: self._list_stored_objects,
+            commands.ClearObjectsCommand: self._clear_objects,
             commands.FactoryResetCommand: self._factory_reset,
-            commands.RestartCommand: self._restart,
+            commands.RebootCommand: self._reboot,
         }
 
         self._id_counter = count(start=OBJECT_ID_START)
-        self._active_profiles = []
+        self._active_profiles = [0]
 
         self._objects = {
             3: {  # OneWireBus
@@ -46,7 +44,7 @@ class SimulationResponder():
                 OBJECT_TYPE_KEY: 256,
                 PROFILE_LIST_KEY: [i for i in range(8)],
                 OBJECT_DATA_KEY: b'\x00'
-            }
+            },
         }
 
     def respond(self, cmd) -> commands.Command:
@@ -91,13 +89,6 @@ class SimulationResponder():
         key = request[OBJECT_ID_KEY]
         del self._objects[key]
 
-    def _read_active_profiles(self, request):
-        return {PROFILE_LIST_KEY: self._active_profiles}
-
-    def _write_active_profiles(self, request):
-        self._active_profiles = request[PROFILE_LIST_KEY]
-        return self._read_active_profiles(request)
-
     def _list_active_objects(self, request):
         return {
             PROFILE_LIST_KEY: self._active_profiles,
@@ -108,22 +99,19 @@ class SimulationResponder():
             ]
         }
 
-    def _list_saved_objects(self, request):
+    def _list_stored_objects(self, request):
         return {
             PROFILE_LIST_KEY: self._active_profiles,
             OBJECT_LIST_KEY: [obj for obj in self._objects.values()]
         }
 
-    def _clear_profile(self, request):
-        cleared_profiles = request[PROFILE_LIST_KEY]
-        for obj in self._objects.values():
-            obj_profiles = obj[PROFILE_LIST_KEY]
-            obj[PROFILE_LIST_KEY] = [p for p in obj_profiles if p not in cleared_profiles]
+    def _clear_objects(self, request):
+        self._objects = {k: v for k, v in self._objects.items() if k < OBJECT_ID_START}
 
     def _factory_reset(self, request):
         pass
 
-    def _restart(self, request):
+    def _reboot(self, request):
         pass
 
 

@@ -8,7 +8,7 @@ from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
                                    communication, datastore, device, seeder,
                                    status)
 from brewblox_devcon_spark.api import (alias_api, debug_api, error_response,
-                                       object_api, profile_api, remote_api)
+                                       object_api, remote_api)
 from brewblox_devcon_spark.codec import codec
 
 LOGGER = brewblox_logger(__name__)
@@ -54,7 +54,7 @@ def create_parser(default_name='spark'):
     parser.add_argument('--seed-profiles',
                         nargs='+',
                         type=int,
-                        help='Profiles that should be made active on connection. [%(default)s]')
+                        help='UNUSED: Profiles that should be made active on connection. [%(default)s]')
     return parser
 
 
@@ -89,7 +89,6 @@ def main():
     debug_api.setup(app)
     alias_api.setup(app)
     object_api.setup(app)
-    profile_api.setup(app)
     remote_api.setup(app)
 
     seeder.setup(app)
