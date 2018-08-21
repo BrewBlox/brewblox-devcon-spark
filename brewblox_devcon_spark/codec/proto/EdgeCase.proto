@@ -22,4 +22,5 @@ message EdgeCase {
     State state = 2;
     uint32 link = 3 [(brewblox).link = "testey"];
     repeated NestedLink additionalLinks = 4;
+    repeated uint32 listValues = 5 [(brewblox).unit = "degC", (brewblox).scale = 256];
 }

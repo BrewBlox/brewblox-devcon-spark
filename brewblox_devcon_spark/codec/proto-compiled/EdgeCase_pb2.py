@@ -7,6 +7,7 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf import descriptor_pb2
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -19,8 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='EdgeCase.proto',
   package='blox',
   syntax='proto3',
-  serialized_options=None,
-  serialized_pb=_b('\n\x0e\x45\x64geCase.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"\xea\x02\n\x08\x45\x64geCase\x12)\n\x08settings\x18\x01 \x01(\x0b\x32\x17.blox.EdgeCase.Settings\x12#\n\x05state\x18\x02 \x01(\x0b\x32\x14.blox.EdgeCase.State\x12\x19\n\x04link\x18\x03 \x01(\rB\x0b\x9a?\x08\x1a\x06testey\x12\x32\n\x0f\x61\x64\x64itionalLinks\x18\x04 \x03(\x0b\x32\x19.blox.EdgeCase.NestedLink\x1aI\n\x08Settings\x12\x16\n\x07\x61\x64\x64ress\x18\x01 \x01(\x0c\x42\x05\x9a?\x02 \x01\x12%\n\x06offset\x18\x02 \x01(\x11\x42\x15\x9a?\x0c\n\ndelta_degC\x9a?\x03\x10\x80\x02\x1a\x41\n\x05State\x12\x1e\n\x05value\x18\x01 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12\x18\n\tconnected\x18\x02 \x01(\x08\x42\x05\x9a?\x02(\x01\x1a\x31\n\nNestedLink\x12#\n\nconnection\x18\x01 \x01(\rB\x0f\x9a?\x0c\x1a\nconnectionb\x06proto3')
+  serialized_pb=_b('\n\x0e\x45\x64geCase.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"\x8f\x03\n\x08\x45\x64geCase\x12)\n\x08settings\x18\x01 \x01(\x0b\x32\x17.blox.EdgeCase.Settings\x12#\n\x05state\x18\x02 \x01(\x0b\x32\x14.blox.EdgeCase.State\x12\x19\n\x04link\x18\x03 \x01(\rB\x0b\x9a?\x08\x1a\x06testey\x12\x32\n\x0f\x61\x64\x64itionalLinks\x18\x04 \x03(\x0b\x32\x19.blox.EdgeCase.NestedLink\x12#\n\nlistValues\x18\x05 \x03(\rB\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x1aI\n\x08Settings\x12\x16\n\x07\x61\x64\x64ress\x18\x01 \x01(\x0c\x42\x05\x9a?\x02 \x01\x12%\n\x06offset\x18\x02 \x01(\x11\x42\x15\x9a?\x0c\n\ndelta_degC\x9a?\x03\x10\x80\x02\x1a\x41\n\x05State\x12\x1e\n\x05value\x18\x01 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12\x18\n\tconnected\x18\x02 \x01(\x08\x42\x05\x9a?\x02(\x01\x1a\x31\n\nNestedLink\x12#\n\nconnection\x18\x01 \x01(\rB\x0f\x9a?\x0c\x1a\nconnectionb\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,])
 
@@ -40,28 +40,28 @@ _EDGECASE_SETTINGS = _descriptor.Descriptor(
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\002 \001'), file=DESCRIPTOR),
+      options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\002 \001')), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='offset', full_name='blox.EdgeCase.Settings.offset', index=1,
       number=2, type=17, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\014\n\ndelta_degC\232?\003\020\200\002'), file=DESCRIPTOR),
+      options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\014\n\ndelta_degC\232?\003\020\200\002')), file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  serialized_options=None,
+  options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=212,
-  serialized_end=285,
+  serialized_start=249,
+  serialized_end=322,
 )
 
 _EDGECASE_STATE = _descriptor.Descriptor(
@@ -77,28 +77,28 @@ _EDGECASE_STATE = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\006\n\004degC\232?\003\020\200\002'), file=DESCRIPTOR),
+      options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\006\n\004degC\232?\003\020\200\002')), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='connected', full_name='blox.EdgeCase.State.connected', index=1,
       number=2, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\002(\001'), file=DESCRIPTOR),
+      options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\002(\001')), file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  serialized_options=None,
+  options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=287,
-  serialized_end=352,
+  serialized_start=324,
+  serialized_end=389,
 )
 
 _EDGECASE_NESTEDLINK = _descriptor.Descriptor(
@@ -114,21 +114,21 @@ _EDGECASE_NESTEDLINK = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\014\032\nconnection'), file=DESCRIPTOR),
+      options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\014\032\nconnection')), file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  serialized_options=None,
+  options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=354,
-  serialized_end=403,
+  serialized_start=391,
+  serialized_end=440,
 )
 
 _EDGECASE = _descriptor.Descriptor(
@@ -144,42 +144,49 @@ _EDGECASE = _descriptor.Descriptor(
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
+      options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='state', full_name='blox.EdgeCase.state', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
+      options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='link', full_name='blox.EdgeCase.link', index=2,
       number=3, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\010\032\006testey'), file=DESCRIPTOR),
+      options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\010\032\006testey')), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='additionalLinks', full_name='blox.EdgeCase.additionalLinks', index=3,
       number=4, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='listValues', full_name='blox.EdgeCase.listValues', index=4,
+      number=5, type=13, cpp_type=3, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\006\n\004degC\232?\003\020\200\002')), file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[_EDGECASE_SETTINGS, _EDGECASE_STATE, _EDGECASE_NESTEDLINK, ],
   enum_types=[
   ],
-  serialized_options=None,
+  options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
   serialized_start=41,
-  serialized_end=403,
+  serialized_end=440,
 )
 
 _EDGECASE_SETTINGS.containing_type = _EDGECASE
@@ -223,10 +230,18 @@ _sym_db.RegisterMessage(EdgeCase.State)
 _sym_db.RegisterMessage(EdgeCase.NestedLink)
 
 
-_EDGECASE_SETTINGS.fields_by_name['address']._options = None
-_EDGECASE_SETTINGS.fields_by_name['offset']._options = None
-_EDGECASE_STATE.fields_by_name['value']._options = None
-_EDGECASE_STATE.fields_by_name['connected']._options = None
-_EDGECASE_NESTEDLINK.fields_by_name['connection']._options = None
-_EDGECASE.fields_by_name['link']._options = None
+_EDGECASE_SETTINGS.fields_by_name['address'].has_options = True
+_EDGECASE_SETTINGS.fields_by_name['address']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\002 \001'))
+_EDGECASE_SETTINGS.fields_by_name['offset'].has_options = True
+_EDGECASE_SETTINGS.fields_by_name['offset']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\014\n\ndelta_degC\232?\003\020\200\002'))
+_EDGECASE_STATE.fields_by_name['value'].has_options = True
+_EDGECASE_STATE.fields_by_name['value']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\006\n\004degC\232?\003\020\200\002'))
+_EDGECASE_STATE.fields_by_name['connected'].has_options = True
+_EDGECASE_STATE.fields_by_name['connected']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\002(\001'))
+_EDGECASE_NESTEDLINK.fields_by_name['connection'].has_options = True
+_EDGECASE_NESTEDLINK.fields_by_name['connection']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\014\032\nconnection'))
+_EDGECASE.fields_by_name['link'].has_options = True
+_EDGECASE.fields_by_name['link']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\010\032\006testey'))
+_EDGECASE.fields_by_name['listValues'].has_options = True
+_EDGECASE.fields_by_name['listValues']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\006\n\004degC\232?\003\020\200\002'))
 # @@protoc_insertion_point(module_scope)

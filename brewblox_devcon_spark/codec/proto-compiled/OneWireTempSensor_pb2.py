@@ -7,6 +7,7 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf import descriptor_pb2
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -19,7 +20,6 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='OneWireTempSensor.proto',
   package='blox',
   syntax='proto3',
-  serialized_options=None,
   serialized_pb=_b('\n\x17OneWireTempSensor.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"\xfc\x01\n\x11OneWireTempSensor\x12\x32\n\x08settings\x18\x01 \x01(\x0b\x32 .blox.OneWireTempSensor.Settings\x12,\n\x05state\x18\x02 \x01(\x0b\x32\x1d.blox.OneWireTempSensor.State\x1aI\n\x08Settings\x12\x16\n\x07\x61\x64\x64ress\x18\x01 \x01(\x0c\x42\x05\x9a?\x02 \x01\x12%\n\x06offset\x18\x02 \x01(\x11\x42\x15\x9a?\x0c\n\ndelta_degC\x9a?\x03\x10\x80\x02\x1a:\n\x05State\x12\x1e\n\x05value\x18\x01 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12\x11\n\tconnected\x18\x02 \x01(\x08\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,])
@@ -40,21 +40,21 @@ _ONEWIRETEMPSENSOR_SETTINGS = _descriptor.Descriptor(
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\002 \001'), file=DESCRIPTOR),
+      options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\002 \001')), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='offset', full_name='blox.OneWireTempSensor.Settings.offset', index=1,
       number=2, type=17, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\014\n\ndelta_degC\232?\003\020\200\002'), file=DESCRIPTOR),
+      options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\014\n\ndelta_degC\232?\003\020\200\002')), file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  serialized_options=None,
+  options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -77,21 +77,21 @@ _ONEWIRETEMPSENSOR_STATE = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\006\n\004degC\232?\003\020\200\002'), file=DESCRIPTOR),
+      options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\006\n\004degC\232?\003\020\200\002')), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='connected', full_name='blox.OneWireTempSensor.State.connected', index=1,
       number=2, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
+      options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  serialized_options=None,
+  options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -114,21 +114,21 @@ _ONEWIRETEMPSENSOR = _descriptor.Descriptor(
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
+      options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='state', full_name='blox.OneWireTempSensor.state', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
+      options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[_ONEWIRETEMPSENSOR_SETTINGS, _ONEWIRETEMPSENSOR_STATE, ],
   enum_types=[
   ],
-  serialized_options=None,
+  options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -169,7 +169,10 @@ _sym_db.RegisterMessage(OneWireTempSensor.Settings)
 _sym_db.RegisterMessage(OneWireTempSensor.State)
 
 
-_ONEWIRETEMPSENSOR_SETTINGS.fields_by_name['address']._options = None
-_ONEWIRETEMPSENSOR_SETTINGS.fields_by_name['offset']._options = None
-_ONEWIRETEMPSENSOR_STATE.fields_by_name['value']._options = None
+_ONEWIRETEMPSENSOR_SETTINGS.fields_by_name['address'].has_options = True
+_ONEWIRETEMPSENSOR_SETTINGS.fields_by_name['address']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\002 \001'))
+_ONEWIRETEMPSENSOR_SETTINGS.fields_by_name['offset'].has_options = True
+_ONEWIRETEMPSENSOR_SETTINGS.fields_by_name['offset']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\014\n\ndelta_degC\232?\003\020\200\002'))
+_ONEWIRETEMPSENSOR_STATE.fields_by_name['value'].has_options = True
+_ONEWIRETEMPSENSOR_STATE.fields_by_name['value']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\006\n\004degC\232?\003\020\200\002'))
 # @@protoc_insertion_point(module_scope)

@@ -5,9 +5,9 @@ Tests brewblox_devcon_spark.device
 import pytest
 from brewblox_service import features, scheduler
 
-from brewblox_codec_spark import codec
 from brewblox_devcon_spark import (commander, commander_sim, datastore, device,
                                    status)
+from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.device import OBJECT_DATA_KEY, OBJECT_ID_KEY
 
 TESTED = device.__name__
@@ -27,7 +27,8 @@ def generate_obj():
         'additionalLinks': [
             {'connection<>': 1},
             {'connection<>': 2},
-        ]
+        ],
+        'listValues': [1, 2, 3],
     }
 
 

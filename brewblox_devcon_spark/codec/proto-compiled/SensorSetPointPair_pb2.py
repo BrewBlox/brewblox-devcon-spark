@@ -7,6 +7,7 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf import descriptor_pb2
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -19,7 +20,6 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='SensorSetPointPair.proto',
   package='blox',
   syntax='proto3',
-  serialized_options=None,
   serialized_pb=_b('\n\x18SensorSetPointPair.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"X\n\x12SensorSetPointPair\x12\x1b\n\x06sensor\x18\x01 \x01(\x11\x42\x0b\x9a?\x08\x1a\x06Sensor\x12%\n\x08setpoint\x18\x02 \x01(\x11\x42\x13\x9a?\x10\x1a\x0eSetPointSimpleb\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,])
@@ -40,21 +40,21 @@ _SENSORSETPOINTPAIR = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\010\032\006Sensor'), file=DESCRIPTOR),
+      options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\010\032\006Sensor')), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='setpoint', full_name='blox.SensorSetPointPair.setpoint', index=1,
       number=2, type=17, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\020\032\016SetPointSimple'), file=DESCRIPTOR),
+      options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\020\032\016SetPointSimple')), file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  serialized_options=None,
+  options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -75,6 +75,8 @@ SensorSetPointPair = _reflection.GeneratedProtocolMessageType('SensorSetPointPai
 _sym_db.RegisterMessage(SensorSetPointPair)
 
 
-_SENSORSETPOINTPAIR.fields_by_name['sensor']._options = None
-_SENSORSETPOINTPAIR.fields_by_name['setpoint']._options = None
+_SENSORSETPOINTPAIR.fields_by_name['sensor'].has_options = True
+_SENSORSETPOINTPAIR.fields_by_name['sensor']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\010\032\006Sensor'))
+_SENSORSETPOINTPAIR.fields_by_name['setpoint'].has_options = True
+_SENSORSETPOINTPAIR.fields_by_name['setpoint']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\020\032\016SetPointSimple'))
 # @@protoc_insertion_point(module_scope)

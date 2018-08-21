@@ -4,12 +4,12 @@ Example of how to import and use the brewblox service
 
 from brewblox_service import brewblox_logger, events, scheduler, service
 
-from brewblox_codec_spark import codec
 from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
                                    communication, datastore, device, seeder,
                                    status)
 from brewblox_devcon_spark.api import (alias_api, debug_api, error_response,
                                        object_api, profile_api, remote_api)
+from brewblox_devcon_spark.codec import codec
 
 LOGGER = brewblox_logger(__name__)
 

@@ -7,6 +7,7 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf import descriptor_pb2
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -19,7 +20,6 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='SetPointSimple.proto',
   package='blox',
   syntax='proto3',
-  serialized_options=None,
   serialized_pb=_b('\n\x14SetPointSimple.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"2\n\x0eSetPointSimple\x12 \n\x07setting\x18\x01 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,])
@@ -40,14 +40,14 @@ _SETPOINTSIMPLE = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\006\n\004degC\232?\003\020\200\002'), file=DESCRIPTOR),
+      options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\006\n\004degC\232?\003\020\200\002')), file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  serialized_options=None,
+  options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -68,5 +68,6 @@ SetPointSimple = _reflection.GeneratedProtocolMessageType('SetPointSimple', (_me
 _sym_db.RegisterMessage(SetPointSimple)
 
 
-_SETPOINTSIMPLE.fields_by_name['setting']._options = None
+_SETPOINTSIMPLE.fields_by_name['setting'].has_options = True
+_SETPOINTSIMPLE.fields_by_name['setting']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\006\n\004degC\232?\003\020\200\002'))
 # @@protoc_insertion_point(module_scope)

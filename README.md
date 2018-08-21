@@ -37,7 +37,7 @@ Services are capable of interacting with a BrewPi Spark that has pre-existing bl
 
 Object metadata is persisted to files. This does not include object settings - these are the responsibility of the Spark itself.
 
-### Codec ([codec.py](./brewblox_codec_spark/codec.py))
+### Codec ([codec.py](./brewblox_devcon_spark/codec/codec.py))
 
 While the controller <-> service communication uses the Controlbox protocol, individual objects are encoded separately, using Google's [Protocol Buffers](https://developers.google.com/protocol-buffers/).
 

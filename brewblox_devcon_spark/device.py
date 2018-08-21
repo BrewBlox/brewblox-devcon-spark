@@ -11,7 +11,7 @@ from typing import Any, Awaitable, Callable, List, Type
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
 
-from brewblox_codec_spark import codec
+from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark import (commander, commands, datastore, exceptions,
                                    twinkeydict)
 from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,

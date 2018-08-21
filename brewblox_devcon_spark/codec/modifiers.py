@@ -2,7 +2,7 @@
 Input/output modification functions for transcoding
 """
 
-from brewblox_codec_spark import _path_extension  # isort:skip
+from brewblox_devcon_spark.codec import _path_extension  # isort:skip
 
 import re
 from base64 import b64decode, b64encode
@@ -60,7 +60,7 @@ class Modifier():
     def _quantity(self, *args, **kwargs) -> quantity._Quantity:
         return self._ureg.Quantity(*args, **kwargs)
 
-    def _find_options(self, desc: DescriptorBase, obj) -> Iterator[OptionElement]:
+    def _find_options(self, desc: DescriptorBase, obj: dict) -> Iterator[OptionElement]:
         """
         Recursively walks `obj`, and yields an `OptionElement` for each value
         where the associated Protobuf message has an option.
@@ -69,9 +69,6 @@ class Modifier():
         This makes it safe for calling code to modify or delete the value relevant to them.
         Any entries added to the parent object after an element is yielded will not be considered.
         """
-        if not isinstance(obj, dict):
-            raise StopIteration()
-
         for key in set(obj.keys()):
             base_key, option_value = self._postfix_pattern.findall(key)[0]
             field: FieldDescriptor = desc.fields_by_name[base_key]

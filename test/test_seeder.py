@@ -9,7 +9,7 @@ from tempfile import NamedTemporaryFile
 import pytest
 from brewblox_service import scheduler
 
-from brewblox_codec_spark import codec
+from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark import (commander_sim, datastore, device, seeder,
                                    status)
 from brewblox_devcon_spark.api import object_api, profile_api

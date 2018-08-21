@@ -9,9 +9,9 @@ from typing import Awaitable, Callable, Tuple, Union
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
 
-from brewblox_codec_spark.modifiers import Modifier
-from brewblox_codec_spark.transcoders import (Decoded_, Encoded_, ObjType_,
-                                              Transcoder)
+from brewblox_devcon_spark.codec.modifiers import Modifier
+from brewblox_devcon_spark.codec.transcoders import (Decoded_, Encoded_, ObjType_,
+                                                     Transcoder)
 from brewblox_devcon_spark import exceptions
 
 TranscodeFunc_ = Callable[

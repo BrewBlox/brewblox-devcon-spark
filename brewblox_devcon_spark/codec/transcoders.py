@@ -2,7 +2,7 @@
 Object-specific transcoders
 """
 
-from brewblox_codec_spark import _path_extension  # isort:skip
+from brewblox_devcon_spark.codec import _path_extension  # isort:skip
 
 from abc import ABC, abstractclassmethod, abstractmethod
 from typing import Iterable, Union
@@ -18,7 +18,7 @@ import Pid_pb2
 import SensorSetPointPair_pb2
 import SetPointSimple_pb2
 import XboxController_pb2
-from brewblox_codec_spark.modifiers import Modifier
+from brewblox_devcon_spark.codec.modifiers import Modifier
 
 ObjType_ = Union[int, str]
 Decoded_ = dict
@@ -35,19 +35,19 @@ class Transcoder(ABC):
 
     @abstractclassmethod
     def type_int(cls) -> int:
-        pass
+        pass  # pragma: no cover
 
     @abstractclassmethod
     def type_str(cls) -> str:
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def encode(self, values: Decoded_) -> Encoded_:
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def decode(encoded: Encoded_) -> Decoded_:
-        pass
+        pass  # pragma: no cover
 
     @classmethod
     def get(cls, obj_type: ObjType_, mods: Modifier) -> 'Transcoder':

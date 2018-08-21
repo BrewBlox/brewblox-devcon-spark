@@ -10,7 +10,7 @@ import pytest
 from asynctest import CoroutineMock
 from brewblox_service import scheduler
 
-from brewblox_codec_spark import codec
+from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark import commander_sim, datastore, device, status
 from brewblox_devcon_spark.api import object_api, remote_api
 from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
