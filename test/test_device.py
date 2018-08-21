@@ -79,7 +79,7 @@ async def test_transcoding(app, client, cmder, store, ctrl, mocker):
     decode_spy = mocker.spy(c, 'decode')
 
     retval = await ctrl.create_object(object_args)
-    assert retval['object_data']['settings']['address'] == 'ff'
+    assert retval['object_data']['settings']['address'] == 'ff'.rjust(16, '0')
 
     encode_spy.assert_called_once_with(obj_type, obj_data)
     decode_spy.assert_called_once_with(enc_type, enc_data)

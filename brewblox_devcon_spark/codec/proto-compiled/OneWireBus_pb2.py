@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='OneWireBus.proto',
   package='blox',
   syntax='proto3',
-  serialized_pb=_b('\n\x10OneWireBus.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"}\n\nOneWireBus\x12)\n\x07\x63ommand\x18\x01 \x01(\x0b\x32\x18.blox.OneWireBus.Command\x12\x1b\n\x07\x61\x64\x64ress\x18\x02 \x03(\x0c\x42\n\x9a?\x02 \x01\x9a?\x02(\x01\x1a\'\n\x07\x43ommand\x12\x0e\n\x06opcode\x18\x01 \x01(\r\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\rb\x06proto3')
+  serialized_pb=_b('\n\x10OneWireBus.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"}\n\nOneWireBus\x12)\n\x07\x63ommand\x18\x01 \x01(\x0b\x32\x18.blox.OneWireBus.Command\x12\x1b\n\x07\x61\x64\x64ress\x18\x02 \x03(\x06\x42\n\x9a?\x02 \x01\x9a?\x02(\x01\x1a\'\n\x07\x43ommand\x12\x0e\n\x06opcode\x18\x01 \x01(\r\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\rb\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,])
 
@@ -80,7 +80,7 @@ _ONEWIREBUS = _descriptor.Descriptor(
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='address', full_name='blox.OneWireBus.address', index=1,
-      number=2, type=12, cpp_type=9, label=3,
+      number=2, type=6, cpp_type=4, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,

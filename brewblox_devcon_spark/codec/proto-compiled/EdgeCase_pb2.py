@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='EdgeCase.proto',
   package='blox',
   syntax='proto3',
-  serialized_pb=_b('\n\x0e\x45\x64geCase.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"\x8f\x03\n\x08\x45\x64geCase\x12)\n\x08settings\x18\x01 \x01(\x0b\x32\x17.blox.EdgeCase.Settings\x12#\n\x05state\x18\x02 \x01(\x0b\x32\x14.blox.EdgeCase.State\x12\x19\n\x04link\x18\x03 \x01(\rB\x0b\x9a?\x08\x1a\x06testey\x12\x32\n\x0f\x61\x64\x64itionalLinks\x18\x04 \x03(\x0b\x32\x19.blox.EdgeCase.NestedLink\x12#\n\nlistValues\x18\x05 \x03(\rB\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x1aI\n\x08Settings\x12\x16\n\x07\x61\x64\x64ress\x18\x01 \x01(\x0c\x42\x05\x9a?\x02 \x01\x12%\n\x06offset\x18\x02 \x01(\x11\x42\x15\x9a?\x0c\n\ndelta_degC\x9a?\x03\x10\x80\x02\x1a\x41\n\x05State\x12\x1e\n\x05value\x18\x01 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12\x18\n\tconnected\x18\x02 \x01(\x08\x42\x05\x9a?\x02(\x01\x1a\x31\n\nNestedLink\x12#\n\nconnection\x18\x01 \x01(\rB\x0f\x9a?\x0c\x1a\nconnectionb\x06proto3')
+  serialized_pb=_b('\n\x0e\x45\x64geCase.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"\x8f\x03\n\x08\x45\x64geCase\x12)\n\x08settings\x18\x01 \x01(\x0b\x32\x17.blox.EdgeCase.Settings\x12#\n\x05state\x18\x02 \x01(\x0b\x32\x14.blox.EdgeCase.State\x12\x19\n\x04link\x18\x03 \x01(\rB\x0b\x9a?\x08\x1a\x06testey\x12\x32\n\x0f\x61\x64\x64itionalLinks\x18\x04 \x03(\x0b\x32\x19.blox.EdgeCase.NestedLink\x12#\n\nlistValues\x18\x05 \x03(\x02\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x1aI\n\x08Settings\x12\x16\n\x07\x61\x64\x64ress\x18\x01 \x01(\x06\x42\x05\x9a?\x02 \x01\x12%\n\x06offset\x18\x02 \x01(\x11\x42\x15\x9a?\x0c\n\ndelta_degC\x9a?\x03\x10\x80\x02\x1a\x41\n\x05State\x12\x1e\n\x05value\x18\x01 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12\x18\n\tconnected\x18\x02 \x01(\x08\x42\x05\x9a?\x02(\x01\x1a\x31\n\nNestedLink\x12#\n\nconnection\x18\x01 \x01(\rB\x0f\x9a?\x0c\x1a\nconnectionb\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,])
 
@@ -36,8 +36,8 @@ _EDGECASE_SETTINGS = _descriptor.Descriptor(
   fields=[
     _descriptor.FieldDescriptor(
       name='address', full_name='blox.EdgeCase.Settings.address', index=0,
-      number=1, type=12, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b(""),
+      number=1, type=6, cpp_type=4, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\002 \001')), file=DESCRIPTOR),
@@ -168,7 +168,7 @@ _EDGECASE = _descriptor.Descriptor(
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='listValues', full_name='blox.EdgeCase.listValues', index=4,
-      number=5, type=13, cpp_type=3, label=3,
+      number=5, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,

@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='OneWireTempSensor.proto',
   package='blox',
   syntax='proto3',
-  serialized_pb=_b('\n\x17OneWireTempSensor.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"\xfc\x01\n\x11OneWireTempSensor\x12\x32\n\x08settings\x18\x01 \x01(\x0b\x32 .blox.OneWireTempSensor.Settings\x12,\n\x05state\x18\x02 \x01(\x0b\x32\x1d.blox.OneWireTempSensor.State\x1aI\n\x08Settings\x12\x16\n\x07\x61\x64\x64ress\x18\x01 \x01(\x0c\x42\x05\x9a?\x02 \x01\x12%\n\x06offset\x18\x02 \x01(\x11\x42\x15\x9a?\x0c\n\ndelta_degC\x9a?\x03\x10\x80\x02\x1a:\n\x05State\x12\x1e\n\x05value\x18\x01 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12\x11\n\tconnected\x18\x02 \x01(\x08\x62\x06proto3')
+  serialized_pb=_b('\n\x17OneWireTempSensor.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"\xfc\x01\n\x11OneWireTempSensor\x12\x32\n\x08settings\x18\x01 \x01(\x0b\x32 .blox.OneWireTempSensor.Settings\x12,\n\x05state\x18\x02 \x01(\x0b\x32\x1d.blox.OneWireTempSensor.State\x1aI\n\x08Settings\x12\x16\n\x07\x61\x64\x64ress\x18\x01 \x01(\x06\x42\x05\x9a?\x02 \x01\x12%\n\x06offset\x18\x02 \x01(\x11\x42\x15\x9a?\x0c\n\ndelta_degC\x9a?\x03\x10\x80\x02\x1a:\n\x05State\x12\x1e\n\x05value\x18\x01 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12\x11\n\tconnected\x18\x02 \x01(\x08\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,])
 
@@ -36,8 +36,8 @@ _ONEWIRETEMPSENSOR_SETTINGS = _descriptor.Descriptor(
   fields=[
     _descriptor.FieldDescriptor(
       name='address', full_name='blox.OneWireTempSensor.Settings.address', index=0,
-      number=1, type=12, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b(""),
+      number=1, type=6, cpp_type=4, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\232?\002 \001')), file=DESCRIPTOR),

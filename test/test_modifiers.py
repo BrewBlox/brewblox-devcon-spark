@@ -37,7 +37,7 @@ def generate_encoding_data():
 def generate_decoding_data():
     return {
         'settings': {
-            'address': 'qrvM3Q==',
+            'address': 2864434397,
             'offset': 2844
         },
         'state': {
@@ -59,7 +59,7 @@ def test_encode_options(mod):
 def test_decode_options(mod):
     vals = {
         'settings': {
-            'address': 'qrvM3Q==',
+            'address': 2864434397,
             'offset': 2844
         },
         'state': {
@@ -76,7 +76,7 @@ def test_decode_options(mod):
 def test_decode_no_system(k_mod):
     vals = {
         'settings': {
-            'address': 'qrvM3Q==',
+            'address': 2864434397,
             'offset': 2844
         },
         'state': {

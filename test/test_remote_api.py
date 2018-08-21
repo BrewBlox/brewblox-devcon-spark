@@ -10,7 +10,6 @@ import pytest
 from asynctest import CoroutineMock
 from brewblox_service import scheduler
 
-from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark import commander_sim, datastore, device, status
 from brewblox_devcon_spark.api import object_api, remote_api
 from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
@@ -19,6 +18,7 @@ from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
                                                   OBJECT_ID_KEY,
                                                   OBJECT_TYPE_KEY,
                                                   PROFILE_LIST_KEY)
+from brewblox_devcon_spark.codec import codec
 
 TESTED = remote_api.__name__
 
@@ -107,14 +107,14 @@ async def test_slave_translations(app, client, created, object_args, dummy_liste
 
     data = object_args[OBJECT_DATA_KEY]
     # should be propagated
-    data['settings']['address'] = 'aa'
+    data['settings']['address'] = 'aa'.rjust(16, '0')
     # ignored
     data['state']['connected'] = False
 
     await dummy_listener.on_message(None, 'testface', deepcopy(data))
 
     updated = await ctrl.read_object({OBJECT_ID_KEY: object_args[OBJECT_ID_KEY]})
-    assert updated[OBJECT_DATA_KEY]['settings']['address'] == 'aa'
+    assert updated[OBJECT_DATA_KEY]['settings']['address'] == 'aa'.rjust(16, '0')
     assert updated[OBJECT_DATA_KEY]['state']['connected'] is True
 
 
@@ -128,12 +128,12 @@ async def test_slave_all(app, client, created, object_args, dummy_listener):
 
     # No translation table: everything is used
     data = object_args[OBJECT_DATA_KEY]
-    data['settings']['address'] = 'aa'
+    data['settings']['address'] = 'aa'.rjust(16, '0')
     data['state']['connected'] = False
 
     await dummy_listener.on_message(None, 'testface', deepcopy(data))
     updated = await ctrl.read_object({OBJECT_ID_KEY: object_args[OBJECT_ID_KEY]})
-    assert updated[OBJECT_DATA_KEY]['settings']['address'] == 'aa'
+    assert updated[OBJECT_DATA_KEY]['settings']['address'] == 'aa'.rjust(16, '0')
     assert not updated[OBJECT_DATA_KEY]['state'].get('connected')
 
 
