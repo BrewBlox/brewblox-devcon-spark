@@ -12,7 +12,7 @@ from brewblox_devcon_spark.device import OBJECT_DATA_KEY, OBJECT_ID_KEY
 
 TESTED = device.__name__
 
-NUM_SYSTEM_OBJECTS = 4
+N_SYS_OBJ = len(datastore.SYS_OBJECTS)
 
 
 def generate_obj():
@@ -99,7 +99,7 @@ async def test_list_transcoding(app, client, cmder, store, ctrl, mocker):
         })
 
     retval = await ctrl.list_stored_objects()
-    assert len(retval['objects']) == 5 + NUM_SYSTEM_OBJECTS
+    assert len(retval['objects']) == 5 + N_SYS_OBJ
 
 
 async def test_resolve_id(app, client, store, mocker, ctrl):

@@ -29,7 +29,7 @@ Serial communication is asynchronous: requests and responses are not linked at t
 For when using an actual Spark is inconvenient, there is a simulation version. It serves as a drop-in replacement for the real commander: it handles commands, and returns sensible values.
 Commands are encoded/decoded, to closely match the real situation.
 
-### Datastore ([twinkeydict.py](./brewblox_devcon_spark/twinkeydict.py))
+### Datastore ([datastore.py](./brewblox_devcon_spark/datastore.py))
 
 The service must keep track of object metadata not directly persisted by the controller. This includes user-defined object names and descriptions.
 
@@ -58,6 +58,17 @@ The Spark service is not responsible for retaining any object data. Any requests
 To reduce the impact of this bottleneck, and to persist historic data, `Broadcaster` reads all objects every few seconds, and broadcasts their values to the eventbus.
 
 Here, the data will likely be picked up by the [History Service](https://github.com/BrewBlox/brewblox-history).
+
+
+### Seeder ([seeder.py](./brewblox_devcon_spark/seeder.py))
+
+Some actions are required when connecting to a (new) Spark controller.
+The Seeder feature waits for a connection to be made, and then performs these one-time tasks.
+
+Examples are:
+* Configuring active profiles
+* Adding a baseline of desired blocks
+* Setting Spark system clock
 
 ## REST API
 

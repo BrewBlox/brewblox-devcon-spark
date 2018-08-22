@@ -113,7 +113,7 @@ class SimulationResponder():
                     OBJECT_DATA_KEY: enc_data
                 })
 
-        # Encode + decode response
+        # Encode response, force decoding by creating new command
         encoding_cmd = cmd.from_decoded(cmd.decoded_request, retv)
         return cmd.from_encoded(encoding_cmd.encoded_request, encoding_cmd.encoded_response)
 

@@ -16,7 +16,7 @@ from brewblox_devcon_spark.codec import codec
 
 TESTED = seeder.__name__
 
-NUM_SYSTEM_OBJECTS = 4
+N_SYS_OBJ = len(datastore.SYS_OBJECTS)
 
 
 @pytest.fixture
@@ -104,7 +104,7 @@ async def test_reseed(app, client, seeds, spark_status):
     oapi = object_api.ObjectApi(app)
 
     await oapi.delete('boxy')
-    assert len(await oapi.list_active()) == 1 + NUM_SYSTEM_OBJECTS
+    assert len(await oapi.list_active()) == 1 + N_SYS_OBJ
 
     spark_status.connected.clear()
     spark_status.disconnected.set()

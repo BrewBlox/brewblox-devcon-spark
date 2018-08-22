@@ -19,7 +19,7 @@ from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
                                                   PROFILE_LIST_KEY)
 from brewblox_devcon_spark.codec import codec
 
-NUM_SYSTEM_OBJECTS = 4
+N_SYS_OBJ = len(datastore.SYS_OBJECTS)
 
 
 @pytest.fixture
@@ -144,7 +144,7 @@ async def test_create_performance(app, client, object_args):
     assert [retv.status for retv in responses] == [200]*num_items
 
     retd = await response(client.get('/objects'))
-    assert len(retd) == num_items + NUM_SYSTEM_OBJECTS
+    assert len(retd) == num_items + N_SYS_OBJ
 
 
 async def test_read(app, client, object_args):
@@ -182,11 +182,11 @@ async def test_delete(app, client, object_args):
 
 async def test_all(app, client, object_args):
     retd = await response(client.get('/stored_objects'))
-    assert len(retd) == NUM_SYSTEM_OBJECTS
+    assert len(retd) == N_SYS_OBJ
 
     await client.post('/objects', json=object_args)
     retd = await response(client.get('/stored_objects'))
-    assert len(retd) == 1 + NUM_SYSTEM_OBJECTS
+    assert len(retd) == 1 + N_SYS_OBJ
 
 
 async def test_clear(app, client, object_args):
@@ -194,9 +194,9 @@ async def test_clear(app, client, object_args):
         object_args[API_ID_KEY] = f'id{i}'
         await client.post('/objects', json=object_args)
 
-    assert len(await response(client.get('/objects'))) == 5 + NUM_SYSTEM_OBJECTS
+    assert len(await response(client.get('/objects'))) == 5 + N_SYS_OBJ
     await client.delete('/objects')
-    assert len(await response(client.get('/objects'))) == NUM_SYSTEM_OBJECTS
+    assert len(await response(client.get('/objects'))) == N_SYS_OBJ
 
 
 @pytest.mark.parametrize('input_id', [
