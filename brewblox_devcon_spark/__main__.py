@@ -8,7 +8,7 @@ from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
                                    communication, datastore, device, seeder,
                                    status)
 from brewblox_devcon_spark.api import (alias_api, debug_api, error_response,
-                                       object_api, remote_api)
+                                       object_api, remote_api, system_api)
 from brewblox_devcon_spark.codec import codec
 
 LOGGER = brewblox_logger(__name__)
@@ -99,6 +99,7 @@ def main():
     debug_api.setup(app)
     alias_api.setup(app)
     object_api.setup(app)
+    system_api.setup(app)
     remote_api.setup(app)
 
     seeder.setup(app)

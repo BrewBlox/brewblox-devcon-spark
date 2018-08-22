@@ -11,12 +11,10 @@ from brewblox_service import scheduler
 
 from brewblox_devcon_spark import (commander_sim, datastore, device, seeder,
                                    status)
-from brewblox_devcon_spark.api import object_api
+from brewblox_devcon_spark.api import object_api, system_api
 from brewblox_devcon_spark.codec import codec
 
 TESTED = seeder.__name__
-
-N_SYS_OBJ = len(datastore.SYS_OBJECTS)
 
 
 @pytest.fixture
@@ -83,6 +81,26 @@ async def app(app, seeds_file):
     codec.setup(app)
     device.setup(app)
     seeder.setup(app)
+    system_api.setup(app)
+    return app
+
+
+@pytest.fixture
+async def noseed_app(app):
+    app['config']['seed_objects'] = None
+    app['config']['seed_profiles'] = []
+    return app
+
+
+@pytest.fixture
+async def errfile_app(app):
+    app['config']['seed_objects'] = 'wabberjocky'
+    return app
+
+
+@pytest.fixture
+async def errprofiles_app(app):
+    app['config']['seed_profiles'] = [10]
     return app
 
 
@@ -91,11 +109,12 @@ async def spark_status(app):
     return status.get_status(app)
 
 
-async def test_seeding(app, client, seeds, spark_status):
+async def test_seeding(app, client, seeds, spark_status, seeds_file):
     assert spark_status.connected.is_set()
     assert not spark_status.disconnected.is_set()
     assert seeder.get_seeder(app)
 
+    await asyncio.sleep(0.1)
     read_ids = {obj['id'] for obj in await object_api.ObjectApi(app).list_active()}
     assert read_ids & {'tempsensor', 'boxy'}
 
@@ -103,8 +122,10 @@ async def test_seeding(app, client, seeds, spark_status):
 async def test_reseed(app, client, seeds, spark_status):
     oapi = object_api.ObjectApi(app)
 
+    await asyncio.sleep(0.1)
     await oapi.delete('boxy')
-    assert len(await oapi.list_active()) == 1 + N_SYS_OBJ
+    read_ids = {obj['id'] for obj in await oapi.list_active()}
+    assert 'boxy' not in read_ids
 
     spark_status.connected.clear()
     spark_status.disconnected.set()
@@ -113,3 +134,39 @@ async def test_reseed(app, client, seeds, spark_status):
 
     await asyncio.sleep(0.1)
     await oapi.read('boxy')
+
+
+async def test_noseed(noseed_app, client):
+    await asyncio.sleep(0.1)
+    assert 'boxy' not in {
+        obj['id'] for obj
+        in await object_api.ObjectApi(noseed_app).list_active()
+    }
+
+
+async def test_errfile(errfile_app, client):
+    oapi = object_api.ObjectApi(errfile_app)
+    sapi = system_api.SystemApi(errfile_app)
+
+    await asyncio.sleep(0.1)
+    # objects not seeded
+    assert 'boxy' not in {
+        obj['id'] for obj
+        in await oapi.list_active()
+    }
+    # profiles still ok
+    assert await sapi.read_profiles() == [1, 3, 7]
+
+
+async def test_errprofiles(errprofiles_app, client):
+    oapi = object_api.ObjectApi(errprofiles_app)
+    sapi = system_api.SystemApi(errprofiles_app)
+
+    await asyncio.sleep(0.1)
+    # objects ok
+    assert 'boxy' in {
+        obj['id'] for obj
+        in await oapi.list_active()
+    }
+    # profiles default
+    assert await sapi.read_profiles() == [0]

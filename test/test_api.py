@@ -10,7 +10,7 @@ from brewblox_service import scheduler
 from brewblox_devcon_spark import (commander_sim, datastore, device,
                                    exceptions, status)
 from brewblox_devcon_spark.api import (alias_api, debug_api, error_response,
-                                       object_api)
+                                       object_api, system_api)
 from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
                                                   API_TYPE_KEY,
                                                   OBJECT_DATA_KEY,
@@ -51,6 +51,7 @@ async def app(app, loop):
     debug_api.setup(app)
     alias_api.setup(app)
     object_api.setup(app)
+    system_api.setup(app)
 
     return app
 
@@ -249,3 +250,11 @@ async def test_alias_update(app, client, object_args):
 
     retv = await client.get('/objects/newname')
     assert retv.status == 200
+
+
+async def test_profiles(app, client):
+    profiles = await response(client.get('/system/profiles'))
+    assert profiles == [0]  # Profiles initialize as [0]
+    updated = await response(client.put('/system/profiles', json=[0, 1, 2]))
+    assert updated == [0, 1, 2]
+    assert updated == (await response(client.get('/system/profiles')))
