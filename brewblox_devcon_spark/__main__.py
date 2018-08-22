@@ -16,45 +16,55 @@ LOGGER = brewblox_logger(__name__)
 
 def create_parser(default_name='spark'):
     parser = service.create_parser(default_name=default_name)
-    parser.add_argument('--database',
-                        help='Backing file for the object database. [%(default)s]',
-                        default='brewblox_db.json')
-    parser.add_argument('--device-port',
-                        help='Spark device port. Automatically determined if not set. [%(default)s]')
-    parser.add_argument('--device-url-port',
-                        help='Spark port when accessing a device over WiFi. [%(default)s]',
-                        type=int,
-                        default=8332)
-    parser.add_argument('--device-url',
-                        help='Spark device URL. Takes precedence over serial connections. [%(default)s]')
-    parser.add_argument('--device-id',
-                        help='Spark serial number. Any spark is valid if not set. '
-                        'This will be ignored if --device-port is specified. [%(default)s]')
-    parser.add_argument('--simulation',
-                        help='Start in simulator mode. Will not connect to a physical device. [%(default)s]',
-                        action='store_true')
-    parser.add_argument('--broadcast-interval',
-                        help='Interval (in seconds) between broadcasts of controller state.'
-                        'Set to a value <= 0 to disable broadcasting. [%(default)s]',
-                        type=float,
-                        default=5)
-    parser.add_argument('--broadcast-exchange',
-                        help='Eventbus exchange to which controller state should be broadcasted. [%(default)s]',
-                        default='brewcast')
-    parser.add_argument('--sync-exchange',
-                        help='Eventbus exchange used to synchronize remote blocks. [%(default)s]',
-                        default='syncast')
-    parser.add_argument('--unit-system-file',
-                        help='User configuration for units [%(default)s]')
-    parser.add_argument('--list-devices',
-                        action='store_true',
-                        help='List connected devices and exit. [%(default)s]')
-    parser.add_argument('--seed-objects',
-                        help='A file of objects that should be created on connection. [%(default)s]')
-    parser.add_argument('--seed-profiles',
-                        nargs='+',
-                        type=int,
-                        help='UNUSED: Profiles that should be made active on connection. [%(default)s]')
+
+    # Local config
+    group = parser.add_argument_group('Local configuration')
+    group.add_argument('--database',
+                       help='Backing file for the object database. [%(default)s]',
+                       default='brewblox_db.json')
+    group.add_argument('--unit-system-file',
+                       help='User configuration for units [%(default)s]')
+    group.add_argument('--seed-objects',
+                       help='A file of objects that should be created on connection. [%(default)s]')
+    group.add_argument('--seed-profiles',
+                       nargs='+',
+                       type=int,
+                       help='Profiles that should be made active on connection. [%(default)s]')
+
+    # Device options
+    group = parser.add_argument_group('Device communication')
+    group.add_argument('--simulation',
+                       help='Start in simulation mode. Will not connect to a physical device. [%(default)s]',
+                       action='store_true')
+    group.add_argument('--device-host',
+                       help='Spark device URL host. Takes precedence over serial connections. [%(default)s]')
+    group.add_argument('--device-port',
+                       help='Spark device URL port when accessing a device over WiFi. [%(default)s]',
+                       type=int,
+                       default=8332)
+    group.add_argument('--device-serial',
+                       help='Spark device serial port. Automatically determined if not set. [%(default)s]')
+    group.add_argument('--device-id',
+                       help='Spark serial number. Any spark is valid if not set. '
+                       'This will be ignored if --device-port is specified. [%(default)s]')
+    group.add_argument('--list-devices',
+                       action='store_true',
+                       help='List connected devices and exit. [%(default)s]')
+
+    # Service network options
+    group = parser.add_argument_group('Service communication')
+    group.add_argument('--broadcast-exchange',
+                       help='Eventbus exchange to which controller state should be broadcasted. [%(default)s]',
+                       default='brewcast')
+    group.add_argument('--broadcast-interval',
+                       help='Interval (in seconds) between broadcasts of controller state.'
+                       'Set to a value <= 0 to disable broadcasting. [%(default)s]',
+                       type=float,
+                       default=5)
+    group.add_argument('--sync-exchange',
+                       help='Eventbus exchange used to synchronize remote blocks. [%(default)s]',
+                       default='syncast')
+
     return parser
 
 

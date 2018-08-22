@@ -106,7 +106,7 @@ def transport_mock(mocker):
 
 @pytest.fixture
 def tcp_create_connection_mock(app, mocker):
-    app['config']['device_url'] = 'enterprise'
+    app['config']['device_host'] = 'enterprise'
 
     tcp_transport_mock = Mock()
     tcp_transport_mock.is_closing.return_value = False
@@ -131,7 +131,7 @@ def bound_collector(loop):
 
 @pytest.fixture
 def app(app, serial_mock, transport_mock):
-    app['config']['device_url'] = None
+    app['config']['device_host'] = None
     status.setup(app)
     scheduler.setup(app)
     communication.setup(app)

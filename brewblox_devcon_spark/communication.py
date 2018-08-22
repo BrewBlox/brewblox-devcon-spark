@@ -61,7 +61,7 @@ async def connect_serial(app: web.Application,
                          factory: ProtocolFactory_
                          ) -> Awaitable[ConnectionResult_]:
     config = app['config']
-    port = config['device_port']
+    port = config['device_serial']
     id = config['device_id']
 
     address = detect_device(port, id)
@@ -75,14 +75,14 @@ async def connect_serial(app: web.Application,
 async def connect_tcp(app: web.Application,
                       factory: ProtocolFactory_
                       ) -> Awaitable[ConnectionResult_]:
-    address = app['config']['device_url']
-    port = app['config']['device_url_port']
+    host = app['config']['device_host']
+    port = app['config']['device_port']
     transport, protocol = await app.loop.create_connection(
         factory,
-        address,
+        host,
         port
     )
-    return address, transport, protocol
+    return f'{host}:{port}', transport, protocol
 
 
 class SparkConduit(features.ServiceFeature):
@@ -123,7 +123,7 @@ class SparkConduit(features.ServiceFeature):
                 on_data=partial(self._do_callbacks, self._data_callbacks)
             )
 
-        if app['config']['device_url']:
+        if app['config']['device_host']:
             connect_func = partial(connect_tcp, self.app, factory)
         else:
             connect_func = partial(connect_serial, self.app, factory)
