@@ -401,14 +401,14 @@ class DeleteObjectCommand(Command):
 class ListActiveObjectsCommand(Command):
     _OPCODE = OpcodeEnum.LIST_ACTIVE_OBJECTS
     _REQUEST = None
-    _RESPONSE = _PROFILE_LIST
+    _RESPONSE = None
     _VALUES = (OBJECT_LIST_KEY, _OBJECT)
 
 
 class ListStoredObjectsCommand(Command):
     _OPCODE = OpcodeEnum.LIST_STORED_OBJECTS
     _REQUEST = None
-    _RESPONSE = _PROFILE_LIST
+    _RESPONSE = None
     _VALUES = (OBJECT_LIST_KEY, _OBJECT)
 
 

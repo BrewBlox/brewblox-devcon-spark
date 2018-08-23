@@ -150,7 +150,6 @@ class SimulationResponder():
 
     async def _list_active_objects(self, request):
         return {
-            PROFILE_LIST_KEY: self._active_profiles,
             OBJECT_LIST_KEY: [
                 obj for obj in self._objects.values()
                 if obj[OBJECT_ID_KEY] < OBJECT_ID_START
@@ -160,7 +159,6 @@ class SimulationResponder():
 
     async def _list_stored_objects(self, request):
         return {
-            PROFILE_LIST_KEY: self._active_profiles,
             OBJECT_LIST_KEY: [obj for obj in self._objects.values()]
         }
 
