@@ -15,7 +15,6 @@ import EdgeCase_pb2
 import OneWireBus_pb2
 import OneWireTempSensor_pb2
 import Pid_pb2
-import Profiles_pb2
 import SensorSetPointPair_pb2
 import SetPointSimple_pb2
 import SysInfo_pb2
@@ -136,20 +135,22 @@ class TicksTranscoder(OptionsTranscoder):
     _TYPE_INT = 262
 
 
-class ProfilesTranscoder(OptionsTranscoder):
-    _MESSAGE = Profiles_pb2.Profiles
-    _TYPE_INT = 263
+class ProfilesTranscoder(Transcoder):
+    @classmethod
+    def type_int(cls) -> int:
+        return 2
+
+    @classmethod
+    def type_str(cls) -> str:
+        return 'Profiles'
 
     def encode(self, values: Decoded_) -> Encoded_:
-        values['active'] =\
-            self.mod.pack_bit_flags(values.get('active', []))
-        return super().encode(values)
+        active = self.mod.pack_bit_flags(values.get('active', []))
+        return bytes([active])
 
     def decode(self, encoded: Encoded_) -> Decoded_:
-        decoded = super().decode(encoded)
-        decoded['active'] =\
-            self.mod.unpack_bit_flags(decoded.get('active', 0))
-        return decoded
+        active = self.mod.unpack_bit_flags(int.from_bytes(encoded, 'little'))
+        return {'active': active}
 
 
 class SysInfoTranscoder(OptionsTranscoder):

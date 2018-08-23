@@ -14,7 +14,7 @@ from typing import List
 
 from brewblox_service import brewblox_logger
 from construct import (Adapter, Byte, Const, Container, Default, Enum,
-                       GreedyBytes, Int8ub, Int16ub, Struct)
+                       GreedyBytes, Int8ul, Int16ul, Struct)
 
 from brewblox_devcon_spark import exceptions
 
@@ -32,7 +32,7 @@ OBJECT_LIST_KEY = 'objects'
 PROFILE_LIST_KEY = 'profiles'
 
 
-OpcodeEnum = Enum(Int8ub,
+OpcodeEnum = Enum(Int8ul,
                   NONE=0,
                   READ_OBJECT=1,
                   WRITE_OBJECT=2,
@@ -45,7 +45,7 @@ OpcodeEnum = Enum(Int8ub,
                   FACTORY_RESET=9,
                   )
 
-ErrorcodeEnum = Enum(Int8ub,
+ErrorcodeEnum = Enum(Int8ul,
                      OK=0,
                      UNKNOWN_ERROR=1,
 
@@ -320,14 +320,15 @@ class Command(ABC):
 
         return self._decoded_response
 
-    def _build(self, struct: Struct, decoded: dict) -> HexStr_:
+    def _build(self, struct: Struct, decoded: dict, crc=False) -> HexStr_:
         if decoded is None:
             return None
         built_val = struct.build(decoded)
-        built_val += CRC8.calculate(built_val)
+        if crc:
+            built_val += CRC8.calculate(built_val)
         return hexlify(built_val).decode()
 
-    def _parse(self, struct: Struct, encoded: HexStr_, crc: bool=True) -> dict:
+    def _parse(self, struct: Struct, encoded: HexStr_, crc=False) -> dict:
         """
         Parses struct, and returns a serializable Python object.
         """
@@ -361,13 +362,13 @@ class Command(ABC):
 
 # Reoccurring data types - can be used as a macro
 _PROFILE_LIST = Struct(PROFILE_LIST_KEY / ProfileListAdapter())
-_OBJECT_ID = Struct(OBJECT_ID_KEY / Int16ub)
-_OBJECT_TYPE = Struct(OBJECT_TYPE_KEY / Int16ub)
+_OBJECT_ID = Struct(OBJECT_ID_KEY / Int16ul)
+_OBJECT_TYPE = Struct(OBJECT_TYPE_KEY / Int16ul)
 _OBJECT_DATA = Struct(OBJECT_DATA_KEY / GreedyBytes)
 _OBJECT = _OBJECT_ID + _PROFILE_LIST + _OBJECT_TYPE + _OBJECT_DATA
 
 # Special cases
-_CREATE_ID = Struct(OBJECT_ID_KEY / Default(Int16ub, 0))  # 0 == assigned by controller
+_CREATE_ID = Struct(OBJECT_ID_KEY / Default(Int16ul, 0))  # 0 == assigned by controller
 
 
 class ReadObjectCommand(Command):
