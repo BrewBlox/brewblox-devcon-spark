@@ -2,13 +2,13 @@
 Input/output modification functions for transcoding
 """
 
-from brewblox_codec_spark import _path_extension  # isort:skip
+from brewblox_devcon_spark.codec import _path_extension  # isort:skip
 
 import re
-from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
 from contextlib import suppress
-from typing import Iterator
+from functools import reduce
+from typing import Iterator, List
 
 from brewblox_service import brewblox_logger
 from dataclasses import dataclass
@@ -50,17 +50,27 @@ class Modifier():
         ]))
 
     @staticmethod
-    def hex_to_b64(s: str) -> str:
-        return b64encode(unhexlify(s)).decode()
+    def hex_to_int(s: str) -> int:
+        return int.from_bytes(unhexlify(s), 'big')
 
     @staticmethod
-    def b64_to_hex(s: str) -> str:
-        return hexlify(b64decode(s)).decode()
+    def int_to_hex(i: int) -> str:
+        return hexlify(int(i).to_bytes(8, 'big')).decode()
+
+    @staticmethod
+    def pack_bit_flags(flags: List[int]) -> int:
+        if next((i for i in flags if i >= 8), None):
+            raise ValueError(f'Invalid bit flags in {flags}. Values must be 0-7.')
+        return reduce(lambda result, idx: result | 1 << idx, flags, 0)
+
+    @staticmethod
+    def unpack_bit_flags(flags: int) -> List[int]:
+        return [i for i in range(8) if 1 << i & flags]
 
     def _quantity(self, *args, **kwargs) -> quantity._Quantity:
         return self._ureg.Quantity(*args, **kwargs)
 
-    def _find_options(self, desc: DescriptorBase, obj) -> Iterator[OptionElement]:
+    def _find_options(self, desc: DescriptorBase, obj: dict) -> Iterator[OptionElement]:
         """
         Recursively walks `obj`, and yields an `OptionElement` for each value
         where the associated Protobuf message has an option.
@@ -69,9 +79,6 @@ class Modifier():
         This makes it safe for calling code to modify or delete the value relevant to them.
         Any entries added to the parent object after an element is yielded will not be considered.
         """
-        if not isinstance(obj, dict):
-            raise StopIteration()
-
         for key in set(obj.keys()):
             base_key, option_value = self._postfix_pattern.findall(key)[0]
             field: FieldDescriptor = desc.fields_by_name[base_key]
@@ -102,7 +109,7 @@ class Modifier():
         * unit:     convert post-fixed unit notation ([UNIT]) to Protobuf unit
         * scale:    multiply value with scale after unit conversion
         * link:     strip link key postfix (<>)
-        * hexed:    convert hexadecimal string to base64 (protobuf input)
+        * hexed:    convert hexadecimal string to int64
         * readonly: strip value from protobuf input
 
         The output is a dict where values use controller units.
@@ -126,7 +133,7 @@ class Modifier():
             #
             # message ExampleMessage {
             #   message Settings {
-            #     bytes address = 1 [(brewblox).hexed = true];
+            #     fixed64 address = 1 [(brewblox).hexed = true];
             #     sint32 offset = 2 [(brewblox).unit = "delta_degC", (brewblox).scale = 256];
             #     uint16 sensor = 3 [(brewblox).link = "SensorType"];
             #     sint32 output = 4 [(brewblox).readonly = true];
@@ -136,7 +143,7 @@ class Modifier():
             >>> print(values)
             {
                 'settings': {
-                    'address': 'qrvM3Q==',  # Converted from Hex to base64
+                    'address': 2864434397,  # Converted from Hex to int64
                     'offset': 2844,         # Converted to delta_degC, scaled * 256, and rounded to int
                     'sensor': 10            # Link postfix stripped
                                             # 'output' is readonly -> stripped from dict
@@ -164,7 +171,7 @@ class Modifier():
                 val = [v * options.scale for v in val]
 
             if options.hexed:
-                val = [self.hex_to_b64(v) for v in val]
+                val = [self.hex_to_int(v) for v in val]
 
             if element.field.cpp_type in json_format._INT_TYPES:
                 val = [int(round(v)) for v in val]
@@ -192,7 +199,7 @@ class Modifier():
         Example:
             >>> values = {
                 'settings': {
-                    'address': 'qrvM3Q==',
+                    'address': 2864434397,
                     'offset': 2844,
                     'sensor': 10,
                     'output': 1234,
@@ -208,7 +215,7 @@ class Modifier():
             #
             # message ExampleMessage {
             #   message Settings {
-            #     bytes address = 1 [(brewblox).hexed = true];
+            #     fixed64 address = 1 [(brewblox).hexed = true];
             #     sint32 offset = 2 [(brewblox).unit = "delta_degC", (brewblox).scale = 256];
             #     uint16 sensor = 3 [(brewblox).link = "SensorType"];
             #     sint32 output = 4 [(brewblox).readonly = true];
@@ -265,7 +272,7 @@ class Modifier():
                 new_key += '<>'
 
             if options.hexed:
-                val = [self.b64_to_hex(v) for v in val]
+                val = [self.int_to_hex(v) for v in val]
 
             if not is_list:
                 val = val[0]

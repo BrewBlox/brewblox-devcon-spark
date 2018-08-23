@@ -7,7 +7,7 @@ package blox;
 // This message allows testing combinations that are possible, but not likely in real protobuf messages.
 message EdgeCase {
     message Settings {
-        bytes address = 1 [(brewblox).hexed = true];
+        fixed64 address = 1 [(brewblox).hexed = true];
         sint32 offset = 2 [(brewblox).unit = "delta_degC", (brewblox).scale = 256];
     }
     message State {
@@ -22,4 +22,5 @@ message EdgeCase {
     State state = 2;
     uint32 link = 3 [(brewblox).link = "testey"];
     repeated NestedLink additionalLinks = 4;
+    repeated float listValues = 5 [(brewblox).unit = "degC", (brewblox).scale = 256];
 }

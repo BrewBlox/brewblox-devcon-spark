@@ -9,10 +9,10 @@ from typing import Awaitable, Callable, Tuple, Union
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
 
-from brewblox_codec_spark.modifiers import Modifier
-from brewblox_codec_spark.transcoders import (Decoded_, Encoded_, ObjType_,
-                                              Transcoder)
 from brewblox_devcon_spark import exceptions
+from brewblox_devcon_spark.codec.modifiers import Modifier
+from brewblox_devcon_spark.codec.transcoders import (Decoded_, Encoded_,
+                                                     ObjType_, Transcoder)
 
 TranscodeFunc_ = Callable[
     [ObjType_, Union[Encoded_, Decoded_]],
@@ -70,7 +70,7 @@ class Codec(features.ServiceFeature):
             trc = Transcoder.get(obj_type, self._mod)
             return trc.type_int(), trc.encode(deepcopy(values))
         except Exception as ex:
-            raise exceptions.EncodeException(ex) from ex
+            raise exceptions.EncodeException(ex)
 
     async def decode(self,
                      obj_type: ObjType_,
@@ -101,4 +101,4 @@ class Codec(features.ServiceFeature):
             trc = Transcoder.get(obj_type, self._mod)
             return trc.type_str(), trc.decode(encoded)
         except Exception as ex:
-            raise exceptions.DecodeException(ex) from ex
+            raise exceptions.DecodeException(ex)

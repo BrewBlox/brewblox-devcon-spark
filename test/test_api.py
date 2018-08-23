@@ -7,34 +7,32 @@ import asyncio
 import pytest
 from brewblox_service import scheduler
 
-from brewblox_codec_spark import codec
-from brewblox_devcon_spark import (commander_sim, device, exceptions, status,
-                                   twinkeydict)
+from brewblox_devcon_spark import (commander_sim, datastore, device,
+                                   exceptions, status)
 from brewblox_devcon_spark.api import (alias_api, debug_api, error_response,
-                                       object_api, profile_api, system_api)
+                                       object_api, system_api)
 from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
                                                   API_TYPE_KEY,
                                                   OBJECT_DATA_KEY,
                                                   OBJECT_ID_KEY,
                                                   OBJECT_TYPE_KEY,
                                                   PROFILE_LIST_KEY)
+from brewblox_devcon_spark.codec import codec
+
+N_SYS_OBJ = len(datastore.SYS_OBJECTS)
 
 
 @pytest.fixture
 def object_args():
     return {
         API_ID_KEY: 'testobj',
-        PROFILE_LIST_KEY: [1, 4, 7],
+        PROFILE_LIST_KEY: [0],
         API_TYPE_KEY: 'OneWireTempSensor',
         API_DATA_KEY: {
-            'settings': {
-                'address': 'FF',
-                'offset': 20
-            },
-            'state': {
-                'value': 12345,
-                'connected': True
-            }
+            'value': 12345,
+            'connected': True,
+            'offset': 20,
+            'address': 'FF'
         }
     }
 
@@ -45,7 +43,7 @@ async def app(app, loop):
     status.setup(app)
     scheduler.setup(app)
     commander_sim.setup(app)
-    twinkeydict.setup(app)
+    datastore.setup(app)
     codec.setup(app)
     device.setup(app)
 
@@ -53,7 +51,6 @@ async def app(app, loop):
     debug_api.setup(app)
     alias_api.setup(app)
     object_api.setup(app)
-    profile_api.setup(app)
     system_api.setup(app)
 
     return app
@@ -79,14 +76,10 @@ async def test_do(app, client):
             OBJECT_TYPE_KEY: 'OneWireTempSensor',
             PROFILE_LIST_KEY: [1, 2, 3],
             OBJECT_DATA_KEY: {
-                'settings': {
-                    'address': 'FF',
-                    'offset': 20
-                },
-                'state': {
-                    'value': 1234,
-                    'connected': True
-                }
+                'value': 12345,
+                'connected': True,
+                'offset': 20,
+                'address': 'FF'
             }
         }
     }
@@ -141,18 +134,9 @@ async def test_create_performance(app, client, object_args):
     def custom(num):
         return {
             API_ID_KEY: f'id{num}',
-            PROFILE_LIST_KEY: [1, 4, 7],
-            API_TYPE_KEY: 'OneWireTempSensor',
-            API_DATA_KEY: {
-                'settings': {
-                    'address': 'FF',
-                    'offset': 20
-                },
-                'state': {
-                    'value': 12345,
-                    'connected': True
-                }
-            }
+            PROFILE_LIST_KEY: object_args[PROFILE_LIST_KEY],
+            API_TYPE_KEY: object_args[API_TYPE_KEY],
+            API_DATA_KEY: object_args[API_DATA_KEY]
         }
 
     num_items = 50
@@ -160,8 +144,8 @@ async def test_create_performance(app, client, object_args):
     responses = await asyncio.gather(*coros)
     assert [retv.status for retv in responses] == [200]*num_items
 
-    retd = await response(client.get('/saved_objects'))
-    assert len(retd) == num_items
+    retd = await response(client.get('/objects'))
+    assert len(retd) == num_items + N_SYS_OBJ
 
 
 async def test_read(app, client, object_args):
@@ -198,50 +182,22 @@ async def test_delete(app, client, object_args):
 
 
 async def test_all(app, client, object_args):
-    assert await response(client.get('/saved_objects')) == []
+    retd = await response(client.get('/stored_objects'))
+    assert len(retd) == N_SYS_OBJ
 
     await client.post('/objects', json=object_args)
-    retd = await response(client.get('/saved_objects'))
-    assert len(retd) == 1
+    retd = await response(client.get('/stored_objects'))
+    assert len(retd) == 1 + N_SYS_OBJ
 
 
-async def test_active(app, client, object_args):
-    retd = await response(client.get('/objects'))
-    assert retd == []
+async def test_clear(app, client, object_args):
+    for i in range(5):
+        object_args[API_ID_KEY] = f'id{i}'
+        await client.post('/objects', json=object_args)
 
-    await client.post('/objects', json=object_args)
-    retd = await response(client.get('/objects'))
-    assert retd == []
-
-    await client.post('/profiles', json=[1])
-
-    retd = await response(client.get('/objects'))
-    assert len(retd) == 1
-    assert retd[0][API_ID_KEY] == object_args[API_ID_KEY]
-
-
-async def test_system_read(app, client, object_args):
-    # No system objects found
-    # TODO(Bob): add preset system objects to simulator
-    await response(client.get('/system/onewirebus'))
-
-
-async def test_system_update(app, client, object_args):
-    # No system objects found
-    # TODO(Bob): add preset system objects to simulator
-    await response(client.put('/system/onewirebus', json=object_args))
-
-
-async def test_profiles(app, client):
-    retd = await response(client.get('/profiles'))
-    assert retd == []
-
-    active = [1, 6, 7]
-    retd = await response(client.post('/profiles', json=active))
-    assert retd == active
-
-    retd = await response(client.get('/profiles'))
-    assert retd == active
+    assert len(await response(client.get('/objects'))) == 5 + N_SYS_OBJ
+    await client.delete('/objects')
+    assert len(await response(client.get('/objects'))) == N_SYS_OBJ
 
 
 @pytest.mark.parametrize('input_id', [
@@ -294,3 +250,11 @@ async def test_alias_update(app, client, object_args):
 
     retv = await client.get('/objects/newname')
     assert retv.status == 200
+
+
+async def test_profiles(app, client):
+    profiles = await response(client.get('/system/profiles'))
+    assert profiles == [0]  # Profiles initialize as [0]
+    updated = await response(client.put('/system/profiles', json=[0, 1, 2]))
+    assert updated == [0, 1, 2]
+    assert updated == (await response(client.get('/system/profiles')))

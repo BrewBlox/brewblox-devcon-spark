@@ -51,13 +51,12 @@ def test_command_from_encoded(object_args):
 def test_values(object_args):
     command = commands.ListActiveObjectsCommand
     encoded = ','.join([
-        '000e2a',
+        '0000',
         '002a0200060f0f0f0f0f0f0f0f0f0f55',
         '002a0200060f0f0f0f0f0f0f0f0f0f55',
         '002a0200060f0f0f0f0f0f0f0f0f0f55',
     ])
     decoded = {
-        'profiles': [1, 2, 3],
         'objects': [object_args]*3
     }
 

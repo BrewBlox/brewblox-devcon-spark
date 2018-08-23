@@ -29,7 +29,7 @@ Serial communication is asynchronous: requests and responses are not linked at t
 For when using an actual Spark is inconvenient, there is a simulation version. It serves as a drop-in replacement for the real commander: it handles commands, and returns sensible values.
 Commands are encoded/decoded, to closely match the real situation.
 
-### Datastore ([twinkeydict.py](./brewblox_devcon_spark/twinkeydict.py))
+### Datastore ([datastore.py](./brewblox_devcon_spark/datastore.py))
 
 The service must keep track of object metadata not directly persisted by the controller. This includes user-defined object names and descriptions.
 
@@ -37,7 +37,7 @@ Services are capable of interacting with a BrewPi Spark that has pre-existing bl
 
 Object metadata is persisted to files. This does not include object settings - these are the responsibility of the Spark itself.
 
-### Codec ([codec.py](./brewblox_codec_spark/codec.py))
+### Codec ([codec.py](./brewblox_devcon_spark/codec/codec.py))
 
 While the controller <-> service communication uses the Controlbox protocol, individual objects are encoded separately, using Google's [Protocol Buffers](https://developers.google.com/protocol-buffers/).
 
@@ -59,6 +59,17 @@ To reduce the impact of this bottleneck, and to persist historic data, `Broadcas
 
 Here, the data will likely be picked up by the [History Service](https://github.com/BrewBlox/brewblox-history).
 
+
+### Seeder ([seeder.py](./brewblox_devcon_spark/seeder.py))
+
+Some actions are required when connecting to a (new) Spark controller.
+The Seeder feature waits for a connection to be made, and then performs these one-time tasks.
+
+Examples are:
+* Configuring active profiles
+* Adding a baseline of desired blocks
+* Setting Spark system clock
+
 ## REST API
 
 ### ObjectApi ([object_api.py](./brewblox_devcon_spark/api/object_api.py))
@@ -78,13 +89,6 @@ Remote blocks allow synchronization between master and slave blocks.
 In the sensor/heater example, the Spark with the heater would be configured to have a dummy sensor object linked to the heater.
 
 Instead of directly reading a sensor, this dummy object is updated by the service whenever it receives an update from the master object (the real sensor).
-
-### ProfileApi ([profile_api.py](./brewblox_devcon_spark/api/profile_api.py))
-
-All objects on the Spark can be part of zero or more profiles.
-An object is only active when it belongs to an active profile.
-
-This API section allows reading and writing currently active profiles.
 
 ### AliasApi ([alias_api.py](./brewblox_devcon_spark/api/alias_api.py))
 

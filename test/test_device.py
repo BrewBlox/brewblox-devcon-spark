@@ -5,18 +5,20 @@ Tests brewblox_devcon_spark.device
 import pytest
 from brewblox_service import features, scheduler
 
-from brewblox_codec_spark import codec
-from brewblox_devcon_spark import (commander, commander_sim, device, status,
-                                   twinkeydict)
+from brewblox_devcon_spark import (commander, commander_sim, datastore, device,
+                                   status)
+from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.device import OBJECT_DATA_KEY, OBJECT_ID_KEY
 
 TESTED = device.__name__
+
+N_SYS_OBJ = len(datastore.SYS_OBJECTS)
 
 
 def generate_obj():
     return 'EdgeCase', {
         'settings': {
-            'address': 'ff',
+            'address': 'ff'.rjust(16, '0'),
             'offset[delta_degC]': 20
         },
         'state': {
@@ -27,7 +29,8 @@ def generate_obj():
         'additionalLinks': [
             {'connection<>': 1},
             {'connection<>': 2},
-        ]
+        ],
+        'listValues': [1, 2, 3],
     }
 
 
@@ -35,7 +38,7 @@ def generate_obj():
 def app(app):
     """App + controller routes"""
     status.setup(app)
-    twinkeydict.setup(app)
+    datastore.setup(app)
     commander_sim.setup(app)
     scheduler.setup(app)
     codec.setup(app)
@@ -55,7 +58,7 @@ def ctrl(app):
 
 @pytest.fixture
 async def store(app, client):
-    return twinkeydict.get_object_store(app)
+    return datastore.get_datastore(app)
 
 
 async def test_transcoding(app, client, cmder, store, ctrl, mocker):
@@ -76,10 +79,10 @@ async def test_transcoding(app, client, cmder, store, ctrl, mocker):
     decode_spy = mocker.spy(c, 'decode')
 
     retval = await ctrl.create_object(object_args)
-    assert retval['object_data']['settings']['address'] == 'ff'
+    assert retval['object_data']['settings']['address'] == 'ff'.rjust(16, '0')
 
-    encode_spy.assert_called_once_with(obj_type, obj_data)
-    decode_spy.assert_called_once_with(enc_type, enc_data)
+    encode_spy.assert_any_call(obj_type, obj_data)
+    decode_spy.assert_any_call(enc_type, enc_data)
 
 
 async def test_list_transcoding(app, client, cmder, store, ctrl, mocker):
@@ -90,17 +93,13 @@ async def test_list_transcoding(app, client, cmder, store, ctrl, mocker):
 
         await ctrl.create_object({
             'object_id': f'obj{i}',
-            'profiles': [1],
+            'profiles': [0],
             'object_type': obj_type,
             'object_data': obj_data
         })
 
-    c = codec.get_codec(app)
-    decode_spy = mocker.spy(c, 'decode')
-
-    retval = await ctrl.list_saved_objects()
-    assert len(retval['objects']) == 5
-    assert decode_spy.call_count == 5
+    retval = await ctrl.list_stored_objects()
+    assert len(retval['objects']) == 5 + N_SYS_OBJ
 
 
 async def test_resolve_id(app, client, store, mocker, ctrl):

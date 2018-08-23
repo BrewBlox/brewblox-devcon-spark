@@ -2,13 +2,21 @@
 Monkey patches commander.SparkCommander to not require an actual connection.
 """
 
+from contextlib import suppress
+from copy import deepcopy
+from itertools import count
+from typing import List
+
 from aiohttp import web
 from brewblox_service import features
 
 from brewblox_devcon_spark import commander, commands, exceptions, status
+from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
-                                            PROFILE_LIST_KEY, SYSTEM_ID_KEY)
+                                            PROFILE_LIST_KEY)
+
+OBJECT_ID_START = 256
 
 
 def setup(app: web.Application):
@@ -19,59 +27,106 @@ def setup(app: web.Application):
 class SimulationResponder():
 
     def __init__(self):
-        self._generators = {
+        self._handlers = {
             commands.ReadObjectCommand: self._read_object,
             commands.WriteObjectCommand: self._write_object,
             commands.CreateObjectCommand: self._create_object,
             commands.DeleteObjectCommand: self._delete_object,
-            commands.ReadSystemObjectCommand: self._read_system_object,
-            commands.WriteSystemObjectCommand: self._write_system_object,
-            commands.ReadActiveProfilesCommand: self._read_active_profiles,
-            commands.WriteActiveProfilesCommand: self._write_active_profiles,
             commands.ListActiveObjectsCommand: self._list_active_objects,
-            commands.ListSavedObjectsCommand: self._list_saved_objects,
-            commands.ListSystemObjectsCommand: self._list_system_objects,
-            commands.ClearProfileCommand: self._clear_profile,
+            commands.ListStoredObjectsCommand: self._list_stored_objects,
+            commands.ClearObjectsCommand: self._clear_objects,
             commands.FactoryResetCommand: self._factory_reset,
-            commands.RestartCommand: self._restart,
+            commands.RebootCommand: self._reboot,
         }
 
-        self._current_id = 0
-        self._active_profiles = []
+        self._id_counter = count(start=OBJECT_ID_START)
+        self._codec: codec.Codec = None
 
-        self._system_objects = {
+        def all_profiles():
+            return [i for i in range(8)]
+
+        self._objects = {
+            1: {
+                OBJECT_ID_KEY: 1,
+                OBJECT_TYPE_KEY: 'SysInfo',
+                PROFILE_LIST_KEY: all_profiles(),
+                OBJECT_DATA_KEY: {},
+            },
             2: {
-                SYSTEM_ID_KEY: 2,
-                OBJECT_TYPE_KEY: 256,
-                # data: {'command':{}, 'address':['aa','bb']}
-                OBJECT_DATA_KEY: b'\n\x00\x12\x01\xaa\x12\x01\xbb\x00'
+                OBJECT_ID_KEY: 2,
+                OBJECT_TYPE_KEY: 'Ticks',
+                PROFILE_LIST_KEY: all_profiles(),
+                OBJECT_DATA_KEY: {},
+            },
+            3: {
+                OBJECT_ID_KEY: 3,
+                OBJECT_TYPE_KEY: 'OneWireBus',
+                PROFILE_LIST_KEY: all_profiles(),
+                OBJECT_DATA_KEY: {},
+            },
+            4: {
+                OBJECT_ID_KEY: 4,
+                OBJECT_TYPE_KEY: 'Profiles',
+                PROFILE_LIST_KEY: all_profiles(),
+                OBJECT_DATA_KEY: {'active': [0]},
             }
         }
 
-        self._objects = {}
+    @property
+    def _active_profiles(self):
+        return self._objects[4][OBJECT_DATA_KEY]['active']
 
-    def respond(self, cmd) -> commands.Command:
+    async def startup(self, app: web.Application):
+        self._codec = codec.get_codec(app)
+
+    @staticmethod
+    def _get_content_objects(content: dict) -> List[dict]:
+        objects_to_process = [content]
+        with suppress(KeyError):
+            objects_to_process += content[OBJECT_LIST_KEY]
+        return objects_to_process
+
+    async def respond(self, cmd) -> commands.Command:
         # Encode + decode request
         args = cmd.from_encoded(cmd.encoded_request, None).decoded_request
 
-        func = self._generators[type(cmd)]
-        retv = func(args)
+        for obj in self._get_content_objects(args):
+            with suppress(KeyError):
+                dec_type, dec_data = await self._codec.decode(
+                    obj[OBJECT_TYPE_KEY],
+                    obj[OBJECT_DATA_KEY]
+                )
+                obj.update({
+                    OBJECT_TYPE_KEY: dec_type,
+                    OBJECT_DATA_KEY: dec_data
+                })
 
-        # Encode + decode response
-        encoding_cmd = cmd.from_decoded(cmd.decoded_request, retv or dict())
+        func = self._handlers[type(cmd)]
+        retv = await func(args)
+        retv = deepcopy(retv) if retv else dict()
+
+        for obj in self._get_content_objects(retv):
+            with suppress(KeyError):
+                enc_type, enc_data = await self._codec.encode(
+                    obj[OBJECT_TYPE_KEY],
+                    obj[OBJECT_DATA_KEY]
+                )
+                obj.update({
+                    OBJECT_TYPE_KEY: enc_type,
+                    OBJECT_DATA_KEY: enc_data
+                })
+
+        # Encode response, force decoding by creating new command
+        encoding_cmd = cmd.from_decoded(cmd.decoded_request, retv)
         return cmd.from_encoded(encoding_cmd.encoded_request, encoding_cmd.encoded_response)
 
-    def _next_controller_id(self):
-        self._current_id += 1
-        return self._current_id
-
-    def _read_object(self, request):
+    async def _read_object(self, request):
         try:
             return self._objects[request[OBJECT_ID_KEY]]
         except KeyError:
             raise exceptions.CommandException(f'{request} not found')
 
-    def _write_object(self, request):
+    async def _write_object(self, request):
         key = request[OBJECT_ID_KEY]
         if key not in self._objects:
             raise exceptions.CommandException(f'{key} not found')
@@ -79,12 +134,12 @@ class SimulationResponder():
         self._objects[key] = request
         return request
 
-    def _create_object(self, request):
+    async def _create_object(self, request):
         key = request.get(OBJECT_ID_KEY)
         obj = request
 
         if not key:
-            key = self._next_controller_id()
+            key = next(self._id_counter)
             obj[OBJECT_ID_KEY] = key
         elif key in self._objects:
             raise exceptions.CommandException(f'Object {key} already exists')
@@ -92,59 +147,31 @@ class SimulationResponder():
         self._objects[key] = obj
         return obj
 
-    def _delete_object(self, request):
+    async def _delete_object(self, request):
         key = request[OBJECT_ID_KEY]
         del self._objects[key]
 
-    def _read_system_object(self, request):
-        try:
-            return self._system_objects[request[SYSTEM_ID_KEY]]
-        except KeyError:
-            raise exceptions.CommandException(f'System object not found for {request}')
-
-    def _write_system_object(self, request):
-        key = request[SYSTEM_ID_KEY]
-        if key not in self._system_objects:
-            raise exceptions.CommandException(f'{key} not found')
-
-        self._system_objects[key] = request
-        return request
-
-    def _read_active_profiles(self, request):
-        return {PROFILE_LIST_KEY: self._active_profiles}
-
-    def _write_active_profiles(self, request):
-        self._active_profiles = request[PROFILE_LIST_KEY]
-        return self._read_active_profiles(request)
-
-    def _list_active_objects(self, request):
+    async def _list_active_objects(self, request):
         return {
-            PROFILE_LIST_KEY: self._active_profiles,
             OBJECT_LIST_KEY: [
                 obj for obj in self._objects.values()
-                if set(obj[PROFILE_LIST_KEY]) & set(self._active_profiles)
+                if obj[OBJECT_ID_KEY] < OBJECT_ID_START
+                or set(obj[PROFILE_LIST_KEY]) & set(self._active_profiles)
             ]
         }
 
-    def _list_saved_objects(self, request):
+    async def _list_stored_objects(self, request):
         return {
-            PROFILE_LIST_KEY: self._active_profiles,
             OBJECT_LIST_KEY: [obj for obj in self._objects.values()]
         }
 
-    def _list_system_objects(self, request):
-        return {OBJECT_LIST_KEY: [obj for obj in self._system_objects.values()]}
+    async def _clear_objects(self, request):
+        self._objects = {k: v for k, v in self._objects.items() if k < OBJECT_ID_START}
 
-    def _clear_profile(self, request):
-        cleared_profiles = request[PROFILE_LIST_KEY]
-        for obj in self._objects.values():
-            obj_profiles = obj[PROFILE_LIST_KEY]
-            obj[PROFILE_LIST_KEY] = [p for p in obj_profiles if p not in cleared_profiles]
-
-    def _factory_reset(self, request):
+    async def _factory_reset(self, request):
         pass
 
-    def _restart(self, request):
+    async def _reboot(self, request):
         pass
 
 
@@ -155,10 +182,11 @@ class SimulationCommander(commander.SparkCommander):
         self._responder = SimulationResponder()
 
     async def startup(self, app: web.Application):
+        await self._responder.startup(app)
         status.get_status(app).connected.set()
 
     async def shutdown(self, _):
         pass
 
     async def execute(self, command: commands.Command) -> dict:
-        return self._responder.respond(command).decoded_response
+        return (await self._responder.respond(command)).decoded_response

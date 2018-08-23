@@ -7,7 +7,7 @@ from brewblox_service import events, service
 
 from brewblox_devcon_spark import __main__ as main
 from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
-                                   device, twinkeydict)
+                                   datastore, device)
 
 TESTED = main.__name__
 
@@ -28,7 +28,7 @@ def test_main(mocker, app):
 
     assert None not in [
         commander.get_commander(app),
-        twinkeydict.get_object_store(app),
+        datastore.get_datastore(app),
         device.get_controller(app),
         events.get_listener(app),
         broadcaster.get_broadcaster(app)

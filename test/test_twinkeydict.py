@@ -7,7 +7,7 @@ import json
 from unittest.mock import mock_open
 
 import pytest
-from brewblox_service import scheduler
+from brewblox_service import features, scheduler
 
 from brewblox_devcon_spark import twinkeydict
 
@@ -37,22 +37,29 @@ def store():
 
 
 @pytest.fixture
-async def app(app, loop, mocker, items):
+async def app(app, loop, mocker, items, test_db):
     mocker.patch(TESTED + '.open', mock_open(read_data=as_items_json(items)))
     mocker.patch(TESTED + '.FLUSH_DELAY_S', 0.01)
     scheduler.setup(app)
-    twinkeydict.setup(app)
+
+    features.add(app,
+                 twinkeydict.TwinKeyFileDict(app, test_db),
+                 key='store')
+    features.add(app,
+                 twinkeydict.TwinKeyFileDict(app, test_db, read_only=True),
+                 key='readonly_store')
+
     return app
 
 
 @pytest.fixture
 async def file_store(app):
-    return twinkeydict.get_object_store(app)
+    return features.get(app, key='store')
 
 
 @pytest.fixture
 async def readonly_store(app):
-    return twinkeydict.get_system_store(app)
+    return features.get(app, key='readonly_store')
 
 
 def test_get_set(store, items):

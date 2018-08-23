@@ -5,7 +5,7 @@ REST API for Spark objects
 from aiohttp import web
 from brewblox_service import brewblox_logger
 
-from brewblox_devcon_spark import device, exceptions, twinkeydict
+from brewblox_devcon_spark import datastore, device, exceptions, twinkeydict
 from brewblox_devcon_spark.api import (API_DATA_KEY, API_ID_KEY, API_TYPE_KEY,
                                        alias_api, utils)
 from brewblox_devcon_spark.device import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
@@ -24,7 +24,7 @@ class ObjectApi():
 
     def __init__(self, app: web.Application):
         self._ctrl: device.SparkController = device.get_controller(app)
-        self._store: twinkeydict.TwinKeyDict = twinkeydict.get_object_store(app)
+        self._store: twinkeydict.TwinKeyDict = datastore.get_datastore(app)
 
     async def create(self,
                      input_id: str,
@@ -127,8 +127,8 @@ class ObjectApi():
             } for obj in response.get(OBJECT_LIST_KEY, [])
         ]
 
-    async def list_saved(self) -> dict:
-        response = await self._ctrl.list_saved_objects()
+    async def list_stored(self) -> dict:
+        response = await self._ctrl.list_stored_objects()
 
         return [
             {
@@ -138,6 +138,11 @@ class ObjectApi():
                 API_DATA_KEY: obj[OBJECT_DATA_KEY]
             } for obj in response.get(OBJECT_LIST_KEY, [])
         ]
+
+    async def clear_objects(self):
+        await self._ctrl.clear_objects()
+        datastore.clear_objects(self._store)
+        return {}
 
 
 @routes.post('/objects')
@@ -326,18 +331,35 @@ async def active_objects(request: web.Request) -> web.Response:
     )
 
 
-@routes.get('/saved_objects')
-async def saved_objects(request: web.Request) -> web.Response:
+@routes.get('/stored_objects')
+async def stored_objects(request: web.Request) -> web.Response:
     """
     ---
-    summary: Lists all saved objects
+    summary: Lists all stored objects
     tags:
     - Spark
     - Objects
-    operationId: controller.spark.objects.saved
+    operationId: controller.spark.objects.stored
     produces:
     - application/json
     """
     return web.json_response(
-        await ObjectApi(request.app).list_saved()
+        await ObjectApi(request.app).list_stored()
+    )
+
+
+@routes.delete('/objects')
+async def clear_objects(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Clear all objects
+    tags:
+    - Spark
+    - Objects
+    operationId: controller.spark.objects.clear
+    produces:
+    - application/json
+    """
+    return web.json_response(
+        await ObjectApi(request.app).clear_objects()
     )

@@ -2,7 +2,7 @@
 Object-specific transcoders
 """
 
-from brewblox_codec_spark import _path_extension  # isort:skip
+from brewblox_devcon_spark.codec import _path_extension  # isort:skip
 
 from abc import ABC, abstractclassmethod, abstractmethod
 from typing import Iterable, Union
@@ -15,10 +15,13 @@ import EdgeCase_pb2
 import OneWireBus_pb2
 import OneWireTempSensor_pb2
 import Pid_pb2
+import Profiles_pb2
 import SensorSetPointPair_pb2
 import SetPointSimple_pb2
+import SysInfo_pb2
+import Ticks_pb2
 import XboxController_pb2
-from brewblox_codec_spark.modifiers import Modifier
+from brewblox_devcon_spark.codec.modifiers import Modifier
 
 ObjType_ = Union[int, str]
 Decoded_ = dict
@@ -35,19 +38,19 @@ class Transcoder(ABC):
 
     @abstractclassmethod
     def type_int(cls) -> int:
-        pass
+        pass  # pragma: no cover
 
     @abstractclassmethod
     def type_str(cls) -> str:
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def encode(self, values: Decoded_) -> Encoded_:
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def decode(encoded: Encoded_) -> Decoded_:
-        pass
+        pass  # pragma: no cover
 
     @classmethod
     def get(cls, obj_type: ObjType_, mods: Modifier) -> 'Transcoder':
@@ -113,8 +116,8 @@ class OneWireTempSensorTranscoder(OptionsTranscoder):
     _TYPE_INT = 257
 
 
-class SetPointSimpleTranscoder(OptionsTranscoder):
-    _MESSAGE = SetPointSimple_pb2.SetPointSimple
+class PidTranscoder(OptionsTranscoder):
+    _MESSAGE = Pid_pb2.Pid
     _TYPE_INT = 258
 
 
@@ -123,9 +126,35 @@ class SensorSetPointPairTranscoder(OptionsTranscoder):
     _TYPE_INT = 259
 
 
-class PidTranscoder(OptionsTranscoder):
-    _MESSAGE = Pid_pb2.Pid
+class SetPointSimpleTranscoder(OptionsTranscoder):
+    _MESSAGE = SetPointSimple_pb2.SetPointSimple
     _TYPE_INT = 260
+
+
+class TicksTranscoder(OptionsTranscoder):
+    _MESSAGE = Ticks_pb2.Ticks
+    _TYPE_INT = 262
+
+
+class ProfilesTranscoder(OptionsTranscoder):
+    _MESSAGE = Profiles_pb2.Profiles
+    _TYPE_INT = 263
+
+    def encode(self, values: Decoded_) -> Encoded_:
+        values['active'] =\
+            self.mod.pack_bit_flags(values.get('active', []))
+        return super().encode(values)
+
+    def decode(self, encoded: Encoded_) -> Decoded_:
+        decoded = super().decode(encoded)
+        decoded['active'] =\
+            self.mod.unpack_bit_flags(decoded.get('active', 0))
+        return decoded
+
+
+class SysInfoTranscoder(OptionsTranscoder):
+    _MESSAGE = SysInfo_pb2.SysInfo
+    _TYPE_INT = 264
 
 
 class EdgeCaseTranscoder(OptionsTranscoder):
@@ -150,6 +179,9 @@ _TRANSCODERS = [
     SetPointSimpleTranscoder,
     SensorSetPointPairTranscoder,
     PidTranscoder,
+    ProfilesTranscoder,
+    SysInfoTranscoder,
+    TicksTranscoder,
 
     # Debug/testing transcoders
     EdgeCaseTranscoder,

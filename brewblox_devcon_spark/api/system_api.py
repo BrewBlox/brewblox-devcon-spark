@@ -1,14 +1,14 @@
 """
-REST API for Spark system objects
+Specific endpoints for using system objects
 """
+
+
+from typing import List
 
 from aiohttp import web
 from brewblox_service import brewblox_logger
 
-from brewblox_devcon_spark.api import (API_DATA_KEY, API_ID_KEY, API_TYPE_KEY,
-                                       utils)
-from brewblox_devcon_spark.device import (OBJECT_DATA_KEY, OBJECT_TYPE_KEY,
-                                          SYSTEM_ID_KEY, get_controller)
+from brewblox_devcon_spark.api import API_DATA_KEY, object_api
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -21,102 +21,58 @@ def setup(app: web.Application):
 class SystemApi():
 
     def __init__(self, app: web.Application):
-        self._ctrl = get_controller(app)
+        self._obj_api: object_api.ObjectApi = object_api.ObjectApi(app)
 
-    async def read(self, input_id: str, input_type: int=0) -> dict:
-        response = await self._ctrl.read_system_object({
-            SYSTEM_ID_KEY: input_id,
-            OBJECT_TYPE_KEY: input_type
-        })
+    async def read_profiles(self) -> List[int]:
+        profiles = await self._obj_api.read('__profiles')
+        return profiles[API_DATA_KEY]['active']
 
-        return {
-            API_ID_KEY: response[SYSTEM_ID_KEY],
-            API_TYPE_KEY: response[OBJECT_TYPE_KEY],
-            API_DATA_KEY: response[OBJECT_DATA_KEY]
-        }
-
-    async def write(self, input_id: str, input_type: int, input_data: dict) -> dict:
-        response = await self._ctrl.write_system_object({
-            SYSTEM_ID_KEY: input_id,
-            OBJECT_TYPE_KEY: input_type,
-            OBJECT_DATA_KEY: input_data
-        })
-
-        return {
-            API_ID_KEY: response[SYSTEM_ID_KEY],
-            API_TYPE_KEY: response[OBJECT_TYPE_KEY],
-            API_DATA_KEY: response[OBJECT_DATA_KEY]
-        }
+    async def write_profiles(self, profiles: List[int]) -> List[int]:
+        profile_obj = await self._obj_api.write(
+            input_id='__profiles',
+            profiles=[],
+            input_type='Profiles',
+            input_data={'active': profiles}
+        )
+        return profile_obj[API_DATA_KEY]['active']
 
 
-@routes.get('/system/{id}')
-async def system_read(request: web.Request) -> web.Response:
+@routes.get('/system/profiles')
+async def profiles_read(request: web.Request) -> web.Response:
     """
     ---
-    summary: Read sytem object
+    summary: Read active profiles
     tags:
     - Spark
     - System
-    operationId: controller.spark.system.read
+    - Profiles
+    operationId: controller.spark.profiles.read
     produces:
     - application/json
-    parameters:
-    -
-        name: id
-        in: path
-        required: true
-        description: Service ID of object
-        schema:
-            type: string
     """
     return web.json_response(
-        await SystemApi(request.app).read(
-            request.match_info[API_ID_KEY]
-        )
+        await SystemApi(request.app).read_profiles()
     )
 
 
-@routes.put('/system/{id}')
-async def system_write(request: web.Request) -> web.Response:
+@routes.put('/system/profiles')
+async def profiles_write(request: web.Request) -> web.Response:
     """
     ---
-    summary: Update system object
+    summary: Write active profiles
     tags:
     - Spark
     - System
-    operationId: controller.spark.system.update
+    - Profiles
+    operationId: controller.spark.profiles.write
     produces:
     - application/json
     parameters:
     -
-        name: id
-        in: path
-        required: true
-        description: Service ID of object
-        schema:
-            type: string
-    -
-        name: body
-        in: body
-        description: object
-        required: true
-        schema:
-            type: object
-            properties:
-                type:
-                    type: string
-                    example: OneWireBus
-                data:
-                    type: object
-                    example: { "command": { "opcode":2, "data":4136 } }
+        name: profiles
+        type: list
+        example: [0, 1, 2, 3]
     """
-    request_args = await request.json()
-    with utils.collecting_input():
-        args = (
-            request.match_info[API_ID_KEY],
-            request_args[API_TYPE_KEY],
-            request_args[API_DATA_KEY],
-        )
     return web.json_response(
-        await SystemApi(request.app).write(*args)
+        await SystemApi(request.app).write_profiles(await request.json())
     )

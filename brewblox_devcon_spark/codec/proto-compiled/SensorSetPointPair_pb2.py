@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x18SensorSetPointPair.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"X\n\x12SensorSetPointPair\x12\x1b\n\x06sensor\x18\x01 \x01(\x11\x42\x0b\x9a?\x08\x1a\x06Sensor\x12%\n\x08setpoint\x18\x02 \x01(\x11\x42\x13\x9a?\x10\x1a\x0eSetPointSimpleb\x06proto3')
+  serialized_pb=_b('\n\x18SensorSetPointPair.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"R\n\x12SensorSetPointPair\x12\x1b\n\x06sensor\x18\x01 \x01(\rB\x0b\x9a?\x08\x1a\x06Sensor\x12\x1f\n\x08setpoint\x18\x02 \x01(\rB\r\x9a?\n\x1a\x08SetPointb\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,])
 
@@ -36,18 +36,18 @@ _SENSORSETPOINTPAIR = _descriptor.Descriptor(
   fields=[
     _descriptor.FieldDescriptor(
       name='sensor', full_name='blox.SensorSetPointPair.sensor', index=0,
-      number=1, type=17, cpp_type=1, label=1,
+      number=1, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\232?\010\032\006Sensor'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='setpoint', full_name='blox.SensorSetPointPair.setpoint', index=1,
-      number=2, type=17, cpp_type=1, label=1,
+      number=2, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\020\032\016SetPointSimple'), file=DESCRIPTOR),
+      serialized_options=_b('\232?\n\032\010SetPoint'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -61,7 +61,7 @@ _SENSORSETPOINTPAIR = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=50,
-  serialized_end=138,
+  serialized_end=132,
 )
 
 DESCRIPTOR.message_types_by_name['SensorSetPointPair'] = _SENSORSETPOINTPAIR

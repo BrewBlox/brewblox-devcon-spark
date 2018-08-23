@@ -9,7 +9,7 @@ import sys
 
 PROTO_PATH = os.path.dirname(os.path.abspath(__file__)) + '/proto-compiled/'
 
-if PROTO_PATH not in sys.path:
+if PROTO_PATH not in sys.path:  # pragma: no cover
     sys.path.append(PROTO_PATH)
 
 

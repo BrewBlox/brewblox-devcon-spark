@@ -11,11 +11,12 @@ from typing import Any, Awaitable, Callable, List, Type
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
 
-from brewblox_codec_spark import codec
-from brewblox_devcon_spark import commander, commands, exceptions, twinkeydict
+from brewblox_devcon_spark import (commander, commands, datastore, exceptions,
+                                   twinkeydict)
+from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
-                                            PROFILE_LIST_KEY, SYSTEM_ID_KEY)
+                                            PROFILE_LIST_KEY)
 
 OBJECT_LINK_POSTFIX = '<>'
 ServiceId_ = str
@@ -31,7 +32,6 @@ _FORWARDED = (
     OBJECT_TYPE_KEY,
     OBJECT_LIST_KEY,
     PROFILE_LIST_KEY,
-    SYSTEM_ID_KEY
 )
 
 LOGGER = brewblox_logger(__name__)
@@ -49,8 +49,7 @@ class SparkResolver():
 
     def __init__(self, app: web.Application):
         self._app = app
-        self._object_store = twinkeydict.get_object_store(app)
-        self._system_store = twinkeydict.get_system_store(app)
+        self._datastore = datastore.get_datastore(app)
         self._codec = codec.get_codec(app)
 
     @staticmethod
@@ -114,9 +113,7 @@ class SparkResolver():
 
         for obj in objects_to_process:
             with suppress(KeyError):
-                obj[OBJECT_ID_KEY] = finder_func(self._object_store, obj[OBJECT_ID_KEY])
-            with suppress(KeyError):
-                obj[SYSTEM_ID_KEY] = finder_func(self._system_store, obj[SYSTEM_ID_KEY])
+                obj[OBJECT_ID_KEY] = finder_func(self._datastore, obj[OBJECT_ID_KEY])
 
         return content
 
@@ -124,7 +121,7 @@ class SparkResolver():
                              finder_func: FindIdFunc_,
                              content: dict
                              ) -> Awaitable[dict]:
-        store = self._object_store
+        store = self._datastore
         objects_to_process = self._get_content_objects(content)
 
         async def traverse(data):
@@ -215,13 +212,8 @@ class SparkController(features.ServiceFeature):
     write_object = partialmethod(_execute, commands.WriteObjectCommand)
     create_object = partialmethod(_execute, commands.CreateObjectCommand)
     delete_object = partialmethod(_execute, commands.DeleteObjectCommand)
-    read_system_object = partialmethod(_execute, commands.ReadSystemObjectCommand)
-    write_system_object = partialmethod(_execute, commands.WriteSystemObjectCommand)
-    read_active_profiles = partialmethod(_execute, commands.ReadActiveProfilesCommand)
-    write_active_profiles = partialmethod(_execute, commands.WriteActiveProfilesCommand)
     list_active_objects = partialmethod(_execute, commands.ListActiveObjectsCommand)
-    list_saved_objects = partialmethod(_execute, commands.ListSavedObjectsCommand)
-    list_system_objects = partialmethod(_execute, commands.ListSystemObjectsCommand)
-    clear_profile = partialmethod(_execute, commands.ClearProfileCommand)
+    list_stored_objects = partialmethod(_execute, commands.ListStoredObjectsCommand)
+    clear_objects = partialmethod(_execute, commands.ClearObjectsCommand)
     factory_reset = partialmethod(_execute, commands.FactoryResetCommand)
-    restart = partialmethod(_execute, commands.RestartCommand)
+    reboot = partialmethod(_execute, commands.RebootCommand)

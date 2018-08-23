@@ -4,8 +4,6 @@ import 'brewblox.proto';
 
 package blox;
 
-// Command encodes the next command to perform when the object is read
-// data is optional and only used in some commands. For example when doing a family search, data contains the family ID
 message Pid {
     message Settings {
         sint32 kp = 1 [(brewblox).unit = "degC", (brewblox).scale = 256];
