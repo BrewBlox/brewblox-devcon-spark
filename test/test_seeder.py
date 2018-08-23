@@ -22,7 +22,7 @@ def seeds():
     return [
         {
             'id': 'tempsensor',
-            'profiles': [0],
+            'profiles': [3],
             'type': 'OneWireTempSensor',
             'data': {
                 'address': 'deadbeef',
@@ -31,7 +31,7 @@ def seeds():
         },
         {
             'id': 'boxy',
-            'profiles': [0],
+            'profiles': [7],
             'type': 'XboxController',
             'data': {
                 'buttons': {
@@ -166,7 +166,7 @@ async def test_errprofiles(errprofiles_app, client):
     # objects ok
     assert 'boxy' in {
         obj['id'] for obj
-        in await oapi.list_active()
+        in await oapi.list_stored()
     }
     # profiles default
     assert await sapi.read_profiles() == [0]

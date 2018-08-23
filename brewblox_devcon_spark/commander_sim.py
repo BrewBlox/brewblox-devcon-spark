@@ -41,7 +41,6 @@ class SimulationResponder():
 
         self._id_counter = count(start=OBJECT_ID_START)
         self._codec: codec.Codec = None
-        self._active_profiles = [0]
 
         def all_profiles():
             return [i for i in range(8)]
@@ -72,6 +71,10 @@ class SimulationResponder():
                 OBJECT_DATA_KEY: {'active': [0]},
             }
         }
+
+    @property
+    def _active_profiles(self):
+        return self._objects[4][OBJECT_DATA_KEY]['active']
 
     async def startup(self, app: web.Application):
         self._codec = codec.get_codec(app)
