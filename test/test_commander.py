@@ -72,18 +72,18 @@ async def test_on_data_error(mocker, conduit_mock, sparky):
 
 
 async def test_command(conduit_mock, sparky):
-    await sparky._on_data(conduit_mock, '06 12 | 00 00 00')
+    await sparky._on_data(conduit_mock, '06 DD | 00 00 00')
 
     command = commands.ListStoredObjectsCommand.from_args()
     resp = await sparky.execute(command)
     assert resp['objects'] == []
 
-    conduit_mock.write.assert_called_once_with('0612')
+    conduit_mock.write.assert_called_once_with('06DD')
 
 
 async def test_error_command(conduit_mock, sparky):
     command = commands.ListStoredObjectsCommand.from_args()
-    await sparky._on_data(conduit_mock, '06 12 | FF 00 ')
+    await sparky._on_data(conduit_mock, '06 DD | FF 00 ')
 
     with pytest.raises(exceptions.CommandException):
         await sparky.execute(command)
@@ -101,7 +101,7 @@ async def test_stale_reply(conduit_mock, sparky):
     stale._timestamp -= timedelta(minutes=1)
     fresh = commander.TimestampedResponse('000000')
 
-    q = sparky._requests['0612'].queue
+    q = sparky._requests['06DD'].queue
     await q.put(stale)
     await q.put(fresh)
 
