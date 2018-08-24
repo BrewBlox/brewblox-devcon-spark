@@ -59,6 +59,26 @@ class Transcoder(ABC):
             raise KeyError(f'No codec found for object type [{obj_type}]')
 
 
+class InactiveObjectTranscoder(Transcoder):
+
+    @classmethod
+    def type_int(cls) -> int:
+        return 1
+
+    @classmethod
+    def type_str(cls) -> str:
+        return 'InactiveObject'
+
+    def encode(self, values: Decoded_) -> Encoded_:
+        type_id = values['actual_type']
+        encoded = Transcoder.get(type_id, self.mod).type_int().to_bytes(2, 'little')
+        return encoded
+
+    def decode(self, encoded: Encoded_) -> Decoded_:
+        type_id = int.from_bytes(encoded, 'little')
+        return {'actual_type': Transcoder.get(type_id, self.mod).type_str()}
+
+
 class ProtobufTranscoder(Transcoder):
 
     @classmethod
@@ -175,6 +195,7 @@ def _generate_mapping(vals: Iterable[Transcoder]):
 
 
 _TRANSCODERS = [
+    InactiveObjectTranscoder,
     OneWireBusTranscoder,
     OneWireTempSensorTranscoder,
     SetPointSimpleTranscoder,
