@@ -52,9 +52,9 @@ def test_values(object_args):
     command = commands.ListActiveObjectsCommand
     encoded = ','.join([
         '0000',
-        '002a0200060f0f0f0f0f0f0f0f0f0f55',
-        '002a0200060f0f0f0f0f0f0f0f0f0f55',
-        '002a0200060f0f0f0f0f0f0f0f0f0f55',
+        '2a00''02''0600''0f0f0f0f0f0f0f0f0f0fc6',
+        '2a00''02''0600''0f0f0f0f0f0f0f0f0f0fc6',
+        '2a00''02''0600''0f0f0f0f0f0f0f0f0f0fc6',
     ])
     decoded = {
         'objects': [object_args]*3

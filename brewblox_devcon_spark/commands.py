@@ -320,15 +320,14 @@ class Command(ABC):
 
         return self._decoded_response
 
-    def _build(self, struct: Struct, decoded: dict, crc=False) -> HexStr_:
+    def _build(self, struct: Struct, decoded: dict) -> HexStr_:
         if decoded is None:
             return None
         built_val = struct.build(decoded)
-        if crc:
-            built_val += CRC8.calculate(built_val)
+        built_val += CRC8.calculate(built_val)
         return hexlify(built_val).decode()
 
-    def _parse(self, struct: Struct, encoded: HexStr_, crc=False) -> dict:
+    def _parse(self, struct: Struct, encoded: HexStr_, crc=True) -> dict:
         """
         Parses struct, and returns a serializable Python object.
         """
