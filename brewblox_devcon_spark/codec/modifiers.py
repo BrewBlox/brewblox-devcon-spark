@@ -51,11 +51,11 @@ class Modifier():
 
     @staticmethod
     def hex_to_int(s: str) -> int:
-        return int.from_bytes(unhexlify(s), 'big')
+        return int.from_bytes(unhexlify(s), 'little')
 
     @staticmethod
     def int_to_hex(i: int) -> str:
-        return hexlify(int(i).to_bytes(8, 'big')).decode()
+        return hexlify(int(i).to_bytes(8, 'little')).decode()
 
     @staticmethod
     def pack_bit_flags(flags: List[int]) -> int:
