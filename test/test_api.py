@@ -258,3 +258,18 @@ async def test_profiles(app, client):
     updated = await response(client.put('/system/profiles', json=[0, 1, 2]))
     assert updated == [0, 1, 2]
     assert updated == (await response(client.get('/system/profiles')))
+
+
+async def test_inactive_objects(app, client, object_args):
+    object_args[PROFILE_LIST_KEY] = [1]
+    await client.post('/objects', json=object_args)
+
+    retd = await response(client.get('/objects'))
+    assert retd[-1] == {
+        API_ID_KEY: object_args[API_ID_KEY],
+        PROFILE_LIST_KEY: [1],
+        API_TYPE_KEY: 'InactiveObject',
+        API_DATA_KEY: {
+            'actual_type': object_args[API_TYPE_KEY]
+        }
+    }

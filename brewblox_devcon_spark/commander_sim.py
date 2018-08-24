@@ -152,12 +152,22 @@ class SimulationResponder():
         del self._objects[key]
 
     async def _list_active_objects(self, request):
+        def as_active(obj):
+            if obj[OBJECT_ID_KEY] < OBJECT_ID_START:
+                return obj  # system object
+
+            if set(obj[PROFILE_LIST_KEY]) & set(self._active_profiles):
+                return obj
+            else:
+                return {
+                    OBJECT_ID_KEY: obj[OBJECT_ID_KEY],
+                    OBJECT_TYPE_KEY: 'InactiveObject',
+                    PROFILE_LIST_KEY: obj[PROFILE_LIST_KEY],
+                    OBJECT_DATA_KEY: {'actual_type': obj[OBJECT_TYPE_KEY]},
+                }
+
         return {
-            OBJECT_LIST_KEY: [
-                obj for obj in self._objects.values()
-                if obj[OBJECT_ID_KEY] < OBJECT_ID_START
-                or set(obj[PROFILE_LIST_KEY]) & set(self._active_profiles)
-            ]
+            OBJECT_LIST_KEY: [as_active(obj) for obj in self._objects.values()]
         }
 
     async def _list_stored_objects(self, request):
