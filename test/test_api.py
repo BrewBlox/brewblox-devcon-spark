@@ -270,6 +270,6 @@ async def test_inactive_objects(app, client, object_args):
         PROFILE_LIST_KEY: [1],
         API_TYPE_KEY: 'InactiveObject',
         API_DATA_KEY: {
-            'actual_type': object_args[API_TYPE_KEY]
+            'actualType': object_args[API_TYPE_KEY]
         }
     }
