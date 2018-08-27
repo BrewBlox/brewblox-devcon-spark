@@ -42,7 +42,7 @@ class DummyListener():
 def object_args():
     return {
         OBJECT_ID_KEY: 'testobj',
-        PROFILE_LIST_KEY: [1, 4, 7],
+        PROFILE_LIST_KEY: [0],
         OBJECT_TYPE_KEY: 'OneWireTempSensor',
         OBJECT_DATA_KEY: {
             'value': 1234,

@@ -31,12 +31,13 @@ def get_codec(app: web.Application) -> 'Codec':
 
 
 class Codec(features.ServiceFeature):
-    def __init__(self, app: web.Application):
+    def __init__(self, app: web.Application, strip_readonly=True):
         super().__init__(app)
+        self._strip_readonly = strip_readonly
         self._mod: Modifier = None
 
     async def startup(self, app: web.Application):
-        self._mod = Modifier(app['config']['unit_system_file'])
+        self._mod = Modifier(app['config']['unit_system_file'], self._strip_readonly)
 
     async def shutdown(self, *_):
         pass

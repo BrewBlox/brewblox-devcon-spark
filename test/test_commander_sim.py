@@ -48,6 +48,10 @@ async def test_create(app, client, object_args, sim):
     with pytest.raises(exceptions.CommandException):
         await sim.execute(cmd.from_args(**created))
 
+    # 100 is reserved for system objects
+    with pytest.raises(exceptions.CommandException):
+        await sim.execute(cmd.from_args(**object_args, object_id=100))
+
 
 async def test_crud(app, client, object_args, sim):
     create_cmd = commands.CreateObjectCommand

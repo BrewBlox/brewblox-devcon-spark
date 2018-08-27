@@ -5,6 +5,7 @@ Regulates actions that should be taken when the service connects to a controller
 
 import asyncio
 import json
+from datetime import datetime
 
 import aiofiles
 from aiohttp import web
@@ -47,11 +48,28 @@ class Seeder(features.ServiceFeature):
 
         while True:
             await spark_status.connected.wait()
+            await self._seed_time()
             await self._seed_objects()
             await self._seed_profiles()
             await spark_status.disconnected.wait()
 
     ##########
+
+    async def _seed_time(self):
+        try:
+            now = datetime.now()
+            api = object_api.ObjectApi(self.app)
+            await api.write(
+                input_id='__time',
+                profiles=[i for i in range(8)],
+                input_type='Ticks',
+                input_data={
+                    'secondsSinceEpoch': now.timestamp(),
+                    'millisSinceBoot': 0
+                })
+
+        except Exception as ex:  # pragma: no cover
+            LOGGER.warn(f'Failed to seed controller time {type(ex).__name__}({ex})')
 
     async def _seed_objects(self):
         seed_file = self._config['seed_objects']

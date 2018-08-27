@@ -110,13 +110,18 @@ async def spark_status(app):
 
 
 async def test_seeding(app, client, seeds, spark_status, seeds_file):
+    oapi = object_api.ObjectApi(app)
     assert spark_status.connected.is_set()
     assert not spark_status.disconnected.is_set()
     assert seeder.get_seeder(app)
 
     await asyncio.sleep(0.1)
-    read_ids = {obj['id'] for obj in await object_api.ObjectApi(app).list_active()}
+    read_ids = {obj['id'] for obj in await oapi.list_active()}
     assert read_ids & {'tempsensor', 'boxy'}
+
+    # Test time
+    t = await oapi.read('__time')
+    assert t['data']['secondsSinceEpoch'] > 100
 
 
 async def test_reseed(app, client, seeds, spark_status):
