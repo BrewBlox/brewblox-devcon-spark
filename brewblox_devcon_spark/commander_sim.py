@@ -163,7 +163,7 @@ class SimulationResponder():
                     OBJECT_ID_KEY: obj[OBJECT_ID_KEY],
                     OBJECT_TYPE_KEY: 'InactiveObject',
                     PROFILE_LIST_KEY: obj[PROFILE_LIST_KEY],
-                    OBJECT_DATA_KEY: {'actual_type': obj[OBJECT_TYPE_KEY]},
+                    OBJECT_DATA_KEY: {'actualType': obj[OBJECT_TYPE_KEY]},
                 }
 
         return {
