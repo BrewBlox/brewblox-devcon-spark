@@ -39,17 +39,19 @@ def modify_ticks(start_time, obj):
 
 class SimulationResponder():
 
-    def __init__(self):
+    async def startup(self, app: web.Application):
+        self._app = app
         self._start_time = datetime.now()
         self._id_counter = count(start=OBJECT_ID_START)
-        self._codec: codec.Codec = None
+        self._codec = features.get(app, key='sim_codec')
 
         self._command_funcs = {
             commands.ReadObjectCommand: self._read_object,
             commands.WriteObjectCommand: self._write_object,
             commands.CreateObjectCommand: self._create_object,
             commands.DeleteObjectCommand: self._delete_object,
-            commands.ListActiveObjectsCommand: self._list_active_objects,
+            commands.ListObjectsCommand: self._list_objects,
+            commands.ReadStoredObjectCommand: self._read_stored_object,
             commands.ListStoredObjectsCommand: self._list_stored_objects,
             commands.ClearObjectsCommand: self._clear_objects,
             commands.FactoryResetCommand: self._factory_reset,
@@ -101,9 +103,6 @@ class SimulationResponder():
     @property
     def _active_profiles(self):
         return self._objects[4][OBJECT_DATA_KEY]['active']
-
-    async def startup(self, app: web.Application):
-        self._codec = features.get(app, key='sim_codec')
 
     @staticmethod
     def _get_content_objects(content: dict) -> List[dict]:
@@ -197,10 +196,16 @@ class SimulationResponder():
         key = request[OBJECT_ID_KEY]
         del self._objects[key]
 
-    async def _list_active_objects(self, request):
+    async def _list_objects(self, request):
         return {
             OBJECT_LIST_KEY: [self._get_obj(id) for id in self._objects.keys()]
         }
+
+    async def _read_stored_object(self, request):
+        try:
+            return self._objects[request[OBJECT_ID_KEY]]
+        except KeyError:
+            raise exceptions.CommandException(f'{request} not found')
 
     async def _list_stored_objects(self, request):
         return {
@@ -211,10 +216,10 @@ class SimulationResponder():
         self._objects = {k: v for k, v in self._objects.items() if k < OBJECT_ID_START}
 
     async def _factory_reset(self, request):
-        pass
+        await self.startup(self._app)
 
     async def _reboot(self, request):
-        pass
+        self._start_time = datetime.now()
 
 
 class SimulationCommander(commander.SparkCommander):

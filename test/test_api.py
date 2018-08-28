@@ -181,13 +181,19 @@ async def test_delete(app, client, object_args):
     assert retv.status == 400
 
 
-async def test_all(app, client, object_args):
+async def test_stored_objects(app, client, object_args):
     retd = await response(client.get('/stored_objects'))
     assert len(retd) == N_SYS_OBJ
 
     await client.post('/objects', json=object_args)
     retd = await response(client.get('/stored_objects'))
     assert len(retd) == 1 + N_SYS_OBJ
+
+    retd = await response(client.get('/stored_objects/testobj'))
+    assert retd[API_ID_KEY] == 'testobj'
+
+    retv = await client.get('/stored_objects/flappy')
+    assert retv.status == 400
 
 
 async def test_clear(app, client, object_args):

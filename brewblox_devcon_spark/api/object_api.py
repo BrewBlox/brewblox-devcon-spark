@@ -63,9 +63,6 @@ class ObjectApi():
         }
 
     async def read(self, input_id: str) -> dict:
-        """
-        Reads object on the controller.
-        """
         response = await self._ctrl.read_object({
             OBJECT_ID_KEY: input_id
         })
@@ -115,8 +112,8 @@ class ObjectApi():
             API_ID_KEY: input_id
         }
 
-    async def list_active(self) -> list:
-        response = await self._ctrl.list_active_objects()
+    async def all(self) -> list:
+        response = await self._ctrl.list_objects()
 
         return [
             {
@@ -127,7 +124,19 @@ class ObjectApi():
             } for obj in response.get(OBJECT_LIST_KEY, [])
         ]
 
-    async def list_stored(self) -> dict:
+    async def read_stored(self, input_id: str) -> dict:
+        response = await self._ctrl.read_stored_object({
+            OBJECT_ID_KEY: input_id
+        })
+
+        return {
+            API_ID_KEY: response[OBJECT_ID_KEY],
+            PROFILE_LIST_KEY: response[PROFILE_LIST_KEY],
+            API_TYPE_KEY: response[OBJECT_TYPE_KEY],
+            API_DATA_KEY: response[OBJECT_DATA_KEY]
+        }
+
+    async def all_stored(self) -> dict:
         response = await self._ctrl.list_stored_objects()
 
         return [
@@ -178,14 +187,10 @@ async def object_create(request: web.Request) -> web.Response:
                     type: object
                     example:
                         {
-                            "settings": {
-                                "address": "FF",
-                                "offset[delta_degF]": 20
-                            },
-                            "state": {
-                                "value": 12345,
-                                "connected": true
-                            }
+                            "address": "FF",
+                            "offset[delta_degF]": 20
+                            "value": 200,
+                            "connected": true
                         }
     """
     request_args = await request.json()
@@ -266,10 +271,10 @@ async def object_write(request: web.Request) -> web.Response:
                 data:
                     type: object
                     example: {
-                            "settings": {
-                                "address": "FF",
-                                "offset[delta_degF]": 20
-                            }
+                            "address": "FF",
+                            "offset[delta_degF]": 20
+                            "value": 200,
+                            "connected": true
                         }
     """
     request_args = await request.json()
@@ -315,7 +320,7 @@ async def object_delete(request: web.Request) -> web.Response:
 
 
 @routes.get('/objects')
-async def active_objects(request: web.Request) -> web.Response:
+async def all_objects(request: web.Request) -> web.Response:
     """
     ---
     summary: List all active objects
@@ -327,24 +332,51 @@ async def active_objects(request: web.Request) -> web.Response:
     - application/json
     """
     return web.json_response(
-        await ObjectApi(request.app).list_active()
+        await ObjectApi(request.app).all()
+    )
+
+
+@routes.get('/stored_objects/{id}')
+async def stored_read(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Read object
+    tags:
+    - Spark
+    - Stored
+    operationId: controller.spark.stored.read
+    produces:
+    - application/json
+    parameters:
+    -
+        name: id
+        in: path
+        required: true
+        description: Service ID of object
+        schema:
+            type: string
+    """
+    return web.json_response(
+        await ObjectApi(request.app).read_stored(
+            request.match_info[API_ID_KEY]
+        )
     )
 
 
 @routes.get('/stored_objects')
-async def stored_objects(request: web.Request) -> web.Response:
+async def all_stored(request: web.Request) -> web.Response:
     """
     ---
     summary: Lists all stored objects
     tags:
     - Spark
-    - Objects
-    operationId: controller.spark.objects.stored
+    - Stored
+    operationId: controller.spark.stored.all
     produces:
     - application/json
     """
     return web.json_response(
-        await ObjectApi(request.app).list_stored()
+        await ObjectApi(request.app).all_stored()
     )
 
 

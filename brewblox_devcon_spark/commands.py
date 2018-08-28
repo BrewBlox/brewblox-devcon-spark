@@ -38,47 +38,53 @@ OpcodeEnum = Enum(Int8ul,
                   WRITE_OBJECT=2,
                   CREATE_OBJECT=3,
                   DELETE_OBJECT=4,
-                  LIST_ACTIVE_OBJECTS=5,
-                  LIST_STORED_OBJECTS=6,
-                  CLEAR_OBJECTS=7,
-                  REBOOT=8,
-                  FACTORY_RESET=9,
+                  LIST_OBJECTS=5,
+                  READ_STORED_OBJECT=6,
+                  LIST_STORED_OBJECTS=7,
+                  CLEAR_OBJECTS=8,
+                  REBOOT=9,
+                  FACTORY_RESET=10,
                   )
 
 ErrorcodeEnum = Enum(Int8ul,
                      OK=0,
                      UNKNOWN_ERROR=1,
 
-                     # Object creation
+                     # object creation
                      INSUFFICIENT_HEAP=4,
 
-                     # Generic stream errors
+                     # generic stream errors
                      STREAM_ERROR_UNSPECIFIED=8,
                      OUTPUT_STREAM_WRITE_ERROR=9,
                      INPUT_STREAM_READ_ERROR=10,
                      INPUT_STREAM_DECODING_ERROR=11,
                      OUTPUT_STREAM_ENCODING_ERROR=12,
 
-                     # Storage errors
+                     # storage errors
                      INSUFFICIENT_PERSISTENT_STORAGE=16,
                      PERSISTED_OBJECT_NOT_FOUND=17,
                      INVALID_PERSISTED_BLOCK_TYPE=18,
                      COULD_NOT_READ_PERSISTED_BLOCK_SIZE=19,
                      PERSISTED_BLOCK_STREAM_ERROR=20,
                      PERSISTED_STORAGE_WRITE_ERROR=21,
+                     CRC_ERROR_IN_STORED_OBJECT=22,
 
-                     # Invalid actions
+                     # invalid actions
                      OBJECT_NOT_WRITABLE=32,
                      OBJECT_NOT_READABLE=33,
                      OBJECT_NOT_CREATABLE=34,
                      OBJECT_NOT_DELETABLE=35,
 
-                     # Invalid parameters
+                     # invalid parameters
                      INVALID_COMMAND=63,
-                     INVALID_OBJECT_ID=65,
-                     INVALID_OBJECT_TYPE=66,
-                     INVALID_OBJECT_PROFILES=68,
-                     INVALID_CRC=69,
+                     INVALID_OBJECT_ID=64,
+                     INVALID_OBJECT_TYPE=65,
+                     INVALID_OBJECT_PROFILES=66,
+                     CRC_ERROR_IN_COMMAND=67,
+                     OBJECT_DATA_NOT_ACCEPTED=68,
+
+                     # freak events that should not be possible
+                     WRITE_TO_INACTIVE_OBJECT=200,
                      )
 
 
@@ -402,11 +408,18 @@ class DeleteObjectCommand(Command):
     _VALUES = None
 
 
-class ListActiveObjectsCommand(Command):
-    _OPCODE = OpcodeEnum.LIST_ACTIVE_OBJECTS
+class ListObjectsCommand(Command):
+    _OPCODE = OpcodeEnum.LIST_OBJECTS
     _REQUEST = None
     _RESPONSE = None
     _VALUES = (OBJECT_LIST_KEY, _OBJECT)
+
+
+class ReadStoredObjectCommand(Command):
+    _OPCODE = OpcodeEnum.READ_STORED_OBJECT
+    _REQUEST = _OBJECT_ID
+    _RESPONSE = _OBJECT
+    _VALUES = None
 
 
 class ListStoredObjectsCommand(Command):
