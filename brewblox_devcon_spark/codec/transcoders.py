@@ -79,6 +79,25 @@ class InactiveObjectTranscoder(Transcoder):
         return {'actualType': Transcoder.get(type_id, self.mod).type_str()}
 
 
+class ProfilesTranscoder(Transcoder):
+
+    @classmethod
+    def type_int(cls) -> int:
+        return 2
+
+    @classmethod
+    def type_str(cls) -> str:
+        return 'Profiles'
+
+    def encode(self, values: Decoded_) -> Encoded_:
+        active = self.mod.pack_bit_flags(values.get('active', []))
+        return active.to_bytes(1, 'little')
+
+    def decode(self, encoded: Encoded_) -> Decoded_:
+        active = self.mod.unpack_bit_flags(int.from_bytes(encoded, 'little'))
+        return {'active': active}
+
+
 class ProtobufTranscoder(Transcoder):
 
     @classmethod
@@ -155,24 +174,6 @@ class TicksTranscoder(OptionsTranscoder):
     _TYPE_INT = 262
 
 
-class ProfilesTranscoder(Transcoder):
-    @classmethod
-    def type_int(cls) -> int:
-        return 2
-
-    @classmethod
-    def type_str(cls) -> str:
-        return 'Profiles'
-
-    def encode(self, values: Decoded_) -> Encoded_:
-        active = self.mod.pack_bit_flags(values.get('active', []))
-        return active.to_bytes(1, 'little')
-
-    def decode(self, encoded: Encoded_) -> Decoded_:
-        active = self.mod.unpack_bit_flags(int.from_bytes(encoded, 'little'))
-        return {'active': active}
-
-
 class SysInfoTranscoder(OptionsTranscoder):
     _MESSAGE = SysInfo_pb2.SysInfo
     _TYPE_INT = 264
@@ -195,19 +196,22 @@ def _generate_mapping(vals: Iterable[Transcoder]):
 
 
 _TRANSCODERS = [
+    # Raw system objects
     InactiveObjectTranscoder,
+    ProfilesTranscoder,
+
+    # Debug/testing objects
+    EdgeCaseTranscoder,
+    XboxControllerTranscoder,
+
+    # Protobuf objects
     OneWireBusTranscoder,
     OneWireTempSensorTranscoder,
     SetPointSimpleTranscoder,
     SensorSetPointPairTranscoder,
     PidTranscoder,
-    ProfilesTranscoder,
     SysInfoTranscoder,
     TicksTranscoder,
-
-    # Debug/testing transcoders
-    EdgeCaseTranscoder,
-    XboxControllerTranscoder,
 ]
 
 _TYPE_MAPPING = {k: v for k, v in _generate_mapping(_TRANSCODERS)}

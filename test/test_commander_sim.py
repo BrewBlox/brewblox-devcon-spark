@@ -71,6 +71,10 @@ async def test_crud(app, client, object_args, sim):
     await sim.execute(delete_cmd.from_args(object_id=read_args[OBJECT_ID_KEY]))
 
     with pytest.raises(exceptions.CommandException):
+        # Create object with system-range ID
+        await sim.execute(create_cmd.from_args(**{OBJECT_ID_KEY: 50}, **object_args))
+
+    with pytest.raises(exceptions.CommandException):
         await sim.execute(write_cmd.from_args(**created))
 
     with pytest.raises(exceptions.CommandException):

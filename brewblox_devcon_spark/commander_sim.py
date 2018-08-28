@@ -18,7 +18,7 @@ from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                             PROFILE_LIST_KEY)
 
-OBJECT_ID_START = 256
+OBJECT_ID_START = 100
 LOGGER = brewblox_logger(__name__)
 
 
