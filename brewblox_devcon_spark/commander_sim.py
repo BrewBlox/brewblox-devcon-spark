@@ -25,6 +25,8 @@ LOGGER = brewblox_logger(__name__)
 def setup(app: web.Application):
     # Register as a SparkCommander, so features.get(app, SparkCommander) still works
     features.add(app, SimulationCommander(app), key=commander.SparkCommander)
+    # Before returning, the simulator encodes + decodes values
+    # We want to avoid stripping readonly values here
     features.add(app, codec.Codec(app, strip_readonly=False), key='sim_codec')
 
 
@@ -38,7 +40,11 @@ def modify_ticks(start_time, obj):
 class SimulationResponder():
 
     def __init__(self):
-        self._handlers = {
+        self._start_time = datetime.now()
+        self._id_counter = count(start=OBJECT_ID_START)
+        self._codec: codec.Codec = None
+
+        self._command_funcs = {
             commands.ReadObjectCommand: self._read_object,
             commands.WriteObjectCommand: self._write_object,
             commands.CreateObjectCommand: self._create_object,
@@ -50,13 +56,6 @@ class SimulationResponder():
             commands.RebootCommand: self._reboot,
         }
 
-        self._start_time = datetime.now()
-        self._id_counter = count(start=OBJECT_ID_START)
-        self._codec: codec.Codec = None
-
-        def all_profiles():
-            return [i for i in range(8)]
-
         self._modifiers = {
             'Ticks': partial(modify_ticks, self._start_time),
         }
@@ -65,13 +64,15 @@ class SimulationResponder():
             1: {
                 OBJECT_ID_KEY: 1,
                 OBJECT_TYPE_KEY: 'SysInfo',
-                PROFILE_LIST_KEY: all_profiles(),
-                OBJECT_DATA_KEY: {},
+                PROFILE_LIST_KEY: self._all_profiles,
+                OBJECT_DATA_KEY: {
+                    'deviceId': 'c2ltdWxhdG9y'
+                },
             },
             2: {
                 OBJECT_ID_KEY: 2,
                 OBJECT_TYPE_KEY: 'Ticks',
-                PROFILE_LIST_KEY: all_profiles(),
+                PROFILE_LIST_KEY: self._all_profiles,
                 OBJECT_DATA_KEY: {
                     'millisSinceBoot': 0,
                     'secondsSinceEpoch': 0,
@@ -80,16 +81,22 @@ class SimulationResponder():
             3: {
                 OBJECT_ID_KEY: 3,
                 OBJECT_TYPE_KEY: 'OneWireBus',
-                PROFILE_LIST_KEY: all_profiles(),
+                PROFILE_LIST_KEY: self._all_profiles,
                 OBJECT_DATA_KEY: {},
             },
             4: {
                 OBJECT_ID_KEY: 4,
                 OBJECT_TYPE_KEY: 'Profiles',
-                PROFILE_LIST_KEY: all_profiles(),
-                OBJECT_DATA_KEY: {'active': [0]},
+                PROFILE_LIST_KEY: self._all_profiles,
+                OBJECT_DATA_KEY: {
+                    'active': [0]
+                },
             }
         }
+
+    @property
+    def _all_profiles(self):
+        return [i for i in range(8)]
 
     @property
     def _active_profiles(self):
@@ -120,7 +127,7 @@ class SimulationResponder():
                     OBJECT_DATA_KEY: dec_data
                 })
 
-        func = self._handlers[type(cmd)]
+        func = self._command_funcs[type(cmd)]
         retv = await func(args)
         retv = deepcopy(retv) if retv else dict()
 
@@ -141,7 +148,8 @@ class SimulationResponder():
 
     def _get_obj(self, id):
         obj = self._objects[id]
-        self._modifiers.get(obj[OBJECT_TYPE_KEY], lambda o: o)(obj)
+        mod = self._modifiers.get(obj[OBJECT_TYPE_KEY], lambda o: o)
+        mod(obj)
 
         if id < OBJECT_ID_START:
             return obj  # system object
