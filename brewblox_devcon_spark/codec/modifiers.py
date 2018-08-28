@@ -35,8 +35,9 @@ class OptionElement():
 class Modifier():
     _BREWBLOX_PROVIDER: DescriptorBase = brewblox_pb2.brewblox
 
-    def __init__(self, unit_filename: str):
+    def __init__(self, unit_filename: str, strip_readonly=True):
         self._ureg: UnitRegistry = UnitRegistry()
+        self._strip_readonly = strip_readonly
         if unit_filename:
             self._ureg.load_definitions(unit_filename)
             self._ureg.default_system = 'brewblox'
@@ -72,8 +73,7 @@ class Modifier():
 
     def _find_options(self, desc: DescriptorBase, obj: dict) -> Iterator[OptionElement]:
         """
-        Recursively walks `obj`, and yields an `OptionElement` for each value
-        where the associated Protobuf message has an option.
+        Recursively walks `obj`, and yields an `OptionElement` for each value.
 
         The tree is walked depth-first, and iterates over a copy of the initial keyset.
         This makes it safe for calling code to modify or delete the value relevant to them.
@@ -92,8 +92,7 @@ class Modifier():
                 for c in children:
                     yield from self._find_options(field.message_type, c)
 
-            if field.has_options:
-                yield OptionElement(field, obj, key, base_key, option_value)
+            yield OptionElement(field, obj, key, base_key, option_value)
 
         raise StopIteration()
 
@@ -155,10 +154,6 @@ class Modifier():
             val = element.obj[element.key]
             new_key = element.base_key
 
-            if options.readonly:
-                del element.obj[element.key]
-                continue
-
             is_list = isinstance(val, (list, set))
 
             if not is_list:
@@ -181,6 +176,10 @@ class Modifier():
 
             if element.key != new_key:
                 del element.obj[element.key]
+
+            if options.readonly and self._strip_readonly:
+                # Replace with the same type, but empty
+                val = type(val)()
 
             element.obj[new_key] = val
 

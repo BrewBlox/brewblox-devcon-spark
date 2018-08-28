@@ -73,7 +73,7 @@ async def test_transcoding(app, client, cmder, store, ctrl, mocker):
         'object_data': obj_data
     }
 
-    store['alias', 200] = dict()
+    store['alias', 300] = dict()
 
     encode_spy = mocker.spy(c, 'encode')
     decode_spy = mocker.spy(c, 'decode')
@@ -89,7 +89,7 @@ async def test_list_transcoding(app, client, cmder, store, ctrl, mocker):
     obj_type, obj_data = generate_obj()
 
     for i in range(5):
-        store[f'obj{i}', 10+i] = dict()
+        store[f'obj{i}', 300+i] = dict()
 
         await ctrl.create_object({
             'object_id': f'obj{i}',

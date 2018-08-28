@@ -4,11 +4,13 @@ Monkey patches commander.SparkCommander to not require an actual connection.
 
 from contextlib import suppress
 from copy import deepcopy
+from datetime import datetime
+from functools import partial
 from itertools import count
 from typing import List
 
 from aiohttp import web
-from brewblox_service import features
+from brewblox_service import brewblox_logger, features
 
 from brewblox_devcon_spark import commander, commands, exceptions, status
 from brewblox_devcon_spark.codec import codec
@@ -17,17 +19,32 @@ from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             PROFILE_LIST_KEY)
 
 OBJECT_ID_START = 256
+LOGGER = brewblox_logger(__name__)
 
 
 def setup(app: web.Application):
     # Register as a SparkCommander, so features.get(app, SparkCommander) still works
     features.add(app, SimulationCommander(app), key=commander.SparkCommander)
+    # Before returning, the simulator encodes + decodes values
+    # We want to avoid stripping readonly values here
+    features.add(app, codec.Codec(app, strip_readonly=False), key='sim_codec')
+
+
+def modify_ticks(start_time, obj):
+    elapsed = datetime.now() - start_time
+    obj_data = obj[OBJECT_DATA_KEY]
+    obj_data['millisSinceBoot'] = elapsed.total_seconds() * 1000
+    obj_data['secondsSinceEpoch'] = start_time.timestamp() + elapsed.total_seconds()
 
 
 class SimulationResponder():
 
     def __init__(self):
-        self._handlers = {
+        self._start_time = datetime.now()
+        self._id_counter = count(start=OBJECT_ID_START)
+        self._codec: codec.Codec = None
+
+        self._command_funcs = {
             commands.ReadObjectCommand: self._read_object,
             commands.WriteObjectCommand: self._write_object,
             commands.CreateObjectCommand: self._create_object,
@@ -39,45 +56,54 @@ class SimulationResponder():
             commands.RebootCommand: self._reboot,
         }
 
-        self._id_counter = count(start=OBJECT_ID_START)
-        self._codec: codec.Codec = None
-
-        def all_profiles():
-            return [i for i in range(8)]
+        self._modifiers = {
+            'Ticks': partial(modify_ticks, self._start_time),
+        }
 
         self._objects = {
             1: {
                 OBJECT_ID_KEY: 1,
                 OBJECT_TYPE_KEY: 'SysInfo',
-                PROFILE_LIST_KEY: all_profiles(),
-                OBJECT_DATA_KEY: {},
+                PROFILE_LIST_KEY: self._all_profiles,
+                OBJECT_DATA_KEY: {
+                    'deviceId': 'c2ltdWxhdG9y'
+                },
             },
             2: {
                 OBJECT_ID_KEY: 2,
                 OBJECT_TYPE_KEY: 'Ticks',
-                PROFILE_LIST_KEY: all_profiles(),
-                OBJECT_DATA_KEY: {},
+                PROFILE_LIST_KEY: self._all_profiles,
+                OBJECT_DATA_KEY: {
+                    'millisSinceBoot': 0,
+                    'secondsSinceEpoch': 0,
+                },
             },
             3: {
                 OBJECT_ID_KEY: 3,
                 OBJECT_TYPE_KEY: 'OneWireBus',
-                PROFILE_LIST_KEY: all_profiles(),
+                PROFILE_LIST_KEY: self._all_profiles,
                 OBJECT_DATA_KEY: {},
             },
             4: {
                 OBJECT_ID_KEY: 4,
                 OBJECT_TYPE_KEY: 'Profiles',
-                PROFILE_LIST_KEY: all_profiles(),
-                OBJECT_DATA_KEY: {'active': [0]},
+                PROFILE_LIST_KEY: self._all_profiles,
+                OBJECT_DATA_KEY: {
+                    'active': [0]
+                },
             }
         }
+
+    @property
+    def _all_profiles(self):
+        return [i for i in range(8)]
 
     @property
     def _active_profiles(self):
         return self._objects[4][OBJECT_DATA_KEY]['active']
 
     async def startup(self, app: web.Application):
-        self._codec = codec.get_codec(app)
+        self._codec = features.get(app, key='sim_codec')
 
     @staticmethod
     def _get_content_objects(content: dict) -> List[dict]:
@@ -101,7 +127,7 @@ class SimulationResponder():
                     OBJECT_DATA_KEY: dec_data
                 })
 
-        func = self._handlers[type(cmd)]
+        func = self._command_funcs[type(cmd)]
         retv = await func(args)
         retv = deepcopy(retv) if retv else dict()
 
@@ -120,9 +146,27 @@ class SimulationResponder():
         encoding_cmd = cmd.from_decoded(cmd.decoded_request, retv)
         return cmd.from_encoded(encoding_cmd.encoded_request, encoding_cmd.encoded_response)
 
+    def _get_obj(self, id):
+        obj = self._objects[id]
+        mod = self._modifiers.get(obj[OBJECT_TYPE_KEY], lambda o: o)
+        mod(obj)
+
+        if id < OBJECT_ID_START:
+            return obj  # system object
+
+        if set(obj[PROFILE_LIST_KEY]) & set(self._active_profiles):
+            return obj
+        else:
+            return {
+                OBJECT_ID_KEY: obj[OBJECT_ID_KEY],
+                OBJECT_TYPE_KEY: 'InactiveObject',
+                PROFILE_LIST_KEY: obj[PROFILE_LIST_KEY],
+                OBJECT_DATA_KEY: {'actualType': obj[OBJECT_TYPE_KEY]},
+            }
+
     async def _read_object(self, request):
         try:
-            return self._objects[request[OBJECT_ID_KEY]]
+            return self._get_obj(request[OBJECT_ID_KEY])
         except KeyError:
             raise exceptions.CommandException(f'{request} not found')
 
@@ -132,7 +176,7 @@ class SimulationResponder():
             raise exceptions.CommandException(f'{key} not found')
 
         self._objects[key] = request
-        return request
+        return self._get_obj(key)
 
     async def _create_object(self, request):
         key = request.get(OBJECT_ID_KEY)
@@ -141,6 +185,8 @@ class SimulationResponder():
         if not key:
             key = next(self._id_counter)
             obj[OBJECT_ID_KEY] = key
+        elif key < OBJECT_ID_START:
+            raise exceptions.CommandException(f'Id {key} is reserved for system objects')
         elif key in self._objects:
             raise exceptions.CommandException(f'Object {key} already exists')
 
@@ -152,22 +198,8 @@ class SimulationResponder():
         del self._objects[key]
 
     async def _list_active_objects(self, request):
-        def as_active(obj):
-            if obj[OBJECT_ID_KEY] < OBJECT_ID_START:
-                return obj  # system object
-
-            if set(obj[PROFILE_LIST_KEY]) & set(self._active_profiles):
-                return obj
-            else:
-                return {
-                    OBJECT_ID_KEY: obj[OBJECT_ID_KEY],
-                    OBJECT_TYPE_KEY: 'InactiveObject',
-                    PROFILE_LIST_KEY: obj[PROFILE_LIST_KEY],
-                    OBJECT_DATA_KEY: {'actualType': obj[OBJECT_TYPE_KEY]},
-                }
-
         return {
-            OBJECT_LIST_KEY: [as_active(obj) for obj in self._objects.values()]
+            OBJECT_LIST_KEY: [self._get_obj(id) for id in self._objects.keys()]
         }
 
     async def _list_stored_objects(self, request):
