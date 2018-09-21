@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-import 'brewblox.proto';
-
-package blox;
-
-message SetPointSimple {
-    sint32 setting = 1 [(brewblox).unit = "degC", (brewblox).scale = 256];
-}

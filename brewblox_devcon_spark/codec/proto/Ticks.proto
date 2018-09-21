@@ -1,10 +1,13 @@
 syntax = "proto3";
 
-import 'brewblox.proto';
+import "brewblox.proto";
+import "nanopb.proto";
 
 package blox;
 
 message Ticks {
-    uint32 millisSinceBoot = 1 [(brewblox).readonly = true];
-    uint32 secondsSinceEpoch = 2;
+    option (nanopb_msgopt).msgid = 257;
+
+    uint32 millisSinceBoot = 1 [(brewblox).readonly = true, (nanopb).int_size = IS_32];
+    uint32 secondsSinceEpoch = 2 [(nanopb).int_size = IS_32];
 }

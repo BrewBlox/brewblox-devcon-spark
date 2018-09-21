@@ -29,7 +29,7 @@ def sim(app):
 def object_args():
     return {
         PROFILE_LIST_KEY: [0],
-        OBJECT_TYPE_KEY: 257,  # OneWireTempSensor
+        OBJECT_TYPE_KEY: 302,  # TempSensorOneWire
         OBJECT_DATA_KEY: b'\x00'
     }
 

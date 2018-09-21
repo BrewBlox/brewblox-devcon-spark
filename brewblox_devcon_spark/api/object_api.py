@@ -178,19 +178,19 @@ async def object_create(request: web.Request) -> web.Response:
                     type: string
                     example: temp_sensor_1
                 profiles:
-                    type: list
-                    example: [1, 3, 4]
+                    type: array
+                    example: [0, 3, 4]
                 type:
                     type: string
-                    example: OneWireTempSensor
+                    example: TempSensorOneWire
                 data:
                     type: object
                     example:
                         {
                             "address": "FF",
-                            "offset[delta_degF]": 20
+                            "offset[delta_degF]": 20,
                             "value": 200,
-                            "connected": true
+                            "valid": true
                         }
     """
     request_args = await request.json()
@@ -264,17 +264,18 @@ async def object_write(request: web.Request) -> web.Response:
             properties:
                 profiles:
                     type: list
-                    example: [1, 4, 8]
+                    example: [0, 4, 8]
                 type:
                     type: string
-                    example: OneWireTempSensor
+                    example: TempSensorOneWire
                 data:
                     type: object
-                    example: {
+                    example:
+                        {
                             "address": "FF",
-                            "offset[delta_degF]": 20
+                            "offset[delta_degF]": 20,
                             "value": 200,
-                            "connected": true
+                            "valid": true
                         }
     """
     request_args = await request.json()

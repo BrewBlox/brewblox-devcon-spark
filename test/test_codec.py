@@ -51,7 +51,7 @@ async def test_encode_system_objects(app, client, cdc):
 
 async def test_encode_errors(app, client, cdc):
     with pytest.raises(TypeError):
-        await cdc.encode('OneWireTempSensor', None)
+        await cdc.encode('TempSensorOneWire', None)
 
     with pytest.raises(exceptions.EncodeException):
         await cdc.encode('MAGIC', {})
@@ -59,7 +59,12 @@ async def test_encode_errors(app, client, cdc):
 
 async def test_decode_errors(app, client, cdc):
     with pytest.raises(TypeError):
-        await cdc.decode('OneWireTempSensor', 'string')
+        await cdc.decode('TempSensorOneWire', 'string')
 
     with pytest.raises(exceptions.DecodeException):
         await cdc.decode('MAGIC', b'\x00')
+
+
+async def test_invalid_object(app, client, cdc):
+    assert await cdc.encode('InvalidObject', {'args': True}) == (0, b'\x00')
+    assert await cdc.decode(0, b'\xAA') == ('InvalidObject', {})

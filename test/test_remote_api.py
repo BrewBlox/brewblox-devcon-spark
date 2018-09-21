@@ -43,10 +43,10 @@ def object_args():
     return {
         OBJECT_ID_KEY: 'testobj',
         PROFILE_LIST_KEY: [0],
-        OBJECT_TYPE_KEY: 'OneWireTempSensor',
+        OBJECT_TYPE_KEY: 'TempSensorOneWire',
         OBJECT_DATA_KEY: {
             'value': 1234,
-            'connected': True,
+            'valid': True,
             'address': 'ff',
         }
     }
@@ -106,13 +106,12 @@ async def test_slave_translations(app, client, created, object_args, dummy_liste
     # should be propagated
     data['address'] = 'aa'.rjust(16, '0')
     # ignored
-    data['connected'] = False
+    data['valid'] = False
 
     await dummy_listener.on_message(None, 'testface', deepcopy(data))
 
     updated = await ctrl.read_object({OBJECT_ID_KEY: object_args[OBJECT_ID_KEY]})
     assert updated[OBJECT_DATA_KEY]['address'] == 'aa'.rjust(16, '0')
-    assert updated[OBJECT_DATA_KEY]['connected'] is True
 
 
 async def test_slave_all(app, client, created, object_args, dummy_listener):
@@ -126,12 +125,12 @@ async def test_slave_all(app, client, created, object_args, dummy_listener):
     # No translation table: everything is used
     data = object_args[OBJECT_DATA_KEY]
     data['address'] = 'aa'.rjust(16, '0')
-    data['connected'] = False
+    data['valid'] = False
 
     await dummy_listener.on_message(None, 'testface', deepcopy(data))
     updated = await ctrl.read_object({OBJECT_ID_KEY: object_args[OBJECT_ID_KEY]})
     assert updated[OBJECT_DATA_KEY]['address'] == 'aa'.rjust(16, '0')
-    assert not updated[OBJECT_DATA_KEY]['connected']
+    assert not updated[OBJECT_DATA_KEY]['valid']
 
 
 async def test_master(app, client, created, mock_publisher, object_args):

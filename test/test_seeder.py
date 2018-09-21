@@ -23,7 +23,7 @@ def seeds():
         {
             'id': 'tempsensor',
             'profiles': [3],
-            'type': 'OneWireTempSensor',
+            'type': 'TempSensorOneWire',
             'data': {
                 'address': 'deadbeef',
                 'offset[delta_degF]': 20,

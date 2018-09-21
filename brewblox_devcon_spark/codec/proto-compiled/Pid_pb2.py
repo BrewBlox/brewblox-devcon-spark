@@ -13,6 +13,7 @@ _sym_db = _symbol_database.Default()
 
 
 import brewblox_pb2 as brewblox__pb2
+import nanopb_pb2 as nanopb__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
@@ -20,230 +21,54 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\tPid.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"\xed\x05\n\x03Pid\x12$\n\x08settings\x18\x01 \x01(\x0b\x32\x12.blox.Pid.Settings\x12\x1e\n\x05state\x18\x02 \x01(\x0b\x32\x0f.blox.Pid.State\x12\x1e\n\x05links\x18\x03 \x01(\x0b\x32\x0f.blox.Pid.Links\x12&\n\tfiltering\x18\x04 \x01(\x0b\x32\x13.blox.Pid.Filtering\x1aj\n\x08Settings\x12\x1b\n\x02kp\x18\x01 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12\x17\n\x02ti\x18\x02 \x01(\rB\x0b\x9a?\x08\n\x06second\x12\x17\n\x02td\x18\x03 \x01(\rB\x0b\x9a?\x08\n\x06second\x12\x0f\n\x07\x65nabled\x18\x04 \x01(\x08\x1a\xfa\x02\n\x05State\x12#\n\ninputValue\x18\x01 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12%\n\x0cinputSetting\x18\x02 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12$\n\x0boutputValue\x18\x03 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12&\n\routputSetting\x18\x04 \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12 \n\x01p\x18\x05 \x01(\x11\x42\x15\x9a?\x0c\n\ndelta_degC\x9a?\x03\x10\x80\x02\x12 \n\x01i\x18\x06 \x01(\x11\x42\x15\x9a?\x0c\n\ndelta_degC\x9a?\x03\x10\x80\x02\x12)\n\x01\x64\x18\x07 \x01(\x11\x42\x1e\x9a?\x15\n\x13\x64\x65lta_degC / second\x9a?\x03\x10\x80\x02\x12%\n\nderivative\x18\x08 \x01(\x11\x42\x11\x9a?\x06\n\x04\x64\x65gC\x9a?\x05\x10\x80\x80\x80\x08\x12!\n\x08integral\x18\t \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x12\x1e\n\x05\x65rror\x18\n \x01(\x11\x42\x0f\x9a?\x06\n\x04\x64\x65gC\x9a?\x03\x10\x80\x02\x1a?\n\x05Links\x12\x19\n\x05input\x18\x01 \x01(\x11\x42\n\x9a?\x07\x1a\x05Input\x12\x1b\n\x06output\x18\x02 \x01(\x11\x42\x0b\x9a?\x08\x1a\x06Output\x1a.\n\tFiltering\x12\r\n\x05input\x18\x01 \x01(\r\x12\x12\n\nderivative\x18\x02 \x01(\rb\x06proto3')
+  serialized_pb=_b('\n\tPid.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x9f\x07\n\x03Pid\x12\x1c\n\x07inputId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x01\x92?\x02\x38\x10\x12\x1d\n\x08outputId\x18\x02 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x01\x92?\x02\x38\x10\x12\x1a\n\ninputValid\x18\x03 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12\x1b\n\x0boutputValid\x18\x04 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12\x30\n\ninputValue\x18\x05 \x01(\x11\x42\x1c\x8a\xb5\x18\x06\n\x04\x64\x65gC\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x32\n\x0cinputSetting\x18\x06 \x01(\x11\x42\x1c\x8a\xb5\x18\x06\n\x04\x64\x65gC\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\'\n\x0boutputValue\x18\x07 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12)\n\routputSetting\x18\x08 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12&\n\x06\x66ilter\x18\t \x01(\x0e\x32\x16.blox.Pid.FilterChoice\x12\x35\n\x0f\x66ilterThreshold\x18\n \x01(\x11\x42\x1c\x8a\xb5\x18\x0c\n\ndelta_degC\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x0f\n\x07\x65nabled\x18\x0b \x01(\x08\x12\x16\n\x06\x61\x63tive\x18\x0c \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12\"\n\x02kp\x18\r \x01(\x11\x42\x16\x8a\xb5\x18\x06\n\x04\x64\x65gC\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x1d\n\x02ti\x18\x0e \x01(\rB\x11\x8a\xb5\x18\x08\n\x06second\x92?\x02\x38\x10\x12\x1d\n\x02td\x18\x0f \x01(\rB\x11\x8a\xb5\x18\x08\n\x06second\x92?\x02\x38\x10\x12\x1d\n\x01p\x18\x10 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x1d\n\x01i\x18\x11 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x1d\n\x01\x64\x18\x12 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x31\n\x05\x65rror\x18\x13 \x01(\x11\x42\"\x8a\xb5\x18\x0c\n\ndelta_degC\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x34\n\x08integral\x18\x14 \x01(\x11\x42\"\x8a\xb5\x18\x0c\n\ndelta_degC\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x41\n\nderivative\x18\x15 \x01(\x11\x42-\x8a\xb5\x18\x15\n\x13\x64\x65lta_degC / second\x8a\xb5\x18\x05\x10\x80\x80\x80\x04\x92?\x02\x38 \x8a\xb5\x18\x02(\x01\"m\n\x0c\x46ilterChoice\x12\x0c\n\x08\x46ILT_30s\x10\x00\x12\x0b\n\x07\x46ILT_1m\x10\x01\x12\x0b\n\x07\x46ILT_3m\x10\x02\x12\x0b\n\x07\x46ILT_5m\x10\x03\x12\x0c\n\x08\x46ILT_10m\x10\x04\x12\x0c\n\x08\x46ILT_20m\x10\x05\x12\x0c\n\x08\x46ILT_45m\x10\x06:\x06\x92?\x03H\xb0\x02\x62\x06proto3')
   ,
-  dependencies=[brewblox__pb2.DESCRIPTOR,])
+  dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
 
 
-
-_PID_SETTINGS = _descriptor.Descriptor(
-  name='Settings',
-  full_name='blox.Pid.Settings',
+_PID_FILTERCHOICE = _descriptor.EnumDescriptor(
+  name='FilterChoice',
+  full_name='blox.Pid.FilterChoice',
   filename=None,
   file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='FILT_30s', index=0, number=0,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='FILT_1m', index=1, number=1,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='FILT_3m', index=2, number=2,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='FILT_5m', index=3, number=3,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='FILT_10m', index=4, number=4,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='FILT_20m', index=5, number=5,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='FILT_45m', index=6, number=6,
+      serialized_options=None,
+      type=None),
+  ],
   containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='kp', full_name='blox.Pid.Settings.kp', index=0,
-      number=1, type=17, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\006\n\004degC\232?\003\020\200\002'), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='ti', full_name='blox.Pid.Settings.ti', index=1,
-      number=2, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\010\n\006second'), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='td', full_name='blox.Pid.Settings.td', index=2,
-      number=3, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\010\n\006second'), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='enabled', full_name='blox.Pid.Settings.enabled', index=3,
-      number=4, type=8, cpp_type=7, label=1,
-      has_default_value=False, default_value=False,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
   serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=185,
-  serialized_end=291,
+  serialized_start=860,
+  serialized_end=969,
 )
+_sym_db.RegisterEnumDescriptor(_PID_FILTERCHOICE)
 
-_PID_STATE = _descriptor.Descriptor(
-  name='State',
-  full_name='blox.Pid.State',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='inputValue', full_name='blox.Pid.State.inputValue', index=0,
-      number=1, type=17, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\006\n\004degC\232?\003\020\200\002'), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='inputSetting', full_name='blox.Pid.State.inputSetting', index=1,
-      number=2, type=17, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\006\n\004degC\232?\003\020\200\002'), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='outputValue', full_name='blox.Pid.State.outputValue', index=2,
-      number=3, type=17, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\006\n\004degC\232?\003\020\200\002'), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='outputSetting', full_name='blox.Pid.State.outputSetting', index=3,
-      number=4, type=17, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\006\n\004degC\232?\003\020\200\002'), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='p', full_name='blox.Pid.State.p', index=4,
-      number=5, type=17, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\014\n\ndelta_degC\232?\003\020\200\002'), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='i', full_name='blox.Pid.State.i', index=5,
-      number=6, type=17, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\014\n\ndelta_degC\232?\003\020\200\002'), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='d', full_name='blox.Pid.State.d', index=6,
-      number=7, type=17, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\025\n\023delta_degC / second\232?\003\020\200\002'), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='derivative', full_name='blox.Pid.State.derivative', index=7,
-      number=8, type=17, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\006\n\004degC\232?\005\020\200\200\200\010'), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='integral', full_name='blox.Pid.State.integral', index=8,
-      number=9, type=17, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\006\n\004degC\232?\003\020\200\002'), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='error', full_name='blox.Pid.State.error', index=9,
-      number=10, type=17, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\006\n\004degC\232?\003\020\200\002'), file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=294,
-  serialized_end=672,
-)
-
-_PID_LINKS = _descriptor.Descriptor(
-  name='Links',
-  full_name='blox.Pid.Links',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='input', full_name='blox.Pid.Links.input', index=0,
-      number=1, type=17, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\007\032\005Input'), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='output', full_name='blox.Pid.Links.output', index=1,
-      number=2, type=17, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\010\032\006Output'), file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=674,
-  serialized_end=737,
-)
-
-_PID_FILTERING = _descriptor.Descriptor(
-  name='Filtering',
-  full_name='blox.Pid.Filtering',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='input', full_name='blox.Pid.Filtering.input', index=0,
-      number=1, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='derivative', full_name='blox.Pid.Filtering.derivative', index=1,
-      number=2, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=739,
-  serialized_end=785,
-)
 
 _PID = _descriptor.Descriptor(
   name='Pid',
@@ -253,113 +78,200 @@ _PID = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='settings', full_name='blox.Pid.settings', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
+      name='inputId', full_name='blox.Pid.inputId', index=0,
+      number=1, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\002\030\001\222?\0028\020'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='outputId', full_name='blox.Pid.outputId', index=1,
+      number=2, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\002\030\001\222?\0028\020'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='inputValid', full_name='blox.Pid.inputValid', index=2,
+      number=3, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\002(\001'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='outputValid', full_name='blox.Pid.outputValid', index=3,
+      number=4, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\002(\001'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='inputValue', full_name='blox.Pid.inputValue', index=4,
+      number=5, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\006\n\004degC\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='inputSetting', full_name='blox.Pid.inputSetting', index=5,
+      number=6, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\006\n\004degC\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='outputValue', full_name='blox.Pid.outputValue', index=6,
+      number=7, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='outputSetting', full_name='blox.Pid.outputSetting', index=7,
+      number=8, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='filter', full_name='blox.Pid.filter', index=8,
+      number=9, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='state', full_name='blox.Pid.state', index=1,
-      number=2, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
+      name='filterThreshold', full_name='blox.Pid.filterThreshold', index=9,
+      number=10, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\014\n\ndelta_degC\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='enabled', full_name='blox.Pid.enabled', index=10,
+      number=11, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='links', full_name='blox.Pid.links', index=2,
-      number=3, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
+      name='active', full_name='blox.Pid.active', index=11,
+      number=12, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002(\001'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='filtering', full_name='blox.Pid.filtering', index=3,
-      number=4, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
+      name='kp', full_name='blox.Pid.kp', index=12,
+      number=13, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\006\n\004degC\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='ti', full_name='blox.Pid.ti', index=13,
+      number=14, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\010\n\006second\222?\0028\020'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='td', full_name='blox.Pid.td', index=14,
+      number=15, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\010\n\006second\222?\0028\020'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='p', full_name='blox.Pid.p', index=15,
+      number=16, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='i', full_name='blox.Pid.i', index=16,
+      number=17, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='d', full_name='blox.Pid.d', index=17,
+      number=18, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='error', full_name='blox.Pid.error', index=18,
+      number=19, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\014\n\ndelta_degC\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='integral', full_name='blox.Pid.integral', index=19,
+      number=20, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\014\n\ndelta_degC\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='derivative', full_name='blox.Pid.derivative', index=20,
+      number=21, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\025\n\023delta_degC / second\212\265\030\005\020\200\200\200\004\222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
-  nested_types=[_PID_SETTINGS, _PID_STATE, _PID_LINKS, _PID_FILTERING, ],
+  nested_types=[],
   enum_types=[
+    _PID_FILTERCHOICE,
   ],
-  serialized_options=None,
+  serialized_options=_b('\222?\003H\260\002'),
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=36,
-  serialized_end=785,
+  serialized_start=50,
+  serialized_end=977,
 )
 
-_PID_SETTINGS.containing_type = _PID
-_PID_STATE.containing_type = _PID
-_PID_LINKS.containing_type = _PID
-_PID_FILTERING.containing_type = _PID
-_PID.fields_by_name['settings'].message_type = _PID_SETTINGS
-_PID.fields_by_name['state'].message_type = _PID_STATE
-_PID.fields_by_name['links'].message_type = _PID_LINKS
-_PID.fields_by_name['filtering'].message_type = _PID_FILTERING
+_PID.fields_by_name['filter'].enum_type = _PID_FILTERCHOICE
+_PID_FILTERCHOICE.containing_type = _PID
 DESCRIPTOR.message_types_by_name['Pid'] = _PID
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 Pid = _reflection.GeneratedProtocolMessageType('Pid', (_message.Message,), dict(
-
-  Settings = _reflection.GeneratedProtocolMessageType('Settings', (_message.Message,), dict(
-    DESCRIPTOR = _PID_SETTINGS,
-    __module__ = 'Pid_pb2'
-    # @@protoc_insertion_point(class_scope:blox.Pid.Settings)
-    ))
-  ,
-
-  State = _reflection.GeneratedProtocolMessageType('State', (_message.Message,), dict(
-    DESCRIPTOR = _PID_STATE,
-    __module__ = 'Pid_pb2'
-    # @@protoc_insertion_point(class_scope:blox.Pid.State)
-    ))
-  ,
-
-  Links = _reflection.GeneratedProtocolMessageType('Links', (_message.Message,), dict(
-    DESCRIPTOR = _PID_LINKS,
-    __module__ = 'Pid_pb2'
-    # @@protoc_insertion_point(class_scope:blox.Pid.Links)
-    ))
-  ,
-
-  Filtering = _reflection.GeneratedProtocolMessageType('Filtering', (_message.Message,), dict(
-    DESCRIPTOR = _PID_FILTERING,
-    __module__ = 'Pid_pb2'
-    # @@protoc_insertion_point(class_scope:blox.Pid.Filtering)
-    ))
-  ,
   DESCRIPTOR = _PID,
   __module__ = 'Pid_pb2'
   # @@protoc_insertion_point(class_scope:blox.Pid)
   ))
 _sym_db.RegisterMessage(Pid)
-_sym_db.RegisterMessage(Pid.Settings)
-_sym_db.RegisterMessage(Pid.State)
-_sym_db.RegisterMessage(Pid.Links)
-_sym_db.RegisterMessage(Pid.Filtering)
 
 
-_PID_SETTINGS.fields_by_name['kp']._options = None
-_PID_SETTINGS.fields_by_name['ti']._options = None
-_PID_SETTINGS.fields_by_name['td']._options = None
-_PID_STATE.fields_by_name['inputValue']._options = None
-_PID_STATE.fields_by_name['inputSetting']._options = None
-_PID_STATE.fields_by_name['outputValue']._options = None
-_PID_STATE.fields_by_name['outputSetting']._options = None
-_PID_STATE.fields_by_name['p']._options = None
-_PID_STATE.fields_by_name['i']._options = None
-_PID_STATE.fields_by_name['d']._options = None
-_PID_STATE.fields_by_name['derivative']._options = None
-_PID_STATE.fields_by_name['integral']._options = None
-_PID_STATE.fields_by_name['error']._options = None
-_PID_LINKS.fields_by_name['input']._options = None
-_PID_LINKS.fields_by_name['output']._options = None
+_PID.fields_by_name['inputId']._options = None
+_PID.fields_by_name['outputId']._options = None
+_PID.fields_by_name['inputValid']._options = None
+_PID.fields_by_name['outputValid']._options = None
+_PID.fields_by_name['inputValue']._options = None
+_PID.fields_by_name['inputSetting']._options = None
+_PID.fields_by_name['outputValue']._options = None
+_PID.fields_by_name['outputSetting']._options = None
+_PID.fields_by_name['filterThreshold']._options = None
+_PID.fields_by_name['active']._options = None
+_PID.fields_by_name['kp']._options = None
+_PID.fields_by_name['ti']._options = None
+_PID.fields_by_name['td']._options = None
+_PID.fields_by_name['p']._options = None
+_PID.fields_by_name['i']._options = None
+_PID.fields_by_name['d']._options = None
+_PID.fields_by_name['error']._options = None
+_PID.fields_by_name['integral']._options = None
+_PID.fields_by_name['derivative']._options = None
+_PID._options = None
 # @@protoc_insertion_point(module_scope)

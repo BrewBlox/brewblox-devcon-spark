@@ -1,10 +1,13 @@
 syntax = "proto3";
 
-import 'brewblox.proto';
+import "brewblox.proto";
+import "nanopb.proto";
 
 package blox;
 
 message XboxController {
+    option (nanopb_msgopt).msgid = 9002;
+
     message Buttons {
         uint32 a = 1;
         uint32 b = 2;
