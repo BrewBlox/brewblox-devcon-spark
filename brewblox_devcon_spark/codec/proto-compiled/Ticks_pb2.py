@@ -13,6 +13,7 @@ _sym_db = _symbol_database.Default()
 
 
 import brewblox_pb2 as brewblox__pb2
+import nanopb_pb2 as nanopb__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
@@ -20,9 +21,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0bTicks.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"B\n\x05Ticks\x12\x1e\n\x0fmillisSinceBoot\x18\x01 \x01(\rB\x05\x9a?\x02(\x01\x12\x19\n\x11secondsSinceEpoch\x18\x02 \x01(\rb\x06proto3')
+  serialized_pb=_b('\n\x0bTicks.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"W\n\x05Ticks\x12$\n\x0fmillisSinceBoot\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x38 \x12 \n\x11secondsSinceEpoch\x18\x02 \x01(\rB\x05\x92?\x02\x38 :\x06\x92?\x03H\x81\x02\x62\x06proto3')
   ,
-  dependencies=[brewblox__pb2.DESCRIPTOR,])
+  dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
 
 
@@ -40,28 +41,28 @@ _TICKS = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\002(\001'), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002(\001\222?\0028 '), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='secondsSinceEpoch', full_name='blox.Ticks.secondsSinceEpoch', index=1,
       number=2, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
+      serialized_options=_b('\222?\0028 '), file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  serialized_options=None,
+  serialized_options=_b('\222?\003H\201\002'),
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=37,
-  serialized_end=103,
+  serialized_start=51,
+  serialized_end=138,
 )
 
 DESCRIPTOR.message_types_by_name['Ticks'] = _TICKS
@@ -76,4 +77,6 @@ _sym_db.RegisterMessage(Ticks)
 
 
 _TICKS.fields_by_name['millisSinceBoot']._options = None
+_TICKS.fields_by_name['secondsSinceEpoch']._options = None
+_TICKS._options = None
 # @@protoc_insertion_point(module_scope)

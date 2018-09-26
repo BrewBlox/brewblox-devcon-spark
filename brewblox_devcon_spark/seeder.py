@@ -48,9 +48,11 @@ class Seeder(features.ServiceFeature):
 
         while True:
             await spark_status.connected.wait()
-            await self._seed_time()
-            await self._seed_objects()
-            await self._seed_profiles()
+            await asyncio.gather(
+                self._seed_time(),
+                self._seed_objects(),
+                self._seed_profiles()
+            )
             await spark_status.disconnected.wait()
 
     ##########

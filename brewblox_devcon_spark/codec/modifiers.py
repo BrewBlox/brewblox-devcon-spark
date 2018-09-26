@@ -124,7 +124,7 @@ class Modifier():
             }
 
             >>> encode_options(
-                OneWireTempSensor_pb2.OneWireTempSensor(),
+                TempSensorOneWire_pb2.TempSensorOneWire(),
                 values
             )
 

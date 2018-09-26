@@ -13,6 +13,7 @@ _sym_db = _symbol_database.Default()
 
 
 import brewblox_pb2 as brewblox__pb2
+import nanopb_pb2 as nanopb__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
@@ -20,9 +21,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\rSysInfo.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"\"\n\x07SysInfo\x12\x17\n\x08\x64\x65viceId\x18\x01 \x01(\x0c\x42\x05\x9a?\x02(\x01\x62\x06proto3')
+  serialized_pb=_b('\n\rSysInfo.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"5\n\x07SysInfo\x12\"\n\x08\x64\x65viceId\x18\x01 \x01(\x0c\x42\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x92?\x02x\x01:\x06\x92?\x03H\x80\x02\x62\x06proto3')
   ,
-  dependencies=[brewblox__pb2.DESCRIPTOR,])
+  dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
 
 
@@ -40,21 +41,21 @@ _SYSINFO = _descriptor.Descriptor(
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\002(\001'), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002(\001\222?\002\010\014\222?\002x\001'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  serialized_options=None,
+  serialized_options=_b('\222?\003H\200\002'),
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=39,
-  serialized_end=73,
+  serialized_start=53,
+  serialized_end=106,
 )
 
 DESCRIPTOR.message_types_by_name['SysInfo'] = _SYSINFO
@@ -69,4 +70,5 @@ _sym_db.RegisterMessage(SysInfo)
 
 
 _SYSINFO.fields_by_name['deviceId']._options = None
+_SYSINFO._options = None
 # @@protoc_insertion_point(module_scope)

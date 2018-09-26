@@ -6,7 +6,7 @@ from brewblox_devcon_spark.codec import _path_extension  # isort:skip
 
 import pytest
 
-import OneWireTempSensor_pb2
+import TempSensorOneWire_pb2
 from brewblox_devcon_spark.codec import modifiers
 
 _path_extension.avoid_lint_errors()
@@ -14,7 +14,7 @@ _path_extension.avoid_lint_errors()
 
 @pytest.fixture(scope='module')
 def mod():
-    return modifiers.Modifier('config/fahrenheit_system.txt')
+    return modifiers.Modifier('config/fahrenheit_system.txt', strip_readonly=False)
 
 
 @pytest.fixture(scope='module')
@@ -25,7 +25,7 @@ def k_mod():
 def generate_encoding_data():
     return {
         'value[degF]': 10,
-        'connected': True,
+        'valid': True,
         'offset[delta_degF]': 20,
         'address': 'aabbccdd',
     }
@@ -33,16 +33,16 @@ def generate_encoding_data():
 
 def generate_decoding_data():
     return {
-        'value': -3129,
-        'connected': True,
-        'offset': 2844,
+        'value': -50062,
+        'valid': True,
+        'offset': 45511,
         'address': 3721182122,
     }
 
 
 def test_encode_options(mod):
     vals = generate_encoding_data()
-    mod.encode_options(OneWireTempSensor_pb2.OneWireTempSensor(), vals)
+    mod.encode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals)
 
     # converted to delta_degC
     # scaled * 256
@@ -52,7 +52,7 @@ def test_encode_options(mod):
 
 def test_decode_options(mod):
     vals = generate_decoding_data()
-    mod.decode_options(OneWireTempSensor_pb2.OneWireTempSensor(), vals)
+    mod.decode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals)
     print(vals)
     assert vals['offset[delta_degF]'] == pytest.approx(20, 0.1)
     assert vals['value[degF]'] == pytest.approx(10, 0.1)
@@ -60,7 +60,7 @@ def test_decode_options(mod):
 
 def test_decode_no_system(k_mod):
     vals = generate_decoding_data()
-    k_mod.decode_options(OneWireTempSensor_pb2.OneWireTempSensor(), vals)
+    k_mod.decode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals)
     print(vals)
     assert vals['offset[kelvin]'] > 0
     assert vals['value[kelvin]'] > 0

@@ -71,7 +71,7 @@ class Broadcaster(features.ServiceFeature):
                 await asyncio.sleep(interval)
                 current_objects = {
                     obj[API_ID_KEY]: obj[API_DATA_KEY]
-                    for obj in await api.list_active()
+                    for obj in await api.all()
                 }
 
                 # Don't broadcast when empty

@@ -10,7 +10,7 @@ from brewblox_devcon_spark import twinkeydict
 
 LOGGER = brewblox_logger(__name__)
 
-OBJECT_ID_START = 256
+OBJECT_ID_START = 100
 SYS_OBJECTS = [
     {
         'keys': ['__sysinfo', 1],

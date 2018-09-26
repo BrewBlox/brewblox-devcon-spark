@@ -29,7 +29,7 @@ def sim(app):
 def object_args():
     return {
         PROFILE_LIST_KEY: [0],
-        OBJECT_TYPE_KEY: 257,  # OneWireTempSensor
+        OBJECT_TYPE_KEY: 302,  # TempSensorOneWire
         OBJECT_DATA_KEY: b'\x00'
     }
 
@@ -61,10 +61,7 @@ async def test_crud(app, client, object_args, sim):
 
     created = await sim.execute(create_cmd.from_args(**object_args))
 
-    read_args = {
-        OBJECT_ID_KEY: created[OBJECT_ID_KEY],
-        OBJECT_TYPE_KEY: created[OBJECT_TYPE_KEY]
-    }
+    read_args = {OBJECT_ID_KEY: created[OBJECT_ID_KEY]}
     assert await sim.execute(read_cmd.from_args(**read_args)) == created
 
     created[PROFILE_LIST_KEY] = [0, 1, 7]
@@ -74,15 +71,35 @@ async def test_crud(app, client, object_args, sim):
     await sim.execute(delete_cmd.from_args(object_id=read_args[OBJECT_ID_KEY]))
 
     with pytest.raises(exceptions.CommandException):
-        assert await sim.execute(write_cmd.from_args(**created))
+        # Create object with system-range ID
+        await sim.execute(create_cmd.from_args(**{OBJECT_ID_KEY: 50}, **object_args))
 
     with pytest.raises(exceptions.CommandException):
-        assert await sim.execute(read_cmd.from_args(**read_args))
+        await sim.execute(write_cmd.from_args(**created))
+
+    with pytest.raises(exceptions.CommandException):
+        await sim.execute(read_cmd.from_args(**read_args))
+
+
+async def test_stored(app, client, object_args, sim):
+    create_cmd = commands.CreateObjectCommand
+    read_cmd = commands.ReadStoredObjectCommand
+    list_cmd = commands.ListStoredObjectsCommand
+
+    created = await sim.execute(create_cmd.from_args(**object_args))
+    read_args = {OBJECT_ID_KEY: created[OBJECT_ID_KEY]}
+    assert await sim.execute(read_cmd.from_args(**read_args)) == created
+
+    all_stored = await sim.execute(list_cmd.from_args())
+    assert created in all_stored[OBJECT_LIST_KEY]
+
+    with pytest.raises(exceptions.CommandException):
+        await sim.execute(read_cmd.from_args(**{OBJECT_ID_KEY: 9001}))
 
 
 async def test_clear(app, client, object_args, sim):
     create_cmd = commands.CreateObjectCommand
-    list_cmd = commands.ListActiveObjectsCommand
+    list_cmd = commands.ListObjectsCommand
     clear_cmd = commands.ClearObjectsCommand
 
     await sim.execute(create_cmd.from_args(**object_args))

@@ -23,7 +23,7 @@ def seeds():
         {
             'id': 'tempsensor',
             'profiles': [3],
-            'type': 'OneWireTempSensor',
+            'type': 'TempSensorOneWire',
             'data': {
                 'address': 'deadbeef',
                 'offset[delta_degF]': 20,
@@ -116,7 +116,7 @@ async def test_seeding(app, client, seeds, spark_status, seeds_file):
     assert seeder.get_seeder(app)
 
     await asyncio.sleep(0.1)
-    read_ids = {obj['id'] for obj in await oapi.list_active()}
+    read_ids = {obj['id'] for obj in await oapi.all()}
     assert read_ids & {'tempsensor', 'boxy'}
 
     # Test time
@@ -129,7 +129,7 @@ async def test_reseed(app, client, seeds, spark_status):
 
     await asyncio.sleep(0.1)
     await oapi.delete('boxy')
-    read_ids = {obj['id'] for obj in await oapi.list_active()}
+    read_ids = {obj['id'] for obj in await oapi.all()}
     assert 'boxy' not in read_ids
 
     spark_status.connected.clear()
@@ -145,7 +145,7 @@ async def test_noseed(noseed_app, client):
     await asyncio.sleep(0.1)
     assert 'boxy' not in {
         obj['id'] for obj
-        in await object_api.ObjectApi(noseed_app).list_active()
+        in await object_api.ObjectApi(noseed_app).all()
     }
 
 
@@ -157,7 +157,7 @@ async def test_errfile(errfile_app, client):
     # objects not seeded
     assert 'boxy' not in {
         obj['id'] for obj
-        in await oapi.list_active()
+        in await oapi.all()
     }
     # profiles still ok
     assert await sapi.read_profiles() == [1, 3, 7]
@@ -171,7 +171,7 @@ async def test_errprofiles(errprofiles_app, client):
     # objects ok
     assert 'boxy' in {
         obj['id'] for obj
-        in await oapi.list_stored()
+        in await oapi.all_stored()
     }
     # profiles default
     assert await sapi.read_profiles() == [0]

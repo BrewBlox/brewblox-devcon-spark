@@ -13,6 +13,7 @@ _sym_db = _symbol_database.Default()
 
 
 import brewblox_pb2 as brewblox__pb2
+import nanopb_pb2 as nanopb__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
@@ -20,9 +21,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x14XboxController.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\"\xe9\x03\n\x0eXboxController\x12-\n\x07\x62uttons\x18\x01 \x01(\x0b\x32\x1c.blox.XboxController.Buttons\x12-\n\tleftStick\x18\x02 \x01(\x0b\x32\x1a.blox.XboxController.Stick\x12.\n\nrightStick\x18\x03 \x01(\x0b\x32\x1a.blox.XboxController.Stick\x12&\n\x04\x64Pad\x18\x04 \x01(\x0b\x32\x18.blox.XboxController.Pad\x12\x12\n\nleftBumper\x18\x05 \x01(\r\x12\x13\n\x0brightBumper\x18\x06 \x01(\r\x12\x13\n\x0bleftTrigger\x18\x07 \x01(\r\x12\x14\n\x0crightTrigger\x18\x08 \x01(\r\x1a\x61\n\x07\x42uttons\x12\t\n\x01\x61\x18\x01 \x01(\r\x12\t\n\x01\x62\x18\x02 \x01(\r\x12\t\n\x01x\x18\x03 \x01(\r\x12\t\n\x01y\x18\x04 \x01(\r\x12\x0c\n\x04\x62\x61\x63k\x18\x05 \x01(\r\x12\r\n\x05guide\x18\x06 \x01(\r\x12\r\n\x05start\x18\x07 \x01(\r\x1a,\n\x05Stick\x12\t\n\x01x\x18\x01 \x01(\x11\x12\t\n\x01y\x18\x02 \x01(\x11\x12\r\n\x05\x63lick\x18\x03 \x01(\r\x1a<\n\x03Pad\x12\n\n\x02up\x18\x01 \x01(\r\x12\x0c\n\x04\x64own\x18\x02 \x01(\r\x12\x0c\n\x04left\x18\x03 \x01(\r\x12\r\n\x05right\x18\x04 \x01(\rb\x06proto3')
+  serialized_pb=_b('\n\x14XboxController.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xf1\x03\n\x0eXboxController\x12-\n\x07\x62uttons\x18\x01 \x01(\x0b\x32\x1c.blox.XboxController.Buttons\x12-\n\tleftStick\x18\x02 \x01(\x0b\x32\x1a.blox.XboxController.Stick\x12.\n\nrightStick\x18\x03 \x01(\x0b\x32\x1a.blox.XboxController.Stick\x12&\n\x04\x64Pad\x18\x04 \x01(\x0b\x32\x18.blox.XboxController.Pad\x12\x12\n\nleftBumper\x18\x05 \x01(\r\x12\x13\n\x0brightBumper\x18\x06 \x01(\r\x12\x13\n\x0bleftTrigger\x18\x07 \x01(\r\x12\x14\n\x0crightTrigger\x18\x08 \x01(\r\x1a\x61\n\x07\x42uttons\x12\t\n\x01\x61\x18\x01 \x01(\r\x12\t\n\x01\x62\x18\x02 \x01(\r\x12\t\n\x01x\x18\x03 \x01(\r\x12\t\n\x01y\x18\x04 \x01(\r\x12\x0c\n\x04\x62\x61\x63k\x18\x05 \x01(\r\x12\r\n\x05guide\x18\x06 \x01(\r\x12\r\n\x05start\x18\x07 \x01(\r\x1a,\n\x05Stick\x12\t\n\x01x\x18\x01 \x01(\x11\x12\t\n\x01y\x18\x02 \x01(\x11\x12\r\n\x05\x63lick\x18\x03 \x01(\r\x1a<\n\x03Pad\x12\n\n\x02up\x18\x01 \x01(\r\x12\x0c\n\x04\x64own\x18\x02 \x01(\r\x12\x0c\n\x04left\x18\x03 \x01(\r\x12\r\n\x05right\x18\x04 \x01(\r:\x06\x92?\x03H\xaa\x46\x62\x06proto3')
   ,
-  dependencies=[brewblox__pb2.DESCRIPTOR,])
+  dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
 
 
@@ -95,8 +96,8 @@ _XBOXCONTROLLER_BUTTONS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=331,
-  serialized_end=428,
+  serialized_start=345,
+  serialized_end=442,
 )
 
 _XBOXCONTROLLER_STICK = _descriptor.Descriptor(
@@ -139,8 +140,8 @@ _XBOXCONTROLLER_STICK = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=430,
-  serialized_end=474,
+  serialized_start=444,
+  serialized_end=488,
 )
 
 _XBOXCONTROLLER_PAD = _descriptor.Descriptor(
@@ -190,8 +191,8 @@ _XBOXCONTROLLER_PAD = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=476,
-  serialized_end=536,
+  serialized_start=490,
+  serialized_end=550,
 )
 
 _XBOXCONTROLLER = _descriptor.Descriptor(
@@ -263,14 +264,14 @@ _XBOXCONTROLLER = _descriptor.Descriptor(
   nested_types=[_XBOXCONTROLLER_BUTTONS, _XBOXCONTROLLER_STICK, _XBOXCONTROLLER_PAD, ],
   enum_types=[
   ],
-  serialized_options=None,
+  serialized_options=_b('\222?\003H\252F'),
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=47,
-  serialized_end=536,
+  serialized_start=61,
+  serialized_end=558,
 )
 
 _XBOXCONTROLLER_BUTTONS.containing_type = _XBOXCONTROLLER
@@ -315,4 +316,5 @@ _sym_db.RegisterMessage(XboxController.Stick)
 _sym_db.RegisterMessage(XboxController.Pad)
 
 
+_XBOXCONTROLLER._options = None
 # @@protoc_insertion_point(module_scope)

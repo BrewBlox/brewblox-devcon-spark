@@ -27,10 +27,10 @@ def object_args():
     return {
         API_ID_KEY: 'testobj',
         PROFILE_LIST_KEY: [0],
-        API_TYPE_KEY: 'OneWireTempSensor',
+        API_TYPE_KEY: 'TempSensorOneWire',
         API_DATA_KEY: {
             'value': 12345,
-            'connected': True,
+            'valid': True,
             'offset': 20,
             'address': 'FF'
         }
@@ -73,11 +73,11 @@ async def test_do(app, client):
         'command': 'create_object',
         'data': {
             OBJECT_ID_KEY: 0,
-            OBJECT_TYPE_KEY: 'OneWireTempSensor',
+            OBJECT_TYPE_KEY: 'TempSensorOneWire',
             PROFILE_LIST_KEY: [1, 2, 3],
             OBJECT_DATA_KEY: {
                 'value': 12345,
-                'connected': True,
+                'valid': True,
                 'offset': 20,
                 'address': 'FF'
             }
@@ -181,13 +181,19 @@ async def test_delete(app, client, object_args):
     assert retv.status == 400
 
 
-async def test_all(app, client, object_args):
+async def test_stored_objects(app, client, object_args):
     retd = await response(client.get('/stored_objects'))
     assert len(retd) == N_SYS_OBJ
 
     await client.post('/objects', json=object_args)
     retd = await response(client.get('/stored_objects'))
     assert len(retd) == 1 + N_SYS_OBJ
+
+    retd = await response(client.get('/stored_objects/testobj'))
+    assert retd[API_ID_KEY] == 'testobj'
+
+    retv = await client.get('/stored_objects/flappy')
+    assert retv.status == 400
 
 
 async def test_clear(app, client, object_args):

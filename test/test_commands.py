@@ -49,7 +49,7 @@ def test_command_from_encoded(object_args):
 
 
 def test_values(object_args):
-    command = commands.ListActiveObjectsCommand
+    command = commands.ListObjectsCommand
     encoded = ','.join([
         '0000',
         '2a00''02''0600''0f0f0f0f0f0f0f0f0f0fd1',

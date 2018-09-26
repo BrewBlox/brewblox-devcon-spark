@@ -20,19 +20,53 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0e\x62rewblox.proto\x1a google/protobuf/descriptor.proto\"b\n\x14\x42rewbloxFieldOptions\x12\x0c\n\x04unit\x18\x01 \x01(\t\x12\r\n\x05scale\x18\x02 \x01(\r\x12\x0c\n\x04link\x18\x03 \x01(\t\x12\r\n\x05hexed\x18\x04 \x01(\x08\x12\x10\n\x08readonly\x18\x05 \x01(\x08:G\n\x08\x62rewblox\x12\x1d.google.protobuf.FieldOptions\x18\xf3\x07 \x01(\x0b\x32\x15.BrewbloxFieldOptionsb\x06proto3')
+  serialized_pb=_b('\n\x0e\x62rewblox.proto\x1a google/protobuf/descriptor.proto\"\xe5\x01\n\x14\x42rewbloxFieldOptions\x12\x0c\n\x04unit\x18\x01 \x01(\t\x12\r\n\x05scale\x18\x02 \x01(\r\x12,\n\x04link\x18\x03 \x01(\x0e\x32\x1e.BrewbloxFieldOptions.LinkType\x12\r\n\x05hexed\x18\x04 \x01(\x08\x12\x10\n\x08readonly\x18\x05 \x01(\x08\"a\n\x08LinkType\x12\x0b\n\x07Invalid\x10\x00\x12\x16\n\x12ProcessValue_11_12\x10\x01\x12\x0e\n\nTempSensor\x10\x02\x12\x0c\n\x08Setpoint\x10\x03\x12\x12\n\x0e\x41\x63tuatorAnalog\x10\x04:H\n\x08\x62rewblox\x12\x1d.google.protobuf.FieldOptions\x18\xd1\x86\x03 \x01(\x0b\x32\x15.BrewbloxFieldOptionsb\x06proto3')
   ,
   dependencies=[google_dot_protobuf_dot_descriptor__pb2.DESCRIPTOR,])
 
 
-BREWBLOX_FIELD_NUMBER = 1011
+BREWBLOX_FIELD_NUMBER = 50001
 brewblox = _descriptor.FieldDescriptor(
   name='brewblox', full_name='brewblox', index=0,
-  number=1011, type=11, cpp_type=10, label=1,
+  number=50001, type=11, cpp_type=10, label=1,
   has_default_value=False, default_value=None,
   message_type=None, enum_type=None, containing_type=None,
   is_extension=True, extension_scope=None,
   serialized_options=None, file=DESCRIPTOR)
+
+_BREWBLOXFIELDOPTIONS_LINKTYPE = _descriptor.EnumDescriptor(
+  name='LinkType',
+  full_name='BrewbloxFieldOptions.LinkType',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='Invalid', index=0, number=0,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='ProcessValue_11_12', index=1, number=1,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='TempSensor', index=2, number=2,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='Setpoint', index=3, number=3,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='ActuatorAnalog', index=4, number=4,
+      serialized_options=None,
+      type=None),
+  ],
+  containing_type=None,
+  serialized_options=None,
+  serialized_start=185,
+  serialized_end=282,
+)
+_sym_db.RegisterEnumDescriptor(_BREWBLOXFIELDOPTIONS_LINKTYPE)
 
 
 _BREWBLOXFIELDOPTIONS = _descriptor.Descriptor(
@@ -58,8 +92,8 @@ _BREWBLOXFIELDOPTIONS = _descriptor.Descriptor(
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='link', full_name='BrewbloxFieldOptions.link', index=2,
-      number=3, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
+      number=3, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
@@ -82,6 +116,7 @@ _BREWBLOXFIELDOPTIONS = _descriptor.Descriptor(
   ],
   nested_types=[],
   enum_types=[
+    _BREWBLOXFIELDOPTIONS_LINKTYPE,
   ],
   serialized_options=None,
   is_extendable=False,
@@ -89,10 +124,12 @@ _BREWBLOXFIELDOPTIONS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=52,
-  serialized_end=150,
+  serialized_start=53,
+  serialized_end=282,
 )
 
+_BREWBLOXFIELDOPTIONS.fields_by_name['link'].enum_type = _BREWBLOXFIELDOPTIONS_LINKTYPE
+_BREWBLOXFIELDOPTIONS_LINKTYPE.containing_type = _BREWBLOXFIELDOPTIONS
 DESCRIPTOR.message_types_by_name['BrewbloxFieldOptions'] = _BREWBLOXFIELDOPTIONS
 DESCRIPTOR.extensions_by_name['brewblox'] = brewblox
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
