@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0e\x62rewblox.proto\x1a google/protobuf/descriptor.proto\"\xf4\x01\n\x14\x42rewbloxFieldOptions\x12\x0c\n\x04unit\x18\x01 \x01(\t\x12\r\n\x05scale\x18\x02 \x01(\r\x12,\n\x04link\x18\x03 \x01(\x0e\x32\x1e.BrewbloxFieldOptions.LinkType\x12\r\n\x05hexed\x18\x04 \x01(\x08\x12\x10\n\x08readonly\x18\x05 \x01(\x08\"p\n\x08LinkType\x12\x0b\n\x07Invalid\x10\x00\x12\x10\n\x0cProcessValue\x10\x01\x12\x0e\n\nTempSensor\x10\x02\x12\x0c\n\x08Setpoint\x10\x03\x12\x12\n\x0e\x41\x63tuatorAnalog\x10\x04\x12\x13\n\x0f\x41\x63tuatorDigital\x10\x05:H\n\x08\x62rewblox\x12\x1d.google.protobuf.FieldOptions\x18\xd1\x86\x03 \x01(\x0b\x32\x15.BrewbloxFieldOptionsb\x06proto3')
+  serialized_pb=_b('\n\x0e\x62rewblox.proto\x1a google/protobuf/descriptor.proto\"\x8e\x02\n\x14\x42rewbloxFieldOptions\x12\x0c\n\x04unit\x18\x01 \x01(\t\x12\r\n\x05scale\x18\x02 \x01(\r\x12,\n\x04link\x18\x03 \x01(\x0e\x32\x1e.BrewbloxFieldOptions.LinkType\x12\r\n\x05hexed\x18\x04 \x01(\x08\x12\x10\n\x08readonly\x18\x05 \x01(\x08\"\x89\x01\n\x08LinkType\x12\x0b\n\x07Invalid\x10\x00\x12\x10\n\x0cProcessValue\x10\x01\x12\x0e\n\nTempSensor\x10\x02\x12\x0c\n\x08Setpoint\x10\x03\x12\x12\n\x0e\x41\x63tuatorAnalog\x10\x04\x12\x13\n\x0f\x41\x63tuatorDigital\x10\x05\x12\x0c\n\x08\x42\x61lancer\x10\x06\x12\t\n\x05Mutex\x10\x07:H\n\x08\x62rewblox\x12\x1d.google.protobuf.FieldOptions\x18\xd1\x86\x03 \x01(\x0b\x32\x15.BrewbloxFieldOptionsb\x06proto3')
   ,
   dependencies=[google_dot_protobuf_dot_descriptor__pb2.DESCRIPTOR,])
 
@@ -64,11 +64,19 @@ _BREWBLOXFIELDOPTIONS_LINKTYPE = _descriptor.EnumDescriptor(
       name='ActuatorDigital', index=5, number=5,
       serialized_options=None,
       type=None),
+    _descriptor.EnumValueDescriptor(
+      name='Balancer', index=6, number=6,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='Mutex', index=7, number=7,
+      serialized_options=None,
+      type=None),
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=185,
-  serialized_end=297,
+  serialized_start=186,
+  serialized_end=323,
 )
 _sym_db.RegisterEnumDescriptor(_BREWBLOXFIELDOPTIONS_LINKTYPE)
 
@@ -129,7 +137,7 @@ _BREWBLOXFIELDOPTIONS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=53,
-  serialized_end=297,
+  serialized_end=323,
 )
 
 _BREWBLOXFIELDOPTIONS.fields_by_name['link'].enum_type = _BREWBLOXFIELDOPTIONS_LINKTYPE

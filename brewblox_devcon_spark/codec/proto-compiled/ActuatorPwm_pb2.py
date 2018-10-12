@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x11\x41\x63tuatorPwm.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x17\x41nalogConstraints.proto\"\xdb\x01\n\x0b\x41\x63tuatorPwm\x12\x1f\n\nactuatorId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x05\x92?\x02\x38\x10\x12\x1d\n\ractuatorValid\x18\x02 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12\x0e\n\x06period\x18\x03 \x01(\r\x12#\n\x07setting\x18\x04 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12!\n\x05value\x18\x05 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12,\n\x0b\x63onstraints\x18\x06 \x01(\x0b\x32\x17.blox.AnalogConstraints:\x06\x92?\x03H\xb3\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x11\x41\x63tuatorPwm.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x17\x41nalogConstraints.proto\"\xdd\x01\n\x0b\x41\x63tuatorPwm\x12\x1f\n\nactuatorId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x05\x92?\x02\x38\x10\x12\x1d\n\ractuatorValid\x18\x02 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12\x0e\n\x06period\x18\x03 \x01(\r\x12#\n\x07setting\x18\x04 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12!\n\x05value\x18\x05 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12.\n\rconstrainedBy\x18\x06 \x01(\x0b\x32\x17.blox.AnalogConstraints:\x06\x92?\x03H\xb3\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,AnalogConstraints__pb2.DESCRIPTOR,])
 
@@ -72,7 +72,7 @@ _ACTUATORPWM = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=_b('\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='constraints', full_name='blox.ActuatorPwm.constraints', index=5,
+      name='constrainedBy', full_name='blox.ActuatorPwm.constrainedBy', index=5,
       number=6, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -91,10 +91,10 @@ _ACTUATORPWM = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=83,
-  serialized_end=302,
+  serialized_end=304,
 )
 
-_ACTUATORPWM.fields_by_name['constraints'].message_type = AnalogConstraints__pb2._ANALOGCONSTRAINTS
+_ACTUATORPWM.fields_by_name['constrainedBy'].message_type = AnalogConstraints__pb2._ANALOGCONSTRAINTS
 DESCRIPTOR.message_types_by_name['ActuatorPwm'] = _ACTUATORPWM
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 

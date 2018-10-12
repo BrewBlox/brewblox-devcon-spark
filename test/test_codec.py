@@ -73,10 +73,10 @@ async def test_invalid_object(app, client, cdc):
 async def test_encode_constraint(app, client, cdc):
     assert await cdc.decode('ActuatorPwm', b'\x00')
     assert await cdc.encode('ActuatorPwm', {
-        'constraints': {
-            'constraint': [
-                {'min': {'min': -100}},
-                {'max': {'max': 100}}
-            ]
-        }
+        'constrainedBy': {
+            'constraints': [
+                {'min': -100},
+                {'max': 100},
+            ],
+        },
     })
