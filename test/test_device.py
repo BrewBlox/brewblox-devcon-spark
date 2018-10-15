@@ -134,7 +134,10 @@ async def test_resolve_links(app, client, store):
                     'flappy<>': 'moo',
                     'meaning_of_life': 42,
                     'mystery<>': None
-                }
+                },
+                'listed': [
+                    {'flappy<>': 'moo'}
+                ]
             }
         }
 
@@ -149,9 +152,12 @@ async def test_resolve_links(app, client, store):
             'nested': {
                 'flappy<>': 9003,
                 'meaning_of_life': 42,
-                'mystery<>': 0
-            }
-        }
+                'mystery<>': 0,
+            },
+            'listed': [
+                {'flappy<>': 9003},
+            ],
+        },
     }
 
     output = await resolver.resolve_service_links(output)

@@ -126,8 +126,12 @@ class SparkResolver():
 
         async def traverse(data):
             """Recursively finds and resolves links"""
-            for k, v in data.items():
-                if isinstance(v, dict):
+            iter = enumerate(data) \
+                if isinstance(data, (list, tuple)) \
+                else data.items()
+
+            for k, v in iter:
+                if isinstance(v, (dict, list, tuple)):
                     await traverse(v)
                 elif str(k).endswith(OBJECT_LINK_POSTFIX):
                     data[k] = finder_func(store, v)

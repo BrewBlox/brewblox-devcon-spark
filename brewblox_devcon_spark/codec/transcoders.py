@@ -12,6 +12,8 @@ from google.protobuf import json_format
 from google.protobuf.message import Message
 
 import ActuatorAnalogMock_pb2
+import ActuatorPin_pb2
+import ActuatorPwm_pb2
 import EdgeCase_pb2
 import nanopb_pb2
 import OneWireBus_pb2
@@ -146,7 +148,8 @@ class ProtobufTranscoder(Transcoder):
         decoded = json_format.MessageToDict(
             message=obj,
             preserving_proto_field_name=True,
-            including_default_value_fields=True
+            including_default_value_fields=True,
+            use_integers_for_enums=True,
         )
         LOGGER.debug(f'decoded {self.__class__._MESSAGE} to {decoded}')
         return decoded
@@ -166,6 +169,14 @@ class OptionsTranscoder(ProtobufTranscoder):
 
 class ActuatorAnalogMockTranscoder(OptionsTranscoder):
     _MESSAGE = ActuatorAnalogMock_pb2.ActuatorAnalogMock
+
+
+class ActuatorPinTranscoder(OptionsTranscoder):
+    _MESSAGE = ActuatorPin_pb2.ActuatorPin
+
+
+class ActuatorPwmTranscoder(OptionsTranscoder):
+    _MESSAGE = ActuatorPwm_pb2.ActuatorPwm
 
 
 class EdgeCaseTranscoder(OptionsTranscoder):
@@ -226,6 +237,8 @@ _TRANSCODERS = [
 
     # Protobuf objects
     ActuatorAnalogMockTranscoder,
+    ActuatorPinTranscoder,
+    ActuatorPwmTranscoder,
     OneWireBusTranscoder,
     PidTranscoder,
     SetpointSensorPairTranscoder,
