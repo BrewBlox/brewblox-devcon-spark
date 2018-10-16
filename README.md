@@ -1,3 +1,5 @@
+![build status](https://travis-ci.org/BrewBlox/brewblox-devcon-spark.svg?branch=develop)
+
 # Spark Service
 
 The Spark service handles connectivity for the BrewPi Spark controller.
