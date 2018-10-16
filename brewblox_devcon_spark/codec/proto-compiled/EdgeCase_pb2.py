@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0e\x45\x64geCase.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x91\x03\n\x08\x45\x64geCase\x12)\n\x08settings\x18\x01 \x01(\x0b\x32\x17.blox.EdgeCase.Settings\x12#\n\x05state\x18\x02 \x01(\x0b\x32\x14.blox.EdgeCase.State\x12\x14\n\x04link\x18\x03 \x01(\rB\x06\x8a\xb5\x18\x02\x18\x03\x12\x32\n\x0f\x61\x64\x64itionalLinks\x18\x04 \x03(\x0b\x32\x19.blox.EdgeCase.NestedLink\x12%\n\nlistValues\x18\x05 \x03(\x02\x42\x11\x8a\xb5\x18\x06\n\x04\x64\x65gC\x8a\xb5\x18\x03\x10\x80\x02\x1aL\n\x08Settings\x12\x17\n\x07\x61\x64\x64ress\x18\x01 \x01(\x06\x42\x06\x8a\xb5\x18\x02 \x01\x12\'\n\x06offset\x18\x02 \x01(\x11\x42\x17\x8a\xb5\x18\x0c\n\ndelta_degC\x8a\xb5\x18\x03\x10\x80\x02\x1a\x44\n\x05State\x12 \n\x05value\x18\x01 \x01(\x11\x42\x11\x8a\xb5\x18\x06\n\x04\x64\x65gC\x8a\xb5\x18\x03\x10\x80\x02\x12\x19\n\tconnected\x18\x02 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x1a(\n\nNestedLink\x12\x1a\n\nconnection\x18\x01 \x01(\rB\x06\x8a\xb5\x18\x02\x18\x02:\x06\x92?\x03H\xa9\x46\x62\x06proto3')
+  serialized_pb=_b('\n\x0e\x45\x64geCase.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xc3\x03\n\x08\x45\x64geCase\x12)\n\x08settings\x18\x01 \x01(\x0b\x32\x17.blox.EdgeCase.Settings\x12#\n\x05state\x18\x02 \x01(\x0b\x32\x14.blox.EdgeCase.State\x12\x14\n\x04link\x18\x03 \x01(\rB\x06\x8a\xb5\x18\x02\x18\x03\x12\x32\n\x0f\x61\x64\x64itionalLinks\x18\x04 \x03(\x0b\x32\x19.blox.EdgeCase.NestedLink\x12%\n\nlistValues\x18\x05 \x03(\x02\x42\x11\x8a\xb5\x18\x06\n\x04\x64\x65gC\x8a\xb5\x18\x03\x10\x80\x02\x12\x30\n\x06\x64\x65ltaV\x18\x06 \x01(\rB \x8a\xb5\x18\x15\n\x13\x64\x65lta_degC / second\x8a\xb5\x18\x03\x10\x80\x02\x1aL\n\x08Settings\x12\x17\n\x07\x61\x64\x64ress\x18\x01 \x01(\x06\x42\x06\x8a\xb5\x18\x02 \x01\x12\'\n\x06offset\x18\x02 \x01(\x11\x42\x17\x8a\xb5\x18\x0c\n\ndelta_degC\x8a\xb5\x18\x03\x10\x80\x02\x1a\x44\n\x05State\x12 \n\x05value\x18\x01 \x01(\x11\x42\x11\x8a\xb5\x18\x06\n\x04\x64\x65gC\x8a\xb5\x18\x03\x10\x80\x02\x12\x19\n\tconnected\x18\x02 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x1a(\n\nNestedLink\x12\x1a\n\nconnection\x18\x01 \x01(\rB\x06\x8a\xb5\x18\x02\x18\x02:\x06\x92?\x03H\xa9\x46\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -61,8 +61,8 @@ _EDGECASE_SETTINGS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=260,
-  serialized_end=336,
+  serialized_start=310,
+  serialized_end=386,
 )
 
 _EDGECASE_STATE = _descriptor.Descriptor(
@@ -98,8 +98,8 @@ _EDGECASE_STATE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=338,
-  serialized_end=406,
+  serialized_start=388,
+  serialized_end=456,
 )
 
 _EDGECASE_NESTEDLINK = _descriptor.Descriptor(
@@ -128,8 +128,8 @@ _EDGECASE_NESTEDLINK = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=408,
-  serialized_end=448,
+  serialized_start=458,
+  serialized_end=498,
 )
 
 _EDGECASE = _descriptor.Descriptor(
@@ -174,6 +174,13 @@ _EDGECASE = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\212\265\030\006\n\004degC\212\265\030\003\020\200\002'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='deltaV', full_name='blox.EdgeCase.deltaV', index=5,
+      number=6, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\025\n\023delta_degC / second\212\265\030\003\020\200\002'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -187,7 +194,7 @@ _EDGECASE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=55,
-  serialized_end=456,
+  serialized_end=506,
 )
 
 _EDGECASE_SETTINGS.containing_type = _EDGECASE
@@ -238,5 +245,6 @@ _EDGECASE_STATE.fields_by_name['connected']._options = None
 _EDGECASE_NESTEDLINK.fields_by_name['connection']._options = None
 _EDGECASE.fields_by_name['link']._options = None
 _EDGECASE.fields_by_name['listValues']._options = None
+_EDGECASE.fields_by_name['deltaV']._options = None
 _EDGECASE._options = None
 # @@protoc_insertion_point(module_scope)

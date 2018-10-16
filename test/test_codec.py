@@ -14,6 +14,7 @@ _path_extension.avoid_lint_errors()
 
 @pytest.fixture
 def app(app):
+    app['config']['unit_system_file'] = 'config/celsius_system.txt'
     codec.setup(app)
     return app
 
@@ -80,3 +81,12 @@ async def test_encode_constraint(app, client, cdc):
             ],
         },
     })
+
+
+async def test_encode_delta_sec(app, client, cdc):
+    # Check whether [delta_temperature / time] can be converted
+    enc_id, enc_val = await cdc.encode('EdgeCase', {
+        'deltaV': 100,
+    })
+    dec_id, dec_val = await cdc.decode(enc_id, enc_val)
+    assert dec_val['deltaV[delta_degC / second]'] == pytest.approx(100, 0.1)

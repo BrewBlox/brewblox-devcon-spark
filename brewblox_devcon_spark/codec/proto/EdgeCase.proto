@@ -26,4 +26,5 @@ message EdgeCase {
     uint32 link = 3 [(brewblox).link = Setpoint];
     repeated NestedLink additionalLinks = 4;
     repeated float listValues = 5 [(brewblox).unit = "degC", (brewblox).scale = 256];
+    uint32 deltaV = 6 [(brewblox).unit = "delta_degC / second", (brewblox).scale = 256];
 }

@@ -36,7 +36,7 @@ class Modifier():
     _BREWBLOX_PROVIDER: DescriptorBase = brewblox_pb2.brewblox
 
     def __init__(self, unit_filename: str, strip_readonly=True):
-        self._ureg: UnitRegistry = UnitRegistry()
+        self._ureg: UnitRegistry = UnitRegistry(autoconvert_offset_to_baseunit=True)
         self._strip_readonly = strip_readonly
         if unit_filename:
             self._ureg.load_definitions(unit_filename)

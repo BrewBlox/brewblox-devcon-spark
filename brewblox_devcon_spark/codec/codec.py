@@ -71,7 +71,9 @@ class Codec(features.ServiceFeature):
             trc = Transcoder.get(obj_type, self._mod)
             return trc.type_int(), trc.encode(deepcopy(values))
         except Exception as ex:
-            raise exceptions.EncodeException(ex)
+            msg = f'{type(ex).__name__}({ex})'
+            LOGGER.debug(msg, exc_info=True)
+            raise exceptions.EncodeException(msg)
 
     async def decode(self,
                      obj_type: ObjType_,
@@ -102,4 +104,6 @@ class Codec(features.ServiceFeature):
             trc = Transcoder.get(obj_type, self._mod)
             return trc.type_str(), trc.decode(encoded)
         except Exception as ex:
-            raise exceptions.DecodeException(ex)
+            msg = f'{type(ex).__name__}({ex})'
+            LOGGER.debug(msg, exc_info=True)
+            raise exceptions.DecodeException(msg)
