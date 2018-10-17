@@ -23,6 +23,9 @@ def create_parser(default_name='spark'):
     group.add_argument('--database',
                        help='Backing file for the object database. [%(default)s]',
                        default='brewblox_db.json')
+    group.add_argument('--config',
+                       help='Backing file for service configuration. [%(default)s]',
+                       default='brewblox_cfg.json')
     group.add_argument('--seed-objects',
                        help='A file of objects that should be created on connection. [%(default)s]')
     group.add_argument('--seed-profiles',

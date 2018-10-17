@@ -1,20 +1,25 @@
 [[source]]
+
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
+
 [packages]
+
 brewblox-service = "~=0.12.0"
 dpath = "*"
 pyserial-asyncio = "*"
 construct = "*"
 deprecated = "*"
 protobuf = "*"
-pint = "*"
+Pint = "*"
 dataclasses = "*"
 aiofiles = "*"
 
+
 [dev-packages]
+
 pytest = "==3.6.4"
 pytest-sugar = "*"
 "pytest-flake8" = "*"
@@ -26,8 +31,12 @@ asynctest = "*"
 "autopep8" = "*"
 brewblox-tools = "*"
 
+
 [requires]
+
 python_version = "3.6"
 
+
 [scripts]
+
 dist = "python setup.py sdist"
