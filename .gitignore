@@ -80,5 +80,6 @@ docker/pkg/*
 rpi-docker/pkg/*
 !rpi-docker/pkg/.gitkeep
 
-# Default database file
+# Default persistence files
 brewblox_db.json
+brewblox_cfg.json

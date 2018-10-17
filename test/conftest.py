@@ -34,14 +34,24 @@ def test_db():
     f.close()
 
 
+@pytest.fixture(autouse=True)
+def test_cfg():
+    f = NamedTemporaryFile(mode='w+t', encoding='utf8')
+    f.write('{}')
+    f.flush()
+    yield f.name
+    f.close()
+
+
 @pytest.fixture
-def app_config(test_db) -> dict:
+def app_config(test_db, test_cfg) -> dict:
     return {
         'name': 'test_app',
         'host': 'localhost',
         'port': 1234,
         'debug': True,
         'database': test_db,
+        'config': test_cfg,
         'device_serial': '/dev/TESTEH',
         'device_id': '1234',
         'simulation': False,
@@ -60,6 +70,7 @@ def sys_args(app_config) -> list:
         '--host', app_config['host'],
         '--port', app_config['port'],
         '--database', app_config['database'],
+        '--config', app_config['config'],
         '--device-serial', app_config['device_serial'],
         '--device-id', app_config['device_id'],
         '--broadcast-interval', app_config['broadcast_interval'],

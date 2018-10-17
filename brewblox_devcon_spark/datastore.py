@@ -6,7 +6,7 @@ Stores service-related data associated with objects.
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
 
-from brewblox_devcon_spark import twinkeydict
+from brewblox_devcon_spark import file_config, twinkeydict
 
 LOGGER = brewblox_logger(__name__)
 
@@ -42,6 +42,9 @@ def setup(app: web.Application):
     features.add(app, store, key='object_store')
     add_system_objects(store)
 
+    config = file_config.FileConfig(app, app['config']['config'])
+    features.add(app, config)
+
 
 def get_datastore(app: web.Application) -> twinkeydict.TwinKeyDict:
     return features.get(app, key='object_store')
@@ -55,3 +58,7 @@ def add_system_objects(store: twinkeydict.TwinKeyDict):
 def clear_objects(store: twinkeydict.TwinKeyDict):
     store.clear()
     add_system_objects(store)
+
+
+def get_config(app: web.Application) -> file_config.FileConfig:
+    return features.get(app, file_config.FileConfig)

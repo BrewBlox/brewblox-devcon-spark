@@ -5,8 +5,9 @@ Tests brewblox codec
 from brewblox_devcon_spark.codec import _path_extension  # isort:skip
 
 import pytest
+from brewblox_service import scheduler
 
-from brewblox_devcon_spark import exceptions
+from brewblox_devcon_spark import datastore, exceptions
 from brewblox_devcon_spark.codec import codec
 
 _path_extension.avoid_lint_errors()
@@ -15,6 +16,8 @@ _path_extension.avoid_lint_errors()
 @pytest.fixture
 def app(app):
     app['config']['unit_defaults'] = ['degC']
+    scheduler.setup(app)
+    datastore.setup(app)
     codec.setup(app)
     return app
 
