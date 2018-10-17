@@ -9,8 +9,8 @@ from brewblox_service import scheduler
 
 from brewblox_devcon_spark import (commander_sim, datastore, device,
                                    exceptions, status)
-from brewblox_devcon_spark.api import (alias_api, debug_api, error_response,
-                                       object_api, system_api)
+from brewblox_devcon_spark.api import (alias_api, codec_api, debug_api,
+                                       error_response, object_api, system_api)
 from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
                                                   API_TYPE_KEY,
                                                   OBJECT_DATA_KEY,
@@ -52,6 +52,7 @@ async def app(app, loop):
     alias_api.setup(app)
     object_api.setup(app)
     system_api.setup(app)
+    codec_api.setup(app)
 
     return app
 
@@ -279,3 +280,27 @@ async def test_inactive_objects(app, client, object_args):
             'actualType': object_args[API_TYPE_KEY]
         }
     }
+
+
+async def test_codec_api(app, client, object_args):
+    degC_offset = object_args[API_DATA_KEY]['offset']
+    degF_offset = degC_offset * (9/5)  # delta_degC to delta_degF
+    await client.post('/objects', json=object_args)
+
+    default_units = await response(client.get('/codec/units'))
+    assert {'Temp', 'DeltaTemp', 'DeltaTempPerTime', 'Time'} == default_units.keys()
+
+    # offset is a delta_degC value
+    # We'd expect to get the same value in delta_celsius as in kelvin
+
+    await client.put('/codec/units', json={'DeltaTemp': 'delta_degF'})
+    retd = await response(client.get(f'/objects/{object_args[API_ID_KEY]}'))
+    assert retd[API_DATA_KEY]['offset[delta_degF]'] == pytest.approx(degF_offset, 0.1)
+
+    await client.put('/codec/units', json={'DeltaTemp': 'kelvin'})
+    retd = await response(client.get(f'/objects/{object_args[API_ID_KEY]}'))
+    assert retd[API_DATA_KEY]['offset[kelvin]'] == pytest.approx(degC_offset, 0.1)
+
+    await client.put('/codec/units', json={})
+    retd = await response(client.get(f'/objects/{object_args[API_ID_KEY]}'))
+    assert retd[API_DATA_KEY]['offset[delta_degC]'] == pytest.approx(degC_offset, 0.1)

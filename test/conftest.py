@@ -47,7 +47,6 @@ def app_config(test_db) -> dict:
         'simulation': False,
         'broadcast_interval': 5,
         'broadcast_exchange': 'brewcast',
-        'unit_system_file': 'config/celsius_system.txt',
         'sync_exchange': 'syncast',
     }
 
@@ -65,7 +64,6 @@ def sys_args(app_config) -> list:
         '--device-id', app_config['device_id'],
         '--broadcast-interval', app_config['broadcast_interval'],
         '--broadcast-exchange', app_config['broadcast_exchange'],
-        '--unit-system-file', app_config['unit_system_file'],
         '--sync-exchange', app_config['sync_exchange'],
     ]]
 

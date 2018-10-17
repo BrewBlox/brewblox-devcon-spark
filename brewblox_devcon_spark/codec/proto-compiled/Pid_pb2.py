@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\tPid.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x9f\x07\n\x03Pid\x12\x1c\n\x07inputId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x01\x92?\x02\x38\x10\x12\x1d\n\x08outputId\x18\x02 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x01\x92?\x02\x38\x10\x12\x1a\n\ninputValid\x18\x03 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12\x1b\n\x0boutputValid\x18\x04 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12\x30\n\ninputValue\x18\x05 \x01(\x11\x42\x1c\x8a\xb5\x18\x06\n\x04\x64\x65gC\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x32\n\x0cinputSetting\x18\x06 \x01(\x11\x42\x1c\x8a\xb5\x18\x06\n\x04\x64\x65gC\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\'\n\x0boutputValue\x18\x07 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12)\n\routputSetting\x18\x08 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12&\n\x06\x66ilter\x18\t \x01(\x0e\x32\x16.blox.Pid.FilterChoice\x12\x35\n\x0f\x66ilterThreshold\x18\n \x01(\x11\x42\x1c\x8a\xb5\x18\x0c\n\ndelta_degC\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x0f\n\x07\x65nabled\x18\x0b \x01(\x08\x12\x16\n\x06\x61\x63tive\x18\x0c \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12\"\n\x02kp\x18\r \x01(\x11\x42\x16\x8a\xb5\x18\x06\n\x04\x64\x65gC\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x1d\n\x02ti\x18\x0e \x01(\rB\x11\x8a\xb5\x18\x08\n\x06second\x92?\x02\x38\x10\x12\x1d\n\x02td\x18\x0f \x01(\rB\x11\x8a\xb5\x18\x08\n\x06second\x92?\x02\x38\x10\x12\x1d\n\x01p\x18\x10 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x1d\n\x01i\x18\x11 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x1d\n\x01\x64\x18\x12 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x31\n\x05\x65rror\x18\x13 \x01(\x11\x42\"\x8a\xb5\x18\x0c\n\ndelta_degC\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x34\n\x08integral\x18\x14 \x01(\x11\x42\"\x8a\xb5\x18\x0c\n\ndelta_degC\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x41\n\nderivative\x18\x15 \x01(\x11\x42-\x8a\xb5\x18\x15\n\x13\x64\x65lta_degC / second\x8a\xb5\x18\x05\x10\x80\x80\x80\x04\x92?\x02\x38 \x8a\xb5\x18\x02(\x01\"m\n\x0c\x46ilterChoice\x12\x0c\n\x08\x46ILT_30s\x10\x00\x12\x0b\n\x07\x46ILT_1m\x10\x01\x12\x0b\n\x07\x46ILT_3m\x10\x02\x12\x0b\n\x07\x46ILT_5m\x10\x03\x12\x0c\n\x08\x46ILT_10m\x10\x04\x12\x0c\n\x08\x46ILT_20m\x10\x05\x12\x0c\n\x08\x46ILT_45m\x10\x06:\x06\x92?\x03H\xb0\x02\x62\x06proto3')
+  serialized_pb=_b('\n\tPid.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xd6\x06\n\x03Pid\x12\x1c\n\x07inputId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x01\x92?\x02\x38\x10\x12\x1d\n\x08outputId\x18\x02 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x01\x92?\x02\x38\x10\x12\x1a\n\ninputValid\x18\x03 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12\x1b\n\x0boutputValid\x18\x04 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12,\n\ninputValue\x18\x05 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12.\n\x0cinputSetting\x18\x06 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\'\n\x0boutputValue\x18\x07 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12)\n\routputSetting\x18\x08 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12&\n\x06\x66ilter\x18\t \x01(\x0e\x32\x16.blox.Pid.FilterChoice\x12+\n\x0f\x66ilterThreshold\x18\n \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x02\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x0f\n\x07\x65nabled\x18\x0b \x01(\x08\x12\x16\n\x06\x61\x63tive\x18\x0c \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12\x1e\n\x02kp\x18\r \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x17\n\x02ti\x18\x0e \x01(\rB\x0b\x8a\xb5\x18\x02\x08\x04\x92?\x02\x38\x10\x12\x17\n\x02td\x18\x0f \x01(\rB\x0b\x8a\xb5\x18\x02\x08\x04\x92?\x02\x38\x10\x12\x1d\n\x01p\x18\x10 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x1d\n\x01i\x18\x11 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x1d\n\x01\x64\x18\x12 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\'\n\x05\x65rror\x18\x13 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x08\x02\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12*\n\x08integral\x18\x14 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x08\x02\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12.\n\nderivative\x18\x15 \x01(\x11\x42\x1a\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x05\x10\x80\x80\x80\x04\x92?\x02\x38 \x8a\xb5\x18\x02(\x01\"m\n\x0c\x46ilterChoice\x12\x0c\n\x08\x46ILT_30s\x10\x00\x12\x0b\n\x07\x46ILT_1m\x10\x01\x12\x0b\n\x07\x46ILT_3m\x10\x02\x12\x0b\n\x07\x46ILT_5m\x10\x03\x12\x0c\n\x08\x46ILT_10m\x10\x04\x12\x0c\n\x08\x46ILT_20m\x10\x05\x12\x0c\n\x08\x46ILT_45m\x10\x06:\x06\x92?\x03H\xb0\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -64,8 +64,8 @@ _PID_FILTERCHOICE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=860,
-  serialized_end=969,
+  serialized_start=787,
+  serialized_end=896,
 )
 _sym_db.RegisterEnumDescriptor(_PID_FILTERCHOICE)
 
@@ -111,14 +111,14 @@ _PID = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\006\n\004degC\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002\010\001\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='inputSetting', full_name='blox.Pid.inputSetting', index=5,
       number=6, type=17, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\006\n\004degC\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002\010\001\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='outputValue', full_name='blox.Pid.outputValue', index=6,
       number=7, type=17, cpp_type=1, label=1,
@@ -146,7 +146,7 @@ _PID = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\014\n\ndelta_degC\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002\010\002\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='enabled', full_name='blox.Pid.enabled', index=10,
       number=11, type=8, cpp_type=7, label=1,
@@ -167,21 +167,21 @@ _PID = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\006\n\004degC\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002\010\001\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='ti', full_name='blox.Pid.ti', index=13,
       number=14, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\010\n\006second\222?\0028\020'), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002\010\004\222?\0028\020'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='td', full_name='blox.Pid.td', index=14,
       number=15, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\010\n\006second\222?\0028\020'), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002\010\004\222?\0028\020'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='p', full_name='blox.Pid.p', index=15,
       number=16, type=17, cpp_type=1, label=1,
@@ -209,21 +209,21 @@ _PID = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\014\n\ndelta_degC\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002\010\002\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='integral', full_name='blox.Pid.integral', index=19,
       number=20, type=17, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\014\n\ndelta_degC\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002\010\002\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='derivative', full_name='blox.Pid.derivative', index=20,
       number=21, type=17, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\025\n\023delta_degC / second\212\265\030\005\020\200\200\200\004\222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002\010\003\212\265\030\005\020\200\200\200\004\222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -238,7 +238,7 @@ _PID = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=50,
-  serialized_end=977,
+  serialized_end=904,
 )
 
 _PID.fields_by_name['filter'].enum_type = _PID_FILTERCHOICE

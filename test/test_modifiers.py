@@ -7,19 +7,30 @@ from brewblox_devcon_spark.codec import _path_extension  # isort:skip
 import pytest
 
 import TempSensorOneWire_pb2
-from brewblox_devcon_spark.codec import modifiers
+from brewblox_devcon_spark.codec import modifiers, unit_conversion
 
 _path_extension.avoid_lint_errors()
 
 
 @pytest.fixture(scope='module')
 def mod():
-    return modifiers.Modifier('config/fahrenheit_system.txt', strip_readonly=False)
+    c = unit_conversion.UnitConverter()
+    c.user_units = {
+        'Temp': 'degF',
+        'DeltaTemp': 'delta_degF'
+    }
+    m = modifiers.Modifier(c, strip_readonly=False)
+    return m
 
 
 @pytest.fixture(scope='module')
 def k_mod():
-    return modifiers.Modifier(None)
+    c = unit_conversion.UnitConverter()
+    c.user_units = {
+        'Temp': 'kelvin',
+        'DeltaTemp': 'kelvin'
+    }
+    return modifiers.Modifier(c)
 
 
 def generate_encoding_data():
@@ -44,7 +55,7 @@ def test_encode_options(mod):
     vals = generate_encoding_data()
     mod.encode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals)
 
-    # converted to delta_degC
+    # converted to (delta) degC
     # scaled * 256
     # rounded to int
     assert vals == generate_decoding_data()
@@ -53,7 +64,6 @@ def test_encode_options(mod):
 def test_decode_options(mod):
     vals = generate_decoding_data()
     mod.decode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals)
-    print(vals)
     assert vals['offset[delta_degF]'] == pytest.approx(20, 0.1)
     assert vals['value[degF]'] == pytest.approx(10, 0.1)
 
@@ -61,7 +71,6 @@ def test_decode_options(mod):
 def test_decode_no_system(k_mod):
     vals = generate_decoding_data()
     k_mod.decode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals)
-    print(vals)
     assert vals['offset[kelvin]'] > 0
     assert vals['value[kelvin]'] > 0
 

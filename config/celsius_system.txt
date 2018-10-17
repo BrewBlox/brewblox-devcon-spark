@@ -1,3 +1,0 @@
-@system brewblox using cgs
-    degC
-@end

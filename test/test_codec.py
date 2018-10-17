@@ -14,7 +14,7 @@ _path_extension.avoid_lint_errors()
 
 @pytest.fixture
 def app(app):
-    app['config']['unit_system_file'] = 'config/celsius_system.txt'
+    app['config']['unit_defaults'] = ['degC']
     codec.setup(app)
     return app
 
@@ -47,7 +47,7 @@ async def test_encode_system_objects(app, client, cdc):
     ]
 
     encoded = [await cdc.encode(o['type'], o['data']) for o in objects]
-    print(encoded)
+    assert encoded
 
 
 async def test_encode_errors(app, client, cdc):

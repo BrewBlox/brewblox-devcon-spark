@@ -31,7 +31,6 @@ class DummyListener():
                   exchange_type=None,
                   on_message=None,
                   ):
-        print('subscribed')
         self.exchange_name = exchange_name
         self.routing = routing
         self.exchange_type = exchange_type

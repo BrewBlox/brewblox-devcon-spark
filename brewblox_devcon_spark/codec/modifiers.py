@@ -6,7 +6,6 @@ from brewblox_devcon_spark.codec import _path_extension  # isort:skip
 
 import re
 from binascii import hexlify, unhexlify
-from contextlib import suppress
 from functools import reduce
 from typing import Iterator, List
 
@@ -15,9 +14,9 @@ from dataclasses import dataclass
 from google.protobuf import json_format
 from google.protobuf.descriptor import DescriptorBase, FieldDescriptor
 from google.protobuf.message import Message
-from pint import UndefinedUnitError, UnitRegistry, quantity
 
 import brewblox_pb2
+from brewblox_devcon_spark.codec.unit_conversion import UnitConverter
 
 _path_extension.avoid_lint_errors()
 LOGGER = brewblox_logger(__name__)
@@ -35,12 +34,9 @@ class OptionElement():
 class Modifier():
     _BREWBLOX_PROVIDER: DescriptorBase = brewblox_pb2.brewblox
 
-    def __init__(self, unit_filename: str, strip_readonly=True):
-        self._ureg: UnitRegistry = UnitRegistry(autoconvert_offset_to_baseunit=True)
+    def __init__(self, converter: UnitConverter, strip_readonly=True):
+        self._converter = converter
         self._strip_readonly = strip_readonly
-        if unit_filename:
-            self._ureg.load_definitions(unit_filename)
-            self._ureg.default_system = 'brewblox'
 
         symbols = re.escape('[]<>')
         self._postfix_pattern = re.compile(''.join([
@@ -67,9 +63,6 @@ class Modifier():
     @staticmethod
     def unpack_bit_flags(flags: int) -> List[int]:
         return [i for i in range(8) if 1 << i & flags]
-
-    def _quantity(self, *args, **kwargs) -> quantity._Quantity:
-        return self._ureg.Quantity(*args, **kwargs)
 
     def _find_options(self, desc: DescriptorBase, obj: dict) -> Iterator[OptionElement]:
         """
@@ -99,6 +92,9 @@ class Modifier():
     def _field_options(self, field: FieldDescriptor, provider: FieldDescriptor=None):
         provider = provider or self._BREWBLOX_PROVIDER
         return field.GetOptions().Extensions[provider]
+
+    def _unit_name(self, unit_num: int) -> str:
+        return brewblox_pb2.BrewbloxFieldOptions.UnitType.Name(unit_num)
 
     def encode_options(self, message: Message, obj: dict) -> dict:
         """
@@ -160,7 +156,8 @@ class Modifier():
                 val = [val]
 
             if options.unit and element.postfix:
-                val = [self._quantity(v, element.postfix).to(options.unit).magnitude for v in val]
+                unit = self._unit_name(options.unit)
+                val = [self._converter.to_sys(v, unit, element.postfix) for v in val]
 
             if options.scale:
                 val = [v * options.scale for v in val]
@@ -247,23 +244,10 @@ class Modifier():
                 val = [v / options.scale for v in val]
 
             if options.unit:
-                base_unit = str(self._quantity(options.unit).to_base_units().units)
-
-                # The Pint to_base_units() function doesn't retain delta units.
-                # If the base unit is degC, then quantity('delta_degF').to_base_units() yields degC.
-                # We catch UndefinedUnitError because not all base units have a delta.
-                # 'delta_degK', for example, does not exist.
-                if options.unit.lower().startswith('delta_'):
-                    with suppress(UndefinedUnitError):
-                        delta_base = 'delta_' + base_unit
-                        self._quantity(delta_base)
-                        base_unit = delta_base
-
-                new_key += '[' + base_unit + ']'
+                unit = self._unit_name(options.unit)
+                new_key += '[' + self._converter.user_unit(unit) + ']'
                 val = [
-                    self._quantity(v, options.unit)
-                    .to(base_unit)
-                    .magnitude
+                    self._converter.to_user(v, unit)
                     for v in val
                 ]
 
