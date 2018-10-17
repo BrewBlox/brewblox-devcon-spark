@@ -11,10 +11,10 @@ message EdgeCase {
 
     message Settings {
         fixed64 address = 1 [(brewblox).hexed = true];
-        sint32 offset = 2 [(brewblox).unit = "delta_degC", (brewblox).scale = 256];
+        sint32 offset = 2 [(brewblox).unit = DeltaTemp, (brewblox).scale = 256];
     }
     message State {
-        sint32 value = 1 [(brewblox).unit = "degC", (brewblox).scale = 256];
+        sint32 value = 1 [(brewblox).unit = Temp, (brewblox).scale = 256];
         bool connected = 2 [(brewblox).readonly = true];
     }
     message NestedLink {
@@ -25,6 +25,6 @@ message EdgeCase {
     State state = 2;
     uint32 link = 3 [(brewblox).link = Setpoint];
     repeated NestedLink additionalLinks = 4;
-    repeated float listValues = 5 [(brewblox).unit = "degC", (brewblox).scale = 256];
-    uint32 deltaV = 6 [(brewblox).unit = "delta_degC / second", (brewblox).scale = 256];
+    repeated float listValues = 5 [(brewblox).unit = Temp, (brewblox).scale = 256];
+    uint32 deltaV = 6 [(brewblox).unit = DeltaTempPerTime, (brewblox).scale = 256];
 }

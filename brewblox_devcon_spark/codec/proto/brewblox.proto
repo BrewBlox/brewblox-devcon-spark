@@ -13,7 +13,14 @@ message BrewbloxFieldOptions {
     Balancer = 6;
     Mutex = 7;
   }
-  string unit = 1;
+  enum UnitType {
+      NotSet = 0;
+      Temp = 1;
+      DeltaTemp = 2;
+      DeltaTempPerTime = 3;
+      Time = 4;
+  }
+  UnitType unit = 1;
   uint32 scale = 2;
   LinkType link = 3;
   bool hexed = 4;
