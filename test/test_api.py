@@ -290,6 +290,9 @@ async def test_codec_api(app, client, object_args):
     default_units = await response(client.get('/codec/units'))
     assert {'Temp', 'DeltaTemp', 'DeltaTempPerTime', 'Time'} == default_units.keys()
 
+    alternative_units = await response(client.get('/codec/unit_alternatives'))
+    assert alternative_units.keys() == default_units.keys()
+
     # offset is a delta_degC value
     # We'd expect to get the same value in delta_celsius as in kelvin
 
