@@ -10,6 +10,35 @@ from brewblox_devcon_spark.exceptions import InvalidInput
 LOGGER = brewblox_logger(__name__)
 
 
+UNIT_ALTERNATIVES = {
+    'Temp': [
+        'celsius',
+        'degC',
+        'fahrenheit',
+        'degF',
+        'kelvin',
+        'degK',
+    ],
+    'DeltaTemp': [
+        'delta_degC',
+        'delta_degF',
+        'kelvin',
+    ],
+    'Time': [
+        'millisecond',
+        'second',
+        'minute',
+        'hour',
+    ]
+}
+
+UNIT_ALTERNATIVES['DeltaTempPerTime'] = [
+    f'{delta} / {time}'
+    for delta in UNIT_ALTERNATIVES['DeltaTemp']
+    for time in UNIT_ALTERNATIVES['Time']
+]
+
+
 class UnitConverter():
 
     def __init__(self):

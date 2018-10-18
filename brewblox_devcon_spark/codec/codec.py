@@ -13,7 +13,8 @@ from brewblox_devcon_spark import datastore, exceptions
 from brewblox_devcon_spark.codec.modifiers import Modifier
 from brewblox_devcon_spark.codec.transcoders import (Decoded_, Encoded_,
                                                      ObjType_, Transcoder)
-from brewblox_devcon_spark.codec.unit_conversion import UnitConverter
+from brewblox_devcon_spark.codec.unit_conversion import (UNIT_ALTERNATIVES,
+                                                         UnitConverter)
 
 TranscodeFunc_ = Callable[
     [ObjType_, Union[Encoded_, Decoded_]],
@@ -62,6 +63,9 @@ class Codec(features.ServiceFeature):
         with datastore.get_config(self.app).open() as config:
             config[UNIT_CONFIG_KEY] = updated
         return updated
+
+    def get_unit_alternatives(self):
+        return UNIT_ALTERNATIVES
 
     async def encode(self,
                      obj_type: ObjType_,
