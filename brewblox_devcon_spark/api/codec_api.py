@@ -19,11 +19,11 @@ def setup(app: web.Application):
 async def units_get(request: web.Request) -> web.Response:
     """
     ---
-    summary: Get available unit systems
+    summary: Get current unit configuration
     tags:
     - Spark
     - Codec
-    operationId: controller.spark.codec.systems.get
+    operationId: controller.spark.codec.units.get
     produces:
     - application/json
     """
@@ -38,7 +38,7 @@ async def units_put(request: web.Request) -> web.Response:
     tags:
     - Spark
     - Codec
-    operationId: controller.spark.codec.units.set
+    operationId: controller.spark.codec.units.put
     produces:
     - application/json
     parameters:
@@ -65,3 +65,18 @@ async def units_put(request: web.Request) -> web.Response:
     """
     args = await request.json()
     return web.json_response(codec.get_codec(request.app).update_unit_config(args))
+
+
+@routes.get('/codec/unit_alternatives')
+async def unit_alternatives_get(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Get alternative values for each unit type
+    tags:
+    - Spark
+    - Codec
+    operationId: controller.spark.codec.units_alternatives.get
+    produces:
+    - application/json
+    """
+    return web.json_response(codec.get_codec(request.app).get_unit_alternatives())
