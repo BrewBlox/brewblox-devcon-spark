@@ -9,6 +9,11 @@ from brewblox_devcon_spark.exceptions import InvalidInput
 
 LOGGER = brewblox_logger(__name__)
 
+# Pint makes multiple I/O calls while constructing its UnitRegistry
+# As long as we never modify the unit registry, we can keep it in module scope
+# This significantly reduces setup time for unit tests
+_UREG = UnitRegistry()
+
 
 UNIT_ALTERNATIVES = {
     'Temp': [
@@ -42,7 +47,6 @@ UNIT_ALTERNATIVES['DeltaTempPerTime'] = [
 class UnitConverter():
 
     def __init__(self):
-        self._ureg: UnitRegistry = UnitRegistry()
         # ID: [system_unit, user_unit]
         self._table = {k: [v, v] for k, v in self.system_units.items()}
 
@@ -65,7 +69,7 @@ class UnitConverter():
 
         for id, units in cfg.items():
             try:
-                self._ureg.Quantity(1, units[0]).to(units[1])
+                _UREG.Quantity(1, units[0]).to(units[1])
             except Exception as ex:
                 raise InvalidInput(f'Invalid new unit config "{id}:{units}", {ex}')
 
@@ -73,11 +77,11 @@ class UnitConverter():
 
     def to_sys(self, amount, id, custom=None):
         conversion = self._table[id]
-        return self._ureg.Quantity(amount, custom or conversion[1]).to(conversion[0]).magnitude
+        return _UREG.Quantity(amount, custom or conversion[1]).to(conversion[0]).magnitude
 
     def to_user(self, amount, id):
         conversion = self._table[id]
-        return self._ureg.Quantity(amount, conversion[0]).to(conversion[1]).magnitude
+        return _UREG.Quantity(amount, conversion[0]).to(conversion[1]).magnitude
 
     def user_unit(self, id):
         return self._table[id][1]
