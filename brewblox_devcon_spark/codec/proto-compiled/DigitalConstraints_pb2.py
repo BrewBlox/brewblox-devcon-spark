@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x18\x44igitalConstraints.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"p\n\x11\x44igitalConstraint\x12\x17\n\x06minOff\x18\x01 \x01(\rB\x05\x92?\x02\x38 H\x00\x12\x16\n\x05minOn\x18\x02 \x01(\rB\x05\x92?\x02\x38 H\x00\x12\x1c\n\x05mutex\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x07\x92?\x02\x38\x10H\x00\x42\x0c\n\nconstraint\"I\n\x12\x44igitalConstraints\x12\x33\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32\x17.blox.DigitalConstraintB\x05\x92?\x02\x10\x08\x62\x06proto3')
+  serialized_pb=_b('\n\x18\x44igitalConstraints.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"p\n\x11\x44igitalConstraint\x12\x17\n\x06minOff\x18\x01 \x01(\rB\x05\x92?\x02\x38 H\x00\x12\x16\n\x05minOn\x18\x02 \x01(\rB\x05\x92?\x02\x38 H\x00\x12\x1c\n\x05mutex\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x08\x92?\x02\x38\x10H\x00\x42\x0c\n\nconstraint\"I\n\x12\x44igitalConstraints\x12\x33\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32\x17.blox.DigitalConstraintB\x05\x92?\x02\x10\x08\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -55,7 +55,7 @@ _DIGITALCONSTRAINT = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002\030\007\222?\0028\020'), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002\030\010\222?\0028\020'), file=DESCRIPTOR),
   ],
   extensions=[
   ],

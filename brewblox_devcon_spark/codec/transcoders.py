@@ -12,12 +12,16 @@ from google.protobuf import json_format
 from google.protobuf.message import Message
 
 import ActuatorAnalogMock_pb2
+import ActuatorOffset_pb2
 import ActuatorPin_pb2
 import ActuatorPwm_pb2
+import Balancer_pb2
 import EdgeCase_pb2
+import Mutex_pb2
 import nanopb_pb2
 import OneWireBus_pb2
 import Pid_pb2
+import SetpointProfile_pb2
 import SetpointSensorPair_pb2
 import SetpointSimple_pb2
 import SysInfo_pb2
@@ -171,6 +175,10 @@ class ActuatorAnalogMockTranscoder(OptionsTranscoder):
     _MESSAGE = ActuatorAnalogMock_pb2.ActuatorAnalogMock
 
 
+class ActuatorOffsetTranscoder(OptionsTranscoder):
+    _MESSAGE = ActuatorOffset_pb2.ActuatorOffset
+
+
 class ActuatorPinTranscoder(OptionsTranscoder):
     _MESSAGE = ActuatorPin_pb2.ActuatorPin
 
@@ -179,8 +187,16 @@ class ActuatorPwmTranscoder(OptionsTranscoder):
     _MESSAGE = ActuatorPwm_pb2.ActuatorPwm
 
 
+class BalancerTranscoder(OptionsTranscoder):
+    _MESSAGE = Balancer_pb2.Balancer
+
+
 class EdgeCaseTranscoder(OptionsTranscoder):
     _MESSAGE = EdgeCase_pb2.EdgeCase
+
+
+class MutexTranscoder(OptionsTranscoder):
+    _MESSAGE = Mutex_pb2.Mutex
 
 
 class OneWireBusTranscoder(OptionsTranscoder):
@@ -189,6 +205,10 @@ class OneWireBusTranscoder(OptionsTranscoder):
 
 class PidTranscoder(OptionsTranscoder):
     _MESSAGE = Pid_pb2.Pid
+
+
+class SetpointProfileTranscoder(OptionsTranscoder):
+    _MESSAGE = SetpointProfile_pb2.SetpointProfile
 
 
 class SetpointSensorPairTranscoder(OptionsTranscoder):
@@ -237,10 +257,14 @@ _TRANSCODERS = [
 
     # Protobuf objects
     ActuatorAnalogMockTranscoder,
+    ActuatorOffsetTranscoder,
     ActuatorPinTranscoder,
     ActuatorPwmTranscoder,
+    BalancerTranscoder,
+    MutexTranscoder,
     OneWireBusTranscoder,
     PidTranscoder,
+    SetpointProfileTranscoder,
     SetpointSensorPairTranscoder,
     SetpointSimpleTranscoder,
     SysInfoTranscoder,
