@@ -65,14 +65,22 @@ class SimulationResponder():
         self._objects = {
             1: {
                 OBJECT_ID_KEY: 1,
+                OBJECT_TYPE_KEY: 'Profiles',
+                PROFILE_LIST_KEY: self._all_profiles,
+                OBJECT_DATA_KEY: {
+                    'active': [0]
+                },
+            },
+            2: {
+                OBJECT_ID_KEY: 2,
                 OBJECT_TYPE_KEY: 'SysInfo',
                 PROFILE_LIST_KEY: self._all_profiles,
                 OBJECT_DATA_KEY: {
                     'deviceId': 'c2ltdWxhdG9y'
                 },
             },
-            2: {
-                OBJECT_ID_KEY: 2,
+            3: {
+                OBJECT_ID_KEY: 3,
                 OBJECT_TYPE_KEY: 'Ticks',
                 PROFILE_LIST_KEY: self._all_profiles,
                 OBJECT_DATA_KEY: {
@@ -80,20 +88,12 @@ class SimulationResponder():
                     'secondsSinceEpoch': 0,
                 },
             },
-            3: {
-                OBJECT_ID_KEY: 3,
+            4: {
+                OBJECT_ID_KEY: 4,
                 OBJECT_TYPE_KEY: 'OneWireBus',
                 PROFILE_LIST_KEY: self._all_profiles,
                 OBJECT_DATA_KEY: {},
             },
-            4: {
-                OBJECT_ID_KEY: 4,
-                OBJECT_TYPE_KEY: 'Profiles',
-                PROFILE_LIST_KEY: self._all_profiles,
-                OBJECT_DATA_KEY: {
-                    'active': [0]
-                },
-            }
         }
 
     @property
@@ -102,7 +102,7 @@ class SimulationResponder():
 
     @property
     def _active_profiles(self):
-        return self._objects[4][OBJECT_DATA_KEY]['active']
+        return self._objects[1][OBJECT_DATA_KEY]['active']
 
     @staticmethod
     def _get_content_objects(content: dict) -> List[dict]:

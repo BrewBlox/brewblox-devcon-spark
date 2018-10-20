@@ -13,19 +13,19 @@ LOGGER = brewblox_logger(__name__)
 OBJECT_ID_START = 100
 SYS_OBJECTS = [
     {
-        'keys': ['__sysinfo', 1],
+        'keys': ['__profiles', 1],
         'data': {}
     },
     {
-        'keys': ['__time', 2],
+        'keys': ['__sysinfo', 2],
         'data': {}
     },
     {
-        'keys': ['__onewirebus', 3],
+        'keys': ['__time', 3],
         'data': {}
     },
     {
-        'keys': ['__profiles', 4],
+        'keys': ['__onewirebus', 4],
         'data': {}
     },
 ]
