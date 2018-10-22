@@ -89,15 +89,13 @@ class Codec(features.ServiceFeature):
             Tuple[ObjType_, Encoded_]:
                 Serializable values of both object type and values.
         """
-        if values is not ... and not isinstance(values, dict):
+        if not isinstance(values, (dict, type(...))):
             raise TypeError(f'Unable to encode [{type(values).__name__}] values')
 
         try:
             trc = Transcoder.get(obj_type, self._mod)
-            if values is ...:
-                return trc.type_int()
-            else:
-                return trc.type_int(), trc.encode(deepcopy(values))
+            return trc.type_int() if values is ... \
+                else (trc.type_int(), trc.encode(deepcopy(values)))
         except Exception as ex:
             msg = f'{type(ex).__name__}({ex})'
             LOGGER.debug(msg, exc_info=True)
@@ -125,15 +123,13 @@ class Codec(features.ServiceFeature):
             Tuple[ObjType_, Decoded_]:
                 Python-compatible values of both object type and values
         """
-        if encoded is not ... and not isinstance(encoded, (bytes, list)):
+        if not isinstance(encoded, (bytes, list, type(...))):
             raise TypeError(f'Unable to decode [{type(encoded).__name__}] values')
 
         try:
             trc = Transcoder.get(obj_type, self._mod)
-            if encoded is ...:
-                return trc.type_str()
-            else:
-                return trc.type_str(), trc.decode(encoded)
+            return trc.type_str() if encoded is ... \
+                else (trc.type_str(), trc.decode(encoded))
         except Exception as ex:
             msg = f'{type(ex).__name__}({ex})'
             LOGGER.debug(msg, exc_info=True)
