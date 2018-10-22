@@ -307,3 +307,8 @@ async def test_codec_api(app, client, object_args):
     await client.put('/codec/units', json={})
     retd = await response(client.get(f'/objects/{object_args[API_ID_KEY]}'))
     assert retd[API_DATA_KEY]['offset[delta_degC]'] == pytest.approx(degC_offset, 0.1)
+
+
+async def test_list_compatible(app, client, object_args):
+    resp = await response(client.get('/compatible_objects', params={'interface': 'BalancerLink'}))
+    assert all([isinstance(id, str) for id in resp])

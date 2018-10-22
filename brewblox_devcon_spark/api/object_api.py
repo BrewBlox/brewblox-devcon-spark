@@ -6,9 +6,12 @@ from aiohttp import web
 from brewblox_service import brewblox_logger
 
 from brewblox_devcon_spark import datastore, device, exceptions, twinkeydict
-from brewblox_devcon_spark.api import (API_DATA_KEY, API_ID_KEY, API_TYPE_KEY,
+from brewblox_devcon_spark.api import (API_DATA_KEY, API_ID_KEY,
+                                       API_INTERFACE_KEY, API_TYPE_KEY,
                                        alias_api, utils)
 from brewblox_devcon_spark.device import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
+                                          OBJECT_ID_LIST_KEY,
+                                          OBJECT_INTERFACE_KEY,
                                           OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                           PROFILE_LIST_KEY)
 
@@ -147,6 +150,13 @@ class ObjectApi():
                 API_DATA_KEY: obj[OBJECT_DATA_KEY]
             } for obj in response.get(OBJECT_LIST_KEY, [])
         ]
+
+    async def list_compatible(self, interface: str) -> dict:
+        response = await self._ctrl.list_compatible_objects({
+            OBJECT_INTERFACE_KEY: interface,
+        })
+
+        return [obj[OBJECT_ID_KEY] for obj in response[OBJECT_ID_LIST_KEY]]
 
     async def clear_objects(self):
         await self._ctrl.clear_objects()
@@ -344,7 +354,7 @@ async def stored_read(request: web.Request) -> web.Response:
     summary: Read object
     tags:
     - Spark
-    - Stored
+    - Objects
     operationId: controller.spark.stored.read
     produces:
     - application/json
@@ -371,13 +381,41 @@ async def all_stored(request: web.Request) -> web.Response:
     summary: Lists all stored objects
     tags:
     - Spark
-    - Stored
+    - Objects
     operationId: controller.spark.stored.all
     produces:
     - application/json
     """
     return web.json_response(
         await ObjectApi(request.app).all_stored()
+    )
+
+
+@routes.get('/compatible_objects')
+async def all_compatible(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Returns object IDs for all compatible objects
+    tags:
+    - Spark
+    - Objects
+    operationId: controller.spark.compatible.all
+    produces:
+    - application/json
+    parameters:
+    -
+        in: query
+        name: interface
+        schema:
+            type: string
+            example: "SetpointLink"
+            required: true
+    -
+    """
+    return web.json_response(
+        await ObjectApi(request.app).list_compatible(
+            request.query.get(API_INTERFACE_KEY)
+        )
     )
 
 

@@ -15,6 +15,8 @@ from brewblox_devcon_spark import (commander, commands, datastore, exceptions,
                                    twinkeydict)
 from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
+                                            OBJECT_ID_LIST_KEY,
+                                            OBJECT_INTERFACE_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                             PROFILE_LIST_KEY)
 
@@ -32,6 +34,8 @@ _FORWARDED = (
     OBJECT_TYPE_KEY,
     OBJECT_LIST_KEY,
     PROFILE_LIST_KEY,
+    OBJECT_ID_LIST_KEY,
+    OBJECT_INTERFACE_KEY,
 )
 
 LOGGER = brewblox_logger(__name__)
@@ -57,6 +61,8 @@ class SparkResolver():
         objects_to_process = [content]
         with suppress(KeyError):
             objects_to_process += content[OBJECT_LIST_KEY]
+        with suppress(KeyError):
+            objects_to_process += content[OBJECT_ID_LIST_KEY]
         return objects_to_process
 
     @staticmethod
@@ -70,6 +76,7 @@ class SparkResolver():
         objects_to_process = self._get_content_objects(content)
 
         for obj in objects_to_process:
+            # transcode type + data
             with suppress(KeyError):
                 new_type, new_data = await codec_func(
                     obj[OBJECT_TYPE_KEY],
@@ -77,6 +84,10 @@ class SparkResolver():
                 )
                 obj[OBJECT_TYPE_KEY] = new_type
                 obj[OBJECT_DATA_KEY] = new_data
+            # transcode interface (type only)
+            with suppress(KeyError):
+                new_type = await codec_func(obj[OBJECT_INTERFACE_KEY])
+                obj[OBJECT_INTERFACE_KEY] = new_type
 
         return content
 
@@ -222,3 +233,4 @@ class SparkController(features.ServiceFeature):
     clear_objects = partialmethod(_execute, commands.ClearObjectsCommand)
     factory_reset = partialmethod(_execute, commands.FactoryResetCommand)
     reboot = partialmethod(_execute, commands.RebootCommand)
+    list_compatible_objects = partialmethod(_execute, commands.ListCompatibleObjectsCommand)

@@ -16,6 +16,7 @@ import ActuatorOffset_pb2
 import ActuatorPin_pb2
 import ActuatorPwm_pb2
 import Balancer_pb2
+import brewblox_pb2
 import EdgeCase_pb2
 import Mutex_pb2
 import nanopb_pb2
@@ -68,21 +69,26 @@ class Transcoder(ABC):
             raise KeyError(f'No codec found for object type [{obj_type}]')
 
 
-class InvalidObjectTranscoder(Transcoder):
+class LinkTypeTranscoder(Transcoder):
 
     @classmethod
     def type_int(cls) -> int:
-        return 0
+        return cls._ENUM_VAL
 
     @classmethod
     def type_str(cls) -> str:
-        return 'InvalidObject'
+        return brewblox_pb2.BrewbloxFieldOptions.LinkType.Name(cls._ENUM_VAL)
 
     def encode(self, values: Decoded_) -> Encoded_:
         return b'\x00'
 
     def decode(self, values: Encoded_) -> Decoded_:
         return dict()
+
+
+def link_type_factory(value: int) -> LinkTypeTranscoder:
+    name = f'{brewblox_pb2.BrewbloxFieldOptions.LinkType.Name(value)}Transcoder'
+    return type(name, (LinkTypeTranscoder, ), {'_ENUM_VAL': value})
 
 
 class InactiveObjectTranscoder(Transcoder):
@@ -171,72 +177,9 @@ class OptionsTranscoder(ProtobufTranscoder):
         return decoded
 
 
-class ActuatorAnalogMockTranscoder(OptionsTranscoder):
-    _MESSAGE = ActuatorAnalogMock_pb2.ActuatorAnalogMock
-
-
-class ActuatorOffsetTranscoder(OptionsTranscoder):
-    _MESSAGE = ActuatorOffset_pb2.ActuatorOffset
-
-
-class ActuatorPinTranscoder(OptionsTranscoder):
-    _MESSAGE = ActuatorPin_pb2.ActuatorPin
-
-
-class ActuatorPwmTranscoder(OptionsTranscoder):
-    _MESSAGE = ActuatorPwm_pb2.ActuatorPwm
-
-
-class BalancerTranscoder(OptionsTranscoder):
-    _MESSAGE = Balancer_pb2.Balancer
-
-
-class EdgeCaseTranscoder(OptionsTranscoder):
-    _MESSAGE = EdgeCase_pb2.EdgeCase
-
-
-class MutexTranscoder(OptionsTranscoder):
-    _MESSAGE = Mutex_pb2.Mutex
-
-
-class OneWireBusTranscoder(OptionsTranscoder):
-    _MESSAGE = OneWireBus_pb2.OneWireBus
-
-
-class PidTranscoder(OptionsTranscoder):
-    _MESSAGE = Pid_pb2.Pid
-
-
-class SetpointProfileTranscoder(OptionsTranscoder):
-    _MESSAGE = SetpointProfile_pb2.SetpointProfile
-
-
-class SetpointSensorPairTranscoder(OptionsTranscoder):
-    _MESSAGE = SetpointSensorPair_pb2.SetpointSensorPair
-
-
-class SetpointSimpleTranscoder(OptionsTranscoder):
-    _MESSAGE = SetpointSimple_pb2.SetpointSimple
-
-
-class SysInfoTranscoder(OptionsTranscoder):
-    _MESSAGE = SysInfo_pb2.SysInfo
-
-
-class TempSensorMockTranscoder(OptionsTranscoder):
-    _MESSAGE = TempSensorMock_pb2.TempSensorMock
-
-
-class TempSensorOneWireTranscoder(OptionsTranscoder):
-    _MESSAGE = TempSensorOneWire_pb2.TempSensorOneWire
-
-
-class TicksTranscoder(OptionsTranscoder):
-    _MESSAGE = Ticks_pb2.Ticks
-
-
-class XboxControllerTranscoder(OptionsTranscoder):
-    _MESSAGE = XboxController_pb2.XboxController
+def options_type_factory(message):
+    name = f'{message.__name__}Transcoder'
+    return type(name, (OptionsTranscoder, ), {'_MESSAGE': message})
 
 
 def _generate_mapping(vals: Iterable[Transcoder]):
@@ -247,30 +190,34 @@ def _generate_mapping(vals: Iterable[Transcoder]):
 
 _TRANSCODERS = [
     # Raw system objects
-    InvalidObjectTranscoder,
+    *[link_type_factory(v) for v in brewblox_pb2.BrewbloxFieldOptions.LinkType.values()],
     InactiveObjectTranscoder,
     ProfilesTranscoder,
 
-    # Debug/testing objects
-    EdgeCaseTranscoder,
-    XboxControllerTranscoder,
+    # Debugging objects
+    *[options_type_factory(msg) for msg in [
+        EdgeCase_pb2.EdgeCase,
+        XboxController_pb2.XboxController,
+    ]],
 
     # Protobuf objects
-    ActuatorAnalogMockTranscoder,
-    ActuatorOffsetTranscoder,
-    ActuatorPinTranscoder,
-    ActuatorPwmTranscoder,
-    BalancerTranscoder,
-    MutexTranscoder,
-    OneWireBusTranscoder,
-    PidTranscoder,
-    SetpointProfileTranscoder,
-    SetpointSensorPairTranscoder,
-    SetpointSimpleTranscoder,
-    SysInfoTranscoder,
-    TempSensorMockTranscoder,
-    TempSensorOneWireTranscoder,
-    TicksTranscoder,
+    *[options_type_factory(msg) for msg in [
+        ActuatorAnalogMock_pb2.ActuatorAnalogMock,
+        ActuatorOffset_pb2.ActuatorOffset,
+        ActuatorPin_pb2.ActuatorPin,
+        ActuatorPwm_pb2.ActuatorPwm,
+        Balancer_pb2.Balancer,
+        Mutex_pb2.Mutex,
+        OneWireBus_pb2.OneWireBus,
+        Pid_pb2.Pid,
+        SetpointProfile_pb2.SetpointProfile,
+        SetpointSensorPair_pb2.SetpointSensorPair,
+        SetpointSimple_pb2.SetpointSimple,
+        SysInfo_pb2.SysInfo,
+        TempSensorMock_pb2.TempSensorMock,
+        TempSensorOneWire_pb2.TempSensorOneWire,
+        Ticks_pb2.Ticks,
+    ]],
 ]
 
 _TYPE_MAPPING = {k: v for k, v in _generate_mapping(_TRANSCODERS)}

@@ -18,12 +18,12 @@ message EdgeCase {
         bool connected = 2 [(brewblox).readonly = true];
     }
     message NestedLink {
-        uint32 connection = 1 [(brewblox).link = TempSensor];
+        uint32 connection = 1 [(brewblox).link = TempSensorLink];
     }
 
     Settings settings = 1;
     State state = 2;
-    uint32 link = 3 [(brewblox).link = Setpoint];
+    uint32 link = 3 [(brewblox).link = SetpointLink];
     repeated NestedLink additionalLinks = 4;
     repeated float listValues = 5 [(brewblox).unit = Temp, (brewblox).scale = 256];
     uint32 deltaV = 6 [(brewblox).unit = DeltaTempPerTime, (brewblox).scale = 256];
