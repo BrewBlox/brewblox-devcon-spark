@@ -410,7 +410,6 @@ async def all_compatible(request: web.Request) -> web.Response:
             type: string
             example: "SetpointLink"
             required: true
-    -
     """
     return web.json_response(
         await ObjectApi(request.app).list_compatible(
