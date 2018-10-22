@@ -96,6 +96,9 @@ class Modifier():
     def _unit_name(self, unit_num: int) -> str:
         return brewblox_pb2.BrewbloxFieldOptions.UnitType.Name(unit_num)
 
+    def _link_name(self, link_num: int) -> str:
+        return brewblox_pb2.BrewbloxFieldOptions.LinkType.Name(link_num)
+
     def encode_options(self, message: Message, obj: dict) -> dict:
         """
         Modifies `obj` based on Protobuf options and dict key postfixes.
@@ -114,7 +117,7 @@ class Modifier():
                 'settings': {
                     'address': 'aabbccdd',
                     'offset[delta_degF]': 20,
-                    'sensor<>': 10,
+                    'sensor<TempSensorLink>': 10,
                     'output': 9000,
                 }
             }
@@ -130,7 +133,7 @@ class Modifier():
             #   message Settings {
             #     fixed64 address = 1 [(brewblox).hexed = true];
             #     sint32 offset = 2 [(brewblox).unit = "delta_degC", (brewblox).scale = 256];
-            #     uint16 sensor = 3 [(brewblox).link = "SensorType"];
+            #     uint16 sensor = 3 [(brewblox).link = TempSensorLink];
             #     sint32 output = 4 [(brewblox).readonly = true];
             #   }
             # ...
@@ -213,7 +216,7 @@ class Modifier():
             #   message Settings {
             #     fixed64 address = 1 [(brewblox).hexed = true];
             #     sint32 offset = 2 [(brewblox).unit = "delta_degC", (brewblox).scale = 256];
-            #     uint16 sensor = 3 [(brewblox).link = "SensorType"];
+            #     uint16 sensor = 3 [(brewblox).link = TempSensorLink];
             #     sint32 output = 4 [(brewblox).readonly = true];
             #   }
             # ...
@@ -223,10 +226,10 @@ class Modifier():
             >>> print(values)
             {
                 'settings': {
-                    'address': 'aabbccdd',      # Converted from base64 string to hex string
-                    'offset[delta_degF]': 20    # Scaled / 256, converted to preference, postfixed with unit
-                    'sensor<>': 10,             # Postfixed with link indicator
-                    'output': 1234,             # We're reading -> keep readonly values
+                    'address': 'aabbccdd',        # Converted from base64 string to hex string
+                    'offset[delta_degF]': 20      # Scaled / 256, converted to preference, postfixed with unit
+                    'sensor<TempSensorLink>': 10, # Postfixed with link type
+                    'output': 1234,               # We're reading -> keep readonly values
                 }
             }
         """
@@ -252,7 +255,7 @@ class Modifier():
                 ]
 
             if options.link:
-                new_key += '<>'
+                new_key += f'<{self._link_name(options.link)}>'
 
             if options.hexed:
                 val = [self.int_to_hex(v) for v in val]

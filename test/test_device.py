@@ -25,10 +25,10 @@ def generate_obj():
             'value[delta_degC]': 123,
             'connected': True
         },
-        'link<>': 30,
+        'link<SetpointLink>': 30,
         'additionalLinks': [
-            {'connection<>': 1},
-            {'connection<>': 2},
+            {'connection<TempSensorLink>': 1},
+            {'connection<TempSensorLink>': 2},
         ],
         'listValues': [1, 2, 3],
     }
@@ -128,15 +128,15 @@ async def test_resolve_links(app, client, store):
         return {
             OBJECT_DATA_KEY: {
                 'testval': 1,
-                'input<>': 'eeney',
-                'output<>': 'miney',
+                'input<SetpointLink>': 'eeney',
+                'output<SetpointLink>': 'miney',
                 'nested': {
                     'flappy<>': 'moo',
                     'meaning_of_life': 42,
-                    'mystery<>': None
+                    'mystery<EdgeCase>': None
                 },
                 'listed': [
-                    {'flappy<>': 'moo'}
+                    {'flappy<SetpointSensorPairLink>': 'moo'}
                 ]
             }
         }
@@ -147,15 +147,15 @@ async def test_resolve_links(app, client, store):
     assert output == {
         OBJECT_DATA_KEY: {
             'testval': 1,
-            'input<>': 9001,
-            'output<>': 9002,
+            'input<SetpointLink>': 9001,
+            'output<SetpointLink>': 9002,
             'nested': {
                 'flappy<>': 9003,
                 'meaning_of_life': 42,
-                'mystery<>': 0,
+                'mystery<EdgeCase>': 0,
             },
             'listed': [
-                {'flappy<>': 9003},
+                {'flappy<SetpointSensorPairLink>': 9003},
             ],
         },
     }
