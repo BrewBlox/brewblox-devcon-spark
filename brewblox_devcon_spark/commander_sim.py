@@ -15,6 +15,7 @@ from brewblox_service import brewblox_logger, features
 from brewblox_devcon_spark import commander, commands, exceptions, status
 from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
+                                            OBJECT_ID_LIST_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                             PROFILE_LIST_KEY)
 
@@ -56,6 +57,7 @@ class SimulationResponder():
             commands.ClearObjectsCommand: self._clear_objects,
             commands.FactoryResetCommand: self._factory_reset,
             commands.RebootCommand: self._reboot,
+            commands.ListCompatibleObjectsCommand: self._list_compatible_objects,
         }
 
         self._modifiers = {
@@ -209,7 +211,12 @@ class SimulationResponder():
 
     async def _list_stored_objects(self, request):
         return {
-            OBJECT_LIST_KEY: [obj for obj in self._objects.values()]
+            OBJECT_LIST_KEY: list(self._objects.values())
+        }
+
+    async def _list_compatible_objects(self, request):
+        return {
+            OBJECT_ID_LIST_KEY: [{OBJECT_ID_KEY: k} for k in self._objects.keys()]
         }
 
     async def _clear_objects(self, request):

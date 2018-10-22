@@ -26,10 +26,12 @@ HexStr_ = str
 VALUE_SEPARATOR = ','
 
 OBJECT_ID_KEY = 'object_id'
+OBJECT_INTERFACE_KEY = 'object_if'
 OBJECT_TYPE_KEY = 'object_type'
 OBJECT_DATA_KEY = 'object_data'
 OBJECT_LIST_KEY = 'objects'
 PROFILE_LIST_KEY = 'profiles'
+OBJECT_ID_LIST_KEY = 'object_ids'
 
 
 OpcodeEnum = Enum(Int8ul,
@@ -44,6 +46,7 @@ OpcodeEnum = Enum(Int8ul,
                   CLEAR_OBJECTS=8,
                   REBOOT=9,
                   FACTORY_RESET=10,
+                  LIST_COMPATIBLE_OBJECTS=11,
                   )
 
 ErrorcodeEnum = Enum(Int8ul,
@@ -372,6 +375,7 @@ class Command(ABC):
 # Reoccurring data types - can be used as a macro
 _PROFILE_LIST = Struct(PROFILE_LIST_KEY / ProfileListAdapter())
 _OBJECT_ID = Struct(OBJECT_ID_KEY / Int16ul)
+_OBJECT_INTERFACE = Struct(OBJECT_INTERFACE_KEY / Int16ul)
 _OBJECT_TYPE = Struct(OBJECT_TYPE_KEY / Int16ul)
 _OBJECT_DATA = Struct(OBJECT_DATA_KEY / GreedyBytes)
 _OBJECT = _OBJECT_ID + _PROFILE_LIST + _OBJECT_TYPE + _OBJECT_DATA
@@ -427,6 +431,13 @@ class ListStoredObjectsCommand(Command):
     _REQUEST = None
     _RESPONSE = None
     _VALUES = (OBJECT_LIST_KEY, _OBJECT)
+
+
+class ListCompatibleObjectsCommand(Command):
+    _OPCODE = OpcodeEnum.LIST_COMPATIBLE_OBJECTS
+    _REQUEST = _OBJECT_INTERFACE
+    _RESPONSE = None
+    _VALUES = (OBJECT_ID_LIST_KEY, _OBJECT_ID)
 
 
 class ClearObjectsCommand(Command):

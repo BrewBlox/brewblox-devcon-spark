@@ -104,3 +104,9 @@ def test_crc_failure():
     cmd = commands.WriteObjectCommand.from_encoded('0A00')
     with pytest.raises(exceptions.CRCFailed):
         cmd.decoded_request
+
+
+def test_too_many_args():
+    cmd1 = commands.RebootCommand.from_args()
+    cmd2 = commands.RebootCommand.from_args(unused_arg=True)
+    assert cmd1.encoded_request == cmd2.encoded_request

@@ -70,8 +70,8 @@ async def test_decode_errors(app, client, cdc):
 
 
 async def test_invalid_object(app, client, cdc):
-    assert await cdc.encode('InvalidObject', {'args': True}) == (0, b'\x00')
-    assert await cdc.decode(0, b'\xAA') == ('InvalidObject', {})
+    assert await cdc.encode('InvalidLink', {'args': True}) == (0, b'\x00')
+    assert await cdc.decode(0, b'\xAA') == ('InvalidLink', {})
 
 
 async def test_encode_constraint(app, client, cdc):
@@ -93,3 +93,13 @@ async def test_encode_delta_sec(app, client, cdc):
     })
     dec_id, dec_val = await cdc.decode(enc_id, enc_val)
     assert dec_val['deltaV[delta_degC / second]'] == pytest.approx(100, 0.1)
+
+
+async def test_transcode_interfaces(app, client, cdc):
+    types = [
+        'EdgeCase',
+        'BalancerLink',
+        'SetpointSensorPair',
+        'SetpointSensorPairLink'
+    ]
+    assert [await cdc.decode(await cdc.encode(t)) for t in types] == types
