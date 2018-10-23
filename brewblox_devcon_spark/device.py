@@ -20,7 +20,7 @@ from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                             PROFILE_LIST_KEY)
 
-OBJECT_LINK_POSTFIX = '<>'
+OBJECT_LINK_POSTFIX = '>'
 ServiceId_ = str
 ControllerId_ = int
 FindIdFunc_ = Callable[[twinkeydict.TwinKeyDict, Any], Awaitable[Any]]
