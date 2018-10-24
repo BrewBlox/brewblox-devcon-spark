@@ -8,11 +8,10 @@ from brewblox_service import features, scheduler
 from brewblox_devcon_spark import (commander, commander_sim, datastore, device,
                                    status)
 from brewblox_devcon_spark.codec import codec
-from brewblox_devcon_spark.device import OBJECT_DATA_KEY, OBJECT_ID_KEY
+from brewblox_devcon_spark.device import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
+                                          OBJECT_LIST_KEY)
 
 TESTED = device.__name__
-
-N_SYS_OBJ = len(datastore.SYS_OBJECTS)
 
 
 def generate_obj():
@@ -87,19 +86,20 @@ async def test_transcoding(app, client, cmder, store, ctrl, mocker):
 
 async def test_list_transcoding(app, client, cmder, store, ctrl, mocker):
     obj_type, obj_data = generate_obj()
+    ids = {f'obj{i}' for i in range(5)}
 
-    for i in range(5):
-        store[f'obj{i}', 300+i] = dict()
+    for i, id in enumerate(ids):
+        store[id, 300+i] = dict()
 
         await ctrl.create_object({
-            'object_id': f'obj{i}',
+            'object_id': id,
             'profiles': [0],
             'object_type': obj_type,
             'object_data': obj_data
         })
 
     retval = await ctrl.list_stored_objects()
-    assert len(retval['objects']) == 5 + N_SYS_OBJ
+    assert ids.issubset({obj[OBJECT_ID_KEY] for obj in retval[OBJECT_LIST_KEY]})
 
 
 async def test_resolve_id(app, client, store, mocker, ctrl):
