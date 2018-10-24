@@ -19,7 +19,9 @@ from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
                                                   PROFILE_LIST_KEY)
 from brewblox_devcon_spark.codec import codec
 
-N_SYS_OBJ = len(datastore.SYS_OBJECTS)
+
+def ret_ids(objects):
+    return {obj[API_ID_KEY] for obj in objects}
 
 
 @pytest.fixture
@@ -132,21 +134,23 @@ async def test_invalid_input(app, client, object_args):
 
 
 async def test_create_performance(app, client, object_args):
+    num_items = 50
+    ids = [f'id{num}' for num in range(num_items)]
+
     def custom(num):
         return {
-            API_ID_KEY: f'id{num}',
+            API_ID_KEY: ids[num],
             PROFILE_LIST_KEY: object_args[PROFILE_LIST_KEY],
             API_TYPE_KEY: object_args[API_TYPE_KEY],
             API_DATA_KEY: object_args[API_DATA_KEY]
         }
 
-    num_items = 50
     coros = [client.post('/objects', json=custom(i))for i in range(num_items)]
     responses = await asyncio.gather(*coros)
     assert [retv.status for retv in responses] == [200]*num_items
 
     retd = await response(client.get('/objects'))
-    assert len(retd) == num_items + N_SYS_OBJ
+    assert set(ids).issubset(ret_ids(retd))
 
 
 async def test_read(app, client, object_args):
@@ -184,11 +188,11 @@ async def test_delete(app, client, object_args):
 
 async def test_stored_objects(app, client, object_args):
     retd = await response(client.get('/stored_objects'))
-    assert len(retd) == N_SYS_OBJ
+    base_num = len(retd)
 
     await client.post('/objects', json=object_args)
     retd = await response(client.get('/stored_objects'))
-    assert len(retd) == 1 + N_SYS_OBJ
+    assert len(retd) == 1 + base_num
 
     retd = await response(client.get('/stored_objects/testobj'))
     assert retd[API_ID_KEY] == 'testobj'
@@ -198,13 +202,15 @@ async def test_stored_objects(app, client, object_args):
 
 
 async def test_clear(app, client, object_args):
+    n_sys_obj = len(await response(client.get('/objects')))
+
     for i in range(5):
         object_args[API_ID_KEY] = f'id{i}'
         await client.post('/objects', json=object_args)
 
-    assert len(await response(client.get('/objects'))) == 5 + N_SYS_OBJ
+    assert len(await response(client.get('/objects'))) == 5 + n_sys_obj
     await client.delete('/objects')
-    assert len(await response(client.get('/objects'))) == N_SYS_OBJ
+    assert len(await response(client.get('/objects'))) == n_sys_obj
 
 
 @pytest.mark.parametrize('input_id', [
