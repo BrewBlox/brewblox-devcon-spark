@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0e\x42\x61lancer.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xb7\x01\n\x08\x42\x61lancer\x12\x30\n\x07\x63lients\x18\x01 \x03(\x0b\x32\x1f.blox.Balancer.BalancedActuator\x1aq\n\x10\x42\x61lancedActuator\x12\x1d\n\x02id\x18\x01 \x01(\rB\x11\x8a\xb5\x18\x02\x18\x05\x92?\x02\x38\x10\x8a\xb5\x18\x02(\x01\x12\x1f\n\trequested\x18\x02 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x1d\n\x07granted\x18\x03 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 :\x06\x92?\x03H\xb5\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x0e\x42\x61lancer.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xcb\x01\n\x08\x42\x61lancer\x12\x38\n\x07\x63lients\x18\x01 \x03(\x0b\x32\x1f.blox.Balancer.BalancedActuatorB\x06\x8a\xb5\x18\x02(\x01\x1a}\n\x10\x42\x61lancedActuator\x12\x1d\n\x02id\x18\x01 \x01(\rB\x11\x8a\xb5\x18\x02\x18\x05\x92?\x02\x38\x10\x8a\xb5\x18\x02(\x01\x12%\n\trequested\x18\x02 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12#\n\x07granted\x18\x03 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01:\x06\x92?\x03H\xb5\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -48,14 +48,14 @@ _BALANCER_BALANCEDACTUATOR = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='granted', full_name='blox.Balancer.BalancedActuator.granted', index=2,
       number=3, type=17, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -68,8 +68,8 @@ _BALANCER_BALANCEDACTUATOR = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=117,
-  serialized_end=230,
+  serialized_start=125,
+  serialized_end=250,
 )
 
 _BALANCER = _descriptor.Descriptor(
@@ -85,7 +85,7 @@ _BALANCER = _descriptor.Descriptor(
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002(\001'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -99,7 +99,7 @@ _BALANCER = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=55,
-  serialized_end=238,
+  serialized_end=258,
 )
 
 _BALANCER_BALANCEDACTUATOR.containing_type = _BALANCER
@@ -126,5 +126,6 @@ _sym_db.RegisterMessage(Balancer.BalancedActuator)
 _BALANCER_BALANCEDACTUATOR.fields_by_name['id']._options = None
 _BALANCER_BALANCEDACTUATOR.fields_by_name['requested']._options = None
 _BALANCER_BALANCEDACTUATOR.fields_by_name['granted']._options = None
+_BALANCER.fields_by_name['clients']._options = None
 _BALANCER._options = None
 # @@protoc_insertion_point(module_scope)

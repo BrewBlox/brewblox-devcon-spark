@@ -12,22 +12,24 @@ LOGGER = brewblox_logger(__name__)
 
 OBJECT_ID_START = 100
 SYS_OBJECTS = [
-    {
-        'keys': ['__profiles', 1],
-        'data': {}
-    },
-    {
-        'keys': ['__sysinfo', 2],
-        'data': {}
-    },
-    {
-        'keys': ['__time', 3],
-        'data': {}
-    },
-    {
-        'keys': ['__onewirebus', 4],
-        'data': {}
-    },
+    {'keys': keys, 'data': {}}
+    for keys in [
+        ['__profiles', 1],
+        ['__sysinfo', 2],
+        ['__time', 3],
+        ['__onewirebus', 4],
+        # Spark V3
+        ['__pin_bottom_1', 10],
+        ['__pin_bottom_2', 11],
+        ['__pin_top_1', 12],
+        ['__pin_top_2', 13],
+        ['__pin_top_3', 14],
+        # Spark V1/V2
+        ['__actuator_0', 15],
+        ['__actuator_1', 16],
+        ['__actuator_2', 17],
+        ['__actuator_3', 18],
+    ]
 ]
 
 
