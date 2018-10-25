@@ -13,6 +13,7 @@ message BrewbloxFieldOptions {
     ActuatorDigitalLink = 6;
     BalancerLink = 7;
     MutexLink = 8;
+    OneWireDeviceLink = 9;
   }
   enum UnitType {
       NotSet = 0;

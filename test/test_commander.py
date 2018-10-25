@@ -71,6 +71,12 @@ async def test_on_data_error(mocker, conduit_mock, sparky):
     assert logger_mock.error.call_count == 1
 
 
+async def test_on_event(mocker, conduit_mock, sparky):
+    logger_mock = mocker.spy(commander, 'LOGGER')
+    await sparky._on_event(conduit_mock, 'hello')
+    assert logger_mock.info.call_count == 1
+
+
 async def test_command(conduit_mock, sparky):
     await sparky._on_data(conduit_mock, '07 83 | 00 00 00')
 
