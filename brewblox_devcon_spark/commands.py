@@ -47,6 +47,7 @@ OpcodeEnum = Enum(Int8ul,
                   REBOOT=9,
                   FACTORY_RESET=10,
                   LIST_COMPATIBLE_OBJECTS=11,
+                  DISCOVER_OBJECTS=12,
                   )
 
 ErrorcodeEnum = Enum(Int8ul,
@@ -433,13 +434,6 @@ class ListStoredObjectsCommand(Command):
     _VALUES = (OBJECT_LIST_KEY, _OBJECT)
 
 
-class ListCompatibleObjectsCommand(Command):
-    _OPCODE = OpcodeEnum.LIST_COMPATIBLE_OBJECTS
-    _REQUEST = _OBJECT_INTERFACE
-    _RESPONSE = None
-    _VALUES = (OBJECT_ID_LIST_KEY, _OBJECT_ID)
-
-
 class ClearObjectsCommand(Command):
     _OPCODE = OpcodeEnum.CLEAR_OBJECTS
     _REQUEST = None
@@ -459,3 +453,17 @@ class RebootCommand(Command):
     _REQUEST = None
     _RESPONSE = None
     _VALUES = None
+
+
+class ListCompatibleObjectsCommand(Command):
+    _OPCODE = OpcodeEnum.LIST_COMPATIBLE_OBJECTS
+    _REQUEST = _OBJECT_INTERFACE
+    _RESPONSE = None
+    _VALUES = (OBJECT_ID_LIST_KEY, _OBJECT_ID)
+
+
+class DiscoverObjectsCommand(Command):
+    _OPCODE = OpcodeEnum.DISCOVER_OBJECTS
+    _REQUEST = None
+    _RESPONSE = None
+    _VALUES = (OBJECT_ID_LIST_KEY, _OBJECT_ID)

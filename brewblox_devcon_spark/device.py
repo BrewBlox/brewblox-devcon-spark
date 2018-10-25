@@ -234,3 +234,4 @@ class SparkController(features.ServiceFeature):
     factory_reset = partialmethod(_execute, commands.FactoryResetCommand)
     reboot = partialmethod(_execute, commands.RebootCommand)
     list_compatible_objects = partialmethod(_execute, commands.ListCompatibleObjectsCommand)
+    discover_objects = partialmethod(_execute, commands.DiscoverObjectsCommand)

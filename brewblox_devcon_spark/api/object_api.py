@@ -151,11 +151,15 @@ class ObjectApi():
             } for obj in response.get(OBJECT_LIST_KEY, [])
         ]
 
-    async def list_compatible(self, interface: str) -> dict:
+    async def list_compatible(self, interface: str) -> list:
         response = await self._ctrl.list_compatible_objects({
             OBJECT_INTERFACE_KEY: interface,
         })
 
+        return [obj[OBJECT_ID_KEY] for obj in response[OBJECT_ID_LIST_KEY]]
+
+    async def discover(self) -> list:
+        response = await self._ctrl.discover_objects()
         return [obj[OBJECT_ID_KEY] for obj in response[OBJECT_ID_LIST_KEY]]
 
     async def clear_objects(self):
@@ -416,6 +420,21 @@ async def all_compatible(request: web.Request) -> web.Response:
             request.query.get(API_INTERFACE_KEY)
         )
     )
+
+
+@routes.get('/discover_objects')
+async def discover(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Discovers newly connected devices
+    tags:
+    - Spark
+    - Objects
+    operationId: controller.spark.discover
+    produces:
+    - application/json
+    """
+    return web.json_response(await ObjectApi(request.app).discover())
 
 
 @routes.delete('/objects')
