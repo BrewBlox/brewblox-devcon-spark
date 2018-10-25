@@ -58,6 +58,7 @@ class SimulationResponder():
             commands.FactoryResetCommand: self._factory_reset,
             commands.RebootCommand: self._reboot,
             commands.ListCompatibleObjectsCommand: self._list_compatible_objects,
+            commands.DiscoverObjectsCommand: self._discover_objects,
         }
 
         self._modifiers = {
@@ -217,6 +218,11 @@ class SimulationResponder():
     async def _list_compatible_objects(self, request):
         return {
             OBJECT_ID_LIST_KEY: [{OBJECT_ID_KEY: k} for k in self._objects.keys()]
+        }
+
+    async def _discover_objects(self, request):
+        return {
+            OBJECT_ID_LIST_KEY: [{OBJECT_ID_KEY: 1}]
         }
 
     async def _clear_objects(self, request):
