@@ -118,6 +118,9 @@ class SparkCommander(features.ServiceFeature):
             except Exception as ex:
                 LOGGER.warn(f'{self} cleanup task error: {ex}')
 
+    async def _on_event(self, conduit, msg: str):
+        LOGGER.info(f'Spark event: "{msg}"')
+
     async def _on_data(self, conduit, msg: str):
         try:
             raw_request, raw_response = msg.upper().replace(' ', '').split(RESPONSE_SEPARATOR)
@@ -163,11 +166,13 @@ class SparkCommander(features.ServiceFeature):
         await self.shutdown()
         self._conduit = communication.get_conduit(app)
         self._conduit.data_callbacks.add(self._on_data)
+        self._conduit.event_callbacks.add(self._on_event)
         self._cleanup_task = await scheduler.create_task(app, self._cleanup())
 
     async def shutdown(self, *_):
         if self._conduit:
             self._conduit.data_callbacks.discard(self._on_data)
+            self._conduit.event_callbacks.discard(self._on_event)
             self._conduit = None
 
         await scheduler.cancel_task(self.app, self._cleanup_task)
