@@ -167,6 +167,21 @@ class ObjectApi():
         datastore.clear_objects(self._store)
         return {}
 
+    async def reset_objects(self, objects: list) -> list:
+        await self.clear_objects()
+        for obj in objects:
+            obj_id = obj[API_ID_KEY]
+            obj_profiles = obj[PROFILE_LIST_KEY]
+            obj_type = obj[API_TYPE_KEY]
+            obj_data = obj[API_DATA_KEY]
+
+            if (obj_id, None) in self._store:
+                await self.write(obj_id, obj_profiles, obj_type, obj_data)
+            else:
+                await self.create(obj_id, obj_profiles, obj_type, obj_data)
+
+        return await self.all()
+
 
 @routes.post('/objects')
 async def object_create(request: web.Request) -> web.Response:
@@ -351,6 +366,23 @@ async def all_objects(request: web.Request) -> web.Response:
     )
 
 
+@routes.delete('/objects')
+async def clear_objects(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Clear all objects
+    tags:
+    - Spark
+    - Objects
+    operationId: controller.spark.objects.clear
+    produces:
+    - application/json
+    """
+    return web.json_response(
+        await ObjectApi(request.app).clear_objects()
+    )
+
+
 @routes.get('/stored_objects/{id}')
 async def stored_read(request: web.Request) -> web.Response:
     """
@@ -437,18 +469,45 @@ async def discover(request: web.Request) -> web.Response:
     return web.json_response(await ObjectApi(request.app).discover())
 
 
-@routes.delete('/objects')
-async def clear_objects(request: web.Request) -> web.Response:
+@routes.post('/reset_objects')
+async def reset(request: web.Request) -> web.Response:
     """
     ---
-    summary: Clear all objects
+    summary: Delete all blocks on controller, and set to given state
     tags:
     - Spark
     - Objects
-    operationId: controller.spark.objects.clear
+    operationId: controller.spark.objects.reset
     produces:
     - application/json
+    parameters:
+    -
+        in: body
+        name: body
+        description: new objects
+        required: true
+        schema:
+            type: array
+            items:
+                type: object
+                properties:
+                    id:
+                        type: string
+                        example: temp_sensor_1
+                    profiles:
+                        type: array
+                        example: [0, 3, 4]
+                    type:
+                        type: string
+                        example: TempSensorOneWire
+                    data:
+                        type: object
+                        example:
+                            {
+                                "address": "FF",
+                                "offset[delta_degF]": 20,
+                                "value": 200,
+                                "valid": true
+                            }
     """
-    return web.json_response(
-        await ObjectApi(request.app).clear_objects()
-    )
+    return web.json_response(await ObjectApi(request.app).reset_objects(await request.json()))

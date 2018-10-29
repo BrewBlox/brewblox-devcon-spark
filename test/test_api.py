@@ -39,6 +39,16 @@ def object_args():
     }
 
 
+def multi_objects(ids):
+    args = object_args()
+    return [{
+        API_ID_KEY: id,
+        PROFILE_LIST_KEY: args[PROFILE_LIST_KEY],
+        API_TYPE_KEY: args[API_TYPE_KEY],
+        API_DATA_KEY: args[API_DATA_KEY]
+    } for id in ids]
+
+
 @pytest.fixture
 async def app(app, loop):
     """App + controller routes"""
@@ -136,16 +146,9 @@ async def test_invalid_input(app, client, object_args):
 async def test_create_performance(app, client, object_args):
     num_items = 50
     ids = [f'id{num}' for num in range(num_items)]
+    objs = multi_objects(ids)
 
-    def custom(num):
-        return {
-            API_ID_KEY: ids[num],
-            PROFILE_LIST_KEY: object_args[PROFILE_LIST_KEY],
-            API_TYPE_KEY: object_args[API_TYPE_KEY],
-            API_DATA_KEY: object_args[API_DATA_KEY]
-        }
-
-    coros = [client.post('/objects', json=custom(i))for i in range(num_items)]
+    coros = [client.post('/objects', json=obj) for obj in objs]
     responses = await asyncio.gather(*coros)
     assert [retv.status for retv in responses] == [200]*num_items
 
@@ -323,3 +326,21 @@ async def test_list_compatible(app, client, object_args):
 async def test_discover_objects(app, client):
     resp = await response(client.get('/discover_objects'))
     assert resp == ['__profiles']
+
+
+async def test_reset_objects(app, client, object_args):
+    ids = [f'id{num}' for num in range(10)]
+    args = multi_objects(ids)
+    args.append({
+        API_ID_KEY: '__profiles',
+        PROFILE_LIST_KEY: [0],
+        API_TYPE_KEY: 'Profiles',
+        API_DATA_KEY: {
+            'active': [0, 1, 2, 3],
+        },
+    })
+
+    resp = await response(client.post('/reset_objects', json=args))
+    resp_ids = ret_ids(resp)
+    assert set(ids).issubset(resp_ids)
+    assert '__profiles' in resp_ids
