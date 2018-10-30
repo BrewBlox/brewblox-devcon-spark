@@ -17,7 +17,7 @@ LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
 
 SERVICE_ID_PATTERN = re.compile(
-    '^[a-z]{1}[^\[\]\<\>]{0,199}$',
+    r'^[a-z]{1}[^\[\]\<\>]{0,199}$',
     re.IGNORECASE
 )
 SERVICE_ID_RULES = """

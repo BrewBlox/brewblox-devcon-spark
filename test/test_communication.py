@@ -41,17 +41,17 @@ class Collector():
             assert actual_msg == expected_msg
         assert items_left or actual.empty()
 
-    async def verify_events(self, expected: list=None, items_left=False):
+    async def verify_events(self, expected: list = None, items_left=False):
         if expected is None:
             expected = expected_events()
         await self._verify(self.events, expected, items_left)
 
-    async def verify_data(self, expected: list=None, items_left=False):
+    async def verify_data(self, expected: list = None, items_left=False):
         if expected is None:
             expected = expected_data()
         await self._verify(self.data, expected, items_left)
 
-    async def verify(self, expected_events: list=None, expected_data: list=None, items_left=False):
+    async def verify(self, expected_events: list = None, expected_data: list = None, items_left=False):
         await self.verify_events(expected_events, items_left)
         await self.verify_data(expected_data, items_left)
 

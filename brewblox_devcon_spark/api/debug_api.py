@@ -4,8 +4,9 @@ Debug functionality for the Spark REST API
 
 
 from aiohttp import web
-from brewblox_devcon_spark import device
 from brewblox_service import brewblox_logger
+
+from brewblox_devcon_spark import device
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()

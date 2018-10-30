@@ -87,9 +87,9 @@ class Modifier():
 
             yield OptionElement(field, obj, key, base_key, option_value)
 
-        raise StopIteration()
+        return
 
-    def _field_options(self, field: FieldDescriptor, provider: FieldDescriptor=None):
+    def _field_options(self, field: FieldDescriptor, provider: FieldDescriptor = None):
         provider = provider or self._BREWBLOX_PROVIDER
         return field.GetOptions().Extensions[provider]
 

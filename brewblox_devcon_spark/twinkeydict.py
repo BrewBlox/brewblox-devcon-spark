@@ -6,6 +6,7 @@ When looking up objects with both left and right key, asserts that keys point to
 
 import asyncio
 import json
+import warnings
 from collections.abc import MutableMapping
 from concurrent.futures import CancelledError
 from contextlib import suppress
@@ -189,8 +190,8 @@ class TwinKeyFileDict(features.ServiceFeature, TwinKeyDict):
     def __init__(self,
                  app: web.Application,
                  filename: str,
-                 read_only: bool=False,
-                 filter: Callable[[Keys_, Any], bool]=lambda k, v: True
+                 read_only: bool = False,
+                 filter: Callable[[Keys_, Any], bool] = lambda k, v: True
                  ):
         features.ServiceFeature.__init__(self, app)
         TwinKeyDict.__init__(self)
@@ -204,7 +205,7 @@ class TwinKeyFileDict(features.ServiceFeature, TwinKeyDict):
         try:
             self.read_file()
         except FileNotFoundError:
-            LOGGER.warn(f'{self} file not found.')
+            warnings.warn(f'{self} file not found.')
         except Exception:
             LOGGER.error(f'{self} unable to read objects.')
             raise
@@ -260,7 +261,7 @@ class TwinKeyFileDict(features.ServiceFeature, TwinKeyDict):
                 break
 
             except Exception as ex:
-                LOGGER.warn(f'{self} {type(ex).__name__}({ex})')
+                warnings.warn(f'{self} {type(ex).__name__}({ex})')
 
     async def startup(self, app: web.Application):
         await self.shutdown(app)

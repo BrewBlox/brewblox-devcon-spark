@@ -163,6 +163,7 @@ async def test_errfile(errfile_app, client):
     assert await sapi.read_profiles() == [1, 3, 7]
 
 
+@pytest.mark.filterwarnings('ignore::UserWarning')
 async def test_errprofiles(errprofiles_app, client):
     oapi = object_api.ObjectApi(errprofiles_app)
     sapi = system_api.SystemApi(errprofiles_app)

@@ -4,6 +4,7 @@ Implements a protocol and a conduit for async serial communication.
 
 import asyncio
 import re
+import warnings
 from collections import namedtuple
 from concurrent.futures import CancelledError
 from contextlib import suppress
@@ -151,7 +152,7 @@ class SparkConduit(features.ServiceFeature):
             try:
                 await cb(self, message)
             except Exception as ex:
-                LOGGER.warn(f'Unhandled exception in {cb}, message={message}, ex={ex}')
+                warnings.warn(f'Unhandled exception in {cb}, message={message}, ex={ex}')
 
         for cb in callbacks or [_default_on_message]:
             self.app.loop.create_task(call_cb(cb, message))
@@ -213,7 +214,7 @@ class SparkProtocol(asyncio.Protocol):
     def connection_lost(self, exc):
         self._connection_lost_event.set()
         if exc:
-            LOGGER.warning(f'Protocol connection error: {exc}')
+            warnings.warn(f'Protocol connection error: {exc}')
 
     def data_received(self, data):
         self._buffer += data.decode()
@@ -221,7 +222,7 @@ class SparkProtocol(asyncio.Protocol):
         # Annotations use < and > as start/end characters
         # Most annotations can be discarded, except for event messages
         # Event messages are annotations that start with !
-        for event in self._coerce_message_from_buffer(start='<', end='>', filter_expr='^!([\s\S]*)'):
+        for event in self._coerce_message_from_buffer(start='<', end='>', filter_expr=r'^!(.*)'):
             self._on_event(event)
 
         # Once annotations are filtered, all that remains is data
@@ -229,7 +230,7 @@ class SparkProtocol(asyncio.Protocol):
         for data in self._coerce_message_from_buffer(start='^', end='\n'):
             self._on_data(data)
 
-    def _coerce_message_from_buffer(self, start: str, end: str, filter_expr: str=None):
+    def _coerce_message_from_buffer(self, start: str, end: str, filter_expr: str = None):
         """ Filters separate messages from the buffer.
 
         It makes some assumptions about messages:
@@ -282,8 +283,8 @@ def all_ports() -> Iterable[PortType_]:
 
 
 def recognized_ports(
-    allowed: Iterable[DeviceMatch]=KNOWN_DEVICES,
-    serial_number: str=None
+    allowed: Iterable[DeviceMatch] = KNOWN_DEVICES,
+    serial_number: str = None
 ) -> Generator[PortType_, None, None]:
 
     # Construct a regex OR'ing all allowed hardware ID matches
@@ -295,7 +296,7 @@ def recognized_ports(
             yield port
 
 
-def detect_device(device: str=None, serial_number: str=None) -> str:
+def detect_device(device: str = None, serial_number: str = None) -> str:
     if device is None:
         try:
             port = next(recognized_ports(serial_number=serial_number))

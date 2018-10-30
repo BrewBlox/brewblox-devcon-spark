@@ -4,6 +4,7 @@ Persistent configuration. Is read from file on startup, and then periodically fl
 
 import asyncio
 import json
+import warnings
 from concurrent.futures import CancelledError
 from contextlib import contextmanager
 
@@ -28,7 +29,7 @@ class FileConfig(features.ServiceFeature):
         try:
             self.read_file()
         except FileNotFoundError:
-            LOGGER.warn(f'{self} file not found.')
+            warnings.warn(f'{self} file not found.')
         except Exception:
             LOGGER.error(f'{self} unable to read objects.')
             raise
@@ -69,7 +70,7 @@ class FileConfig(features.ServiceFeature):
                 break
 
             except Exception as ex:
-                LOGGER.warn(f'{self} {type(ex).__name__}({ex})')
+                warnings.warn(f'{self} {type(ex).__name__}({ex})')
 
     async def startup(self, app: web.Application):
         await self.shutdown(app)

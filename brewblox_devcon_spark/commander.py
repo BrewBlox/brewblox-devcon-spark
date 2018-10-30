@@ -3,6 +3,7 @@ Command-based device communication
 """
 
 import asyncio
+import warnings
 from collections import defaultdict
 from concurrent.futures import CancelledError, TimeoutError
 from datetime import datetime, timedelta
@@ -116,7 +117,7 @@ class SparkCommander(features.ServiceFeature):
                 break
 
             except Exception as ex:
-                LOGGER.warn(f'{self} cleanup task error: {ex}')
+                warnings.warn(f'{self} cleanup task error: {type(ex).__name__}({ex})')
 
     async def _on_event(self, conduit, msg: str):
         LOGGER.info(f'Spark event: "{msg}"')
@@ -148,7 +149,7 @@ class SparkCommander(features.ServiceFeature):
                 raise exceptions.CommandTimeout()
 
             if not response.fresh:
-                LOGGER.warn(f'Discarding stale response: {response}')
+                warnings.warn(f'Discarding stale response: {response}')
                 continue
 
             # Create a new command of the same type to contain response

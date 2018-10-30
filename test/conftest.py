@@ -20,6 +20,7 @@ def log_enabled():
     """Sets log level to DEBUG for all test functions.
     Allows all logged messages to be captured during pytest runs"""
     logging.getLogger().setLevel(logging.DEBUG)
+    logging.captureWarnings(True)
 
 
 @pytest.fixture(autouse=True)

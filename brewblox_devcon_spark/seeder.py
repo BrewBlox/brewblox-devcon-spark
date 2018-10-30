@@ -5,6 +5,7 @@ Regulates actions that should be taken when the service connects to a controller
 
 import asyncio
 import json
+import warnings
 from datetime import datetime
 
 import aiofiles
@@ -66,12 +67,11 @@ class Seeder(features.ServiceFeature):
                 profiles=[i for i in range(8)],
                 input_type='Ticks',
                 input_data={
-                    'secondsSinceEpoch': now.timestamp(),
-                    'millisSinceBoot': 0
+                    'secondsSinceEpoch': now.timestamp()
                 })
 
         except Exception as ex:  # pragma: no cover
-            LOGGER.warn(f'Failed to seed controller time {type(ex).__name__}({ex})')
+            warnings.warn(f'Failed to seed controller time {type(ex).__name__}({ex})')
 
     async def _seed_objects(self):
         seed_file = self._config['seed_objects']
@@ -82,7 +82,7 @@ class Seeder(features.ServiceFeature):
             async with aiofiles.open(seed_file) as f:
                 seeds = json.loads(await f.read())
         except Exception as ex:
-            LOGGER.warn(f'Failed to read seed file {seed_file} {type(ex).__name__}({ex})')
+            warnings.warn(f'Failed to read seed file {seed_file} {type(ex).__name__}({ex})')
             return
 
         api = object_api.ObjectApi(self.app)
@@ -98,10 +98,10 @@ class Seeder(features.ServiceFeature):
                 LOGGER.info(f'Seeded [{id}]')
 
             except exceptions.ExistingId:
-                LOGGER.warn(f'Skipped seeding [{id}]: duplicate name, or already created')
+                warnings.warn(f'Skipped seeding [{id}]: duplicate name, or already created')
 
             except Exception as ex:
-                LOGGER.warn(f'Failed to seed object: {type(ex).__name__}({ex})')
+                warnings.warn(f'Failed to seed object: {type(ex).__name__}({ex})')
 
     async def _seed_profiles(self):
         if not self._config['seed_profiles']:
@@ -113,4 +113,4 @@ class Seeder(features.ServiceFeature):
             await api.write_profiles(profiles)
 
         except Exception as ex:
-            LOGGER.warn(f'Failed to seed profiles {profiles} {type(ex).__name__}({ex})')
+            warnings.warn(f'Failed to seed profiles {profiles} {type(ex).__name__}({ex})')

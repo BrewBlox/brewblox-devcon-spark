@@ -243,13 +243,13 @@ class Command(ABC):
         return cmd
 
     @classmethod
-    def from_encoded(cls, request: str=None, response: str=None) -> 'Command':
+    def from_encoded(cls, request: str = None, response: str = None) -> 'Command':
         cmd = cls(encoded=(request, response))
         LOGGER.debug(f'{cmd} from encoded: {request} | {response}')
         return cmd
 
     @classmethod
-    def from_decoded(cls, request: dict=None, response: dict=None) -> 'Command':
+    def from_decoded(cls, request: dict = None, response: dict = None) -> 'Command':
         cmd = cls(decoded=(request, response))
         LOGGER.debug(f'{cmd} from decoded: {request} | {response}')
         return cmd
