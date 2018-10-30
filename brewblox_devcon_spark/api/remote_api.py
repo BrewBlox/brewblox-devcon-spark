@@ -9,6 +9,7 @@ they write the object data to the controller.
 
 import asyncio
 import glob
+import warnings
 from concurrent.futures import CancelledError
 from contextlib import suppress
 from functools import partial
@@ -86,7 +87,7 @@ async def _broadcast(app: web.Application,
 
         except Exception as ex:
             if last_broadcast_ok:
-                LOGGER.warn(f'Remote publisher [{routing}] encountered an error: {type(ex).__name__}({ex})')
+                warnings.warn(f'Remote publisher [{routing}] encountered an error: {type(ex).__name__}({ex})')
                 last_broadcast_ok = False
 
 

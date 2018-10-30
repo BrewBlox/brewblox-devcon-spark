@@ -159,12 +159,12 @@ async def test_queue_cleanup(mocker, conduit_mock, sparky, app):
 
 async def test_queue_cleanup_error(mocker, sparky, app):
     mocker.patch(TESTED + '.CLEANUP_INTERVAL', timedelta(milliseconds=10))
-    logger_spy = mocker.spy(commander, 'LOGGER')
+    warning_spy = mocker.spy(commander, 'warnings')
 
     # Trigger an error
     sparky._requests = None
 
     await sparky.startup(app)
     await asyncio.sleep(0.1)
-    assert logger_spy.warn.call_count > 0
+    assert warning_spy.warn.call_count > 0
     assert not sparky._cleanup_task.done()

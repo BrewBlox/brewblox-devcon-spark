@@ -69,7 +69,7 @@ class Codec(features.ServiceFeature):
 
     async def encode(self,
                      obj_type: ObjType_,
-                     values: Decoded_=...
+                     values: Decoded_ = ...
                      ) -> Awaitable[Tuple[ObjType_, Encoded_]]:
         """
         Encode given data to a serializable type.
@@ -103,7 +103,7 @@ class Codec(features.ServiceFeature):
 
     async def decode(self,
                      obj_type: ObjType_,
-                     encoded: Encoded_=...
+                     encoded: Encoded_ = ...
                      ) -> Awaitable[Tuple[ObjType_, Decoded_]]:
         """
         Decodes given data to a Python-compatible type.

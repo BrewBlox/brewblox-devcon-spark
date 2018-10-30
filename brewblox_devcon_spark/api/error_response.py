@@ -20,7 +20,7 @@ def error_response(request: web.Request, ex: Exception, status: int) -> web.Resp
     app = request.app
     message = f'{type(ex).__name__}({str(ex)})'
     debug = app['config']['debug']
-    LOGGER.warn(f'[{request.url}] => {message}', exc_info=debug)
+    LOGGER.error(f'[{request.url}] => {message}', exc_info=debug)
 
     response = {'error': message}
 
