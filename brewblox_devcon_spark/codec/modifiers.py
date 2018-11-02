@@ -153,10 +153,20 @@ class Modifier():
             val = element.obj[element.key]
             new_key = element.base_key
 
+            if options.readonly and self._strip_readonly:
+                del element.obj[element.key]
+                continue
+
             is_list = isinstance(val, (list, set))
 
             if not is_list:
                 val = [val]
+
+            val = [v for v in val if v is not None]
+
+            if not val:
+                del element.obj[element.key]
+                continue
 
             if options.unit and element.postfix:
                 unit = self._unit_name(options.unit)
@@ -176,10 +186,6 @@ class Modifier():
 
             if element.key != new_key:
                 del element.obj[element.key]
-
-            if options.readonly and self._strip_readonly:
-                # Replace with the same type, but empty
-                val = type(val)()
 
             element.obj[new_key] = val
 

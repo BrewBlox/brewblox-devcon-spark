@@ -85,3 +85,12 @@ def test_pack_bit_flags(mod):
 def test_unpack_bit_flags(mod):
     assert mod.unpack_bit_flags(7) == [0, 1, 2]
     assert mod.unpack_bit_flags(255) == [i for i in range(8)]
+
+
+def test_null_values(mod):
+    vals = generate_encoding_data()
+    vals['offset[delta_degF]'] = None
+    vals['address'] = None
+
+    mod.encode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals)
+    assert 'address' not in vals
