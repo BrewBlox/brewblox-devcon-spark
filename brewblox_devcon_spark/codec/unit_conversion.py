@@ -17,17 +17,9 @@ _UREG = UnitRegistry()
 
 UNIT_ALTERNATIVES = {
     'Temp': [
-        'celsius',
         'degC',
-        'fahrenheit',
         'degF',
-        'kelvin',
         'degK',
-    ],
-    'DeltaTemp': [
-        'delta_degC',
-        'delta_degF',
-        'kelvin',
     ],
     'Time': [
         'millisecond',
@@ -37,35 +29,45 @@ UNIT_ALTERNATIVES = {
     ]
 }
 
-UNIT_ALTERNATIVES['DeltaTempPerTime'] = [
-    f'{delta} / {time}'
-    for delta in UNIT_ALTERNATIVES['DeltaTemp']
-    for time in UNIT_ALTERNATIVES['Time']
-]
+
+def derived_cfg(base_cfg):
+    temps = base_cfg['Temp']
+    times = base_cfg['Time']
+    inverse_temps = [f'1 / {temp}' for temp in temps]
+    delta_temps = [temp if temp in ['degK', 'kelvin'] else f'delta_{temp}' for temp in temps]
+    delta_temp_per_times = [f'{delta_temp} / {time}' for delta_temp, time in zip(delta_temps, times)]
+    delta_temp_times = [f'{delta_temp} * {time}' for delta_temp, time in zip(delta_temps, times)]
+
+    return {
+        'Temp': temps,
+        'Time': times,
+        'InverseTemp': inverse_temps,
+        'DeltaTemp': delta_temps,
+        'DeltaTempPerTime': delta_temp_per_times,
+        'DeltaTempTime': delta_temp_times,
+    }
 
 
 class UnitConverter():
 
     def __init__(self):
         # ID: [system_unit, user_unit]
-        self._table = {k: [v, v] for k, v in self.system_units.items()}
+        self._table = derived_cfg({k: [v, v] for k, v in self.system_units.items()})
 
     @property
     def system_units(self):
         return {
             'Temp': 'degC',
-            'DeltaTemp': 'delta_degC',
-            'DeltaTempPerTime': 'delta_degC / second',
             'Time': 'second',
         }
 
     @property
     def user_units(self):
-        return {k: v[1] for k, v in self._table.items()}
+        return {k: self._table[k][1] for k in self.system_units.keys()}
 
     @user_units.setter
     def user_units(self, new_cfg: dict):
-        cfg = {k: [v, new_cfg.get(k, v)] for k, v in self.system_units.items()}
+        cfg = derived_cfg({k: [v, new_cfg.get(k, v)] for k, v in self.system_units.items()})
 
         for id, units in cfg.items():
             try:

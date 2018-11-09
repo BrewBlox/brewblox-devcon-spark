@@ -53,12 +53,6 @@ async def units_put(request: web.Request) -> web.Response:
                 Temp:
                     type: string
                     example: degC
-                DeltaTemp:
-                    type: string
-                    example: delta_degC
-                DeltaTempPerTime:
-                    type: string
-                    example: delta_degC / second
                 Time:
                     type: string
                     example: second
