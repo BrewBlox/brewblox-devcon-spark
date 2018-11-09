@@ -297,21 +297,21 @@ async def test_codec_api(app, client, object_args):
     await client.post('/objects', json=object_args)
 
     default_units = await response(client.get('/codec/units'))
-    assert {'Temp', 'DeltaTemp', 'DeltaTempPerTime', 'Time'} == default_units.keys()
+    assert {'Temp', 'Time'} == default_units.keys()
 
     alternative_units = await response(client.get('/codec/unit_alternatives'))
     assert alternative_units.keys() == default_units.keys()
 
     # offset is a delta_degC value
-    # We'd expect to get the same value in delta_celsius as in kelvin
+    # We'd expect to get the same value in delta_celsius as in degK
 
-    await client.put('/codec/units', json={'DeltaTemp': 'delta_degF'})
+    await client.put('/codec/units', json={'Temp': 'degF'})
     retd = await response(client.get(f'/objects/{object_args[API_ID_KEY]}'))
     assert retd[API_DATA_KEY]['offset[delta_degF]'] == pytest.approx(degF_offset, 0.1)
 
-    await client.put('/codec/units', json={'DeltaTemp': 'kelvin'})
+    await client.put('/codec/units', json={'Temp': 'degK'})
     retd = await response(client.get(f'/objects/{object_args[API_ID_KEY]}'))
-    assert retd[API_DATA_KEY]['offset[kelvin]'] == pytest.approx(degC_offset, 0.1)
+    assert retd[API_DATA_KEY]['offset[degK]'] == pytest.approx(degC_offset, 0.1)
 
     await client.put('/codec/units', json={})
     retd = await response(client.get(f'/objects/{object_args[API_ID_KEY]}'))

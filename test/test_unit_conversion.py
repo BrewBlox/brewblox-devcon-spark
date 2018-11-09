@@ -15,6 +15,8 @@ def unit_ids():
         ('DeltaTemp', 'delta_degC'),
         ('DeltaTempPerTime', 'delta_degC / second'),
         ('Time', 'second'),
+        ('InverseTemp', '1 / degC'),
+        ('DeltaTempTime', 'delta_degC * second'),
     ]
 
 
@@ -36,9 +38,3 @@ def test_update_config(unit_ids):
 
     with pytest.raises(InvalidInput):
         cv.user_units = {'Temp': 'cm'}
-
-
-def test_unit_alternatives(unit_ids):
-    alts = unit_conversion.UNIT_ALTERNATIVES
-    assert alts.keys() == {id[0] for id in unit_ids}
-    assert len(alts['DeltaTempPerTime']) == len(alts['DeltaTemp']) * len(alts['Time'])
