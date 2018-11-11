@@ -1,13 +1,20 @@
-FROM brewblox/brewblox-service:latest
+FROM brewblox/brewblox-service:latest as base
 
+COPY ./dist /build/dist
+
+RUN pip3 install wheel \
+    && pip3 wheel /build/dist/* --wheel-dir=/wheeley
+
+FROM python:3.6-slim
+EXPOSE 5000
 WORKDIR /app
 
-COPY ./dist /app/dist
+COPY --from=base /wheeley /wheeley
 COPY ./config /app/config
 
-EXPOSE 5000
-
-RUN pip3 install /app/dist/* \
-    && pip3 show brewblox-devcon-spark
+RUN ls /wheeley \
+    && pip3 install --no-index --find-links=/wheeley brewblox-devcon-spark \
+    && rm -rf /wheeley \
+    && pip3 freeze
 
 ENTRYPOINT ["python3", "-m", "brewblox_devcon_spark"]
