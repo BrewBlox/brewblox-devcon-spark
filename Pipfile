@@ -16,6 +16,7 @@ protobuf = "*"
 Pint = "*"
 dataclasses = "*"
 aiofiles = "*"
+aiozeroconf = "*"
 
 
 [dev-packages]
