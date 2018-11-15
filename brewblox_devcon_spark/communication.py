@@ -81,11 +81,7 @@ async def connect_tcp(app: web.Application,
                       ) -> Awaitable[ConnectionResult_]:
     host = app['config']['device_host']
     port = app['config']['device_port']
-    transport, protocol = await app.loop.create_connection(
-        factory,
-        host,
-        port
-    )
+    transport, protocol = await app.loop.create_connection(factory, host, port)
     return f'{host}:{port}', transport, protocol
 
 
@@ -101,20 +97,12 @@ async def connect_discovered(app: web.Application,
             pass
 
         try:
-            host, port = await asyncio.wait_for(
-                dns_discovery.discover(app.loop, id),
-                timeout=DNS_DISCOVER_TIMEOUT_S
-            )
-            transport, protocol = await app.loop.create_connection(
-                factory,
-                host,
-                port
-            )
+            host, port = await dns_discovery.discover(app.loop, id, DNS_DISCOVER_TIMEOUT_S)
+            transport, protocol = await app.loop.create_connection(factory, host, port)
             return f'{host}:{port}', transport, protocol
         except TimeoutError:
             pass
 
-        LOGGER.info(f'No valid devices discovered, retry in {DISCOVER_INTERVAL_S}s')
         await asyncio.sleep(DISCOVER_INTERVAL_S)
 
 

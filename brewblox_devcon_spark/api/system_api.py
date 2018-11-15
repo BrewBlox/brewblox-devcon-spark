@@ -3,11 +3,9 @@ Specific endpoints for using system objects
 """
 
 
-import asyncio
 from typing import List
 
 from aiohttp import web
-from aiozeroconf import ServiceBrowser, Zeroconf
 from brewblox_service import brewblox_logger
 
 from brewblox_devcon_spark.api import API_DATA_KEY, object_api
@@ -78,34 +76,3 @@ async def profiles_write(request: web.Request) -> web.Response:
     return web.json_response(
         await SystemApi(request.app).write_profiles(await request.json())
     )
-
-
-class MyListener:
-
-    def remove_service(self, zeroconf, type_, name):
-        LOGGER.info(f'Removed service {name}')
-
-    def add_service(self, zeroconf, type_, name):
-        asyncio.ensure_future(self.found_service(zeroconf, type_, name))
-
-    async def found_service(self, zeroconf, type_, name):
-        info = await zeroconf.get_service_info(type_, name)
-        LOGGER.info(f'Found {info}')
-
-
-@routes.get('/system/dns')
-async def dns_query(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: DNS query
-    tags:
-    - Spark
-    - DNS
-    operationId: spark.dns
-    produces:
-    - application/json
-    """
-    conf = Zeroconf(request.app.loop)
-    listener = MyListener()
-    request.app['config']['browser'] = ServiceBrowser(conf, '_brewblox._tcp.local.', listener)
-    return web.json_response({})

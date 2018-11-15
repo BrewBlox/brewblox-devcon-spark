@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+
+  eventbus:
+    image: rabbitmq:alpine
+
+  spark:
+    image: brewblox/brewblox-devcon-spark:develop
+    depends_on:
+      - eventbus
+    ports:
+      - "5000:5000"
+    volumes:
+      - "./:/app/"
+    command: >
+      --device-id=3f0025000851353532343835

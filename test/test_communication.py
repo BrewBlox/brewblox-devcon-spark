@@ -106,6 +106,7 @@ def transport_mock(mocker):
 
 @pytest.fixture
 def tcp_create_connection_mock(app, mocker):
+    app['config']['device_serial'] = None
     app['config']['device_host'] = 'enterprise'
 
     tcp_transport_mock = Mock()
@@ -122,6 +123,13 @@ def tcp_create_connection_mock(app, mocker):
         CoroutineMock(side_effect=connect)
     )
     return create_connection_mock
+
+
+@pytest.fixture
+def discovery_mock(app, mocker):
+    return mocker.patch.object(
+        communication.dns_discovery, 'discover',
+        CoroutineMock(return_value=('enterprise', 1234)))
 
 
 @pytest.fixture
@@ -330,3 +338,31 @@ async def test_reconnect(app, client, mocker, tcp_create_connection_mock):
     spock._protocol.connection_lost(None)
     await asyncio.sleep(0.01)
     assert tcp_create_connection_mock.call_count == 3
+
+
+async def test_discover(app, client, mocker, tcp_create_connection_mock, discovery_mock):
+    app['config']['device_serial'] = None
+    app['config']['device_host'] = None
+    spock = communication.SparkConduit(app)
+
+    await spock.startup(app)
+    await asyncio.sleep(0.01)
+
+    assert spock.connected
+    assert tcp_create_connection_mock.call_count == 1
+
+
+async def test_discover_repeat(app, client, mocker, tcp_create_connection_mock, discovery_mock):
+    app['config']['device_serial'] = None
+    app['config']['device_host'] = None
+    discovery_mock.side_effect = asyncio.TimeoutError
+    mocker.patch(TESTED + '.DISCOVER_INTERVAL_S', 0.001)
+
+    spock = communication.SparkConduit(app)
+
+    await spock.startup(app)
+    await asyncio.sleep(0.1)
+
+    assert not spock.connected
+    assert tcp_create_connection_mock.call_count == 0
+    assert discovery_mock.call_count > 1

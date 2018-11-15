@@ -13,7 +13,7 @@ BREWBLOX_DNS_TYPE = '_brewblox._tcp.local.'
 LOGGER = brewblox_logger(__name__)
 
 
-async def discover(loop, id: str):
+async def _discover(loop, id: str):
     queue = asyncio.Queue()
     conf = Zeroconf(loop, address_family=[AF_INET])
 
@@ -30,6 +30,8 @@ async def discover(loop, id: str):
         while True:
             info = await queue.get()
             addr = inet_ntoa(info.address)
+            if addr == '0.0.0.0':
+                continue  # discard simulators
             if id is None or info.server == f'{id}.local.':
                 LOGGER.info(f'Discovered {info.name} @ {addr}:{info.port}')
                 return addr, info.port
@@ -37,3 +39,10 @@ async def discover(loop, id: str):
                 LOGGER.info(f'Discarding {info.name} @ {addr}:{info.port}')
     finally:
         await conf.close()
+
+
+async def discover(loop, id: str, timeout: int = 0):
+    if timeout:
+        return await asyncio.wait_for(_discover(loop, id), timeout=timeout)
+    else:
+        return await _discover(loop, id)
