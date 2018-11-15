@@ -28,6 +28,7 @@ setup(
         'pint~=0.8',
         'aiofiles~=0.3.2',
         'dataclasses~=0.6',
+        'aiozeroconf~=0.1.7',
     ],
     python_requires='>=3.6',
     extras_require={'dev': ['tox']},

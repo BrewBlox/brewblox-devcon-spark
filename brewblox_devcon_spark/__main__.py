@@ -41,16 +41,18 @@ def create_parser(default_name='spark'):
                        help='Start in simulation mode. Will not connect to a physical device. [%(default)s]',
                        action='store_true')
     group.add_argument('--device-host',
-                       help='Spark device URL host. Takes precedence over serial connections. [%(default)s]')
+                       help='Spark device URL host. '
+                       'Will connect to this URL regardless of advertised device ID. [%(default)s]')
     group.add_argument('--device-port',
                        help='Spark device URL port when accessing a device over WiFi. [%(default)s]',
                        type=int,
                        default=8332)
     group.add_argument('--device-serial',
-                       help='Spark device serial port. Automatically determined if not set. [%(default)s]')
+                       help='Spark device serial port. Takes precedence over URL connections. '
+                       'Will only connect if device ID matches advertised ID, or is not set. [%(default)s]')
     group.add_argument('--device-id',
                        help='Spark serial number. Any spark is valid if not set. '
-                       'This will be ignored if --device-port is specified. [%(default)s]')
+                       'This will be ignored if --device-host is used. [%(default)s]')
     group.add_argument('--list-devices',
                        action='store_true',
                        help='List connected devices and exit. [%(default)s]')

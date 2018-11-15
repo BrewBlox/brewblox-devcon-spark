@@ -5,6 +5,7 @@ Implements a protocol and a conduit for async serial communication.
 import asyncio
 import re
 import warnings
+from asyncio import TimeoutError
 from collections import namedtuple
 from concurrent.futures import CancelledError
 from contextlib import suppress
@@ -17,11 +18,13 @@ from brewblox_service import brewblox_logger, features, scheduler
 from serial.tools import list_ports
 from serial_asyncio import SerialTransport
 
-from brewblox_devcon_spark import exceptions, status
+from brewblox_devcon_spark import dns_discovery, exceptions, status
 
 LOGGER = brewblox_logger(__name__)
+DNS_DISCOVER_TIMEOUT_S = 20
 DEFAULT_BAUD_RATE = 57600
 RETRY_INTERVAL_S = 1
+DISCOVER_INTERVAL_S = 10
 
 PortType_ = Any
 MessageCallback_ = Callable[['SparkConduit', str], Awaitable]
@@ -78,12 +81,29 @@ async def connect_tcp(app: web.Application,
                       ) -> Awaitable[ConnectionResult_]:
     host = app['config']['device_host']
     port = app['config']['device_port']
-    transport, protocol = await app.loop.create_connection(
-        factory,
-        host,
-        port
-    )
+    transport, protocol = await app.loop.create_connection(factory, host, port)
     return f'{host}:{port}', transport, protocol
+
+
+async def connect_discovered(app: web.Application,
+                             factory: ProtocolFactory_
+                             ) -> Awaitable[ConnectionResult_]:
+    id = app['config']['device_id']
+    LOGGER.info(f'Starting device discovery, id={id}...')
+    while True:
+        try:
+            return await connect_serial(app, factory)
+        except exceptions.ConnectionImpossible:
+            pass
+
+        try:
+            host, port = await dns_discovery.discover(app.loop, id, DNS_DISCOVER_TIMEOUT_S)
+            transport, protocol = await app.loop.create_connection(factory, host, port)
+            return f'{host}:{port}', transport, protocol
+        except TimeoutError:
+            pass
+
+        await asyncio.sleep(DISCOVER_INTERVAL_S)
 
 
 class SparkConduit(features.ServiceFeature):
@@ -124,10 +144,12 @@ class SparkConduit(features.ServiceFeature):
                 on_data=partial(self._do_callbacks, self._data_callbacks)
             )
 
-        if app['config']['device_host']:
+        if app['config']['device_serial']:
+            connect_func = partial(connect_serial, self.app, factory)
+        elif app['config']['device_host']:
             connect_func = partial(connect_tcp, self.app, factory)
         else:
-            connect_func = partial(connect_serial, self.app, factory)
+            connect_func = partial(connect_discovered, self.app, factory)
 
         self._connection_task = await scheduler.create_task(
             self.app,
@@ -179,7 +201,7 @@ class SparkConduit(features.ServiceFeature):
                 break
 
             except Exception as ex:
-                LOGGER.debug(f'Connection failed: {ex}')
+                LOGGER.info(f'Connection failed: {type(ex).__name__}({ex})')
                 await asyncio.sleep(RETRY_INTERVAL_S)
 
             finally:

@@ -149,6 +149,7 @@ async def test_noseed(noseed_app, client):
     }
 
 
+@pytest.mark.filterwarnings('ignore::UserWarning')
 async def test_errfile(errfile_app, client):
     oapi = object_api.ObjectApi(errfile_app)
     sapi = system_api.SystemApi(errfile_app)
