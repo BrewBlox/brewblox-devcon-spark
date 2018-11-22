@@ -21,12 +21,49 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x17\x41nalogConstraints.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"{\n\x10\x41nalogConstraint\x12\x1b\n\x03min\x18\x01 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 H\x00\x12\x1b\n\x03max\x18\x02 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 H\x00\x12\x1f\n\x08\x62\x61lancer\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x07\x92?\x02\x38\x10H\x00\x42\x0c\n\nconstraint\"G\n\x11\x41nalogConstraints\x12\x32\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32\x16.blox.AnalogConstraintB\x05\x92?\x02\x10\x08\x62\x06proto3')
+  serialized_pb=_b('\n\x17\x41nalogConstraints.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xef\x01\n\x10\x41nalogConstraint\x12\x1b\n\x03min\x18\x01 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 H\x00\x12\x1b\n\x03max\x18\x02 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 H\x00\x12\x33\n\x08\x62\x61lanced\x18\x03 \x01(\x0b\x32\x1f.blox.AnalogConstraint.BalancedH\x00\x12\x18\n\x08limiting\x18\x64 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x1a\x44\n\x08\x42\x61lanced\x12\x1f\n\nbalancerId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x07\x92?\x02\x38\x10\x12\x17\n\x07granted\x18\x02 \x01(\rB\x06\x8a\xb5\x18\x02(\x01\x42\x0c\n\nconstraint\"r\n\x11\x41nalogConstraints\x12\x32\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32\x16.blox.AnalogConstraintB\x05\x92?\x02\x10\x08\x12)\n\runconstrained\x18\x02 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
 
 
+
+_ANALOGCONSTRAINT_BALANCED = _descriptor.Descriptor(
+  name='Balanced',
+  full_name='blox.AnalogConstraint.Balanced',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='balancerId', full_name='blox.AnalogConstraint.Balanced.balancerId', index=0,
+      number=1, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\002\030\007\222?\0028\020'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='granted', full_name='blox.AnalogConstraint.Balanced.granted', index=1,
+      number=2, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\002(\001'), file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=221,
+  serialized_end=289,
+)
 
 _ANALOGCONSTRAINT = _descriptor.Descriptor(
   name='AnalogConstraint',
@@ -50,16 +87,23 @@ _ANALOGCONSTRAINT = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=_b('\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='balancer', full_name='blox.AnalogConstraint.balancer', index=2,
-      number=3, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
+      name='balanced', full_name='blox.AnalogConstraint.balanced', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002\030\007\222?\0028\020'), file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='limiting', full_name='blox.AnalogConstraint.limiting', index=3,
+      number=100, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\002(\001'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
-  nested_types=[],
+  nested_types=[_ANALOGCONSTRAINT_BALANCED, ],
   enum_types=[
   ],
   serialized_options=None,
@@ -71,8 +115,8 @@ _ANALOGCONSTRAINT = _descriptor.Descriptor(
       name='constraint', full_name='blox.AnalogConstraint.constraint',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=63,
-  serialized_end=186,
+  serialized_start=64,
+  serialized_end=303,
 )
 
 
@@ -90,6 +134,13 @@ _ANALOGCONSTRAINTS = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\222?\002\020\010'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='unconstrained', full_name='blox.AnalogConstraints.unconstrained', index=1,
+      number=2, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -102,10 +153,12 @@ _ANALOGCONSTRAINTS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=188,
-  serialized_end=259,
+  serialized_start=305,
+  serialized_end=419,
 )
 
+_ANALOGCONSTRAINT_BALANCED.containing_type = _ANALOGCONSTRAINT
+_ANALOGCONSTRAINT.fields_by_name['balanced'].message_type = _ANALOGCONSTRAINT_BALANCED
 _ANALOGCONSTRAINT.oneofs_by_name['constraint'].fields.append(
   _ANALOGCONSTRAINT.fields_by_name['min'])
 _ANALOGCONSTRAINT.fields_by_name['min'].containing_oneof = _ANALOGCONSTRAINT.oneofs_by_name['constraint']
@@ -113,19 +166,27 @@ _ANALOGCONSTRAINT.oneofs_by_name['constraint'].fields.append(
   _ANALOGCONSTRAINT.fields_by_name['max'])
 _ANALOGCONSTRAINT.fields_by_name['max'].containing_oneof = _ANALOGCONSTRAINT.oneofs_by_name['constraint']
 _ANALOGCONSTRAINT.oneofs_by_name['constraint'].fields.append(
-  _ANALOGCONSTRAINT.fields_by_name['balancer'])
-_ANALOGCONSTRAINT.fields_by_name['balancer'].containing_oneof = _ANALOGCONSTRAINT.oneofs_by_name['constraint']
+  _ANALOGCONSTRAINT.fields_by_name['balanced'])
+_ANALOGCONSTRAINT.fields_by_name['balanced'].containing_oneof = _ANALOGCONSTRAINT.oneofs_by_name['constraint']
 _ANALOGCONSTRAINTS.fields_by_name['constraints'].message_type = _ANALOGCONSTRAINT
 DESCRIPTOR.message_types_by_name['AnalogConstraint'] = _ANALOGCONSTRAINT
 DESCRIPTOR.message_types_by_name['AnalogConstraints'] = _ANALOGCONSTRAINTS
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 AnalogConstraint = _reflection.GeneratedProtocolMessageType('AnalogConstraint', (_message.Message,), dict(
+
+  Balanced = _reflection.GeneratedProtocolMessageType('Balanced', (_message.Message,), dict(
+    DESCRIPTOR = _ANALOGCONSTRAINT_BALANCED,
+    __module__ = 'AnalogConstraints_pb2'
+    # @@protoc_insertion_point(class_scope:blox.AnalogConstraint.Balanced)
+    ))
+  ,
   DESCRIPTOR = _ANALOGCONSTRAINT,
   __module__ = 'AnalogConstraints_pb2'
   # @@protoc_insertion_point(class_scope:blox.AnalogConstraint)
   ))
 _sym_db.RegisterMessage(AnalogConstraint)
+_sym_db.RegisterMessage(AnalogConstraint.Balanced)
 
 AnalogConstraints = _reflection.GeneratedProtocolMessageType('AnalogConstraints', (_message.Message,), dict(
   DESCRIPTOR = _ANALOGCONSTRAINTS,
@@ -135,8 +196,11 @@ AnalogConstraints = _reflection.GeneratedProtocolMessageType('AnalogConstraints'
 _sym_db.RegisterMessage(AnalogConstraints)
 
 
+_ANALOGCONSTRAINT_BALANCED.fields_by_name['balancerId']._options = None
+_ANALOGCONSTRAINT_BALANCED.fields_by_name['granted']._options = None
 _ANALOGCONSTRAINT.fields_by_name['min']._options = None
 _ANALOGCONSTRAINT.fields_by_name['max']._options = None
-_ANALOGCONSTRAINT.fields_by_name['balancer']._options = None
+_ANALOGCONSTRAINT.fields_by_name['limiting']._options = None
 _ANALOGCONSTRAINTS.fields_by_name['constraints']._options = None
+_ANALOGCONSTRAINTS.fields_by_name['unconstrained']._options = None
 # @@protoc_insertion_point(module_scope)
