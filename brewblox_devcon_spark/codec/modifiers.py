@@ -18,6 +18,8 @@ from google.protobuf.message import Message
 import brewblox_pb2
 from brewblox_devcon_spark.codec.unit_conversion import UnitConverter
 
+STRIP_UNLOGGED_KEY = 'strip_unlogged'
+
 _path_extension.avoid_lint_errors()
 LOGGER = brewblox_logger(__name__)
 
@@ -99,7 +101,7 @@ class Modifier():
     def _link_name(self, link_num: int) -> str:
         return brewblox_pb2.BrewbloxFieldOptions.LinkType.Name(link_num)
 
-    def encode_options(self, message: Message, obj: dict) -> dict:
+    def encode_options(self, message: Message, obj: dict, codec_opts: dict) -> dict:
         """
         Modifies `obj` based on Protobuf options and dict key postfixes.
 
@@ -191,7 +193,7 @@ class Modifier():
 
         return obj
 
-    def decode_options(self, message: Message, obj: dict) -> dict:
+    def decode_options(self, message: Message, obj: dict, codec_opts: dict) -> dict:
         """
         Modifies `obj` based on brewblox protobuf options.
         Supported options:
@@ -239,10 +241,16 @@ class Modifier():
                 }
             }
         """
+        strip_unlogged = codec_opts.get(STRIP_UNLOGGED_KEY)
+
         for element in self._find_options(message.DESCRIPTOR, obj):
             options = self._field_options(element.field)
             val = element.obj[element.key]
             new_key = element.key
+
+            if not options.logged and strip_unlogged:
+                del element.obj[element.key]
+                continue
 
             is_list = isinstance(val, (list, set))
 

@@ -4,13 +4,13 @@ Offers encoding and decoding of objects.
 """
 
 from copy import deepcopy
-from typing import Awaitable, Callable, Dict, Tuple, Union
+from typing import Awaitable, Callable, Dict, Optional, Tuple, Union
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
 
 from brewblox_devcon_spark import datastore, exceptions
-from brewblox_devcon_spark.codec.modifiers import Modifier
+from brewblox_devcon_spark.codec.modifiers import STRIP_UNLOGGED_KEY, Modifier
 from brewblox_devcon_spark.codec.transcoders import (Decoded_, Encoded_,
                                                      ObjType_, Transcoder)
 from brewblox_devcon_spark.codec.unit_conversion import (UNIT_ALTERNATIVES,
@@ -21,6 +21,7 @@ TranscodeFunc_ = Callable[
     Awaitable[Tuple[ObjType_, Union[Encoded_, Decoded_]]]
 ]
 UNIT_CONFIG_KEY = 'user_units'
+STRIP_UNLOGGED_KEY = STRIP_UNLOGGED_KEY
 
 LOGGER = brewblox_logger(__name__)
 
@@ -69,7 +70,8 @@ class Codec(features.ServiceFeature):
 
     async def encode(self,
                      obj_type: ObjType_,
-                     values: Decoded_ = ...
+                     values: Decoded_ = ...,
+                     opts: Optional[dict] = None
                      ) -> Awaitable[Tuple[ObjType_, Encoded_]]:
         """
         Encode given data to a serializable type.
@@ -85,6 +87,9 @@ class Codec(features.ServiceFeature):
             values (Decoded_):
                 Decoded representation of the message.
 
+            opts (Optional[dict]):
+                Additional options that are passed to the transcoder.
+
         Returns:
             Tuple[ObjType_, Encoded_]:
                 Serializable values of both object type and values.
@@ -93,9 +98,10 @@ class Codec(features.ServiceFeature):
             raise TypeError(f'Unable to encode [{type(values).__name__}] values')
 
         try:
+            opts = opts or {}
             trc = Transcoder.get(obj_type, self._mod)
             return trc.type_int() if values is ... \
-                else (trc.type_int(), trc.encode(deepcopy(values)))
+                else (trc.type_int(), trc.encode(deepcopy(values), opts))
         except Exception as ex:
             msg = f'{type(ex).__name__}({ex})'
             LOGGER.debug(msg, exc_info=True)
@@ -103,7 +109,8 @@ class Codec(features.ServiceFeature):
 
     async def decode(self,
                      obj_type: ObjType_,
-                     encoded: Encoded_ = ...
+                     encoded: Encoded_ = ...,
+                     opts: Optional[dict] = None
                      ) -> Awaitable[Tuple[ObjType_, Decoded_]]:
         """
         Decodes given data to a Python-compatible type.
@@ -119,6 +126,9 @@ class Codec(features.ServiceFeature):
             values (Encoded_):
                 Encoded representation of the message.
 
+            opts (Optional[dict]):
+                Additional options that are passed to the transcoder.
+
         Returns:
             Tuple[ObjType_, Decoded_]:
                 Python-compatible values of both object type and values
@@ -127,9 +137,10 @@ class Codec(features.ServiceFeature):
             raise TypeError(f'Unable to decode [{type(encoded).__name__}] values')
 
         try:
+            opts = opts or {}
             trc = Transcoder.get(obj_type, self._mod)
             return trc.type_str() if encoded is ... \
-                else (trc.type_str(), trc.decode(encoded))
+                else (trc.type_str(), trc.decode(encoded, opts))
         except Exception as ex:
             msg = f'{type(ex).__name__}({ex})'
             LOGGER.debug(msg, exc_info=True)
