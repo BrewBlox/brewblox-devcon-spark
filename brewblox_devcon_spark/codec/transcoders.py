@@ -54,11 +54,11 @@ class Transcoder(ABC):
         pass  # pragma: no cover
 
     @abstractmethod
-    def encode(self, values: Decoded_) -> Encoded_:
+    def encode(self, values: Decoded_, opts: dict) -> Encoded_:
         pass  # pragma: no cover
 
     @abstractmethod
-    def decode(encoded: Encoded_) -> Decoded_:
+    def decode(encoded: Encoded_, opts: dict) -> Decoded_:
         pass  # pragma: no cover
 
     @classmethod
@@ -79,10 +79,10 @@ class LinkTypeTranscoder(Transcoder):
     def type_str(cls) -> str:
         return brewblox_pb2.BrewbloxFieldOptions.LinkType.Name(cls._ENUM_VAL)
 
-    def encode(self, values: Decoded_) -> Encoded_:
+    def encode(self, values: Decoded_, _) -> Encoded_:
         return b'\x00'
 
-    def decode(self, values: Encoded_) -> Decoded_:
+    def decode(self, values: Encoded_, _) -> Decoded_:
         return dict()
 
 
@@ -101,12 +101,12 @@ class InactiveObjectTranscoder(Transcoder):
     def type_str(cls) -> str:
         return 'InactiveObject'
 
-    def encode(self, values: Decoded_) -> Encoded_:
+    def encode(self, values: Decoded_, _) -> Encoded_:
         type_id = values['actualType']
         encoded = Transcoder.get(type_id, self.mod).type_int().to_bytes(2, 'little')
         return encoded
 
-    def decode(self, encoded: Encoded_) -> Decoded_:
+    def decode(self, encoded: Encoded_, _) -> Decoded_:
         type_id = int.from_bytes(encoded, 'little')
         return {'actualType': Transcoder.get(type_id, self.mod).type_str()}
 
@@ -121,11 +121,11 @@ class ProfilesTranscoder(Transcoder):
     def type_str(cls) -> str:
         return 'Profiles'
 
-    def encode(self, values: Decoded_) -> Encoded_:
+    def encode(self, values: Decoded_, _) -> Encoded_:
         active = self.mod.pack_bit_flags(values.get('active', []))
         return active.to_bytes(1, 'little')
 
-    def decode(self, encoded: Encoded_) -> Decoded_:
+    def decode(self, encoded: Encoded_, _) -> Decoded_:
         active = self.mod.unpack_bit_flags(int.from_bytes(encoded, 'little'))
         return {'active': active}
 
@@ -143,13 +143,13 @@ class ProtobufTranscoder(Transcoder):
     def create_message(self) -> Message:
         return self.__class__._MESSAGE()
 
-    def encode(self, values: Decoded_) -> Encoded_:
+    def encode(self, values: Decoded_, _) -> Encoded_:
         LOGGER.debug(f'encoding {values} to {self.__class__._MESSAGE}')
         obj = json_format.ParseDict(values, self.create_message())
         data = obj.SerializeToString()
         return data + b'\x00'  # Include null terminator
 
-    def decode(self, encoded: Encoded_) -> Decoded_:
+    def decode(self, encoded: Encoded_, _) -> Decoded_:
         # Remove null terminator
         encoded = encoded[:-1]
 
@@ -167,13 +167,13 @@ class ProtobufTranscoder(Transcoder):
 
 class OptionsTranscoder(ProtobufTranscoder):
 
-    def encode(self, values: Decoded_) -> Encoded_:
-        self.mod.encode_options(self.create_message(), values)
-        return super().encode(values)
+    def encode(self, values: Decoded_, opts: dict) -> Encoded_:
+        self.mod.encode_options(self.create_message(), values, opts)
+        return super().encode(values, opts)
 
-    def decode(self, encoded: Encoded_) -> Decoded_:
-        decoded = super().decode(encoded)
-        self.mod.decode_options(self.create_message(), decoded)
+    def decode(self, encoded: Encoded_, opts: dict) -> Decoded_:
+        decoded = super().decode(encoded, opts)
+        self.mod.decode_options(self.create_message(), decoded, opts)
         return decoded
 
 

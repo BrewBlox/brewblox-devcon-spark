@@ -344,3 +344,35 @@ async def test_reset_objects(app, client, object_args):
     resp_ids = ret_ids(resp)
     assert set(ids).issubset(resp_ids)
     assert '__profiles' in resp_ids
+
+
+async def test_logged_objects(app, client):
+    args = {
+        API_ID_KEY: 'edgey',
+        PROFILE_LIST_KEY: [0],
+        API_TYPE_KEY: 'EdgeCase',
+        API_DATA_KEY: {
+            'logged': 12345,
+            'unLogged': 54321,
+        }
+    }
+
+    await client.post('/objects', json=args)
+    listed = await response(client.get('/objects'))
+    logged = await response(client.get('/logged_objects'))
+
+    # list_objects returns everything
+    obj = listed[-1]
+    assert args[API_ID_KEY] == obj[API_ID_KEY]
+    obj_data = obj[API_DATA_KEY]
+    assert obj_data is not None
+    assert 'logged' in obj_data
+    assert 'unLogged' in obj_data
+
+    # log_objects strips all keys that are not explicitly marked as logged
+    obj = logged[-1]
+    assert args[API_ID_KEY] == obj[API_ID_KEY]
+    obj_data = obj[API_DATA_KEY]
+    assert obj_data is not None
+    assert 'logged' in obj_data
+    assert 'unLogged' not in obj_data

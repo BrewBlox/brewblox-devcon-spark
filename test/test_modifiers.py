@@ -53,7 +53,7 @@ def generate_decoding_data():
 
 def test_encode_options(mod):
     vals = generate_encoding_data()
-    mod.encode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals)
+    mod.encode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals, {})
 
     # converted to (delta) degC
     # scaled * 256
@@ -63,14 +63,14 @@ def test_encode_options(mod):
 
 def test_decode_options(mod):
     vals = generate_decoding_data()
-    mod.decode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals)
+    mod.decode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals, {})
     assert vals['offset[delta_degF]'] == pytest.approx(20, 0.1)
     assert vals['value[degF]'] == pytest.approx(10, 0.1)
 
 
 def test_decode_no_system(k_mod):
     vals = generate_decoding_data()
-    k_mod.decode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals)
+    k_mod.decode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals, {})
     assert vals['offset[kelvin]'] > 0
     assert vals['value[kelvin]'] > 0
 
@@ -92,5 +92,5 @@ def test_null_values(mod):
     vals['offset[delta_degF]'] = None
     vals['address'] = None
 
-    mod.encode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals)
+    mod.encode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals, {})
     assert 'address' not in vals

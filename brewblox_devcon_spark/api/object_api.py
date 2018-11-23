@@ -29,6 +29,14 @@ class ObjectApi():
         self._ctrl: device.SparkController = device.get_controller(app)
         self._store: twinkeydict.TwinKeyDict = datastore.get_datastore(app)
 
+    def _as_api_object(self, obj: dict):
+        return {
+            API_ID_KEY: obj[OBJECT_ID_KEY],
+            PROFILE_LIST_KEY: obj[PROFILE_LIST_KEY],
+            API_TYPE_KEY: obj[OBJECT_TYPE_KEY],
+            API_DATA_KEY: obj[OBJECT_DATA_KEY]
+        }
+
     async def create(self,
                      input_id: str,
                      profiles: list,
@@ -69,13 +77,7 @@ class ObjectApi():
         response = await self._ctrl.read_object({
             OBJECT_ID_KEY: input_id
         })
-
-        return {
-            API_ID_KEY: response[OBJECT_ID_KEY],
-            PROFILE_LIST_KEY: response[PROFILE_LIST_KEY],
-            API_TYPE_KEY: response[OBJECT_TYPE_KEY],
-            API_DATA_KEY: response[OBJECT_DATA_KEY]
-        }
+        return self._as_api_object(response)
 
     async def write(self,
                     input_id: str,
@@ -92,13 +94,7 @@ class ObjectApi():
             OBJECT_TYPE_KEY: input_type,
             OBJECT_DATA_KEY: input_data
         })
-
-        return {
-            API_ID_KEY: response[OBJECT_ID_KEY],
-            PROFILE_LIST_KEY: response[PROFILE_LIST_KEY],
-            API_TYPE_KEY: response[OBJECT_TYPE_KEY],
-            API_DATA_KEY: response[OBJECT_DATA_KEY]
-        }
+        return self._as_api_object(response)
 
     async def delete(self, input_id: str) -> dict:
         """
@@ -117,39 +113,21 @@ class ObjectApi():
 
     async def all(self) -> list:
         response = await self._ctrl.list_objects()
-
-        return [
-            {
-                API_ID_KEY: obj[OBJECT_ID_KEY],
-                PROFILE_LIST_KEY: obj[PROFILE_LIST_KEY],
-                API_TYPE_KEY: obj[OBJECT_TYPE_KEY],
-                API_DATA_KEY: obj[OBJECT_DATA_KEY]
-            } for obj in response.get(OBJECT_LIST_KEY, [])
-        ]
+        return [self._as_api_object(obj) for obj in response.get(OBJECT_LIST_KEY, [])]
 
     async def read_stored(self, input_id: str) -> dict:
         response = await self._ctrl.read_stored_object({
             OBJECT_ID_KEY: input_id
         })
-
-        return {
-            API_ID_KEY: response[OBJECT_ID_KEY],
-            PROFILE_LIST_KEY: response[PROFILE_LIST_KEY],
-            API_TYPE_KEY: response[OBJECT_TYPE_KEY],
-            API_DATA_KEY: response[OBJECT_DATA_KEY]
-        }
+        return self._as_api_object(response)
 
     async def all_stored(self) -> dict:
         response = await self._ctrl.list_stored_objects()
+        return [self._as_api_object(obj) for obj in response.get(OBJECT_LIST_KEY, [])]
 
-        return [
-            {
-                API_ID_KEY: obj[OBJECT_ID_KEY],
-                PROFILE_LIST_KEY: obj[PROFILE_LIST_KEY],
-                API_TYPE_KEY: obj[OBJECT_TYPE_KEY],
-                API_DATA_KEY: obj[OBJECT_DATA_KEY]
-            } for obj in response.get(OBJECT_LIST_KEY, [])
-        ]
+    async def all_logged(self) -> dict:
+        response = await self._ctrl.log_objects()
+        return [self._as_api_object(obj) for obj in response.get(OBJECT_LIST_KEY, [])]
 
     async def list_compatible(self, interface: str) -> list:
         response = await self._ctrl.list_compatible_objects({
@@ -424,6 +402,23 @@ async def all_stored(request: web.Request) -> web.Response:
     """
     return web.json_response(
         await ObjectApi(request.app).all_stored()
+    )
+
+
+@routes.get('/logged_objects')
+async def all_logged(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Lists all objects, with unlogged data keys stripped
+    tags:
+    - Spark
+    - Objects
+    operationId: controller.spark.logged.all
+    produces:
+    - application/json
+    """
+    return web.json_response(
+        await ObjectApi(request.app).all_logged()
     )
 
 

@@ -6,7 +6,7 @@ import random
 import string
 from contextlib import suppress
 from functools import partialmethod
-from typing import Any, Awaitable, Callable, List, Type
+from typing import Any, Awaitable, Callable, List, Optional, Type
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
@@ -72,7 +72,11 @@ class SparkResolver():
             for n in range(32)
         ])
 
-    async def _process_data(self, codec_func: codec.TranscodeFunc_, content: dict) -> Awaitable[dict]:
+    async def _process_data(self,
+                            codec_func: codec.TranscodeFunc_,
+                            content: dict,
+                            opts: Optional[dict]
+                            ) -> Awaitable[dict]:
         objects_to_process = self._get_content_objects(content)
 
         for obj in objects_to_process:
@@ -80,13 +84,14 @@ class SparkResolver():
             with suppress(KeyError):
                 new_type, new_data = await codec_func(
                     obj[OBJECT_TYPE_KEY],
-                    obj[OBJECT_DATA_KEY]
+                    obj[OBJECT_DATA_KEY],
+                    opts=opts,
                 )
                 obj[OBJECT_TYPE_KEY] = new_type
                 obj[OBJECT_DATA_KEY] = new_data
             # transcode interface (type only)
             with suppress(KeyError):
-                new_type = await codec_func(obj[OBJECT_INTERFACE_KEY])
+                new_type = await codec_func(obj[OBJECT_INTERFACE_KEY], opts=opts)
                 obj[OBJECT_INTERFACE_KEY] = new_type
 
         return content
@@ -153,22 +158,22 @@ class SparkResolver():
 
         return content
 
-    async def encode_data(self, content: dict) -> Awaitable[dict]:
-        return await self._process_data(self._codec.encode, content)
+    async def encode_data(self, content: dict, opts: Optional[dict]) -> Awaitable[dict]:
+        return await self._process_data(self._codec.encode, content, opts)
 
-    async def decode_data(self, content: dict) -> Awaitable[dict]:
-        return await self._process_data(self._codec.decode, content)
+    async def decode_data(self, content: dict, opts: Optional[dict]) -> Awaitable[dict]:
+        return await self._process_data(self._codec.decode, content, opts)
 
-    async def resolve_controller_id(self, content: dict) -> Awaitable[dict]:
+    async def resolve_controller_id(self, content: dict, _=None) -> Awaitable[dict]:
         return await self._resolve_id(self._find_controller_id, content)
 
-    async def resolve_service_id(self, content: dict) -> Awaitable[dict]:
+    async def resolve_service_id(self, content: dict, _=None) -> Awaitable[dict]:
         return await self._resolve_id(self._find_service_id, content)
 
-    async def resolve_controller_links(self, content: dict) -> Awaitable[dict]:
+    async def resolve_controller_links(self, content: dict, _=None) -> Awaitable[dict]:
         return await self._resolve_links(self._find_controller_id, content)
 
-    async def resolve_service_links(self, content: dict) -> Awaitable[dict]:
+    async def resolve_service_links(self, content: dict, _=None) -> Awaitable[dict]:
         return await self._resolve_links(self._find_service_id, content)
 
 
@@ -186,6 +191,7 @@ class SparkController(features.ServiceFeature):
 
     async def _execute(self,
                        command_type: Type[commands.Command],
+                       command_opts: Optional[dict],
                        content_: dict = None,
                        **kwargs
                        ) -> Awaitable[dict]:
@@ -202,7 +208,7 @@ class SparkController(features.ServiceFeature):
                 resolver.resolve_controller_links,
                 resolver.encode_data,
             ]:
-                content = await afunc(content)
+                content = await afunc(content, command_opts)
 
             # execute
             retval = await self._commander.execute(
@@ -215,7 +221,7 @@ class SparkController(features.ServiceFeature):
                 resolver.resolve_service_links,
                 resolver.resolve_service_id,
             ]:
-                retval = await afunc(retval)
+                retval = await afunc(retval, command_opts)
 
             return retval
 
@@ -223,15 +229,16 @@ class SparkController(features.ServiceFeature):
             LOGGER.debug(f'Failed to execute {command_type}: {type(ex).__name__}({ex})')
             raise ex
 
-    read_object = partialmethod(_execute, commands.ReadObjectCommand)
-    write_object = partialmethod(_execute, commands.WriteObjectCommand)
-    create_object = partialmethod(_execute, commands.CreateObjectCommand)
-    delete_object = partialmethod(_execute, commands.DeleteObjectCommand)
-    list_objects = partialmethod(_execute, commands.ListObjectsCommand)
-    read_stored_object = partialmethod(_execute, commands.ReadStoredObjectCommand)
-    list_stored_objects = partialmethod(_execute, commands.ListStoredObjectsCommand)
-    clear_objects = partialmethod(_execute, commands.ClearObjectsCommand)
-    factory_reset = partialmethod(_execute, commands.FactoryResetCommand)
-    reboot = partialmethod(_execute, commands.RebootCommand)
-    list_compatible_objects = partialmethod(_execute, commands.ListCompatibleObjectsCommand)
-    discover_objects = partialmethod(_execute, commands.DiscoverObjectsCommand)
+    read_object = partialmethod(_execute, commands.ReadObjectCommand, None)
+    write_object = partialmethod(_execute, commands.WriteObjectCommand, None)
+    create_object = partialmethod(_execute, commands.CreateObjectCommand, None)
+    delete_object = partialmethod(_execute, commands.DeleteObjectCommand, None)
+    list_objects = partialmethod(_execute, commands.ListObjectsCommand, None)
+    log_objects = partialmethod(_execute, commands.ListObjectsCommand, {codec.STRIP_UNLOGGED_KEY: True})
+    read_stored_object = partialmethod(_execute, commands.ReadStoredObjectCommand, None)
+    list_stored_objects = partialmethod(_execute, commands.ListStoredObjectsCommand, None)
+    clear_objects = partialmethod(_execute, commands.ClearObjectsCommand, None)
+    factory_reset = partialmethod(_execute, commands.FactoryResetCommand, None)
+    reboot = partialmethod(_execute, commands.RebootCommand, None)
+    list_compatible_objects = partialmethod(_execute, commands.ListCompatibleObjectsCommand, None)
+    discover_objects = partialmethod(_execute, commands.DiscoverObjectsCommand, None)

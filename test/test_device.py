@@ -80,8 +80,8 @@ async def test_transcoding(app, client, cmder, store, ctrl, mocker):
     retval = await ctrl.create_object(object_args)
     assert retval['object_data']['settings']['address'] == 'ff'.rjust(16, '0')
 
-    encode_spy.assert_any_call(obj_type, obj_data)
-    decode_spy.assert_any_call(enc_type, enc_data)
+    encode_spy.assert_any_call(obj_type, obj_data, None)
+    decode_spy.assert_any_call(enc_type, enc_data, None)
 
 
 async def test_list_transcoding(app, client, cmder, store, ctrl, mocker):
