@@ -2,6 +2,7 @@
 Catches Python error, and returns appropriate error codes
 """
 
+import asyncio
 import traceback
 
 from aiohttp import web, web_exceptions
@@ -34,6 +35,9 @@ def error_response(request: web.Request, ex: Exception, status: int) -> web.Resp
 async def controller_error_middleware(request: web.Request, handler: web.RequestHandler) -> web.Response:
     try:
         return await handler(request)
+
+    except asyncio.CancelledError:
+        raise  # pragma: no cover
 
     except web_exceptions.HTTPError:
         raise  # pragma: no cover

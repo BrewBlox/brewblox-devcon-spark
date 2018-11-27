@@ -19,7 +19,7 @@ setup(
     keywords='brewing brewpi brewblox embedded controller spark service',
     packages=find_packages(exclude=['test']),
     install_requires=[
-        'brewblox-service~=0.12.0',
+        'brewblox-service~=0.13.0',
         'dpath~=1.4.2',
         'pyserial-asyncio==0.4',
         'construct==2.9.45',
@@ -29,6 +29,7 @@ setup(
         'aiofiles~=0.3.2',
         'dataclasses~=0.6',
         'aiozeroconf~=0.1.7',
+        'aiohttp-sse~=2.0.0',
     ],
     python_requires='>=3.6',
     extras_require={'dev': ['tox']},
