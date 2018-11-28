@@ -8,8 +8,8 @@ from brewblox_service import features, scheduler
 from brewblox_devcon_spark import (commander, commander_sim, datastore, device,
                                    status)
 from brewblox_devcon_spark.codec import codec
-from brewblox_devcon_spark.device import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
-                                          OBJECT_LIST_KEY)
+from brewblox_devcon_spark.device import (GENERATED_ID_PREFIX, OBJECT_DATA_KEY,
+                                          OBJECT_ID_KEY, OBJECT_LIST_KEY)
 
 TESTED = device.__name__
 
@@ -116,7 +116,7 @@ async def test_resolve_id(app, client, store, mocker, ctrl):
 
     # Service ID not found: create placeholder
     generated = await resolver.resolve_service_id({OBJECT_ID_KEY: 456})
-    assert generated[OBJECT_ID_KEY].startswith('generated|')
+    assert generated[OBJECT_ID_KEY].startswith(GENERATED_ID_PREFIX)
 
 
 async def test_resolve_links(app, client, store):

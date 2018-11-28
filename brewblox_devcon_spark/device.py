@@ -21,6 +21,7 @@ from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             PROFILE_LIST_KEY)
 
 OBJECT_LINK_POSTFIX = '>'
+GENERATED_ID_PREFIX = 'UNKNOWN|'
 ServiceId_ = str
 ControllerId_ = int
 FindIdFunc_ = Callable[[twinkeydict.TwinKeyDict, Any], Awaitable[Any]]
@@ -67,7 +68,7 @@ class SparkResolver():
 
     @staticmethod
     def _random_string():
-        return 'generated|' + ''.join([
+        return GENERATED_ID_PREFIX + ''.join([
             random.choice(string.ascii_letters + string.digits)
             for n in range(32)
         ])
