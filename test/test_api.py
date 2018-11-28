@@ -10,7 +10,8 @@ from brewblox_service import scheduler
 from brewblox_devcon_spark import (commander_sim, datastore, device,
                                    exceptions, status)
 from brewblox_devcon_spark.api import (alias_api, codec_api, debug_api,
-                                       error_response, object_api, system_api)
+                                       error_response, object_api, sse_api,
+                                       system_api)
 from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
                                                   API_TYPE_KEY,
                                                   OBJECT_DATA_KEY,
@@ -39,8 +40,7 @@ def object_args():
     }
 
 
-def multi_objects(ids):
-    args = object_args()
+def multi_objects(ids, args):
     return [{
         API_ID_KEY: id,
         PROFILE_LIST_KEY: args[PROFILE_LIST_KEY],
@@ -65,6 +65,7 @@ async def app(app, loop):
     object_api.setup(app)
     system_api.setup(app)
     codec_api.setup(app)
+    sse_api.setup(app)
 
     return app
 
@@ -146,7 +147,7 @@ async def test_invalid_input(app, client, object_args):
 async def test_create_performance(app, client, object_args):
     num_items = 50
     ids = [f'id{num}' for num in range(num_items)]
-    objs = multi_objects(ids)
+    objs = multi_objects(ids, object_args)
 
     coros = [client.post('/objects', json=obj) for obj in objs]
     responses = await asyncio.gather(*coros)
@@ -330,7 +331,7 @@ async def test_discover_objects(app, client):
 
 async def test_reset_objects(app, client, object_args):
     ids = [f'id{num}' for num in range(10)]
-    args = multi_objects(ids)
+    args = multi_objects(ids, object_args)
     args.append({
         API_ID_KEY: '__profiles',
         PROFILE_LIST_KEY: [0],

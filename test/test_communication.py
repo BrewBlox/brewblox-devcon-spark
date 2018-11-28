@@ -51,12 +51,11 @@ class Collector():
             expected = expected_data()
         await self._verify(self.data, expected, items_left)
 
-    async def verify(self, expected_events: list = None, expected_data: list = None, items_left=False):
-        await self.verify_events(expected_events, items_left)
-        await self.verify_data(expected_data, items_left)
+    async def verify(self, events: list = None, data: list = None, items_left=False):
+        await self.verify_events(events, items_left)
+        await self.verify_data(data, items_left)
 
 
-@pytest.fixture
 def serial_data():
     chunks = [
         '<add>0A<id>00<OneWir<!connected:sen',
@@ -73,7 +72,6 @@ def serial_data():
     return [c.encode() for c in chunks]
 
 
-@pytest.fixture
 def expected_events():
     return [
         'connected:sensor',
@@ -84,7 +82,6 @@ def expected_events():
     ]
 
 
-@pytest.fixture
 def expected_data():
     return [
         '0A''00''01''28C80E9A0300009C',
@@ -200,18 +197,18 @@ async def test_coerce_messages(loop):
     await coll.verify()
 
 
-async def test_coerce_partial(loop, serial_data):
+async def test_coerce_partial(loop):
     coll = Collector(loop)
     p = communication.SparkProtocol(coll.on_event, coll.on_data)
 
-    p.data_received(serial_data[0])
+    p.data_received(serial_data()[0])
     await coll.verify([], [])
 
-    p.data_received(serial_data[1])
+    p.data_received(serial_data()[1])
     await coll.verify(['connected:sensor'], [])
 
-    p.data_received(serial_data[2])
-    p.data_received(serial_data[3])
+    p.data_received(serial_data()[2])
+    p.data_received(serial_data()[3])
     await coll.verify(['spaced message'], ['0A''00''01''28C80E9A0300009C'])
 
 
@@ -267,14 +264,14 @@ async def test_conduit_remove_callbacks(bound_collector, bound_conduit):
     await bound_collector.verify_data([])
 
 
-async def test_conduit_err_callback(bound_conduit, expected_events):
+async def test_conduit_err_callback(bound_conduit):
     error_cb = CoroutineMock(side_effect=RuntimeError('boom!'))
     bound_conduit.event_callbacks.add(error_cb)
 
     # no errors should be thrown
     _send_chunks(bound_conduit._protocol)
     await asyncio.sleep(0.01)
-    assert error_cb.call_args_list == [call(bound_conduit, e) for e in expected_events]
+    assert error_cb.call_args_list == [call(bound_conduit, e) for e in expected_events()]
 
 
 async def test_all_ports(comports_mock):

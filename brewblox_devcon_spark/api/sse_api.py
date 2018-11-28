@@ -37,8 +37,6 @@ class SSEPublisher(features.ServiceFeature):
         self._task: asyncio.Task = None
         self._queues: Set[asyncio.Queue] = weakref.WeakSet()
 
-        app.on_shutdown.append(self.before_shutdown)
-
     def __str__(self):
         return f'{type(self).__name__}'
 
@@ -122,4 +120,5 @@ async def subscribe(request: web.Request) -> web.Response:
                 raise data
             await resp.send(json.dumps(data))
 
-    return resp
+    # Note: we don't ever expect to return the response
+    # Either the client cancels the request, or an exception is raised by publisher
