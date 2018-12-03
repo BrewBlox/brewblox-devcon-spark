@@ -8,10 +8,8 @@ brewblox-service = "~=0.13.0"
 dpath = "*"
 pyserial-asyncio = "*"
 construct = "*"
-deprecated = "*"
 protobuf = "*"
 Pint = "*"
-dataclasses = "*"
 aiofiles = "*"
 aiozeroconf = "*"
 aiohttp-sse = "*"
@@ -28,7 +26,7 @@ asynctest = "*"
 brewblox-tools = "*"
 
 [requires]
-python_version = "3.6"
+python_version = "3.7"
 
 [scripts]
 dist = "python setup.py sdist"
