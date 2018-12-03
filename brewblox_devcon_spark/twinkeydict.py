@@ -13,8 +13,9 @@ from contextlib import suppress
 from typing import Any, Callable, Dict, Hashable, Iterator, Tuple
 
 import aiofiles
-from aiohttp import web
+from aiohttp import ClientSession, client_exceptions, web
 from brewblox_service import brewblox_logger, features, scheduler
+
 from dataclasses import dataclass
 
 Keys_ = Tuple[Hashable, Hashable]
@@ -22,6 +23,7 @@ Keys_ = Tuple[Hashable, Hashable]
 LOGGER = brewblox_logger(__name__)
 
 FLUSH_DELAY_S = 5
+COUCH_URL = 'http://datastore:5984'
 
 
 class TwinKeyError(Exception):
@@ -272,3 +274,69 @@ class TwinKeyFileDict(features.ServiceFeature, TwinKeyDict):
     async def shutdown(self, app: web.Application):
         self._changed_event = None
         await scheduler.cancel_task(app, self._flush_task)
+
+
+class TwinKeyCouchDict(features.ServiceFeature, TwinKeyDict):
+    def __init__(self,
+                 app: web.Application,
+                 filter: Callable[[Keys_, Any], bool] = lambda k, v: True
+                 ):
+        features.ServiceFeature.__init__(self, app)
+        TwinKeyDict.__init__(self)
+        self._session: ClientSession = None
+        self._db_name = '{}-spark-db'.format(app['config']['name'])
+
+    async def startup(self, app: web.Application):
+        await self.shutdown(app)
+        self._session = await ClientSession(raise_for_status=True).__aenter__()
+
+        LOGGER.info('Contacting datastore...')
+        for i in range(10):
+            try:
+                await self._session.head(COUCH_URL)
+            except Exception as ex:
+                LOGGER.info(f'retrying... {ex}')
+                await asyncio.sleep(2)
+            else:
+                break
+        else:
+            raise RuntimeError('Datastore unreachable')
+
+        try:
+            await self._session.head(f'{COUCH_URL}/{self._db_name}')
+        except client_exceptions.ClientConnectionError:
+            await self._session.put(f'{COUCH_URL}/{self._db_name}')
+
+        LOGGER.info(f'Datastore "{self._db_name}" ok')
+
+        resp = await self._session.get(
+            f'{COUCH_URL}/{self._db_name}/_all_docs',
+            params=[('include_docs', 'true')])
+        LOGGER.info(await resp.json())
+
+    async def shutdown(self, app: web.Application):
+        if self._session:
+            await self._session.__aexit__(None, None, None)
+            self._session = None
+
+    async def _write_item(self, keys, item):
+        url = f'{COUCH_URL}/{self._db_name}/{keys[0]}-{keys[1]}'
+        content = {'keys': keys, 'item': item}
+        LOGGER.info(url)
+        resp = await self._session.put(url, json=content)
+        if resp.status == 409:
+            LOGGER.info('changing')
+            resp = await self._session.get(url)
+            resp_body = await resp.json()
+            await self._session.put(url, json=content, params=[('rev', resp_body['_rev'])])
+
+    def __setitem__(self, keys, item):
+        TwinKeyDict.__setitem__(self, keys, item)
+        if self.app.loop:
+            self.app.loop.create_task(self._write_item(keys, item))
+
+    def __delitem__(self, keys):
+        self._check_writable()
+        TwinKeyDict.__delitem__(self, keys)
+        if self._changed_event:
+            self._changed_event.set()

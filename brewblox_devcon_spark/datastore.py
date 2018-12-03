@@ -47,6 +47,9 @@ def setup(app: web.Application):
     config = file_config.FileConfig(app, app['config']['config'])
     features.add(app, config)
 
+    couchstore = twinkeydict.TwinKeyCouchDict(app)
+    features.add(app, couchstore)
+
 
 def get_datastore(app: web.Application) -> twinkeydict.TwinKeyDict:
     return features.get(app, key='object_store')

@@ -5,13 +5,19 @@ services:
   eventbus:
     image: rabbitmq:alpine
 
+  datastore:
+    image: treehouses/couchdb
+    ports:
+      - "5984:5984"
+    volumes:
+      - "./couchdb:/opt/couchdb/data"
+
   spark:
     image: brewblox/brewblox-devcon-spark:develop
     depends_on:
       - eventbus
+      - datastore
     ports:
       - "5000:5000"
-    volumes:
-      - "./:/app/"
     command: >
-      --device-id=3f0025000851353532343835
+      --simulation
