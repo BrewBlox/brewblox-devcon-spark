@@ -1,4 +1,4 @@
-FROM brewblox/rpi-python:3.7 as base
+FROM brewblox/brewblox-service:rpi-latest as base
 
 COPY ./dist /app/dist
 

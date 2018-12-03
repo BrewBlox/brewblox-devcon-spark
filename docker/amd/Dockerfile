@@ -1,9 +1,9 @@
-FROM python:3.7 as base
+FROM brewblox/brewblox-service:latest as base
 
-COPY ./dist /build/dist
+COPY ./dist /app/dist
 
 RUN pip3 install wheel \
-    && pip3 wheel /build/dist/* --wheel-dir=/wheeley --find-links=/wheeley
+    && pip3 wheel /app/dist/* --wheel-dir=/wheeley --find-links=/wheeley
 
 FROM python:3.7-slim
 EXPOSE 5000
