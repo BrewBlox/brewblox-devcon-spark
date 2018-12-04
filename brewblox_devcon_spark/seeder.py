@@ -12,7 +12,6 @@ from brewblox_service import brewblox_logger, features, scheduler
 
 from brewblox_devcon_spark import datastore, status
 from brewblox_devcon_spark.api import object_api
-from brewblox_devcon_spark.codec import codec
 
 LOGGER = brewblox_logger(__name__)
 
@@ -56,13 +55,16 @@ class Seeder(features.ServiceFeature):
 
     async def _seed_datastore(self):
         try:
-            app_name = self.app['config']['name']
+            sys_info = await object_api.ObjectApi(self.app).read(datastore.SYSINFO_CONTROLLER_ID)
+            device_id = sys_info[object_api.API_DATA_KEY]['deviceId']
+
             await asyncio.gather(
-                datastore.get_datastore(self.app).read(f'{app_name}-blocks-db'),
-                datastore.get_config(self.app).read(f'{app_name}-config-db'),
+                datastore.get_datastore(self.app).read(f'{device_id}-blocks-db'),
+                datastore.get_config(self.app).read(f'{device_id}-config-db'),
             )
 
-            codec.get_codec(self.app).update_unit_config()
+        except asyncio.CancelledError:
+            raise
 
         except Exception as ex:  # pragma: no cover
             warnings.warn(f'Failed to seed datastore - {type(ex).__name__}({ex})')
@@ -78,6 +80,9 @@ class Seeder(features.ServiceFeature):
                 input_data={
                     'secondsSinceEpoch': now.timestamp()
                 })
+
+        except asyncio.CancelledError:
+            raise
 
         except Exception as ex:  # pragma: no cover
             warnings.warn(f'Failed to seed controller time - {type(ex).__name__}({ex})')

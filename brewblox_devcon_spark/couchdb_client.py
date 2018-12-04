@@ -1,5 +1,4 @@
 import asyncio
-import warnings
 from typing import Any, Awaitable, Tuple
 
 from aiohttp import ClientSession, client_exceptions, web
@@ -8,7 +7,7 @@ from brewblox_service import brewblox_logger, features
 LOGGER = brewblox_logger(__name__)
 
 DB_CONTACT_TIMEOUT_S = 30
-DB_RETRY_INTERVAL_S = 2
+DB_RETRY_INTERVAL_S = 1
 COUCH_URL = 'http://couchstore:5984'
 
 
@@ -103,7 +102,8 @@ class CouchDBClient(features.ServiceFeature):
             raise
 
         except Exception as ex:
-            warnings.warn(f'{self} {type(ex).__name__}({ex})')
+            LOGGER.error(f'{self} {type(ex).__name__}({ex})')
+            raise
 
     async def write(self, database: str, document: str, rev: str, data: Any) -> Awaitable[str]:
         kwargs = {

@@ -12,8 +12,8 @@ services:
     # volumes:
     #   - "./couchdb:/opt/couchdb/data"
 
-  # sparksimulator:
-  #   image: brewblox/firmware-simulator:develop
+  sparksimulator:
+    image: brewblox/firmware-simulator:develop
 
   spark:
     image: brewblox/brewblox-devcon-spark:develop
@@ -25,5 +25,6 @@ services:
       - "5000:5000"
     volumes:
       - "./:/app/"
-    # command: >
+    command: >
+      --device-host=sparksimulator
     #   --volatile
