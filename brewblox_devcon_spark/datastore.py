@@ -34,21 +34,22 @@ SYS_OBJECTS = [
 
 
 def setup(app: web.Application):
-    store = twinkeydict.TwinKeyFileDict(
-        app=app,
-        filename=app['config']['database'],
-        # System objects should not be serialized to file
-        filter=lambda k, v: k[1] >= OBJECT_ID_START
-    )
+    # store = twinkeydict.TwinKeyFileDict(
+    #     app=app,
+    #     filename=app['config']['database'],
+    #     # System objects should not be serialized to file
+    #     filter=lambda k, v: k[1] >= OBJECT_ID_START
+    # )
 
+    store = twinkeydict.TwinKeyCouchDict(app)
     features.add(app, store, key='object_store')
     add_system_objects(store)
 
     config = file_config.FileConfig(app, app['config']['config'])
     features.add(app, config)
 
-    couchstore = twinkeydict.TwinKeyCouchDict(app)
-    features.add(app, couchstore)
+    # couchstore = twinkeydict.TwinKeyCouchDict(app)
+    # features.add(app, couchstore)
 
 
 def get_datastore(app: web.Application) -> twinkeydict.TwinKeyDict:

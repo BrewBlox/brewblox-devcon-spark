@@ -12,7 +12,7 @@ import aiofiles
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, scheduler
 
-from brewblox_devcon_spark import exceptions, status
+from brewblox_devcon_spark import datastore, exceptions, status
 from brewblox_devcon_spark.api import (API_DATA_KEY, API_ID_KEY,
                                        API_PROFILE_LIST_KEY, API_TYPE_KEY,
                                        object_api, system_api)
@@ -52,7 +52,8 @@ class Seeder(features.ServiceFeature):
             await asyncio.gather(
                 self._seed_time(),
                 self._seed_objects(),
-                self._seed_profiles()
+                self._seed_profiles(),
+                self._seed_datastore(),
             )
             await spark_status.disconnected.wait()
 
@@ -72,6 +73,9 @@ class Seeder(features.ServiceFeature):
 
         except Exception as ex:  # pragma: no cover
             warnings.warn(f'Failed to seed controller time {type(ex).__name__}({ex})')
+
+    async def _seed_datastore(self):
+        await datastore.get_datastore(self.app).read_db()
 
     async def _seed_objects(self):
         seed_file = self._config['seed_objects']
