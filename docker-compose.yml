@@ -5,12 +5,12 @@ services:
   eventbus:
     image: rabbitmq:alpine
 
-  datastore:
+  couchstore:
     image: treehouses/couchdb
     ports:
       - "5984:5984"
-    volumes:
-      - "./couchdb:/opt/couchdb/data"
+    # volumes:
+    #   - "./couchdb:/opt/couchdb/data"
 
   # sparksimulator:
   #   image: brewblox/firmware-simulator:develop
@@ -20,7 +20,7 @@ services:
     privileged: true
     depends_on:
       - eventbus
-      - datastore
+      - couchstore
     ports:
       - "5000:5000"
     volumes:

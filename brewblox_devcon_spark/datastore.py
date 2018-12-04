@@ -3,13 +3,23 @@ Stores service-related data associated with objects.
 """
 
 
-from aiohttp import web
-from brewblox_service import brewblox_logger, features
+import asyncio
+import json
+import warnings
+from contextlib import contextmanager, suppress
+from typing import List
 
-from brewblox_devcon_spark import file_config, twinkeydict
+from aiohttp import web
+from brewblox_service import brewblox_logger, features, scheduler
+
+from brewblox_devcon_spark import couchdb_client
+from brewblox_devcon_spark.twinkeydict import TwinKeyDict, TwinKeyError
 
 LOGGER = brewblox_logger(__name__)
 
+
+FLUSH_DELAY_S = 5
+DB_NAME = 'spark-service'
 OBJECT_ID_START = 100
 SYS_OBJECTS = [
     {'keys': keys, 'data': {}}
@@ -34,37 +44,189 @@ SYS_OBJECTS = [
 
 
 def setup(app: web.Application):
-    # store = twinkeydict.TwinKeyFileDict(
-    #     app=app,
-    #     filename=app['config']['database'],
-    #     # System objects should not be serialized to file
-    #     filter=lambda k, v: k[1] >= OBJECT_ID_START
-    # )
-
-    store = twinkeydict.TwinKeyCouchDict(app)
+    store = TwinKeyCouchDBDict(app, defaults=SYS_OBJECTS)
     features.add(app, store, key='object_store')
-    add_system_objects(store)
 
-    config = file_config.FileConfig(app, app['config']['config'])
-    features.add(app, config)
-
-    # couchstore = twinkeydict.TwinKeyCouchDict(app)
-    # features.add(app, couchstore)
+    config = CouchDBConfig(app)
+    features.add(app, config, key='config_store')
 
 
-def get_datastore(app: web.Application) -> twinkeydict.TwinKeyDict:
+def get_datastore(app: web.Application) -> TwinKeyDict:
     return features.get(app, key='object_store')
 
 
-def add_system_objects(store: twinkeydict.TwinKeyDict):
-    for obj in SYS_OBJECTS:
-        store[obj['keys']] = obj['data']
+def get_config(app: web.Application) -> 'CouchDBConfig':
+    return features.get(app, key='config_store')
 
 
-def clear_objects(store: twinkeydict.TwinKeyDict):
-    store.clear()
-    add_system_objects(store)
+class TwinKeyCouchDBDict(features.ServiceFeature, TwinKeyDict):
+    """
+    TwinKeyDict subclass to periodically flush contained objects to CouchDB.
+    """
+
+    def __init__(self,
+                 app: web.Application,
+                 defaults: List[dict] = None,  # key: tuple, data: any
+                 ):
+        features.ServiceFeature.__init__(self, app)
+        TwinKeyDict.__init__(self)
+
+        self._client: couchdb_client.CouchDBClient = None
+        self._flush_task: asyncio.Task = None
+        self._changed_event: asyncio.Event = None
+        self._ready_event: asyncio.Event = None
+
+        self._defaults = defaults or []
+        self._doc_name = None
+        self._rev = None
+
+    def __str__(self):
+        return f'<{type(self).__name__} for {DB_NAME}/{self._doc_name}>'
+
+    @property
+    def active(self):
+        return self._flush_task and not self._flush_task.done()
+
+    async def startup(self, app: web.Application):
+        await self.shutdown(app)
+        self._flush_task = await scheduler.create_task(app, self._autoflush())
+        self._client = couchdb_client.get_client(app)
+        self._changed_event = asyncio.Event()
+        self._ready_event = asyncio.Event()
+
+    async def shutdown(self, app: web.Application):
+        await scheduler.cancel_task(app, self._flush_task)
+        self._client = None
+        self._changed_event = None
+        self._ready_event = None
+
+    async def read(self, document: str):
+        self._ready_event.clear()
+
+        try:
+            self._rev, data = await self._client.read(DB_NAME, document, [])
+            self._doc_name = document
+            LOGGER.info(f'{self} Read {len(data)} blocks. Rev = {self._rev}')
+
+            for obj in data:
+                TwinKeyDict.__setitem__(self, obj['keys'], obj['data'])
+
+            # Merge defaults into data
+            for obj in self._defaults:
+                with suppress(TwinKeyError):
+                    if obj['keys'] not in self:
+                        self.__setitem__(obj['keys'], obj['data'])
+
+        finally:
+            self._ready_event.set()
+
+    async def write(self):
+        await self._ready_event.wait()
+        data = [
+            {'keys': keys, 'data': content}
+            for keys, content in self.items()
+        ]
+        self._rev = await self._client.write(DB_NAME, self._doc_name, self._rev, data)
+        LOGGER.info(f'{self} Saved {len(data)} blocks. Rev = {self._rev}')
+
+    async def _autoflush(self):
+        while True:
+            try:
+                await self._changed_event.wait()
+                await asyncio.sleep(FLUSH_DELAY_S)
+                await self.write()
+                self._changed_event.clear()
+
+            except asyncio.CancelledError:
+                await self.write()
+                break
+
+            except Exception as ex:
+                warnings.warn(f'{self} {type(ex).__name__}({ex})')
+
+    def __setitem__(self, keys, item):
+        TwinKeyDict.__setitem__(self, keys, item)
+        if self._changed_event:
+            self._changed_event.set()
+
+    def __delitem__(self, keys):
+        TwinKeyDict.__delitem__(self, keys)
+        if self._changed_event:
+            self._changed_event.set()
+
+    def clear(self):
+        TwinKeyDict.clear(self)
+        for obj in self._defaults:
+            self.__setitem__(obj['keys'], obj['data'])
 
 
-def get_config(app: web.Application) -> file_config.FileConfig:
-    return features.get(app, file_config.FileConfig)
+class CouchDBConfig(features.ServiceFeature):
+
+    def __init__(self, app: web.Application):
+        features.ServiceFeature.__init__(self, app)
+        self._config: dict = {}
+        self._doc_name = None
+        self._rev = None
+        self._client: couchdb_client.CouchDBClient = None
+        self._flush_task: asyncio.Task = None
+        self._changed_event: asyncio.Event = None
+        self._ready_event: asyncio.Event = None
+
+    def __str__(self):
+        return f'<{type(self).__name__} for {DB_NAME}/{self._doc_name}>'
+
+    @property
+    def active(self):
+        return self._flush_task and not self._flush_task.done()
+
+    async def startup(self, app: web.Application):
+        await self.shutdown(app)
+        self._flush_task = await scheduler.create_task(app, self._autoflush())
+        self._client = couchdb_client.get_client(app)
+        self._changed_event = asyncio.Event()
+        self._ready_event = asyncio.Event()
+
+    async def shutdown(self, app: web.Application):
+        await scheduler.cancel_task(app, self._flush_task)
+        self._client = None
+        self._changed_event = None
+        self._ready_event = None
+
+    @contextmanager
+    def open(self):
+        before = json.dumps(self._config)
+        yield self._config
+        after = json.dumps(self._config)
+        if before != after and self._changed_event:
+            self._changed_event.set()
+
+    async def read(self, document: str):
+        self._ready_event.clear()
+
+        try:
+            self._rev, self._config = await self._client.read(DB_NAME, document, {})
+            self._doc_name = document
+            LOGGER.info(f'{self} Read {len(self._config)} settings. Rev = {self._rev}')
+
+        finally:
+            self._ready_event.set()
+
+    async def write(self):
+        await self._ready_event.wait()
+        self._rev = await self._client.write(DB_NAME, self._doc_name, self._rev, self._config)
+        LOGGER.info(f'{self} Saved {len(self._config)} settings. Rev = {self._rev}')
+
+    async def _autoflush(self):
+        while True:
+            try:
+                await self._changed_event.wait()
+                await asyncio.sleep(FLUSH_DELAY_S)
+                await self.write()
+                self._changed_event.clear()
+
+            except asyncio.CancelledError:
+                await self.write()
+                break
+
+            except Exception as ex:
+                warnings.warn(f'{self} {type(ex).__name__}({ex})')

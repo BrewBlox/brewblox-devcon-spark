@@ -7,8 +7,8 @@ import logging
 from brewblox_service import brewblox_logger, events, scheduler, service
 
 from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
-                                   communication, datastore, device, seeder,
-                                   status)
+                                   communication, couchdb_client, datastore,
+                                   device, seeder, status)
 from brewblox_devcon_spark.api import (alias_api, codec_api, debug_api,
                                        error_response, object_api, remote_api,
                                        sse_api, system_api)
@@ -28,12 +28,6 @@ def create_parser(default_name='spark'):
     group.add_argument('--config',
                        help='Backing file for service configuration. [%(default)s]',
                        default='brewblox_cfg.json')
-    group.add_argument('--seed-objects',
-                       help='A file of objects that should be created on connection. [%(default)s]')
-    group.add_argument('--seed-profiles',
-                       nargs='+',
-                       type=int,
-                       help='Profiles that should be made active on connection. [%(default)s]')
 
     # Device options
     group = parser.add_argument_group('Device communication')
@@ -70,6 +64,9 @@ def create_parser(default_name='spark'):
     group.add_argument('--sync-exchange',
                        help='Eventbus exchange used to synchronize remote blocks. [%(default)s]',
                        default='syncast')
+    group.add_argument('--volatile',
+                       action='store_true',
+                       help='Disable all outgoing network calls. [%(default)s]')
 
     return parser
 
@@ -98,6 +95,7 @@ def main():
     events.setup(app)
 
     codec.setup(app)
+    couchdb_client.setup(app)
     datastore.setup(app)
     device.setup(app)
     broadcaster.setup(app)

@@ -142,7 +142,7 @@ class ObjectApi():
 
     async def clear_objects(self):
         await self._ctrl.clear_objects()
-        datastore.clear_objects(self._store)
+        self._store.clear()
         return {}
 
     async def reset_objects(self, objects: list) -> list:

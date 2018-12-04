@@ -45,20 +45,17 @@ class Codec(features.ServiceFeature):
         self._converter = UnitConverter()
         self._mod = Modifier(self._converter, self._strip_readonly)
 
-        try:
-            with datastore.get_config(app).open() as cfg:
-                self._converter.user_units = cfg.get(UNIT_CONFIG_KEY, {})
-            LOGGER.info('Loaded user-defined units')
-        except Exception as ex:
-            LOGGER.info(f'Failed to load user-defined units: {type(ex).__name__}({ex})', exc_info=True)
-
     async def shutdown(self, *_):
         pass
 
     def get_unit_config(self) -> Dict[str, str]:
         return self._converter.user_units
 
-    def update_unit_config(self, units: Dict[str, str]) -> Dict[str, str]:
+    def update_unit_config(self, units: Dict[str, str] = None) -> Dict[str, str]:
+        if units is None:
+            with datastore.get_config(self.app).open() as cfg:
+                units = cfg.get(UNIT_CONFIG_KEY, {})
+
         self._converter.user_units = units
         updated = self._converter.user_units
         with datastore.get_config(self.app).open() as config:

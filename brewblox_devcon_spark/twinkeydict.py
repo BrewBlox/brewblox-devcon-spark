@@ -4,29 +4,17 @@ Supports lookups where either left or right value is unknown.
 When looking up objects with both left and right key, asserts that keys point to the same object.
 """
 
-import asyncio
-import json
-import warnings
 from collections.abc import MutableMapping
-from concurrent.futures import CancelledError
 from contextlib import suppress
-from typing import Any, Callable, Dict, Hashable, Iterator, Tuple
+from typing import Any, Dict, Hashable, Iterator, Tuple
 
-import aiofiles
-from aiohttp import ClientSession, client_exceptions, web
-from brewblox_service import brewblox_logger, features, scheduler
+from brewblox_service import brewblox_logger
 
 from dataclasses import dataclass
 
 Keys_ = Tuple[Hashable, Hashable]
 
 LOGGER = brewblox_logger(__name__)
-
-FLUSH_DELAY_S = 5
-DB_RETRY_COUNT = 10
-DB_RETRY_INTERVAL_S = 2
-COUCH_URL = 'http://datastore:5984'
-DB_URL = f'{COUCH_URL}/spark-object-db'
 
 
 class TwinKeyError(Exception):
@@ -122,10 +110,12 @@ class TwinKeyDict(MutableMapping):
         if right_key is None:
             return self._left_view[left_key]
 
-        obj = self._left_view[left_key]
-        if right_key != obj.right_key:
+        left_obj, right_obj = self._left_view.get(left_key), self._right_view.get(right_key)
+        if (left_obj, right_obj) == (None, None):
+            raise KeyError(f'[{left_key}, {right_key}]')
+        if left_obj is not right_obj:
             raise TwinKeyError(f'Keys [{left_key}, {right_key}] point to different objects')
-        return obj
+        return left_obj
 
     def __getitem__(self, keys: Keys_) -> Any:
         return self._getobj(keys).content
@@ -166,241 +156,3 @@ class TwinKeyDict(MutableMapping):
 
         del self[old_keys]
         self[new_left, new_right] = obj.content
-
-
-class TwinKeyFileDict(features.ServiceFeature, TwinKeyDict):
-    """
-    TwinKeyDict subclass to periodically flush contained objects to file.
-
-    Will attempt to read the backing file once during __init__,
-    and then add hooks to the __setitem__ and __delitem__ functions.
-
-    Whenever an item is added or deleted, TwinKeyFileDict will flush the file a few seconds later.
-    This optimizes for the scenario where data is updated in batches.
-    The collection is also saved to file when the application is shut down.
-
-    Note: modifications of objects inside the dict are not tracked.
-    Calling code may choose to explicitly flush to file by calling `write_file()`.
-
-    Example:
-        >>> twinkey = TwinKeyFileDict(app, 'myfile.json')
-        # Will be flushed to file
-        >>> twinkey[1, 2] = {'subkey': 1}
-        # Will not trigger a flush
-        >>> twinkey[1, 2]['subkey'] = 2
-        # Can safely be called whenever
-        >>> await twinkey.write_file()
-    """
-
-    def __init__(self,
-                 app: web.Application,
-                 filename: str,
-                 read_only: bool = False,
-                 filter: Callable[[Keys_, Any], bool] = lambda k, v: True
-                 ):
-        features.ServiceFeature.__init__(self, app)
-        TwinKeyDict.__init__(self)
-
-        self._filename: str = filename
-        self._read_only: bool = read_only
-        self._filter: Callable[[Keys_, Any], bool] = filter
-        self._flush_task: asyncio.Task = None
-        self._changed_event: asyncio.Event = None
-
-        try:
-            self.read_file()
-        except FileNotFoundError:
-            warnings.warn(f'{self} file not found.')
-        except Exception:
-            LOGGER.error(f'{self} unable to read objects.')
-            raise
-
-    def __str__(self):
-        return f'<{type(self).__name__} for {self._filename}>'
-
-    def __setitem__(self, keys, item):
-        self._check_writable()
-        TwinKeyDict.__setitem__(self, keys, item)
-        if self._changed_event:
-            self._changed_event.set()
-
-    def __delitem__(self, keys):
-        self._check_writable()
-        TwinKeyDict.__delitem__(self, keys)
-        if self._changed_event:
-            self._changed_event.set()
-
-    @property
-    def active(self):
-        return self._flush_task and not self._flush_task.done()
-
-    def _check_writable(self):
-        if self._read_only:
-            raise TypeError(f'{self} is read-only')
-
-    def read_file(self):
-        with open(self._filename) as f:
-            for obj in json.load(f):
-                TwinKeyDict.__setitem__(self, obj['keys'], obj['data'])
-
-    async def write_file(self):
-        self._check_writable()
-        persisted = [
-            {'keys': keys, 'data': content}
-            for keys, content in self.items()
-            if self._filter(keys, content)
-        ]
-        async with aiofiles.open(self._filename, mode='w') as f:
-            await f.write(json.dumps(persisted))
-
-    async def _autoflush(self):
-        while True:
-            try:
-                await self._changed_event.wait()
-                await asyncio.sleep(FLUSH_DELAY_S)
-                await self.write_file()
-                self._changed_event.clear()
-
-            except CancelledError:
-                await self.write_file()
-                break
-
-            except Exception as ex:
-                warnings.warn(f'{self} {type(ex).__name__}({ex})')
-
-    async def startup(self, app: web.Application):
-        await self.shutdown(app)
-        if not self._read_only:
-            self._changed_event = asyncio.Event()
-            self._flush_task = await scheduler.create_task(app, self._autoflush())
-
-    async def shutdown(self, app: web.Application):
-        self._changed_event = None
-        await scheduler.cancel_task(app, self._flush_task)
-
-
-class TwinKeyCouchDict(features.ServiceFeature, TwinKeyDict):
-    def __init__(self,
-                 app: web.Application,
-                 filter: Callable[[Keys_, Any], bool] = lambda k, v: True
-                 ):
-        features.ServiceFeature.__init__(self, app)
-        TwinKeyDict.__init__(self)
-
-        self._filter: Callable[[Keys_, Any], bool] = filter
-        self._flush_task: asyncio.Task = None
-        self._changed_event: asyncio.Event = None
-        self._read_event: asyncio.Event = None
-
-        self._session: ClientSession = None
-        self._doc_name = app['config']['name']
-        self._rev = None
-
-    def __str__(self):
-        return f'<{type(self).__name__} for {DB_URL}/{self._doc_name}>'
-
-    async def startup(self, app: web.Application):
-        await self.shutdown(app)
-        self._session = await ClientSession(raise_for_status=True).__aenter__()
-        self._changed_event = asyncio.Event()
-        self._read_event = asyncio.Event()
-        self._flush_task = await scheduler.create_task(app, self._autoflush())
-
-    async def shutdown(self, app: web.Application):
-        await scheduler.cancel_task(app, self._flush_task)
-        self._changed_event = None
-        self._read_event = None
-
-        if self._session:
-            await self._session.__aexit__(None, None, None)
-            self._session = None
-
-    async def read_db(self):
-        LOGGER.info('Contacting datastore...')
-        for i in range(10):
-            try:
-                await self._session.head(COUCH_URL)
-            except Exception as ex:
-                LOGGER.info(f'retrying... {ex}')
-                await asyncio.sleep(2)
-            else:
-                break
-        else:
-            raise RuntimeError('Datastore unreachable')
-
-        LOGGER.info('Datastore found, checking database...')
-
-        try:
-            await self._session.head(DB_URL)
-        except client_exceptions.ClientResponseError as ex:
-            if ex.status == 404:
-                LOGGER.info('Creating database...')
-                await self._session.put(DB_URL)
-            else:
-                raise ex
-
-        LOGGER.info('Database ok, checking service document...')
-
-        try:
-            resp = await self._session.get(f'{DB_URL}/{self._doc_name}')
-            content = await resp.json()
-            self._rev = content['_rev']
-            for obj in content['blocks']:
-                TwinKeyDict.__setitem__(self, obj['keys'], obj['data'])
-
-        except client_exceptions.ClientResponseError as ex:
-            if ex.status == 404:
-                LOGGER.info('Creating service document...')
-                resp = await self._session.put(f'{DB_URL}/{self._doc_name}', json={'blocks': []})
-                resp_content = await resp.json()
-                self._rev = resp_content['rev']
-            else:
-                raise ex
-
-        except Exception as ex:
-            warnings.warn(ex)
-            raise ex
-
-        self._read_event.set()
-        LOGGER.info(f'{self} read ok. Revision = {self._rev}')
-
-    async def write_db(self):
-        persisted = [
-            {'keys': keys, 'data': content}
-            for keys, content in self.items()
-            if self._filter(keys, content)
-        ]
-        resp = await self._session.put(
-            f'{DB_URL}/{self._doc_name}',
-            params=[('rev', self._rev)],
-            json={'blocks': persisted}
-        )
-        resp_content = await resp.json()
-        self._rev = resp_content['rev']
-        LOGGER.info(f'{self} write ok. Revision = {self._rev}')
-
-    async def _autoflush(self):
-        while True:
-            try:
-                await self._changed_event.wait()
-                await self._read_event.wait()
-                await asyncio.sleep(FLUSH_DELAY_S)
-                await self.write_db()
-                self._changed_event.clear()
-
-            except CancelledError:
-                await self.write_db()
-                break
-
-            except Exception as ex:
-                warnings.warn(f'{self} {type(ex).__name__}({ex})')
-
-    def __setitem__(self, keys, item):
-        TwinKeyDict.__setitem__(self, keys, item)
-        if self._changed_event:
-            self._changed_event.set()
-
-    def __delitem__(self, keys):
-        TwinKeyDict.__delitem__(self, keys)
-        if self._changed_event:
-            self._changed_event.set()

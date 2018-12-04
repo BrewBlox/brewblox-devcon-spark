@@ -59,8 +59,8 @@ class Broadcaster(features.ServiceFeature):
             exchange = self.app['config']['broadcast_exchange']
             last_broadcast_ok = True
 
-            if interval <= 0:
-                LOGGER.info(f'Exiting {self} (disabled by user)')
+            if interval <= 0 or self.app['config']['volatile']:
+                LOGGER.info(f'{self} Disabled by user')
                 return
 
         except Exception as ex:
@@ -69,7 +69,7 @@ class Broadcaster(features.ServiceFeature):
 
         while True:
             try:
-                await spark_status.connected.wait()
+                await spark_status.seeded.wait()
                 await asyncio.sleep(interval)
                 current_objects = {
                     obj[API_ID_KEY]: obj[API_DATA_KEY]

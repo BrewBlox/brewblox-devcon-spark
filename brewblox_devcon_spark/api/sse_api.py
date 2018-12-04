@@ -61,7 +61,7 @@ class SSEPublisher(features.ServiceFeature):
 
         try:
             api = ObjectApi(self.app)
-            spark_status = status.get_status(self.app)
+            spark_status: status.SparkStatus = status.get_status(self.app)
 
         except Exception as ex:
             LOGGER.error(f'{type(ex).__name__}: {str(ex)}', exc_info=True)
@@ -69,7 +69,7 @@ class SSEPublisher(features.ServiceFeature):
 
         while True:
             try:
-                await spark_status.connected.wait()
+                await spark_status.seeded.wait()
                 await asyncio.sleep(PUBLISH_INTERVAL_S)
 
                 if not self._queues:
