@@ -48,17 +48,17 @@ class Broadcaster(features.ServiceFeature):
         self._task = None
 
     async def _broadcast(self):
-        name = self.app['config']['name']
-        interval = self.app['config']['broadcast_interval']
-        exchange = self.app['config']['broadcast_exchange']
-
-        if interval <= 0 or self.app['config']['volatile']:
-            LOGGER.info(f'{self} disabled by user')
-            return
-
-        LOGGER.info(f'Starting {self}')
-
         try:
+            name = self.app['config']['name']
+            interval = self.app['config']['broadcast_interval']
+            exchange = self.app['config']['broadcast_exchange']
+
+            if interval <= 0 or self.app['config']['volatile']:
+                LOGGER.info(f'{self} disabled by user')
+                return
+
+            LOGGER.info(f'Starting {self}')
+
             api = ObjectApi(self.app)
             spark_status = status.get_status(self.app)
             publisher = events.get_publisher(self.app)
@@ -74,7 +74,8 @@ class Broadcaster(features.ServiceFeature):
                 await asyncio.sleep(interval)
                 current_objects = {
                     obj[API_ID_KEY]: obj[API_DATA_KEY]
-                    for obj in await api.all() if not obj[API_ID_KEY].startswith(GENERATED_ID_PREFIX)
+                    for obj in await api.all()
+                    if not obj[API_ID_KEY].startswith(GENERATED_ID_PREFIX)
                 }
 
                 # Don't broadcast when empty

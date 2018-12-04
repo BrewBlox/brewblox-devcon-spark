@@ -72,7 +72,7 @@ class Seeder(features.ServiceFeature):
             now = datetime.now()
             api = object_api.ObjectApi(self.app)
             await api.write(
-                input_id=3,  # Controller ID for time object
+                input_id=datastore.TIME_CONTROLLER_ID,
                 profiles=[i for i in range(8)],
                 input_type='Ticks',
                 input_data={

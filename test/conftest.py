@@ -59,6 +59,7 @@ def app_config(test_db, test_cfg) -> dict:
         'broadcast_interval': 5,
         'broadcast_exchange': 'brewcast',
         'sync_exchange': 'syncast',
+        'volatile': True,
     }
 
 
@@ -77,6 +78,7 @@ def sys_args(app_config) -> list:
         '--broadcast-interval', app_config['broadcast_interval'],
         '--broadcast-exchange', app_config['broadcast_exchange'],
         '--sync-exchange', app_config['sync_exchange'],
+        '--volatile',
     ]]
 
 

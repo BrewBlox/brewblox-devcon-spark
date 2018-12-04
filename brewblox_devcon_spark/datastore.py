@@ -17,6 +17,11 @@ from brewblox_devcon_spark.twinkeydict import TwinKeyDict, TwinKeyError
 
 LOGGER = brewblox_logger(__name__)
 
+PROFILES_CONTROLLER_ID = 1
+SYSINFO_CONTROLLER_ID = 2
+TIME_CONTROLLER_ID = 3
+ONEWIREBUS_CONTROLLER_ID = 4
+
 
 FLUSH_DELAY_S = 5
 DB_NAME = 'spark-service'
@@ -24,10 +29,10 @@ OBJECT_ID_START = 100
 SYS_OBJECTS = [
     {'keys': keys, 'data': {}}
     for keys in [
-        ['__profiles', 1],
-        ['__sysinfo', 2],
-        ['__time', 3],
-        ['__onewirebus', 4],
+        ['__profiles', PROFILES_CONTROLLER_ID],
+        ['__sysinfo', SYSINFO_CONTROLLER_ID],
+        ['__time', TIME_CONTROLLER_ID],
+        ['__onewirebus', ONEWIREBUS_CONTROLLER_ID],
         # Spark V3
         ['__pin_bottom_1', 10],
         ['__pin_bottom_2', 11],
@@ -88,6 +93,7 @@ class CouchDBBlockStore(features.ServiceFeature, TwinKeyDict):
     async def startup(self, app: web.Application):
         await self.shutdown(app)
         if self._volatile:
+            self.clear()
             LOGGER.info(f'{self} is volatile (will not read/write datastore)')
             return
 
@@ -104,14 +110,7 @@ class CouchDBBlockStore(features.ServiceFeature, TwinKeyDict):
         self._ready_event = None
 
     async def read(self, document: str):
-        def merge_defaults():
-            for obj in self._defaults:
-                with suppress(TwinKeyError):
-                    if obj['keys'] not in self:
-                        self.__setitem__(obj['keys'], obj['data'])
-
         if self._volatile:
-            merge_defaults()
             return
 
         self._ready_event.clear()
@@ -124,7 +123,10 @@ class CouchDBBlockStore(features.ServiceFeature, TwinKeyDict):
             for obj in data:
                 TwinKeyDict.__setitem__(self, obj['keys'], obj['data'])
 
-            merge_defaults()
+            for obj in self._defaults:
+                with suppress(TwinKeyError):
+                    if obj['keys'] not in self:
+                        self.__setitem__(obj['keys'], obj['data'])
 
         finally:
             self._ready_event.set()
