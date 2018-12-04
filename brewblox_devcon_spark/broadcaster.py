@@ -48,20 +48,21 @@ class Broadcaster(features.ServiceFeature):
         self._task = None
 
     async def _broadcast(self):
+        name = self.app['config']['name']
+        interval = self.app['config']['broadcast_interval']
+        exchange = self.app['config']['broadcast_exchange']
+
+        if interval <= 0 or self.app['config']['volatile']:
+            LOGGER.info(f'{self} disabled by user')
+            return
+
         LOGGER.info(f'Starting {self}')
 
         try:
             api = ObjectApi(self.app)
             spark_status = status.get_status(self.app)
             publisher = events.get_publisher(self.app)
-            name = self.app['config']['name']
-            interval = self.app['config']['broadcast_interval']
-            exchange = self.app['config']['broadcast_exchange']
             last_broadcast_ok = True
-
-            if interval <= 0 or self.app['config']['volatile']:
-                LOGGER.info(f'{self} Disabled by user')
-                return
 
         except Exception as ex:
             LOGGER.error(f'{type(ex).__name__}: {str(ex)}', exc_info=True)

@@ -44,22 +44,19 @@ SYS_OBJECTS = [
 
 
 def setup(app: web.Application):
-    store = TwinKeyCouchDBDict(app, defaults=SYS_OBJECTS)
-    features.add(app, store, key='object_store')
-
-    config = CouchDBConfig(app)
-    features.add(app, config, key='config_store')
+    features.add(app, CouchDBBlockStore(app, defaults=SYS_OBJECTS))
+    features.add(app, CouchDBConfig(app))
 
 
 def get_datastore(app: web.Application) -> TwinKeyDict:
-    return features.get(app, key='object_store')
+    return features.get(app, CouchDBBlockStore)
 
 
 def get_config(app: web.Application) -> 'CouchDBConfig':
-    return features.get(app, key='config_store')
+    return features.get(app, CouchDBConfig)
 
 
-class TwinKeyCouchDBDict(features.ServiceFeature, TwinKeyDict):
+class CouchDBBlockStore(features.ServiceFeature, TwinKeyDict):
     """
     TwinKeyDict subclass to periodically flush contained objects to CouchDB.
     """
@@ -76,6 +73,7 @@ class TwinKeyCouchDBDict(features.ServiceFeature, TwinKeyDict):
         self._changed_event: asyncio.Event = None
         self._ready_event: asyncio.Event = None
 
+        self._volatile = app['config']['volatile']
         self._defaults = defaults or []
         self._doc_name = None
         self._rev = None
@@ -89,6 +87,10 @@ class TwinKeyCouchDBDict(features.ServiceFeature, TwinKeyDict):
 
     async def startup(self, app: web.Application):
         await self.shutdown(app)
+        if self._volatile:
+            LOGGER.info(f'{self} is volatile (will not read/write datastore)')
+            return
+
         self._flush_task = await scheduler.create_task(app, self._autoflush())
         self._client = couchdb_client.get_client(app)
         self._changed_event = asyncio.Event()
@@ -96,11 +98,22 @@ class TwinKeyCouchDBDict(features.ServiceFeature, TwinKeyDict):
 
     async def shutdown(self, app: web.Application):
         await scheduler.cancel_task(app, self._flush_task)
+        self._flush_task = None
         self._client = None
         self._changed_event = None
         self._ready_event = None
 
     async def read(self, document: str):
+        def merge_defaults():
+            for obj in self._defaults:
+                with suppress(TwinKeyError):
+                    if obj['keys'] not in self:
+                        self.__setitem__(obj['keys'], obj['data'])
+
+        if self._volatile:
+            merge_defaults()
+            return
+
         self._ready_event.clear()
 
         try:
@@ -111,16 +124,15 @@ class TwinKeyCouchDBDict(features.ServiceFeature, TwinKeyDict):
             for obj in data:
                 TwinKeyDict.__setitem__(self, obj['keys'], obj['data'])
 
-            # Merge defaults into data
-            for obj in self._defaults:
-                with suppress(TwinKeyError):
-                    if obj['keys'] not in self:
-                        self.__setitem__(obj['keys'], obj['data'])
+            merge_defaults()
 
         finally:
             self._ready_event.set()
 
     async def write(self):
+        if self._volatile:
+            return
+
         await self._ready_event.wait()
         data = [
             {'keys': keys, 'data': content}
@@ -161,9 +173,13 @@ class TwinKeyCouchDBDict(features.ServiceFeature, TwinKeyDict):
 
 
 class CouchDBConfig(features.ServiceFeature):
+    """
+    Database-backed configuration
+    """
 
     def __init__(self, app: web.Application):
         features.ServiceFeature.__init__(self, app)
+        self._volatile = app['config']['volatile']
         self._config: dict = {}
         self._doc_name = None
         self._rev = None
@@ -181,6 +197,10 @@ class CouchDBConfig(features.ServiceFeature):
 
     async def startup(self, app: web.Application):
         await self.shutdown(app)
+        if self._volatile:
+            LOGGER.info(f'{self} is volatile (will not read/write datastore)')
+            return
+
         self._flush_task = await scheduler.create_task(app, self._autoflush())
         self._client = couchdb_client.get_client(app)
         self._changed_event = asyncio.Event()
@@ -188,6 +208,7 @@ class CouchDBConfig(features.ServiceFeature):
 
     async def shutdown(self, app: web.Application):
         await scheduler.cancel_task(app, self._flush_task)
+        self._flush_task = None
         self._client = None
         self._changed_event = None
         self._ready_event = None
@@ -201,6 +222,9 @@ class CouchDBConfig(features.ServiceFeature):
             self._changed_event.set()
 
     async def read(self, document: str):
+        if self._volatile:
+            return
+
         self._ready_event.clear()
 
         try:
@@ -212,6 +236,9 @@ class CouchDBConfig(features.ServiceFeature):
             self._ready_event.set()
 
     async def write(self):
+        if self._volatile:
+            return
+
         await self._ready_event.wait()
         self._rev = await self._client.write(DB_NAME, self._doc_name, self._rev, self._config)
         LOGGER.info(f'{self} Saved {len(self._config)} settings. Rev = {self._rev}')

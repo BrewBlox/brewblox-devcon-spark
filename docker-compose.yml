@@ -26,4 +26,4 @@ services:
     volumes:
       - "./:/app/"
     # command: >
-    #   --device-host=sparksimulator
+    #   --volatile

@@ -35,11 +35,6 @@ class CouchDBClient(features.ServiceFeature):
         await self.shutdown(app)
         self._session = await ClientSession(raise_for_status=True).__aenter__()
 
-    async def before_shutdown(self, app: web.Application):
-        if self._session:
-            await self._session.__aexit__(None, None, None)
-            self._session = None
-
     async def shutdown(self, app: web.Application):
         if self._session:
             await self._session.__aexit__(None, None, None)
@@ -53,6 +48,8 @@ class CouchDBClient(features.ServiceFeature):
             while True:
                 try:
                     await self._session.head(COUCH_URL, raise_for_status=False)
+                except asyncio.CancelledError:
+                    raise
                 except Exception:
                     await asyncio.sleep(DB_RETRY_INTERVAL_S)
                 else:
@@ -101,6 +98,9 @@ class CouchDBClient(features.ServiceFeature):
             read_result, create_result = await asyncio.gather(read_document(), create_document())
             (rev, data) = read_result or create_result
             return rev, data
+
+        except asyncio.CancelledError:
+            raise
 
         except Exception as ex:
             warnings.warn(f'{self} {type(ex).__name__}({ex})')
