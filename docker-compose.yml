@@ -21,6 +21,7 @@ services:
     depends_on:
       - eventbus
       - couchstore
+      - sparksimulator
     ports:
       - "5000:5000"
     volumes:

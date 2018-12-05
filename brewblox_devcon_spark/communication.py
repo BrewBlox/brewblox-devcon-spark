@@ -10,7 +10,7 @@ from collections import namedtuple
 from concurrent.futures import CancelledError
 from contextlib import suppress
 from functools import partial
-from typing import Any, Awaitable, Callable, Generator, Iterable, List, Tuple
+from typing import Any, Awaitable, Callable, Iterable, Iterator, List, Tuple
 
 import serial
 from aiohttp import web
@@ -212,8 +212,8 @@ class SparkConduit(features.ServiceFeature):
 
 class SparkProtocol(asyncio.Protocol):
     def __init__(self,
-                 on_event: Callable[[str], None],
-                 on_data: Callable[[str], None]
+                 on_event: Callable[[str], Any],
+                 on_data: Callable[[str], Any]
                  ):
         super().__init__()
         self._connection_made_event = asyncio.Event()
@@ -307,7 +307,7 @@ def all_ports() -> Iterable[PortType_]:
 def recognized_ports(
     allowed: Iterable[DeviceMatch] = KNOWN_DEVICES,
     serial_number: str = None
-) -> Generator[PortType_, None, None]:
+) -> Iterator[PortType_]:
 
     # Construct a regex OR'ing all allowed hardware ID matches
     # Example result: (?:HWID_REGEX_ONE|HWID_REGEX_TWO)

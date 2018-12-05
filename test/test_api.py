@@ -326,6 +326,7 @@ async def test_list_compatible(app, client, object_args):
 
 async def test_discover_objects(app, client):
     resp = await response(client.get('/discover_objects'))
+    # Commander sim always returns the profiles object
     assert resp == ['__profiles']
 
 

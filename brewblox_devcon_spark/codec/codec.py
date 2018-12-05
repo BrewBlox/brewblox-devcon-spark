@@ -3,14 +3,14 @@ Generic entry point for all codecs.
 Offers encoding and decoding of objects.
 """
 
-import asyncio
+
 from copy import deepcopy
 from typing import Awaitable, Callable, Dict, Optional, Tuple, Union
 
 from aiohttp import web
-from brewblox_service import brewblox_logger, features, scheduler
+from brewblox_service import brewblox_logger, features
 
-from brewblox_devcon_spark import datastore, exceptions, status
+from brewblox_devcon_spark import datastore, exceptions
 from brewblox_devcon_spark.codec.modifiers import STRIP_UNLOGGED_KEY, Modifier
 from brewblox_devcon_spark.codec.transcoders import (Decoded_, Encoded_,
                                                      ObjType_, Transcoder)
@@ -41,26 +41,21 @@ class Codec(features.ServiceFeature):
         self._strip_readonly = strip_readonly
         self._converter: UnitConverter = None
         self._mod: Modifier = None
-        self._config_task: asyncio.Task = None
 
     async def startup(self, app: web.Application):
-        await self.shutdown(app)
         self._converter = UnitConverter()
         self._mod = Modifier(self._converter, self._strip_readonly)
-        self._config_task = await scheduler.create_task(app, self._update_on_seed())
+        datastore.get_config(app).subscribe(self._on_config_change)
 
     async def shutdown(self, app: web.Application):
-        await scheduler.cancel_task(app, self._config_task)
-        self._config_task = None
+        pass
 
     def get_unit_config(self) -> Dict[str, str]:
         return self._converter.user_units
 
-    async def _update_on_seed(self):
-        while True:
-            await status.get_status(self.app).seeded.wait()
-            with datastore.get_config(self.app).open() as cfg:
-                self._converter.user_units = cfg.get(UNIT_CONFIG_KEY, {})
+    def _on_config_change(self, config):
+        LOGGER.info('config update')
+        self._converter.user_units = config.get(UNIT_CONFIG_KEY, {})
 
     def update_unit_config(self, units: Dict[str, str] = None) -> Dict[str, str]:
         self._converter.user_units = units

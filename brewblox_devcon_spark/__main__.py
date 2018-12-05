@@ -94,9 +94,9 @@ def main():
     scheduler.setup(app)
     events.setup(app)
 
-    codec.setup(app)
     couchdb_client.setup(app)
     datastore.setup(app)
+    codec.setup(app)
     device.setup(app)
     broadcaster.setup(app)
 

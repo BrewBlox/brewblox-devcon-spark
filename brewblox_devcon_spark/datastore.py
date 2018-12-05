@@ -9,7 +9,7 @@ import warnings
 from abc import abstractmethod
 from contextlib import contextmanager, suppress
 from functools import wraps
-from typing import List
+from typing import Any, Callable, List
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, scheduler
@@ -145,8 +145,8 @@ class FlushedStore(features.ServiceFeature):
                 self._changed_event.clear()
 
             except asyncio.CancelledError:
-                # if self._changed_event.is_set():
-                #     await self.write()
+                if self._changed_event.is_set():
+                    await self.write()
                 break
 
             except Exception as ex:
@@ -230,6 +230,7 @@ class CouchDBConfig(FlushedStore):
     def __init__(self, app: web.Application):
         FlushedStore.__init__(self, app)
         self._config: dict = {}
+        self._listeners = set()
         self._ready_event: asyncio.Event = None
 
     async def startup(self, app: web.Application):
@@ -239,6 +240,9 @@ class CouchDBConfig(FlushedStore):
     async def shutdown(self, app: web.Application):
         await FlushedStore.shutdown(self, app)
         self._ready_event = None
+
+    def subscribe(self, func: Callable[[dict], Any]):
+        self._listeners.add(func)
 
     @contextmanager
     def open(self):
@@ -256,6 +260,11 @@ class CouchDBConfig(FlushedStore):
             self.rev, self._config = await client.read(DB_NAME, document, {})
             self.document = document
             LOGGER.info(f'{self} Read {len(self._config)} settings. Rev = {self.rev}')
+
+            with self.open() as cfg:
+                for func in self._listeners:
+                    func(cfg)
+
         finally:
             self._ready_event.set()
 
