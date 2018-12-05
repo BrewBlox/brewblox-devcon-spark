@@ -150,7 +150,7 @@ class FlushedStore(features.ServiceFeature):
                 break
 
             except Exception as ex:
-                warnings.warn(f'{self} {type(ex).__name__}({ex})')
+                warnings.warn(f'{self} flush error {type(ex).__name__}({ex})')
 
 
 class CouchDBBlockStore(FlushedStore, TwinKeyDict):
@@ -158,14 +158,12 @@ class CouchDBBlockStore(FlushedStore, TwinKeyDict):
     TwinKeyDict subclass to periodically flush contained objects to CouchDB.
     """
 
-    def __init__(self,
-                 app: web.Application,
-                 defaults: List[dict] = None,  # key: tuple, data: any
-                 ):
+    def __init__(self, app: web.Application, defaults: List[dict] = None):
         FlushedStore.__init__(self, app)
         TwinKeyDict.__init__(self)
         self._defaults = defaults or []
         self._ready_event: asyncio.Event = None
+        self.clear()  # inserts defaults
 
     async def startup(self, app: web.Application):
         await FlushedStore.startup(self, app)
@@ -175,15 +173,23 @@ class CouchDBBlockStore(FlushedStore, TwinKeyDict):
         await FlushedStore.shutdown(self, app)
         self._ready_event = None
 
-    @non_volatile
     async def read(self, document: str):
+        data = []
         try:
             self._ready_event.clear()
-            client = couchdb_client.get_client(self.app)
-            self.rev, data = await client.read(DB_NAME, document, [])
-            self.document = document
-            LOGGER.info(f'{self} Read {len(data)} blocks. Rev = {self.rev}')
+            if not self.volatile:
+                client = couchdb_client.get_client(self.app)
+                self.rev, data = await client.read(DB_NAME, document, [])
+                self.document = document
+                LOGGER.info(f'{self} Read {len(data)} blocks. Rev = {self.rev}')
 
+        except asyncio.CancelledError:  # pragma: no cover
+            raise
+
+        except Exception as ex:
+            warnings.warn(f'{self} read error {type(ex).__name__}({ex})')
+
+        finally:
             # Clear -> load from database -> merge defaults
             TwinKeyDict.clear(self)
             for obj in data:
@@ -192,9 +198,7 @@ class CouchDBBlockStore(FlushedStore, TwinKeyDict):
                 with suppress(TwinKeyError):
                     if obj['keys'] not in self:
                         self.__setitem__(obj['keys'], obj['data'])
-        except Exception as ex:
-            LOGGER.error(ex, exc_info=True)
-        finally:
+
             self._ready_event.set()
 
     @non_volatile
@@ -206,7 +210,7 @@ class CouchDBBlockStore(FlushedStore, TwinKeyDict):
         ]
         client = couchdb_client.get_client(self.app)
         self.rev = await client.write(DB_NAME, self.document, self.rev, data)
-        LOGGER.info(f'{self} Saved {len(data)} blocks. Rev = {self.rev}')
+        LOGGER.info(f'{self} Saved {len(data)} block(s). Rev = {self.rev}')
 
     def __setitem__(self, keys, item):
         TwinKeyDict.__setitem__(self, keys, item)
@@ -259,7 +263,7 @@ class CouchDBConfig(FlushedStore):
             client = couchdb_client.get_client(self.app)
             self.rev, self._config = await client.read(DB_NAME, document, {})
             self.document = document
-            LOGGER.info(f'{self} Read {len(self._config)} settings. Rev = {self.rev}')
+            LOGGER.info(f'{self} Read {len(self._config)} setting(s). Rev = {self.rev}')
 
             with self.open() as cfg:
                 for func in self._listeners:

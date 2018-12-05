@@ -24,7 +24,7 @@ class SparkStatus(features.ServiceFeature):
     def __init__(self, app: web.Application):
         super().__init__(app)
         self._connected: asyncio.Event = None
-        self._seeded: asyncio.Event = None
+        self._synchronized: asyncio.Event = None
         self._disconnected: asyncio.Event = None
 
     @property
@@ -32,8 +32,8 @@ class SparkStatus(features.ServiceFeature):
         return self._connected
 
     @property
-    def seeded(self) -> asyncio.Event:
-        return self._seeded
+    def synchronized(self) -> asyncio.Event:
+        return self._synchronized
 
     @property
     def disconnected(self) -> asyncio.Event:
@@ -41,7 +41,7 @@ class SparkStatus(features.ServiceFeature):
 
     async def startup(self, app: web.Application):
         self._connected = asyncio.Event()
-        self._seeded = asyncio.Event()
+        self._synchronized = asyncio.Event()
         self._disconnected = asyncio.Event()
 
     async def shutdown(self, app: web.Application):

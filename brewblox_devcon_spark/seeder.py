@@ -32,6 +32,10 @@ class Seeder(features.ServiceFeature):
         self._config = app['config']
         self._task: asyncio.Task = None
 
+    @property
+    def active(self):
+        return self._task and not self._task.done()
+
     async def startup(self, app: web.Application):
         await self.shutdown(app)
         self._task = await scheduler.create_task(app, self._seed())
@@ -44,20 +48,23 @@ class Seeder(features.ServiceFeature):
         spark_status = status.get_status(self.app)
 
         while True:
-            spark_status.seeded.clear()
             await spark_status.connected.wait()
             await self._seed_datastore()
             await self._seed_time()
-            spark_status.seeded.set()
+            spark_status.synchronized.set()
+
             await spark_status.disconnected.wait()
+            spark_status.synchronized.clear()
 
     ##########
 
     async def _seed_datastore(self):
         try:
-            sys_info = await object_api.ObjectApi(self.app).read(datastore.SYSINFO_CONTROLLER_ID)
-            device_id = sys_info[object_api.API_DATA_KEY]['deviceId']
+            api = object_api.ObjectApi(self.app)
+            sys_block = await api.read(datastore.SYSINFO_CONTROLLER_ID)
+            device_id = sys_block[object_api.API_DATA_KEY]['deviceId']
 
+            LOGGER.info(datastore.get_datastore(self.app))
             await asyncio.gather(
                 datastore.get_datastore(self.app).read(f'{device_id}-blocks-db'),
                 datastore.get_config(self.app).read(f'{device_id}-config-db'),
@@ -66,7 +73,7 @@ class Seeder(features.ServiceFeature):
         except asyncio.CancelledError:
             raise
 
-        except Exception as ex:  # pragma: no cover
+        except Exception as ex:
             warnings.warn(f'Failed to seed datastore - {type(ex).__name__}({ex})')
 
     async def _seed_time(self):
@@ -84,5 +91,5 @@ class Seeder(features.ServiceFeature):
         except asyncio.CancelledError:
             raise
 
-        except Exception as ex:  # pragma: no cover
+        except Exception as ex:
             warnings.warn(f'Failed to seed controller time - {type(ex).__name__}({ex})')

@@ -69,7 +69,7 @@ class SSEPublisher(features.ServiceFeature):
 
         while True:
             try:
-                await spark_status.seeded.wait()
+                await spark_status.synchronized.wait()
                 await asyncio.sleep(PUBLISH_INTERVAL_S)
 
                 if not self._queues:

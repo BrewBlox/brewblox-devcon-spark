@@ -70,7 +70,7 @@ class Broadcaster(features.ServiceFeature):
 
         while True:
             try:
-                await spark_status.seeded.wait()
+                await spark_status.synchronized.wait()
                 await asyncio.sleep(interval)
                 current_objects = {
                     obj[API_ID_KEY]: obj[API_DATA_KEY]

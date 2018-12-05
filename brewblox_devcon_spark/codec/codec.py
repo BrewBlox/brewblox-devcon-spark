@@ -54,8 +54,8 @@ class Codec(features.ServiceFeature):
         return self._converter.user_units
 
     def _on_config_change(self, config):
-        LOGGER.info('config update')
         self._converter.user_units = config.get(UNIT_CONFIG_KEY, {})
+        config[UNIT_CONFIG_KEY] = self._converter.user_units
 
     def update_unit_config(self, units: Dict[str, str] = None) -> Dict[str, str]:
         self._converter.user_units = units

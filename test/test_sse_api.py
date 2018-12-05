@@ -8,7 +8,8 @@ import pytest
 from asynctest import CoroutineMock
 from brewblox_service import scheduler
 
-from brewblox_devcon_spark import commander_sim, datastore, device, status
+from brewblox_devcon_spark import (commander_sim, datastore, device, seeder,
+                                   status)
 from brewblox_devcon_spark.api import error_response, sse_api
 from brewblox_devcon_spark.codec import codec
 
@@ -24,6 +25,7 @@ async def app(app, loop, mocker):
     scheduler.setup(app)
     commander_sim.setup(app)
     datastore.setup(app)
+    seeder.setup(app)
     codec.setup(app)
     device.setup(app)
 
@@ -49,7 +51,6 @@ async def test_error_setup(app, client, mocker):
     assert api_mock.call_count == 1
 
 
-@pytest.mark.filterwarnings('ignore::UserWarning')
 async def test_error_call(app, client, mocker):
     api_mock = mocker.patch(TESTED + '.ObjectApi')
     api_mock.return_value.all = CoroutineMock(side_effect=RuntimeError)

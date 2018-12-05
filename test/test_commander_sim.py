@@ -3,9 +3,10 @@ Tests brewblox_devcon_spark.commander_sim
 """
 
 import pytest
+from brewblox_service import scheduler
 
 from brewblox_devcon_spark import (commander, commander_sim, commands,
-                                   exceptions, status)
+                                   datastore, exceptions, status)
 from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
@@ -14,8 +15,10 @@ from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
 
 @pytest.fixture
 def app(app):
+    scheduler.setup(app)
     status.setup(app)
     commander_sim.setup(app)
+    datastore.setup(app)
     codec.setup(app)
     return app
 
