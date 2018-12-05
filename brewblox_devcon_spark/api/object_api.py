@@ -2,10 +2,13 @@
 REST API for Spark objects
 """
 
+import asyncio
+
 from aiohttp import web
 from brewblox_service import brewblox_logger
 
-from brewblox_devcon_spark import datastore, device, exceptions, twinkeydict
+from brewblox_devcon_spark import (datastore, device, exceptions, status,
+                                   twinkeydict)
 from brewblox_devcon_spark.api import (API_DATA_KEY, API_ID_KEY,
                                        API_INTERFACE_KEY, API_TYPE_KEY,
                                        alias_api, utils)
@@ -14,6 +17,8 @@ from brewblox_devcon_spark.device import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                           OBJECT_INTERFACE_KEY,
                                           OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                           PROFILE_LIST_KEY)
+
+SYNC_WAIT_TIMEOUT_S = 20
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -25,7 +30,9 @@ def setup(app: web.Application):
 
 class ObjectApi():
 
-    def __init__(self, app: web.Application):
+    def __init__(self, app: web.Application, wait_sync=True):
+        self._wait_sync = wait_sync
+        self._status = status.get_status(app)
         self._ctrl: device.SparkController = device.get_controller(app)
         self._store: twinkeydict.TwinKeyDict = datastore.get_datastore(app)
 
@@ -37,6 +44,10 @@ class ObjectApi():
             API_DATA_KEY: obj[OBJECT_DATA_KEY]
         }
 
+    async def wait_for_sync(self):
+        if self._wait_sync and self._status.connected.is_set():
+            await asyncio.wait_for(self._status.synchronized.wait(), SYNC_WAIT_TIMEOUT_S)
+
     async def create(self,
                      input_id: str,
                      profiles: list,
@@ -46,6 +57,7 @@ class ObjectApi():
         """
         Creates a new object in the datastore and controller.
         """
+        await self.wait_for_sync()
         alias_api.validate_service_id(input_id)
 
         try:
@@ -74,6 +86,7 @@ class ObjectApi():
         }
 
     async def read(self, input_id: str) -> dict:
+        await self.wait_for_sync()
         response = await self._ctrl.read_object({
             OBJECT_ID_KEY: input_id
         })
@@ -88,6 +101,7 @@ class ObjectApi():
         """
         Writes new values to existing object on controller
         """
+        await self.wait_for_sync()
         response = await self._ctrl.write_object({
             OBJECT_ID_KEY: input_id,
             PROFILE_LIST_KEY: profiles,
@@ -100,7 +114,7 @@ class ObjectApi():
         """
         Deletes object from controller and data store
         """
-
+        await self.wait_for_sync()
         await self._ctrl.delete_object({
             OBJECT_ID_KEY: input_id
         })
@@ -112,24 +126,29 @@ class ObjectApi():
         }
 
     async def all(self) -> list:
+        await self.wait_for_sync()
         response = await self._ctrl.list_objects()
         return [self._as_api_object(obj) for obj in response.get(OBJECT_LIST_KEY, [])]
 
     async def read_stored(self, input_id: str) -> dict:
+        await self.wait_for_sync()
         response = await self._ctrl.read_stored_object({
             OBJECT_ID_KEY: input_id
         })
         return self._as_api_object(response)
 
     async def all_stored(self) -> dict:
+        await self.wait_for_sync()
         response = await self._ctrl.list_stored_objects()
         return [self._as_api_object(obj) for obj in response.get(OBJECT_LIST_KEY, [])]
 
     async def all_logged(self) -> dict:
+        await self.wait_for_sync()
         response = await self._ctrl.log_objects()
         return [self._as_api_object(obj) for obj in response.get(OBJECT_LIST_KEY, [])]
 
     async def list_compatible(self, interface: str) -> list:
+        await self.wait_for_sync()
         response = await self._ctrl.list_compatible_objects({
             OBJECT_INTERFACE_KEY: interface,
         })
@@ -137,15 +156,18 @@ class ObjectApi():
         return [obj[OBJECT_ID_KEY] for obj in response[OBJECT_ID_LIST_KEY]]
 
     async def discover(self) -> list:
+        await self.wait_for_sync()
         response = await self._ctrl.discover_objects()
         return [obj[OBJECT_ID_KEY] for obj in response[OBJECT_ID_LIST_KEY]]
 
     async def clear_objects(self):
+        await self.wait_for_sync()
         await self._ctrl.clear_objects()
         self._store.clear()
         return {}
 
     async def reset_objects(self, objects: list) -> list:
+        await self.wait_for_sync()
         await self.clear_objects()
         for obj in objects:
             obj_id = obj[API_ID_KEY]
