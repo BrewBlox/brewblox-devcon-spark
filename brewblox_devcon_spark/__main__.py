@@ -20,15 +20,6 @@ LOGGER = brewblox_logger(__name__)
 def create_parser(default_name='spark'):
     parser = service.create_parser(default_name=default_name)
 
-    # Local config
-    group = parser.add_argument_group('Local configuration')
-    group.add_argument('--database',
-                       help='Backing file for the object database. [%(default)s]',
-                       default='brewblox_db.json')
-    group.add_argument('--config',
-                       help='Backing file for service configuration. [%(default)s]',
-                       default='brewblox_cfg.json')
-
     # Device options
     group = parser.add_argument_group('Device communication')
     group.add_argument('--simulation',

@@ -64,7 +64,6 @@ class Seeder(features.ServiceFeature):
             sys_block = await api.read(datastore.SYSINFO_CONTROLLER_ID)
             device_id = sys_block[object_api.API_DATA_KEY]['deviceId']
 
-            LOGGER.info(datastore.get_datastore(self.app))
             await asyncio.gather(
                 datastore.get_datastore(self.app).read(f'{device_id}-blocks-db'),
                 datastore.get_config(self.app).read(f'{device_id}-config-db'),

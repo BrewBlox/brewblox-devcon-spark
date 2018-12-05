@@ -175,7 +175,10 @@ class CouchDBBlockStore(FlushedStore, TwinKeyDict):
 
     async def read(self, document: str):
         data = []
+
         try:
+            self.rev = None
+            self.document = None
             self._ready_event.clear()
             if not self.volatile:
                 client = couchdb_client.get_client(self.app)
@@ -204,6 +207,8 @@ class CouchDBBlockStore(FlushedStore, TwinKeyDict):
     @non_volatile
     async def write(self):
         await self._ready_event.wait()
+        if self.rev is None or self.document is None:
+            raise RuntimeError('Document or revision unknown - did read() fail?')
         data = [
             {'keys': keys, 'data': content}
             for keys, content in self.items()
@@ -256,25 +261,38 @@ class CouchDBConfig(FlushedStore):
         if before != after:
             self.set_changed()
 
-    @non_volatile
     async def read(self, document: str):
-        try:
-            self._ready_event.clear()
-            client = couchdb_client.get_client(self.app)
-            self.rev, self._config = await client.read(DB_NAME, document, {})
-            self.document = document
-            LOGGER.info(f'{self} Read {len(self._config)} setting(s). Rev = {self.rev}')
+        data = {}
 
+        try:
+            self.rev = None
+            self.document = None
+            self._ready_event.clear()
+            if not self.volatile:
+                client = couchdb_client.get_client(self.app)
+                self.rev, data = await client.read(DB_NAME, document, {})
+                self.document = document
+                LOGGER.info(f'{self} Read {len(data)} setting(s). Rev = {self.rev}')
+
+        except asyncio.CancelledError:  # pragma: no cover
+            raise
+
+        except Exception as ex:
+            warnings.warn(f'{self} read error {type(ex).__name__}({ex})')
+
+        finally:
+            self._config = data
             with self.open() as cfg:
                 for func in self._listeners:
                     func(cfg)
 
-        finally:
             self._ready_event.set()
 
     @non_volatile
     async def write(self):
         await self._ready_event.wait()
+        if self.rev is None or self.document is None:
+            raise RuntimeError('Document or revision unknown - did read() fail?')
         client = couchdb_client.get_client(self.app)
         self.rev = await client.write(DB_NAME, self.document, self.rev, self._config)
         LOGGER.info(f'{self} Saved {len(self._config)} settings. Rev = {self.rev}')

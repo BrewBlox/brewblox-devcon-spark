@@ -95,7 +95,9 @@ class CouchDBClient(features.ServiceFeature):
             await asyncio.wait_for(contact_store(), DB_CONTACT_TIMEOUT_S)
             await ensure_database()
             read_result, create_result = await asyncio.gather(read_document(), create_document())
-            (rev, data) = read_result or create_result
+            (rev, data) = read_result or create_result or (None, None)
+            if rev is None:
+                raise ValueError('Data was neither read nor created')
             return rev, data
 
         except asyncio.CancelledError:
@@ -103,7 +105,7 @@ class CouchDBClient(features.ServiceFeature):
 
         except Exception as ex:
             LOGGER.error(f'{self} {type(ex).__name__}({ex})')
-            raise
+            raise ex
 
     async def write(self, database: str, document: str, rev: str, data: Any) -> Awaitable[str]:
         kwargs = {

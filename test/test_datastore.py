@@ -22,7 +22,7 @@ def read_objects():
 
 
 @pytest.fixture
-def client_mock(app, mocker):
+def client_mock(mocker):
     m = mocker.patch(TESTED + '.couchdb_client.get_client')
     m.return_value.read = CoroutineMock(return_value=('rev_read', read_objects()))
     m.return_value.write = CoroutineMock(return_value='rev_write')
@@ -92,12 +92,25 @@ async def test_store(app, client, store, client_mock):
     await asyncio.sleep(0.05)
     assert client_mock.write.call_count == 3
 
+    # handle read error
+    client_mock.read.side_effect = return_once(RuntimeError, then=('rev_read', read_objects()))
+    with pytest.warns(UserWarning, match='read error'):
+        await store.read('doc')
+
+    assert store.rev is None
+    assert store.document is None
+    with pytest.warns(UserWarning, match='flush error'):
+        await asyncio.sleep(0.05)
+
+    # reset to normal
+    await store.read('doc')
+
     # continue on write error
     with pytest.warns(UserWarning, match='flush error'):
         client_mock.write.side_effect = return_once(RuntimeError, then='rev_write')
         store['inserted2', 9002] = 'val'
         await asyncio.sleep(0.05)
-        assert client_mock.write.call_count == 5
+    assert client_mock.write.call_count == 5
 
     # write on shutdown
     store['inserted3', 9003] = 'val'
@@ -147,3 +160,29 @@ async def test_config(app, client, config, client_mock):
     await asyncio.sleep(0.05)
     assert config.rev == 'rev_write'
     assert client_mock.write.call_count == 1
+
+    # handle read error
+    client_mock.read.side_effect = return_once(RuntimeError, then=('rev_read', vals()))
+    with pytest.warns(UserWarning, match='read error'):
+        await config.read('doc')
+
+    assert config.rev is None
+    assert config.document is None
+
+    with config.open() as cfg:
+        assert cfg == {}
+        cfg['key'] = 'val'
+
+    with pytest.warns(UserWarning, match='flush error'):
+        await asyncio.sleep(0.05)
+
+    # reset to normal
+    await config.read('doc')
+
+    # continue on write error
+    with pytest.warns(UserWarning, match='flush error'):
+        client_mock.write.side_effect = return_once(RuntimeError, then='rev_write')
+        with config.open() as cfg:
+            cfg['insert'] = 'outsert'
+        await asyncio.sleep(0.05)
+    assert client_mock.write.call_count == 3

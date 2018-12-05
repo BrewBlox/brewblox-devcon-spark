@@ -4,10 +4,13 @@ Tests brewblox codec
 
 from brewblox_devcon_spark.codec import _path_extension  # isort:skip
 
+import asyncio
+
 import pytest
 from brewblox_service import scheduler
 
-from brewblox_devcon_spark import datastore, exceptions
+from brewblox_devcon_spark import (commander_sim, datastore, device,
+                                   exceptions, seeder, status)
 from brewblox_devcon_spark.codec import codec
 
 _path_extension.avoid_lint_errors()
@@ -15,10 +18,13 @@ _path_extension.avoid_lint_errors()
 
 @pytest.fixture
 def app(app):
-    app['config']['unit_defaults'] = ['degC']
+    status.setup(app)
     scheduler.setup(app)
     datastore.setup(app)
+    commander_sim.setup(app)
     codec.setup(app)
+    device.setup(app)
+    seeder.setup(app)
     return app
 
 
@@ -103,3 +109,22 @@ async def test_transcode_interfaces(app, client, cdc):
         'SetpointSensorPairLink'
     ]
     assert [await cdc.decode(await cdc.encode(t)) for t in types] == types
+
+
+async def test_codec_config(app, client, cdc):
+    state = status.get_status(app)
+
+    updated = cdc.update_unit_config({'Temp': 'degF'})
+    assert updated['Temp'] == 'degF'
+    assert cdc.get_unit_config() == updated
+
+    # disconnect
+    state.connected.clear()
+    state.disconnected.set()
+    await asyncio.sleep(0.01)
+    # connect
+    state.disconnected.clear()
+    state.connected.set()
+    await asyncio.sleep(0.01)
+
+    assert cdc.get_unit_config()['Temp'] == 'degC'
