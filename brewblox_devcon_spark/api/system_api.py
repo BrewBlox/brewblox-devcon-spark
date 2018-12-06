@@ -9,6 +9,7 @@ from aiohttp import web
 from brewblox_service import brewblox_logger
 
 from brewblox_devcon_spark.api import API_DATA_KEY, object_api
+from brewblox_devcon_spark.datastore import PROFILES_CONTROLLER_ID
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -24,12 +25,12 @@ class SystemApi():
         self._obj_api: object_api.ObjectApi = object_api.ObjectApi(app)
 
     async def read_profiles(self) -> List[int]:
-        profiles = await self._obj_api.read('__profiles')
+        profiles = await self._obj_api.read(PROFILES_CONTROLLER_ID)
         return profiles[API_DATA_KEY]['active']
 
     async def write_profiles(self, profiles: List[int]) -> List[int]:
         profile_obj = await self._obj_api.write(
-            input_id='__profiles',
+            input_id=PROFILES_CONTROLLER_ID,
             profiles=[],
             input_type='Profiles',
             input_data={'active': profiles}

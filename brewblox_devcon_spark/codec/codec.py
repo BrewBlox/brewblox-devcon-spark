@@ -3,6 +3,7 @@ Generic entry point for all codecs.
 Offers encoding and decoding of objects.
 """
 
+
 from copy import deepcopy
 from typing import Awaitable, Callable, Dict, Optional, Tuple, Union
 
@@ -44,21 +45,19 @@ class Codec(features.ServiceFeature):
     async def startup(self, app: web.Application):
         self._converter = UnitConverter()
         self._mod = Modifier(self._converter, self._strip_readonly)
+        datastore.get_config(app).subscribe(self._on_config_change)
 
-        try:
-            with datastore.get_config(app).open() as cfg:
-                self._converter.user_units = cfg.get(UNIT_CONFIG_KEY, {})
-            LOGGER.info('Loaded user-defined units')
-        except Exception as ex:
-            LOGGER.info(f'Failed to load user-defined units: {type(ex).__name__}({ex})', exc_info=True)
-
-    async def shutdown(self, *_):
+    async def shutdown(self, app: web.Application):
         pass
 
     def get_unit_config(self) -> Dict[str, str]:
         return self._converter.user_units
 
-    def update_unit_config(self, units: Dict[str, str]) -> Dict[str, str]:
+    def _on_config_change(self, config):
+        self._converter.user_units = config.get(UNIT_CONFIG_KEY, {})
+        config[UNIT_CONFIG_KEY] = self._converter.user_units
+
+    def update_unit_config(self, units: Dict[str, str] = None) -> Dict[str, str]:
         self._converter.user_units = units
         updated = self._converter.user_units
         with datastore.get_config(self.app).open() as config:

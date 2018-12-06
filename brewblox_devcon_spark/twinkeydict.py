@@ -4,24 +4,17 @@ Supports lookups where either left or right value is unknown.
 When looking up objects with both left and right key, asserts that keys point to the same object.
 """
 
-import asyncio
-import json
-import warnings
 from collections.abc import MutableMapping
-from concurrent.futures import CancelledError
 from contextlib import suppress
-from typing import Any, Callable, Dict, Hashable, Iterator, Tuple
+from typing import Any, Dict, Hashable, Iterator, Tuple
 
-import aiofiles
-from aiohttp import web
-from brewblox_service import brewblox_logger, features, scheduler
+from brewblox_service import brewblox_logger
+
 from dataclasses import dataclass
 
 Keys_ = Tuple[Hashable, Hashable]
 
 LOGGER = brewblox_logger(__name__)
-
-FLUSH_DELAY_S = 5
 
 
 class TwinKeyError(Exception):
@@ -117,10 +110,12 @@ class TwinKeyDict(MutableMapping):
         if right_key is None:
             return self._left_view[left_key]
 
-        obj = self._left_view[left_key]
-        if right_key != obj.right_key:
+        left_obj, right_obj = self._left_view.get(left_key), self._right_view.get(right_key)
+        if (left_obj, right_obj) == (None, None):
+            raise KeyError(f'[{left_key}, {right_key}]')
+        if left_obj is not right_obj:
             raise TwinKeyError(f'Keys [{left_key}, {right_key}] point to different objects')
-        return obj
+        return left_obj
 
     def __getitem__(self, keys: Keys_) -> Any:
         return self._getobj(keys).content
@@ -161,114 +156,3 @@ class TwinKeyDict(MutableMapping):
 
         del self[old_keys]
         self[new_left, new_right] = obj.content
-
-
-class TwinKeyFileDict(features.ServiceFeature, TwinKeyDict):
-    """
-    TwinKeyDict subclass to periodically flush contained objects to file.
-
-    Will attempt to read the backing file once during __init__,
-    and then add hooks to the __setitem__ and __delitem__ functions.
-
-    Whenever an item is added or deleted, TwinKeyFileDict will flush the file a few seconds later.
-    This optimizes for the scenario where data is updated in batches.
-    The collection is also saved to file when the application is shut down.
-
-    Note: modifications of objects inside the dict are not tracked.
-    Calling code may choose to explicitly flush to file by calling `write_file()`.
-
-    Example:
-        >>> twinkey = TwinKeyFileDict(app, 'myfile.json')
-        # Will be flushed to file
-        >>> twinkey[1, 2] = {'subkey': 1}
-        # Will not trigger a flush
-        >>> twinkey[1, 2]['subkey'] = 2
-        # Can safely be called whenever
-        >>> await twinkey.write_file()
-    """
-
-    def __init__(self,
-                 app: web.Application,
-                 filename: str,
-                 read_only: bool = False,
-                 filter: Callable[[Keys_, Any], bool] = lambda k, v: True
-                 ):
-        features.ServiceFeature.__init__(self, app)
-        TwinKeyDict.__init__(self)
-
-        self._filename: str = filename
-        self._read_only: bool = read_only
-        self._filter: Callable[[Keys_, Any], bool] = filter
-        self._flush_task: asyncio.Task = None
-        self._changed_event: asyncio.Event = None
-
-        try:
-            self.read_file()
-        except FileNotFoundError:
-            warnings.warn(f'{self} file not found.')
-        except Exception:
-            LOGGER.error(f'{self} unable to read objects.')
-            raise
-
-    def __str__(self):
-        return f'<{type(self).__name__} for {self._filename}>'
-
-    def __setitem__(self, keys, item):
-        self._check_writable()
-        TwinKeyDict.__setitem__(self, keys, item)
-        if self._changed_event:
-            self._changed_event.set()
-
-    def __delitem__(self, keys):
-        self._check_writable()
-        TwinKeyDict.__delitem__(self, keys)
-        if self._changed_event:
-            self._changed_event.set()
-
-    @property
-    def active(self):
-        return self._flush_task and not self._flush_task.done()
-
-    def _check_writable(self):
-        if self._read_only:
-            raise TypeError(f'{self} is read-only')
-
-    def read_file(self):
-        with open(self._filename) as f:
-            for obj in json.load(f):
-                TwinKeyDict.__setitem__(self, obj['keys'], obj['data'])
-
-    async def write_file(self):
-        self._check_writable()
-        persisted = [
-            {'keys': keys, 'data': content}
-            for keys, content in self.items()
-            if self._filter(keys, content)
-        ]
-        async with aiofiles.open(self._filename, mode='w') as f:
-            await f.write(json.dumps(persisted))
-
-    async def _autoflush(self):
-        while True:
-            try:
-                await self._changed_event.wait()
-                await asyncio.sleep(FLUSH_DELAY_S)
-                await self.write_file()
-                self._changed_event.clear()
-
-            except CancelledError:
-                await self.write_file()
-                break
-
-            except Exception as ex:
-                warnings.warn(f'{self} {type(ex).__name__}({ex})')
-
-    async def startup(self, app: web.Application):
-        await self.shutdown(app)
-        if not self._read_only:
-            self._changed_event = asyncio.Event()
-            self._flush_task = await scheduler.create_task(app, self._autoflush())
-
-    async def shutdown(self, app: web.Application):
-        self._changed_event = None
-        await scheduler.cancel_task(app, self._flush_task)

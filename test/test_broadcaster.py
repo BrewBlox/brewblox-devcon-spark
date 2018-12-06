@@ -33,6 +33,7 @@ def mock_publisher(mocker):
 async def app(app, mock_api, mock_publisher):
     app['config']['broadcast_interval'] = 0.01
     app['config']['broadcast_exchange'] = 'testcast'
+    app['config']['volatile'] = False
     status.setup(app)
     scheduler.setup(app)
     broadcaster.setup(app)
@@ -48,6 +49,7 @@ async def disabled_app(app):
 @pytest.fixture
 async def connected(app, client):
     status.get_status(app).connected.set()
+    status.get_status(app).synchronized.set()
 
 
 async def test_startup_shutdown(app, client):

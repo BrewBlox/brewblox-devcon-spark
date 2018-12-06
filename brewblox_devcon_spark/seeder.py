@@ -4,18 +4,14 @@ Regulates actions that should be taken when the service connects to a controller
 
 
 import asyncio
-import json
 import warnings
 from datetime import datetime
 
-import aiofiles
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, scheduler
 
-from brewblox_devcon_spark import exceptions, status
-from brewblox_devcon_spark.api import (API_DATA_KEY, API_ID_KEY,
-                                       API_PROFILE_LIST_KEY, API_TYPE_KEY,
-                                       object_api, system_api)
+from brewblox_devcon_spark import datastore, status
+from brewblox_devcon_spark.api import object_api
 
 LOGGER = brewblox_logger(__name__)
 
@@ -36,6 +32,10 @@ class Seeder(features.ServiceFeature):
         self._config = app['config']
         self._task: asyncio.Task = None
 
+    @property
+    def active(self):
+        return self._task and not self._task.done()
+
     async def startup(self, app: web.Application):
         await self.shutdown(app)
         self._task = await scheduler.create_task(app, self._seed())
@@ -49,68 +49,46 @@ class Seeder(features.ServiceFeature):
 
         while True:
             await spark_status.connected.wait()
-            await asyncio.gather(
-                self._seed_time(),
-                self._seed_objects(),
-                self._seed_profiles()
-            )
+            await self._seed_datastore()
+            await self._seed_time()
+            spark_status.synchronized.set()
+
             await spark_status.disconnected.wait()
+            spark_status.synchronized.clear()
 
     ##########
+
+    async def _seed_datastore(self):
+        try:
+            api = object_api.ObjectApi(self.app, wait_sync=False)
+            sys_block = await api.read(datastore.SYSINFO_CONTROLLER_ID)
+            device_id = sys_block[object_api.API_DATA_KEY]['deviceId']
+
+            await asyncio.gather(
+                datastore.get_datastore(self.app).read(f'{device_id}-blocks-db'),
+                datastore.get_config(self.app).read(f'{device_id}-config-db'),
+            )
+
+        except asyncio.CancelledError:
+            raise
+
+        except Exception as ex:
+            warnings.warn(f'Failed to seed datastore - {type(ex).__name__}({ex})')
 
     async def _seed_time(self):
         try:
             now = datetime.now()
-            api = object_api.ObjectApi(self.app)
+            api = object_api.ObjectApi(self.app, wait_sync=False)
             await api.write(
-                input_id='__time',
+                input_id=datastore.TIME_CONTROLLER_ID,
                 profiles=[i for i in range(8)],
                 input_type='Ticks',
                 input_data={
                     'secondsSinceEpoch': now.timestamp()
                 })
 
-        except Exception as ex:  # pragma: no cover
-            warnings.warn(f'Failed to seed controller time {type(ex).__name__}({ex})')
-
-    async def _seed_objects(self):
-        seed_file = self._config['seed_objects']
-        if not seed_file:
-            return
-
-        try:
-            async with aiofiles.open(seed_file) as f:
-                seeds = json.loads(await f.read())
-        except Exception as ex:
-            warnings.warn(f'Failed to read seed file {seed_file} {type(ex).__name__}({ex})')
-            return
-
-        api = object_api.ObjectApi(self.app)
-        for seed in seeds:
-            try:
-                id = seed[API_ID_KEY]
-                await api.create(
-                    id,
-                    seed[API_PROFILE_LIST_KEY],
-                    seed[API_TYPE_KEY],
-                    seed[API_DATA_KEY]
-                )
-                LOGGER.info(f'Seeded [{id}]')
-
-            except exceptions.ExistingId:
-                warnings.warn(f'Skipped seeding [{id}]: duplicate name, or already created')
-
-            except Exception as ex:
-                warnings.warn(f'Failed to seed object: {type(ex).__name__}({ex})')
-
-    async def _seed_profiles(self):
-        if not self._config['seed_profiles']:
-            return
-
-        try:
-            api = system_api.SystemApi(self.app)
-            profiles = self._config['seed_profiles']
-            await api.write_profiles(profiles)
+        except asyncio.CancelledError:
+            raise
 
         except Exception as ex:
-            warnings.warn(f'Failed to seed profiles {profiles} {type(ex).__name__}({ex})')
+            warnings.warn(f'Failed to seed controller time - {type(ex).__name__}({ex})')

@@ -83,3 +83,4 @@ rpi-docker/pkg/*
 # Default persistence files
 brewblox_db.json
 brewblox_cfg.json
+couchdb/

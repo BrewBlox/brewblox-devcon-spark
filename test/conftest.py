@@ -5,7 +5,6 @@ Any fixtures declared here are available to all test functions in this directory
 
 
 import logging
-from tempfile import NamedTemporaryFile
 
 import pytest
 from brewblox_service import brewblox_logger, features, service
@@ -23,42 +22,20 @@ def log_enabled():
     logging.captureWarnings(True)
 
 
-@pytest.fixture(autouse=True)
-def test_db():
-    """
-    Creates a temporary database file that will be automatically removed.
-    """
-    f = NamedTemporaryFile(mode='w+t', encoding='utf8')
-    f.write('[]')
-    f.flush()
-    yield f.name
-    f.close()
-
-
-@pytest.fixture(autouse=True)
-def test_cfg():
-    f = NamedTemporaryFile(mode='w+t', encoding='utf8')
-    f.write('{}')
-    f.flush()
-    yield f.name
-    f.close()
-
-
 @pytest.fixture
-def app_config(test_db, test_cfg) -> dict:
+def app_config() -> dict:
     return {
         'name': 'test_app',
         'host': 'localhost',
         'port': 1234,
         'debug': True,
-        'database': test_db,
-        'config': test_cfg,
         'device_serial': '/dev/TESTEH',
         'device_id': '1234',
         'simulation': False,
         'broadcast_interval': 5,
         'broadcast_exchange': 'brewcast',
         'sync_exchange': 'syncast',
+        'volatile': True,
     }
 
 
@@ -70,13 +47,12 @@ def sys_args(app_config) -> list:
         '--name', app_config['name'],
         '--host', app_config['host'],
         '--port', app_config['port'],
-        '--database', app_config['database'],
-        '--config', app_config['config'],
         '--device-serial', app_config['device_serial'],
         '--device-id', app_config['device_id'],
         '--broadcast-interval', app_config['broadcast_interval'],
         '--broadcast-exchange', app_config['broadcast_exchange'],
         '--sync-exchange', app_config['sync_exchange'],
+        '--volatile',
     ]]
 
 

@@ -5,18 +5,19 @@ Input/output modification functions for transcoding
 from brewblox_devcon_spark.codec import _path_extension  # isort:skip
 
 import re
+from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
 from functools import reduce
 from typing import Iterator, List
 
 from brewblox_service import brewblox_logger
-from dataclasses import dataclass
 from google.protobuf import json_format
 from google.protobuf.descriptor import DescriptorBase, FieldDescriptor
 from google.protobuf.message import Message
 
 import brewblox_pb2
 from brewblox_devcon_spark.codec.unit_conversion import UnitConverter
+from dataclasses import dataclass
 
 STRIP_UNLOGGED_KEY = 'strip_unlogged'
 
@@ -55,6 +56,16 @@ class Modifier():
     @staticmethod
     def int_to_hex(i: int) -> str:
         return hexlify(int(i).to_bytes(8, 'little')).decode()
+
+    @staticmethod
+    def hex_to_b64(s: str) -> str:
+        print('hex->b64', s)
+        return b64encode(unhexlify(s)).decode()
+
+    @staticmethod
+    def b64_to_hex(s: str) -> str:
+        print('b64->hex', s)
+        return hexlify(b64decode(s)).decode()
 
     @staticmethod
     def pack_bit_flags(flags: List[int]) -> int:
@@ -180,6 +191,9 @@ class Modifier():
             if options.hexed:
                 val = [self.hex_to_int(v) for v in val]
 
+            if options.hexstr:
+                val = [self.hex_to_b64(v) for v in val]
+
             if element.field.cpp_type in json_format._INT_TYPES:
                 val = [int(round(v)) for v in val]
 
@@ -273,6 +287,9 @@ class Modifier():
 
             if options.hexed:
                 val = [self.int_to_hex(v) for v in val]
+
+            if options.hexstr:
+                val = [self.b64_to_hex(v) for v in val]
 
             if not is_list:
                 val = val[0]

@@ -48,20 +48,21 @@ class Broadcaster(features.ServiceFeature):
         self._task = None
 
     async def _broadcast(self):
-        LOGGER.info(f'Starting {self}')
-
         try:
-            api = ObjectApi(self.app)
-            spark_status = status.get_status(self.app)
-            publisher = events.get_publisher(self.app)
             name = self.app['config']['name']
             interval = self.app['config']['broadcast_interval']
             exchange = self.app['config']['broadcast_exchange']
-            last_broadcast_ok = True
 
-            if interval <= 0:
-                LOGGER.info(f'Exiting {self} (disabled by user)')
+            if interval <= 0 or self.app['config']['volatile']:
+                LOGGER.info(f'{self} disabled by user')
                 return
+
+            LOGGER.info(f'Starting {self}')
+
+            api = ObjectApi(self.app)
+            spark_status = status.get_status(self.app)
+            publisher = events.get_publisher(self.app)
+            last_broadcast_ok = True
 
         except Exception as ex:
             LOGGER.error(f'{type(ex).__name__}: {str(ex)}', exc_info=True)
@@ -69,11 +70,12 @@ class Broadcaster(features.ServiceFeature):
 
         while True:
             try:
-                await spark_status.connected.wait()
+                await spark_status.synchronized.wait()
                 await asyncio.sleep(interval)
                 current_objects = {
                     obj[API_ID_KEY]: obj[API_DATA_KEY]
-                    for obj in await api.all() if not obj[API_ID_KEY].startswith(GENERATED_ID_PREFIX)
+                    for obj in await api.all()
+                    if not obj[API_ID_KEY].startswith(GENERATED_ID_PREFIX)
                 }
 
                 # Don't broadcast when empty

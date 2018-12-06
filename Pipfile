@@ -24,6 +24,7 @@ asynctest = "*"
 "flake8" = "*"
 "autopep8" = "*"
 brewblox-tools = "*"
+aioresponses = "*"
 
 [requires]
 python_version = "3.7"

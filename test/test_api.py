@@ -8,7 +8,7 @@ import pytest
 from brewblox_service import scheduler
 
 from brewblox_devcon_spark import (commander_sim, datastore, device,
-                                   exceptions, status)
+                                   exceptions, seeder, status)
 from brewblox_devcon_spark.api import (alias_api, codec_api, debug_api,
                                        error_response, object_api, sse_api,
                                        system_api)
@@ -57,6 +57,7 @@ async def app(app, loop):
     commander_sim.setup(app)
     datastore.setup(app)
     codec.setup(app)
+    seeder.setup(app)
     device.setup(app)
 
     error_response.setup(app)
@@ -326,6 +327,7 @@ async def test_list_compatible(app, client, object_args):
 
 async def test_discover_objects(app, client):
     resp = await response(client.get('/discover_objects'))
+    # Commander sim always returns the profiles object
     assert resp == ['__profiles']
 
 
