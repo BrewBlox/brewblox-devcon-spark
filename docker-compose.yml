@@ -5,7 +5,7 @@ services:
   eventbus:
     image: rabbitmq:alpine
 
-  couchstore:
+  datastore:
     image: treehouses/couchdb
     ports:
       - "5984:5984"
@@ -20,7 +20,7 @@ services:
     privileged: true
     depends_on:
       - eventbus
-      - couchstore
+      - datastore
       - sparksimulator
     ports:
       - "5000:5000"

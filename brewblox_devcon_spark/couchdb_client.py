@@ -8,7 +8,7 @@ LOGGER = brewblox_logger(__name__)
 
 DB_CONTACT_TIMEOUT_S = 30
 DB_RETRY_INTERVAL_S = 1
-COUCH_URL = 'http://couchstore:5984'
+COUCH_URL = 'http://datastore:5984'
 
 
 def setup(app: web.Application):
