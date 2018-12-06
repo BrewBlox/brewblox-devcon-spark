@@ -79,7 +79,7 @@ class SimulationResponder():
                 OBJECT_TYPE_KEY: 'SysInfo',
                 PROFILE_LIST_KEY: self._all_profiles,
                 OBJECT_DATA_KEY: {
-                    'deviceId': 'c2ltdWxhdG9y'
+                    'deviceId': 'FACADE'
                 },
             },
             3: {
