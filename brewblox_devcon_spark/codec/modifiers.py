@@ -59,12 +59,10 @@ class Modifier():
 
     @staticmethod
     def hex_to_b64(s: str) -> str:
-        print('hex->b64', s)
         return b64encode(unhexlify(s)).decode()
 
     @staticmethod
     def b64_to_hex(s: str) -> str:
-        print('b64->hex', s)
         return hexlify(b64decode(s)).decode()
 
     @staticmethod
