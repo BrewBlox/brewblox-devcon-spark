@@ -16,16 +16,30 @@ services:
     image: brewblox/firmware-simulator:develop
 
   spark:
-    image: brewblox/brewblox-devcon-spark:develop
+    image: brewblox/brewblox-devcon-spark:feature-mdns
     privileged: true
     depends_on:
       - eventbus
       - datastore
       - sparksimulator
-    ports:
-      - "5000:5000"
+    labels:
+      - "traefik.port=5000"
+      - "traefik.frontend.rule=PathPrefix: /spark"
     volumes:
       - "./:/app/"
     command: >
-      --device-host=sparksimulator
+      --device-id=3f0025000851353532343835
     #   --volatile
+
+  mdns:
+    image: brewblox/brewblox-mdns:develop
+    network_mode: host
+
+  traefik:
+    image: traefik
+    command: -c /dev/null --api --docker --docker.domain=docker.localhost
+    ports:
+      - "80:80"
+      - "9001:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock

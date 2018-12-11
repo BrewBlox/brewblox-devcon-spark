@@ -8,7 +8,7 @@ import pytest
 from aiohttp.client_exceptions import ClientResponseError
 from aioresponses import aioresponses
 
-from brewblox_devcon_spark import couchdb_client
+from brewblox_devcon_spark import couchdb_client, http_client
 
 TESTED = couchdb_client.__name__
 SRV_URL = couchdb_client.COUCH_URL
@@ -30,6 +30,7 @@ def resp():
 def app(app, mocker):
     mocker.patch(TESTED + '.DB_RETRY_INTERVAL_S', 0.01)
     mocker.patch(TESTED + '.DB_CONTACT_TIMEOUT_S', 0.1)
+    http_client.setup(app)
     couchdb_client.setup(app)
     return app
 
