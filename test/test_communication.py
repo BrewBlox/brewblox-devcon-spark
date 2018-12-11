@@ -7,10 +7,13 @@ from collections import namedtuple
 from unittest.mock import Mock, call
 
 import pytest
+from aiohttp.client_exceptions import ClientResponseError
+from aioresponses import aioresponses
 from asynctest import CoroutineMock
 from brewblox_service import scheduler
 
-from brewblox_devcon_spark import communication, exceptions, status
+from brewblox_devcon_spark import (communication, exceptions, http_client,
+                                   status)
 
 DummyPortInfo = namedtuple('DummyPortInfo', ['device', 'description', 'hwid', 'serial_number'])
 
@@ -123,13 +126,6 @@ def tcp_create_connection_mock(app, mocker):
 
 
 @pytest.fixture
-def discovery_mock(app, mocker):
-    return mocker.patch.object(
-        communication.dns_discovery, 'discover',
-        CoroutineMock(return_value=('enterprise', 1234)))
-
-
-@pytest.fixture
 def bound_collector(loop):
     return Collector(loop)
 
@@ -138,9 +134,25 @@ def bound_collector(loop):
 def app(app, serial_mock, transport_mock):
     app['config']['device_host'] = None
     status.setup(app)
+    http_client.setup(app)
     scheduler.setup(app)
     communication.setup(app)
     return app
+
+
+@pytest.fixture
+def discovery_resp(app):
+    config = app['config']
+    mdns_host = config['mdns_host']
+    mdns_port = config['mdns_port']
+    with aioresponses() as m:
+        for i in range(100):
+            m.post(
+                f'http://{mdns_host}:{mdns_port}/mdns/discover',
+                payload={'host': 'enterprise', 'port': 1234})
+            m.post(f'http://mdns_error_host:{mdns_port}/mdns/discover',
+                   exception=ClientResponseError(None, None, status=500))
+        yield m
 
 
 @pytest.fixture
@@ -337,22 +349,22 @@ async def test_reconnect(app, client, mocker, tcp_create_connection_mock):
     assert tcp_create_connection_mock.call_count == 3
 
 
-async def test_discover(app, client, mocker, tcp_create_connection_mock, discovery_mock):
+async def test_discover(app, client, mocker, tcp_create_connection_mock, discovery_resp):
     app['config']['device_serial'] = None
     app['config']['device_host'] = None
     spock = communication.SparkConduit(app)
 
     await spock.startup(app)
-    await asyncio.sleep(0.01)
+    await asyncio.sleep(0.1)
 
     assert spock.connected
     assert tcp_create_connection_mock.call_count == 1
 
 
-async def test_discover_repeat(app, client, mocker, tcp_create_connection_mock, discovery_mock):
+async def test_discover_repeat(app, client, mocker, tcp_create_connection_mock, discovery_resp):
     app['config']['device_serial'] = None
     app['config']['device_host'] = None
-    discovery_mock.side_effect = asyncio.TimeoutError
+    app['config']['mdns_host'] = 'mdns_error_host'
     mocker.patch(TESTED + '.DISCOVER_INTERVAL_S', 0.001)
 
     spock = communication.SparkConduit(app)
@@ -362,4 +374,3 @@ async def test_discover_repeat(app, client, mocker, tcp_create_connection_mock, 
 
     assert not spock.connected
     assert tcp_create_connection_mock.call_count == 0
-    assert discovery_mock.call_count > 1

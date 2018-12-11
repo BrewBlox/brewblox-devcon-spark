@@ -8,7 +8,7 @@ from brewblox_service import brewblox_logger, events, scheduler, service
 
 from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
                                    communication, couchdb_client, datastore,
-                                   device, seeder, status)
+                                   device, http_client, seeder, status)
 from brewblox_devcon_spark.api import (alias_api, codec_api, debug_api,
                                        error_response, object_api, remote_api,
                                        sse_api, system_api)
@@ -55,6 +55,13 @@ def create_parser(default_name='spark'):
     group.add_argument('--sync-exchange',
                        help='Eventbus exchange used to synchronize remote blocks. [%(default)s]',
                        default='syncast')
+    group.add_argument('--mdns-host',
+                       help='Address of the BrewBlox mdns discovery service. [%(default)s]',
+                       default='172.17.0.1')
+    group.add_argument('--mdns-port',
+                       help='Port of the BrewBlox mdns discovery service. [%(default)s]',
+                       type=int,
+                       default=5000)
     group.add_argument('--volatile',
                        action='store_true',
                        help='Disable all outgoing network calls. [%(default)s]')
@@ -75,6 +82,7 @@ def main():
         return
 
     status.setup(app)
+    http_client.setup(app)
 
     if config['simulation']:
         commander_sim.setup(app)

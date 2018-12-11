@@ -35,6 +35,8 @@ def app_config() -> dict:
         'broadcast_interval': 5,
         'broadcast_exchange': 'brewcast',
         'sync_exchange': 'syncast',
+        'mdns_host': '172.17.0.1',
+        'mdns_port': 5000,
         'volatile': True,
     }
 
@@ -52,6 +54,8 @@ def sys_args(app_config) -> list:
         '--broadcast-interval', app_config['broadcast_interval'],
         '--broadcast-exchange', app_config['broadcast_exchange'],
         '--sync-exchange', app_config['sync_exchange'],
+        '--mdns-host', app_config['mdns_host'],
+        '--mdns-port', app_config['mdns_port'],
         '--volatile',
     ]]
 

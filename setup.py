@@ -26,7 +26,6 @@ setup(
         'protobuf~=3.6.0',
         'pint~=0.8',
         'aiofiles~=0.4.0',
-        'aiozeroconf~=0.1.7',
         'aiohttp-sse~=2.0',
     ],
     python_requires='>=3.7',

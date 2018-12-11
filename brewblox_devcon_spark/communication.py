@@ -18,7 +18,7 @@ from brewblox_service import brewblox_logger, features, scheduler
 from serial.tools import list_ports
 from serial_asyncio import SerialTransport
 
-from brewblox_devcon_spark import dns_discovery, exceptions, status
+from brewblox_devcon_spark import exceptions, http_client, status
 
 LOGGER = brewblox_logger(__name__)
 DNS_DISCOVER_TIMEOUT_S = 20
@@ -88,7 +88,10 @@ async def connect_tcp(app: web.Application,
 async def connect_discovered(app: web.Application,
                              factory: ProtocolFactory_
                              ) -> Awaitable[ConnectionResult_]:
-    id = app['config']['device_id']
+    config = app['config']
+    id = config['device_id']
+    mdns_host = config['mdns_host']
+    mdns_port = config['mdns_port']
     LOGGER.info(f'Starting device discovery, id={id}...')
     while True:
         try:
@@ -97,13 +100,19 @@ async def connect_discovered(app: web.Application,
             pass
 
         try:
-            host, port = await dns_discovery.discover(app.loop, id, DNS_DISCOVER_TIMEOUT_S)
+            session = http_client.get_client(app).session
+            retv = await asyncio.wait_for(
+                session.post(f'http://{mdns_host}:{mdns_port}/mdns/discover', json={'id': id}),
+                DNS_DISCOVER_TIMEOUT_S
+            )
+            resp = await retv.json()
+            print(resp)
+            host, port = resp['host'], resp['port']
             transport, protocol = await app.loop.create_connection(factory, host, port)
             return f'{host}:{port}', transport, protocol
-        except TimeoutError:
-            pass
 
-        await asyncio.sleep(DISCOVER_INTERVAL_S)
+        except TimeoutError:  # pragma: no cover
+            await asyncio.sleep(DISCOVER_INTERVAL_S)
 
 
 class SparkConduit(features.ServiceFeature):

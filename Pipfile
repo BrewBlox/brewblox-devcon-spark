@@ -1,9 +1,12 @@
 [[source]]
+
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
+
 [packages]
+
 brewblox-service = "~=0.14.0"
 dpath = "*"
 pyserial-asyncio = "*"
@@ -11,10 +14,11 @@ construct = "*"
 protobuf = "*"
 Pint = "*"
 aiofiles = "*"
-aiozeroconf = "*"
 aiohttp-sse = "*"
 
+
 [dev-packages]
+
 pytest = "*"
 "pytest-flake8" = "*"
 pytest-cov = "*"
@@ -26,8 +30,12 @@ asynctest = "*"
 brewblox-tools = "*"
 aioresponses = "*"
 
+
 [requires]
+
 python_version = "3.7"
 
+
 [scripts]
+
 dist = "python setup.py sdist"
