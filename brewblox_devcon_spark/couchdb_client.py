@@ -1,8 +1,10 @@
 import asyncio
 from typing import Any, Awaitable, Tuple
 
-from aiohttp import ClientSession, client_exceptions, web
+from aiohttp import client_exceptions, web
 from brewblox_service import brewblox_logger, features
+
+from brewblox_devcon_spark import http_client
 
 LOGGER = brewblox_logger(__name__)
 
@@ -21,32 +23,24 @@ def get_client(app: web.Application) -> 'CouchDBClient':
 
 class CouchDBClient(features.ServiceFeature):
 
-    def __init__(self, app: web.Application):
-        super().__init__(app)
-
-        self._session: ClientSession = None
-        self._rev = None
-
     def __str__(self):
         return f'<{type(self).__name__} for {COUCH_URL}>'
 
     async def startup(self, app: web.Application):
-        await self.shutdown(app)
-        self._session = await ClientSession(raise_for_status=True).__aenter__()
+        pass
 
     async def shutdown(self, app: web.Application):
-        if self._session:
-            await self._session.__aexit__(None, None, None)
-            self._session = None
+        pass
 
     async def read(self, database: str, document: str, default_data: Any) -> Awaitable[Tuple[str, Any]]:
         db_url = f'{COUCH_URL}/{database}'
         document_url = f'{db_url}/{document}'
+        session = http_client.get_client(self.app).session
 
         async def contact_store():
             while True:
                 try:
-                    await self._session.head(COUCH_URL, raise_for_status=False)
+                    await session.head(COUCH_URL, raise_for_status=False)
                 except asyncio.CancelledError:
                     raise
                 except Exception:
@@ -56,7 +50,7 @@ class CouchDBClient(features.ServiceFeature):
 
         async def ensure_database():
             try:
-                await self._session.put(db_url)
+                await session.put(db_url)
                 LOGGER.info(f'{self} New database created ({database})')
 
             except client_exceptions.ClientResponseError as ex:
@@ -65,7 +59,7 @@ class CouchDBClient(features.ServiceFeature):
 
         async def create_document():
             try:
-                resp = await self._session.put(document_url, json={'data': default_data})
+                resp = await session.put(document_url, json={'data': default_data})
                 resp_content = await resp.json()
 
                 rev = resp_content['rev']
@@ -79,7 +73,7 @@ class CouchDBClient(features.ServiceFeature):
 
         async def read_document():
             try:
-                resp = await self._session.get(document_url)
+                resp = await session.get(document_url)
                 resp_content = await resp.json()
 
                 rev = resp_content['_rev']
@@ -114,6 +108,6 @@ class CouchDBClient(features.ServiceFeature):
             'params': [('rev', rev)],
         }
 
-        resp = await self._session.put(**kwargs)
+        resp = await http_client.get_client(self.app).session.put(**kwargs)
         resp_content = await resp.json()
         return resp_content['rev']
