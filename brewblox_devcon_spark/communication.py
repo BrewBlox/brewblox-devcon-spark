@@ -106,7 +106,6 @@ async def connect_discovered(app: web.Application,
                 DNS_DISCOVER_TIMEOUT_S
             )
             resp = await retv.json()
-            print(resp)
             host, port = resp['host'], resp['port']
             transport, protocol = await app.loop.create_connection(factory, host, port)
             return f'{host}:{port}', transport, protocol
