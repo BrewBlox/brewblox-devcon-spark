@@ -66,13 +66,19 @@ async def test_encode_errors(app, client, cdc):
     with pytest.raises(exceptions.EncodeException):
         await cdc.encode('MAGIC', {})
 
+    with pytest.raises(exceptions.EncodeException):
+        await cdc.encode('TempSensorOneWire', {'Galileo': 'thunderbolts and lightning'})
+
 
 async def test_decode_errors(app, client, cdc):
     with pytest.raises(TypeError):
         await cdc.decode('TempSensorOneWire', 'string')
 
+    # Attempt to gracefully fall back when unable to decode
+    assert await cdc.decode(1e6, b'\x00') == ('UnknownType', {'type': 1e6})
+
     with pytest.raises(exceptions.DecodeException):
-        await cdc.decode('MAGIC', b'\x00')
+        await cdc.decode('TempSensorOneWire', b'very very frightening me')
 
 
 async def test_invalid_object(app, client, cdc):
