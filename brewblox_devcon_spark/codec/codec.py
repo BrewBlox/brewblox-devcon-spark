@@ -135,12 +135,16 @@ class Codec(features.ServiceFeature):
         if not isinstance(encoded, (bytes, list, type(...))):
             raise TypeError(f'Unable to decode [{type(encoded).__name__}] values')
 
+        type_name = obj_type
+        no_content = encoded == ...
+
         try:
             opts = opts or {}
             trc = Transcoder.get(obj_type, self._mod)
-            return trc.type_str() if encoded is ... \
-                else (trc.type_str(), trc.decode(encoded, opts))
+            type_name = trc.type_str()
+            return type_name if no_content else (type_name, trc.decode(encoded, opts))
+
         except Exception as ex:
             msg = f'{type(ex).__name__}({ex})'
             LOGGER.debug(msg, exc_info=True)
-            raise exceptions.DecodeException(msg)
+            return 'UnknownType' if no_content else ('ErrorObject', {'error': msg, 'type': type_name})
