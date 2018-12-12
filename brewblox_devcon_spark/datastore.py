@@ -35,6 +35,9 @@ SYS_OBJECTS = [
         ['__sysinfo', SYSINFO_CONTROLLER_ID],
         ['__time', TIME_CONTROLLER_ID],
         ['__onewirebus', ONEWIREBUS_CONTROLLER_ID],
+        ['__wifisettings', 5],
+        ['__touchsettings', 6],
+        ['__displaysettings', 7],
         # Spark V3
         ['__pin_bottom_1', 10],
         ['__pin_bottom_2', 11],
