@@ -40,10 +40,6 @@ _path_extension.avoid_lint_errors()
 LOGGER = brewblox_logger(__name__)
 
 
-class UnknownTypeException(Exception):
-    pass
-
-
 class Transcoder(ABC):
 
     def __init__(self, mods: Modifier):
@@ -70,28 +66,7 @@ class Transcoder(ABC):
         try:
             return _TYPE_MAPPING[obj_type](mods)
         except KeyError:
-            return type(
-                '_UnknownTypeTranscoder',
-                (UnknownTypeTranscoder, ),
-                {'_TYPE': obj_type}
-            )(mods)
-
-
-class UnknownTypeTranscoder(Transcoder):
-
-    @classmethod
-    def type_int(cls) -> int:
-        return 0
-
-    @classmethod
-    def type_str(cls) -> str:
-        return 'UnknownType'
-
-    def encode(self, values: Decoded_, opts: dict) -> Encoded_:
-        raise UnknownTypeException(f'No codec found for type [{self._TYPE}]')
-
-    def decode(self, values: Encoded_, opts: dict) -> Decoded_:
-        return {'type': self._TYPE}
+            raise KeyError(f'No codec found for object type [{obj_type}]')
 
 
 class LinkTypeTranscoder(Transcoder):
