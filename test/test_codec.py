@@ -5,6 +5,7 @@ Tests brewblox codec
 from brewblox_devcon_spark.codec import _path_extension  # isort:skip
 
 import asyncio
+from unittest.mock import ANY
 
 import pytest
 from brewblox_service import scheduler
@@ -66,13 +67,20 @@ async def test_encode_errors(app, client, cdc):
     with pytest.raises(exceptions.EncodeException):
         await cdc.encode('MAGIC', {})
 
+    with pytest.raises(exceptions.EncodeException):
+        await cdc.encode('TempSensorOneWire', {'Galileo': 'thunderbolts and lightning'})
+
 
 async def test_decode_errors(app, client, cdc):
     with pytest.raises(TypeError):
         await cdc.decode('TempSensorOneWire', 'string')
 
-    with pytest.raises(exceptions.DecodeException):
-        await cdc.decode('MAGIC', b'\x00')
+    type_int = await cdc.encode('TempSensorOneWire')
+    assert await cdc.decode(type_int, b'very very frightening me') \
+        == ('ErrorObject', {'error': ANY, 'type': 'TempSensorOneWire'})
+
+    assert await cdc.decode(1e6, b'\x00') == ('ErrorObject', {'error': ANY, 'type': 1e6})
+    assert await cdc.decode(1e6) == 'UnknownType'
 
 
 async def test_invalid_object(app, client, cdc):
