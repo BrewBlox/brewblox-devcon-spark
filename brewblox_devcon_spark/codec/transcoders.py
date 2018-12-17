@@ -17,6 +17,7 @@ import ActuatorPin_pb2
 import ActuatorPwm_pb2
 import Balancer_pb2
 import brewblox_pb2
+import DisplaySettings_pb2
 import EdgeCase_pb2
 import Mutex_pb2
 import nanopb_pb2
@@ -29,7 +30,9 @@ import SysInfo_pb2
 import TempSensorMock_pb2
 import TempSensorOneWire_pb2
 import Ticks_pb2
+import TouchSettings_pb2
 import XboxController_pb2
+import WiFiSettings_pb2
 from brewblox_devcon_spark.codec.modifiers import Modifier
 
 ObjType_ = Union[int, str]
@@ -207,6 +210,7 @@ _TRANSCODERS = [
         ActuatorPin_pb2.ActuatorPin,
         ActuatorPwm_pb2.ActuatorPwm,
         Balancer_pb2.Balancer,
+        DisplaySettings_pb2.DisplaySettings,
         Mutex_pb2.Mutex,
         OneWireBus_pb2.OneWireBus,
         Pid_pb2.Pid,
@@ -217,6 +221,8 @@ _TRANSCODERS = [
         TempSensorMock_pb2.TempSensorMock,
         TempSensorOneWire_pb2.TempSensorOneWire,
         Ticks_pb2.Ticks,
+        TouchSettings_pb2.TouchSettings,
+        WiFiSettings_pb2.WiFiSettings,
     ]],
 ]
 
