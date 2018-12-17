@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x12WiFiSettings.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xee\x03\n\x0cWiFiSettings\x12\x13\n\x04ssid\x18\x01 \x01(\tB\x05\x92?\x02\x08!\x12\x17\n\x08password\x18\x02 \x01(\tB\x05\x92?\x02\x08@\x12\x31\n\x08security\x18\x03 \x01(\x0e\x32\x1f.blox.WiFiSettings.WlanSecurity\x12-\n\x06\x63ipher\x18\x04 \x01(\x0e\x32\x1d.blox.WiFiSettings.WlanCipher\x12\x0e\n\x06signal\x18\x05 \x01(\x05\x12\x1c\n\x02ip\x18\x06 \x01(\x0c\x42\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x04\x92?\x02x\x01\"\xab\x01\n\x0cWlanSecurity\x12\x12\n\x0eWLAN_SEC_UNSEC\x10\x00\x12\x10\n\x0cWLAN_SEC_WEP\x10\x01\x12\x10\n\x0cWLAN_SEC_WPA\x10\x02\x12\x11\n\rWLAN_SEC_WPA2\x10\x03\x12\x1b\n\x17WLAN_SEC_WPA_ENTERPRISE\x10\x04\x12\x1c\n\x18WLAN_SEC_WPA2_ENTERPRISE\x10\x05\x12\x15\n\x10WLAN_SEC_NOT_SET\x10\xff\x01\"j\n\nWlanCipher\x12\x17\n\x13WLAN_CIPHER_NOT_SET\x10\x00\x12\x13\n\x0fWLAN_CIPHER_AES\x10\x01\x12\x14\n\x10WLAN_CIPHER_TKIP\x10\x02\x12\x18\n\x14WLAN_CIPHER_AES_TKIP\x10\x03:\x06\x92?\x03H\xb8\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x12WiFiSettings.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xf5\x03\n\x0cWiFiSettings\x12\x13\n\x04ssid\x18\x01 \x01(\tB\x05\x92?\x02\x08!\x12\x17\n\x08password\x18\x02 \x01(\tB\x05\x92?\x02\x08@\x12\x31\n\x08security\x18\x03 \x01(\x0e\x32\x1f.blox.WiFiSettings.WlanSecurity\x12-\n\x06\x63ipher\x18\x04 \x01(\x0e\x32\x1d.blox.WiFiSettings.WlanCipher\x12\x15\n\x06signal\x18\x05 \x01(\x05\x42\x05\x92?\x02\x38\x08\x12\x1c\n\x02ip\x18\x06 \x01(\tB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x10\x92?\x02x\x01\"\xab\x01\n\x0cWlanSecurity\x12\x12\n\x0eWLAN_SEC_UNSEC\x10\x00\x12\x10\n\x0cWLAN_SEC_WEP\x10\x01\x12\x10\n\x0cWLAN_SEC_WPA\x10\x02\x12\x11\n\rWLAN_SEC_WPA2\x10\x03\x12\x1b\n\x17WLAN_SEC_WPA_ENTERPRISE\x10\x04\x12\x1c\n\x18WLAN_SEC_WPA2_ENTERPRISE\x10\x05\x12\x15\n\x10WLAN_SEC_NOT_SET\x10\xff\x01\"j\n\nWlanCipher\x12\x17\n\x13WLAN_CIPHER_NOT_SET\x10\x00\x12\x13\n\x0fWLAN_CIPHER_AES\x10\x01\x12\x14\n\x10WLAN_CIPHER_TKIP\x10\x02\x12\x18\n\x14WLAN_CIPHER_AES_TKIP\x10\x03:\x06\x92?\x03H\xb8\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -64,8 +64,8 @@ _WIFISETTINGS_WLANSECURITY = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=266,
-  serialized_end=437,
+  serialized_start=273,
+  serialized_end=444,
 )
 _sym_db.RegisterEnumDescriptor(_WIFISETTINGS_WLANSECURITY)
 
@@ -94,8 +94,8 @@ _WIFISETTINGS_WLANCIPHER = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=439,
-  serialized_end=545,
+  serialized_start=446,
+  serialized_end=552,
 )
 _sym_db.RegisterEnumDescriptor(_WIFISETTINGS_WLANCIPHER)
 
@@ -141,14 +141,14 @@ _WIFISETTINGS = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
+      serialized_options=_b('\222?\0028\010'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='ip', full_name='blox.WiFiSettings.ip', index=5,
-      number=6, type=12, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b(""),
+      number=6, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002(\001\222?\002\010\004\222?\002x\001'), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002(\001\222?\002\010\020\222?\002x\001'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -164,7 +164,7 @@ _WIFISETTINGS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=59,
-  serialized_end=553,
+  serialized_end=560,
 )
 
 _WIFISETTINGS.fields_by_name['security'].enum_type = _WIFISETTINGS_WLANSECURITY
@@ -184,6 +184,7 @@ _sym_db.RegisterMessage(WiFiSettings)
 
 _WIFISETTINGS.fields_by_name['ssid']._options = None
 _WIFISETTINGS.fields_by_name['password']._options = None
+_WIFISETTINGS.fields_by_name['signal']._options = None
 _WIFISETTINGS.fields_by_name['ip']._options = None
 _WIFISETTINGS._options = None
 # @@protoc_insertion_point(module_scope)

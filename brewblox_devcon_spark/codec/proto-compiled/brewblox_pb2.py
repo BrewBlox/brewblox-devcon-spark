@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0e\x62rewblox.proto\x1a google/protobuf/descriptor.proto\"\x96\x04\n\x14\x42rewbloxFieldOptions\x12,\n\x04unit\x18\x01 \x01(\x0e\x32\x1e.BrewbloxFieldOptions.UnitType\x12\r\n\x05scale\x18\x02 \x01(\r\x12,\n\x04link\x18\x03 \x01(\x0e\x32\x1e.BrewbloxFieldOptions.LinkType\x12\r\n\x05hexed\x18\x04 \x01(\x08\x12\x10\n\x08readonly\x18\x05 \x01(\x08\x12\x0e\n\x06logged\x18\x06 \x01(\x08\x12\x0e\n\x06hexstr\x18\x07 \x01(\x08\"\xdc\x01\n\x08LinkType\x12\x0f\n\x0bInvalidLink\x10\x00\x12\x14\n\x10ProcessValueLink\x10\x01\x12\x12\n\x0eTempSensorLink\x10\x02\x12\x10\n\x0cSetpointLink\x10\x03\x12\x1a\n\x16SetpointSensorPairLink\x10\x04\x12\x16\n\x12\x41\x63tuatorAnalogLink\x10\x05\x12\x17\n\x13\x41\x63tuatorDigitalLink\x10\x06\x12\x10\n\x0c\x42\x61lancerLink\x10\x07\x12\r\n\tMutexLink\x10\x08\x12\x15\n\x11OneWireDeviceLink\x10\t\"s\n\x08UnitType\x12\n\n\x06NotSet\x10\x00\x12\x08\n\x04Temp\x10\x01\x12\r\n\tDeltaTemp\x10\x02\x12\x14\n\x10\x44\x65ltaTempPerTime\x10\x03\x12\x08\n\x04Time\x10\x04\x12\x0f\n\x0bInverseTemp\x10\x05\x12\x11\n\rDeltaTempTime\x10\x06:H\n\x08\x62rewblox\x12\x1d.google.protobuf.FieldOptions\x18\xd1\x86\x03 \x01(\x0b\x32\x15.BrewbloxFieldOptionsb\x06proto3')
+  serialized_pb=_b('\n\x0e\x62rewblox.proto\x1a google/protobuf/descriptor.proto\"\xb8\x04\n\x14\x42rewbloxFieldOptions\x12,\n\x04unit\x18\x01 \x01(\x0e\x32\x1e.BrewbloxFieldOptions.UnitType\x12\r\n\x05scale\x18\x02 \x01(\r\x12,\n\x04link\x18\x03 \x01(\x0e\x32\x1e.BrewbloxFieldOptions.LinkType\x12\r\n\x05hexed\x18\x04 \x01(\x08\x12\x10\n\x08readonly\x18\x05 \x01(\x08\x12\x0e\n\x06logged\x18\x06 \x01(\x08\x12\x0e\n\x06hexstr\x18\x07 \x01(\x08\"\xfe\x01\n\x08LinkType\x12\x0f\n\x0bInvalidLink\x10\x00\x12\x14\n\x10ProcessValueLink\x10\x01\x12\x12\n\x0eTempSensorLink\x10\x02\x12\x10\n\x0cSetpointLink\x10\x03\x12\x1a\n\x16SetpointSensorPairLink\x10\x04\x12\x16\n\x12\x41\x63tuatorAnalogLink\x10\x05\x12\x17\n\x13\x41\x63tuatorDigitalLink\x10\x06\x12\x10\n\x0c\x42\x61lancerLink\x10\x07\x12\r\n\tMutexLink\x10\x08\x12\x15\n\x11OneWireDeviceLink\x10\t\x12\x13\n\x0f\x41\x63tuatorPwmLink\x10\n\x12\x0b\n\x07PidLink\x10\x0b\"s\n\x08UnitType\x12\n\n\x06NotSet\x10\x00\x12\x08\n\x04Temp\x10\x01\x12\r\n\tDeltaTemp\x10\x02\x12\x14\n\x10\x44\x65ltaTempPerTime\x10\x03\x12\x08\n\x04Time\x10\x04\x12\x0f\n\x0bInverseTemp\x10\x05\x12\x11\n\rDeltaTempTime\x10\x06:H\n\x08\x62rewblox\x12\x1d.google.protobuf.FieldOptions\x18\xd1\x86\x03 \x01(\x0b\x32\x15.BrewbloxFieldOptionsb\x06proto3')
   ,
   dependencies=[google_dot_protobuf_dot_descriptor__pb2.DESCRIPTOR,])
 
@@ -80,11 +80,19 @@ _BREWBLOXFIELDOPTIONS_LINKTYPE = _descriptor.EnumDescriptor(
       name='OneWireDeviceLink', index=9, number=9,
       serialized_options=None,
       type=None),
+    _descriptor.EnumValueDescriptor(
+      name='ActuatorPwmLink', index=10, number=10,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='PidLink', index=11, number=11,
+      serialized_options=None,
+      type=None),
   ],
   containing_type=None,
   serialized_options=None,
   serialized_start=250,
-  serialized_end=470,
+  serialized_end=504,
 )
 _sym_db.RegisterEnumDescriptor(_BREWBLOXFIELDOPTIONS_LINKTYPE)
 
@@ -125,8 +133,8 @@ _BREWBLOXFIELDOPTIONS_UNITTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=472,
-  serialized_end=587,
+  serialized_start=506,
+  serialized_end=621,
 )
 _sym_db.RegisterEnumDescriptor(_BREWBLOXFIELDOPTIONS_UNITTYPE)
 
@@ -202,7 +210,7 @@ _BREWBLOXFIELDOPTIONS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=53,
-  serialized_end=587,
+  serialized_end=621,
 )
 
 _BREWBLOXFIELDOPTIONS.fields_by_name['unit'].enum_type = _BREWBLOXFIELDOPTIONS_UNITTYPE
