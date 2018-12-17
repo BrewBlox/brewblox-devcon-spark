@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x15\x44isplaySettings.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xf8\x02\n\x0f\x44isplaySettings\x12\x34\n\x07widgets\x18\x01 \x03(\x0b\x32\x1c.blox.DisplaySettings.WidgetB\x05\x92?\x02\x10\x06\x12\x13\n\x04name\x18\x02 \x01(\tB\x05\x92?\x02\x08(\x1a\x91\x02\n\x06Widget\x12\x12\n\x03pos\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08\x12\"\n\x08\x62g_color\x18\x02 \x01(\x0c\x42\x10\x92?\x02\x08\x03\x92?\x02x\x01\x8a\xb5\x18\x02\x38\x01\x12\x13\n\x04name\x18\x03 \x01(\tB\x05\x92?\x02\x08\x10\x12!\n\nTempSensor\x18\n \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x02\x92?\x02\x38\x10H\x00\x12)\n\x12SetpointSensorPair\x18\x0b \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x04\x92?\x02\x38\x10H\x00\x12\"\n\x0b\x41\x63tuatorPwm\x18\x0c \x01(\rB\x0b\x8a\xb5\x18\x02\x18\n\x92?\x02\x38\x10H\x00\x12%\n\x0e\x41\x63tuatorAnalog\x18\r \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x05\x92?\x02\x38\x10H\x00\x12\x1a\n\x03Pid\x18\x0e \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x0b\x92?\x02\x38\x10H\x00\x42\x05\n\x03obj:\x06\x92?\x03H\xba\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x15\x44isplaySettings.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xf5\x02\n\x0f\x44isplaySettings\x12\x34\n\x07widgets\x18\x01 \x03(\x0b\x32\x1c.blox.DisplaySettings.WidgetB\x05\x92?\x02\x10\x06\x12\x13\n\x04name\x18\x02 \x01(\tB\x05\x92?\x02\x08(\x1a\x8e\x02\n\x06Widget\x12\x12\n\x03pos\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08\x12\x1f\n\x05\x63olor\x18\x02 \x01(\x0c\x42\x10\x92?\x02\x08\x03\x92?\x02x\x01\x8a\xb5\x18\x02\x38\x01\x12\x13\n\x04name\x18\x03 \x01(\tB\x05\x92?\x02\x08\x10\x12!\n\nTempSensor\x18\n \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x02\x92?\x02\x38\x10H\x00\x12)\n\x12SetpointSensorPair\x18\x0b \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x04\x92?\x02\x38\x10H\x00\x12\"\n\x0b\x41\x63tuatorPwm\x18\x0c \x01(\rB\x0b\x8a\xb5\x18\x02\x18\n\x92?\x02\x38\x10H\x00\x12%\n\x0e\x41\x63tuatorAnalog\x18\r \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x05\x92?\x02\x38\x10H\x00\x12\x1a\n\x03Pid\x18\x0e \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x0b\x92?\x02\x38\x10H\x00\x42\x05\n\x03obj:\x06\x92?\x03H\xba\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -43,7 +43,7 @@ _DISPLAYSETTINGS_WIDGET = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=_b('\222?\0028\010'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='bg_color', full_name='blox.DisplaySettings.Widget.bg_color', index=1,
+      name='color', full_name='blox.DisplaySettings.Widget.color', index=1,
       number=2, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
@@ -107,7 +107,7 @@ _DISPLAYSETTINGS_WIDGET = _descriptor.Descriptor(
       index=0, containing_type=None, fields=[]),
   ],
   serialized_start=157,
-  serialized_end=430,
+  serialized_end=427,
 )
 
 _DISPLAYSETTINGS = _descriptor.Descriptor(
@@ -144,7 +144,7 @@ _DISPLAYSETTINGS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=62,
-  serialized_end=438,
+  serialized_end=435,
 )
 
 _DISPLAYSETTINGS_WIDGET.containing_type = _DISPLAYSETTINGS
@@ -184,7 +184,7 @@ _sym_db.RegisterMessage(DisplaySettings.Widget)
 
 
 _DISPLAYSETTINGS_WIDGET.fields_by_name['pos']._options = None
-_DISPLAYSETTINGS_WIDGET.fields_by_name['bg_color']._options = None
+_DISPLAYSETTINGS_WIDGET.fields_by_name['color']._options = None
 _DISPLAYSETTINGS_WIDGET.fields_by_name['name']._options = None
 _DISPLAYSETTINGS_WIDGET.fields_by_name['TempSensor']._options = None
 _DISPLAYSETTINGS_WIDGET.fields_by_name['SetpointSensorPair']._options = None

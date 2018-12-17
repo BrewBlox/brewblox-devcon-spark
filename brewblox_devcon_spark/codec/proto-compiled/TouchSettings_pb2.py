@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x13TouchSettings.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xef\x01\n\rTouchSettings\x12\x32\n\ncalibrated\x18\x01 \x01(\x0e\x32\x1e.blox.TouchSettings.Calibrated\x12\x17\n\x08x_offset\x18\x02 \x01(\x05\x42\x05\x92?\x02\x38\x10\x12\x17\n\x08y_offset\x18\x03 \x01(\x05\x42\x05\x92?\x02\x38\x10\x12#\n\x14x_bits_per_pixel_x16\x18\x04 \x01(\rB\x05\x92?\x02\x38\x10\x12#\n\x14y_bits_per_pixel_x16\x18\x05 \x01(\rB\x05\x92?\x02\x38\x10\"&\n\nCalibrated\x12\x06\n\x02NO\x10\x00\x12\x07\n\x03YES\x10\x01\x12\x07\n\x03NEW\x10\x02:\x06\x92?\x03H\xb9\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x13TouchSettings.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xe5\x01\n\rTouchSettings\x12\x32\n\ncalibrated\x18\x01 \x01(\x0e\x32\x1e.blox.TouchSettings.Calibrated\x12\x16\n\x07xOffset\x18\x02 \x01(\x05\x42\x05\x92?\x02\x38\x10\x12\x16\n\x07yOffset\x18\x03 \x01(\x05\x42\x05\x92?\x02\x38\x10\x12\x1f\n\x10xBitsPerPixelX16\x18\x04 \x01(\rB\x05\x92?\x02\x38\x10\x12\x1f\n\x10yBitsPerPixelX16\x18\x05 \x01(\rB\x05\x92?\x02\x38\x10\"&\n\nCalibrated\x12\x06\n\x02NO\x10\x00\x12\x07\n\x03YES\x10\x01\x12\x07\n\x03NEW\x10\x02:\x06\x92?\x03H\xb9\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -48,8 +48,8 @@ _TOUCHSETTINGS_CALIBRATED = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=253,
-  serialized_end=291,
+  serialized_start=243,
+  serialized_end=281,
 )
 _sym_db.RegisterEnumDescriptor(_TOUCHSETTINGS_CALIBRATED)
 
@@ -69,28 +69,28 @@ _TOUCHSETTINGS = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='x_offset', full_name='blox.TouchSettings.x_offset', index=1,
+      name='xOffset', full_name='blox.TouchSettings.xOffset', index=1,
       number=2, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\222?\0028\020'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='y_offset', full_name='blox.TouchSettings.y_offset', index=2,
+      name='yOffset', full_name='blox.TouchSettings.yOffset', index=2,
       number=3, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\222?\0028\020'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='x_bits_per_pixel_x16', full_name='blox.TouchSettings.x_bits_per_pixel_x16', index=3,
+      name='xBitsPerPixelX16', full_name='blox.TouchSettings.xBitsPerPixelX16', index=3,
       number=4, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\222?\0028\020'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='y_bits_per_pixel_x16', full_name='blox.TouchSettings.y_bits_per_pixel_x16', index=4,
+      name='yBitsPerPixelX16', full_name='blox.TouchSettings.yBitsPerPixelX16', index=4,
       number=5, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -110,7 +110,7 @@ _TOUCHSETTINGS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=60,
-  serialized_end=299,
+  serialized_end=289,
 )
 
 _TOUCHSETTINGS.fields_by_name['calibrated'].enum_type = _TOUCHSETTINGS_CALIBRATED
@@ -126,9 +126,9 @@ TouchSettings = _reflection.GeneratedProtocolMessageType('TouchSettings', (_mess
 _sym_db.RegisterMessage(TouchSettings)
 
 
-_TOUCHSETTINGS.fields_by_name['x_offset']._options = None
-_TOUCHSETTINGS.fields_by_name['y_offset']._options = None
-_TOUCHSETTINGS.fields_by_name['x_bits_per_pixel_x16']._options = None
-_TOUCHSETTINGS.fields_by_name['y_bits_per_pixel_x16']._options = None
+_TOUCHSETTINGS.fields_by_name['xOffset']._options = None
+_TOUCHSETTINGS.fields_by_name['yOffset']._options = None
+_TOUCHSETTINGS.fields_by_name['xBitsPerPixelX16']._options = None
+_TOUCHSETTINGS.fields_by_name['yBitsPerPixelX16']._options = None
 _TOUCHSETTINGS._options = None
 # @@protoc_insertion_point(module_scope)
