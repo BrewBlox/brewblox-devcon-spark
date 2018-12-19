@@ -16,7 +16,7 @@ services:
     image: brewblox/firmware-simulator:develop
 
   spark:
-    image: brewblox/brewblox-devcon-spark:feature-mdns
+    image: brewblox/brewblox-devcon-spark:develop
     privileged: true
     depends_on:
       - eventbus
@@ -28,7 +28,8 @@ services:
     volumes:
       - "./:/app/"
     command: >
-      --device-id=3f0025000851353532343835
+      --device-host=sparksimulator
+    #   --device-id=3f0025000851353532343835
     #   --volatile
 
   mdns:

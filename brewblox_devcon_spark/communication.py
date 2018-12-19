@@ -23,7 +23,7 @@ from brewblox_devcon_spark import exceptions, http_client, status
 LOGGER = brewblox_logger(__name__)
 DNS_DISCOVER_TIMEOUT_S = 20
 DEFAULT_BAUD_RATE = 57600
-RETRY_INTERVAL_S = 1
+RETRY_INTERVAL_S = 2
 DISCOVER_INTERVAL_S = 10
 
 PortType_ = Any
@@ -188,6 +188,7 @@ class SparkConduit(features.ServiceFeature):
             self.app.loop.create_task(call_cb(cb, message))
 
     async def _maintain_connection(self, connect_func: Callable[[], Awaitable[ConnectionResult_]]):
+        last_ok = True
         while True:
             try:
                 spark_status = status.get_status(self.app)
@@ -197,6 +198,7 @@ class SparkConduit(features.ServiceFeature):
                 LOGGER.info(f'Connected {self}')
                 spark_status.disconnected.clear()
                 spark_status.connected.set()
+                last_ok = True
 
                 await self._protocol.disconnected
                 LOGGER.info(f'Disconnected {self}')
@@ -209,7 +211,9 @@ class SparkConduit(features.ServiceFeature):
                 break
 
             except Exception as ex:
-                LOGGER.info(f'Connection failed: {type(ex).__name__}({ex})')
+                if last_ok:
+                    LOGGER.info(f'Connection failed: {type(ex).__name__}({ex})')
+                    last_ok = False
                 await asyncio.sleep(RETRY_INTERVAL_S)
 
             finally:
