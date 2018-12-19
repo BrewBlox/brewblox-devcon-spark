@@ -36,13 +36,23 @@ class SSEPublisher(features.ServiceFeature):
         super().__init__(app)
         self._task: asyncio.Task = None
         self._queues: Set[asyncio.Queue] = weakref.WeakSet()
+        self._current = None
 
     def __str__(self):
         return f'{type(self).__name__}'
 
-    @property
-    def queues(self):
-        return self._queues
+    async def subscribe(self, queue: asyncio.Queue):
+        self._queues.add(queue)
+        try:
+            if self._current is None:
+                self._current = await ObjectApi(self.app).all()
+            await queue.put(self._current)
+
+        except asyncio.CancelledError:  # pragma: no cover
+            raise
+
+        except Exception as ex:
+            LOGGER.info(f'Initial subscription push failed: {type(ex).__name__}({ex})')
 
     async def startup(self, app: web.Application):
         await self.shutdown(app)
@@ -73,10 +83,11 @@ class SSEPublisher(features.ServiceFeature):
                 await asyncio.sleep(PUBLISH_INTERVAL_S)
 
                 if not self._queues:
+                    self._current = None
                     continue
 
-                current_objects = await api.all()
-                coros = [q.put(current_objects) for q in self._queues]
+                self._current = await api.all()
+                coros = [q.put(self._current) for q in self._queues]
                 await asyncio.wait_for(asyncio.gather(*coros, return_exceptions=True), PUBLISH_INTERVAL_S)
 
             except asyncio.CancelledError:
@@ -112,7 +123,7 @@ async def subscribe(request: web.Request) -> web.Response:
     async with sse_response(request, headers=_cors_headers(request)) as resp:
         publisher: SSEPublisher = get_publisher(request.app)
         queue = asyncio.Queue(loop=request.app.loop)
-        publisher.queues.add(queue)
+        await publisher.subscribe(queue)
 
         while True:
             data = await queue.get()

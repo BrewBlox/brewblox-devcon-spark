@@ -40,6 +40,26 @@ async def publisher(app):
     return sse_api.get_publisher(app)
 
 
+async def test_immediate_result(app, client, mocker):
+    api_mock = mocker.patch(TESTED + '.ObjectApi').return_value
+    api_mock.all = CoroutineMock(side_effect=['one', 'two', 'three'])
+
+    mocker.patch(TESTED + '.PUBLISH_INTERVAL_S', 1)
+
+    pub = sse_api.SSEPublisher(app)
+    await pub.startup(app)
+    await asyncio.sleep(0.01)
+    assert api_mock.all.call_count == 0
+
+    q1, q2 = asyncio.Queue(), asyncio.Queue()
+    await pub.subscribe(q1)
+    await pub.subscribe(q2)
+    await asyncio.sleep(0.01)
+    assert api_mock.all.call_count == 1
+    assert q1.get_nowait() == 'one'
+    assert q2.get_nowait() == 'one'
+
+
 async def test_error_setup(app, client, mocker):
     api_mock = mocker.patch(TESTED + '.ObjectApi')
     api_mock.side_effect = RuntimeError
@@ -52,21 +72,21 @@ async def test_error_setup(app, client, mocker):
 
 
 async def test_error_call(app, client, mocker):
-    api_mock = mocker.patch(TESTED + '.ObjectApi')
-    api_mock.return_value.all = CoroutineMock(side_effect=RuntimeError)
+    api_mock = mocker.patch(TESTED + '.ObjectApi').return_value
+    api_mock.all = CoroutineMock(side_effect=RuntimeError)
 
     pub = sse_api.SSEPublisher(app)
     await pub.startup(app)
 
     # There are no requests - don't call API
     await asyncio.sleep(0.01)
-    assert api_mock.return_value.all.call_count == 0
+    assert api_mock.all.call_count == 0
 
     # Do not crash if api.all() raises exceptions
     queue = asyncio.Queue()
-    pub.queues.add(queue)
+    await pub.subscribe(queue)
     await asyncio.sleep(0.01)
-    assert api_mock.return_value.all.call_count > 1
+    assert api_mock.all.call_count > 1
     assert queue.empty()
 
 
