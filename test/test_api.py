@@ -33,7 +33,6 @@ def object_args():
         API_TYPE_KEY: 'TempSensorOneWire',
         API_DATA_KEY: {
             'value': 12345,
-            'valid': True,
             'offset': 20,
             'address': 'FF'
         }
@@ -92,7 +91,6 @@ async def test_do(app, client):
             PROFILE_LIST_KEY: [1, 2, 3],
             OBJECT_DATA_KEY: {
                 'value': 12345,
-                'valid': True,
                 'offset': 20,
                 'address': 'FF'
             }
