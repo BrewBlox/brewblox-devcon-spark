@@ -6,7 +6,7 @@ import "nanopb.proto";
 package blox;
 
 message TouchSettings {
-  option (nanopb_msgopt).msgid = 313;
+  option (brewblox_msg).objtype = TouchSettings;
 
   enum Calibrated {
     NO = 0;

@@ -461,7 +461,7 @@ async def all_compatible(request: web.Request) -> web.Response:
         name: interface
         schema:
             type: string
-            example: "SetpointLink"
+            example: "SetpointInterface"
             required: true
     """
     return web.json_response(

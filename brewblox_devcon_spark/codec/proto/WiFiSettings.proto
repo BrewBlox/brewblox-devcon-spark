@@ -6,7 +6,7 @@ import "nanopb.proto";
 package blox;
 
 message WiFiSettings {
-  option (nanopb_msgopt).msgid = 312;
+  option (brewblox_msg).objtype = WiFiSettings;
 
   enum WlanSecurity {
     WLAN_SEC_UNSEC = 0;

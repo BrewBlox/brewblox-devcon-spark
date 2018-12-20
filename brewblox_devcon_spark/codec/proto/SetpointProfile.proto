@@ -6,7 +6,7 @@ import "nanopb.proto";
 package blox;
 
 message SetpointProfile {
-    option (nanopb_msgopt).msgid = 311;
+    option (brewblox_msg).objtype = SetpointProfile;
 
     message Point {
         uint32 time = 1;

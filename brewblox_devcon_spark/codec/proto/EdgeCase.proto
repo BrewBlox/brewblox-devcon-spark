@@ -7,8 +7,6 @@ package blox;
 
 // This message allows testing combinations that are possible, but not likely in real protobuf messages.
 message EdgeCase {
-    option (nanopb_msgopt).msgid = 9001;
-
     message Settings {
         fixed64 address = 1 [(brewblox).hexed = true];
         sint32 offset = 2 [(brewblox).unit = DeltaTemp, (brewblox).scale = 256];
@@ -18,15 +16,16 @@ message EdgeCase {
         bool connected = 2 [(brewblox).readonly = true];
     }
     message NestedLink {
-        uint32 connection = 1 [(brewblox).link = TempSensorLink];
+        uint32 connection = 1 [(brewblox).objtype = TempSensorInterface];
     }
 
     Settings settings = 1;
     State state = 2;
-    uint32 link = 3 [(brewblox).link = SetpointLink];
+    uint32 link = 3 [(brewblox).objtype = SetpointInterface];
     repeated NestedLink additionalLinks = 4;
     repeated float listValues = 5 [(brewblox).unit = Temp, (brewblox).scale = 256];
     uint32 deltaV = 6 [(brewblox).unit = DeltaTempPerTime, (brewblox).scale = 256];
     uint32 logged = 7 [(brewblox).logged = true];
     uint32 unLogged = 8;
+    repeated uint32 strippedFields = 99 [ (brewblox).tags = true, (brewblox).readonly = true, (nanopb).int_size = IS_16, (nanopb).max_count = 2 ];
 }

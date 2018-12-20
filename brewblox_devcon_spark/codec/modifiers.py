@@ -20,6 +20,7 @@ from brewblox_devcon_spark.codec.unit_conversion import UnitConverter
 from dataclasses import dataclass
 
 STRIP_UNLOGGED_KEY = 'strip_unlogged'
+STRIP_FIELDS_KEY = 'strippedFields'
 
 _path_extension.avoid_lint_errors()
 LOGGER = brewblox_logger(__name__)
@@ -105,10 +106,10 @@ class Modifier():
         return field.GetOptions().Extensions[provider]
 
     def _unit_name(self, unit_num: int) -> str:
-        return brewblox_pb2.BrewbloxFieldOptions.UnitType.Name(unit_num)
+        return brewblox_pb2.BrewbloxOptions.UnitType.Name(unit_num)
 
-    def _link_name(self, link_num: int) -> str:
-        return brewblox_pb2.BrewbloxFieldOptions.LinkType.Name(link_num)
+    def _objtype_name(self, objtype_num: int) -> str:
+        return brewblox_pb2.BrewbloxOptions.BlockType.Name(objtype_num)
 
     def encode_options(self, message: Message, obj: dict, codec_opts: dict) -> dict:
         """
@@ -144,7 +145,7 @@ class Modifier():
             #   message Settings {
             #     fixed64 address = 1 [(brewblox).hexed = true];
             #     sint32 offset = 2 [(brewblox).unit = "delta_degC", (brewblox).scale = 256];
-            #     uint16 sensor = 3 [(brewblox).link = TempSensorLink];
+            #     uint16 sensor = 3 [(brewblox).objtype = TempSensorLink];
             #     sint32 output = 4 [(brewblox).readonly = true];
             #   }
             # ...
@@ -154,7 +155,7 @@ class Modifier():
                 'settings': {
                     'address': 2864434397,  # Converted from Hex to int64
                     'offset': 2844,         # Converted to delta_degC, scaled * 256, and rounded to int
-                    'sensor': 10            # Link postfix stripped
+                    'sensor': 10            # Object type postfix stripped
                                             # 'output' is readonly -> stripped from dict
                 }
             }
@@ -211,9 +212,13 @@ class Modifier():
         Supported options:
         * scale:        divides value by scale before unit conversion
         * unit:         postfixes dict key with the unit defined in the Protobuf spec
-        * link:         postfixes dict key with triangle brackets (<>)
-        * hexed:        converts base64 decoder output to hexadecimal string
+        * objtype:      postfixes dict key with triangle brackets (<>)
+        * hexed:        converts base64 decoder output to int
+        * hexstr:       converts base64 decoder output to hexadecimal string
         * readonly:     ignored: decoding means reading from controller
+
+        Supported special field names:
+        * strippedFields:  lists all fields that should be set to None in the current message
 
         Example:
             >>> values = {
@@ -236,7 +241,7 @@ class Modifier():
             #   message Settings {
             #     fixed64 address = 1 [(brewblox).hexed = true];
             #     sint32 offset = 2 [(brewblox).unit = "delta_degC", (brewblox).scale = 256];
-            #     uint16 sensor = 3 [(brewblox).link = TempSensorLink];
+            #     uint16 sensor = 3 [(brewblox).objtype = TempSensorInterface];
             #     sint32 output = 4 [(brewblox).readonly = true];
             #   }
             # ...
@@ -246,14 +251,15 @@ class Modifier():
             >>> print(values)
             {
                 'settings': {
-                    'address': 'aabbccdd',        # Converted from base64 string to hex string
-                    'offset[delta_degF]': 20      # Scaled / 256, converted to preference, postfixed with unit
-                    'sensor<TempSensorLink>': 10, # Postfixed with link type
-                    'output': 1234,               # We're reading -> keep readonly values
+                    'address': 'aabbccdd',              # Converted from base64 string to hex string
+                    'offset[delta_degF]': 20            # Scaled / 256, converted to preference, postfixed with unit
+                    'sensor<TempSensorInterface>': 10,  # Postfixed with obj type
+                    'output': 1234,                     # We're reading -> keep readonly values
                 }
             }
         """
         strip_unlogged = codec_opts.get(STRIP_UNLOGGED_KEY)
+        stripped_fields = obj.pop(STRIP_FIELDS_KEY, [])
 
         for element in self._find_options(message.DESCRIPTOR, obj):
             options = self._field_options(element.field)
@@ -262,6 +268,10 @@ class Modifier():
 
             if not options.logged and strip_unlogged:
                 del element.obj[element.key]
+                continue
+
+            if element.field.number in stripped_fields:
+                element.obj[element.key] = None
                 continue
 
             is_list = isinstance(val, (list, set))
@@ -274,14 +284,14 @@ class Modifier():
 
             if options.unit:
                 unit = self._unit_name(options.unit)
-                new_key += '[' + self._converter.user_unit(unit) + ']'
+                new_key += f'[{self._converter.user_unit(unit)}]'
                 val = [
                     self._converter.to_user(v, unit)
                     for v in val
                 ]
 
-            if options.link:
-                new_key += f'<{self._link_name(options.link)}>'
+            if options.objtype:
+                new_key += f'<{self._objtype_name(options.objtype)}>'
 
             if options.hexed:
                 val = [self.int_to_hex(v) for v in val]

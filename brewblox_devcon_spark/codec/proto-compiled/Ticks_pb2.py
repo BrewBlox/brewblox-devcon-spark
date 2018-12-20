@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0bTicks.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"W\n\x05Ticks\x12$\n\x0fmillisSinceBoot\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x38 \x12 \n\x11secondsSinceEpoch\x18\x02 \x01(\rB\x05\x92?\x02\x38 :\x06\x92?\x03H\x81\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x0bTicks.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"X\n\x05Ticks\x12$\n\x0fmillisSinceBoot\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x38 \x12 \n\x11secondsSinceEpoch\x18\x02 \x01(\rB\x05\x92?\x02\x38 :\x07\x8a\xb5\x18\x03\x18\x81\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -55,14 +55,14 @@ _TICKS = _descriptor.Descriptor(
   nested_types=[],
   enum_types=[
   ],
-  serialized_options=_b('\222?\003H\201\002'),
+  serialized_options=_b('\212\265\030\003\030\201\002'),
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
   serialized_start=51,
-  serialized_end=138,
+  serialized_end=139,
 )
 
 DESCRIPTOR.message_types_by_name['Ticks'] = _TICKS

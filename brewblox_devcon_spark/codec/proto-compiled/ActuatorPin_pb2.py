@@ -23,7 +23,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x11\x41\x63tuatorPin.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x15\x41\x63tuatorDigital.proto\x1a\x18\x44igitalConstraints.proto\"u\n\x0b\x41\x63tuatorPin\x12\x1d\n\x05state\x18\x01 \x01(\x0e\x32\x0e.blox.AD.State\x12\x0e\n\x06invert\x18\x03 \x01(\x08\x12/\n\rconstrainedBy\x18\x04 \x01(\x0b\x32\x18.blox.DigitalConstraints:\x06\x92?\x03H\xb2\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x11\x41\x63tuatorPin.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x15\x41\x63tuatorDigital.proto\x1a\x18\x44igitalConstraints.proto\"\xa6\x01\n\x0b\x41\x63tuatorPin\x12\x1d\n\x05state\x18\x01 \x01(\x0e\x32\x0e.blox.AD.State\x12\x0e\n\x06invert\x18\x03 \x01(\x08\x12/\n\rconstrainedBy\x18\x04 \x01(\x0b\x32\x18.blox.DigitalConstraints\x12.\n\x0estrippedFields\x18\x63 \x03(\rB\x16\x8a\xb5\x18\x02@\x01\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x01:\x07\x8a\xb5\x18\x03\x18\xb2\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,ActuatorDigital__pb2.DESCRIPTOR,DigitalConstraints__pb2.DESCRIPTOR,])
 
@@ -58,20 +58,27 @@ _ACTUATORPIN = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='strippedFields', full_name='blox.ActuatorPin.strippedFields', index=3,
+      number=99, type=13, cpp_type=3, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\002@\001\212\265\030\002(\001\222?\0028\020\222?\002\020\001'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  serialized_options=_b('\222?\003H\262\002'),
+  serialized_options=_b('\212\265\030\003\030\262\002'),
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=106,
-  serialized_end=223,
+  serialized_start=107,
+  serialized_end=273,
 )
 
 _ACTUATORPIN.fields_by_name['state'].enum_type = ActuatorDigital__pb2._AD_STATE
@@ -87,5 +94,6 @@ ActuatorPin = _reflection.GeneratedProtocolMessageType('ActuatorPin', (_message.
 _sym_db.RegisterMessage(ActuatorPin)
 
 
+_ACTUATORPIN.fields_by_name['strippedFields']._options = None
 _ACTUATORPIN._options = None
 # @@protoc_insertion_point(module_scope)

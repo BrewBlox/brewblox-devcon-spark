@@ -6,7 +6,7 @@ import "nanopb.proto";
 package blox;
 
 message TempSensorOneWire {
-    option (nanopb_msgopt).msgid = 302;
+    option (brewblox_msg).objtype = TempSensorOneWire;
 
     sint32 value = 1 [(brewblox).unit = Temp, (brewblox).scale = 4096, (nanopb).int_size = IS_32, (brewblox).readonly = true];
     bool valid = 2 [ (brewblox).readonly = true];

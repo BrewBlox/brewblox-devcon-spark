@@ -321,7 +321,7 @@ async def test_codec_api(app, client, object_args):
 
 
 async def test_list_compatible(app, client, object_args):
-    resp = await response(client.get('/compatible_objects', params={'interface': 'BalancerLink'}))
+    resp = await response(client.get('/compatible_objects', params={'interface': 'BalancerInterface'}))
     assert all([isinstance(id, str) for id in resp])
 
 

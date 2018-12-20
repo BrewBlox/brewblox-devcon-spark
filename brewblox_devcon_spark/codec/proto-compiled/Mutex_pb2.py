@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0bMutex.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\".\n\x05Mutex\x12\x1d\n\x15\x64ifferentActuatorWait\x18\x01 \x01(\r:\x06\x92?\x03H\xb6\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x0bMutex.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"/\n\x05Mutex\x12\x1d\n\x15\x64ifferentActuatorWait\x18\x01 \x01(\r:\x07\x8a\xb5\x18\x03\x18\xb6\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -48,14 +48,14 @@ _MUTEX = _descriptor.Descriptor(
   nested_types=[],
   enum_types=[
   ],
-  serialized_options=_b('\222?\003H\266\002'),
+  serialized_options=_b('\212\265\030\003\030\266\002'),
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
   serialized_start=51,
-  serialized_end=97,
+  serialized_end=98,
 )
 
 DESCRIPTOR.message_types_by_name['Mutex'] = _MUTEX

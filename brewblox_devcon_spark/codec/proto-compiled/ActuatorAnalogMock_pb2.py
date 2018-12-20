@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x18\x41\x63tuatorAnalogMock.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xf9\x01\n\x12\x41\x63tuatorAnalogMock\x12\x1d\n\x07setting\x18\x01 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12!\n\x05value\x18\x02 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x15\n\x05valid\x18\x03 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12 \n\nminSetting\x18\x04 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12 \n\nmaxSetting\x18\x05 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x1e\n\x08minValue\x18\x06 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x1e\n\x08maxValue\x18\x07 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 :\x06\x92?\x03H\xb1\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x18\x41\x63tuatorAnalogMock.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x93\x02\n\x12\x41\x63tuatorAnalogMock\x12\x1d\n\x07setting\x18\x01 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12!\n\x05value\x18\x02 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12 \n\nminSetting\x18\x04 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12 \n\nmaxSetting\x18\x05 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x1e\n\x08minValue\x18\x06 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x1e\n\x08maxValue\x18\x07 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12.\n\x0estrippedFields\x18\x63 \x03(\rB\x16\x8a\xb5\x18\x02@\x01\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x02:\x07\x8a\xb5\x18\x03\x18\xb1\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -50,54 +50,54 @@ _ACTUATORANALOGMOCK = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=_b('\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='valid', full_name='blox.ActuatorAnalogMock.valid', index=2,
-      number=3, type=8, cpp_type=7, label=1,
-      has_default_value=False, default_value=False,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002(\001'), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='minSetting', full_name='blox.ActuatorAnalogMock.minSetting', index=3,
+      name='minSetting', full_name='blox.ActuatorAnalogMock.minSetting', index=2,
       number=4, type=17, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='maxSetting', full_name='blox.ActuatorAnalogMock.maxSetting', index=4,
+      name='maxSetting', full_name='blox.ActuatorAnalogMock.maxSetting', index=3,
       number=5, type=17, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='minValue', full_name='blox.ActuatorAnalogMock.minValue', index=5,
+      name='minValue', full_name='blox.ActuatorAnalogMock.minValue', index=4,
       number=6, type=17, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='maxValue', full_name='blox.ActuatorAnalogMock.maxValue', index=6,
+      name='maxValue', full_name='blox.ActuatorAnalogMock.maxValue', index=5,
       number=7, type=17, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='strippedFields', full_name='blox.ActuatorAnalogMock.strippedFields', index=6,
+      number=99, type=13, cpp_type=3, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\002@\001\212\265\030\002(\001\222?\0028\020\222?\002\020\002'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  serialized_options=_b('\222?\003H\261\002'),
+  serialized_options=_b('\212\265\030\003\030\261\002'),
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
   serialized_start=65,
-  serialized_end=314,
+  serialized_end=340,
 )
 
 DESCRIPTOR.message_types_by_name['ActuatorAnalogMock'] = _ACTUATORANALOGMOCK
@@ -113,10 +113,10 @@ _sym_db.RegisterMessage(ActuatorAnalogMock)
 
 _ACTUATORANALOGMOCK.fields_by_name['setting']._options = None
 _ACTUATORANALOGMOCK.fields_by_name['value']._options = None
-_ACTUATORANALOGMOCK.fields_by_name['valid']._options = None
 _ACTUATORANALOGMOCK.fields_by_name['minSetting']._options = None
 _ACTUATORANALOGMOCK.fields_by_name['maxSetting']._options = None
 _ACTUATORANALOGMOCK.fields_by_name['minValue']._options = None
 _ACTUATORANALOGMOCK.fields_by_name['maxValue']._options = None
+_ACTUATORANALOGMOCK.fields_by_name['strippedFields']._options = None
 _ACTUATORANALOGMOCK._options = None
 # @@protoc_insertion_point(module_scope)

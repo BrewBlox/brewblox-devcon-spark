@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x14SetpointSimple.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"L\n\x0eSetpointSimple\x12#\n\x07setting\x18\x01 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\r\n\x05valid\x18\x02 \x01(\x08:\x06\x92?\x03H\xac\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x14SetpointSimple.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"O\n\x0eSetpointSimple\x12#\n\x07setting\x18\x01 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x0f\n\x07\x65nabled\x18\x02 \x01(\x08:\x07\x8a\xb5\x18\x03\x18\xac\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -43,7 +43,7 @@ _SETPOINTSIMPLE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=_b('\212\265\030\002\010\001\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='valid', full_name='blox.SetpointSimple.valid', index=1,
+      name='enabled', full_name='blox.SetpointSimple.enabled', index=1,
       number=2, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -55,14 +55,14 @@ _SETPOINTSIMPLE = _descriptor.Descriptor(
   nested_types=[],
   enum_types=[
   ],
-  serialized_options=_b('\222?\003H\254\002'),
+  serialized_options=_b('\212\265\030\003\030\254\002'),
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
   serialized_start=60,
-  serialized_end=136,
+  serialized_end=139,
 )
 
 DESCRIPTOR.message_types_by_name['SetpointSimple'] = _SETPOINTSIMPLE

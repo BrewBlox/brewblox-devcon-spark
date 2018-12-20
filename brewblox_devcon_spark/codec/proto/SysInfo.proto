@@ -6,6 +6,6 @@ import "nanopb.proto";
 package blox;
 
 message SysInfo {
-  option (nanopb_msgopt).msgid = 256;
+  option (brewblox_msg).objtype = SysInfo;
   bytes deviceId = 1 [ (brewblox).readonly = true, (nanopb).max_size = 12, (nanopb).fixed_length = true, (brewblox).hexstr = true ];
 }
