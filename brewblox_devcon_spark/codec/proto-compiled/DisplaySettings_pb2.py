@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x15\x44isplaySettings.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x85\x03\n\x0f\x44isplaySettings\x12\x34\n\x07widgets\x18\x01 \x03(\x0b\x32\x1c.blox.DisplaySettings.WidgetB\x05\x92?\x02\x10\x06\x12\x13\n\x04name\x18\x02 \x01(\tB\x05\x92?\x02\x08(\x1a\x9d\x02\n\x06Widget\x12\x12\n\x03pos\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08\x12\x1f\n\x05\x63olor\x18\x02 \x01(\x0c\x42\x10\x92?\x02\x08\x03\x92?\x02x\x01\x8a\xb5\x18\x02\x38\x01\x12\x13\n\x04name\x18\x03 \x01(\tB\x05\x92?\x02\x08\x10\x12!\n\ntempSensor\x18\n \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x02\x92?\x02\x38\x10H\x00\x12*\n\x12setpointSensorPair\x18\x0b \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xaf\x02\x92?\x02\x38\x10H\x00\x12#\n\x0b\x61\x63tuatorPwm\x18\x0c \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xb3\x02\x92?\x02\x38\x10H\x00\x12*\n\x12\x61\x63tuatorAnalogMock\x18\r \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xb1\x02\x92?\x02\x38\x10H\x00\x12\x1b\n\x03pid\x18\x0e \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xb0\x02\x92?\x02\x38\x10H\x00\x42\x0c\n\nWidgetType:\x07\x8a\xb5\x18\x03\x18\xba\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x15\x44isplaySettings.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xdb\x02\n\x0f\x44isplaySettings\x12\x34\n\x07widgets\x18\x01 \x03(\x0b\x32\x1c.blox.DisplaySettings.WidgetB\x05\x92?\x02\x10\x06\x12\x13\n\x04name\x18\x02 \x01(\tB\x05\x92?\x02\x08(\x1a\xf3\x01\n\x06Widget\x12\x12\n\x03pos\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08\x12\x1f\n\x05\x63olor\x18\x02 \x01(\x0c\x42\x10\x92?\x02\x08\x03\x92?\x02x\x01\x8a\xb5\x18\x02\x38\x01\x12\x13\n\x04name\x18\x03 \x01(\tB\x05\x92?\x02\x08\x10\x12!\n\ntempSensor\x18\n \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x02\x92?\x02\x38\x10H\x00\x12*\n\x12setpointSensorPair\x18\x0b \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xaf\x02\x92?\x02\x38\x10H\x00\x12%\n\x0e\x61\x63tuatorAnalog\x18\x0c \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x05\x92?\x02\x38\x10H\x00\x12\x1b\n\x03pid\x18\x0e \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xb0\x02\x92?\x02\x38\x10H\x00\x42\x0c\n\nWidgetType:\x07\x8a\xb5\x18\x03\x18\xba\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -71,21 +71,14 @@ _DISPLAYSETTINGS_WIDGET = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=_b('\212\265\030\003\030\257\002\222?\0028\020'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='actuatorPwm', full_name='blox.DisplaySettings.Widget.actuatorPwm', index=5,
+      name='actuatorAnalog', full_name='blox.DisplaySettings.Widget.actuatorAnalog', index=5,
       number=12, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\003\030\263\002\222?\0028\020'), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002\030\005\222?\0028\020'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='actuatorAnalogMock', full_name='blox.DisplaySettings.Widget.actuatorAnalogMock', index=6,
-      number=13, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\003\030\261\002\222?\0028\020'), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='pid', full_name='blox.DisplaySettings.Widget.pid', index=7,
+      name='pid', full_name='blox.DisplaySettings.Widget.pid', index=6,
       number=14, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -107,7 +100,7 @@ _DISPLAYSETTINGS_WIDGET = _descriptor.Descriptor(
       index=0, containing_type=None, fields=[]),
   ],
   serialized_start=157,
-  serialized_end=442,
+  serialized_end=400,
 )
 
 _DISPLAYSETTINGS = _descriptor.Descriptor(
@@ -144,7 +137,7 @@ _DISPLAYSETTINGS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=62,
-  serialized_end=451,
+  serialized_end=409,
 )
 
 _DISPLAYSETTINGS_WIDGET.containing_type = _DISPLAYSETTINGS
@@ -155,11 +148,8 @@ _DISPLAYSETTINGS_WIDGET.oneofs_by_name['WidgetType'].fields.append(
   _DISPLAYSETTINGS_WIDGET.fields_by_name['setpointSensorPair'])
 _DISPLAYSETTINGS_WIDGET.fields_by_name['setpointSensorPair'].containing_oneof = _DISPLAYSETTINGS_WIDGET.oneofs_by_name['WidgetType']
 _DISPLAYSETTINGS_WIDGET.oneofs_by_name['WidgetType'].fields.append(
-  _DISPLAYSETTINGS_WIDGET.fields_by_name['actuatorPwm'])
-_DISPLAYSETTINGS_WIDGET.fields_by_name['actuatorPwm'].containing_oneof = _DISPLAYSETTINGS_WIDGET.oneofs_by_name['WidgetType']
-_DISPLAYSETTINGS_WIDGET.oneofs_by_name['WidgetType'].fields.append(
-  _DISPLAYSETTINGS_WIDGET.fields_by_name['actuatorAnalogMock'])
-_DISPLAYSETTINGS_WIDGET.fields_by_name['actuatorAnalogMock'].containing_oneof = _DISPLAYSETTINGS_WIDGET.oneofs_by_name['WidgetType']
+  _DISPLAYSETTINGS_WIDGET.fields_by_name['actuatorAnalog'])
+_DISPLAYSETTINGS_WIDGET.fields_by_name['actuatorAnalog'].containing_oneof = _DISPLAYSETTINGS_WIDGET.oneofs_by_name['WidgetType']
 _DISPLAYSETTINGS_WIDGET.oneofs_by_name['WidgetType'].fields.append(
   _DISPLAYSETTINGS_WIDGET.fields_by_name['pid'])
 _DISPLAYSETTINGS_WIDGET.fields_by_name['pid'].containing_oneof = _DISPLAYSETTINGS_WIDGET.oneofs_by_name['WidgetType']
@@ -188,8 +178,7 @@ _DISPLAYSETTINGS_WIDGET.fields_by_name['color']._options = None
 _DISPLAYSETTINGS_WIDGET.fields_by_name['name']._options = None
 _DISPLAYSETTINGS_WIDGET.fields_by_name['tempSensor']._options = None
 _DISPLAYSETTINGS_WIDGET.fields_by_name['setpointSensorPair']._options = None
-_DISPLAYSETTINGS_WIDGET.fields_by_name['actuatorPwm']._options = None
-_DISPLAYSETTINGS_WIDGET.fields_by_name['actuatorAnalogMock']._options = None
+_DISPLAYSETTINGS_WIDGET.fields_by_name['actuatorAnalog']._options = None
 _DISPLAYSETTINGS_WIDGET.fields_by_name['pid']._options = None
 _DISPLAYSETTINGS.fields_by_name['widgets']._options = None
 _DISPLAYSETTINGS.fields_by_name['name']._options = None

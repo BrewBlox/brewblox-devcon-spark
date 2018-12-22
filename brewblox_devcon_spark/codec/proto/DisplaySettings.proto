@@ -15,8 +15,7 @@ message DisplaySettings {
     oneof WidgetType {
       uint32 tempSensor = 10 [ (brewblox).objtype = TempSensorInterface, (nanopb).int_size = IS_16 ];
       uint32 setpointSensorPair = 11 [ (brewblox).objtype = SetpointSensorPair, (nanopb).int_size = IS_16 ];
-      uint32 actuatorPwm = 12 [ (brewblox).objtype = ActuatorPwm, (nanopb).int_size = IS_16 ];
-      uint32 actuatorAnalogMock = 13 [ (brewblox).objtype = ActuatorAnalogMock, (nanopb).int_size = IS_16 ];
+      uint32 actuatorAnalog = 12 [ (brewblox).objtype = ActuatorAnalogInterface, (nanopb).int_size = IS_16 ];
       uint32 pid = 14 [ (brewblox).objtype = Pid, (nanopb).int_size = IS_16 ];
     };
   }
