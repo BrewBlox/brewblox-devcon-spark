@@ -18,7 +18,7 @@ message ActuatorDS2413 {
 
   uint32 hwDevice = 1 [ (brewblox).objtype = DS2413, (nanopb).int_size = IS_16 ];
   Channel channel = 2;
-  AD.State state = 3;
+  AD.State state = 3 [ (brewblox).logged = true ];
   bool invert = 4;
   DigitalConstraints constrainedBy = 5;
   repeated uint32 strippedFields = 99 [ (brewblox).readonly = true, (nanopb).int_size = IS_16, (nanopb).max_count = 1 ];

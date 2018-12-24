@@ -10,7 +10,7 @@ package blox;
 message ActuatorPin {
   option (brewblox_msg).objtype = ActuatorPin;
 
-  AD.State state = 1;
+  AD.State state = 1 [ (brewblox).logged = true ];
   bool invert = 3;
   DigitalConstraints constrainedBy = 4;
   repeated uint32 strippedFields = 99 [ (brewblox).readonly = true, (nanopb).int_size = IS_16, (nanopb).max_count = 1 ];

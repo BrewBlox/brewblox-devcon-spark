@@ -8,8 +8,8 @@ package blox;
 message TempSensorMock {
   option (brewblox_msg).objtype = TempSensorMock;
 
-  sint32 value = 1 [ (brewblox).unit = Temp, (brewblox).scale = 4096, (nanopb).int_size = IS_32 ];
-  bool connected = 3;
+  sint32 value = 1 [ (brewblox).logged = true, (brewblox).unit = Temp, (brewblox).scale = 4096, (nanopb).int_size = IS_32 ];
+  bool connected = 3 [ (brewblox).logged = true ];
 
   repeated uint32 strippedFields = 99 [ (brewblox).readonly = true, (nanopb).int_size = IS_16, (nanopb).max_count = 1 ];
 }

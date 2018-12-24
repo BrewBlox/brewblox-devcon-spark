@@ -28,6 +28,6 @@ message WiFiSettings {
   string password = 2 [ (nanopb).max_size = 64 ];
   WlanSecurity security = 3;
   WlanCipher cipher = 4;
-  int32 signal = 5 [ (nanopb).int_size = IS_8 ];
+  int32 signal = 5 [ (brewblox).logged = true, (nanopb).int_size = IS_8 ];
   string ip = 6 [ (brewblox).readonly = true, (nanopb).max_size = 16, (nanopb).fixed_length = true ];
 }

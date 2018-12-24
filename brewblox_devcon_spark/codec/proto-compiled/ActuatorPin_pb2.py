@@ -23,7 +23,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x11\x41\x63tuatorPin.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x15\x41\x63tuatorDigital.proto\x1a\x18\x44igitalConstraints.proto\"\xa0\x01\n\x0b\x41\x63tuatorPin\x12\x1d\n\x05state\x18\x01 \x01(\x0e\x32\x0e.blox.AD.State\x12\x0e\n\x06invert\x18\x03 \x01(\x08\x12/\n\rconstrainedBy\x18\x04 \x01(\x0b\x32\x18.blox.DigitalConstraints\x12(\n\x0estrippedFields\x18\x63 \x03(\rB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x01:\x07\x8a\xb5\x18\x03\x18\xb2\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x11\x41\x63tuatorPin.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x15\x41\x63tuatorDigital.proto\x1a\x18\x44igitalConstraints.proto\"\xa8\x01\n\x0b\x41\x63tuatorPin\x12%\n\x05state\x18\x01 \x01(\x0e\x32\x0e.blox.AD.StateB\x06\x8a\xb5\x18\x02\x30\x01\x12\x0e\n\x06invert\x18\x03 \x01(\x08\x12/\n\rconstrainedBy\x18\x04 \x01(\x0b\x32\x18.blox.DigitalConstraints\x12(\n\x0estrippedFields\x18\x63 \x03(\rB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x01:\x07\x8a\xb5\x18\x03\x18\xb2\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,ActuatorDigital__pb2.DESCRIPTOR,DigitalConstraints__pb2.DESCRIPTOR,])
 
@@ -43,7 +43,7 @@ _ACTUATORPIN = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\0020\001'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='invert', full_name='blox.ActuatorPin.invert', index=1,
       number=3, type=8, cpp_type=7, label=1,
@@ -78,7 +78,7 @@ _ACTUATORPIN = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=107,
-  serialized_end=267,
+  serialized_end=275,
 )
 
 _ACTUATORPIN.fields_by_name['state'].enum_type = ActuatorDigital__pb2._AD_STATE
@@ -94,6 +94,7 @@ ActuatorPin = _reflection.GeneratedProtocolMessageType('ActuatorPin', (_message.
 _sym_db.RegisterMessage(ActuatorPin)
 
 
+_ACTUATORPIN.fields_by_name['state']._options = None
 _ACTUATORPIN.fields_by_name['strippedFields']._options = None
 _ACTUATORPIN._options = None
 # @@protoc_insertion_point(module_scope)
