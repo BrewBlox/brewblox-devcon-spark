@@ -74,7 +74,7 @@ class Broadcaster(features.ServiceFeature):
                 await asyncio.sleep(interval)
                 current_objects = {
                     obj[API_ID_KEY]: obj[API_DATA_KEY]
-                    for obj in await api.all()
+                    for obj in await api.all_logged()
                     if not obj[API_ID_KEY].startswith(GENERATED_ID_PREFIX)
                 }
 
