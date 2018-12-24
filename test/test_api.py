@@ -33,7 +33,6 @@ def object_args():
         API_TYPE_KEY: 'TempSensorOneWire',
         API_DATA_KEY: {
             'value': 12345,
-            'valid': True,
             'offset': 20,
             'address': 'FF'
         }
@@ -92,7 +91,6 @@ async def test_do(app, client):
             PROFILE_LIST_KEY: [1, 2, 3],
             OBJECT_DATA_KEY: {
                 'value': 12345,
-                'valid': True,
                 'offset': 20,
                 'address': 'FF'
             }
@@ -321,7 +319,7 @@ async def test_codec_api(app, client, object_args):
 
 
 async def test_list_compatible(app, client, object_args):
-    resp = await response(client.get('/compatible_objects', params={'interface': 'BalancerLink'}))
+    resp = await response(client.get('/compatible_objects', params={'interface': 'BalancerInterface'}))
     assert all([isinstance(id, str) for id in resp])
 
 

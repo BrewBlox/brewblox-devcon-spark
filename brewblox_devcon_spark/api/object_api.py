@@ -218,8 +218,7 @@ async def object_create(request: web.Request) -> web.Response:
                         {
                             "address": "FF",
                             "offset[delta_degF]": 20,
-                            "value": 200,
-                            "valid": true
+                            "value": 200
                         }
     """
     request_args = await request.json()
@@ -303,8 +302,7 @@ async def object_write(request: web.Request) -> web.Response:
                         {
                             "address": "FF",
                             "offset[delta_degF]": 20,
-                            "value": 200,
-                            "valid": true
+                            "value": 200
                         }
     """
     request_args = await request.json()
@@ -461,7 +459,7 @@ async def all_compatible(request: web.Request) -> web.Response:
         name: interface
         schema:
             type: string
-            example: "SetpointLink"
+            example: "SetpointInterface"
             required: true
     """
     return web.json_response(
@@ -523,8 +521,7 @@ async def reset(request: web.Request) -> web.Response:
                             {
                                 "address": "FF",
                                 "offset[delta_degF]": 20,
-                                "value": 200,
-                                "valid": true
+                                "value": 200
                             }
     """
     return web.json_response(await ObjectApi(request.app).reset_objects(await request.json()))

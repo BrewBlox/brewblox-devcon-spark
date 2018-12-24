@@ -18,7 +18,7 @@ TESTED = broadcaster.__name__
 @pytest.fixture
 def mock_api(mocker):
     m = mocker.patch(TESTED + '.ObjectApi', autospec=True)
-    m.return_value.all = CoroutineMock(return_value=[])
+    m.return_value.all_logged = CoroutineMock(return_value=[])
     return m.return_value
 
 
@@ -67,7 +67,7 @@ async def test_noop_broadcast(app, mock_api, mock_publisher, client, connected):
     b = broadcaster.get_broadcaster(app)
     await asyncio.sleep(0.1)
     assert b.active
-    assert mock_api.all.call_count > 0
+    assert mock_api.all_logged.call_count > 0
     assert mock_publisher.publish.call_count == 0
 
 
@@ -75,7 +75,7 @@ async def test_disabled(disabled_app, mock_api, mock_publisher, client, connecte
     b = broadcaster.get_broadcaster(disabled_app)
     await asyncio.sleep(0.1)
     assert not b.active
-    assert mock_api.all.call_count == 0
+    assert mock_api.all_logged.call_count == 0
     assert mock_publisher.publish.call_count == 0
 
 
@@ -85,7 +85,7 @@ async def test_broadcast(mock_api, mock_publisher, client, connected):
         {API_ID_KEY: 'testface', API_DATA_KEY: {'val': 2}}
     ]
     objects = {'testey': {'var': 1}, 'testface': {'val': 2}}
-    mock_api.all.return_value = object_list
+    mock_api.all_logged.return_value = object_list
     await asyncio.sleep(0.1)
 
     assert call(exchange='testcast', routing='test_app', message=objects) in mock_publisher.publish.mock_calls
@@ -95,15 +95,15 @@ async def test_error(app, client, mock_api, mock_publisher, connected):
     b = broadcaster.get_broadcaster(app)
 
     # Don't exit after error
-    mock_api.all.side_effect = RuntimeError
+    mock_api.all_logged.side_effect = RuntimeError
 
     await asyncio.sleep(0.1)
     assert not b._task.done()
     assert mock_publisher.publish.call_count == 0
 
     # Error over, resume normal work
-    mock_api.all.side_effect = None
-    mock_api.all.return_value = [
+    mock_api.all_logged.side_effect = None
+    mock_api.all_logged.return_value = [
         {API_ID_KEY: 'testey', API_DATA_KEY: {'var': 1}},
         {API_ID_KEY: 'testface', API_DATA_KEY: {'val': 2}}
     ]

@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+import "brewblox.proto";
+import "nanopb.proto";
+import "ActuatorDigital.proto";
+import "DigitalConstraints.proto";
+
+package blox;
+
+message ActuatorDS2413 {
+  option (brewblox_msg).objtype = ActuatorDS2413;
+
+  enum Channel {
+    UNSET = 0;
+    A = 1;
+    B = 2;
+  }
+
+  uint32 hwDevice = 1 [ (brewblox).objtype = DS2413, (nanopb).int_size = IS_16 ];
+  Channel channel = 2;
+  AD.State state = 3 [ (brewblox).logged = true ];
+  bool invert = 4;
+  DigitalConstraints constrainedBy = 5;
+  repeated uint32 strippedFields = 99 [ (brewblox).readonly = true, (nanopb).int_size = IS_16, (nanopb).max_count = 1 ];
+}

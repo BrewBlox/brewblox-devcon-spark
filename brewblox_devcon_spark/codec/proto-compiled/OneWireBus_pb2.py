@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x10OneWireBus.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x95\x01\n\nOneWireBus\x12)\n\x07\x63ommand\x18\x01 \x01(\x0b\x32\x18.blox.OneWireBus.Command\x12\x1d\n\x07\x61\x64\x64ress\x18\x02 \x03(\x06\x42\x0c\x8a\xb5\x18\x02 \x01\x8a\xb5\x18\x02(\x01\x1a\x35\n\x07\x43ommand\x12\x15\n\x06opcode\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08\x12\x13\n\x04\x64\x61ta\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08:\x06\x92?\x03H\x82\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x10OneWireBus.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x96\x01\n\nOneWireBus\x12)\n\x07\x63ommand\x18\x01 \x01(\x0b\x32\x18.blox.OneWireBus.Command\x12\x1d\n\x07\x61\x64\x64ress\x18\x02 \x03(\x06\x42\x0c\x8a\xb5\x18\x02 \x01\x8a\xb5\x18\x02(\x01\x1a\x35\n\x07\x43ommand\x12\x15\n\x06opcode\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08\x12\x13\n\x04\x64\x61ta\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08:\x07\x8a\xb5\x18\x03\x18\x82\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -92,14 +92,14 @@ _ONEWIREBUS = _descriptor.Descriptor(
   nested_types=[_ONEWIREBUS_COMMAND, ],
   enum_types=[
   ],
-  serialized_options=_b('\222?\003H\202\002'),
+  serialized_options=_b('\212\265\030\003\030\202\002'),
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
   serialized_start=57,
-  serialized_end=206,
+  serialized_end=207,
 )
 
 _ONEWIREBUS_COMMAND.containing_type = _ONEWIREBUS

@@ -12,7 +12,8 @@ from typing import List
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
 
-from brewblox_devcon_spark import commander, commands, exceptions, status
+from brewblox_devcon_spark import (commander, commands, datastore, exceptions,
+                                   status)
 from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             OBJECT_ID_LIST_KEY,
@@ -67,7 +68,7 @@ class SimulationResponder():
 
         self._objects = {
             1: {
-                OBJECT_ID_KEY: 1,
+                OBJECT_ID_KEY: datastore.PROFILES_CONTROLLER_ID,
                 OBJECT_TYPE_KEY: 'Profiles',
                 PROFILE_LIST_KEY: self._all_profiles,
                 OBJECT_DATA_KEY: {
@@ -75,7 +76,7 @@ class SimulationResponder():
                 },
             },
             2: {
-                OBJECT_ID_KEY: 2,
+                OBJECT_ID_KEY: datastore.SYSINFO_CONTROLLER_ID,
                 OBJECT_TYPE_KEY: 'SysInfo',
                 PROFILE_LIST_KEY: self._all_profiles,
                 OBJECT_DATA_KEY: {
@@ -83,7 +84,7 @@ class SimulationResponder():
                 },
             },
             3: {
-                OBJECT_ID_KEY: 3,
+                OBJECT_ID_KEY: datastore.TIME_CONTROLLER_ID,
                 OBJECT_TYPE_KEY: 'Ticks',
                 PROFILE_LIST_KEY: self._all_profiles,
                 OBJECT_DATA_KEY: {
@@ -92,7 +93,7 @@ class SimulationResponder():
                 },
             },
             4: {
-                OBJECT_ID_KEY: 4,
+                OBJECT_ID_KEY: datastore.ONEWIREBUS_CONTROLLER_ID,
                 OBJECT_TYPE_KEY: 'OneWireBus',
                 PROFILE_LIST_KEY: self._all_profiles,
                 OBJECT_DATA_KEY: {},

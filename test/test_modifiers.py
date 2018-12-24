@@ -36,7 +36,6 @@ def k_mod():
 def generate_encoding_data():
     return {
         'value[degF]': 10,
-        'valid': True,
         'offset[delta_degF]': 20,
         'address': 'aabbccdd',
     }
@@ -45,7 +44,6 @@ def generate_encoding_data():
 def generate_decoding_data():
     return {
         'value': -50062,
-        'valid': True,
         'offset': 45511,
         'address': 3721182122,
     }

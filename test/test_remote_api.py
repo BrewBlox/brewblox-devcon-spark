@@ -46,7 +46,6 @@ def object_args():
         OBJECT_TYPE_KEY: 'TempSensorOneWire',
         OBJECT_DATA_KEY: {
             'value': 1234,
-            'valid': True,
             'address': 'ff',
         }
     }
@@ -106,8 +105,6 @@ async def test_slave_translations(app, client, created, object_args, dummy_liste
     data = object_args[OBJECT_DATA_KEY]
     # should be propagated
     data['address'] = 'aa'.rjust(16, '0')
-    # ignored
-    data['valid'] = False
 
     await dummy_listener.on_message(None, 'testface', deepcopy(data))
 
@@ -126,12 +123,10 @@ async def test_slave_all(app, client, created, object_args, dummy_listener):
     # No translation table: everything is used
     data = object_args[OBJECT_DATA_KEY]
     data['address'] = 'aa'.rjust(16, '0')
-    data['valid'] = False
 
     await dummy_listener.on_message(None, 'testface', deepcopy(data))
     updated = await ctrl.read_object({OBJECT_ID_KEY: object_args[OBJECT_ID_KEY]})
     assert updated[OBJECT_DATA_KEY]['address'] == 'aa'.rjust(16, '0')
-    assert not updated[OBJECT_DATA_KEY]['valid']
 
 
 async def test_master(app, client, created, mock_publisher, object_args):

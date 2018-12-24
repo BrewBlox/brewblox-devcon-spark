@@ -7,7 +7,7 @@ package blox;
 
 message AnalogConstraint {
   message Balanced {
-    uint32 balancerId = 1 [ (brewblox).link = BalancerLink, (nanopb).int_size = IS_16 ];
+    uint32 balancerId = 1 [ (brewblox).objtype = BalancerInterface, (nanopb).int_size = IS_16 ];
     uint32 granted = 2 [ (brewblox).scale = 4096, (brewblox).readonly = true ];
   }
 

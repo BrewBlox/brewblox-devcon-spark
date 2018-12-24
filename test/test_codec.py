@@ -8,7 +8,7 @@ import asyncio
 from unittest.mock import ANY
 
 import pytest
-from brewblox_service import scheduler
+from brewblox_service import features, scheduler
 
 from brewblox_devcon_spark import (commander_sim, datastore, device,
                                    exceptions, seeder, status)
@@ -32,6 +32,11 @@ def app(app):
 @pytest.fixture
 def cdc(app) -> codec.Codec:
     return codec.get_codec(app)
+
+
+@pytest.fixture
+def sim_cdc(app) -> codec.Codec:
+    return features.get(app, key='sim_codec')
 
 
 async def test_encode_system_objects(app, client, cdc):
@@ -84,8 +89,8 @@ async def test_decode_errors(app, client, cdc):
 
 
 async def test_invalid_object(app, client, cdc):
-    assert await cdc.encode('InvalidLink', {'args': True}) == (0, b'\x00')
-    assert await cdc.decode(0, b'\xAA') == ('InvalidLink', {})
+    assert await cdc.encode('Invalid', {'args': True}) == (0, b'\x00')
+    assert await cdc.decode(0, b'\xAA') == ('Invalid', {})
 
 
 async def test_encode_constraint(app, client, cdc):
@@ -112,11 +117,23 @@ async def test_encode_delta_sec(app, client, cdc):
 async def test_transcode_interfaces(app, client, cdc):
     types = [
         'EdgeCase',
-        'BalancerLink',
+        'BalancerInterface',
         'SetpointSensorPair',
-        'SetpointSensorPairLink'
+        'SetpointSensorPairInterface'
     ]
     assert [await cdc.decode(await cdc.encode(t)) for t in types] == types
+
+
+async def test_stripped_fields(app, client, cdc, sim_cdc):
+    enc_id, enc_val = await sim_cdc.encode('EdgeCase', {
+        'deltaV': 100,  # tag 6
+        'logged': 10,  # tag 7
+        'strippedFields': [6],
+    })
+    dec_id, dec_val = await cdc.decode(enc_id, enc_val)
+    assert dec_val['deltaV'] is None
+    assert dec_val['logged'] == 10
+    assert 'strippedFields' not in dec_val.keys()
 
 
 async def test_codec_config(app, client, cdc):

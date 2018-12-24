@@ -6,7 +6,7 @@ import "nanopb.proto";
 package blox;
 
 message Ticks {
-  option (nanopb_msgopt).msgid = 257;
+  option (brewblox_msg).objtype = Ticks;
 
   uint32 millisSinceBoot = 1 [ (brewblox).readonly = true, (nanopb).int_size = IS_32 ];
   uint32 secondsSinceEpoch = 2 [ (nanopb).int_size = IS_32 ];

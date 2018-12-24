@@ -12,15 +12,16 @@ from google.protobuf import json_format
 from google.protobuf.message import Message
 
 import ActuatorAnalogMock_pb2
+import ActuatorDS2413_pb2
 import ActuatorOffset_pb2
 import ActuatorPin_pb2
 import ActuatorPwm_pb2
 import Balancer_pb2
 import brewblox_pb2
 import DisplaySettings_pb2
+import DS2413_pb2
 import EdgeCase_pb2
 import Mutex_pb2
-import nanopb_pb2
 import OneWireBus_pb2
 import Pid_pb2
 import SetpointProfile_pb2
@@ -31,7 +32,6 @@ import TempSensorMock_pb2
 import TempSensorOneWire_pb2
 import Ticks_pb2
 import TouchSettings_pb2
-import XboxController_pb2
 import WiFiSettings_pb2
 from brewblox_devcon_spark.codec.modifiers import Modifier
 
@@ -72,7 +72,7 @@ class Transcoder(ABC):
             raise KeyError(f'No codec found for object type [{obj_type}]')
 
 
-class LinkTypeTranscoder(Transcoder):
+class BlockInterfaceTranscoder(Transcoder):
 
     @classmethod
     def type_int(cls) -> int:
@@ -80,7 +80,7 @@ class LinkTypeTranscoder(Transcoder):
 
     @classmethod
     def type_str(cls) -> str:
-        return brewblox_pb2.BrewbloxFieldOptions.LinkType.Name(cls._ENUM_VAL)
+        return brewblox_pb2.BrewbloxOptions.BlockType.Name(cls._ENUM_VAL)
 
     def encode(self, values: Decoded_, _) -> Encoded_:
         return b'\x00'
@@ -89,9 +89,9 @@ class LinkTypeTranscoder(Transcoder):
         return dict()
 
 
-def link_type_factory(value: int) -> LinkTypeTranscoder:
-    name = f'{brewblox_pb2.BrewbloxFieldOptions.LinkType.Name(value)}Transcoder'
-    return type(name, (LinkTypeTranscoder, ), {'_ENUM_VAL': value})
+def interface_factory(value: int) -> BlockInterfaceTranscoder:
+    name = f'{brewblox_pb2.BrewbloxOptions.BlockType.Name(value)}TranscoderStub'
+    return type(name, (BlockInterfaceTranscoder, ), {'_ENUM_VAL': value})
 
 
 class InactiveObjectTranscoder(Transcoder):
@@ -137,7 +137,7 @@ class ProtobufTranscoder(Transcoder):
 
     @classmethod
     def type_int(cls) -> int:
-        return cls._MESSAGE.DESCRIPTOR.GetOptions().Extensions[nanopb_pb2.nanopb_msgopt].msgid
+        return cls._MESSAGE.DESCRIPTOR.GetOptions().Extensions[brewblox_pb2.brewblox_msg].objtype
 
     @classmethod
     def type_str(cls) -> str:
@@ -180,6 +180,18 @@ class OptionsTranscoder(ProtobufTranscoder):
         return decoded
 
 
+class EdgeCaseTranscoder(OptionsTranscoder):
+    _MESSAGE = EdgeCase_pb2.EdgeCase
+
+    @classmethod
+    def type_int(cls) -> int:
+        return 9001
+
+    @classmethod
+    def type_str(cls) -> str:
+        return 'EdgeCase'
+
+
 def options_type_factory(message):
     name = f'{message.__name__}Transcoder'
     return type(name, (OptionsTranscoder, ), {'_MESSAGE': message})
@@ -193,24 +205,23 @@ def _generate_mapping(vals: Iterable[Transcoder]):
 
 _TRANSCODERS = [
     # Raw system objects
-    *[link_type_factory(v) for v in brewblox_pb2.BrewbloxFieldOptions.LinkType.values()],
     InactiveObjectTranscoder,
     ProfilesTranscoder,
 
-    # Debugging objects
-    *[options_type_factory(msg) for msg in [
-        EdgeCase_pb2.EdgeCase,
-        XboxController_pb2.XboxController,
-    ]],
+    # Interface objects
+    # Actual implementations will override this later
+    *[interface_factory(v) for v in brewblox_pb2.BrewbloxOptions.BlockType.values()],
 
     # Protobuf objects
     *[options_type_factory(msg) for msg in [
         ActuatorAnalogMock_pb2.ActuatorAnalogMock,
+        ActuatorDS2413_pb2.ActuatorDS2413,
         ActuatorOffset_pb2.ActuatorOffset,
         ActuatorPin_pb2.ActuatorPin,
         ActuatorPwm_pb2.ActuatorPwm,
         Balancer_pb2.Balancer,
         DisplaySettings_pb2.DisplaySettings,
+        DS2413_pb2.DS2413,
         Mutex_pb2.Mutex,
         OneWireBus_pb2.OneWireBus,
         Pid_pb2.Pid,
@@ -224,6 +235,9 @@ _TRANSCODERS = [
         TouchSettings_pb2.TouchSettings,
         WiFiSettings_pb2.WiFiSettings,
     ]],
+
+    # Debugging object
+    EdgeCaseTranscoder,
 ]
 
 _TYPE_MAPPING = {k: v for k, v in _generate_mapping(_TRANSCODERS)}

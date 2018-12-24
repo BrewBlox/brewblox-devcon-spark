@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x14TempSensorMock.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"e\n\x0eTempSensorMock\x12!\n\x05value\x18\x01 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x15\n\x05valid\x18\x02 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12\x11\n\tconnected\x18\x03 \x01(\x08:\x06\x92?\x03H\xad\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x14TempSensorMock.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x87\x01\n\x0eTempSensorMock\x12\'\n\x05value\x18\x01 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x19\n\tconnected\x18\x03 \x01(\x08\x42\x06\x8a\xb5\x18\x02\x30\x01\x12(\n\x0estrippedFields\x18\x63 \x03(\rB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x01:\x07\x8a\xb5\x18\x03\x18\xad\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -41,35 +41,35 @@ _TEMPSENSORMOCK = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002\010\001\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\0020\001\212\265\030\002\010\001\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='valid', full_name='blox.TempSensorMock.valid', index=1,
-      number=2, type=8, cpp_type=7, label=1,
-      has_default_value=False, default_value=False,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002(\001'), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='connected', full_name='blox.TempSensorMock.connected', index=2,
+      name='connected', full_name='blox.TempSensorMock.connected', index=1,
       number=3, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\0020\001'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='strippedFields', full_name='blox.TempSensorMock.strippedFields', index=2,
+      number=99, type=13, cpp_type=3, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\002(\001\222?\0028\020\222?\002\020\001'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  serialized_options=_b('\222?\003H\255\002'),
+  serialized_options=_b('\212\265\030\003\030\255\002'),
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=60,
-  serialized_end=161,
+  serialized_start=61,
+  serialized_end=196,
 )
 
 DESCRIPTOR.message_types_by_name['TempSensorMock'] = _TEMPSENSORMOCK
@@ -84,6 +84,7 @@ _sym_db.RegisterMessage(TempSensorMock)
 
 
 _TEMPSENSORMOCK.fields_by_name['value']._options = None
-_TEMPSENSORMOCK.fields_by_name['valid']._options = None
+_TEMPSENSORMOCK.fields_by_name['connected']._options = None
+_TEMPSENSORMOCK.fields_by_name['strippedFields']._options = None
 _TEMPSENSORMOCK._options = None
 # @@protoc_insertion_point(module_scope)
