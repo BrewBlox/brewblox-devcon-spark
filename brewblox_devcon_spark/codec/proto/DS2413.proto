@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+import "brewblox.proto";
+import "nanopb.proto";
+
+package blox;
+
+message DS2413 {
+  option (brewblox_msg).objtype = DS2413;
+  fixed64 address = 1 [ (brewblox).hexed = true ];
+  uint32 state = 2 [ (brewblox).readonly = true, (nanopb).int_size = IS_8 ];
+}

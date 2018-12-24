@@ -43,5 +43,5 @@ message Pid {
   sint32 error = 19 [ (brewblox).unit = DeltaTemp, (brewblox).scale = 4096, (nanopb).int_size = IS_32, (brewblox).readonly = true ];
   sint32 integral = 20 [ (brewblox).unit = DeltaTempTime, (brewblox).scale = 4096, (nanopb).int_size = IS_32, (brewblox).readonly = true ];
   sint32 derivative = 21 [ (brewblox).unit = DeltaTempPerTime, (brewblox).scale = 8388608, (nanopb).int_size = IS_32, (brewblox).readonly = true ];
-  repeated uint32 strippedFields = 99 [ (brewblox).tags = true, (brewblox).readonly = true, (nanopb).int_size = IS_16, (nanopb).max_count = 4 ];
+  repeated uint32 strippedFields = 99 [ (brewblox).readonly = true, (nanopb).int_size = IS_16, (nanopb).max_count = 4 ];
 }

@@ -13,5 +13,5 @@ message ActuatorAnalogMock {
   sint32 maxSetting = 5 [ (brewblox).scale = 4096, (nanopb).int_size = IS_32 ];
   sint32 minValue = 6 [ (brewblox).scale = 4096, (nanopb).int_size = IS_32 ];
   sint32 maxValue = 7 [ (brewblox).scale = 4096, (nanopb).int_size = IS_32 ];
-  repeated uint32 strippedFields = 99 [ (brewblox).tags = true, (brewblox).readonly = true, (nanopb).int_size = IS_16, (nanopb).max_count = 2 ];
+  repeated uint32 strippedFields = 99 [ (brewblox).readonly = true, (nanopb).int_size = IS_16, (nanopb).max_count = 2 ];
 }

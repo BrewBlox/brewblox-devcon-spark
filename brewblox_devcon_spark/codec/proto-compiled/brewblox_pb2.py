@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0e\x62rewblox.proto\x1a google/protobuf/descriptor.proto\"\x93\x07\n\x0f\x42rewbloxOptions\x12\'\n\x04unit\x18\x01 \x01(\x0e\x32\x19.BrewbloxOptions.UnitType\x12\r\n\x05scale\x18\x02 \x01(\r\x12+\n\x07objtype\x18\x03 \x01(\x0e\x32\x1a.BrewbloxOptions.BlockType\x12\r\n\x05hexed\x18\x04 \x01(\x08\x12\x10\n\x08readonly\x18\x05 \x01(\x08\x12\x0e\n\x06logged\x18\x06 \x01(\x08\x12\x0e\n\x06hexstr\x18\x07 \x01(\x08\x12\x0c\n\x04tags\x18\x08 \x01(\x08\"\xd6\x04\n\tBlockType\x12\x0b\n\x07Invalid\x10\x00\x12\x19\n\x15ProcessValueInterface\x10\x01\x12\x17\n\x13TempSensorInterface\x10\x02\x12\x15\n\x11SetpointInterface\x10\x03\x12\x1f\n\x1bSetpointSensorPairInterface\x10\x04\x12\x1b\n\x17\x41\x63tuatorAnalogInterface\x10\x05\x12\x1c\n\x18\x41\x63tuatorDigitalInterface\x10\x06\x12\x15\n\x11\x42\x61lancerInterface\x10\x07\x12\x12\n\x0eMutexInterface\x10\x08\x12\x1a\n\x16OneWireDeviceInterface\x10\t\x12\x0c\n\x07SysInfo\x10\x80\x02\x12\x0f\n\nOneWireBus\x10\x82\x02\x12\n\n\x05Ticks\x10\x81\x02\x12\x13\n\x0eSetpointSimple\x10\xac\x02\x12\x13\n\x0eTempSensorMock\x10\xad\x02\x12\x16\n\x11TempSensorOneWire\x10\xae\x02\x12\x17\n\x12SetpointSensorPair\x10\xaf\x02\x12\x08\n\x03Pid\x10\xb0\x02\x12\x17\n\x12\x41\x63tuatorAnalogMock\x10\xb1\x02\x12\x10\n\x0b\x41\x63tuatorPin\x10\xb2\x02\x12\x10\n\x0b\x41\x63tuatorPwm\x10\xb3\x02\x12\x13\n\x0e\x41\x63tuatorOffset\x10\xb4\x02\x12\r\n\x08\x42\x61lancer\x10\xb5\x02\x12\n\n\x05Mutex\x10\xb6\x02\x12\x14\n\x0fSetpointProfile\x10\xb7\x02\x12\x11\n\x0cWiFiSettings\x10\xb8\x02\x12\x12\n\rTouchSettings\x10\xb9\x02\x12\x14\n\x0f\x44isplaySettings\x10\xba\x02\"s\n\x08UnitType\x12\n\n\x06NotSet\x10\x00\x12\x08\n\x04Temp\x10\x01\x12\r\n\tDeltaTemp\x10\x02\x12\x14\n\x10\x44\x65ltaTempPerTime\x10\x03\x12\x08\n\x04Time\x10\x04\x12\x0f\n\x0bInverseTemp\x10\x05\x12\x11\n\rDeltaTempTime\x10\x06:C\n\x08\x62rewblox\x12\x1d.google.protobuf.FieldOptions\x18\xd1\x86\x03 \x01(\x0b\x32\x10.BrewbloxOptions:I\n\x0c\x62rewblox_msg\x12\x1f.google.protobuf.MessageOptions\x18\xd1\x86\x03 \x01(\x0b\x32\x10.BrewbloxOptionsb\x06proto3')
+  serialized_pb=_b('\n\x0e\x62rewblox.proto\x1a google/protobuf/descriptor.proto\"\xc6\x07\n\x0f\x42rewbloxOptions\x12\'\n\x04unit\x18\x01 \x01(\x0e\x32\x19.BrewbloxOptions.UnitType\x12\r\n\x05scale\x18\x02 \x01(\r\x12+\n\x07objtype\x18\x03 \x01(\x0e\x32\x1a.BrewbloxOptions.BlockType\x12\r\n\x05hexed\x18\x04 \x01(\x08\x12\x10\n\x08readonly\x18\x05 \x01(\x08\x12\x0e\n\x06logged\x18\x06 \x01(\x08\x12\x0e\n\x06hexstr\x18\x07 \x01(\x08\"\x97\x05\n\tBlockType\x12\x0b\n\x07Invalid\x10\x00\x12\x19\n\x15ProcessValueInterface\x10\x01\x12\x17\n\x13TempSensorInterface\x10\x02\x12\x15\n\x11SetpointInterface\x10\x03\x12\x1f\n\x1bSetpointSensorPairInterface\x10\x04\x12\x1b\n\x17\x41\x63tuatorAnalogInterface\x10\x05\x12\x1c\n\x18\x41\x63tuatorDigitalInterface\x10\x06\x12\x15\n\x11\x42\x61lancerInterface\x10\x07\x12\x12\n\x0eMutexInterface\x10\x08\x12\x1a\n\x16OneWireDeviceInterface\x10\t\x12\x13\n\x0f\x44S2413Interface\x10\n\x12\x08\n\x03\x41ny\x10\xff\x01\x12\x0c\n\x07SysInfo\x10\x80\x02\x12\x0f\n\nOneWireBus\x10\x82\x02\x12\n\n\x05Ticks\x10\x81\x02\x12\x13\n\x0eSetpointSimple\x10\xac\x02\x12\x13\n\x0eTempSensorMock\x10\xad\x02\x12\x16\n\x11TempSensorOneWire\x10\xae\x02\x12\x17\n\x12SetpointSensorPair\x10\xaf\x02\x12\x08\n\x03Pid\x10\xb0\x02\x12\x17\n\x12\x41\x63tuatorAnalogMock\x10\xb1\x02\x12\x10\n\x0b\x41\x63tuatorPin\x10\xb2\x02\x12\x10\n\x0b\x41\x63tuatorPwm\x10\xb3\x02\x12\x13\n\x0e\x41\x63tuatorOffset\x10\xb4\x02\x12\r\n\x08\x42\x61lancer\x10\xb5\x02\x12\n\n\x05Mutex\x10\xb6\x02\x12\x14\n\x0fSetpointProfile\x10\xb7\x02\x12\x11\n\x0cWiFiSettings\x10\xb8\x02\x12\x12\n\rTouchSettings\x10\xb9\x02\x12\x14\n\x0f\x44isplaySettings\x10\xba\x02\x12\x0b\n\x06\x44S2413\x10\xbb\x02\x12\x13\n\x0e\x41\x63tuatorDS2413\x10\xbc\x02\"s\n\x08UnitType\x12\n\n\x06NotSet\x10\x00\x12\x08\n\x04Temp\x10\x01\x12\r\n\tDeltaTemp\x10\x02\x12\x14\n\x10\x44\x65ltaTempPerTime\x10\x03\x12\x08\n\x04Time\x10\x04\x12\x0f\n\x0bInverseTemp\x10\x05\x12\x11\n\rDeltaTempTime\x10\x06:C\n\x08\x62rewblox\x12\x1d.google.protobuf.FieldOptions\x18\xd1\x86\x03 \x01(\x0b\x32\x10.BrewbloxOptions:I\n\x0c\x62rewblox_msg\x12\x1f.google.protobuf.MessageOptions\x18\xd1\x86\x03 \x01(\x0b\x32\x10.BrewbloxOptionsb\x06proto3')
   ,
   dependencies=[google_dot_protobuf_dot_descriptor__pb2.DESCRIPTOR,])
 
@@ -89,82 +89,98 @@ _BREWBLOXOPTIONS_BLOCKTYPE = _descriptor.EnumDescriptor(
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='SysInfo', index=10, number=256,
+      name='DS2413Interface', index=10, number=10,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='OneWireBus', index=11, number=258,
+      name='Any', index=11, number=255,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='Ticks', index=12, number=257,
+      name='SysInfo', index=12, number=256,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='SetpointSimple', index=13, number=300,
+      name='OneWireBus', index=13, number=258,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='TempSensorMock', index=14, number=301,
+      name='Ticks', index=14, number=257,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='TempSensorOneWire', index=15, number=302,
+      name='SetpointSimple', index=15, number=300,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='SetpointSensorPair', index=16, number=303,
+      name='TempSensorMock', index=16, number=301,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='Pid', index=17, number=304,
+      name='TempSensorOneWire', index=17, number=302,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='ActuatorAnalogMock', index=18, number=305,
+      name='SetpointSensorPair', index=18, number=303,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='ActuatorPin', index=19, number=306,
+      name='Pid', index=19, number=304,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='ActuatorPwm', index=20, number=307,
+      name='ActuatorAnalogMock', index=20, number=305,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='ActuatorOffset', index=21, number=308,
+      name='ActuatorPin', index=21, number=306,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='Balancer', index=22, number=309,
+      name='ActuatorPwm', index=22, number=307,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='Mutex', index=23, number=310,
+      name='ActuatorOffset', index=23, number=308,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='SetpointProfile', index=24, number=311,
+      name='Balancer', index=24, number=309,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='WiFiSettings', index=25, number=312,
+      name='Mutex', index=25, number=310,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='TouchSettings', index=26, number=313,
+      name='SetpointProfile', index=26, number=311,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='DisplaySettings', index=27, number=314,
+      name='WiFiSettings', index=27, number=312,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='TouchSettings', index=28, number=313,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='DisplaySettings', index=29, number=314,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='DS2413', index=30, number=315,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='ActuatorDS2413', index=31, number=316,
       serialized_options=None,
       type=None),
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=253,
-  serialized_end=851,
+  serialized_start=239,
+  serialized_end=902,
 )
 _sym_db.RegisterEnumDescriptor(_BREWBLOXOPTIONS_BLOCKTYPE)
 
@@ -205,8 +221,8 @@ _BREWBLOXOPTIONS_UNITTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=853,
-  serialized_end=968,
+  serialized_start=904,
+  serialized_end=1019,
 )
 _sym_db.RegisterEnumDescriptor(_BREWBLOXOPTIONS_UNITTYPE)
 
@@ -267,13 +283,6 @@ _BREWBLOXOPTIONS = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='tags', full_name='BrewbloxOptions.tags', index=7,
-      number=8, type=8, cpp_type=7, label=1,
-      has_default_value=False, default_value=False,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -289,7 +298,7 @@ _BREWBLOXOPTIONS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=53,
-  serialized_end=968,
+  serialized_end=1019,
 )
 
 _BREWBLOXOPTIONS.fields_by_name['unit'].enum_type = _BREWBLOXOPTIONS_UNITTYPE

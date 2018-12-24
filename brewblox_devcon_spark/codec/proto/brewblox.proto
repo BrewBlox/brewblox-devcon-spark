@@ -14,6 +14,8 @@ message BrewbloxOptions {
     BalancerInterface = 7;
     MutexInterface = 8;
     OneWireDeviceInterface = 9;
+    DS2413Interface = 10;
+    Any = 255;
     SysInfo = 256;
     OneWireBus = 258;
     Ticks = 257;
@@ -32,6 +34,8 @@ message BrewbloxOptions {
     WiFiSettings = 312;
     TouchSettings = 313;
     DisplaySettings = 314;
+    DS2413 = 315;
+    ActuatorDS2413 = 316;
   }
 
   enum UnitType {
@@ -50,7 +54,6 @@ message BrewbloxOptions {
   bool readonly = 5;
   bool logged = 6;
   bool hexstr = 7;
-  bool tags = 8;
 }
 
 extend google.protobuf.FieldOptions { BrewbloxOptions brewblox = 50001; }

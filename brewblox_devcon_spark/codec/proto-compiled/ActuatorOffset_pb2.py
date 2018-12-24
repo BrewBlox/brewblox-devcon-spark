@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x14\x41\x63tuatorOffset.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x17\x41nalogConstraints.proto\"\xf2\x02\n\x0e\x41\x63tuatorOffset\x12\x1d\n\x08targetId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x01\x92?\x02\x38\x10\x12 \n\x0breferenceId\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x01\x92?\x02\x38\x10\x12\x44\n\x17referenceSettingOrValue\x18\x04 \x01(\x0e\x32#.blox.ActuatorOffset.SettingOrValue\x12#\n\x07setting\x18\x06 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12!\n\x05value\x18\x07 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12.\n\rconstrainedBy\x18\x08 \x01(\x0b\x32\x17.blox.AnalogConstraints\x12.\n\x0estrippedFields\x18\x63 \x03(\rB\x16\x8a\xb5\x18\x02@\x01\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x02\"(\n\x0eSettingOrValue\x12\x0b\n\x07SETTING\x10\x00\x12\t\n\x05VALUE\x10\x01:\x07\x8a\xb5\x18\x03\x18\xb4\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x14\x41\x63tuatorOffset.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x17\x41nalogConstraints.proto\"\xec\x02\n\x0e\x41\x63tuatorOffset\x12\x1d\n\x08targetId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x01\x92?\x02\x38\x10\x12 \n\x0breferenceId\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x01\x92?\x02\x38\x10\x12\x44\n\x17referenceSettingOrValue\x18\x04 \x01(\x0e\x32#.blox.ActuatorOffset.SettingOrValue\x12#\n\x07setting\x18\x06 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12!\n\x05value\x18\x07 \x01(\x11\x42\x12\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12.\n\rconstrainedBy\x18\x08 \x01(\x0b\x32\x17.blox.AnalogConstraints\x12(\n\x0estrippedFields\x18\x63 \x03(\rB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x02\"(\n\x0eSettingOrValue\x12\x0b\n\x07SETTING\x10\x00\x12\t\n\x05VALUE\x10\x01:\x07\x8a\xb5\x18\x03\x18\xb4\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,AnalogConstraints__pb2.DESCRIPTOR,])
 
@@ -45,8 +45,8 @@ _ACTUATOROFFSET_SETTINGORVALUE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=407,
-  serialized_end=447,
+  serialized_start=401,
+  serialized_end=441,
 )
 _sym_db.RegisterEnumDescriptor(_ACTUATOROFFSET_SETTINGORVALUE)
 
@@ -106,7 +106,7 @@ _ACTUATOROFFSET = _descriptor.Descriptor(
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002@\001\212\265\030\002(\001\222?\0028\020\222?\002\020\002'), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002(\001\222?\0028\020\222?\002\020\002'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -121,7 +121,7 @@ _ACTUATOROFFSET = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=86,
-  serialized_end=456,
+  serialized_end=450,
 )
 
 _ACTUATOROFFSET.fields_by_name['referenceSettingOrValue'].enum_type = _ACTUATOROFFSET_SETTINGORVALUE

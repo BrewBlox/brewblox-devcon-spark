@@ -6,9 +6,10 @@ import "nanopb.proto";
 package blox;
 
 message TempSensorMock {
-    option (brewblox_msg).objtype = TempSensorMock;
+  option (brewblox_msg).objtype = TempSensorMock;
 
-    sint32 value = 1 [(brewblox).unit = Temp, (brewblox).scale = 4096, (nanopb).int_size = IS_32];
-    bool connected = 3;
-    repeated uint32 strippedFields = 99 [ (brewblox).tags = true, (brewblox).readonly = true, (nanopb).int_size = IS_16, (nanopb).max_count = 2 ];
+  sint32 value = 1 [ (brewblox).unit = Temp, (brewblox).scale = 4096, (nanopb).int_size = IS_32 ];
+  bool connected = 3;
+
+  repeated uint32 strippedFields = 99 [ (brewblox).readonly = true, (nanopb).int_size = IS_16, (nanopb).max_count = 1 ];
 }

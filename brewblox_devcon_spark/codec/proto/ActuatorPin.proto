@@ -13,5 +13,5 @@ message ActuatorPin {
   AD.State state = 1;
   bool invert = 3;
   DigitalConstraints constrainedBy = 4;
-  repeated uint32 strippedFields = 99 [ (brewblox).tags = true, (brewblox).readonly = true, (nanopb).int_size = IS_16, (nanopb).max_count = 1 ];
+  repeated uint32 strippedFields = 99 [ (brewblox).readonly = true, (nanopb).int_size = IS_16, (nanopb).max_count = 1 ];
 }
