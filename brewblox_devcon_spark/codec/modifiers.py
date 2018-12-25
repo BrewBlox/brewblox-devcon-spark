@@ -270,10 +270,6 @@ class Modifier():
                 del element.obj[element.key]
                 continue
 
-            if element.field.number in stripped_fields:
-                element.obj[element.key] = None
-                continue
-
             is_list = isinstance(val, (list, set))
 
             if not is_list:
@@ -304,6 +300,10 @@ class Modifier():
 
             if element.key != new_key:
                 del element.obj[element.key]
+
+            if element.field.number in stripped_fields:
+                # Only strip after element possibly got a new key
+                val = None
 
             element.obj[new_key] = val
 
