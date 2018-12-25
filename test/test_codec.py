@@ -131,7 +131,7 @@ async def test_stripped_fields(app, client, cdc, sim_cdc):
         'strippedFields': [6],
     })
     dec_id, dec_val = await cdc.decode(enc_id, enc_val)
-    assert dec_val['deltaV'] is None
+    assert dec_val['deltaV[delta_degC / second]'] is None
     assert dec_val['logged'] == 10
     assert 'strippedFields' not in dec_val.keys()
 
