@@ -12,13 +12,19 @@ from typing import List
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
 
-from brewblox_devcon_spark import (commander, commands, datastore, exceptions,
-                                   status)
+from brewblox_devcon_spark import commander, commands, exceptions, status
 from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             OBJECT_ID_LIST_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                             PROFILE_LIST_KEY)
+from brewblox_devcon_spark.datastore import (DISPLAY_SETTINGS_ID,
+                                             ONEWIREBUS_CONTROLLER_ID,
+                                             PROFILES_CONTROLLER_ID,
+                                             SYSINFO_CONTROLLER_ID,
+                                             TIME_CONTROLLER_ID,
+                                             TOUCH_SETTINGS_ID,
+                                             WIFI_SETTINGS_ID)
 
 OBJECT_ID_START = 100
 LOGGER = brewblox_logger(__name__)
@@ -67,24 +73,24 @@ class SimulationResponder():
         }
 
         self._objects = {
-            1: {
-                OBJECT_ID_KEY: datastore.PROFILES_CONTROLLER_ID,
+            PROFILES_CONTROLLER_ID: {
+                OBJECT_ID_KEY: PROFILES_CONTROLLER_ID,
                 OBJECT_TYPE_KEY: 'Profiles',
                 PROFILE_LIST_KEY: self._all_profiles,
                 OBJECT_DATA_KEY: {
                     'active': [0]
                 },
             },
-            2: {
-                OBJECT_ID_KEY: datastore.SYSINFO_CONTROLLER_ID,
+            SYSINFO_CONTROLLER_ID: {
+                OBJECT_ID_KEY: SYSINFO_CONTROLLER_ID,
                 OBJECT_TYPE_KEY: 'SysInfo',
                 PROFILE_LIST_KEY: self._all_profiles,
                 OBJECT_DATA_KEY: {
                     'deviceId': 'FACADE'
                 },
             },
-            3: {
-                OBJECT_ID_KEY: datastore.TIME_CONTROLLER_ID,
+            TIME_CONTROLLER_ID: {
+                OBJECT_ID_KEY: TIME_CONTROLLER_ID,
                 OBJECT_TYPE_KEY: 'Ticks',
                 PROFILE_LIST_KEY: self._all_profiles,
                 OBJECT_DATA_KEY: {
@@ -92,9 +98,27 @@ class SimulationResponder():
                     'secondsSinceEpoch': 0,
                 },
             },
-            4: {
-                OBJECT_ID_KEY: datastore.ONEWIREBUS_CONTROLLER_ID,
+            ONEWIREBUS_CONTROLLER_ID: {
+                OBJECT_ID_KEY: ONEWIREBUS_CONTROLLER_ID,
                 OBJECT_TYPE_KEY: 'OneWireBus',
+                PROFILE_LIST_KEY: self._all_profiles,
+                OBJECT_DATA_KEY: {},
+            },
+            WIFI_SETTINGS_ID: {
+                OBJECT_ID_KEY: WIFI_SETTINGS_ID,
+                OBJECT_TYPE_KEY: 'WiFiSettings',
+                PROFILE_LIST_KEY: self._all_profiles,
+                OBJECT_DATA_KEY: {},
+            },
+            TOUCH_SETTINGS_ID: {
+                OBJECT_ID_KEY: TOUCH_SETTINGS_ID,
+                OBJECT_TYPE_KEY: 'TouchSettings',
+                PROFILE_LIST_KEY: self._all_profiles,
+                OBJECT_DATA_KEY: {},
+            },
+            DISPLAY_SETTINGS_ID: {
+                OBJECT_ID_KEY: DISPLAY_SETTINGS_ID,
+                OBJECT_TYPE_KEY: 'DisplaySettings',
                 PROFILE_LIST_KEY: self._all_profiles,
                 OBJECT_DATA_KEY: {},
             },
