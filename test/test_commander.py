@@ -16,6 +16,11 @@ TESTED = commander.__name__
 
 
 @pytest.fixture
+def reset_msgid():
+    commands.Command._msgid = 0
+
+
+@pytest.fixture
 def conduit_mock(mocker):
     m = mocker.patch(TESTED + '.communication.get_conduit')
     m.return_value.bind = CoroutineMock()
@@ -77,19 +82,21 @@ async def test_on_event(mocker, conduit_mock, sparky):
     assert logger_mock.info.call_count == 1
 
 
-async def test_command(conduit_mock, sparky):
-    await sparky._on_data(conduit_mock, '07 83 | 00 00 00')
+async def test_command(conduit_mock, sparky, reset_msgid):
+    await sparky._on_data(conduit_mock, '01 00 07 28 | 00 00 00')
 
     command = commands.ListStoredObjectsCommand.from_args()
+    v = command.encoded_request
+    print(v)
     resp = await sparky.execute(command)
     assert resp['objects'] == []
 
-    conduit_mock.write.assert_called_once_with('0783')
+    conduit_mock.write.assert_called_once_with('01000728')
 
 
-async def test_error_command(conduit_mock, sparky):
+async def test_error_command(conduit_mock, sparky, reset_msgid):
     command = commands.ListStoredObjectsCommand.from_args()
-    await sparky._on_data(conduit_mock, '07 83 | FF 00 ')
+    await sparky._on_data(conduit_mock, '01 00 07 28 | FF 00 ')
 
     with pytest.raises(exceptions.CommandException):
         await sparky.execute(command)
@@ -101,13 +108,13 @@ async def test_timeout_command(conduit_mock, sparky, mocker):
         await sparky.execute(commands.ListStoredObjectsCommand.from_args())
 
 
-async def test_stale_reply(conduit_mock, sparky):
+async def test_stale_reply(conduit_mock, sparky, reset_msgid):
     # error code
     stale = commander.TimestampedResponse('ff0000')
     stale._timestamp -= timedelta(minutes=1)
     fresh = commander.TimestampedResponse('000000')
 
-    q = sparky._requests['0783'].queue
+    q = sparky._requests['01000728'].queue
     await q.put(stale)
     await q.put(fresh)
 
