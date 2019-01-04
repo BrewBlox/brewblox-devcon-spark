@@ -7,5 +7,22 @@ package blox;
 
 message SysInfo {
   option (brewblox_msg).objtype = SysInfo;
+  enum Platform {
+    unknown_platform = 0;
+    gcc = 3;
+    photon = 6;
+    p1 = 8;
+  }
+
+  enum Hardware {
+    unknown_hw = 0;
+    Spark1 = 1;
+    Spark2 = 2;
+    Spark3 = 3;
+  }
+
   bytes deviceId = 1 [ (brewblox).readonly = true, (nanopb).max_size = 12, (nanopb).fixed_length = true, (brewblox).hexstr = true ];
+  string version = 2 [ (brewblox).readonly = true, (nanopb).max_size = 20 ];
+  Platform platform = 3 [ (brewblox).readonly = true ];
+  Hardware hardware = 4 [ (brewblox).readonly = true ];
 }
