@@ -33,6 +33,7 @@ class OptionElement():
     key: str
     base_key: str
     postfix: str
+    nested: bool
 
 
 class Modifier():
@@ -76,7 +77,7 @@ class Modifier():
     def unpack_bit_flags(flags: int) -> List[int]:
         return [i for i in range(8) if 1 << i & flags]
 
-    def _find_options(self, desc: DescriptorBase, obj: dict) -> Iterator[OptionElement]:
+    def _find_options(self, desc: DescriptorBase, obj: dict, nested: bool = False) -> Iterator[OptionElement]:
         """
         Recursively walks `obj`, and yields an `OptionElement` for each value.
 
@@ -95,9 +96,9 @@ class Modifier():
                     children = [obj[key]]
 
                 for c in children:
-                    yield from self._find_options(field.message_type, c)
+                    yield from self._find_options(field.message_type, c, True)
 
-            yield OptionElement(field, obj, key, base_key, option_value)
+            yield OptionElement(field, obj, key, base_key, option_value, nested)
 
         return
 
@@ -301,7 +302,7 @@ class Modifier():
             if element.key != new_key:
                 del element.obj[element.key]
 
-            if element.field.number in stripped_fields:
+            if element.field.number in stripped_fields and not element.nested:
                 # Only strip after element possibly got a new key
                 val = None
 
