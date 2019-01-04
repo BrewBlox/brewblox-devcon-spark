@@ -187,12 +187,23 @@ class Command(ABC):
             'response_list': [4, 5, 6]
         }
     """
+    _msgid = 0
+
+    @staticmethod
+    def _next_id():
+        Command._msgid = (Command._msgid + 1) % 0xFFFF
+        return Command._msgid
 
     def __init__(self, encoded=(None, None), decoded=(None, None)):
         self._encoded_request, self._encoded_response = encoded
         self._decoded_request, self._decoded_response = decoded
 
         self._check_sanity()
+
+        # `msgid` improves request / response mapping
+        # It will be included in `self.encoded_request`, but not in `self.decoded_request`.
+        # Each time the request is encoded, a new msgid will be assigned
+        msgid = Struct('_msgid' / Int16ul)
 
         # `opcode` is defined as a private variable in request.
         # it will be included in `self.encoded_request`, but not in `self.decoded_request`.
@@ -207,7 +218,7 @@ class Command(ABC):
         errcode = Struct('_errcode' / Default(ErrorcodeEnum, ErrorcodeEnum.OK))
 
         request = self.__class__._REQUEST or Struct()
-        self._request = opcode + request
+        self._request = msgid + opcode + request
 
         response = self.__class__._RESPONSE or Struct()
         self._response = errcode + response
@@ -279,7 +290,10 @@ class Command(ABC):
         if self._encoded_request is not None:
             return self._encoded_request
 
-        self._encoded_request = self._build(self.request, self._decoded_request)
+        if self._decoded_request is not None:
+            msgid = Command._next_id()
+            self._encoded_request = self._build(self.request, {**self._decoded_request, '_msgid': msgid})
+
         return self._encoded_request
 
     @property
