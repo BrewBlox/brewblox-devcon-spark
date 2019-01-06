@@ -12,7 +12,6 @@ protobuf = "*"
 Pint = "*"
 aiofiles = "*"
 aiohttp-sse = "*"
-pyyaml = "*"
 
 [dev-packages]
 pytest = "*"
@@ -28,6 +27,3 @@ aresponses = "*"
 
 [requires]
 python_version = "3.7"
-
-[pipenv]
-allow_prereleases = true
