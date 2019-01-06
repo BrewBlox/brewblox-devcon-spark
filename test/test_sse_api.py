@@ -85,7 +85,7 @@ async def test_error_call(app, client, mocker):
     # Do not crash if api.all() raises exceptions
     queue = asyncio.Queue()
     await pub.subscribe(queue)
-    await asyncio.sleep(0.01)
+    await asyncio.sleep(0.1)
     assert api_mock.all.call_count > 1
     assert queue.empty()
 
