@@ -9,7 +9,7 @@ services:
 install:
   - source .env
   - pip install pipenv
-  - pipenv install --dev
+  - pipenv sync --dev
 
 script:
   - pytest
