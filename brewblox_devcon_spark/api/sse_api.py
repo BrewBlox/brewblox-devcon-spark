@@ -122,7 +122,7 @@ async def subscribe(request: web.Request) -> web.Response:
     """
     async with sse_response(request, headers=_cors_headers(request)) as resp:
         publisher: SSEPublisher = get_publisher(request.app)
-        queue = asyncio.Queue(loop=request.app.loop)
+        queue = asyncio.Queue()
         await publisher.subscribe(queue)
 
         while True:

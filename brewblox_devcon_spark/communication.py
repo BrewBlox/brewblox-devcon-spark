@@ -61,6 +61,11 @@ def get_conduit(app: web.Application) -> 'SparkConduit':
     return features.get(app, SparkConduit)
 
 
+async def create_connection(*args, **kwargs):  # pragma: no cover
+    """asyncio.create_connection() wrapper, for easier testing"""
+    return await asyncio.get_event_loop().create_connection(*args, **kwargs)
+
+
 async def connect_serial(app: web.Application,
                          factory: ProtocolFactory_
                          ) -> Awaitable[ConnectionResult_]:
@@ -71,7 +76,8 @@ async def connect_serial(app: web.Application,
     address = detect_device(port, id)
     protocol = factory()
     ser = serial.serial_for_url(address, baudrate=DEFAULT_BAUD_RATE)
-    transport = SerialTransport(app.loop, protocol, ser)
+    loop = asyncio.get_event_loop()
+    transport = SerialTransport(loop, protocol, ser)
     transport.serial.rts = False
     return address, transport, protocol
 
@@ -81,7 +87,7 @@ async def connect_tcp(app: web.Application,
                       ) -> Awaitable[ConnectionResult_]:
     host = app['config']['device_host']
     port = app['config']['device_port']
-    transport, protocol = await app.loop.create_connection(factory, host, port)
+    transport, protocol = await create_connection(factory, host, port)
     return f'{host}:{port}', transport, protocol
 
 
@@ -107,7 +113,7 @@ async def connect_discovered(app: web.Application,
             )
             resp = await retv.json()
             host, port = resp['host'], resp['port']
-            transport, protocol = await app.loop.create_connection(factory, host, port)
+            transport, protocol = await create_connection(factory, host, port)
             return f'{host}:{port}', transport, protocol
 
         except TimeoutError:  # pragma: no cover
@@ -184,8 +190,9 @@ class SparkConduit(features.ServiceFeature):
             except Exception as ex:
                 warnings.warn(f'Unhandled exception in {cb}, message={message}, ex={ex}')
 
+        loop = asyncio.get_event_loop()
         for cb in callbacks or [_default_on_message]:
-            self.app.loop.create_task(call_cb(cb, message))
+            loop.create_task(call_cb(cb, message))
 
     async def _maintain_connection(self, connect_func: Callable[[], Awaitable[ConnectionResult_]]):
         last_ok = True

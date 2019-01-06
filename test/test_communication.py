@@ -7,8 +7,8 @@ from collections import namedtuple
 from unittest.mock import Mock, call
 
 import pytest
-from aiohttp.client_exceptions import ClientResponseError
-from aioresponses import aioresponses
+from aiohttp import web
+from aresponses import ResponsesMockServer
 from asynctest import CoroutineMock
 from brewblox_service import scheduler
 
@@ -118,8 +118,8 @@ def tcp_create_connection_mock(app, mocker):
         protocol.connection_made(tcp_transport_mock)
         return tcp_transport_mock, protocol
 
-    create_connection_mock = mocker.patch.object(
-        app.loop, 'create_connection',
+    create_connection_mock = mocker.patch(
+        TESTED + '.create_connection',
         CoroutineMock(side_effect=connect)
     )
     return create_connection_mock
@@ -141,18 +141,21 @@ def app(app, serial_mock, transport_mock):
 
 
 @pytest.fixture
-def discovery_resp(app):
+async def discovery_resp(app, aresponses: ResponsesMockServer, loop, mocker):
     config = app['config']
     mdns_host = config['mdns_host']
     mdns_port = config['mdns_port']
-    with aioresponses() as m:
-        for i in range(100):
-            m.post(
-                f'http://{mdns_host}:{mdns_port}/mdns/discover',
-                payload={'host': 'enterprise', 'port': 1234})
-            m.post(f'http://mdns_error_host:{mdns_port}/mdns/discover',
-                   exception=ClientResponseError(None, None, status=500))
-        yield m
+
+    for i in range(100):
+        aresponses.add(
+            f'{mdns_host}:{mdns_port}', '/mdns/discover', 'POST',
+            web.json_response({'host': 'enterprise', 'port': 1234})
+        )
+        aresponses.add(
+            f'mdns_error_host:{mdns_port}', '/mdns/discover', 'POST',
+            web.json_response({}, status=500)
+        )
+    return aresponses
 
 
 @pytest.fixture
