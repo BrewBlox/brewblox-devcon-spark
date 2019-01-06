@@ -61,7 +61,7 @@ def get_conduit(app: web.Application) -> 'SparkConduit':
     return features.get(app, SparkConduit)
 
 
-async def create_connection(*args, **kwargs):
+async def create_connection(*args, **kwargs):  # pragma: no cover
     """asyncio.create_connection() wrapper, for easier testing"""
     return await asyncio.get_event_loop().create_connection(*args, **kwargs)
 

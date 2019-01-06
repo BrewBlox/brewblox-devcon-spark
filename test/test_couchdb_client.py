@@ -2,28 +2,16 @@
 Tests brewblox_devcon_spark.couchdb_client
 """
 
-from asyncio import CancelledError
-
 import pytest
+from aiohttp import web
 from aiohttp.client_exceptions import ClientResponseError
-from aioresponses import aioresponses
 
 from brewblox_devcon_spark import couchdb_client, http_client
 
 TESTED = couchdb_client.__name__
-SRV_URL = couchdb_client.COUCH_URL
-DB_URL = f'{SRV_URL}/sparkbase'
-DOC_URL = f'{DB_URL}/sparkdoc'
-
-
-def err(status):
-    return ClientResponseError(None, None, status=status)
-
-
-@pytest.fixture
-def resp():
-    with aioresponses() as m:
-        yield m
+SRV_URL = couchdb_client.COUCH_URL[len('http://'):]
+DB_URL = '/sparkbase'
+DOC_URL = '/sparkbase/sparkdoc'
 
 
 @pytest.fixture
@@ -40,75 +28,55 @@ def cclient(app):
     return couchdb_client.get_client(app)
 
 
-async def test_client_read(app, client, cclient, resp):
+async def test_client_read(app, client, cclient, aresponses):
+
     # Blank database
-    resp.head(SRV_URL)
-    resp.put(DB_URL)
-    resp.get(DOC_URL, exception=err(404))
-    resp.put(DOC_URL, payload={'rev': 'rev_read'})
+    aresponses.add(SRV_URL, '/', 'HEAD')
+    aresponses.add(SRV_URL, DB_URL, 'PUT')
+    aresponses.add(SRV_URL, DOC_URL, 'GET', web.json_response({}, status=404))
+    aresponses.add(SRV_URL, DOC_URL, 'PUT', web.json_response({'rev': 'rev_read'}))
     assert await cclient.read('sparkbase', 'sparkdoc', [1, 2]) == ('rev_read', [1, 2])
 
-    # Retry contact server, blank database
-    resp.head(SRV_URL, exception=err(404))
-    resp.head(SRV_URL)
-    resp.put(DB_URL, exception=err(412))
-    resp.get(DOC_URL, payload={'_rev': 'rev_read', 'data': [2, 1]})
-    resp.put(DOC_URL, exception=err(409))
+    # Retry contact server, content in database
+    aresponses.add(SRV_URL, '/', 'HEAD', web.json_response({}, status=404))
+    aresponses.add(SRV_URL, '/', 'HEAD')
+    aresponses.add(SRV_URL, DB_URL, 'PUT', web.json_response({}, status=412))
+    aresponses.add(SRV_URL, DOC_URL, 'GET', web.json_response({'_rev': 'rev_read', 'data': [2, 1]}))
+    aresponses.add(SRV_URL, DOC_URL, 'PUT', web.json_response({}, status=409))
     assert await cclient.read('sparkbase', 'sparkdoc', []) == ('rev_read', [2, 1])
 
 
-async def test_client_read_errors(app, client, cclient, resp):
-    with pytest.raises(CancelledError):
-        resp.head(SRV_URL, exception=CancelledError())
-        await cclient.read('sparkbase', 'sparkdoc', [])
-
-    with pytest.raises(CancelledError):
-        resp.head(SRV_URL)
-        resp.put(DB_URL, exception=CancelledError())
-        await cclient.read('sparkbase', 'sparkdoc', [])
-
-    with pytest.raises(CancelledError):
-        resp.head(SRV_URL)
-        resp.put(DB_URL)
-        resp.get(DOC_URL, exception=err(404))
-        resp.put(DOC_URL, exception=CancelledError())
-        await cclient.read('sparkbase', 'sparkdoc', [])
-
-    with pytest.raises(CancelledError):
-        resp.head(SRV_URL)
-        resp.put(DB_URL)
-        resp.get(DOC_URL, exception=CancelledError())
-        resp.put(DOC_URL, exception=err(412))
+async def test_client_read_errors(app, client, cclient, aresponses):
+    with pytest.raises(ClientResponseError):
+        aresponses.add(SRV_URL, '/', 'HEAD')
+        aresponses.add(SRV_URL, DB_URL, 'PUT', web.json_response({}, status=404))
         await cclient.read('sparkbase', 'sparkdoc', [])
 
     with pytest.raises(ClientResponseError):
-        resp.head(SRV_URL)
-        resp.put(DB_URL, status=404, exception=err(404))
+        aresponses.add(SRV_URL, '/', 'HEAD')
+        aresponses.add(SRV_URL, DB_URL, 'PUT')
+        aresponses.add(SRV_URL, DOC_URL, 'PUT', web.json_response({}, status=404))  # unexpected
+        aresponses.add(SRV_URL, DOC_URL, 'GET', web.json_response({}, status=404))
         await cclient.read('sparkbase', 'sparkdoc', [])
 
     with pytest.raises(ClientResponseError):
-        resp.head(SRV_URL)
-        resp.put(DB_URL)
-        resp.put(DOC_URL, exception=err(404))  # unexpected
-        resp.get(DOC_URL, exception=err(404))
-        await cclient.read('sparkbase', 'sparkdoc', [])
-
-    with pytest.raises(ClientResponseError):
-        resp.head(SRV_URL)
-        resp.put(DB_URL)
-        resp.put(DOC_URL, exception=err(412))
-        resp.get(DOC_URL, exception=err(500))  # unexpected
+        aresponses.add(SRV_URL, '/', 'HEAD')
+        aresponses.add(SRV_URL, DB_URL, 'PUT')
+        aresponses.add(SRV_URL, DOC_URL, 'PUT', web.json_response({}, status=412))
+        aresponses.add(SRV_URL, DOC_URL, 'GET', web.json_response({}, status=500))  # unexpected
         await cclient.read('sparkbase', 'sparkdoc', [])
 
     with pytest.raises(ValueError):
-        resp.head(SRV_URL)
-        resp.put(DB_URL)
+        aresponses.add(SRV_URL, '/', 'HEAD')
+        aresponses.add(SRV_URL, DB_URL, 'PUT')
         # Either get or put must return an ok value
-        resp.put(DOC_URL, exception=err(409))
-        resp.get(DOC_URL, exception=err(404))
+        aresponses.add(SRV_URL, DOC_URL, 'PUT', web.json_response({}, status=409))
+        aresponses.add(SRV_URL, DOC_URL, 'GET', web.json_response({}, status=404))
         await cclient.read('sparkbase', 'sparkdoc', [])
 
 
-async def test_client_write(app, client, cclient, resp):
-    resp.put(f'{DOC_URL}?rev=revy', payload={'rev': 'rev_write'})
+async def test_client_write(app, client, cclient, aresponses):
+    aresponses.add(
+        SRV_URL, f'{DOC_URL}?rev=revy', 'PUT',
+        web.json_response({'rev': 'rev_write'}), match_querystring=True)
     assert await cclient.write('sparkbase', 'sparkdoc', 'revy', [1, 2]) == 'rev_write'

@@ -41,9 +41,9 @@ class CouchDBClient(features.ServiceFeature):
             while True:
                 try:
                     await session.head(COUCH_URL, raise_for_status=False)
-                except asyncio.CancelledError:
+                except asyncio.CancelledError:  # pragma: no cover
                     raise
-                except Exception:
+                except Exception:  # pragma: no cover
                     await asyncio.sleep(DB_RETRY_INTERVAL_S)
                 else:
                     return
@@ -94,7 +94,7 @@ class CouchDBClient(features.ServiceFeature):
                 raise ValueError('Data was neither read nor created')
             return rev, data
 
-        except asyncio.CancelledError:
+        except asyncio.CancelledError:  # pragma: no cover
             raise
 
         except Exception as ex:
