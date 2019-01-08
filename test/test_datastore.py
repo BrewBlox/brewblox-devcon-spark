@@ -24,6 +24,7 @@ def read_objects():
 @pytest.fixture
 def client_mock(mocker):
     m = mocker.patch(TESTED + '.couchdb_client.get_client')
+    m.return_value.check_remote = CoroutineMock()
     m.return_value.read = CoroutineMock(return_value=('rev_read', read_objects()))
     m.return_value.write = CoroutineMock(return_value='rev_write')
     return m.return_value
@@ -71,6 +72,7 @@ async def test_store(app, client, store, client_mock):
     read_length = default_length + len(read_objects()) - 1  # overlapping item is merged
 
     assert len(store.items()) == default_length
+    await datastore.check_remote(app)
     await store.read('doc')
     assert len(store.items()) == read_length
     assert store.rev == 'rev_read'

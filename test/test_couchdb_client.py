@@ -17,7 +17,6 @@ DOC_URL = '/sparkbase/sparkdoc'
 @pytest.fixture
 def app(app, mocker):
     mocker.patch(TESTED + '.DB_RETRY_INTERVAL_S', 0.01)
-    mocker.patch(TESTED + '.DB_CONTACT_TIMEOUT_S', 0.1)
     http_client.setup(app)
     couchdb_client.setup(app)
     return app
@@ -38,7 +37,8 @@ async def test_client_read(app, client, cclient, aresponses):
     assert await cclient.read('sparkbase', 'sparkdoc', [1, 2]) == ('rev_read', [1, 2])
 
     # Retry contact server, content in database
-    aresponses.add(SRV_URL, '/', 'HEAD', web.json_response({}, status=404))
+    for i in range(20):
+        aresponses.add(SRV_URL, '/', 'HEAD', web.json_response({}, status=404))
     aresponses.add(SRV_URL, '/', 'HEAD')
     aresponses.add(SRV_URL, DB_URL, 'PUT', web.json_response({}, status=412))
     aresponses.add(SRV_URL, DOC_URL, 'GET', web.json_response({'_rev': 'rev_read', 'data': [2, 1]}))

@@ -5,6 +5,7 @@ Tests brewblox_devcon_spark.api.sse_api
 import asyncio
 
 import pytest
+from aiohttp.client_exceptions import ClientPayloadError
 from asynctest import CoroutineMock
 from brewblox_service import scheduler
 
@@ -94,3 +95,11 @@ async def test_sse_objects(app, client, publisher):
     async with client.get('/sse/objects') as resp:
         chunk = await resp.content.read(5)
         assert chunk.decode() == 'data:'
+
+
+async def test_close(app, client, publisher):
+    with pytest.raises(ClientPayloadError):
+        async with client.get('/sse/objects') as resp:
+            await publisher.before_shutdown(app)
+            await resp.content.read(5)
+            await resp.content.read(5)
