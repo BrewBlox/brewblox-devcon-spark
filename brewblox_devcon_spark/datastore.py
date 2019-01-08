@@ -78,6 +78,12 @@ def non_volatile(func):
     return wrapper
 
 
+async def check_remote(app: web.Application):
+    if app['config']['volatile']:
+        return
+    await couchdb_client.get_client(app).check_remote()
+
+
 class FlushedStore(features.ServiceFeature):
 
     def __init__(self, app: web.Application):

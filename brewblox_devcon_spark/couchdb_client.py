@@ -8,7 +8,6 @@ from brewblox_devcon_spark import http_client
 
 LOGGER = brewblox_logger(__name__)
 
-DB_CONTACT_TIMEOUT_S = 30
 DB_RETRY_INTERVAL_S = 1
 COUCH_URL = 'http://datastore:5984'
 
@@ -32,21 +31,26 @@ class CouchDBClient(features.ServiceFeature):
     async def shutdown(self, app: web.Application):
         pass
 
+    async def check_remote(self):
+        session = http_client.get_client(self.app).session
+        num_attempts = 0
+        while True:
+            try:
+                await session.head(COUCH_URL, raise_for_status=True)
+            except asyncio.CancelledError:  # pragma: no cover
+                raise
+            except Exception:
+                num_attempts += 1
+                if num_attempts % 10 == 0:
+                    LOGGER.info(f'{self} Waiting for datastore...')
+                await asyncio.sleep(DB_RETRY_INTERVAL_S)
+            else:
+                return
+
     async def read(self, database: str, document: str, default_data: Any) -> Awaitable[Tuple[str, Any]]:
         db_url = f'{COUCH_URL}/{database}'
         document_url = f'{db_url}/{document}'
         session = http_client.get_client(self.app).session
-
-        async def contact_store():
-            while True:
-                try:
-                    await session.head(COUCH_URL, raise_for_status=False)
-                except asyncio.CancelledError:  # pragma: no cover
-                    raise
-                except Exception:  # pragma: no cover
-                    await asyncio.sleep(DB_RETRY_INTERVAL_S)
-                else:
-                    return
 
         async def ensure_database():
             try:
@@ -86,7 +90,7 @@ class CouchDBClient(features.ServiceFeature):
                     raise ex
 
         try:
-            await asyncio.wait_for(contact_store(), DB_CONTACT_TIMEOUT_S)
+            await self.check_remote()
             await ensure_database()
             read_result, create_result = await asyncio.gather(read_document(), create_document())
             (rev, data) = read_result or create_result or (None, None)
