@@ -2,11 +2,10 @@
 Offers a functional interface to the device functionality
 """
 
-import random
-import string
+import itertools
 from contextlib import suppress
 from functools import partialmethod
-from typing import Any, Awaitable, Callable, List, Optional, Type
+from typing import Awaitable, Callable, List, Optional, Type, Union
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
@@ -20,11 +19,13 @@ from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                             PROFILE_LIST_KEY)
 
-OBJECT_LINK_POSTFIX = '>'
+OBJECT_LINK_POSTFIX_START = '<'
+OBJECT_LINK_POSTFIX_END = '>'
 GENERATED_ID_PREFIX = 'UNKNOWN|'
 ServiceId_ = str
 ControllerId_ = int
-FindIdFunc_ = Callable[[twinkeydict.TwinKeyDict, Any], Awaitable[Any]]
+ObjectId_ = Union[ServiceId_, ControllerId_]
+FindIdFunc_ = Callable[[twinkeydict.TwinKeyDict, ObjectId_, str], Awaitable[ObjectId_]]
 
 # Keys are imported from commands for use in this module
 # but also to allow other modules (eg. API) to import them from here
@@ -66,12 +67,11 @@ class SparkResolver():
             objects_to_process += content[OBJECT_ID_LIST_KEY]
         return objects_to_process
 
-    @staticmethod
-    def _random_string():
-        return GENERATED_ID_PREFIX + ''.join([
-            random.choice(string.ascii_letters + string.digits)
-            for n in range(32)
-        ])
+    def _assign_id(self, input_type: str):
+        for i in itertools.count(start=1):  # pragma: no cover
+            name = f'{GENERATED_ID_PREFIX}{input_type}-{i}'
+            if (name, None) not in self._datastore:
+                return name
 
     async def _process_data(self,
                             codec_func: codec.TranscodeFunc_,
@@ -97,7 +97,11 @@ class SparkResolver():
 
         return content
 
-    def _find_controller_id(self, store: twinkeydict.TwinKeyDict, input_id: ServiceId_) -> ControllerId_:
+    def _find_controller_id(self,
+                            store: twinkeydict.TwinKeyDict,
+                            input_id: ServiceId_,
+                            input_type: str,
+                            ) -> ControllerId_:
         if not input_id:
             return 0
 
@@ -107,9 +111,13 @@ class SparkResolver():
         try:
             return store.right_key(input_id)
         except KeyError:
-            raise exceptions.UnknownId(f'Service ID [{input_id}] not found in {store}')
+            raise exceptions.UnknownId(f'Service ID [{input_id}] for {input_type} not found in {store}')
 
-    def _find_service_id(self, store: twinkeydict.TwinKeyDict, input_id: ControllerId_) -> ServiceId_:
+    def _find_service_id(self,
+                         store: twinkeydict.TwinKeyDict,
+                         input_id: ControllerId_,
+                         input_type: str,
+                         ) -> ServiceId_:
         if not input_id:
             return None
 
@@ -120,7 +128,7 @@ class SparkResolver():
             service_id = store.left_key(input_id)
         except KeyError:
             # If service ID not found, randomly generate one
-            service_id = SparkResolver._random_string()
+            service_id = self._assign_id(input_type)
             store[service_id, input_id] = dict()
 
         return service_id
@@ -130,7 +138,7 @@ class SparkResolver():
 
         for obj in objects_to_process:
             with suppress(KeyError):
-                obj[OBJECT_ID_KEY] = finder_func(self._datastore, obj[OBJECT_ID_KEY])
+                obj[OBJECT_ID_KEY] = finder_func(self._datastore, obj[OBJECT_ID_KEY], obj.get(OBJECT_TYPE_KEY))
 
         return content
 
@@ -150,8 +158,9 @@ class SparkResolver():
             for k, v in iter:
                 if isinstance(v, (dict, list, tuple)):
                     await traverse(v)
-                elif str(k).endswith(OBJECT_LINK_POSTFIX):
-                    data[k] = finder_func(store, v)
+                elif str(k).endswith(OBJECT_LINK_POSTFIX_END):
+                    link_type = k[k.rfind(OBJECT_LINK_POSTFIX_START)+1:-1]
+                    data[k] = finder_func(store, v, link_type)
 
         for obj in objects_to_process:
             with suppress(KeyError):
