@@ -26,25 +26,35 @@ UNIT_ALTERNATIVES = {
         'second',
         'minute',
         'hour',
-    ]
+    ],
+    'LongTime': [
+        'hour',
+        'day',
+    ],
 }
 
 
 def derived_cfg(base_cfg):
     temps = base_cfg['Temp']
     times = base_cfg['Time']
+    long_times = base_cfg['LongTime']
     inverse_temps = [f'1 / {temp}' for temp in temps]
     delta_temps = [temp if temp in ['degK', 'kelvin'] else f'delta_{temp}' for temp in temps]
     delta_temp_per_times = [f'{delta_temp} / {time}' for delta_temp, time in zip(delta_temps, times)]
     delta_temp_times = [f'{delta_temp} * {time}' for delta_temp, time in zip(delta_temps, times)]
+    delta_temp_per_long_times = [f'{delta_temp} / {time}' for delta_temp, time in zip(delta_temps, long_times)]
+    delta_temp_long_times = [f'{delta_temp} * {time}' for delta_temp, time in zip(delta_temps, long_times)]
 
     return {
         'Temp': temps,
         'Time': times,
+        'LongTime': long_times,
         'InverseTemp': inverse_temps,
         'DeltaTemp': delta_temps,
         'DeltaTempPerTime': delta_temp_per_times,
         'DeltaTempTime': delta_temp_times,
+        'DeltaTempPerLongTime': delta_temp_per_long_times,
+        'DeltaTempLongTime': delta_temp_long_times,
     }
 
 
@@ -59,6 +69,7 @@ class UnitConverter():
         return {
             'Temp': 'degC',
             'Time': 'second',
+            'LongTime': 'hour',
         }
 
     @property

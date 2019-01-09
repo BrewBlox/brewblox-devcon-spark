@@ -297,7 +297,7 @@ async def test_codec_api(app, client, object_args):
     await client.post('/objects', json=object_args)
 
     default_units = await response(client.get('/codec/units'))
-    assert {'Temp', 'Time'} == default_units.keys()
+    assert {'Temp', 'Time', 'LongTime'} == default_units.keys()
 
     alternative_units = await response(client.get('/codec/unit_alternatives'))
     assert alternative_units.keys() == default_units.keys()
