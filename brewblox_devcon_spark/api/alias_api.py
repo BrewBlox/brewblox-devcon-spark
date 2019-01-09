@@ -35,6 +35,8 @@ def setup(app: web.Application):
 def validate_service_id(id: str):
     if not re.match(SERVICE_ID_PATTERN, id):
         raise exceptions.InvalidId(SERVICE_ID_RULES)
+    if next((keys for keys in datastore.SYS_OBJECT_KEYS if id == keys[0]), None):
+        raise exceptions.InvalidId(f'"{id}" is an ID reserved for a system object')
 
 
 class AliasApi():

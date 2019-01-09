@@ -31,28 +31,29 @@ DISPLAY_SETTINGS_ID = 7
 FLUSH_DELAY_S = 5
 DB_NAME = 'spark-service'
 OBJECT_ID_START = 100
+SYS_OBJECT_KEYS = [
+    ['ActiveProfiles', PROFILES_CONTROLLER_ID],
+    ['SystemInfo', SYSINFO_CONTROLLER_ID],
+    ['SystemTime', TIME_CONTROLLER_ID],
+    ['OneWireBus', ONEWIREBUS_CONTROLLER_ID],
+    ['WiFiSettings', WIFI_SETTINGS_ID],
+    ['TouchSettings', TOUCH_SETTINGS_ID],
+    ['DisplaySettings', DISPLAY_SETTINGS_ID],
+    # Spark V3
+    ['Pin-Bottom-1', 10],
+    ['Pin-Bottom-2', 11],
+    ['Pin-Top-1', 12],
+    ['Pin-Top-2', 13],
+    ['Pin-Top-3', 14],
+    # Spark V1/V2
+    ['Actuator-0', 15],
+    ['Actuator-1', 16],
+    ['Actuator-2', 17],
+    ['Actuator-3', 18],
+]
 SYS_OBJECTS = [
     {'keys': keys, 'data': {}}
-    for keys in [
-        ['__profiles', PROFILES_CONTROLLER_ID],
-        ['__sysinfo', SYSINFO_CONTROLLER_ID],
-        ['__time', TIME_CONTROLLER_ID],
-        ['__onewirebus', ONEWIREBUS_CONTROLLER_ID],
-        ['__wifisettings', WIFI_SETTINGS_ID],
-        ['__touchsettings', TOUCH_SETTINGS_ID],
-        ['__displaysettings', DISPLAY_SETTINGS_ID],
-        # Spark V3
-        ['__pin_bottom_1', 10],
-        ['__pin_bottom_2', 11],
-        ['__pin_top_1', 12],
-        ['__pin_top_2', 13],
-        ['__pin_top_3', 14],
-        # Spark V1/V2
-        ['__actuator_0', 15],
-        ['__actuator_1', 16],
-        ['__actuator_2', 17],
-        ['__actuator_3', 18],
-    ]
+    for keys in SYS_OBJECT_KEYS
 ]
 
 
