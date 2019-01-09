@@ -237,6 +237,8 @@ async def test_validate_service_id(input_id):
     '',
     'yes!'*51,
     'brackey><',
+    'ActiveProfiles',
+    'Actuator-0',
 ])
 async def test_validate_service_id_error(input_id):
     with pytest.raises(exceptions.InvalidId):
@@ -326,14 +328,14 @@ async def test_list_compatible(app, client, object_args):
 async def test_discover_objects(app, client):
     resp = await response(client.get('/discover_objects'))
     # Commander sim always returns the profiles object
-    assert resp == ['__profiles']
+    assert resp == ['ActiveProfiles']
 
 
 async def test_reset_objects(app, client, object_args):
     ids = [f'id{num}' for num in range(10)]
     args = multi_objects(ids, object_args)
     args.append({
-        API_ID_KEY: '__profiles',
+        API_ID_KEY: 'ActiveProfiles',
         PROFILE_LIST_KEY: [0],
         API_TYPE_KEY: 'Profiles',
         API_DATA_KEY: {
@@ -344,7 +346,7 @@ async def test_reset_objects(app, client, object_args):
     resp = await response(client.post('/reset_objects', json=args))
     resp_ids = ret_ids(resp)
     assert set(ids).issubset(resp_ids)
-    assert '__profiles' in resp_ids
+    assert 'ActiveProfiles' in resp_ids
 
 
 async def test_logged_objects(app, client):
