@@ -122,6 +122,7 @@ class Modifier():
         * link:     strip link key postfix (<>)
         * hexed:    convert hexadecimal string to int64
         * readonly: strip value from protobuf input
+        * hexstr:   convert hexadecimal string to base64 string
 
         The output is a dict where values use controller units.
 
