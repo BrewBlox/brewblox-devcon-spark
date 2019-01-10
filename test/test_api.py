@@ -379,3 +379,19 @@ async def test_logged_objects(app, client):
     assert obj_data is not None
     assert 'logged' in obj_data
     assert 'unLogged' not in obj_data
+
+
+async def test_system_status(app, client):
+    resp = await response(client.get('/system/status'))
+    assert resp == {
+        'connected': True,
+        'synchronized': True,
+    }
+    status.get_status(app).connected.clear()
+    status.get_status(app).disconnected.set()
+    await asyncio.sleep(0.01)
+    resp = await response(client.get('/system/status'))
+    assert resp == {
+        'connected': False,
+        'synchronized': False,
+    }

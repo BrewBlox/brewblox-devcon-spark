@@ -94,6 +94,7 @@ class SSEPublisher(features.ServiceFeature):
                 break
 
             except Exception as ex:
+                self._current = None
                 warnings.warn(f'{self} encountered an error: {type(ex).__name__}({ex})')
 
 
