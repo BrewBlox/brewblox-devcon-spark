@@ -8,6 +8,7 @@ from typing import List
 from aiohttp import web
 from brewblox_service import brewblox_logger
 
+from brewblox_devcon_spark import status
 from brewblox_devcon_spark.api import API_DATA_KEY, object_api
 from brewblox_devcon_spark.datastore import PROFILES_CONTROLLER_ID
 
@@ -77,3 +78,22 @@ async def profiles_write(request: web.Request) -> web.Response:
     return web.json_response(
         await SystemApi(request.app).write_profiles(await request.json())
     )
+
+
+@routes.get('/system/status')
+async def check_status(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Get service status
+    tags:
+    - Spark
+    - System
+    operationId: controller.spark.system.status
+    produces:
+    - application/json
+    """
+    _status = status.get_status(request.app)
+    return web.json_response({
+        'connected': _status.connected.is_set(),
+        'synchronized': _status.synchronized.is_set(),
+    })
