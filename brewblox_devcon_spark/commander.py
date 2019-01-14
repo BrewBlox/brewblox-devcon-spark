@@ -23,7 +23,7 @@ RESPONSE_SEPARATOR = '|'
 # This would happen if the same request is made often with different arguments
 #
 # There is no functional danger here - we just need to curb this equivalent of a memory leak
-QUEUE_VALID_DURATION = timedelta(minutes=15)
+QUEUE_VALID_DURATION = timedelta(seconds=120)
 CLEANUP_INTERVAL = timedelta(seconds=60)
 
 # There is no strict guarantee that when ClientA and ClientB make the same request at the same time,
@@ -41,7 +41,7 @@ CLEANUP_INTERVAL = timedelta(seconds=60)
 #
 # In this scenario, the response will only be t=10 old, as it was stored at t=100
 RESPONSE_VALID_DURATION = timedelta(seconds=5)
-REQUEST_TIMEOUT = timedelta(seconds=5)
+REQUEST_TIMEOUT = timedelta(seconds=60)
 
 
 def setup(app: web.Application):
@@ -146,7 +146,7 @@ class SparkCommander(features.ServiceFeature):
             try:
                 response = await asyncio.wait_for(queue.get(), timeout=REQUEST_TIMEOUT.seconds)
             except TimeoutError:
-                raise exceptions.CommandTimeout()
+                raise exceptions.CommandTimeout(f'{type(command).__name__}')
 
             if not response.fresh:
                 warnings.warn(f'Discarding stale response: {response}')
