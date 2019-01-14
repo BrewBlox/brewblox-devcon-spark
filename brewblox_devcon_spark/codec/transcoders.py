@@ -147,7 +147,7 @@ class ProtobufTranscoder(Transcoder):
         return self.__class__._MESSAGE()
 
     def encode(self, values: Decoded_, _) -> Encoded_:
-        LOGGER.debug(f'encoding {values} to {self.__class__._MESSAGE}')
+        # LOGGER.debug(f'encoding {values} to {self.__class__._MESSAGE}')
         obj = json_format.ParseDict(values, self.create_message())
         data = obj.SerializeToString()
         return data + b'\x00'  # Include null terminator
@@ -164,7 +164,7 @@ class ProtobufTranscoder(Transcoder):
             including_default_value_fields=True,
             use_integers_for_enums=True,
         )
-        LOGGER.debug(f'decoded {self.__class__._MESSAGE} to {decoded}')
+        # LOGGER.debug(f'decoded {self.__class__._MESSAGE} to {decoded}')
         return decoded
 
 
