@@ -10,8 +10,8 @@ from brewblox_service import scheduler
 from brewblox_devcon_spark import (commander_sim, datastore, device,
                                    exceptions, seeder, status)
 from brewblox_devcon_spark.api import (alias_api, codec_api, debug_api,
-                                       error_response, object_api, sse_api,
-                                       system_api)
+                                       error_response, object_api,
+                                       savepoint_api, sse_api, system_api)
 from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
                                                   API_TYPE_KEY,
                                                   OBJECT_DATA_KEY,
@@ -66,6 +66,7 @@ async def app(app, loop):
     system_api.setup(app)
     codec_api.setup(app)
     sse_api.setup(app)
+    savepoint_api.setup(app)
 
     return app
 
@@ -406,3 +407,35 @@ async def test_system_status(app, client):
         'connected': False,
         'synchronized': False,
     }
+
+
+async def test_savepoints(app, client, object_args):
+    await response(client.post('/objects', json=object_args))
+    objects = await response(client.get('/objects'))
+    ids = ret_ids(objects)
+
+    resp1 = await response(client.put('/savepoints/save-1'))
+    resp2 = await response(client.put('/savepoints/save-1'))
+    resp3 = await response(client.put('/savepoints/save-2'))
+    assert ret_ids(resp1) == ids
+    assert ret_ids(resp2) == ids
+    assert ret_ids(resp3) == ids
+
+    assert await response(client.get('/savepoints')) == ['save-1', 'save-2']
+    await response(client.delete('/savepoints/save-2'))
+    assert await response(client.get('/savepoints')) == ['save-1']
+
+    object_args[API_ID_KEY] += '(2)'
+    await response(client.post('/objects', json=object_args))
+
+    resp = await response(client.get('/savepoints/save-1'))
+    assert ret_ids(resp) == ids
+
+    resp = await response(client.get('/objects'))
+    assert ret_ids(resp) > ids
+
+    resp = await response(client.post('/savepoints/save-1'))
+    assert ret_ids(resp) == ids
+
+    new_objects = await response(client.get('/objects'))
+    assert ret_ids(new_objects) == ids
