@@ -169,16 +169,38 @@ class ObjectApi():
     async def reset_objects(self, objects: list) -> list:
         await self.wait_for_sync()
         await self.clear_objects()
+
+        retry_objects = []
+
         for obj in objects:
             obj_id = obj[API_ID_KEY]
             obj_profiles = obj[PROFILE_LIST_KEY]
             obj_type = obj[API_TYPE_KEY]
             obj_data = obj[API_DATA_KEY]
 
-            if (obj_id, None) in self._store:
+            func = self.write if (obj_id, None) in self._store else self.create
+
+            try:
+                await func(obj_id, obj_profiles, obj_type, obj_data)
+            except exceptions.UnknownId:
+                await func(obj_id, obj_profiles, obj_type, {})  # Write an empty stub
+                LOGGER.info(f'{obj_id} contains a link to an unknown object, delaying write...')
+                retry_objects.append(obj)
+            except Exception as ex:
+                LOGGER.error(f'/reset_objects failed at [{obj_id}]')
+                raise ex
+
+        for obj in retry_objects:
+            obj_id = obj[API_ID_KEY]
+            obj_profiles = obj[PROFILE_LIST_KEY]
+            obj_type = obj[API_TYPE_KEY]
+            obj_data = obj[API_DATA_KEY]
+
+            try:
                 await self.write(obj_id, obj_profiles, obj_type, obj_data)
-            else:
-                await self.create(obj_id, obj_profiles, obj_type, obj_data)
+            except Exception as ex:
+                LOGGER.error(f'Retrying objects in /reset_objects failed at [{obj_id}]')
+                raise ex
 
         return await self.all()
 

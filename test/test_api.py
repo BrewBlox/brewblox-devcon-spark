@@ -331,22 +331,33 @@ async def test_discover_objects(app, client):
     assert resp == ['ActiveProfiles']
 
 
-async def test_reset_objects(app, client, object_args):
-    ids = [f'id{num}' for num in range(10)]
-    args = multi_objects(ids, object_args)
-    args.append({
-        API_ID_KEY: 'ActiveProfiles',
-        PROFILE_LIST_KEY: [0],
-        API_TYPE_KEY: 'Profiles',
-        API_DATA_KEY: {
-            'active': [0, 1, 2, 3],
-        },
-    })
-
-    resp = await response(client.post('/reset_objects', json=args))
+async def test_reset_objects(app, client, spark_blocks):
+    # reverse the set, to ensure some blocks are written with invalid references
+    resp = await response(client.post('/reset_objects', json=spark_blocks[::-1]))
+    ids = ret_ids(spark_blocks)
     resp_ids = ret_ids(resp)
     assert set(ids).issubset(resp_ids)
     assert 'ActiveProfiles' in resp_ids
+
+    # Fails during retry
+    spark_blocks.append({
+        API_ID_KEY: 'derpface',
+        PROFILE_LIST_KEY: [0],
+        API_TYPE_KEY: 'SetpointSensorPair',
+        API_DATA_KEY: {'sensorId<>': 'MysteryMan'}
+    })
+    retv = await client.post('/reset_objects', json=spark_blocks)
+    assert retv.status == 400
+
+    # Fails immediately, and will not be retried
+    spark_blocks.append({
+        API_ID_KEY: 'derpface2',
+        PROFILE_LIST_KEY: [0],
+        API_TYPE_KEY: 'INVALID',
+        API_DATA_KEY: {}
+    })
+    retv = await client.post('/reset_objects', json=spark_blocks)
+    assert retv.status == 400
 
 
 async def test_logged_objects(app, client):

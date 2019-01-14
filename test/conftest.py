@@ -86,3 +86,296 @@ def client(app, aiohttp_client, loop):
     LOGGER.debug(app.on_startup)
 
     return loop.run_until_complete(aiohttp_client(app))
+
+
+@pytest.fixture
+def spark_blocks():
+    return [
+        {
+            'id': 'balancer-1',
+            'profiles': [
+                0
+            ],
+            'type': 'Balancer',
+            'data': {}
+        },
+        {
+            'id': 'mutex-1',
+            'profiles': [
+                0
+            ],
+            'type': 'Mutex',
+            'data': {
+                'differentActuatorWait': 43
+            }
+        },
+        {
+            'id': 'profile-1',
+            'profiles': [
+                0
+            ],
+            'type': 'SetpointProfile',
+            'data': {
+                'points': [
+                    {
+                        'time': 1540376829,
+                        'temperature[degC]': 0
+                    },
+                    {
+                        'time': 1540376839,
+                        'temperature[degC]': 50
+                    },
+                    {
+                        'time': 1540376849,
+                        'temperature[degC]': 100
+                    }
+                ]
+            }
+        },
+        {
+            'id': 'setpoint-1',
+            'profiles': [
+                0
+            ],
+            'type': 'SetpointSimple',
+            'data': {
+                'setpoint': 21,
+                'enabled': True
+            }
+        },
+        {
+            'id': 'setpoint-2',
+            'profiles': [
+                0
+            ],
+            'type': 'SetpointSimple',
+            'data': {
+                'setpoint': 50,
+                'enabled': False
+            }
+        },
+        {
+            'id': 'setpoint-inactive',
+            'profiles': [],
+            'type': 'SetpointSimple',
+            'data': {
+                'setpoint': 3,
+                'enabled': True
+            }
+        },
+        {
+            'id': 'sensor-1',
+            'profiles': [
+                0
+            ],
+            'type': 'TempSensorMock',
+            'data': {
+                'value[celsius]': 20.89789201,
+                'connected': True
+            }
+        },
+        {
+            'id': 'sensor-onewire-1',
+            'profiles': [
+                0
+            ],
+            'type': 'TempSensorOneWire',
+            'data': {
+                'value[celsius]': 20.89789201,
+                'offset[delta_degC]': 9,
+                'address': 'DEADBEEF'
+            }
+        },
+        {
+            'id': 'setpoint-sensor-pair-1',
+            'profiles': [
+                0
+            ],
+            'type': 'SetpointSensorPair',
+            'data': {
+                'sensorId<>': 'sensor-1',
+                'setpointId<>': 'setpoint-1',
+                'setpointValue': 0,
+                'sensorValue': 0
+            }
+        },
+        {
+            'id': 'setpoint-sensor-pair-2',
+            'profiles': [
+                0
+            ],
+            'type': 'SetpointSensorPair',
+            'data': {
+                'sensorId<>': 0,
+                'setpointId<>': 0,
+                'setpointValue': 0,
+                'sensorValue': 0
+            }
+        },
+        {
+            'id': 'actuator-1',
+            'profiles': [
+                0
+            ],
+            'type': 'ActuatorAnalogMock',
+            'data': {
+                'setting': 20,
+                'minSetting': 10,
+                'maxSetting': 30,
+                'value': 50,
+                'minValue': 40,
+                'maxValue': 60
+            }
+        },
+        {
+            'id': 'actuator-pwm-1',
+            'profiles': [
+                0
+            ],
+            'type': 'ActuatorPwm',
+            'data': {
+                'constrainedBy': {
+                    'constraints': [
+                        {
+                            'min': 5
+                        },
+                        {
+                            'max': 50
+                        },
+                        {
+                            'balanced<>': {
+                                'balancerId<>': 'balancer-1'
+                            }
+                        }
+                    ]
+                },
+                'period': 4000,
+                'actuatorId<>': 'Pin-Bottom-1'
+            }
+        },
+        {
+            'id': 'actuator-ds2413-1',
+            'profiles': [
+                0
+            ],
+            'type': 'ActuatorDS2413',
+            'data': {
+                'channel': 1,
+                'constrainedBy': {
+                    'constraints': [
+                        {
+                            'mutex<>': 'mutex-1'
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            'id': 'offset-1',
+            'profiles': [
+                0
+            ],
+            'type': 'ActuatorOffset',
+            'data': {
+                'targetId<>': 'setpoint-sensor-pair-1',
+                'referenceId<>': 'setpoint-sensor-pair-1'
+            }
+        },
+        {
+            'id': 'pid-1',
+            'profiles': [
+                0
+            ],
+            'type': 'Pid',
+            'data': {
+                'inputId<>': 'setpoint-sensor-pair-1',
+                'outputId<>': 'actuator-pwm-1',
+                'filter': 'FILT_30s',
+                'filterThreshold': 2,
+                'enabled': True,
+                'active': True,
+                'kp': 20,
+                'ti': 3600,
+                'td': 60
+            }
+        },
+        {
+            'id': 'DisplaySettings',
+            'profiles': [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+            ],
+            'type': 'DisplaySettings',
+            'data': {
+                'widgets': [
+                    {
+                        'pos': 1,
+                        'color': '0088aa',
+                        'name': 'pwm1',
+                        'actuatorAnalog<>': 'actuator-pwm-1'
+                    },
+                    {
+                        'pos': 2,
+                        'color': '00aa88',
+                        'name': 'pair1',
+                        'setpointSensorPair<>': 'setpoint-sensor-pair-1'
+                    },
+                    {
+                        'pos': 3,
+                        'color': 'aa0088',
+                        'name': 'sensor1',
+                        'tempSensor<>': 'sensor-1'
+                    },
+                    {
+                        'pos': 4,
+                        'color': 'aa8800',
+                        'name': 'pid',
+                        'pid<>': 'pid-1'
+                    }
+                ],
+                'name': 'test'
+            }
+        },
+        {
+            'id': 'ds2413-hw-1',
+            'profiles': [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+            ],
+            'type': 'DS2413',
+            'data': {
+                'address': '4444444444444444'
+            }
+        },
+        {
+            'id': 'ow-act',
+            'profiles': [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+            ],
+            'type': 'ActuatorDS2413',
+            'data': {
+                'channel': 1,
+                'invert': True,
+                'hwDevice<DS2413>': 'ds2413-hw-1'
+            }
+        }
+    ]
