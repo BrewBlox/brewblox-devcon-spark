@@ -68,6 +68,7 @@ class Seeder(features.ServiceFeature):
             await asyncio.gather(
                 datastore.get_datastore(self.app).read(f'{device_id}-blocks-db'),
                 datastore.get_config(self.app).read(f'{device_id}-config-db'),
+                datastore.get_savepoints(self.app).read(f'{device_id}-savepoints-db'),
             )
 
         except asyncio.CancelledError:

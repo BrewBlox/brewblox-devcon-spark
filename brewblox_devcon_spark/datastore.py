@@ -59,7 +59,8 @@ SYS_OBJECTS = [
 
 def setup(app: web.Application):
     features.add(app, CouchDBBlockStore(app, defaults=SYS_OBJECTS))
-    features.add(app, CouchDBConfig(app))
+    features.add(app, CouchDBConfig(app), key='config')
+    features.add(app, CouchDBConfig(app), key='savepoints')
 
 
 def get_datastore(app: web.Application) -> TwinKeyDict:
@@ -67,7 +68,11 @@ def get_datastore(app: web.Application) -> TwinKeyDict:
 
 
 def get_config(app: web.Application) -> 'CouchDBConfig':
-    return features.get(app, CouchDBConfig)
+    return features.get(app, key='config')
+
+
+def get_savepoints(app: web.Application) -> 'CouchDBConfig':
+    return features.get(app, key='savepoints')
 
 
 def non_volatile(func):

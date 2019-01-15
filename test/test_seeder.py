@@ -65,9 +65,15 @@ def config(app):
     return datastore.get_config(app)
 
 
-async def test_seed_calls(app, client, mocker, spark_status, store, config):
+@pytest.fixture
+def savepoints(app):
+    return datastore.get_savepoints(app)
+
+
+async def test_seed_calls(app, client, mocker, spark_status, store, config, savepoints):
     store_spy = mocker.spy(store, 'read')
     config_spy = mocker.spy(config, 'read')
+    savepoints_spy = mocker.spy(savepoints, 'read')
 
     assert states(app) == [False, True, True]
 
@@ -78,6 +84,7 @@ async def test_seed_calls(app, client, mocker, spark_status, store, config):
     assert states(app) == [False, True, True]
     assert store_spy.call_count == 1
     assert config_spy.call_count == 1
+    assert savepoints_spy.call_count == 1
 
 
 async def test_seed_errors(app, client, mocker):
