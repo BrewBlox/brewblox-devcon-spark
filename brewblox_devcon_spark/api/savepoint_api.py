@@ -31,7 +31,7 @@ class SavepointApi():
         return point
 
     async def write(self, id: str) -> Awaitable[List[dict]]:
-        blocks = await self._obj_api.all()
+        blocks = await self._obj_api.all_stored()
         with self._savepoints.open() as savepoints:
             savepoints[id] = blocks.copy()
         return blocks
