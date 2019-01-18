@@ -54,7 +54,7 @@ async def test_encode_system_objects(app, client, cdc):
             'data': {},
         },
         {
-            'type': 'Profiles',
+            'type': 'Groups',
             'data': {
                 'active': [0]
             },

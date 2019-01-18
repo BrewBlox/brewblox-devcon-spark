@@ -67,7 +67,7 @@ async def test_transcoding(app, client, cmder, store, ctrl, mocker):
 
     object_args = {
         'object_id': 'alias',
-        'profiles': [1],
+        'groups': [1],
         'object_type': obj_type,
         'object_data': obj_data
     }
@@ -93,7 +93,7 @@ async def test_list_transcoding(app, client, cmder, store, ctrl, mocker):
 
         await ctrl.create_object({
             'object_id': id,
-            'profiles': [0],
+            'groups': [0],
             'object_type': obj_type,
             'object_data': obj_data
         })

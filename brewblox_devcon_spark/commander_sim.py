@@ -14,13 +14,13 @@ from brewblox_service import brewblox_logger, features
 
 from brewblox_devcon_spark import commander, commands, exceptions, status
 from brewblox_devcon_spark.codec import codec
-from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
-                                            OBJECT_ID_LIST_KEY,
+from brewblox_devcon_spark.commands import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
+                                            OBJECT_ID_KEY, OBJECT_ID_LIST_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
-                                            PROFILE_LIST_KEY)
+                                            SYSTEM_GROUP)
 from brewblox_devcon_spark.datastore import (DISPLAY_SETTINGS_ID,
+                                             GROUPS_CONTROLLER_ID,
                                              ONEWIREBUS_CONTROLLER_ID,
-                                             PROFILES_CONTROLLER_ID,
                                              SYSINFO_CONTROLLER_ID,
                                              TIME_CONTROLLER_ID,
                                              TOUCH_SETTINGS_ID,
@@ -73,18 +73,18 @@ class SimulationResponder():
         }
 
         self._objects = {
-            PROFILES_CONTROLLER_ID: {
-                OBJECT_ID_KEY: PROFILES_CONTROLLER_ID,
-                OBJECT_TYPE_KEY: 'Profiles',
-                PROFILE_LIST_KEY: self._all_profiles,
+            GROUPS_CONTROLLER_ID: {
+                OBJECT_ID_KEY: GROUPS_CONTROLLER_ID,
+                OBJECT_TYPE_KEY: 'Groups',
+                GROUP_LIST_KEY: [SYSTEM_GROUP],
                 OBJECT_DATA_KEY: {
-                    'active': [0]
+                    'active': [0, SYSTEM_GROUP]
                 },
             },
             SYSINFO_CONTROLLER_ID: {
                 OBJECT_ID_KEY: SYSINFO_CONTROLLER_ID,
                 OBJECT_TYPE_KEY: 'SysInfo',
-                PROFILE_LIST_KEY: self._all_profiles,
+                GROUP_LIST_KEY: [SYSTEM_GROUP],
                 OBJECT_DATA_KEY: {
                     'deviceId': 'FACADE'
                 },
@@ -92,7 +92,7 @@ class SimulationResponder():
             TIME_CONTROLLER_ID: {
                 OBJECT_ID_KEY: TIME_CONTROLLER_ID,
                 OBJECT_TYPE_KEY: 'Ticks',
-                PROFILE_LIST_KEY: self._all_profiles,
+                GROUP_LIST_KEY: [SYSTEM_GROUP],
                 OBJECT_DATA_KEY: {
                     'millisSinceBoot': 0,
                     'secondsSinceEpoch': 0,
@@ -101,35 +101,31 @@ class SimulationResponder():
             ONEWIREBUS_CONTROLLER_ID: {
                 OBJECT_ID_KEY: ONEWIREBUS_CONTROLLER_ID,
                 OBJECT_TYPE_KEY: 'OneWireBus',
-                PROFILE_LIST_KEY: self._all_profiles,
+                GROUP_LIST_KEY: [SYSTEM_GROUP],
                 OBJECT_DATA_KEY: {},
             },
             WIFI_SETTINGS_ID: {
                 OBJECT_ID_KEY: WIFI_SETTINGS_ID,
                 OBJECT_TYPE_KEY: 'WiFiSettings',
-                PROFILE_LIST_KEY: self._all_profiles,
+                GROUP_LIST_KEY: [SYSTEM_GROUP],
                 OBJECT_DATA_KEY: {},
             },
             TOUCH_SETTINGS_ID: {
                 OBJECT_ID_KEY: TOUCH_SETTINGS_ID,
                 OBJECT_TYPE_KEY: 'TouchSettings',
-                PROFILE_LIST_KEY: self._all_profiles,
+                GROUP_LIST_KEY: [SYSTEM_GROUP],
                 OBJECT_DATA_KEY: {},
             },
             DISPLAY_SETTINGS_ID: {
                 OBJECT_ID_KEY: DISPLAY_SETTINGS_ID,
                 OBJECT_TYPE_KEY: 'DisplaySettings',
-                PROFILE_LIST_KEY: self._all_profiles,
+                GROUP_LIST_KEY: [SYSTEM_GROUP],
                 OBJECT_DATA_KEY: {},
             },
         }
 
     @property
-    def _all_profiles(self):
-        return [i for i in range(8)]
-
-    @property
-    def _active_profiles(self):
+    def _active_groups(self):
         return self._objects[1][OBJECT_DATA_KEY]['active']
 
     @staticmethod
@@ -181,13 +177,13 @@ class SimulationResponder():
         if id < OBJECT_ID_START:
             return obj  # system object
 
-        if set(obj[PROFILE_LIST_KEY]) & set(self._active_profiles):
+        if set(obj[GROUP_LIST_KEY]) & set(self._active_groups):
             return obj
         else:
             return {
                 OBJECT_ID_KEY: obj[OBJECT_ID_KEY],
                 OBJECT_TYPE_KEY: 'InactiveObject',
-                PROFILE_LIST_KEY: obj[PROFILE_LIST_KEY],
+                GROUP_LIST_KEY: obj[GROUP_LIST_KEY],
                 OBJECT_DATA_KEY: {'actualType': obj[OBJECT_TYPE_KEY]},
             }
 
@@ -201,6 +197,8 @@ class SimulationResponder():
         key = request[OBJECT_ID_KEY]
         if key not in self._objects:
             raise exceptions.CommandException(f'{key} not found')
+        elif SYSTEM_GROUP in request[GROUP_LIST_KEY] and key >= OBJECT_ID_START:
+            raise exceptions.CommandException(f'Group {SYSTEM_GROUP} is reserved for system objects')
 
         self._objects[key] = request
         return self._get_obj(key)
@@ -216,6 +214,9 @@ class SimulationResponder():
             raise exceptions.CommandException(f'Id {key} is reserved for system objects')
         elif key in self._objects:
             raise exceptions.CommandException(f'Object {key} already exists')
+
+        if SYSTEM_GROUP in obj[GROUP_LIST_KEY]:
+            raise exceptions.CommandException(f'Group {SYSTEM_GROUP} is reserved for system objects')
 
         self._objects[key] = obj
         return obj

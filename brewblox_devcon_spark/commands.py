@@ -30,8 +30,9 @@ OBJECT_INTERFACE_KEY = 'object_if'
 OBJECT_TYPE_KEY = 'object_type'
 OBJECT_DATA_KEY = 'object_data'
 OBJECT_LIST_KEY = 'objects'
-PROFILE_LIST_KEY = 'profiles'
+GROUP_LIST_KEY = 'groups'
 OBJECT_ID_LIST_KEY = 'object_ids'
+SYSTEM_GROUP = 7
 
 
 OpcodeEnum = Enum(Int8ul,
@@ -83,7 +84,7 @@ ErrorcodeEnum = Enum(Int8ul,
                      INVALID_COMMAND=63,
                      INVALID_OBJECT_ID=64,
                      INVALID_OBJECT_TYPE=65,
-                     INVALID_OBJECT_PROFILES=66,
+                     INVALID_OBJECT_GROUPS=66,
                      CRC_ERROR_IN_COMMAND=67,
                      OBJECT_DATA_NOT_ACCEPTED=68,
 
@@ -92,13 +93,13 @@ ErrorcodeEnum = Enum(Int8ul,
                      )
 
 
-class ProfileListAdapter(Adapter):
+class GroupListAdapter(Adapter):
     def __init__(self):
         super().__init__(Byte)
 
     def _encode(self, obj: List[int], context, path) -> int:
         if next((i for i in obj if i >= 8), None):
-            raise ValueError(f'Invalid profile(s) in {obj}. Values must be 0-7.')
+            raise ValueError(f'Invalid group(s) in {obj}. Values must be 0-7.')
         return reduce(lambda result, idx: result | 1 << idx, obj, 0)
 
     def _decode(self, obj: int, context, path) -> List[int]:
@@ -388,12 +389,12 @@ class Command(ABC):
 
 
 # Reoccurring data types - can be used as a macro
-_PROFILE_LIST = Struct(PROFILE_LIST_KEY / ProfileListAdapter())
+_GROUP_LIST = Struct(GROUP_LIST_KEY / GroupListAdapter())
 _OBJECT_ID = Struct(OBJECT_ID_KEY / Int16ul)
 _OBJECT_INTERFACE = Struct(OBJECT_INTERFACE_KEY / Int16ul)
 _OBJECT_TYPE = Struct(OBJECT_TYPE_KEY / Int16ul)
 _OBJECT_DATA = Struct(OBJECT_DATA_KEY / GreedyBytes)
-_OBJECT = _OBJECT_ID + _PROFILE_LIST + _OBJECT_TYPE + _OBJECT_DATA
+_OBJECT = _OBJECT_ID + _GROUP_LIST + _OBJECT_TYPE + _OBJECT_DATA
 
 # Special cases
 _CREATE_ID = Struct(OBJECT_ID_KEY / Default(Int16ul, 0))  # 0 == assigned by controller
@@ -415,7 +416,7 @@ class WriteObjectCommand(Command):
 
 class CreateObjectCommand(Command):
     _OPCODE = OpcodeEnum.CREATE_OBJECT
-    _REQUEST = _CREATE_ID + _PROFILE_LIST + _OBJECT_TYPE + _OBJECT_DATA
+    _REQUEST = _CREATE_ID + _GROUP_LIST + _OBJECT_TYPE + _OBJECT_DATA
     _RESPONSE = _OBJECT
     _VALUES = None
 

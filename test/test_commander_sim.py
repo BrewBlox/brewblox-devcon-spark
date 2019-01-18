@@ -8,9 +8,9 @@ from brewblox_service import scheduler
 from brewblox_devcon_spark import (commander, commander_sim, commands,
                                    datastore, exceptions, status)
 from brewblox_devcon_spark.codec import codec
-from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
-                                            OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
-                                            PROFILE_LIST_KEY)
+from brewblox_devcon_spark.commands import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
+                                            OBJECT_ID_KEY, OBJECT_LIST_KEY,
+                                            OBJECT_TYPE_KEY)
 
 
 @pytest.fixture
@@ -31,7 +31,7 @@ def sim(app):
 @pytest.fixture
 def object_args():
     return {
-        PROFILE_LIST_KEY: [0],
+        GROUP_LIST_KEY: [0],
         OBJECT_TYPE_KEY: 302,  # TempSensorOneWire
         OBJECT_DATA_KEY: b'\x00'
     }
@@ -67,9 +67,13 @@ async def test_crud(app, client, object_args, sim):
     read_args = {OBJECT_ID_KEY: created[OBJECT_ID_KEY]}
     assert await sim.execute(read_cmd.from_args(**read_args)) == created
 
-    created[PROFILE_LIST_KEY] = [0, 1, 7]
+    created[GROUP_LIST_KEY] = [0, 1]
     assert await sim.execute(write_cmd.from_args(**created)) == created
     assert await sim.execute(read_cmd.from_args(**read_args)) == created
+
+    with pytest.raises(exceptions.CommandException):
+        # Can't assign system group
+        await sim.execute(write_cmd.from_args(**{**created, **{GROUP_LIST_KEY: [0, commands.SYSTEM_GROUP]}}))
 
     await sim.execute(delete_cmd.from_args(object_id=read_args[OBJECT_ID_KEY]))
 
@@ -82,6 +86,9 @@ async def test_crud(app, client, object_args, sim):
 
     with pytest.raises(exceptions.CommandException):
         await sim.execute(read_cmd.from_args(**read_args))
+
+    with pytest.raises(exceptions.CommandException):
+        await sim.execute(create_cmd.from_args(**{**object_args, **{GROUP_LIST_KEY: [commands.SYSTEM_GROUP]}}))
 
 
 async def test_stored(app, client, object_args, sim):

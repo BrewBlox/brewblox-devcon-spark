@@ -14,7 +14,7 @@ TESTED = commands.__name__
 def object_args():
     return dict(
         object_id=42,
-        profiles=[1],
+        groups=[1],
         object_type=6,
         object_data=bytes([0x0F]*10))
 
@@ -82,19 +82,19 @@ def test_error():
         commands.DeleteObjectCommand.from_decoded(None, {'_errcode': -1})
 
 
-def test_profile_adapter():
-    s = Struct('profiles' / commands.ProfileListAdapter())
+def test_group_adapter():
+    s = Struct('groups' / commands.GroupListAdapter())
 
     for left, right in [
         ([], b'\x00'),
         ([0, 1], b'\x03'),
         ([i for i in range(8)], b'\xFF')
     ]:
-        assert s.build({'profiles': left}) == right
-        assert s.parse(right) == {'profiles': left}
+        assert s.build({'groups': left}) == right
+        assert s.parse(right) == {'groups': left}
 
     with pytest.raises(ValueError):
-        s.build({'profiles': [8]})
+        s.build({'groups': [8]})
 
 
 def test_crc_failure():

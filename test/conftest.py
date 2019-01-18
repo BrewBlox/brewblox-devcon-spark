@@ -93,27 +93,21 @@ def spark_blocks():
     return [
         {
             'id': 'balancer-1',
-            'profiles': [
-                0
-            ],
+            'groups': [0],
             'type': 'Balancer',
             'data': {}
         },
         {
             'id': 'mutex-1',
-            'profiles': [
-                0
-            ],
+            'groups': [0],
             'type': 'Mutex',
             'data': {
                 'differentActuatorWait': 43
             }
         },
         {
-            'id': 'profile-1',
-            'profiles': [
-                0
-            ],
+            'id': 'group-1',
+            'groups': [0],
             'type': 'SetpointProfile',
             'data': {
                 'points': [
@@ -134,9 +128,7 @@ def spark_blocks():
         },
         {
             'id': 'setpoint-1',
-            'profiles': [
-                0
-            ],
+            'groups': [0],
             'type': 'SetpointSimple',
             'data': {
                 'setpoint': 21,
@@ -145,9 +137,7 @@ def spark_blocks():
         },
         {
             'id': 'setpoint-2',
-            'profiles': [
-                0
-            ],
+            'groups': [0],
             'type': 'SetpointSimple',
             'data': {
                 'setpoint': 50,
@@ -156,7 +146,7 @@ def spark_blocks():
         },
         {
             'id': 'setpoint-inactive',
-            'profiles': [],
+            'groups': [],
             'type': 'SetpointSimple',
             'data': {
                 'setpoint': 3,
@@ -165,9 +155,7 @@ def spark_blocks():
         },
         {
             'id': 'sensor-1',
-            'profiles': [
-                0
-            ],
+            'groups': [0],
             'type': 'TempSensorMock',
             'data': {
                 'value[celsius]': 20.89789201,
@@ -176,9 +164,7 @@ def spark_blocks():
         },
         {
             'id': 'sensor-onewire-1',
-            'profiles': [
-                0
-            ],
+            'groups': [0],
             'type': 'TempSensorOneWire',
             'data': {
                 'value[celsius]': 20.89789201,
@@ -188,9 +174,7 @@ def spark_blocks():
         },
         {
             'id': 'setpoint-sensor-pair-1',
-            'profiles': [
-                0
-            ],
+            'groups': [0],
             'type': 'SetpointSensorPair',
             'data': {
                 'sensorId<>': 'sensor-1',
@@ -201,9 +185,7 @@ def spark_blocks():
         },
         {
             'id': 'setpoint-sensor-pair-2',
-            'profiles': [
-                0
-            ],
+            'groups': [0],
             'type': 'SetpointSensorPair',
             'data': {
                 'sensorId<>': 0,
@@ -214,9 +196,7 @@ def spark_blocks():
         },
         {
             'id': 'actuator-1',
-            'profiles': [
-                0
-            ],
+            'groups': [0],
             'type': 'ActuatorAnalogMock',
             'data': {
                 'setting': 20,
@@ -229,9 +209,7 @@ def spark_blocks():
         },
         {
             'id': 'actuator-pwm-1',
-            'profiles': [
-                0
-            ],
+            'groups': [0],
             'type': 'ActuatorPwm',
             'data': {
                 'constrainedBy': {
@@ -255,9 +233,7 @@ def spark_blocks():
         },
         {
             'id': 'actuator-ds2413-1',
-            'profiles': [
-                0
-            ],
+            'groups': [0],
             'type': 'ActuatorDS2413',
             'data': {
                 'channel': 1,
@@ -272,9 +248,7 @@ def spark_blocks():
         },
         {
             'id': 'offset-1',
-            'profiles': [
-                0
-            ],
+            'groups': [0],
             'type': 'ActuatorOffset',
             'data': {
                 'targetId<>': 'setpoint-sensor-pair-1',
@@ -283,9 +257,7 @@ def spark_blocks():
         },
         {
             'id': 'pid-1',
-            'profiles': [
-                0
-            ],
+            'groups': [0],
             'type': 'Pid',
             'data': {
                 'inputId<>': 'setpoint-sensor-pair-1',
@@ -301,16 +273,7 @@ def spark_blocks():
         },
         {
             'id': 'DisplaySettings',
-            'profiles': [
-                0,
-                1,
-                2,
-                3,
-                4,
-                5,
-                6,
-                7
-            ],
+            'groups': [7],
             'type': 'DisplaySettings',
             'data': {
                 'widgets': [
@@ -344,16 +307,7 @@ def spark_blocks():
         },
         {
             'id': 'ds2413-hw-1',
-            'profiles': [
-                0,
-                1,
-                2,
-                3,
-                4,
-                5,
-                6,
-                7
-            ],
+            'groups': [0, 1, 2, 3, 4, 5, 6],
             'type': 'DS2413',
             'data': {
                 'address': '4444444444444444'
@@ -361,16 +315,7 @@ def spark_blocks():
         },
         {
             'id': 'ow-act',
-            'profiles': [
-                0,
-                1,
-                2,
-                3,
-                4,
-                5,
-                6,
-                7
-            ],
+            'groups': [0, 1, 2, 3, 4, 5, 6],
             'type': 'ActuatorDS2413',
             'data': {
                 'channel': 1,

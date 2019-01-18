@@ -17,7 +17,7 @@ from brewblox_devcon_spark.device import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
                                           OBJECT_ID_LIST_KEY,
                                           OBJECT_INTERFACE_KEY,
                                           OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
-                                          PROFILE_LIST_KEY)
+                                          GROUP_LIST_KEY)
 
 SYNC_WAIT_TIMEOUT_S = 20
 
@@ -40,7 +40,7 @@ class ObjectApi():
     def _as_api_object(self, obj: dict):
         return {
             API_ID_KEY: obj[OBJECT_ID_KEY],
-            PROFILE_LIST_KEY: obj[PROFILE_LIST_KEY],
+            GROUP_LIST_KEY: obj[GROUP_LIST_KEY],
             API_TYPE_KEY: obj[OBJECT_TYPE_KEY],
             API_DATA_KEY: obj[OBJECT_DATA_KEY]
         }
@@ -51,7 +51,7 @@ class ObjectApi():
 
     async def create(self,
                      input_id: str,
-                     profiles: list,
+                     groups: list,
                      input_type: int,
                      input_data: dict
                      ) -> Awaitable[dict]:
@@ -69,7 +69,7 @@ class ObjectApi():
 
         try:
             created = await self._ctrl.create_object({
-                PROFILE_LIST_KEY: profiles,
+                GROUP_LIST_KEY: groups,
                 OBJECT_TYPE_KEY: input_type,
                 OBJECT_DATA_KEY: input_data
             })
@@ -81,7 +81,7 @@ class ObjectApi():
 
         return {
             API_ID_KEY: input_id,
-            PROFILE_LIST_KEY: created[PROFILE_LIST_KEY],
+            GROUP_LIST_KEY: created[GROUP_LIST_KEY],
             API_TYPE_KEY: created[OBJECT_TYPE_KEY],
             API_DATA_KEY: created[OBJECT_DATA_KEY],
         }
@@ -95,7 +95,7 @@ class ObjectApi():
 
     async def write(self,
                     input_id: str,
-                    profiles: list,
+                    groups: list,
                     input_type: str,
                     input_data: dict
                     ) -> Awaitable[dict]:
@@ -105,7 +105,7 @@ class ObjectApi():
         await self.wait_for_sync()
         response = await self._ctrl.write_object({
             OBJECT_ID_KEY: input_id,
-            PROFILE_LIST_KEY: profiles,
+            GROUP_LIST_KEY: groups,
             OBJECT_TYPE_KEY: input_type,
             OBJECT_DATA_KEY: input_data
         })
@@ -175,16 +175,16 @@ class ObjectApi():
 
         for obj in objects:
             obj_id = obj[API_ID_KEY]
-            obj_profiles = obj[PROFILE_LIST_KEY]
+            obj_groups = obj[GROUP_LIST_KEY]
             obj_type = obj[API_TYPE_KEY]
             obj_data = obj[API_DATA_KEY]
 
             func = self.write if (obj_id, None) in self._store else self.create
 
             try:
-                await func(obj_id, obj_profiles, obj_type, obj_data)
+                await func(obj_id, obj_groups, obj_type, obj_data)
             except exceptions.UnknownId:
-                await func(obj_id, obj_profiles, obj_type, {})  # Write an empty stub
+                await func(obj_id, obj_groups, obj_type, {})  # Write an empty stub
                 LOGGER.info(f'{obj_id} contains a link to an unknown object, delaying write...')
                 retry_objects.append(obj)
             except Exception as ex:
@@ -193,12 +193,12 @@ class ObjectApi():
 
         for obj in retry_objects:
             obj_id = obj[API_ID_KEY]
-            obj_profiles = obj[PROFILE_LIST_KEY]
+            obj_groups = obj[GROUP_LIST_KEY]
             obj_type = obj[API_TYPE_KEY]
             obj_data = obj[API_DATA_KEY]
 
             try:
-                await self.write(obj_id, obj_profiles, obj_type, obj_data)
+                await self.write(obj_id, obj_groups, obj_type, obj_data)
             except Exception as ex:
                 LOGGER.error(f'Retrying objects in /reset_objects failed at [{obj_id}]')
                 raise ex
@@ -229,7 +229,7 @@ async def object_create(request: web.Request) -> web.Response:
                 id:
                     type: string
                     example: temp_sensor_1
-                profiles:
+                groups:
                     type: array
                     example: [0, 3, 4]
                 type:
@@ -249,7 +249,7 @@ async def object_create(request: web.Request) -> web.Response:
     with utils.collecting_input():
         args = (
             request_args[API_ID_KEY],
-            request_args[PROFILE_LIST_KEY],
+            request_args[GROUP_LIST_KEY],
             request_args[API_TYPE_KEY],
             request_args[API_DATA_KEY],
         )
@@ -313,7 +313,7 @@ async def object_write(request: web.Request) -> web.Response:
         schema:
             type: object
             properties:
-                profiles:
+                groups:
                     type: list
                     example: [0, 4, 8]
                 type:
@@ -333,7 +333,7 @@ async def object_write(request: web.Request) -> web.Response:
     with utils.collecting_input():
         args = (
             request.match_info[API_ID_KEY],
-            request_args[PROFILE_LIST_KEY],
+            request_args[GROUP_LIST_KEY],
             request_args[API_TYPE_KEY],
             request_args[API_DATA_KEY],
         )
@@ -532,7 +532,7 @@ async def reset(request: web.Request) -> web.Response:
                     id:
                         type: string
                         example: temp_sensor_1
-                    profiles:
+                    groups:
                         type: array
                         example: [0, 3, 4]
                     type:

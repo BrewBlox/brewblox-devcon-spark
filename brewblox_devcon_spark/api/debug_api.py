@@ -40,7 +40,7 @@ async def do_command(request: web.Request) -> web.Response:
                     example: list_objects
                 data:
                     type: object
-                    example: {"profile_id":0}
+                    example: {"group_id":0}
     """
     request_args = await request.json()
 

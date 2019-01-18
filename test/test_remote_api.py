@@ -18,7 +18,7 @@ from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
                                                   OBJECT_DATA_KEY,
                                                   OBJECT_ID_KEY,
                                                   OBJECT_TYPE_KEY,
-                                                  PROFILE_LIST_KEY)
+                                                  GROUP_LIST_KEY)
 from brewblox_devcon_spark.codec import codec
 
 TESTED = remote_api.__name__
@@ -42,7 +42,7 @@ class DummyListener():
 def object_args():
     return {
         OBJECT_ID_KEY: 'testobj',
-        PROFILE_LIST_KEY: [0],
+        GROUP_LIST_KEY: [0],
         OBJECT_TYPE_KEY: 'TempSensorOneWire',
         OBJECT_DATA_KEY: {
             'value': 1234,
@@ -87,7 +87,7 @@ async def created(app, client, object_args):
     status.get_status(app).connected.set()
     retv = await client.post('/objects', json={
         API_ID_KEY: object_args[OBJECT_ID_KEY],
-        PROFILE_LIST_KEY: object_args[PROFILE_LIST_KEY],
+        GROUP_LIST_KEY: object_args[GROUP_LIST_KEY],
         API_TYPE_KEY: object_args[OBJECT_TYPE_KEY],
         API_DATA_KEY: object_args[OBJECT_DATA_KEY],
     })
