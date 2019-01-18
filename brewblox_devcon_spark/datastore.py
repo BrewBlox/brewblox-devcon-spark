@@ -19,7 +19,7 @@ from brewblox_devcon_spark.twinkeydict import TwinKeyDict, TwinKeyError
 
 LOGGER = brewblox_logger(__name__)
 
-PROFILES_CONTROLLER_ID = 1
+GROUPS_CONTROLLER_ID = 1
 SYSINFO_CONTROLLER_ID = 2
 TIME_CONTROLLER_ID = 3
 ONEWIREBUS_CONTROLLER_ID = 4
@@ -32,7 +32,7 @@ FLUSH_DELAY_S = 5
 DB_NAME = 'spark-service'
 OBJECT_ID_START = 100
 SYS_OBJECT_KEYS = [
-    ['ActiveProfiles', PROFILES_CONTROLLER_ID],
+    ['ActiveGroups', GROUPS_CONTROLLER_ID],
     ['SystemInfo', SYSINFO_CONTROLLER_ID],
     ['SystemTime', TIME_CONTROLLER_ID],
     ['OneWireBus', ONEWIREBUS_CONTROLLER_ID],

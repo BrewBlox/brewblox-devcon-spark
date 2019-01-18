@@ -114,7 +114,7 @@ class InactiveObjectTranscoder(Transcoder):
         return {'actualType': Transcoder.get(type_id, self.mod).type_str()}
 
 
-class ProfilesTranscoder(Transcoder):
+class GroupsTranscoder(Transcoder):
 
     @classmethod
     def type_int(cls) -> int:
@@ -122,7 +122,7 @@ class ProfilesTranscoder(Transcoder):
 
     @classmethod
     def type_str(cls) -> str:
-        return 'Profiles'
+        return 'Groups'
 
     def encode(self, values: Decoded_, _) -> Encoded_:
         active = self.mod.pack_bit_flags(values.get('active', []))
@@ -206,7 +206,7 @@ def _generate_mapping(vals: Iterable[Transcoder]):
 _TRANSCODERS = [
     # Raw system objects
     InactiveObjectTranscoder,
-    ProfilesTranscoder,
+    GroupsTranscoder,
 
     # Interface objects
     # Actual implementations will override this later

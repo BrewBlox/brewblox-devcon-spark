@@ -13,11 +13,10 @@ from brewblox_devcon_spark.api import (alias_api, codec_api, debug_api,
                                        error_response, object_api,
                                        savepoint_api, sse_api, system_api)
 from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
-                                                  API_TYPE_KEY,
+                                                  API_TYPE_KEY, GROUP_LIST_KEY,
                                                   OBJECT_DATA_KEY,
                                                   OBJECT_ID_KEY,
-                                                  OBJECT_TYPE_KEY,
-                                                  PROFILE_LIST_KEY)
+                                                  OBJECT_TYPE_KEY)
 from brewblox_devcon_spark.codec import codec
 
 
@@ -29,7 +28,7 @@ def ret_ids(objects):
 def object_args():
     return {
         API_ID_KEY: 'testobj',
-        PROFILE_LIST_KEY: [0],
+        GROUP_LIST_KEY: [0],
         API_TYPE_KEY: 'TempSensorOneWire',
         API_DATA_KEY: {
             'value': 12345,
@@ -42,7 +41,7 @@ def object_args():
 def multi_objects(ids, args):
     return [{
         API_ID_KEY: id,
-        PROFILE_LIST_KEY: args[PROFILE_LIST_KEY],
+        GROUP_LIST_KEY: args[GROUP_LIST_KEY],
         API_TYPE_KEY: args[API_TYPE_KEY],
         API_DATA_KEY: args[API_DATA_KEY]
     } for id in ids]
@@ -89,7 +88,7 @@ async def test_do(app, client):
         'data': {
             OBJECT_ID_KEY: 0,
             OBJECT_TYPE_KEY: 'TempSensorOneWire',
-            PROFILE_LIST_KEY: [1, 2, 3],
+            GROUP_LIST_KEY: [1, 2, 3],
             OBJECT_DATA_KEY: {
                 'value': 12345,
                 'offset': 20,
@@ -136,12 +135,12 @@ async def test_create(app, client, object_args):
 
 
 async def test_invalid_input(app, client, object_args):
-    del object_args['profiles']
+    del object_args['groups']
     retv = await client.post('/objects', json=object_args)
     assert retv.status == 400
     errtext = await retv.text()
     assert 'MissingInput' in errtext
-    assert 'profiles' in errtext
+    assert 'groups' in errtext
 
 
 async def test_create_performance(app, client, object_args):
@@ -238,7 +237,7 @@ async def test_validate_service_id(input_id):
     '',
     'yes!'*51,
     'brackey><',
-    'ActiveProfiles',
+    'ActiveGroups',
     'Actuator-0',
 ])
 async def test_validate_service_id_error(input_id):
@@ -271,22 +270,22 @@ async def test_alias_update(app, client, object_args):
     assert retv.status == 200
 
 
-async def test_profiles(app, client):
-    profiles = await response(client.get('/system/profiles'))
-    assert profiles == [0]  # Profiles initialize as [0]
-    updated = await response(client.put('/system/profiles', json=[0, 1, 2]))
+async def test_groups(app, client):
+    groups = await response(client.get('/system/groups'))
+    assert groups == [0, device.SYSTEM_GROUP]  # Initialized value
+    updated = await response(client.put('/system/groups', json=[0, 1, 2]))
     assert updated == [0, 1, 2]
-    assert updated == (await response(client.get('/system/profiles')))
+    assert updated == (await response(client.get('/system/groups')))
 
 
 async def test_inactive_objects(app, client, object_args):
-    object_args[PROFILE_LIST_KEY] = [1]
+    object_args[GROUP_LIST_KEY] = [1]
     await client.post('/objects', json=object_args)
 
     retd = await response(client.get('/objects'))
     assert retd[-1] == {
         API_ID_KEY: object_args[API_ID_KEY],
-        PROFILE_LIST_KEY: [1],
+        GROUP_LIST_KEY: [1],
         API_TYPE_KEY: 'InactiveObject',
         API_DATA_KEY: {
             'actualType': object_args[API_TYPE_KEY]
@@ -328,8 +327,8 @@ async def test_list_compatible(app, client, object_args):
 
 async def test_discover_objects(app, client):
     resp = await response(client.get('/discover_objects'))
-    # Commander sim always returns the profiles object
-    assert resp == ['ActiveProfiles']
+    # Commander sim always returns the groups object
+    assert resp == ['ActiveGroups']
 
 
 async def test_reset_objects(app, client, spark_blocks):
@@ -338,12 +337,12 @@ async def test_reset_objects(app, client, spark_blocks):
     ids = ret_ids(spark_blocks)
     resp_ids = ret_ids(resp)
     assert set(ids).issubset(resp_ids)
-    assert 'ActiveProfiles' in resp_ids
+    assert 'ActiveGroups' in resp_ids
 
     # Fails during retry
     spark_blocks.append({
         API_ID_KEY: 'derpface',
-        PROFILE_LIST_KEY: [0],
+        GROUP_LIST_KEY: [0],
         API_TYPE_KEY: 'SetpointSensorPair',
         API_DATA_KEY: {'sensorId<>': 'MysteryMan'}
     })
@@ -353,7 +352,7 @@ async def test_reset_objects(app, client, spark_blocks):
     # Fails immediately, and will not be retried
     spark_blocks.append({
         API_ID_KEY: 'derpface2',
-        PROFILE_LIST_KEY: [0],
+        GROUP_LIST_KEY: [0],
         API_TYPE_KEY: 'INVALID',
         API_DATA_KEY: {}
     })
@@ -364,7 +363,7 @@ async def test_reset_objects(app, client, spark_blocks):
 async def test_logged_objects(app, client):
     args = {
         API_ID_KEY: 'edgey',
-        PROFILE_LIST_KEY: [0],
+        GROUP_LIST_KEY: [0],
         API_TYPE_KEY: 'EdgeCase',
         API_DATA_KEY: {
             'logged': 12345,

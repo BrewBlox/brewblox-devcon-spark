@@ -13,11 +13,11 @@ from brewblox_service import brewblox_logger, features
 from brewblox_devcon_spark import (commander, commands, datastore, exceptions,
                                    twinkeydict)
 from brewblox_devcon_spark.codec import codec
-from brewblox_devcon_spark.commands import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
-                                            OBJECT_ID_LIST_KEY,
+from brewblox_devcon_spark.commands import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
+                                            OBJECT_ID_KEY, OBJECT_ID_LIST_KEY,
                                             OBJECT_INTERFACE_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
-                                            PROFILE_LIST_KEY)
+                                            SYSTEM_GROUP)
 
 OBJECT_LINK_POSTFIX_START = '<'
 OBJECT_LINK_POSTFIX_END = '>'
@@ -35,9 +35,10 @@ _FORWARDED = (
     OBJECT_DATA_KEY,
     OBJECT_TYPE_KEY,
     OBJECT_LIST_KEY,
-    PROFILE_LIST_KEY,
+    GROUP_LIST_KEY,
     OBJECT_ID_LIST_KEY,
     OBJECT_INTERFACE_KEY,
+    SYSTEM_GROUP,
 )
 
 LOGGER = brewblox_logger(__name__)

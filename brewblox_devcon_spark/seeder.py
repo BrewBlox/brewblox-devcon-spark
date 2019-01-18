@@ -12,6 +12,7 @@ from brewblox_service import brewblox_logger, features, scheduler
 
 from brewblox_devcon_spark import datastore, status
 from brewblox_devcon_spark.api import object_api
+from brewblox_devcon_spark.device import SYSTEM_GROUP
 
 LOGGER = brewblox_logger(__name__)
 
@@ -83,7 +84,7 @@ class Seeder(features.ServiceFeature):
             api = object_api.ObjectApi(self.app, wait_sync=False)
             await api.write(
                 input_id=datastore.TIME_CONTROLLER_ID,
-                profiles=[i for i in range(8)],
+                groups=[SYSTEM_GROUP],
                 input_type='Ticks',
                 input_data={
                     'secondsSinceEpoch': now.timestamp()

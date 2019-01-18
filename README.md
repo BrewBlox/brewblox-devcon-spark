@@ -68,9 +68,8 @@ Some actions are required when connecting to a (new) Spark controller.
 The Seeder feature waits for a connection to be made, and then performs these one-time tasks.
 
 Examples are:
-* Configuring active profiles
-* Adding a baseline of desired blocks
 * Setting Spark system clock
+* Reading controller-specific data from the remote datastore
 
 ## REST API
 
