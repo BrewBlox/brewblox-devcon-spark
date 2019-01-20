@@ -9,6 +9,7 @@ message AnalogConstraint {
   message Balanced {
     uint32 balancerId = 1 [ (brewblox).objtype = BalancerInterface, (nanopb).int_size = IS_16 ];
     uint32 granted = 2 [ (brewblox).scale = 4096, (brewblox).readonly = true ];
+    uint32 id = 3 [ (brewblox).readonly = true, (nanopb).int_size = IS_8 ];
   }
 
   oneof constraint {

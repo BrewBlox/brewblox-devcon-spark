@@ -9,7 +9,7 @@ message Balancer {
   option (brewblox_msg).objtype = Balancer;
 
   message BalancedActuator {
-    uint32 id = 1 [ (brewblox).objtype = ActuatorAnalogInterface, (nanopb).int_size = IS_16, (brewblox).readonly = true ];
+    uint32 id = 1 [ (brewblox).readonly = true, (nanopb).int_size = IS_8 ];
     sint32 requested = 2 [ (brewblox).scale = 4096, (nanopb).int_size = IS_32, (brewblox).readonly = true ];
     sint32 granted = 3 [ (brewblox).scale = 4096, (nanopb).int_size = IS_32, (brewblox).readonly = true ];
   }
