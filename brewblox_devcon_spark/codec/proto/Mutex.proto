@@ -8,5 +8,5 @@ package blox;
 message Mutex {
   option (brewblox_msg).objtype = Mutex;
 
-  uint32 differentActuatorWait = 1;
+  uint32 differentActuatorWait = 1 [ (brewblox).unit = Time, (brewblox).scale = 1000 ];
 }
