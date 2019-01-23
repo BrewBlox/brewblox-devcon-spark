@@ -395,6 +395,7 @@ _OBJECT_INTERFACE = Struct(OBJECT_INTERFACE_KEY / Int16ul)
 _OBJECT_TYPE = Struct(OBJECT_TYPE_KEY / Int16ul)
 _OBJECT_DATA = Struct(OBJECT_DATA_KEY / GreedyBytes)
 _OBJECT = _OBJECT_ID + _GROUP_LIST + _OBJECT_TYPE + _OBJECT_DATA
+_DISCOVERY = _OBJECT_ID + _OBJECT_INTERFACE
 
 # Special cases
 _CREATE_ID = Struct(OBJECT_ID_KEY / Default(Int16ul, 0))  # 0 == assigned by controller
@@ -481,4 +482,4 @@ class DiscoverObjectsCommand(Command):
     _OPCODE = OpcodeEnum.DISCOVER_OBJECTS
     _REQUEST = None
     _RESPONSE = None
-    _VALUES = (OBJECT_ID_LIST_KEY, _OBJECT_ID)
+    _VALUES = (OBJECT_LIST_KEY, _DISCOVERY)
