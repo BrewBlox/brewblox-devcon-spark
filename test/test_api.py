@@ -328,7 +328,7 @@ async def test_list_compatible(app, client, object_args):
 async def test_discover_objects(app, client):
     resp = await response(client.get('/discover_objects'))
     # Commander sim always returns the groups object
-    assert resp == ['ActiveGroups']
+    assert resp == ['DisplaySettings']
 
 
 async def test_reset_objects(app, client, spark_blocks):

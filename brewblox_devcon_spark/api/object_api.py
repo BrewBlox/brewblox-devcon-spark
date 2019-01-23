@@ -13,11 +13,10 @@ from brewblox_devcon_spark import (datastore, device, exceptions, status,
 from brewblox_devcon_spark.api import (API_DATA_KEY, API_ID_KEY,
                                        API_INTERFACE_KEY, API_TYPE_KEY,
                                        alias_api, utils)
-from brewblox_devcon_spark.device import (OBJECT_DATA_KEY, OBJECT_ID_KEY,
-                                          OBJECT_ID_LIST_KEY,
+from brewblox_devcon_spark.device import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
+                                          OBJECT_ID_KEY, OBJECT_ID_LIST_KEY,
                                           OBJECT_INTERFACE_KEY,
-                                          OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
-                                          GROUP_LIST_KEY)
+                                          OBJECT_LIST_KEY, OBJECT_TYPE_KEY)
 
 SYNC_WAIT_TIMEOUT_S = 20
 
@@ -159,7 +158,7 @@ class ObjectApi():
     async def discover(self) -> Awaitable[list]:
         await self.wait_for_sync()
         response = await self._ctrl.discover_objects()
-        return [obj[OBJECT_ID_KEY] for obj in response[OBJECT_ID_LIST_KEY]]
+        return [obj[OBJECT_ID_KEY] for obj in response[OBJECT_LIST_KEY]]
 
     async def clear_objects(self) -> Awaitable[dict]:
         await self.wait_for_sync()

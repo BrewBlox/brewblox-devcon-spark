@@ -139,7 +139,10 @@ class SparkResolver():
 
         for obj in objects_to_process:
             with suppress(KeyError):
-                obj[OBJECT_ID_KEY] = finder_func(self._datastore, obj[OBJECT_ID_KEY], obj.get(OBJECT_TYPE_KEY))
+                obj[OBJECT_ID_KEY] = finder_func(
+                    self._datastore,
+                    obj[OBJECT_ID_KEY],
+                    obj.get(OBJECT_TYPE_KEY) or obj.get(OBJECT_INTERFACE_KEY))
 
         return content
 

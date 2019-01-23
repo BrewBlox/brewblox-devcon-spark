@@ -16,6 +16,7 @@ from brewblox_devcon_spark import commander, commands, exceptions, status
 from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.commands import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
                                             OBJECT_ID_KEY, OBJECT_ID_LIST_KEY,
+                                            OBJECT_INTERFACE_KEY,
                                             OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
                                             SYSTEM_GROUP)
 from brewblox_devcon_spark.datastore import (DISPLAY_SETTINGS_ID,
@@ -149,6 +150,9 @@ class SimulationResponder():
                     OBJECT_TYPE_KEY: dec_type,
                     OBJECT_DATA_KEY: dec_data
                 })
+            with suppress(KeyError):
+                dec_type = await self._codec.decode(obj[OBJECT_INTERFACE_KEY])
+                obj[OBJECT_INTERFACE_KEY] = dec_type
 
         func = self._command_funcs[type(cmd)]
         retv = await func(args)
@@ -164,6 +168,9 @@ class SimulationResponder():
                     OBJECT_TYPE_KEY: enc_type,
                     OBJECT_DATA_KEY: enc_data
                 })
+            with suppress(KeyError):
+                enc_type = await self._codec.encode(obj[OBJECT_INTERFACE_KEY])
+                obj[OBJECT_INTERFACE_KEY] = enc_type
 
         # Encode response, force decoding by creating new command
         encoding_cmd = cmd.from_decoded(cmd.decoded_request, retv)
@@ -248,7 +255,10 @@ class SimulationResponder():
 
     async def _discover_objects(self, request):
         return {
-            OBJECT_ID_LIST_KEY: [{OBJECT_ID_KEY: 1}]
+            OBJECT_LIST_KEY: [{
+                OBJECT_ID_KEY: DISPLAY_SETTINGS_ID,
+                OBJECT_INTERFACE_KEY: 'DisplaySettings',
+            }]
         }
 
     async def _clear_objects(self, request):
