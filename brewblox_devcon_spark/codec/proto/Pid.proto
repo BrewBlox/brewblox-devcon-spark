@@ -43,5 +43,8 @@ message Pid {
   sint32 error = 19 [ (brewblox).logged = true, (brewblox).unit = DeltaTemp, (brewblox).scale = 4096, (nanopb).int_size = IS_32, (brewblox).readonly = true ];
   sint32 integral = 20 [ (brewblox).logged = true, (brewblox).unit = DeltaTempLongTime, (brewblox).scale = 14745600, (nanopb).int_size = IS_32, (brewblox).readonly = true ];
   sint32 derivative = 21 [ (brewblox).logged = true, (brewblox).unit = DeltaTempPerLongTime, (brewblox).scale = 2330, (nanopb).int_size = IS_32, (brewblox).readonly = true ];
+
+  uint32 drivenOutputId = 22 [ (brewblox).objtype = ActuatorAnalogInterface, (brewblox).driven = true, (nanopb).int_size = IS_16, (brewblox).readonly = true ];
+  
   repeated uint32 strippedFields = 99 [ (brewblox).readonly = true, (nanopb).int_size = IS_16, (nanopb).max_count = 4 ];
 }

@@ -33,6 +33,7 @@ class OptionElement():
     key: str
     base_key: str
     postfix: str
+    postfix_arg: str
     nested: bool
 
 
@@ -47,7 +48,9 @@ class Modifier():
         self._postfix_pattern = re.compile(''.join([
             f'([^{symbols}]+)',  # "value" -> captured
             f'[{symbols}]?',     # "["
-            f'([^{symbols}]*)',  # "degC" -> captured
+            f'([^{symbols},]*)',  # "degC" -> captured
+            ',?',  # option separator
+            f'([^{symbols}]*)',  # "driven" -> captured
             f'[{symbols}]?',     # "]"
         ]))
 
@@ -86,7 +89,7 @@ class Modifier():
         Any entries added to the parent object after an element is yielded will not be considered.
         """
         for key in set(obj.keys()):
-            base_key, option_value = self._postfix_pattern.findall(key)[0]
+            base_key, postfix, postfix_arg = self._postfix_pattern.findall(key)[0]
             field: FieldDescriptor = desc.fields_by_name[base_key]
 
             if field.message_type:
@@ -98,7 +101,7 @@ class Modifier():
                 for c in children:
                     yield from self._find_options(field.message_type, c, True)
 
-            yield OptionElement(field, obj, key, base_key, option_value, nested)
+            yield OptionElement(field, obj, key, base_key, postfix, postfix_arg, nested)
 
         return
 
@@ -117,12 +120,12 @@ class Modifier():
         Modifies `obj` based on Protobuf options and dict key postfixes.
 
         Supported Protobuf options:
-        * unit:     convert post-fixed unit notation ([UNIT]) to Protobuf unit
-        * scale:    multiply value with scale after unit conversion
-        * link:     strip link key postfix (<>)
-        * hexed:    convert hexadecimal string to int64
-        * readonly: strip value from protobuf input
-        * hexstr:   convert hexadecimal string to base64 string
+        * unit:         convert post-fixed unit notation ([UNIT]) to Protobuf unit
+        * scale:        multiply value with scale after unit conversion
+        * objtype:      strip link key postfix (<TempSensorInterface> or <>)
+        * hexed:        convert hexadecimal string to int64
+        * readonly:     strip value from protobuf input
+        * hexstr:       convert hexadecimal string to base64 string
 
         The output is a dict where values use controller units.
 
@@ -214,7 +217,8 @@ class Modifier():
         Supported options:
         * scale:        divides value by scale before unit conversion
         * unit:         postfixes dict key with the unit defined in the Protobuf spec
-        * objtype:      postfixes dict key with triangle brackets (<>)
+        * objtype:      postfixes dict key with object type in triangle brackets (<TempSensorInterface>)
+        * driven        driven links add ',driven' to object type (<TempSensorInterface,driven>)
         * hexed:        converts base64 decoder output to int
         * hexstr:       converts base64 decoder output to hexadecimal string
         * readonly:     ignored: decoding means reading from controller
@@ -289,7 +293,10 @@ class Modifier():
                 ]
 
             if options.objtype:
-                new_key += f'<{self._objtype_name(options.objtype)}>'
+                postfix = self._objtype_name(options.objtype)
+                if options.driven:
+                    postfix += ',driven'
+                new_key += f'<{postfix}>'
 
             if options.hexed:
                 val = [self.int_to_hex(v) for v in val]

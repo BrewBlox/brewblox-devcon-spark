@@ -23,7 +23,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x14\x41\x63tuatorDS2413.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x15\x41\x63tuatorDigital.proto\x1a\x18\x44igitalConstraints.proto\"\x9e\x02\n\x0e\x41\x63tuatorDS2413\x12\x1e\n\x08hwDevice\x18\x01 \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xbb\x02\x92?\x02\x38\x10\x12-\n\x07\x63hannel\x18\x02 \x01(\x0e\x32\x1c.blox.ActuatorDS2413.Channel\x12%\n\x05state\x18\x03 \x01(\x0e\x32\x0e.blox.AD.StateB\x06\x8a\xb5\x18\x02\x30\x01\x12\x0e\n\x06invert\x18\x04 \x01(\x08\x12/\n\rconstrainedBy\x18\x05 \x01(\x0b\x32\x18.blox.DigitalConstraints\x12(\n\x0estrippedFields\x18\x63 \x03(\rB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x01\"\"\n\x07\x43hannel\x12\t\n\x05UNSET\x10\x00\x12\x05\n\x01\x41\x10\x01\x12\x05\n\x01\x42\x10\x02:\x07\x8a\xb5\x18\x03\x18\xbc\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x14\x41\x63tuatorDS2413.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x15\x41\x63tuatorDigital.proto\x1a\x18\x44igitalConstraints.proto\"\xa4\x02\n\x0e\x41\x63tuatorDS2413\x12$\n\x08hwDevice\x18\x01 \x01(\rB\x12\x8a\xb5\x18\x03\x18\xbb\x02\x8a\xb5\x18\x02@\x01\x92?\x02\x38\x10\x12-\n\x07\x63hannel\x18\x02 \x01(\x0e\x32\x1c.blox.ActuatorDS2413.Channel\x12%\n\x05state\x18\x03 \x01(\x0e\x32\x0e.blox.AD.StateB\x06\x8a\xb5\x18\x02\x30\x01\x12\x0e\n\x06invert\x18\x04 \x01(\x08\x12/\n\rconstrainedBy\x18\x05 \x01(\x0b\x32\x18.blox.DigitalConstraints\x12(\n\x0estrippedFields\x18\x63 \x03(\rB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x01\"\"\n\x07\x43hannel\x12\t\n\x05UNSET\x10\x00\x12\x05\n\x01\x41\x10\x01\x12\x05\n\x01\x42\x10\x02:\x07\x8a\xb5\x18\x03\x18\xbc\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,ActuatorDigital__pb2.DESCRIPTOR,DigitalConstraints__pb2.DESCRIPTOR,])
 
@@ -50,8 +50,8 @@ _ACTUATORDS2413_CHANNEL = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=353,
-  serialized_end=387,
+  serialized_start=359,
+  serialized_end=393,
 )
 _sym_db.RegisterEnumDescriptor(_ACTUATORDS2413_CHANNEL)
 
@@ -69,7 +69,7 @@ _ACTUATORDS2413 = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\003\030\273\002\222?\0028\020'), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\003\030\273\002\212\265\030\002@\001\222?\0028\020'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='channel', full_name='blox.ActuatorDS2413.channel', index=1,
       number=2, type=14, cpp_type=8, label=1,
@@ -119,7 +119,7 @@ _ACTUATORDS2413 = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=110,
-  serialized_end=396,
+  serialized_end=402,
 )
 
 _ACTUATORDS2413.fields_by_name['channel'].enum_type = _ACTUATORDS2413_CHANNEL

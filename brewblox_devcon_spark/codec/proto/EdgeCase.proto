@@ -27,5 +27,6 @@ message EdgeCase {
     uint32 deltaV = 6 [(brewblox).unit = DeltaTempPerTime, (brewblox).scale = 256];
     uint32 logged = 7 [(brewblox).logged = true];
     uint32 unLogged = 8;
+    uint32 drivenDevice = 9 [ (brewblox).objtype = DS2413, (brewblox).driven = true, (nanopb).int_size = IS_16 ];
     repeated uint32 strippedFields = 99 [ (brewblox).readonly = true, (nanopb).int_size = IS_16, (nanopb).max_count = 2 ];
 }

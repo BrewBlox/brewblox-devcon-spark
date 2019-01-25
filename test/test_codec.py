@@ -153,3 +153,11 @@ async def test_codec_config(app, client, cdc):
     await asyncio.sleep(0.01)
 
     assert cdc.get_unit_config()['Temp'] == 'degC'
+
+
+async def test_driven_fields(app, client, cdc):
+    enc_id, enc_val = await cdc.encode('EdgeCase', {
+        'drivenDevice': 10,
+    })
+    dec_id, dec_val = await cdc.decode(enc_id, enc_val)
+    assert dec_val['drivenDevice<DS2413,driven>'] == 10

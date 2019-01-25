@@ -8,7 +8,7 @@ package blox;
 message SetpointSensorPair {
   option (brewblox_msg).objtype = SetpointSensorPair;
 
-  uint32 setpointId = 1 [ (brewblox).objtype = SetpointInterface, (nanopb).int_size = IS_16 ];
+  uint32 setpointId = 1 [ (brewblox).objtype = SetpointInterface, (brewblox).driven = true, (nanopb).int_size = IS_16 ];
   uint32 sensorId = 2 [ (brewblox).objtype = TempSensorInterface, (nanopb).int_size = IS_16 ];
 
   sint32 setpointValue = 5 [ (brewblox).logged = true, (brewblox).unit = Temp, (brewblox).scale = 4096, (nanopb).int_size = IS_32, (brewblox).readonly = true ];
