@@ -16,7 +16,7 @@ message ActuatorDS2413 {
     B = 2;
   }
 
-  uint32 hwDevice = 1 [ (brewblox).objtype = DS2413, (nanopb).int_size = IS_16 ];
+  uint32 hwDevice = 1 [ (brewblox).objtype = DS2413, (brewblox).driven = true, (nanopb).int_size = IS_16 ];
   Channel channel = 2;
   AD.State state = 3 [ (brewblox).logged = true ];
   bool invert = 4;
