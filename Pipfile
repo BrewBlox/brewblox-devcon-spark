@@ -7,7 +7,7 @@ name = "pypi"
 
 [packages]
 
-brewblox-service = "*"
+brewblox-service = ">=0.15.0"
 dpath = "*"
 pyserial-asyncio = "*"
 construct = "*"
@@ -25,9 +25,9 @@ pytest-cov = "*"
 pytest-mock = "*"
 pytest-aiohttp = "*"
 asynctest = "*"
-"flake8" = "*"
+"flake8" = "~=3.6.0"
 "autopep8" = "*"
-brewblox-tools = ">=0.5.1"
+brewblox-tools = "*"
 aresponses = "*"
 pytest-sugar = "*"
 

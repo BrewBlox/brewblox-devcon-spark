@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "2d45ef4b6913d1a98921638d485811fa00331d0fd6bd888ad11719833041e33c"
+            "sha256": "ca6f678868a8e17d4e7918015bcbbb820c18a9bac415ddca2a2b63ffd3bbe709"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -88,10 +88,10 @@
         },
         "brewblox-service": {
             "hashes": [
-                "sha256:a30e14c0407af34d3369a05aea3523777f565974e9119be052bdccf50c554544"
+                "sha256:c85262fbc2517b246eca7a2df991ea3e0451ccea680adb012de3d925c6b6db13"
             ],
             "index": "pypi",
-            "version": "==0.14.3"
+            "version": "==0.15.0"
         },
         "cchardet": {
             "hashes": [
