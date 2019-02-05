@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0bMutex.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\">\n\x05Mutex\x12,\n\x15\x64ifferentActuatorWait\x18\x01 \x01(\rB\r\x8a\xb5\x18\x02\x08\x04\x8a\xb5\x18\x03\x10\xe8\x07:\x07\x8a\xb5\x18\x03\x18\xb6\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x0bMutex.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"j\n\x05Mutex\x12,\n\x15\x64ifferentActuatorWait\x18\x01 \x01(\rB\r\x8a\xb5\x18\x02\x08\x04\x8a\xb5\x18\x03\x10\xe8\x07\x12*\n\rwaitRemaining\x18\x02 \x01(\rB\x13\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x02\x08\x04\x8a\xb5\x18\x03\x10\xe8\x07:\x07\x8a\xb5\x18\x03\x18\xb6\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -42,6 +42,13 @@ _MUTEX = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\212\265\030\002\010\004\212\265\030\003\020\350\007'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='waitRemaining', full_name='blox.Mutex.waitRemaining', index=1,
+      number=2, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\002(\001\212\265\030\002\010\004\212\265\030\003\020\350\007'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -55,7 +62,7 @@ _MUTEX = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=51,
-  serialized_end=113,
+  serialized_end=157,
 )
 
 DESCRIPTOR.message_types_by_name['Mutex'] = _MUTEX
@@ -70,5 +77,6 @@ _sym_db.RegisterMessage(Mutex)
 
 
 _MUTEX.fields_by_name['differentActuatorWait']._options = None
+_MUTEX.fields_by_name['waitRemaining']._options = None
 _MUTEX._options = None
 # @@protoc_insertion_point(module_scope)
