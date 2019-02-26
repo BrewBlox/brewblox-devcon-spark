@@ -10,7 +10,7 @@ steps:
     architecture: 'x64'
 
 - script: |
-    source .env
     pip install pipenv
     pipenv sync --dev
-    pytest
+    pipenv run pytest
+  displayName: Run Pytest
