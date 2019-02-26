@@ -1,0 +1,16 @@
+pool:
+  vmImage: 'Ubuntu-16.04'
+
+steps:
+
+- task: UsePythonVersion@0
+  inputs:
+    addToPath: true
+    versionSpec: '3.7'
+    architecture: 'x64'
+
+- script: |
+    source .env
+    pip install pipenv
+    pipenv sync --dev
+    pytest
