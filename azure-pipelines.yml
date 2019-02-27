@@ -9,21 +9,20 @@ steps:
 - bash: |
     export TRAVIS_BRANCH=$(echo $(Build.SourceBranch) | grep -oP "^refs/heads/\K.*")
     export GIT_TAG=$(git describe --tags | grep "^[[:digit:]]*\.[[:digit:]]*\.[[:digit:]]$")
-    echo "##vso[task.setvariable variable=branch]$TRAVIS_BRANCH"
-    echo "##vso[task.setvariable variable=tag]$GIT_TAG"
-  name: setvarStep
+    echo "##vso[task.setvariable variable=travis.branch]$TRAVIS_BRANCH"
+    echo "##vso[task.setvariable variable=git.tag]$GIT_TAG"
   displayName: export build variables
 
 - bash: |
-    echo $(setvarStep.branch)
-    echo $(setvarStep.tag)
+    echo $(travis.branch)
+    echo $(git.tag)
   displayName: check vars
 
 - bash: |
-    echo $(setvarStep.branch)
-    echo $(setvarStep.tag)
+    echo $(travis.branch)
+    echo $(git.tag)
   displayName: check condition
-  condition: and(succeeded(), variables['setvarStep.branch'])
+  condition: and(succeeded(), variables['travis.branch'])
 
 - task: UsePythonVersion@0
   inputs:
