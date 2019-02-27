@@ -27,6 +27,7 @@ steps:
 #   condition: and(succeeded(), )
 
 - script: >
+    pipenv run
     bbt-localbuild
     --arch amd arm
     --branch-tag
