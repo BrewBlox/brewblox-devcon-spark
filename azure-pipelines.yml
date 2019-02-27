@@ -6,16 +6,15 @@ variables:
 
 steps:
 
-- script: |
+- bash: |
+    export TRAVIS_BRANCH=$(echo $(Build.SourceBranch) | grep -oP "^refs/heads/\K.*")
     echo $(Build.SourceBranch)
     echo $(Build.SourceBranchName)
-    echo ${DOCKER_USER}
-    echo ${MY_DOCKER_PASSWORD}
+    echo $(TRAVIS_BRANCH)
+    echo $(DOCKER_USER)
     echo $(DOCKER_PASSWORD)
     echo ${PYPI_USER}
   displayName: debug env names
-  env:
-    MY_DOCKER_PASSWORD: $(DOCKER_PASSWORD)
 
 - task: UsePythonVersion@0
   inputs:
@@ -23,13 +22,13 @@ steps:
     versionSpec: '3.7'
     architecture: 'x64'
 
-- script: |
+- bash: |
     pip install pipenv
     pipenv sync --dev
     pipenv run pytest
   displayName: Run Pytest
 
-# - script: >
+# - bash: >
 #     bbt-localbuild
 #     --arch amd arm
 #     --tags newest-tag $(git describe --tags)
@@ -37,7 +36,7 @@ steps:
 #   displayName: Deploy newest-tag and version tag to Docker Hub on tagged commits
 #   condition: and(succeeded(), )
 
-- script: >
+- bash: >
     pipenv run
     bbt-localbuild
     --arch amd arm
