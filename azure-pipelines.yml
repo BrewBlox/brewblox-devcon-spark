@@ -6,28 +6,29 @@ variables:
 
 steps:
 
+# Exports values as environment values, and as pipeline variables
 - bash: |
     export TRAVIS_BRANCH=$(echo $(Build.SourceBranch) | grep -oP "^refs/heads/\K.*")
     export GIT_TAG=$(git describe --tags | grep "^[[:digit:]]*\.[[:digit:]]*\.[[:digit:]]$")
-    echo "##vso[task.setvariable variable=travis.branch]$TRAVIS_BRANCH"
-    echo "##vso[task.setvariable variable=git.tag]$GIT_TAG"
+    echo "##vso[task.setvariable variable=brewblox.branch]$TRAVIS_BRANCH"
+    echo "##vso[task.setvariable variable=brewblox.tag]$GIT_TAG"
   displayName: export build variables
 
-- bash: |
-    echo $(travis.branch)
-    echo $(git.tag)
-  displayName: check vars
+# - bash: |
+#     echo $(travis.branch)
+#     echo $(git.tag)
+#   displayName: check vars
 
-- bash: |
-    echo $(travis.branch)
-    echo $(git.tag)
-  displayName: check condition
-  condition: and(succeeded(), variables['travis.branch'])
+# - bash: |
+#     echo $(travis.branch)
+#     echo $(git.tag)
+#   displayName: check condition
+#   condition: and(succeeded(), variables['travis.branch'])
 
-- bash: |
-    echo $(git.tag)
-  displayName: check false condition
-  condition: and(succeeded(), variables['git.tag'])
+# - bash: |
+#     echo $(git.tag)
+#   displayName: check false condition
+#   condition: and(succeeded(), variables['git.tag'])
 
 - task: UsePythonVersion@0
   inputs:
@@ -41,19 +42,25 @@ steps:
     pipenv run pytest
   displayName: Run Pytest
 
-# - bash: >
-#     bbt-localbuild
-#     --arch amd arm
-#     --tags newest-tag $(git describe --tags)
-#     --push
-#   displayName: Deploy newest-tag and version tag to Docker Hub on tagged commits
-#   condition: and(succeeded(), )
+- bash: |
+    echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USER) --password-stdin
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+  displayName: Docker login
+
+- bash: >
+    pipenv run
+    bbt-localbuild
+    --arch amd arm
+    --tags newest-tag $(git.tag)
+    --push
+  condition: and(succeeded(), variables['brewblox.tag'])
+  displayName: Deploy newest-tag and version tag to Docker Hub on tagged commits
 
 - bash: >
     pipenv run
     bbt-localbuild
     --arch amd arm
     --branch-tag
+    --push
+  condition: and(succeeded(), variables['brewblox.branch'], not(variables['brewblox.tag']))
   displayName: Deploy branch to Docker Hub on any push to the GitHub repository
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), variables['setvarStep.branch'])
-
