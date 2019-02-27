@@ -1,6 +1,11 @@
 pool:
   vmImage: 'Ubuntu-16.04'
 
+trigger:
+  tags:
+    include:
+      - "*"
+
 variables:
   # Variables imported from brewblox group:
   # DOCKER_USER
