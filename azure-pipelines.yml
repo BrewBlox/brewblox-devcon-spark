@@ -24,6 +24,11 @@ steps:
   displayName: check condition
   condition: and(succeeded(), variables['travis.branch'])
 
+- bash: |
+    echo $(git.tag)
+  displayName: check false condition
+  condition: and(succeeded(), variables['git.tag'])
+
 - task: UsePythonVersion@0
   inputs:
     addToPath: true
