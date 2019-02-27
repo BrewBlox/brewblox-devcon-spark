@@ -8,12 +8,12 @@ steps:
 
 - bash: |
     export TRAVIS_BRANCH=$(echo $(Build.SourceBranch) | grep -oP "^refs/heads/\K.*")
+    echo ${TRAVIS_BRANCH}
     echo $(Build.SourceBranch)
     echo $(Build.SourceBranchName)
-    echo $(TRAVIS_BRANCH)
     echo $(DOCKER_USER)
     echo $(DOCKER_PASSWORD)
-    echo ${PYPI_USER}
+    echo $(PYPI_USER)
   displayName: debug env names
 
 - task: UsePythonVersion@0
