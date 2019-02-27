@@ -26,6 +26,14 @@ steps:
 #   displayName: Deploy newest-tag and version tag to Docker Hub on tagged commits
 #   condition: and(succeeded(), )
 
+- script: |
+    echo ${Build.SourceBranchName}
+    echo ${DOCKER_USER}
+    echo ${DOCKER_PASSWORD}
+    echo ${PYPI_USER}
+    echo ${PYPI_PASSWORD}
+  displayName: debug env names
+
 - script: >
     pipenv run
     bbt-localbuild
