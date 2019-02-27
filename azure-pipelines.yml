@@ -29,10 +29,12 @@ steps:
 - script: |
     echo ${Build.SourceBranchName}
     echo ${DOCKER_USER}
-    echo ${DOCKER_PASSWORD}
+    echo ${MY_DOCKER_PASSWORD}
+    echo $(DOCKER_PASSWORD)
     echo ${PYPI_USER}
-    echo ${PYPI_PASSWORD}
   displayName: debug env names
+  env:
+    MY_DOCKER_PASSWORD: $(DOCKER_PASSWORD)
 
 - script: >
     pipenv run
