@@ -24,6 +24,9 @@ steps:
   displayName: export build variables
 
 - bash: |
+    docker login -u $(DOCKER_USER) -p $(DOCKER_PASSWORD)
+
+- bash: |
     pip install pipenv
     pipenv install --system --dev --deploy
     pytest
