@@ -23,7 +23,7 @@ steps:
     echo $(setvarStep.branch)
     echo $(setvarStep.tag)
   displayName: check condition
-  condition: and(variables['setvarStep.branch'])
+  condition: and(succeeded(), variables['setvarStep.branch'])
 
 - task: UsePythonVersion@0
   inputs:
