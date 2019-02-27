@@ -1,6 +1,9 @@
 pool:
   vmImage: 'Ubuntu-16.04'
 
+variables:
+  - group: brewblox
+
 steps:
 
 - task: UsePythonVersion@0
@@ -14,3 +17,17 @@ steps:
     pipenv sync --dev
     pipenv run pytest
   displayName: Run Pytest
+
+# - script: >
+#     bbt-localbuild
+#     --arch amd arm
+#     --tags newest-tag $(git describe --tags)
+#     --push
+#   displayName: Deploy newest-tag and version tag to Docker Hub on tagged commits
+#   condition: and(succeeded(), )
+
+- script: >
+    bbt-localbuild
+    --arch amd arm
+    --branch-tag
+  displayName: Deploy branch to Docker Hub on any push to the GitHub repository
