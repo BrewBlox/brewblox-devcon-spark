@@ -25,6 +25,7 @@ DNS_DISCOVER_TIMEOUT_S = 20
 DEFAULT_BAUD_RATE = 57600
 RETRY_INTERVAL_S = 2
 DISCOVER_INTERVAL_S = 10
+DISCOVERY_RETRY_COUNT = 5
 
 PortType_ = Any
 MessageCallback_ = Callable[['SparkConduit', str], Awaitable]
@@ -66,6 +67,12 @@ async def create_connection(*args, **kwargs):  # pragma: no cover
     return await asyncio.get_event_loop().create_connection(*args, **kwargs)
 
 
+def exit_discovery():  # pragma: no cover
+    """SystemExit wrapper, to allow mocking"""
+    LOGGER.error('Device discovery failed. Exiting now.')
+    raise SystemExit(1)
+
+
 async def connect_serial(app: web.Application,
                          factory: ProtocolFactory_
                          ) -> Awaitable[ConnectionResult_]:
@@ -91,33 +98,55 @@ async def connect_tcp(app: web.Application,
     return f'{host}:{port}', transport, protocol
 
 
-async def connect_discovered(app: web.Application,
-                             factory: ProtocolFactory_
-                             ) -> Awaitable[ConnectionResult_]:
+async def discover_serial(app: web.Application, factory: ProtocolFactory_) -> Awaitable[ConnectionResult_]:
+    try:
+        return await connect_serial(app, factory)
+    except exceptions.ConnectionImpossible:
+        return None
+
+
+async def discover_tcp(app: web.Application, factory: ProtocolFactory_) -> Awaitable[ConnectionResult_]:
     config = app['config']
     id = config['device_id']
     mdns_host = config['mdns_host']
     mdns_port = config['mdns_port']
-    LOGGER.info(f'Starting device discovery, id={id}...')
-    while True:
-        try:
-            return await connect_serial(app, factory)
-        except exceptions.ConnectionImpossible:
-            pass
+    try:
+        session = http_client.get_client(app).session
+        retv = await asyncio.wait_for(
+            session.post(f'http://{mdns_host}:{mdns_port}/mdns/discover', json={'id': id}),
+            DNS_DISCOVER_TIMEOUT_S
+        )
+        resp = await retv.json()
+        host, port = resp['host'], resp['port']
+        transport, protocol = await create_connection(factory, host, port)
+        return f'{host}:{port}', transport, protocol
 
-        try:
-            session = http_client.get_client(app).session
-            retv = await asyncio.wait_for(
-                session.post(f'http://{mdns_host}:{mdns_port}/mdns/discover', json={'id': id}),
-                DNS_DISCOVER_TIMEOUT_S
-            )
-            resp = await retv.json()
-            host, port = resp['host'], resp['port']
-            transport, protocol = await create_connection(factory, host, port)
-            return f'{host}:{port}', transport, protocol
+    except TimeoutError:  # pragma: no cover
+        return None
 
-        except TimeoutError:  # pragma: no cover
-            await asyncio.sleep(DISCOVER_INTERVAL_S)
+
+async def connect_discovered(app: web.Application,
+                             factory: ProtocolFactory_
+                             ) -> Awaitable[ConnectionResult_]:
+    discovery_type = app['config']['discovery']
+    LOGGER.info(f'Starting device discovery, type={discovery_type}')
+
+    for i in range(DISCOVERY_RETRY_COUNT):
+        if discovery_type in ['all', 'usb']:
+            result = await discover_serial(app, factory)
+            if result:
+                LOGGER.info(f'discovered usb {result[0]}')
+                return result
+
+        if discovery_type in ['all', 'wifi']:
+            result = await discover_tcp(app, factory)
+            if result:
+                LOGGER.info(f'discovered wifi {result[0]}')
+                return result
+
+        await asyncio.sleep(DISCOVER_INTERVAL_S)
+
+    exit_discovery()
 
 
 class SparkConduit(features.ServiceFeature):

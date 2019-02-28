@@ -38,6 +38,12 @@ def create_parser(default_name='spark'):
     group.add_argument('--device-id',
                        help='Spark serial number. Any spark is valid if not set. '
                        'This will be ignored if --device-host is used. [%(default)s]')
+    group.add_argument('--discovery',
+                       help='Enabled types of device discovery. '
+                       '--device-serial and --device-host disable discovery. '
+                       '--device-id specifies which discovered device is valid. ',
+                       choices=['all', 'usb', 'wifi'],
+                       default='all')
     group.add_argument('--list-devices',
                        action='store_true',
                        help='List connected devices and exit. [%(default)s]')
