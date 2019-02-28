@@ -93,6 +93,12 @@ def expected_data():
 
 
 @pytest.fixture
+def interval_mock(mocker):
+    mocker.patch(TESTED + '.DISCOVER_INTERVAL_S', 0.001)
+    mocker.patch(TESTED + '.RETRY_INTERVAL_S', 0.001)
+
+
+@pytest.fixture
 def serial_mock(mocker):
     return mocker.patch(TESTED + '.serial.serial_for_url').return_value
 
@@ -106,9 +112,6 @@ def transport_mock(mocker):
 
 @pytest.fixture
 def tcp_create_connection_mock(app, mocker):
-    app['config']['device_serial'] = None
-    app['config']['device_host'] = 'enterprise'
-
     tcp_transport_mock = Mock()
     tcp_transport_mock.is_closing.return_value = False
 
@@ -126,6 +129,23 @@ def tcp_create_connection_mock(app, mocker):
 
 
 @pytest.fixture
+def serial_create_connection_mock(app, mocker):
+    serial_transport_mock = Mock()
+    serial_transport_mock.is_closing.return_value = False
+
+    def connect(app, factory):
+        protocol = factory()
+        protocol.connection_made(serial_transport_mock)
+        return '/dev/dummy', serial_transport_mock, protocol
+
+    serial_connection_mock = mocker.patch(
+        TESTED + '.connect_serial',
+        CoroutineMock(side_effect=connect)
+    )
+    return serial_connection_mock
+
+
+@pytest.fixture
 def bound_collector(loop):
     return Collector(loop)
 
@@ -137,6 +157,30 @@ def app(app, serial_mock, transport_mock):
     http_client.setup(app)
     scheduler.setup(app)
     communication.setup(app)
+    return app
+
+
+@pytest.fixture
+def discover_all_app(app, discovery_resp, tcp_create_connection_mock, serial_create_connection_mock):
+    app['config']['device_host'] = None
+    app['config']['device_serial'] = None
+    app['config']['discovery'] = 'all'
+    return app
+
+
+@pytest.fixture
+def discover_usb_app(app, tcp_create_connection_mock, serial_create_connection_mock):
+    app['config']['device_host'] = None
+    app['config']['device_serial'] = None
+    app['config']['discovery'] = 'usb'
+    return app
+
+
+@pytest.fixture
+def discover_wifi_app(app, discovery_resp, tcp_create_connection_mock, serial_create_connection_mock):
+    app['config']['device_host'] = None
+    app['config']['device_serial'] = None
+    app['config']['discovery'] = 'wifi'
     return app
 
 
@@ -311,6 +355,8 @@ async def test_detect_device(grep_ports_mock):
 
 
 async def test_tcp_connection(app, client, mocker, tcp_create_connection_mock):
+    app['config']['device_serial'] = None
+    app['config']['device_host'] = 'enterprise'
     spock = communication.SparkConduit(app)
 
     await spock.startup(app)
@@ -320,8 +366,9 @@ async def test_tcp_connection(app, client, mocker, tcp_create_connection_mock):
     assert tcp_create_connection_mock.call_count == 1
 
 
-async def test_connect_error(app, client, mocker, tcp_create_connection_mock):
-    mocker.patch(TESTED + '.RETRY_INTERVAL_S', 0.001)
+async def test_connect_error(app, client, interval_mock, tcp_create_connection_mock):
+    app['config']['device_serial'] = None
+    app['config']['device_host'] = 'enterprise'
     tcp_create_connection_mock.side_effect = ConnectionRefusedError
 
     spock = communication.SparkConduit(app)
@@ -334,8 +381,9 @@ async def test_connect_error(app, client, mocker, tcp_create_connection_mock):
     assert tcp_create_connection_mock.call_count > 1
 
 
-async def test_reconnect(app, client, mocker, tcp_create_connection_mock):
-    mocker.patch(TESTED + '.RETRY_INTERVAL_S', 0.001)
+async def test_reconnect(app, client, interval_mock, tcp_create_connection_mock):
+    app['config']['device_serial'] = None
+    app['config']['device_host'] = 'enterprise'
 
     spock = communication.SparkConduit(app)
     await spock.startup(app)
@@ -352,21 +400,86 @@ async def test_reconnect(app, client, mocker, tcp_create_connection_mock):
     assert tcp_create_connection_mock.call_count == 3
 
 
-async def test_discover(app, client, mocker, tcp_create_connection_mock, discovery_resp):
-    app['config']['device_serial'] = None
-    app['config']['device_host'] = None
-    spock = communication.SparkConduit(app)
+async def test_discover_all(discover_all_app,
+                            client,
+                            mocker,
+                            tcp_create_connection_mock,
+                            serial_create_connection_mock):
+    spock = communication.get_conduit(discover_all_app)
+    await asyncio.sleep(0.1)
 
-    await spock.startup(app)
+    assert serial_create_connection_mock.call_count == 1
+    assert tcp_create_connection_mock.call_count == 0
+    assert spock.connected
+
+    serial_create_connection_mock.side_effect = exceptions.ConnectionImpossible
+
+    spock._protocol.connection_lost(None)
     await asyncio.sleep(0.1)
 
     assert spock.connected
+    assert serial_create_connection_mock.call_count == 2
     assert tcp_create_connection_mock.call_count == 1
 
 
-async def test_discover_repeat(app, client, mocker, tcp_create_connection_mock, discovery_resp):
+async def test_discover_wifi(discover_wifi_app,
+                             client,
+                             tcp_create_connection_mock,
+                             serial_create_connection_mock):
+    spock = communication.get_conduit(discover_wifi_app)
+    await asyncio.sleep(0.1)
+
+    assert serial_create_connection_mock.call_count == 0
+    assert tcp_create_connection_mock.call_count == 1
+    assert spock.connected
+
+
+async def test_discover_usb(discover_usb_app,
+                            client,
+                            mocker,
+                            tcp_create_connection_mock,
+                            serial_create_connection_mock):
+    spock = communication.get_conduit(discover_usb_app)
+    await asyncio.sleep(0.1)
+
+    assert spock.connected
+    assert tcp_create_connection_mock.call_count == 0
+    assert serial_create_connection_mock.call_count == 1
+
+    mocker.patch(TESTED + '.discover_serial', CoroutineMock(return_value=None))
+    spock._protocol.connection_lost(None)
+    await asyncio.sleep(0.1)
+
+    assert not spock.connected
+    assert tcp_create_connection_mock.call_count == 0
+    assert serial_create_connection_mock.call_count == 1
+
+
+async def test_discover_retry(discover_all_app,
+                              client,
+                              mocker,
+                              tcp_create_connection_mock,
+                              serial_create_connection_mock,
+                              interval_mock):
+    ser_mock = mocker.patch(TESTED + '.discover_serial', CoroutineMock(return_value=None))
+    tcp_mock = mocker.patch(TESTED + '.discover_tcp', CoroutineMock(return_value=None))
+    exit_discovery_mock = mocker.patch(TESTED + '.exit_discovery')
+
+    spock = communication.SparkConduit(discover_all_app)
+
+    await spock.startup(discover_all_app)
+    await asyncio.sleep(0.1)
+
+    assert not spock.connected
+    assert ser_mock.call_count > 1
+    assert tcp_mock.call_count > 1
+    assert exit_discovery_mock.call_count >= 1
+
+
+async def test_mdns_repeat(app, client, mocker, tcp_create_connection_mock, discovery_resp):
     app['config']['device_serial'] = None
     app['config']['device_host'] = None
+    app['config']['discovery'] = 'wifi'
     app['config']['mdns_host'] = 'mdns_error_host'
     mocker.patch(TESTED + '.DISCOVER_INTERVAL_S', 0.001)
 
