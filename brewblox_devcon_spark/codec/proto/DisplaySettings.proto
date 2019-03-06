@@ -20,6 +20,12 @@ message DisplaySettings {
     };
   }
 
+  enum TemperatureUnit {
+    CELSIUS = 0;
+    FAHRENHEIT = 1;
+  };
+
   repeated Widget widgets = 1 [ (nanopb).max_count = 6 ];
   string name = 2 [ (nanopb).max_size = 40 ];
+  TemperatureUnit tempUnit = 3;
 }
