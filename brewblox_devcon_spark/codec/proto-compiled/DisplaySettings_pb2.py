@@ -21,11 +21,33 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x15\x44isplaySettings.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xdb\x02\n\x0f\x44isplaySettings\x12\x34\n\x07widgets\x18\x01 \x03(\x0b\x32\x1c.blox.DisplaySettings.WidgetB\x05\x92?\x02\x10\x06\x12\x13\n\x04name\x18\x02 \x01(\tB\x05\x92?\x02\x08(\x1a\xf3\x01\n\x06Widget\x12\x12\n\x03pos\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08\x12\x1f\n\x05\x63olor\x18\x02 \x01(\x0c\x42\x10\x92?\x02\x08\x03\x92?\x02x\x01\x8a\xb5\x18\x02\x38\x01\x12\x13\n\x04name\x18\x03 \x01(\tB\x05\x92?\x02\x08\x10\x12!\n\ntempSensor\x18\n \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x02\x92?\x02\x38\x10H\x00\x12*\n\x12setpointSensorPair\x18\x0b \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xaf\x02\x92?\x02\x38\x10H\x00\x12%\n\x0e\x61\x63tuatorAnalog\x18\x0c \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x05\x92?\x02\x38\x10H\x00\x12\x1b\n\x03pid\x18\x0e \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xb0\x02\x92?\x02\x38\x10H\x00\x42\x0c\n\nWidgetType:\x07\x8a\xb5\x18\x03\x18\xba\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x15\x44isplaySettings.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xc4\x03\n\x0f\x44isplaySettings\x12\x34\n\x07widgets\x18\x01 \x03(\x0b\x32\x1c.blox.DisplaySettings.WidgetB\x05\x92?\x02\x10\x06\x12\x13\n\x04name\x18\x02 \x01(\tB\x05\x92?\x02\x08(\x12\x37\n\x08tempUnit\x18\x03 \x01(\x0e\x32%.blox.DisplaySettings.TemperatureUnit\x1a\xf3\x01\n\x06Widget\x12\x12\n\x03pos\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08\x12\x1f\n\x05\x63olor\x18\x02 \x01(\x0c\x42\x10\x92?\x02\x08\x03\x92?\x02x\x01\x8a\xb5\x18\x02\x38\x01\x12\x13\n\x04name\x18\x03 \x01(\tB\x05\x92?\x02\x08\x10\x12!\n\ntempSensor\x18\n \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x02\x92?\x02\x38\x10H\x00\x12*\n\x12setpointSensorPair\x18\x0b \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xaf\x02\x92?\x02\x38\x10H\x00\x12%\n\x0e\x61\x63tuatorAnalog\x18\x0c \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x05\x92?\x02\x38\x10H\x00\x12\x1b\n\x03pid\x18\x0e \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xb0\x02\x92?\x02\x38\x10H\x00\x42\x0c\n\nWidgetType\".\n\x0fTemperatureUnit\x12\x0b\n\x07\x43\x45LSIUS\x10\x00\x12\x0e\n\nFAHRENHEIT\x10\x01:\x07\x8a\xb5\x18\x03\x18\xba\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
 
+
+_DISPLAYSETTINGS_TEMPERATUREUNIT = _descriptor.EnumDescriptor(
+  name='TemperatureUnit',
+  full_name='blox.DisplaySettings.TemperatureUnit',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='CELSIUS', index=0, number=0,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='FAHRENHEIT', index=1, number=1,
+      serialized_options=None,
+      type=None),
+  ],
+  containing_type=None,
+  serialized_options=None,
+  serialized_start=459,
+  serialized_end=505,
+)
+_sym_db.RegisterEnumDescriptor(_DISPLAYSETTINGS_TEMPERATUREUNIT)
 
 
 _DISPLAYSETTINGS_WIDGET = _descriptor.Descriptor(
@@ -99,8 +121,8 @@ _DISPLAYSETTINGS_WIDGET = _descriptor.Descriptor(
       name='WidgetType', full_name='blox.DisplaySettings.Widget.WidgetType',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=157,
-  serialized_end=400,
+  serialized_start=214,
+  serialized_end=457,
 )
 
 _DISPLAYSETTINGS = _descriptor.Descriptor(
@@ -124,11 +146,19 @@ _DISPLAYSETTINGS = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\222?\002\010('), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='tempUnit', full_name='blox.DisplaySettings.tempUnit', index=2,
+      number=3, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[_DISPLAYSETTINGS_WIDGET, ],
   enum_types=[
+    _DISPLAYSETTINGS_TEMPERATUREUNIT,
   ],
   serialized_options=_b('\212\265\030\003\030\272\002'),
   is_extendable=False,
@@ -137,7 +167,7 @@ _DISPLAYSETTINGS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=62,
-  serialized_end=409,
+  serialized_end=514,
 )
 
 _DISPLAYSETTINGS_WIDGET.containing_type = _DISPLAYSETTINGS
@@ -154,6 +184,8 @@ _DISPLAYSETTINGS_WIDGET.oneofs_by_name['WidgetType'].fields.append(
   _DISPLAYSETTINGS_WIDGET.fields_by_name['pid'])
 _DISPLAYSETTINGS_WIDGET.fields_by_name['pid'].containing_oneof = _DISPLAYSETTINGS_WIDGET.oneofs_by_name['WidgetType']
 _DISPLAYSETTINGS.fields_by_name['widgets'].message_type = _DISPLAYSETTINGS_WIDGET
+_DISPLAYSETTINGS.fields_by_name['tempUnit'].enum_type = _DISPLAYSETTINGS_TEMPERATUREUNIT
+_DISPLAYSETTINGS_TEMPERATUREUNIT.containing_type = _DISPLAYSETTINGS
 DESCRIPTOR.message_types_by_name['DisplaySettings'] = _DISPLAYSETTINGS
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
