@@ -25,4 +25,6 @@ message SysInfo {
   string version = 2 [ (brewblox).readonly = true, (nanopb).max_size = 20 ];
   Platform platform = 3 [ (brewblox).readonly = true ];
   Hardware hardware = 4 [ (brewblox).readonly = true ];
+  uint32 voltage5 = 5 [ (brewblox).readonly = true, (nanopb).int_size = IS_16, (brewblox).scale = 410 ];  // 2^12 / 4 (R-divider) / 2.5 (ref)
+  uint32 voltage12 = 6 [ (brewblox).readonly = true, (nanopb).int_size = IS_16, (brewblox).scale = 149 ]; // 2^12 / 11 (R-divider) / 2.5 (ref)
 }
