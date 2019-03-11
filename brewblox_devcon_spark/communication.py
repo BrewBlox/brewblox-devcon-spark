@@ -36,13 +36,9 @@ DeviceMatch = namedtuple('DeviceMatch', ['id', 'desc', 'hwid'])
 
 KNOWN_DEVICES = {
     DeviceMatch(
-        id='Spark Core',
-        desc=r'Spark Core.*Arduino.*',
-        hwid=r'USB VID\:PID=1D50\:607D.*'),
-    DeviceMatch(
         id='Particle Photon',
         desc=r'.*Photon.*',
-        hwid=r'USB VID\:PID=2d04\:c006.*'),
+        hwid=r'USB VID\:PID=2B04\:C006.*'),
     DeviceMatch(
         id='Particle P1',
         desc=r'.*P1.*',
