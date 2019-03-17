@@ -1,0 +1,3 @@
+[submodule "brewblox_devcon_spark/codec/proto"]
+	path = brewblox_devcon_spark/codec/proto
+	url = https://github.com/BrewBlox/brewblox-proto
