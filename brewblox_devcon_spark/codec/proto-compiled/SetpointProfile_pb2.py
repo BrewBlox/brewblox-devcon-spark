@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x15SetpointProfile.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xb7\x01\n\x0fSetpointProfile\x12+\n\x06points\x18\x01 \x03(\x0b\x32\x1b.blox.SetpointProfile.Point\x12\x0f\n\x07\x65nabled\x18\x03 \x01(\x08\x12\x1d\n\x08targetId\x18\x04 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x01\x92?\x02\x38\x10\x1a>\n\x05Point\x12\x0c\n\x04time\x18\x01 \x01(\r\x12\'\n\x0btemperature\x18\x02 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 :\x07\x8a\xb5\x18\x03\x18\xb7\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x15SetpointProfile.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xb8\x01\n\x0fSetpointProfile\x12+\n\x06points\x18\x01 \x03(\x0b\x32\x1b.blox.SetpointProfile.Point\x12\x0f\n\x07\x65nabled\x18\x03 \x01(\x08\x12\x1e\n\x08targetId\x18\x04 \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xaf\x02\x92?\x02\x38\x10\x1a>\n\x05Point\x12\x0c\n\x04time\x18\x01 \x01(\r\x12\'\n\x0btemperature\x18\x02 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 :\x07\x8a\xb5\x18\x03\x18\xb7\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -61,8 +61,8 @@ _SETPOINTPROFILE_POINT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=174,
-  serialized_end=236,
+  serialized_start=175,
+  serialized_end=237,
 )
 
 _SETPOINTPROFILE = _descriptor.Descriptor(
@@ -92,7 +92,7 @@ _SETPOINTPROFILE = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002\030\001\222?\0028\020'), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\003\030\257\002\222?\0028\020'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -106,7 +106,7 @@ _SETPOINTPROFILE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=62,
-  serialized_end=245,
+  serialized_end=246,
 )
 
 _SETPOINTPROFILE_POINT.containing_type = _SETPOINTPROFILE
