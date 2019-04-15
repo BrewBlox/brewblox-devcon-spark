@@ -6,8 +6,6 @@ import asyncio
 from typing import Awaitable
 
 from aiohttp import web
-from brewblox_service import brewblox_logger
-
 from brewblox_devcon_spark import (datastore, device, exceptions, status,
                                    twinkeydict)
 from brewblox_devcon_spark.api import (API_DATA_KEY, API_ID_KEY,
@@ -17,6 +15,7 @@ from brewblox_devcon_spark.device import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
                                           OBJECT_ID_KEY, OBJECT_ID_LIST_KEY,
                                           OBJECT_INTERFACE_KEY,
                                           OBJECT_LIST_KEY, OBJECT_TYPE_KEY)
+from brewblox_service import brewblox_logger
 
 SYNC_WAIT_TIMEOUT_S = 20
 
@@ -481,7 +480,7 @@ async def all_compatible(request: web.Request) -> web.Response:
         name: interface
         schema:
             type: string
-            example: "SetpointInterface"
+            example: "ProcessValueInterface"
             required: true
     """
     return web.json_response(

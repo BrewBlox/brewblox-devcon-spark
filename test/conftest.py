@@ -7,9 +7,8 @@ Any fixtures declared here are available to all test functions in this directory
 import logging
 
 import pytest
-from brewblox_service import brewblox_logger, features, service
-
 from brewblox_devcon_spark.__main__ import create_parser
+from brewblox_service import brewblox_logger, features, service
 
 LOGGER = brewblox_logger(__name__)
 
@@ -125,34 +124,8 @@ def spark_blocks():
                         'time': 1540376849,
                         'temperature[degC]': 100
                     }
-                ]
-            }
-        },
-        {
-            'id': 'setpoint-1',
-            'groups': [0],
-            'type': 'SetpointSimple',
-            'data': {
-                'setpoint': 21,
-                'enabled': True
-            }
-        },
-        {
-            'id': 'setpoint-2',
-            'groups': [0],
-            'type': 'SetpointSimple',
-            'data': {
-                'setpoint': 50,
-                'enabled': False
-            }
-        },
-        {
-            'id': 'setpoint-inactive',
-            'groups': [],
-            'type': 'SetpointSimple',
-            'data': {
-                'setpoint': 3,
-                'enabled': True
+                ],
+                'targetId<>': 'setpoint-sensor-pair-2'
             }
         },
         {
@@ -180,9 +153,9 @@ def spark_blocks():
             'type': 'SetpointSensorPair',
             'data': {
                 'sensorId<>': 'sensor-1',
-                'setpointId<>': 'setpoint-1',
-                'setpointValue': 0,
-                'sensorValue': 0
+                'setting': 0,
+                'value': 0,
+                'settingEnabled': True
             }
         },
         {
@@ -191,9 +164,9 @@ def spark_blocks():
             'type': 'SetpointSensorPair',
             'data': {
                 'sensorId<>': 0,
-                'setpointId<>': 0,
-                'setpointValue': 0,
-                'sensorValue': 0
+                'setting': 0,
+                'value': 0,
+                'settingEnabled': True
             }
         },
         {
