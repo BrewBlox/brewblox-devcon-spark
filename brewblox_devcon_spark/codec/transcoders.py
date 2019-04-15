@@ -7,10 +7,6 @@ from brewblox_devcon_spark.codec import _path_extension  # isort:skip
 from abc import ABC, abstractclassmethod, abstractmethod
 from typing import Iterable, Union
 
-from brewblox_service import brewblox_logger
-from google.protobuf import json_format
-from google.protobuf.message import Message
-
 import ActuatorAnalogMock_pb2
 import ActuatorDS2413_pb2
 import ActuatorOffset_pb2
@@ -26,7 +22,6 @@ import OneWireBus_pb2
 import Pid_pb2
 import SetpointProfile_pb2
 import SetpointSensorPair_pb2
-import SetpointSimple_pb2
 import SysInfo_pb2
 import TempSensorMock_pb2
 import TempSensorOneWire_pb2
@@ -34,6 +29,9 @@ import Ticks_pb2
 import TouchSettings_pb2
 import WiFiSettings_pb2
 from brewblox_devcon_spark.codec.modifiers import Modifier
+from brewblox_service import brewblox_logger
+from google.protobuf import json_format
+from google.protobuf.message import Message
 
 ObjType_ = Union[int, str]
 Decoded_ = dict
@@ -227,7 +225,6 @@ _TRANSCODERS = [
         Pid_pb2.Pid,
         SetpointProfile_pb2.SetpointProfile,
         SetpointSensorPair_pb2.SetpointSensorPair,
-        SetpointSimple_pb2.SetpointSimple,
         SysInfo_pb2.SysInfo,
         TempSensorMock_pb2.TempSensorMock,
         TempSensorOneWire_pb2.TempSensorOneWire,

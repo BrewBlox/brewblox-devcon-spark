@@ -3,13 +3,12 @@ Tests brewblox_devcon_spark.device
 """
 
 import pytest
-from brewblox_service import features, scheduler
-
 from brewblox_devcon_spark import (commander, commander_sim, datastore, device,
                                    status)
 from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.device import (GENERATED_ID_PREFIX, OBJECT_DATA_KEY,
                                           OBJECT_ID_KEY, OBJECT_LIST_KEY)
+from brewblox_service import features, scheduler
 
 TESTED = device.__name__
 
@@ -24,7 +23,7 @@ def generate_obj():
             'value[delta_degC]': 123,
             'connected': True
         },
-        'link<SetpointInterface>': 30,
+        'link<ActuatorAnalogInterface>': 30,
         'additionalLinks': [
             {'connection<TempSensorInterface>': 1},
             {'connection<TempSensorInterface>': 2},
@@ -128,8 +127,8 @@ async def test_resolve_links(app, client, store):
         return {
             OBJECT_DATA_KEY: {
                 'testval': 1,
-                'input<SetpointInterface>': 'eeney',
-                'output<SetpointInterface>': 'miney',
+                'input<ProcessValueInterface>': 'eeney',
+                'output<ProcessValueInterface>': 'miney',
                 'nested': {
                     'flappy<>': 'moo',
                     'meaning_of_life': 42,
@@ -147,8 +146,8 @@ async def test_resolve_links(app, client, store):
     assert output == {
         OBJECT_DATA_KEY: {
             'testval': 1,
-            'input<SetpointInterface>': 9001,
-            'output<SetpointInterface>': 9002,
+            'input<ProcessValueInterface>': 9001,
+            'output<ProcessValueInterface>': 9002,
             'nested': {
                 'flappy<>': 9003,
                 'meaning_of_life': 42,

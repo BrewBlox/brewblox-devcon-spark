@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x15SetpointProfile.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xf3\x01\n\x0fSetpointProfile\x12+\n\x06points\x18\x01 \x03(\x0b\x32\x1b.blox.SetpointProfile.Point\x12/\n\x07setting\x18\x02 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x0f\n\x07\x65nabled\x18\x03 \x01(\x08\x12(\n\x0estrippedFields\x18\x63 \x03(\rB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x01\x1a>\n\x05Point\x12\x0c\n\x04time\x18\x01 \x01(\r\x12\'\n\x0btemperature\x18\x02 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 :\x07\x8a\xb5\x18\x03\x18\xb7\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x15SetpointProfile.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xb8\x01\n\x0fSetpointProfile\x12+\n\x06points\x18\x01 \x03(\x0b\x32\x1b.blox.SetpointProfile.Point\x12\x0f\n\x07\x65nabled\x18\x03 \x01(\x08\x12\x1e\n\x08targetId\x18\x04 \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xaf\x02\x92?\x02\x38\x10\x1a>\n\x05Point\x12\x0c\n\x04time\x18\x01 \x01(\r\x12\'\n\x0btemperature\x18\x02 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 :\x07\x8a\xb5\x18\x03\x18\xb7\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -61,8 +61,8 @@ _SETPOINTPROFILE_POINT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=234,
-  serialized_end=296,
+  serialized_start=175,
+  serialized_end=237,
 )
 
 _SETPOINTPROFILE = _descriptor.Descriptor(
@@ -80,26 +80,19 @@ _SETPOINTPROFILE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='setting', full_name='blox.SetpointProfile.setting', index=1,
-      number=2, type=17, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\0020\001\212\265\030\002(\001\212\265\030\002\010\001\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='enabled', full_name='blox.SetpointProfile.enabled', index=2,
+      name='enabled', full_name='blox.SetpointProfile.enabled', index=1,
       number=3, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='strippedFields', full_name='blox.SetpointProfile.strippedFields', index=3,
-      number=99, type=13, cpp_type=3, label=3,
-      has_default_value=False, default_value=[],
+      name='targetId', full_name='blox.SetpointProfile.targetId', index=2,
+      number=4, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002(\001\222?\0028\020\222?\002\020\001'), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\003\030\257\002\222?\0028\020'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -113,7 +106,7 @@ _SETPOINTPROFILE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=62,
-  serialized_end=305,
+  serialized_end=246,
 )
 
 _SETPOINTPROFILE_POINT.containing_type = _SETPOINTPROFILE
@@ -138,7 +131,6 @@ _sym_db.RegisterMessage(SetpointProfile.Point)
 
 
 _SETPOINTPROFILE_POINT.fields_by_name['temperature']._options = None
-_SETPOINTPROFILE.fields_by_name['setting']._options = None
-_SETPOINTPROFILE.fields_by_name['strippedFields']._options = None
+_SETPOINTPROFILE.fields_by_name['targetId']._options = None
 _SETPOINTPROFILE._options = None
 # @@protoc_insertion_point(module_scope)
