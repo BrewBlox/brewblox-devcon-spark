@@ -161,3 +161,25 @@ async def test_driven_fields(app, client, cdc):
     })
     dec_id, dec_val = await cdc.decode(enc_id, enc_val)
     assert dec_val['drivenDevice<DS2413,driven>'] == 10
+
+
+async def test_point_presence(app, client, cdc):
+    enc_id_present, enc_val_present = await cdc.encode('SetpointProfile', {
+        'points': [
+            {'time': 0, 'temperature[degC]': 0},
+            {'time': 10, 'temperature[degC]': 10},
+        ]
+    })
+
+    enc_id_absent, enc_val_absent = await cdc.encode('SetpointProfile', {
+        'points': [
+            {'time': 10, 'temperature[degC]': 10},
+        ]
+    })
+
+    assert enc_val_present != enc_val_absent
+
+    dec_id_present, dec_val_present = await cdc.decode(enc_id_present, enc_val_present)
+    dec_id_absent, dec_val_absent = await cdc.decode(enc_id_absent, enc_val_absent)
+
+    assert dec_val_present['points'][0]['time'] == 0
