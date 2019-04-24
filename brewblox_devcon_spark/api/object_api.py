@@ -176,11 +176,11 @@ class ObjectApi():
         ]
         blocks_data = await self.all_stored()
         return {
-            'store': store_data,
             'blocks': [
                 block for block in blocks_data
                 if block[API_NID_KEY] != datastore.SYSTIME_NID
-            ]
+            ],
+            'store': store_data,
         }
 
     async def import_objects(self, exported: dict) -> Awaitable[list]:
@@ -563,32 +563,7 @@ async def import_objects(request: web.Request) -> web.Response:
     -
         in: body
         name: body
-        description: new objects
+        description: exported data
         required: true
-        schema:
-            type: array
-            items:
-                type: object
-                properties:
-                    id:
-                        type: string
-                        example: temp_sensor_1
-                    nid:
-                        type: int
-                        example: 105
-                    groups:
-                        type: array
-                        example: [0, 3, 4]
-                    type:
-                        type: string
-                        example: TempSensorOneWire
-                    data:
-                        type: object
-                        example:
-                            {
-                                "address": "FF",
-                                "offset[delta_degF]": 20,
-                                "value": 200
-                            }
     """
     return web.json_response(await ObjectApi(request.app).import_objects(await request.json()))
