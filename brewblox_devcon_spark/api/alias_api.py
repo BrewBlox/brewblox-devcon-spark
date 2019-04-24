@@ -11,7 +11,7 @@ from aiohttp import web
 from brewblox_service import brewblox_logger
 
 from brewblox_devcon_spark import datastore, exceptions
-from brewblox_devcon_spark.api import API_ID_KEY, utils
+from brewblox_devcon_spark.api import API_SID_KEY, utils
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -127,8 +127,8 @@ async def alias_update(request: web.Request) -> web.Response:
     """
     with utils.collecting_input():
         args = (
-            request.match_info[API_ID_KEY],
-            (await request.json())[API_ID_KEY],
+            request.match_info[API_SID_KEY],
+            (await request.json())[API_SID_KEY],
         )
     return web.json_response(
         await AliasApi(request.app).update(*args)

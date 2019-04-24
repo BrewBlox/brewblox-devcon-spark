@@ -8,6 +8,7 @@ import traceback
 from aiohttp import web, web_exceptions
 from brewblox_service import brewblox_logger
 
+from brewblox_devcon_spark.api.utils import strex
 from brewblox_devcon_spark.exceptions import BrewBloxException
 
 LOGGER = brewblox_logger(__name__)
@@ -19,7 +20,7 @@ def setup(app: web.Application):
 
 def error_response(request: web.Request, ex: Exception, status: int) -> web.Response:
     app = request.app
-    message = f'{type(ex).__name__}({str(ex)})'
+    message = strex(ex)
     debug = app['config']['debug']
     LOGGER.error(f'[{request.url}] => {message}', exc_info=debug)
 

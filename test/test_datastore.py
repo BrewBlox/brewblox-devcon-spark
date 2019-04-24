@@ -16,7 +16,7 @@ TESTED = datastore.__name__
 
 def read_objects():
     return datastore.SYS_OBJECTS[:1] + [
-        {'keys': [f'key{i}', i+datastore.OBJECT_ID_START], 'data': {}}
+        {'keys': [f'key{i}', i+datastore.OBJECT_NID_START], 'data': {}}
         for i in range(10)
     ]
 

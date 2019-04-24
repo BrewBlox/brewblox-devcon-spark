@@ -20,7 +20,7 @@ from brewblox_service import brewblox_logger, events, scheduler
 
 from brewblox_devcon_spark import device, status
 from brewblox_devcon_spark.api import utils
-from brewblox_devcon_spark.device import OBJECT_DATA_KEY, OBJECT_ID_KEY
+from brewblox_devcon_spark.device import OBJECT_DATA_KEY, OBJECT_SID_KEY
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -31,14 +31,14 @@ def setup(app: web.Application):
 
 
 async def _receive(app: web.Application,
-                   service_id: str,
+                   sid: str,
                    translations: dict,
                    subscription: events.EventSubscription,
                    routing: str,
                    incoming: dict
                    ):
     ctrl = device.get_controller(app)
-    obj = await ctrl.read_object({OBJECT_ID_KEY: service_id})
+    obj = await ctrl.read_object({OBJECT_SID_KEY: sid})
     existing = obj[OBJECT_DATA_KEY]
 
     LOGGER.debug(f'existing={existing}\nincoming={incoming}')
@@ -56,7 +56,7 @@ async def _receive(app: web.Application,
 
 
 async def _broadcast(app: web.Application,
-                     service_id: str,
+                     sid: str,
                      exchange: str,
                      routing: str,
                      interval: int
@@ -70,7 +70,7 @@ async def _broadcast(app: web.Application,
         try:
             await spark_status.connected.wait()
             await asyncio.sleep(interval)
-            obj = await ctrl.read_object({OBJECT_ID_KEY: service_id})
+            obj = await ctrl.read_object({OBJECT_SID_KEY: sid})
 
             await publisher.publish(
                 exchange=exchange,
@@ -87,7 +87,7 @@ async def _broadcast(app: web.Application,
 
         except Exception as ex:
             if last_broadcast_ok:
-                warnings.warn(f'Remote publisher [{routing}] encountered an error: {type(ex).__name__}({ex})')
+                warnings.warn(f'Remote publisher [{routing}] encountered an error: {utils.strex(ex)}')
                 last_broadcast_ok = False
 
 
@@ -96,27 +96,27 @@ class RemoteApi():
     def __init__(self, app: web.Application):
         self.app = app
 
-    async def add_slave(self, service_id: str, key: str, translations: dict):
+    async def add_slave(self, sid: str, key: str, translations: dict):
         events.get_listener(self.app).subscribe(
             exchange_name=self.app['config']['sync_exchange'],
             routing=key,
-            on_message=partial(_receive, self.app, service_id, translations)
+            on_message=partial(_receive, self.app, sid, translations)
         )
-        LOGGER.info(f'Added remote subscription. key = {key}, local object = {service_id}')
+        LOGGER.info(f'Added remote subscription. key = {key}, local object = {sid}')
 
-    async def add_master(self, service_id: str, interval: int):
+    async def add_master(self, sid: str, interval: int):
         key = '.'.join([
             self.app['config']['name'],
-            service_id
+            sid
         ])
         await scheduler.create_task(self.app,
                                     _broadcast(self.app,
-                                               service_id,
+                                               sid,
                                                self.app['config']['sync_exchange'],
                                                key,
                                                interval
                                                ))
-        LOGGER.info(f'Added remote publisher. key = {key}, local object = {service_id}')
+        LOGGER.info(f'Added remote publisher. key = {key}, local object = {sid}')
         return {'key': key}
 
 

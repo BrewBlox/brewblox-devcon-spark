@@ -3,6 +3,7 @@ Tests brewblox_devcon_spark.api
 """
 
 import asyncio
+from unittest.mock import ANY
 
 import pytest
 from brewblox_service import scheduler
@@ -10,24 +11,25 @@ from brewblox_service import scheduler
 from brewblox_devcon_spark import (commander_sim, datastore, device,
                                    exceptions, seeder, status)
 from brewblox_devcon_spark.api import (alias_api, codec_api, debug_api,
-                                       error_response, object_api,
-                                       savepoint_api, sse_api, system_api)
-from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
-                                                  API_TYPE_KEY, GROUP_LIST_KEY,
+                                       error_response, object_api, sse_api,
+                                       system_api)
+from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_NID_KEY,
+                                                  API_SID_KEY, API_TYPE_KEY,
+                                                  GROUP_LIST_KEY,
                                                   OBJECT_DATA_KEY,
-                                                  OBJECT_ID_KEY,
+                                                  OBJECT_SID_KEY,
                                                   OBJECT_TYPE_KEY)
 from brewblox_devcon_spark.codec import codec
 
 
 def ret_ids(objects):
-    return {obj[API_ID_KEY] for obj in objects}
+    return {obj[API_SID_KEY] for obj in objects}
 
 
 @pytest.fixture
 def object_args():
     return {
-        API_ID_KEY: 'testobj',
+        API_SID_KEY: 'testobj',
         GROUP_LIST_KEY: [0],
         API_TYPE_KEY: 'TempSensorOneWire',
         API_DATA_KEY: {
@@ -40,7 +42,7 @@ def object_args():
 
 def multi_objects(ids, args):
     return [{
-        API_ID_KEY: id,
+        API_SID_KEY: id,
         GROUP_LIST_KEY: args[GROUP_LIST_KEY],
         API_TYPE_KEY: args[API_TYPE_KEY],
         API_DATA_KEY: args[API_DATA_KEY]
@@ -65,7 +67,6 @@ async def app(app, loop):
     system_api.setup(app)
     codec_api.setup(app)
     sse_api.setup(app)
-    savepoint_api.setup(app)
 
     return app
 
@@ -86,7 +87,7 @@ async def test_do(app, client):
     command = {
         'command': 'create_object',
         'data': {
-            OBJECT_ID_KEY: 0,
+            OBJECT_SID_KEY: 0,
             OBJECT_TYPE_KEY: 'TempSensorOneWire',
             GROUP_LIST_KEY: [1, 2, 3],
             OBJECT_DATA_KEY: {
@@ -123,15 +124,15 @@ async def test_production_do(production_app, client):
 async def test_create(app, client, object_args):
     # Create object
     retd = await response(client.post('/objects', json=object_args))
-    assert retd[API_ID_KEY] == object_args[API_ID_KEY]
+    assert retd[API_SID_KEY] == object_args[API_SID_KEY]
 
     # Conflict error: name already taken
     retv = await client.post('/objects', json=object_args)
     assert retv.status == 409
 
-    object_args[API_ID_KEY] = 'other_obj'
+    object_args[API_SID_KEY] = 'other_obj'
     retd = await response(client.post('/objects', json=object_args))
-    assert retd[API_ID_KEY] == 'other_obj'
+    assert retd[API_SID_KEY] == 'other_obj'
 
 
 async def test_invalid_input(app, client, object_args):
@@ -163,7 +164,7 @@ async def test_read(app, client, object_args):
     await client.post('/objects', json=object_args)
 
     retd = await response(client.get('/objects/testobj'))
-    assert retd[API_ID_KEY] == 'testobj'
+    assert retd[API_SID_KEY] == 'testobj'
 
 
 async def test_read_performance(app, client, object_args):
@@ -183,7 +184,7 @@ async def test_delete(app, client, object_args):
     await client.post('/objects', json=object_args)
 
     retd = await response(client.delete('/objects/testobj'))
-    assert retd[API_ID_KEY] == 'testobj'
+    assert retd[API_SID_KEY] == 'testobj'
 
     retv = await client.get('/objects/testobj')
     assert retv.status == 400
@@ -198,7 +199,7 @@ async def test_stored_objects(app, client, object_args):
     assert len(retd) == 1 + base_num
 
     retd = await response(client.get('/stored_objects/testobj'))
-    assert retd[API_ID_KEY] == 'testobj'
+    assert retd[API_SID_KEY] == 'testobj'
 
     retv = await client.get('/stored_objects/flappy')
     assert retv.status == 400
@@ -208,7 +209,7 @@ async def test_clear(app, client, object_args):
     n_sys_obj = len(await response(client.get('/objects')))
 
     for i in range(5):
-        object_args[API_ID_KEY] = f'id{i}'
+        object_args[API_SID_KEY] = f'id{i}'
         await client.post('/objects', json=object_args)
 
     assert len(await response(client.get('/objects'))) == 5 + n_sys_obj
@@ -216,7 +217,7 @@ async def test_clear(app, client, object_args):
     assert len(await response(client.get('/objects'))) == n_sys_obj
 
 
-@pytest.mark.parametrize('input_id', [
+@pytest.mark.parametrize('sid', [
     'flabber',
     'FLABBER',
     'f',
@@ -224,11 +225,11 @@ async def test_clear(app, client, object_args):
     'l1214235234231',
     'yes!'*50,
 ])
-async def test_validate_service_id(input_id):
-    alias_api.validate_service_id(input_id)
+async def test_validate_service_id(sid):
+    alias_api.validate_service_id(sid)
 
 
-@pytest.mark.parametrize('input_id', [
+@pytest.mark.parametrize('sid', [
     '1',
     '1adsjlfdsf',
     'pancakes[delicious]',
@@ -240,9 +241,9 @@ async def test_validate_service_id(input_id):
     'ActiveGroups',
     'Actuator-0',
 ])
-async def test_validate_service_id_error(input_id):
+async def test_validate_service_id_error(sid):
     with pytest.raises(exceptions.InvalidId):
-        alias_api.validate_service_id(input_id)
+        alias_api.validate_service_id(sid)
 
 
 async def test_alias_create(app, client):
@@ -284,7 +285,8 @@ async def test_inactive_objects(app, client, object_args):
 
     retd = await response(client.get('/objects'))
     assert retd[-1] == {
-        API_ID_KEY: object_args[API_ID_KEY],
+        API_SID_KEY: object_args[API_SID_KEY],
+        API_NID_KEY: ANY,
         GROUP_LIST_KEY: [1],
         API_TYPE_KEY: 'InactiveObject',
         API_DATA_KEY: {
@@ -308,15 +310,15 @@ async def test_codec_api(app, client, object_args):
     # We'd expect to get the same value in delta_celsius as in degK
 
     await client.put('/codec/units', json={'Temp': 'degF'})
-    retd = await response(client.get(f'/objects/{object_args[API_ID_KEY]}'))
+    retd = await response(client.get(f'/objects/{object_args[API_SID_KEY]}'))
     assert retd[API_DATA_KEY]['offset[delta_degF]'] == pytest.approx(degF_offset, 0.1)
 
     await client.put('/codec/units', json={'Temp': 'degK'})
-    retd = await response(client.get(f'/objects/{object_args[API_ID_KEY]}'))
+    retd = await response(client.get(f'/objects/{object_args[API_SID_KEY]}'))
     assert retd[API_DATA_KEY]['offset[degK]'] == pytest.approx(degC_offset, 0.1)
 
     await client.put('/codec/units', json={})
-    retd = await response(client.get(f'/objects/{object_args[API_ID_KEY]}'))
+    retd = await response(client.get(f'/objects/{object_args[API_SID_KEY]}'))
     assert retd[API_DATA_KEY]['offset[delta_degC]'] == pytest.approx(degC_offset, 0.1)
 
 
@@ -331,38 +333,54 @@ async def test_discover_objects(app, client):
     assert resp == ['DisplaySettings']
 
 
-async def test_reset_objects(app, client, spark_blocks):
+async def test_export_objects(app, client, object_args):
+    retd = await response(client.get('/export_objects'))
+    base_num = len(retd['blocks'])
+
+    await client.post('/objects', json=object_args)
+    retd = await response(client.get('/export_objects'))
+    assert len(retd['blocks']) == 1 + base_num
+
+
+async def test_import_objects(app, client, spark_blocks):
     # reverse the set, to ensure some blocks are written with invalid references
-    resp = await response(client.post('/reset_objects', json=spark_blocks[::-1]))
+    data = {
+        'store': [{'keys': [block[API_SID_KEY], block[API_NID_KEY]], 'data': dict()} for block in spark_blocks],
+        'blocks': spark_blocks[::-1],
+    }
+    resp = await response(client.post('/import_objects', json=data))
+    assert resp == []
+
+    resp = await response(client.get('/objects'))
     ids = ret_ids(spark_blocks)
     resp_ids = ret_ids(resp)
     assert set(ids).issubset(resp_ids)
     assert 'ActiveGroups' in resp_ids
 
-    # Fails during retry
-    spark_blocks.append({
-        API_ID_KEY: 'derpface',
-        GROUP_LIST_KEY: [0],
-        API_TYPE_KEY: 'SetpointSensorPair',
-        API_DATA_KEY: {'sensorId<>': 'MysteryMan'}
-    })
-    retv = await client.post('/reset_objects', json=spark_blocks)
-    assert retv.status == 400
+    # add renamed type to store data
+    data['store'].append({'keys': ['renamed_wifi', datastore.WIFI_SETTINGS_NID], 'data': dict()})
 
-    # Fails immediately, and will not be retried
-    spark_blocks.append({
-        API_ID_KEY: 'derpface2',
+    # Fails, is skipped, and generates an error
+    data['blocks'].append({
+        API_SID_KEY: 'derpface',
+        API_NID_KEY: 500,
         GROUP_LIST_KEY: [0],
         API_TYPE_KEY: 'INVALID',
         API_DATA_KEY: {}
     })
-    retv = await client.post('/reset_objects', json=spark_blocks)
-    assert retv.status == 400
+    retv = await response(client.post('/import_objects', json=data))
+    assert len(retv) == 1
+    assert 'derpface' in retv[0]
+
+    resp = await response(client.get('/objects'))
+    resp_ids = ret_ids(resp)
+    assert 'renamed_wifi' in resp_ids
+    assert 'derpface' not in resp_ids
 
 
 async def test_logged_objects(app, client):
     args = {
-        API_ID_KEY: 'edgey',
+        API_SID_KEY: 'edgey',
         GROUP_LIST_KEY: [0],
         API_TYPE_KEY: 'EdgeCase',
         API_DATA_KEY: {
@@ -377,7 +395,7 @@ async def test_logged_objects(app, client):
 
     # list_objects returns everything
     obj = listed[-1]
-    assert args[API_ID_KEY] == obj[API_ID_KEY]
+    assert args[API_SID_KEY] == obj[API_SID_KEY]
     obj_data = obj[API_DATA_KEY]
     assert obj_data is not None
     assert 'logged' in obj_data
@@ -385,7 +403,7 @@ async def test_logged_objects(app, client):
 
     # log_objects strips all keys that are not explicitly marked as logged
     obj = logged[-1]
-    assert args[API_ID_KEY] == obj[API_ID_KEY]
+    assert args[API_SID_KEY] == obj[API_SID_KEY]
     obj_data = obj[API_DATA_KEY]
     assert obj_data is not None
     assert 'logged' in obj_data
@@ -406,35 +424,3 @@ async def test_system_status(app, client):
         'connected': False,
         'synchronized': False,
     }
-
-
-async def test_savepoints(app, client, object_args):
-    await response(client.post('/objects', json=object_args))
-    objects = await response(client.get('/objects'))
-    ids = ret_ids(objects)
-
-    resp1 = await response(client.put('/savepoints/save-1'))
-    resp2 = await response(client.put('/savepoints/save-1'))
-    resp3 = await response(client.put('/savepoints/save-2'))
-    assert ret_ids(resp1) == ids
-    assert ret_ids(resp2) == ids
-    assert ret_ids(resp3) == ids
-
-    assert await response(client.get('/savepoints')) == ['save-1', 'save-2']
-    await response(client.delete('/savepoints/save-2'))
-    assert await response(client.get('/savepoints')) == ['save-1']
-
-    object_args[API_ID_KEY] += '(2)'
-    await response(client.post('/objects', json=object_args))
-
-    resp = await response(client.get('/savepoints/save-1'))
-    assert ret_ids(resp) == ids
-
-    resp = await response(client.get('/objects'))
-    assert ret_ids(resp) > ids
-
-    resp = await response(client.post('/savepoints/save-1'))
-    assert ret_ids(resp) == ids
-
-    new_objects = await response(client.get('/objects'))
-    assert ret_ids(new_objects) == ids

@@ -15,19 +15,19 @@ from brewblox_service import brewblox_logger, features
 from brewblox_devcon_spark import commander, commands, exceptions, status
 from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.commands import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
-                                            OBJECT_ID_KEY, OBJECT_ID_LIST_KEY,
+                                            OBJECT_ID_LIST_KEY,
                                             OBJECT_INTERFACE_KEY,
-                                            OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
-                                            SYSTEM_GROUP)
-from brewblox_devcon_spark.datastore import (DISPLAY_SETTINGS_ID,
-                                             GROUPS_CONTROLLER_ID,
-                                             ONEWIREBUS_CONTROLLER_ID,
-                                             SYSINFO_CONTROLLER_ID,
-                                             TIME_CONTROLLER_ID,
-                                             TOUCH_SETTINGS_ID,
-                                             WIFI_SETTINGS_ID)
+                                            OBJECT_LIST_KEY, OBJECT_NID_KEY,
+                                            OBJECT_TYPE_KEY, SYSTEM_GROUP)
+from brewblox_devcon_spark.datastore import (DISPLAY_SETTINGS_NID,
+                                             GROUPS_NID,
+                                             OBJECT_NID_START,
+                                             ONEWIREBUS_NID,
+                                             SYSINFO_NID,
+                                             SYSTIME_NID,
+                                             TOUCH_SETTINGS_NID,
+                                             WIFI_SETTINGS_NID)
 
-OBJECT_ID_START = 100
 LOGGER = brewblox_logger(__name__)
 
 
@@ -51,7 +51,7 @@ class SimulationResponder():
     async def startup(self, app: web.Application):
         self._app = app
         self._start_time = datetime.now()
-        self._id_counter = count(start=OBJECT_ID_START)
+        self._id_counter = count(start=OBJECT_NID_START)
         self._codec = features.get(app, key='sim_codec')
 
         self._command_funcs = {
@@ -74,24 +74,24 @@ class SimulationResponder():
         }
 
         self._objects = {
-            GROUPS_CONTROLLER_ID: {
-                OBJECT_ID_KEY: GROUPS_CONTROLLER_ID,
+            GROUPS_NID: {
+                OBJECT_NID_KEY: GROUPS_NID,
                 OBJECT_TYPE_KEY: 'Groups',
                 GROUP_LIST_KEY: [SYSTEM_GROUP],
                 OBJECT_DATA_KEY: {
                     'active': [0, SYSTEM_GROUP]
                 },
             },
-            SYSINFO_CONTROLLER_ID: {
-                OBJECT_ID_KEY: SYSINFO_CONTROLLER_ID,
+            SYSINFO_NID: {
+                OBJECT_NID_KEY: SYSINFO_NID,
                 OBJECT_TYPE_KEY: 'SysInfo',
                 GROUP_LIST_KEY: [SYSTEM_GROUP],
                 OBJECT_DATA_KEY: {
                     'deviceId': 'FACADE'
                 },
             },
-            TIME_CONTROLLER_ID: {
-                OBJECT_ID_KEY: TIME_CONTROLLER_ID,
+            SYSTIME_NID: {
+                OBJECT_NID_KEY: SYSTIME_NID,
                 OBJECT_TYPE_KEY: 'Ticks',
                 GROUP_LIST_KEY: [SYSTEM_GROUP],
                 OBJECT_DATA_KEY: {
@@ -99,26 +99,26 @@ class SimulationResponder():
                     'secondsSinceEpoch': 0,
                 },
             },
-            ONEWIREBUS_CONTROLLER_ID: {
-                OBJECT_ID_KEY: ONEWIREBUS_CONTROLLER_ID,
+            ONEWIREBUS_NID: {
+                OBJECT_NID_KEY: ONEWIREBUS_NID,
                 OBJECT_TYPE_KEY: 'OneWireBus',
                 GROUP_LIST_KEY: [SYSTEM_GROUP],
                 OBJECT_DATA_KEY: {},
             },
-            WIFI_SETTINGS_ID: {
-                OBJECT_ID_KEY: WIFI_SETTINGS_ID,
+            WIFI_SETTINGS_NID: {
+                OBJECT_NID_KEY: WIFI_SETTINGS_NID,
                 OBJECT_TYPE_KEY: 'WiFiSettings',
                 GROUP_LIST_KEY: [SYSTEM_GROUP],
                 OBJECT_DATA_KEY: {},
             },
-            TOUCH_SETTINGS_ID: {
-                OBJECT_ID_KEY: TOUCH_SETTINGS_ID,
+            TOUCH_SETTINGS_NID: {
+                OBJECT_NID_KEY: TOUCH_SETTINGS_NID,
                 OBJECT_TYPE_KEY: 'TouchSettings',
                 GROUP_LIST_KEY: [SYSTEM_GROUP],
                 OBJECT_DATA_KEY: {},
             },
-            DISPLAY_SETTINGS_ID: {
-                OBJECT_ID_KEY: DISPLAY_SETTINGS_ID,
+            DISPLAY_SETTINGS_NID: {
+                OBJECT_NID_KEY: DISPLAY_SETTINGS_NID,
                 OBJECT_TYPE_KEY: 'DisplaySettings',
                 GROUP_LIST_KEY: [SYSTEM_GROUP],
                 OBJECT_DATA_KEY: {},
@@ -181,14 +181,14 @@ class SimulationResponder():
         mod = self._modifiers.get(obj[OBJECT_TYPE_KEY], lambda o: o)
         mod(obj)
 
-        if id < OBJECT_ID_START:
+        if id < OBJECT_NID_START:
             return obj  # system object
 
         if set(obj[GROUP_LIST_KEY]) & set(self._active_groups):
             return obj
         else:
             return {
-                OBJECT_ID_KEY: obj[OBJECT_ID_KEY],
+                OBJECT_NID_KEY: obj[OBJECT_NID_KEY],
                 OBJECT_TYPE_KEY: 'InactiveObject',
                 GROUP_LIST_KEY: obj[GROUP_LIST_KEY],
                 OBJECT_DATA_KEY: {'actualType': obj[OBJECT_TYPE_KEY]},
@@ -196,28 +196,28 @@ class SimulationResponder():
 
     async def _read_object(self, request):
         try:
-            return self._get_obj(request[OBJECT_ID_KEY])
+            return self._get_obj(request[OBJECT_NID_KEY])
         except KeyError:
             raise exceptions.CommandException(f'{request} not found')
 
     async def _write_object(self, request):
-        key = request[OBJECT_ID_KEY]
+        key = request[OBJECT_NID_KEY]
         if key not in self._objects:
             raise exceptions.CommandException(f'{key} not found')
-        elif SYSTEM_GROUP in request[GROUP_LIST_KEY] and key >= OBJECT_ID_START:
+        elif SYSTEM_GROUP in request[GROUP_LIST_KEY] and key >= OBJECT_NID_START:
             raise exceptions.CommandException(f'Group {SYSTEM_GROUP} is reserved for system objects')
 
         self._objects[key] = request
         return self._get_obj(key)
 
     async def _create_object(self, request):
-        key = request.get(OBJECT_ID_KEY)
+        key = request.get(OBJECT_NID_KEY)
         obj = request
 
         if not key:
             key = next(self._id_counter)
-            obj[OBJECT_ID_KEY] = key
-        elif key < OBJECT_ID_START:
+            obj[OBJECT_NID_KEY] = key
+        elif key < OBJECT_NID_START:
             raise exceptions.CommandException(f'Id {key} is reserved for system objects')
         elif key in self._objects:
             raise exceptions.CommandException(f'Object {key} already exists')
@@ -229,7 +229,7 @@ class SimulationResponder():
         return obj
 
     async def _delete_object(self, request):
-        key = request[OBJECT_ID_KEY]
+        key = request[OBJECT_NID_KEY]
         del self._objects[key]
 
     async def _list_objects(self, request):
@@ -239,7 +239,7 @@ class SimulationResponder():
 
     async def _read_stored_object(self, request):
         try:
-            return self._objects[request[OBJECT_ID_KEY]]
+            return self._objects[request[OBJECT_NID_KEY]]
         except KeyError:
             raise exceptions.CommandException(f'{request} not found')
 
@@ -250,19 +250,19 @@ class SimulationResponder():
 
     async def _list_compatible_objects(self, request):
         return {
-            OBJECT_ID_LIST_KEY: [{OBJECT_ID_KEY: k} for k in self._objects.keys()]
+            OBJECT_ID_LIST_KEY: [{OBJECT_NID_KEY: k} for k in self._objects.keys()]
         }
 
     async def _discover_objects(self, request):
         return {
             OBJECT_LIST_KEY: [{
-                OBJECT_ID_KEY: DISPLAY_SETTINGS_ID,
+                OBJECT_NID_KEY: DISPLAY_SETTINGS_NID,
                 OBJECT_INTERFACE_KEY: 'DisplaySettings',
             }]
         }
 
     async def _clear_objects(self, request):
-        self._objects = {k: v for k, v in self._objects.items() if k < OBJECT_ID_START}
+        self._objects = {k: v for k, v in self._objects.items() if k < OBJECT_NID_START}
 
     async def _factory_reset(self, request):
         await self.startup(self._app)

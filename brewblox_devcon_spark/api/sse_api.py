@@ -14,6 +14,7 @@ from brewblox_service import brewblox_logger, features, scheduler
 
 from brewblox_devcon_spark import status
 from brewblox_devcon_spark.api.object_api import ObjectApi
+from brewblox_devcon_spark.api.utils import strex
 
 PUBLISH_INTERVAL_S = 5
 
@@ -52,7 +53,7 @@ class SSEPublisher(features.ServiceFeature):
             raise
 
         except Exception as ex:
-            LOGGER.info(f'Initial subscription push failed: {type(ex).__name__}({ex})')
+            LOGGER.info(f'Initial subscription push failed: {strex(ex)}')
 
     async def startup(self, app: web.Application):
         await self.shutdown(app)
@@ -74,7 +75,7 @@ class SSEPublisher(features.ServiceFeature):
             spark_status: status.SparkStatus = status.get_status(self.app)
 
         except Exception as ex:
-            LOGGER.error(f'{type(ex).__name__}: {str(ex)}', exc_info=True)
+            LOGGER.error(strex(ex), exc_info=True)
             raise ex
 
         while True:
@@ -95,7 +96,7 @@ class SSEPublisher(features.ServiceFeature):
 
             except Exception as ex:
                 self._current = None
-                warnings.warn(f'{self} encountered an error: {type(ex).__name__}({ex})')
+                warnings.warn(f'{self} encountered an error: {strex(ex)}')
 
 
 def _cors_headers(request):
