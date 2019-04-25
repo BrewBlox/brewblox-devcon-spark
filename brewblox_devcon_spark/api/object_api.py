@@ -6,7 +6,7 @@ import asyncio
 from typing import Awaitable
 
 from aiohttp import web
-from brewblox_service import brewblox_logger
+from brewblox_service import brewblox_logger, strex
 
 from brewblox_devcon_spark import (datastore, device, exceptions, status,
                                    twinkeydict)
@@ -223,7 +223,7 @@ class ObjectApi():
             try:
                 await func(obj_sid, obj_groups, obj_type, obj_data)
             except Exception as ex:
-                message = f'failed to import [{obj_sid},{obj_nid},{obj_type}] with {utils.strex(ex)}'
+                message = f'failed to import [{obj_sid},{obj_nid},{obj_type}] with {strex(ex)}'
                 error_log.append(message)
                 LOGGER.error(message)
 

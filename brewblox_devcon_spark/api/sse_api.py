@@ -10,11 +10,10 @@ from typing import Set
 
 from aiohttp import hdrs, web
 from aiohttp_sse import sse_response
-from brewblox_service import brewblox_logger, features, scheduler
+from brewblox_service import brewblox_logger, features, scheduler, strex
 
 from brewblox_devcon_spark import status
 from brewblox_devcon_spark.api.object_api import ObjectApi
-from brewblox_devcon_spark.api.utils import strex
 
 PUBLISH_INTERVAL_S = 5
 
