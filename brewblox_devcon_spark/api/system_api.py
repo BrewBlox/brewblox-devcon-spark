@@ -10,7 +10,7 @@ from brewblox_service import brewblox_logger
 
 from brewblox_devcon_spark import status
 from brewblox_devcon_spark.api import API_DATA_KEY, object_api
-from brewblox_devcon_spark.datastore import GROUPS_CONTROLLER_ID
+from brewblox_devcon_spark.datastore import GROUPS_NID
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -26,12 +26,12 @@ class SystemApi():
         self._obj_api: object_api.ObjectApi = object_api.ObjectApi(app)
 
     async def read_groups(self) -> List[int]:
-        groups = await self._obj_api.read(GROUPS_CONTROLLER_ID)
+        groups = await self._obj_api.read(GROUPS_NID)
         return groups[API_DATA_KEY]['active']
 
     async def write_groups(self, groups: List[int]) -> List[int]:
         group_obj = await self._obj_api.write(
-            input_id=GROUPS_CONTROLLER_ID,
+            sid=GROUPS_NID,
             groups=[],
             input_type='Groups',
             input_data={'active': groups}

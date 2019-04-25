@@ -14,3 +14,7 @@ def collecting_input():
         yield
     except KeyError as ex:
         raise exceptions.MissingInput(ex)
+
+
+def strex(ex):
+    return f'{type(ex).__name__}({str(ex)})'

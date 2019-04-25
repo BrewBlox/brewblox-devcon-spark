@@ -13,7 +13,7 @@ TESTED = commands.__name__
 @pytest.fixture
 def object_args():
     return dict(
-        object_id=42,
+        object_nid=42,
         groups=[1],
         object_type=6,
         object_data=bytes([0x0F]*10))

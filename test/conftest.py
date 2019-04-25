@@ -7,8 +7,9 @@ Any fixtures declared here are available to all test functions in this directory
 import logging
 
 import pytest
-from brewblox_devcon_spark.__main__ import create_parser
 from brewblox_service import brewblox_logger, features, service
+
+from brewblox_devcon_spark.__main__ import create_parser
 
 LOGGER = brewblox_logger(__name__)
 
@@ -94,12 +95,14 @@ def spark_blocks():
     return [
         {
             'id': 'balancer-1',
+            'nid': 200,
             'groups': [0],
             'type': 'Balancer',
             'data': {}
         },
         {
             'id': 'mutex-1',
+            'nid': 300,
             'groups': [0],
             'type': 'Mutex',
             'data': {
@@ -108,6 +111,7 @@ def spark_blocks():
         },
         {
             'id': 'group-1',
+            'nid': 201,
             'groups': [0],
             'type': 'SetpointProfile',
             'data': {
@@ -130,6 +134,7 @@ def spark_blocks():
         },
         {
             'id': 'sensor-1',
+            'nid': 202,
             'groups': [0],
             'type': 'TempSensorMock',
             'data': {
@@ -139,6 +144,7 @@ def spark_blocks():
         },
         {
             'id': 'sensor-onewire-1',
+            'nid': 203,
             'groups': [0],
             'type': 'TempSensorOneWire',
             'data': {
@@ -149,6 +155,7 @@ def spark_blocks():
         },
         {
             'id': 'setpoint-sensor-pair-1',
+            'nid': 204,
             'groups': [0],
             'type': 'SetpointSensorPair',
             'data': {
@@ -160,6 +167,7 @@ def spark_blocks():
         },
         {
             'id': 'setpoint-sensor-pair-2',
+            'nid': 205,
             'groups': [0],
             'type': 'SetpointSensorPair',
             'data': {
@@ -171,6 +179,7 @@ def spark_blocks():
         },
         {
             'id': 'actuator-1',
+            'nid': 206,
             'groups': [0],
             'type': 'ActuatorAnalogMock',
             'data': {
@@ -184,6 +193,7 @@ def spark_blocks():
         },
         {
             'id': 'actuator-pwm-1',
+            'nid': 207,
             'groups': [0],
             'type': 'ActuatorPwm',
             'data': {
@@ -208,6 +218,7 @@ def spark_blocks():
         },
         {
             'id': 'actuator-ds2413-1',
+            'nid': 208,
             'groups': [0],
             'type': 'ActuatorDS2413',
             'data': {
@@ -223,6 +234,7 @@ def spark_blocks():
         },
         {
             'id': 'offset-1',
+            'nid': 209,
             'groups': [0],
             'type': 'ActuatorOffset',
             'data': {
@@ -232,6 +244,7 @@ def spark_blocks():
         },
         {
             'id': 'pid-1',
+            'nid': 210,
             'groups': [0],
             'type': 'Pid',
             'data': {
@@ -248,6 +261,7 @@ def spark_blocks():
         },
         {
             'id': 'DisplaySettings',
+            'nid': 7,
             'groups': [7],
             'type': 'DisplaySettings',
             'data': {
@@ -282,6 +296,7 @@ def spark_blocks():
         },
         {
             'id': 'ds2413-hw-1',
+            'nid': 211,
             'groups': [0, 1, 2, 3, 4, 5, 6],
             'type': 'DS2413',
             'data': {
@@ -290,6 +305,7 @@ def spark_blocks():
         },
         {
             'id': 'ow-act',
+            'nid': 212,
             'groups': [0, 1, 2, 3, 4, 5, 6],
             'type': 'ActuatorDS2413',
             'data': {

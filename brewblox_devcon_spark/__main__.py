@@ -11,7 +11,7 @@ from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
                                    device, http_client, seeder, status)
 from brewblox_devcon_spark.api import (alias_api, codec_api, debug_api,
                                        error_response, object_api, remote_api,
-                                       savepoint_api, sse_api, system_api)
+                                       sse_api, system_api)
 from brewblox_devcon_spark.codec import codec
 
 LOGGER = brewblox_logger(__name__)
@@ -113,7 +113,6 @@ def main():
     remote_api.setup(app)
     codec_api.setup(app)
     sse_api.setup(app)
-    savepoint_api.setup(app)
 
     seeder.setup(app)
 

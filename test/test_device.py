@@ -3,12 +3,15 @@ Tests brewblox_devcon_spark.device
 """
 
 import pytest
-from brewblox_devcon_spark import (commander, commander_sim, datastore, device,
-                                   status)
-from brewblox_devcon_spark.codec import codec
-from brewblox_devcon_spark.device import (GENERATED_ID_PREFIX, OBJECT_DATA_KEY,
-                                          OBJECT_ID_KEY, OBJECT_LIST_KEY)
 from brewblox_service import features, scheduler
+
+from brewblox_devcon_spark import (commander, commander_sim, datastore, device,
+                                   exceptions, status)
+from brewblox_devcon_spark.codec import codec
+from brewblox_devcon_spark.device import (GENERATED_ID_PREFIX, GROUP_LIST_KEY,
+                                          OBJECT_DATA_KEY, OBJECT_LIST_KEY,
+                                          OBJECT_NID_KEY, OBJECT_SID_KEY,
+                                          OBJECT_TYPE_KEY)
 
 TESTED = device.__name__
 
@@ -65,10 +68,10 @@ async def test_transcoding(app, client, cmder, store, ctrl, mocker):
     enc_type, enc_data = await c.encode(obj_type, obj_data)
 
     object_args = {
-        'object_id': 'alias',
-        'groups': [1],
-        'object_type': obj_type,
-        'object_data': obj_data
+        OBJECT_SID_KEY: 'alias',
+        GROUP_LIST_KEY: [1],
+        OBJECT_TYPE_KEY: obj_type,
+        OBJECT_DATA_KEY: obj_data
     }
 
     store['alias', 300] = dict()
@@ -77,7 +80,7 @@ async def test_transcoding(app, client, cmder, store, ctrl, mocker):
     decode_spy = mocker.spy(c, 'decode')
 
     retval = await ctrl.create_object(object_args)
-    assert retval['object_data']['settings']['address'] == 'ff'.rjust(16, '0')
+    assert retval[OBJECT_DATA_KEY]['settings']['address'] == 'ff'.rjust(16, '0')
 
     encode_spy.assert_any_call(obj_type, obj_data, None)
     decode_spy.assert_any_call(enc_type, enc_data, None)
@@ -91,31 +94,37 @@ async def test_list_transcoding(app, client, cmder, store, ctrl, mocker):
         store[id, 300+i] = dict()
 
         await ctrl.create_object({
-            'object_id': id,
-            'groups': [0],
-            'object_type': obj_type,
-            'object_data': obj_data
+            OBJECT_SID_KEY: id,
+            GROUP_LIST_KEY: [0],
+            OBJECT_TYPE_KEY: obj_type,
+            OBJECT_DATA_KEY: obj_data
         })
 
     retval = await ctrl.list_stored_objects()
-    assert ids.issubset({obj[OBJECT_ID_KEY] for obj in retval[OBJECT_LIST_KEY]})
+    assert ids.issubset({obj[OBJECT_SID_KEY] for obj in retval[OBJECT_LIST_KEY]})
 
 
-async def test_resolve_id(app, client, store, mocker, ctrl):
+async def test_convert_id(app, client, store, mocker, ctrl):
     store['alias', 123] = dict()
     store['4-2', 24] = dict()
 
     resolver = device.SparkResolver(app)
 
-    assert await resolver.resolve_controller_id({OBJECT_ID_KEY: 'alias'}) == {OBJECT_ID_KEY: 123}
-    assert await resolver.resolve_controller_id({OBJECT_ID_KEY: 840}) == {OBJECT_ID_KEY: 840}
+    assert await resolver.convert_sid_nid({OBJECT_SID_KEY: 'alias'}) == {OBJECT_NID_KEY: 123}
+    assert await resolver.convert_sid_nid({OBJECT_NID_KEY: 840}) == {OBJECT_NID_KEY: 840}
+    assert await resolver.convert_sid_nid({OBJECT_SID_KEY: 840}) == {OBJECT_NID_KEY: 840}
+    assert await resolver.convert_sid_nid({}) == {}
 
-    assert await resolver.resolve_service_id({OBJECT_ID_KEY: 123}) == {OBJECT_ID_KEY: 'alias'}
-    assert await resolver.resolve_service_id({OBJECT_ID_KEY: 'testey'}) == {OBJECT_ID_KEY: 'testey'}
+    assert await resolver.add_sid({OBJECT_NID_KEY: 123}) == {OBJECT_NID_KEY: 123, OBJECT_SID_KEY: 'alias'}
+    assert await resolver.add_sid({OBJECT_SID_KEY: 'testey'}) == {OBJECT_SID_KEY: 'testey'}
+    assert await resolver.add_sid({}) == {}
+
+    with pytest.raises(exceptions.DecodeException):
+        await resolver.add_sid({OBJECT_NID_KEY: 'testey'})
 
     # Service ID not found: create placeholder
-    generated = await resolver.resolve_service_id({OBJECT_ID_KEY: 456})
-    assert generated[OBJECT_ID_KEY].startswith(GENERATED_ID_PREFIX)
+    generated = await resolver.add_sid({OBJECT_NID_KEY: 456})
+    assert generated[OBJECT_SID_KEY].startswith(GENERATED_ID_PREFIX)
 
 
 async def test_resolve_links(app, client, store):
@@ -141,7 +150,7 @@ async def test_resolve_links(app, client, store):
         }
 
     resolver = device.SparkResolver(app)
-    output = await resolver.resolve_controller_links(create_data())
+    output = await resolver.convert_links_nid(create_data())
 
     assert output == {
         OBJECT_DATA_KEY: {
@@ -159,5 +168,5 @@ async def test_resolve_links(app, client, store):
         },
     }
 
-    output = await resolver.resolve_service_links(output)
+    output = await resolver.convert_links_sid(output)
     assert output == create_data()

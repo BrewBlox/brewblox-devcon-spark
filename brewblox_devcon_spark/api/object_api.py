@@ -6,16 +6,18 @@ import asyncio
 from typing import Awaitable
 
 from aiohttp import web
+from brewblox_service import brewblox_logger
+
 from brewblox_devcon_spark import (datastore, device, exceptions, status,
                                    twinkeydict)
-from brewblox_devcon_spark.api import (API_DATA_KEY, API_ID_KEY,
-                                       API_INTERFACE_KEY, API_TYPE_KEY,
+from brewblox_devcon_spark.api import (API_DATA_KEY, API_INTERFACE_KEY,
+                                       API_NID_KEY, API_SID_KEY, API_TYPE_KEY,
                                        alias_api, utils)
 from brewblox_devcon_spark.device import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
-                                          OBJECT_ID_KEY, OBJECT_ID_LIST_KEY,
+                                          OBJECT_ID_LIST_KEY,
                                           OBJECT_INTERFACE_KEY,
-                                          OBJECT_LIST_KEY, OBJECT_TYPE_KEY)
-from brewblox_service import brewblox_logger
+                                          OBJECT_LIST_KEY, OBJECT_NID_KEY,
+                                          OBJECT_SID_KEY, OBJECT_TYPE_KEY)
 
 SYNC_WAIT_TIMEOUT_S = 20
 
@@ -37,7 +39,8 @@ class ObjectApi():
 
     def _as_api_object(self, obj: dict):
         return {
-            API_ID_KEY: obj[OBJECT_ID_KEY],
+            API_SID_KEY: obj[OBJECT_SID_KEY],
+            API_NID_KEY: obj[OBJECT_NID_KEY],
             GROUP_LIST_KEY: obj[GROUP_LIST_KEY],
             API_TYPE_KEY: obj[OBJECT_TYPE_KEY],
             API_DATA_KEY: obj[OBJECT_DATA_KEY]
@@ -48,7 +51,7 @@ class ObjectApi():
             await asyncio.wait_for(self._status.synchronized.wait(), SYNC_WAIT_TIMEOUT_S)
 
     async def create(self,
-                     input_id: str,
+                     sid: str,
                      groups: list,
                      input_type: int,
                      input_data: dict
@@ -57,11 +60,11 @@ class ObjectApi():
         Creates a new object in the datastore and controller.
         """
         await self.wait_for_sync()
-        alias_api.validate_service_id(input_id)
+        alias_api.validate_service_id(sid)
 
         try:
             placeholder = object()
-            self._store[input_id, placeholder] = 'PLACEHOLDER'
+            self._store[sid, placeholder] = 'PLACEHOLDER'
         except twinkeydict.TwinKeyError as ex:
             raise exceptions.ExistingId(ex) from ex
 
@@ -73,26 +76,26 @@ class ObjectApi():
             })
 
         finally:
-            del self._store[input_id, placeholder]
+            del self._store[sid, placeholder]
 
-        self._store.rename((created[OBJECT_ID_KEY], None), (input_id, None))
+        self._store.rename((created[OBJECT_SID_KEY], None), (sid, None))
 
         return {
-            API_ID_KEY: input_id,
+            API_SID_KEY: sid,
             GROUP_LIST_KEY: created[GROUP_LIST_KEY],
             API_TYPE_KEY: created[OBJECT_TYPE_KEY],
             API_DATA_KEY: created[OBJECT_DATA_KEY],
         }
 
-    async def read(self, input_id: str) -> Awaitable[dict]:
+    async def read(self, sid: str) -> Awaitable[dict]:
         await self.wait_for_sync()
         response = await self._ctrl.read_object({
-            OBJECT_ID_KEY: input_id
+            OBJECT_SID_KEY: sid
         })
         return self._as_api_object(response)
 
     async def write(self,
-                    input_id: str,
+                    sid: str,
                     groups: list,
                     input_type: str,
                     input_data: dict
@@ -102,26 +105,26 @@ class ObjectApi():
         """
         await self.wait_for_sync()
         response = await self._ctrl.write_object({
-            OBJECT_ID_KEY: input_id,
+            OBJECT_SID_KEY: sid,
             GROUP_LIST_KEY: groups,
             OBJECT_TYPE_KEY: input_type,
             OBJECT_DATA_KEY: input_data
         })
         return self._as_api_object(response)
 
-    async def delete(self, input_id: str) -> Awaitable[dict]:
+    async def delete(self, sid: str) -> Awaitable[dict]:
         """
         Deletes object from controller and data store
         """
         await self.wait_for_sync()
         await self._ctrl.delete_object({
-            OBJECT_ID_KEY: input_id
+            OBJECT_SID_KEY: sid
         })
 
-        del self._store[input_id, None]
+        del self._store[sid, None]
 
         return {
-            API_ID_KEY: input_id
+            API_SID_KEY: sid
         }
 
     async def all(self) -> Awaitable[list]:
@@ -129,10 +132,10 @@ class ObjectApi():
         response = await self._ctrl.list_objects()
         return [self._as_api_object(obj) for obj in response.get(OBJECT_LIST_KEY, [])]
 
-    async def read_stored(self, input_id: str) -> Awaitable[dict]:
+    async def read_stored(self, sid: str) -> Awaitable[dict]:
         await self.wait_for_sync()
         response = await self._ctrl.read_stored_object({
-            OBJECT_ID_KEY: input_id
+            OBJECT_SID_KEY: sid
         })
         return self._as_api_object(response)
 
@@ -152,12 +155,12 @@ class ObjectApi():
             OBJECT_INTERFACE_KEY: interface,
         })
 
-        return [obj[OBJECT_ID_KEY] for obj in response[OBJECT_ID_LIST_KEY]]
+        return [obj[OBJECT_SID_KEY] for obj in response[OBJECT_ID_LIST_KEY]]
 
     async def discover(self) -> Awaitable[list]:
         await self.wait_for_sync()
         response = await self._ctrl.discover_objects()
-        return [obj[OBJECT_ID_KEY] for obj in response[OBJECT_LIST_KEY]]
+        return [obj[OBJECT_SID_KEY] for obj in response[OBJECT_LIST_KEY]]
 
     async def clear_objects(self) -> Awaitable[dict]:
         await self.wait_for_sync()
@@ -165,43 +168,66 @@ class ObjectApi():
         self._store.clear()
         return {}
 
-    async def reset_objects(self, objects: list) -> Awaitable[list]:
+    async def export_objects(self) -> Awaitable[dict]:
+        await self.wait_for_sync()
+        store_data = [
+            {'keys': keys, 'data': content}
+            for keys, content in self._store.items()
+        ]
+        blocks_data = await self.all_stored()
+        return {
+            'blocks': [
+                block for block in blocks_data
+                if block[API_NID_KEY] != datastore.SYSTIME_NID
+            ],
+            'store': store_data,
+        }
+
+    async def import_objects(self, exported: dict) -> Awaitable[list]:
+
+        async def reset_create(sid: str, groups: list, input_type: str, input_data: dict):
+            await self._ctrl.create_object({
+                OBJECT_SID_KEY: sid,
+                GROUP_LIST_KEY: groups,
+                OBJECT_TYPE_KEY: input_type,
+                OBJECT_DATA_KEY: input_data
+            })
+
         await self.wait_for_sync()
         await self.clear_objects()
 
-        retry_objects = []
+        error_log = []
 
-        for obj in objects:
-            obj_id = obj[API_ID_KEY]
+        # First populate the datastore, to avoid unknown links
+        for entry in exported['store']:
+            keys = entry['keys']
+            data = entry['data']
+
+            try:
+                self._store[keys] = data
+            except twinkeydict.TwinKeyError:
+                sid, nid = keys
+                self._store.rename((None, nid), (sid, None))
+                self._store[keys] = data
+
+        # Now either create or write the objects, depending on whether they are system objects
+        for obj in exported['blocks']:
+            obj_sid = obj[API_SID_KEY]
+            obj_nid = obj[API_NID_KEY]
             obj_groups = obj[GROUP_LIST_KEY]
             obj_type = obj[API_TYPE_KEY]
             obj_data = obj[API_DATA_KEY]
 
-            func = self.write if (obj_id, None) in self._store else self.create
+            func = self.write if obj_nid < datastore.OBJECT_NID_START else reset_create
 
             try:
-                await func(obj_id, obj_groups, obj_type, obj_data)
-            except exceptions.UnknownId:
-                await func(obj_id, obj_groups, obj_type, {})  # Write an empty stub
-                LOGGER.info(f'{obj_id} contains a link to an unknown object, delaying write...')
-                retry_objects.append(obj)
+                await func(obj_sid, obj_groups, obj_type, obj_data)
             except Exception as ex:
-                LOGGER.error(f'/reset_objects failed at [{obj_id}]')
-                raise ex
+                message = f'failed to import [{obj_sid},{obj_nid},{obj_type}] with {utils.strex(ex)}'
+                error_log.append(message)
+                LOGGER.error(message)
 
-        for obj in retry_objects:
-            obj_id = obj[API_ID_KEY]
-            obj_groups = obj[GROUP_LIST_KEY]
-            obj_type = obj[API_TYPE_KEY]
-            obj_data = obj[API_DATA_KEY]
-
-            try:
-                await self.write(obj_id, obj_groups, obj_type, obj_data)
-            except Exception as ex:
-                LOGGER.error(f'Retrying objects in /reset_objects failed at [{obj_id}]')
-                raise ex
-
-        return await self.all()
+        return error_log
 
 
 @routes.post('/objects')
@@ -246,7 +272,7 @@ async def object_create(request: web.Request) -> web.Response:
 
     with utils.collecting_input():
         args = (
-            request_args[API_ID_KEY],
+            request_args[API_SID_KEY],
             request_args[GROUP_LIST_KEY],
             request_args[API_TYPE_KEY],
             request_args[API_DATA_KEY],
@@ -279,7 +305,7 @@ async def object_read(request: web.Request) -> web.Response:
     """
     return web.json_response(
         await ObjectApi(request.app).read(
-            request.match_info[API_ID_KEY]
+            request.match_info[API_SID_KEY]
         )
     )
 
@@ -330,7 +356,7 @@ async def object_write(request: web.Request) -> web.Response:
 
     with utils.collecting_input():
         args = (
-            request.match_info[API_ID_KEY],
+            request.match_info[API_SID_KEY],
             request_args[GROUP_LIST_KEY],
             request_args[API_TYPE_KEY],
             request_args[API_DATA_KEY],
@@ -363,7 +389,7 @@ async def object_delete(request: web.Request) -> web.Response:
     """
     return web.json_response(
         await ObjectApi(request.app).delete(
-            request.match_info[API_ID_KEY]
+            request.match_info[API_SID_KEY]
         )
     )
 
@@ -424,7 +450,7 @@ async def stored_read(request: web.Request) -> web.Response:
     """
     return web.json_response(
         await ObjectApi(request.app).read_stored(
-            request.match_info[API_ID_KEY]
+            request.match_info[API_SID_KEY]
         )
     )
 
@@ -505,44 +531,39 @@ async def discover(request: web.Request) -> web.Response:
     return web.json_response(await ObjectApi(request.app).discover())
 
 
-@routes.post('/reset_objects')
-async def reset(request: web.Request) -> web.Response:
+@routes.get('/export_objects')
+async def export_objects(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Lists all objects and metadata
+    tags:
+    - Spark
+    - Objects
+    operationId: controller.spark.export
+    produces:
+    - application/json
+    """
+    return web.json_response(
+        await ObjectApi(request.app).export_objects()
+    )
+
+
+@routes.post('/import_objects')
+async def import_objects(request: web.Request) -> web.Response:
     """
     ---
     summary: Delete all blocks on controller, and set to given state
     tags:
     - Spark
     - Objects
-    operationId: controller.spark.objects.reset
+    operationId: controller.spark.import
     produces:
     - application/json
     parameters:
     -
         in: body
         name: body
-        description: new objects
+        description: exported data
         required: true
-        schema:
-            type: array
-            items:
-                type: object
-                properties:
-                    id:
-                        type: string
-                        example: temp_sensor_1
-                    groups:
-                        type: array
-                        example: [0, 3, 4]
-                    type:
-                        type: string
-                        example: TempSensorOneWire
-                    data:
-                        type: object
-                        example:
-                            {
-                                "address": "FF",
-                                "offset[delta_degF]": 20,
-                                "value": 200
-                            }
     """
-    return web.json_response(await ObjectApi(request.app).reset_objects(await request.json()))
+    return web.json_response(await ObjectApi(request.app).import_objects(await request.json()))

@@ -19,26 +19,26 @@ from brewblox_devcon_spark.twinkeydict import TwinKeyDict, TwinKeyError
 
 LOGGER = brewblox_logger(__name__)
 
-GROUPS_CONTROLLER_ID = 1
-SYSINFO_CONTROLLER_ID = 2
-TIME_CONTROLLER_ID = 3
-ONEWIREBUS_CONTROLLER_ID = 4
-WIFI_SETTINGS_ID = 5
-TOUCH_SETTINGS_ID = 6
-DISPLAY_SETTINGS_ID = 7
+GROUPS_NID = 1
+SYSINFO_NID = 2
+SYSTIME_NID = 3
+ONEWIREBUS_NID = 4
+WIFI_SETTINGS_NID = 5
+TOUCH_SETTINGS_NID = 6
+DISPLAY_SETTINGS_NID = 7
 
 
 FLUSH_DELAY_S = 5
 DB_NAME = 'spark-service'
-OBJECT_ID_START = 100
+OBJECT_NID_START = 100
 SYS_OBJECT_KEYS = [
-    ['ActiveGroups', GROUPS_CONTROLLER_ID],
-    ['SystemInfo', SYSINFO_CONTROLLER_ID],
-    ['SystemTime', TIME_CONTROLLER_ID],
-    ['OneWireBus', ONEWIREBUS_CONTROLLER_ID],
-    ['WiFiSettings', WIFI_SETTINGS_ID],
-    ['TouchSettings', TOUCH_SETTINGS_ID],
-    ['DisplaySettings', DISPLAY_SETTINGS_ID],
+    ['ActiveGroups', GROUPS_NID],
+    ['SystemInfo', SYSINFO_NID],
+    ['SystemTime', SYSTIME_NID],
+    ['OneWireBus', ONEWIREBUS_NID],
+    ['WiFiSettings', WIFI_SETTINGS_NID],
+    ['TouchSettings', TOUCH_SETTINGS_NID],
+    ['DisplaySettings', DISPLAY_SETTINGS_NID],
     # Spark V3
     ['Pin-Bottom-1', 10],
     ['Pin-Bottom-2', 11],
