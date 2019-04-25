@@ -16,7 +16,7 @@ from functools import partial
 
 import dpath
 from aiohttp import web
-from brewblox_service import brewblox_logger, events, scheduler
+from brewblox_service import brewblox_logger, events, scheduler, strex
 
 from brewblox_devcon_spark import device, status
 from brewblox_devcon_spark.api import utils
@@ -87,7 +87,7 @@ async def _broadcast(app: web.Application,
 
         except Exception as ex:
             if last_broadcast_ok:
-                warnings.warn(f'Remote publisher [{routing}] encountered an error: {utils.strex(ex)}')
+                warnings.warn(f'Remote publisher [{routing}] encountered an error: {strex(ex)}')
                 last_broadcast_ok = False
 
 

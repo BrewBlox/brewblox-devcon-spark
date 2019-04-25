@@ -6,9 +6,8 @@ import asyncio
 import traceback
 
 from aiohttp import web, web_exceptions
-from brewblox_service import brewblox_logger
+from brewblox_service import brewblox_logger, strex
 
-from brewblox_devcon_spark.api.utils import strex
 from brewblox_devcon_spark.exceptions import BrewBloxException
 
 LOGGER = brewblox_logger(__name__)
