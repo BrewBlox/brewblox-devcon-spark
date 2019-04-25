@@ -1,4 +1,4 @@
-![build status](https://travis-ci.org/BrewBlox/brewblox-devcon-spark.svg?branch=develop)
+[![Build Status](https://dev.azure.com/brewblox/brewblox/_apis/build/status/BrewBlox.brewblox-devcon-spark?branchName=develop)](https://dev.azure.com/brewblox/brewblox/_build/latest?definitionId=1&branchName=develop)
 
 # Spark Service
 
