@@ -8,13 +8,14 @@ from abc import ABC, abstractclassmethod, abstractmethod
 from typing import Iterable, Union
 
 import ActuatorAnalogMock_pb2
-import ActuatorDS2413_pb2
 import ActuatorOffset_pb2
+import ActuatorOneWire_pb2
 import ActuatorPin_pb2
 import ActuatorPwm_pb2
 import Balancer_pb2
 import brewblox_pb2
 import DisplaySettings_pb2
+import DS2408_pb2
 import DS2413_pb2
 import EdgeCase_pb2
 import Mutex_pb2
@@ -213,12 +214,13 @@ _TRANSCODERS = [
     # Protobuf objects
     *[options_type_factory(msg) for msg in [
         ActuatorAnalogMock_pb2.ActuatorAnalogMock,
-        ActuatorDS2413_pb2.ActuatorDS2413,
+        ActuatorOneWire_pb2.ActuatorOneWire,
         ActuatorOffset_pb2.ActuatorOffset,
         ActuatorPin_pb2.ActuatorPin,
         ActuatorPwm_pb2.ActuatorPwm,
         Balancer_pb2.Balancer,
         DisplaySettings_pb2.DisplaySettings,
+        DS2408_pb2.DS2408,
         DS2413_pb2.DS2413,
         Mutex_pb2.Mutex,
         OneWireBus_pb2.OneWireBus,

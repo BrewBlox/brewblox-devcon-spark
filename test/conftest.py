@@ -220,7 +220,7 @@ def spark_blocks():
             'id': 'actuator-ds2413-1',
             'nid': 208,
             'groups': [0],
-            'type': 'ActuatorDS2413',
+            'type': 'ActuatorOneWire',
             'data': {
                 'channel': 1,
                 'constrainedBy': {
@@ -307,7 +307,7 @@ def spark_blocks():
             'id': 'ow-act',
             'nid': 212,
             'groups': [0, 1, 2, 3, 4, 5, 6],
-            'type': 'ActuatorDS2413',
+            'type': 'ActuatorOneWire',
             'data': {
                 'channel': 1,
                 'invert': True,
