@@ -62,7 +62,7 @@ class Seeder(features.ServiceFeature):
     async def _seed_datastore(self):
         try:
             api = object_api.ObjectApi(self.app, wait_sync=False)
-            sys_block = await api.read(datastore.SYSINFO_CONTROLLER_ID)
+            sys_block = await api.read(datastore.SYSINFO_NID)
             device_id = sys_block[object_api.API_DATA_KEY]['deviceId']
 
             await datastore.check_remote(self.app)
@@ -83,7 +83,7 @@ class Seeder(features.ServiceFeature):
             now = datetime.now()
             api = object_api.ObjectApi(self.app, wait_sync=False)
             await api.write(
-                input_id=datastore.TIME_CONTROLLER_ID,
+                sid=datastore.SYSTIME_NID,
                 groups=[SYSTEM_GROUP],
                 input_type='Ticks',
                 input_data={

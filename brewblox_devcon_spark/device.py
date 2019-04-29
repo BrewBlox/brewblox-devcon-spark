@@ -14,24 +14,23 @@ from brewblox_devcon_spark import (commander, commands, datastore, exceptions,
                                    twinkeydict)
 from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.commands import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
-                                            OBJECT_ID_KEY, OBJECT_ID_LIST_KEY,
+                                            OBJECT_ID_LIST_KEY,
                                             OBJECT_INTERFACE_KEY,
-                                            OBJECT_LIST_KEY, OBJECT_TYPE_KEY,
-                                            SYSTEM_GROUP)
+                                            OBJECT_LIST_KEY, OBJECT_NID_KEY,
+                                            OBJECT_TYPE_KEY, SYSTEM_GROUP)
 
+OBJECT_SID_KEY = 'object_sid'
 OBJECT_LINK_POSTFIX_START = '<'
 OBJECT_LINK_POSTFIX_END = '>'
 GENERATED_ID_PREFIX = 'UNKNOWN|'
-ServiceId_ = str
-ControllerId_ = int
-ObjectId_ = Union[ServiceId_, ControllerId_]
+ObjectId_ = Union[str, int]
 FindIdFunc_ = Callable[[twinkeydict.TwinKeyDict, ObjectId_, str], Awaitable[ObjectId_]]
 
 # Keys are imported from commands for use in this module
 # but also to allow other modules (eg. API) to import them from here
 # "use" them here to avoid lint errors
 _FORWARDED = (
-    OBJECT_ID_KEY,
+    OBJECT_NID_KEY,
     OBJECT_DATA_KEY,
     OBJECT_TYPE_KEY,
     OBJECT_LIST_KEY,
@@ -98,53 +97,41 @@ class SparkResolver():
 
         return content
 
-    def _find_controller_id(self,
-                            store: twinkeydict.TwinKeyDict,
-                            input_id: ServiceId_,
-                            input_type: str,
-                            ) -> ControllerId_:
-        if not input_id:
+    def _find_nid(self,
+                  store: twinkeydict.TwinKeyDict,
+                  sid: str,
+                  input_type: str,
+                  ) -> int:
+        if sid is None:
             return 0
 
-        if isinstance(input_id, ControllerId_):
-            return input_id
+        if isinstance(sid, int):
+            return sid
 
         try:
-            return store.right_key(input_id)
+            return store.right_key(sid)
         except KeyError:
-            raise exceptions.UnknownId(f'Service ID [{input_id}] for {input_type} not found in {store}')
+            raise exceptions.UnknownId(f'No numeric ID matching [sid={sid},type={input_type}] found in store')
 
-    def _find_service_id(self,
-                         store: twinkeydict.TwinKeyDict,
-                         input_id: ControllerId_,
-                         input_type: str,
-                         ) -> ServiceId_:
-        if not input_id:
+    def _find_sid(self,
+                  store: twinkeydict.TwinKeyDict,
+                  nid: int,
+                  input_type: str,
+                  ) -> str:
+        if nid is None or nid == 0:
             return None
 
-        if isinstance(input_id, ServiceId_):
-            return input_id
+        if isinstance(nid, str):
+            raise exceptions.DecodeException(f'Expected numeric ID, got string "{nid}"')
 
         try:
-            service_id = store.left_key(input_id)
+            sid = store.left_key(nid)
         except KeyError:
             # If service ID not found, randomly generate one
-            service_id = self._assign_id(input_type)
-            store[service_id, input_id] = dict()
+            sid = self._assign_id(input_type)
+            store[sid, nid] = dict()
 
-        return service_id
-
-    async def _resolve_id(self, finder_func: FindIdFunc_, content: dict) -> Awaitable[dict]:
-        objects_to_process = self._get_content_objects(content)
-
-        for obj in objects_to_process:
-            with suppress(KeyError):
-                obj[OBJECT_ID_KEY] = finder_func(
-                    self._datastore,
-                    obj[OBJECT_ID_KEY],
-                    obj.get(OBJECT_TYPE_KEY) or obj.get(OBJECT_INTERFACE_KEY))
-
-        return content
+        return sid
 
     async def _resolve_links(self,
                              finder_func: FindIdFunc_,
@@ -178,17 +165,45 @@ class SparkResolver():
     async def decode_data(self, content: dict, opts: Optional[dict]) -> Awaitable[dict]:
         return await self._process_data(self._codec.decode, content, opts)
 
-    async def resolve_controller_id(self, content: dict, _=None) -> Awaitable[dict]:
-        return await self._resolve_id(self._find_controller_id, content)
+    async def convert_sid_nid(self, content: dict, _=None) -> Awaitable[dict]:
+        objects_to_process = self._get_content_objects(content)
 
-    async def resolve_service_id(self, content: dict, _=None) -> Awaitable[dict]:
-        return await self._resolve_id(self._find_service_id, content)
+        for obj in objects_to_process:
+            # Remove the sid
+            sid = obj.pop(OBJECT_SID_KEY, None)
 
-    async def resolve_controller_links(self, content: dict, _=None) -> Awaitable[dict]:
-        return await self._resolve_links(self._find_controller_id, content)
+            if sid is None or OBJECT_NID_KEY in obj:
+                continue
 
-    async def resolve_service_links(self, content: dict, _=None) -> Awaitable[dict]:
-        return await self._resolve_links(self._find_service_id, content)
+            obj[OBJECT_NID_KEY] = self._find_nid(
+                self._datastore,
+                sid,
+                obj.get(OBJECT_TYPE_KEY) or obj.get(OBJECT_INTERFACE_KEY))
+
+        return content
+
+    async def add_sid(self, content: dict, _=None) -> Awaitable[dict]:
+        objects_to_process = self._get_content_objects(content)
+
+        for obj in objects_to_process:
+            # Keep the nid
+            nid = obj.get(OBJECT_NID_KEY, None)
+
+            if nid is None:
+                continue
+
+            obj[OBJECT_SID_KEY] = self._find_sid(
+                self._datastore,
+                nid,
+                obj.get(OBJECT_TYPE_KEY) or obj.get(OBJECT_INTERFACE_KEY))
+
+        return content
+
+    async def convert_links_nid(self, content: dict, _=None) -> Awaitable[dict]:
+        return await self._resolve_links(self._find_nid, content)
+
+    async def convert_links_sid(self, content: dict, _=None) -> Awaitable[dict]:
+        return await self._resolve_links(self._find_sid, content)
 
 
 class SparkController(features.ServiceFeature):
@@ -218,8 +233,8 @@ class SparkController(features.ServiceFeature):
 
             # pre-processing
             for afunc in [
-                resolver.resolve_controller_id,
-                resolver.resolve_controller_links,
+                resolver.convert_sid_nid,
+                resolver.convert_links_nid,
                 resolver.encode_data,
             ]:
                 content = await afunc(content, command_opts)
@@ -232,8 +247,8 @@ class SparkController(features.ServiceFeature):
             # post-processing
             for afunc in [
                 resolver.decode_data,
-                resolver.resolve_service_links,
-                resolver.resolve_service_id,
+                resolver.convert_links_sid,
+                resolver.add_sid,
             ]:
                 retval = await afunc(retval, command_opts)
 

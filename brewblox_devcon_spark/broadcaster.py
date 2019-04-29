@@ -11,7 +11,7 @@ from aiohttp import web
 from brewblox_service import brewblox_logger, events, features, scheduler
 
 from brewblox_devcon_spark import status
-from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_ID_KEY,
+from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_SID_KEY,
                                                   ObjectApi)
 from brewblox_devcon_spark.device import GENERATED_ID_PREFIX
 
@@ -73,9 +73,9 @@ class Broadcaster(features.ServiceFeature):
                 await spark_status.synchronized.wait()
                 await asyncio.sleep(interval)
                 current_objects = {
-                    obj[API_ID_KEY]: obj[API_DATA_KEY]
+                    obj[API_SID_KEY]: obj[API_DATA_KEY]
                     for obj in await api.all_logged()
-                    if not obj[API_ID_KEY].startswith(GENERATED_ID_PREFIX)
+                    if not obj[API_SID_KEY].startswith(GENERATED_ID_PREFIX)
                 }
 
                 # Don't broadcast when empty

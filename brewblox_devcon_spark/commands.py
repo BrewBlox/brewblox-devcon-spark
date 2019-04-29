@@ -25,7 +25,7 @@ HexStr_ = str
 
 VALUE_SEPARATOR = ','
 
-OBJECT_ID_KEY = 'object_id'
+OBJECT_NID_KEY = 'object_nid'
 OBJECT_INTERFACE_KEY = 'object_if'
 OBJECT_TYPE_KEY = 'object_type'
 OBJECT_DATA_KEY = 'object_data'
@@ -390,7 +390,7 @@ class Command(ABC):
 
 # Reoccurring data types - can be used as a macro
 _GROUP_LIST = Struct(GROUP_LIST_KEY / GroupListAdapter())
-_OBJECT_ID = Struct(OBJECT_ID_KEY / Int16ul)
+_OBJECT_ID = Struct(OBJECT_NID_KEY / Int16ul)
 _OBJECT_INTERFACE = Struct(OBJECT_INTERFACE_KEY / Int16ul)
 _OBJECT_TYPE = Struct(OBJECT_TYPE_KEY / Int16ul)
 _OBJECT_DATA = Struct(OBJECT_DATA_KEY / GreedyBytes)
@@ -398,7 +398,7 @@ _OBJECT = _OBJECT_ID + _GROUP_LIST + _OBJECT_TYPE + _OBJECT_DATA
 _DISCOVERY = _OBJECT_ID + _OBJECT_INTERFACE
 
 # Special cases
-_CREATE_ID = Struct(OBJECT_ID_KEY / Default(Int16ul, 0))  # 0 == assigned by controller
+_CREATE_ID = Struct(OBJECT_NID_KEY / Default(Int16ul, 0))  # 0 == assigned by controller
 
 
 class ReadObjectCommand(Command):

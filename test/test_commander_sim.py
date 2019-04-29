@@ -9,7 +9,7 @@ from brewblox_devcon_spark import (commander, commander_sim, commands,
                                    datastore, exceptions, status)
 from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.commands import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
-                                            OBJECT_ID_KEY, OBJECT_LIST_KEY,
+                                            OBJECT_LIST_KEY, OBJECT_NID_KEY,
                                             OBJECT_TYPE_KEY)
 
 
@@ -41,7 +41,7 @@ async def test_create(app, client, object_args, sim):
     cmd = commands.CreateObjectCommand
 
     created = await sim.execute(cmd.from_args(**object_args))
-    assert 'object_id' in created
+    assert OBJECT_NID_KEY in created
 
     # Ok to recreate without ID
     other = await sim.execute(cmd.from_args(**object_args))
@@ -53,7 +53,7 @@ async def test_create(app, client, object_args, sim):
 
     # 100 is reserved for system objects
     with pytest.raises(exceptions.CommandException):
-        await sim.execute(cmd.from_args(**object_args, object_id=100))
+        await sim.execute(cmd.from_args(**object_args, object_nid=100))
 
 
 async def test_crud(app, client, object_args, sim):
@@ -64,7 +64,7 @@ async def test_crud(app, client, object_args, sim):
 
     created = await sim.execute(create_cmd.from_args(**object_args))
 
-    read_args = {OBJECT_ID_KEY: created[OBJECT_ID_KEY]}
+    read_args = {OBJECT_NID_KEY: created[OBJECT_NID_KEY]}
     assert await sim.execute(read_cmd.from_args(**read_args)) == created
 
     created[GROUP_LIST_KEY] = [0, 1]
@@ -75,11 +75,11 @@ async def test_crud(app, client, object_args, sim):
         # Can't assign system group
         await sim.execute(write_cmd.from_args(**{**created, **{GROUP_LIST_KEY: [0, commands.SYSTEM_GROUP]}}))
 
-    await sim.execute(delete_cmd.from_args(object_id=read_args[OBJECT_ID_KEY]))
+    await sim.execute(delete_cmd.from_args(object_nid=read_args[OBJECT_NID_KEY]))
 
     with pytest.raises(exceptions.CommandException):
         # Create object with system-range ID
-        await sim.execute(create_cmd.from_args(**{OBJECT_ID_KEY: 50}, **object_args))
+        await sim.execute(create_cmd.from_args(**{OBJECT_NID_KEY: 50}, **object_args))
 
     with pytest.raises(exceptions.CommandException):
         await sim.execute(write_cmd.from_args(**created))
@@ -97,14 +97,14 @@ async def test_stored(app, client, object_args, sim):
     list_cmd = commands.ListStoredObjectsCommand
 
     created = await sim.execute(create_cmd.from_args(**object_args))
-    read_args = {OBJECT_ID_KEY: created[OBJECT_ID_KEY]}
+    read_args = {OBJECT_NID_KEY: created[OBJECT_NID_KEY]}
     assert await sim.execute(read_cmd.from_args(**read_args)) == created
 
     all_stored = await sim.execute(list_cmd.from_args())
     assert created in all_stored[OBJECT_LIST_KEY]
 
     with pytest.raises(exceptions.CommandException):
-        await sim.execute(read_cmd.from_args(**{OBJECT_ID_KEY: 9001}))
+        await sim.execute(read_cmd.from_args(**{OBJECT_NID_KEY: 9001}))
 
 
 async def test_clear(app, client, object_args, sim):
