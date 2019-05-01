@@ -52,6 +52,7 @@ class ObjectApi():
 
     async def create(self,
                      sid: str,
+                     nid: int,
                      groups: list,
                      input_type: int,
                      input_data: dict
@@ -60,7 +61,7 @@ class ObjectApi():
         Creates a new object in the datastore and controller.
         """
         await self.wait_for_sync()
-        alias_api.validate_service_id(sid)
+        alias_api.validate_sid(sid)
 
         try:
             placeholder = object()
@@ -70,6 +71,7 @@ class ObjectApi():
 
         try:
             created = await self._ctrl.create_object({
+                OBJECT_NID_KEY: nid,
                 GROUP_LIST_KEY: groups,
                 OBJECT_TYPE_KEY: input_type,
                 OBJECT_DATA_KEY: input_data
@@ -82,6 +84,7 @@ class ObjectApi():
 
         return {
             API_SID_KEY: sid,
+            API_NID_KEY: self._store.right_key(sid),
             GROUP_LIST_KEY: created[GROUP_LIST_KEY],
             API_TYPE_KEY: created[OBJECT_TYPE_KEY],
             API_DATA_KEY: created[OBJECT_DATA_KEY],
@@ -227,6 +230,19 @@ class ObjectApi():
                 error_log.append(message)
                 LOGGER.error(message)
 
+        used_nids = [b.get(API_NID_KEY) for b in await self.all()]
+        unused = [
+            (sid, nid) for (sid, nid) in self._store
+            if nid >= datastore.OBJECT_NID_START
+            and nid not in used_nids
+        ]
+        print(unused)
+        for sid, nid in unused:
+            del self._store[sid, nid]
+            message = f'Removed unused alias [{sid},{nid}]'
+            LOGGER.info(message)
+            error_log.append(message)
+
         return error_log
 
 
@@ -253,6 +269,10 @@ async def object_create(request: web.Request) -> web.Response:
                 id:
                     type: string
                     example: temp_sensor_1
+                nid:
+                    type: int
+                    required: false
+                    example: 0
                 groups:
                     type: array
                     example: [0, 3, 4]
@@ -273,6 +293,7 @@ async def object_create(request: web.Request) -> web.Response:
     with utils.collecting_input():
         args = (
             request_args[API_SID_KEY],
+            request_args.get(API_NID_KEY),
             request_args[GROUP_LIST_KEY],
             request_args[API_TYPE_KEY],
             request_args[API_DATA_KEY],
