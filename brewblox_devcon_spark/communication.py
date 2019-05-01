@@ -82,7 +82,7 @@ async def connect_serial(app: web.Application,
     loop = asyncio.get_event_loop()
     transport = SerialTransport(loop, protocol, ser)
     transport.serial.rts = False
-    transport.set_write_buffer_limits(high=255)
+    transport.set_write_buffer_limits(high=255) # receiver RX buffer is 256, so limit send buffer to 255
     return address, transport, protocol
 
 
