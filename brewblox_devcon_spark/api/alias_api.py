@@ -17,13 +17,13 @@ LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
 
 SID_PATTERN = re.compile(
-    r'^[a-z]{1}[^\[\]\<\>]{0,199}$',
+    r'^[a-z]{1}[a-z0-9_\-\(\)\| ]{0,199}$',
     re.IGNORECASE
 )
 SID_RULES = """
 An object ID must adhere to the following rules:
 - Starts with a letter
-- May not contain brackets: '[]<>'
+- May only contain alphanumeric characters, space, and _-()|
 - At most 200 characters
 """
 
