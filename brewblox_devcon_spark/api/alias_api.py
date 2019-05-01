@@ -16,10 +16,7 @@ from brewblox_devcon_spark.api import API_SID_KEY, utils
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
 
-SID_PATTERN = re.compile(
-    r'^[a-z]{1}[a-z0-9_\-\(\)\| ]{0,199}$',
-    re.IGNORECASE
-)
+SID_PATTERN = re.compile(r'^[a-zA-Z]{1}[a-zA-Z0-9 _\-\(\)\|]{0,199}$')
 SID_RULES = """
 An object ID must adhere to the following rules:
 - Starts with a letter
