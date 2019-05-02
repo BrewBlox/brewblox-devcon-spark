@@ -225,8 +225,8 @@ async def test_clear(app, client, object_args):
     'l1214235234231',
     'yes!'*50,
 ])
-async def test_validate_service_id(sid):
-    alias_api.validate_service_id(sid)
+async def test_validate_sid(sid):
+    alias_api.validate_sid(sid)
 
 
 @pytest.mark.parametrize('sid', [
@@ -241,14 +241,14 @@ async def test_validate_service_id(sid):
     'ActiveGroups',
     'Actuator-0',
 ])
-async def test_validate_service_id_error(sid):
+async def test_validate_sid_error(sid):
     with pytest.raises(exceptions.InvalidId):
-        alias_api.validate_service_id(sid)
+        alias_api.validate_sid(sid)
 
 
 async def test_alias_create(app, client):
     new_alias = dict(
-        service_id='name',
+        sid='name',
         controller_id=456
     )
     retv = await client.post('/aliases', json=new_alias)
@@ -269,6 +269,16 @@ async def test_alias_update(app, client, object_args):
 
     retv = await client.get('/objects/newname')
     assert retv.status == 200
+
+
+async def test_alias_delete(app, client, object_args):
+    await client.post('/objects', json=object_args)
+
+    retv = await client.delete('/aliases/testobj')
+    assert retv.status == 200
+
+    retv = await client.get('/objects/testobj')
+    assert retv.status == 400
 
 
 async def test_groups(app, client):
@@ -357,10 +367,13 @@ async def test_import_objects(app, client, spark_blocks):
     assert set(ids).issubset(resp_ids)
     assert 'ActiveGroups' in resp_ids
 
-    # add renamed type to store data
+    # Add an unused store alias
+    data['store'].append({'keys': ['TROLOLOL', 9999], 'data': dict()})
+
+    # Add renamed type to store data
     data['store'].append({'keys': ['renamed_wifi', datastore.WIFI_SETTINGS_NID], 'data': dict()})
 
-    # Fails, is skipped, and generates an error
+    # Add a Block that will fail to be created, and should be skipped
     data['blocks'].append({
         API_SID_KEY: 'derpface',
         API_NID_KEY: 500,
@@ -368,9 +381,11 @@ async def test_import_objects(app, client, spark_blocks):
         API_TYPE_KEY: 'INVALID',
         API_DATA_KEY: {}
     })
+
     retv = await response(client.post('/import_objects', json=data))
-    assert len(retv) == 1
+    assert len(retv) == 2
     assert 'derpface' in retv[0]
+    assert 'TROLOLOL' in retv[1]
 
     resp = await response(client.get('/objects'))
     resp_ids = ret_ids(resp)
