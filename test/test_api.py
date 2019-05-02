@@ -220,10 +220,9 @@ async def test_clear(app, client, object_args):
 @pytest.mark.parametrize('sid', [
     'flabber',
     'FLABBER',
-    'f',
-    'a;ljfoihoewr*&(%&^&*%*&^(*&^(',
-    'l1214235234231',
-    'yes!'*50,
+    'f(1)',
+    'l12142|35234231',
+    'word'*50,
 ])
 async def test_validate_sid(sid):
     alias_api.validate_sid(sid)
@@ -236,10 +235,11 @@ async def test_validate_sid(sid):
     '[',
     'f]abbergasted',
     '',
-    'yes!'*51,
+    'word'*51,
     'brackey><',
     'ActiveGroups',
     'Actuator-0',
+    'a;ljfoihoewr*&(%&^&*%*&^(*&^(',
 ])
 async def test_validate_sid_error(sid):
     with pytest.raises(exceptions.InvalidId):
