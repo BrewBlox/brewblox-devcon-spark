@@ -236,7 +236,6 @@ class ObjectApi():
             if nid >= datastore.OBJECT_NID_START
             and nid not in used_nids
         ]
-        print(unused)
         for sid, nid in unused:
             del self._store[sid, nid]
             message = f'Removed unused alias [{sid},{nid}]'
