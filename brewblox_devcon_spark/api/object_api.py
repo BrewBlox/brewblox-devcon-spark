@@ -124,7 +124,11 @@ class ObjectApi():
             OBJECT_SID_KEY: sid
         })
 
-        del self._store[sid, None]
+        # Allow for the endpoint being called with the NID
+        if sid.isdigit():
+            del self._store[None, int(sid)]
+        else:
+            del self._store[sid, None]
 
         return {
             API_SID_KEY: sid

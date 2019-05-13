@@ -190,6 +190,19 @@ async def test_delete(app, client, object_args):
     assert retv.status == 400
 
 
+async def test_nid_crud(app, client, object_args):
+    created = await response(client.post('/objects', json=object_args))
+    nid = created[API_NID_KEY]
+
+    created[API_DATA_KEY]['value'] = 5
+    await response(client.get(f'/objects/{nid}'))
+    await response(client.put(f'/objects/{nid}', json=created))
+    await response(client.delete(f'/objects/{nid}'))
+
+    retv = await client.get('/objects/testobj')
+    assert retv.status == 400
+
+
 async def test_stored_objects(app, client, object_args):
     retd = await response(client.get('/stored_objects'))
     base_num = len(retd)

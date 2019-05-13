@@ -41,9 +41,9 @@ class AliasApi():
     def __init__(self, app: web.Application):
         self._store = datastore.get_datastore(app)
 
-    async def create(self, sid: str, controller_id: int) -> dict:
+    async def create(self, sid: str, nid: int) -> dict:
         validate_sid(sid)
-        self._store[sid, controller_id] = dict()
+        self._store[sid, nid] = dict()
 
     async def update(self, existing_id: str, new_id: str) -> dict:
         validate_sid(new_id)
@@ -78,7 +78,7 @@ async def alias_create(request: web.Request) -> web.Response:
                     type: str
                     example: onewirebus
                     required: true
-                controller_id:
+                nid:
                     type: int
                     example: 2
                     required: true
@@ -87,7 +87,7 @@ async def alias_create(request: web.Request) -> web.Response:
     with utils.collecting_input():
         args = (
             request_args['sid'],
-            request_args['controller_id'],
+            request_args['nid'],
         )
 
     return web.json_response(
