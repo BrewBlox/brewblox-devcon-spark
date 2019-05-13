@@ -262,7 +262,7 @@ async def test_validate_sid_error(sid):
 async def test_alias_create(app, client):
     new_alias = dict(
         sid='name',
-        controller_id=456
+        nid=456
     )
     retv = await client.post('/aliases', json=new_alias)
     assert retv.status == 200
