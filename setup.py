@@ -4,6 +4,7 @@ setup(
     name='brewblox-devcon-spark',
     use_scm_version={'local_scheme': lambda v: ''},
     description='Communication with Spark controllers',
+    long_description_content_type='text/markdown',
     long_description=open('README.md').read(),
     url='https://github.com/BrewBlox/brewblox-devcon-spark',
     author='BrewPi',
