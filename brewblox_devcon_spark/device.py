@@ -105,8 +105,8 @@ class SparkResolver():
         if sid is None:
             return 0
 
-        if isinstance(sid, int):
-            return sid
+        if isinstance(sid, int) or sid.isdigit():
+            return int(sid)
 
         try:
             return store.right_key(sid)
