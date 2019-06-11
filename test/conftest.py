@@ -213,14 +213,14 @@ def spark_blocks():
                     ]
                 },
                 'period': 4000,
-                'actuatorId<>': 'Pin-Bottom-1'
+                'actuatorId<>': 'actuator-digital-1'
             }
         },
         {
-            'id': 'actuator-ds2413-1',
+            'id': 'actuator-digital-1',
             'nid': 208,
             'groups': [0],
-            'type': 'ActuatorDS2413',
+            'type': 'DigitalActuator',
             'data': {
                 'channel': 1,
                 'constrainedBy': {
@@ -307,7 +307,7 @@ def spark_blocks():
             'id': 'ow-act',
             'nid': 212,
             'groups': [0, 1, 2, 3, 4, 5, 6],
-            'type': 'ActuatorDS2413',
+            'type': 'DigitalActuator',
             'data': {
                 'channel': 1,
                 'invert': True,
