@@ -251,7 +251,7 @@ async def test_validate_sid(sid):
     'word'*51,
     'brackey><',
     'ActiveGroups',
-    'Spark-Pins',
+    'SparkPins',
     'a;ljfoihoewr*&(%&^&*%*&^(*&^(',
 ])
 async def test_validate_sid_error(sid):

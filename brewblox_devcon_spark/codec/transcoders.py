@@ -15,7 +15,6 @@ import ActuatorAnalogMock_pb2
 import ActuatorOffset_pb2
 import ActuatorPwm_pb2
 import Balancer_pb2
-import BoardPins_pb2
 import brewblox_pb2
 import DigitalActuator_pb2
 import DisplaySettings_pb2
@@ -27,6 +26,7 @@ import OneWireBus_pb2
 import Pid_pb2
 import SetpointProfile_pb2
 import SetpointSensorPair_pb2
+import Spark2Pins_pb2
 import Spark3Pins_pb2
 import SysInfo_pb2
 import TempSensorMock_pb2
@@ -219,7 +219,6 @@ _TRANSCODERS = [
         ActuatorOffset_pb2.ActuatorOffset,
         ActuatorPwm_pb2.ActuatorPwm,
         Balancer_pb2.Balancer,
-        BoardPins_pb2.BoardPins,
         DigitalActuator_pb2.DigitalActuator,
         DisplaySettings_pb2.DisplaySettings,
         DS2408_pb2.DS2408,
@@ -229,6 +228,7 @@ _TRANSCODERS = [
         Pid_pb2.Pid,
         SetpointProfile_pb2.SetpointProfile,
         SetpointSensorPair_pb2.SetpointSensorPair,
+        Spark2Pins_pb2.Spark2Pins,
         Spark3Pins_pb2.Spark3Pins,
         SysInfo_pb2.SysInfo,
         TempSensorMock_pb2.TempSensorMock,
