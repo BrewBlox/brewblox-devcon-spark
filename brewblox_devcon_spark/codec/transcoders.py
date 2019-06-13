@@ -21,6 +21,7 @@ import DisplaySettings_pb2
 import DS2408_pb2
 import DS2413_pb2
 import EdgeCase_pb2
+import MotorValve_pb2
 import Mutex_pb2
 import OneWireBus_pb2
 import Pid_pb2
@@ -223,6 +224,7 @@ _TRANSCODERS = [
         DisplaySettings_pb2.DisplaySettings,
         DS2408_pb2.DS2408,
         DS2413_pb2.DS2413,
+        MotorValve_pb2.MotorValve,
         Mutex_pb2.Mutex,
         OneWireBus_pb2.OneWireBus,
         Pid_pb2.Pid,
