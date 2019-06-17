@@ -67,6 +67,17 @@ class Codec(features.ServiceFeature):
     def get_unit_alternatives(self):
         return UNIT_ALTERNATIVES
 
+    def compatible_types(self) -> Awaitable[dict]:
+        """
+        Compiles lists of implementers of type interfaces.
+
+        Returns:
+            Dict[str, List[str]]:
+                The key is the name of the interface type.
+                The value is a list of types that implement that interface.
+        """
+        return Transcoder.type_tree(self._mod)
+
     async def encode(self,
                      obj_type: ObjType_,
                      values: Decoded_ = ...,

@@ -183,3 +183,8 @@ async def test_point_presence(app, client, cdc):
     dec_id_absent, dec_val_absent = await cdc.decode(enc_id_absent, enc_val_absent)
 
     assert dec_val_present['points'][0]['time'] == 0
+
+
+async def test_compatible_types(app, client, cdc):
+    tree = cdc.compatible_types()
+    assert len(tree['TempSensorInterface']) > 0

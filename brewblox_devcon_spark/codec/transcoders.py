@@ -5,7 +5,8 @@ Object-specific transcoders
 from brewblox_devcon_spark.codec import _path_extension  # isort:skip
 
 from abc import ABC, abstractclassmethod, abstractmethod
-from typing import Iterable, Union
+from collections import defaultdict
+from typing import Dict, Iterable, List, Union
 
 from brewblox_service import brewblox_logger
 from google.protobuf import json_format
@@ -58,6 +59,10 @@ class Transcoder(ABC):
     def type_str(cls) -> str:
         pass  # pragma: no cover
 
+    @classmethod
+    def type_impl(cls) -> List[int]:
+        return []
+
     @abstractmethod
     def encode(self, values: Decoded_, opts: dict) -> Encoded_:
         pass  # pragma: no cover
@@ -72,6 +77,15 @@ class Transcoder(ABC):
             return _TYPE_MAPPING[obj_type](mods)
         except KeyError:
             raise KeyError(f'No codec found for object type [{obj_type}]')
+
+    @classmethod
+    def type_tree(cls, mods: Modifier) -> Dict[str, List[str]]:
+        impl_tree = defaultdict(list)
+        for trc in _TRANSCODERS:
+            name = trc.type_str()
+            for intf in [Transcoder.get(t, mods).type_str() for t in trc.type_impl()]:
+                impl_tree[intf].append(name)
+        return impl_tree
 
 
 class BlockInterfaceTranscoder(Transcoder):
@@ -144,6 +158,10 @@ class ProtobufTranscoder(Transcoder):
     @classmethod
     def type_str(cls) -> str:
         return cls._MESSAGE.__name__
+
+    @classmethod
+    def type_impl(cls) -> List[int]:
+        return cls._MESSAGE.DESCRIPTOR.GetOptions().Extensions[brewblox_pb2.brewblox_msg].impl
 
     def create_message(self) -> Message:
         return self.__class__._MESSAGE()

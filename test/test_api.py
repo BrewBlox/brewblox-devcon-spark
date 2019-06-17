@@ -344,6 +344,9 @@ async def test_codec_api(app, client, object_args):
     retd = await response(client.get(f'/objects/{object_args[API_SID_KEY]}'))
     assert retd[API_DATA_KEY]['offset[delta_degC]'] == pytest.approx(degC_offset, 0.1)
 
+    retd = await response(client.get('/codec/compatible_types'))
+    assert 'TempSensorOneWire' in retd['TempSensorInterface']
+
 
 async def test_list_compatible(app, client, object_args):
     resp = await response(client.get('/compatible_objects', params={'interface': 'BalancerInterface'}))
