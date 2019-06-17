@@ -74,3 +74,18 @@ async def unit_alternatives_get(request: web.Request) -> web.Response:
     - application/json
     """
     return web.json_response(codec.get_codec(request.app).get_unit_alternatives())
+
+
+@routes.get('/codec/compatible_types')
+async def compatible_types_get(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Get compatible types for object interfaces.
+    tags:
+    - Spark
+    - Codec
+    operationId: controller.spark.codec.compatible_types
+    produces:
+    - application/json
+    """
+    return web.json_response(codec.get_codec(request.app).compatible_types())
