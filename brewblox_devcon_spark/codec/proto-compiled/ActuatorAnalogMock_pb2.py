@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x18\x41\x63tuatorAnalogMock.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x17\x41nalogConstraints.proto\"\xcf\x02\n\x12\x41\x63tuatorAnalogMock\x12#\n\x07setting\x18\x01 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\'\n\x05value\x18\x02 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12 \n\nminSetting\x18\x04 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12 \n\nmaxSetting\x18\x05 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x1e\n\x08minValue\x18\x06 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x1e\n\x08maxValue\x18\x07 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12.\n\rconstrainedBy\x18\x08 \x01(\x0b\x32\x17.blox.AnalogConstraints\x12(\n\x0estrippedFields\x18\x63 \x03(\rB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x02:\r\x8a\xb5\x18\x03\x18\xb1\x02\x8a\xb5\x18\x02H\x01\x62\x06proto3')
+  serialized_pb=_b('\n\x18\x41\x63tuatorAnalogMock.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x17\x41nalogConstraints.proto\"\x81\x03\n\x12\x41\x63tuatorAnalogMock\x12)\n\x07setting\x18\x01 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\'\n\x05value\x18\x02 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12 \n\nminSetting\x18\x04 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12 \n\nmaxSetting\x18\x05 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x1e\n\x08minValue\x18\x06 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x1e\n\x08maxValue\x18\x07 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12.\n\rconstrainedBy\x18\x08 \x01(\x0b\x32\x17.blox.AnalogConstraints\x12*\n\x0e\x64\x65siredSetting\x18\t \x01(\x11\x42\x12\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12(\n\x0estrippedFields\x18\x63 \x03(\rB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x02:\r\x8a\xb5\x18\x03\x18\xb1\x02\x8a\xb5\x18\x02H\x01\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,AnalogConstraints__pb2.DESCRIPTOR,])
 
@@ -42,7 +42,7 @@ _ACTUATORANALOGMOCK = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\0020\001\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\0020\001\212\265\030\002(\001\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='value', full_name='blox.ActuatorAnalogMock.value', index=1,
       number=2, type=17, cpp_type=1, label=1,
@@ -86,7 +86,14 @@ _ACTUATORANALOGMOCK = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='strippedFields', full_name='blox.ActuatorAnalogMock.strippedFields', index=7,
+      name='desiredSetting', full_name='blox.ActuatorAnalogMock.desiredSetting', index=7,
+      number=9, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\0020\001\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='strippedFields', full_name='blox.ActuatorAnalogMock.strippedFields', index=8,
       number=99, type=13, cpp_type=3, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -105,7 +112,7 @@ _ACTUATORANALOGMOCK = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=90,
-  serialized_end=425,
+  serialized_end=475,
 )
 
 _ACTUATORANALOGMOCK.fields_by_name['constrainedBy'].message_type = AnalogConstraints__pb2._ANALOGCONSTRAINTS
@@ -126,6 +133,7 @@ _ACTUATORANALOGMOCK.fields_by_name['minSetting']._options = None
 _ACTUATORANALOGMOCK.fields_by_name['maxSetting']._options = None
 _ACTUATORANALOGMOCK.fields_by_name['minValue']._options = None
 _ACTUATORANALOGMOCK.fields_by_name['maxValue']._options = None
+_ACTUATORANALOGMOCK.fields_by_name['desiredSetting']._options = None
 _ACTUATORANALOGMOCK.fields_by_name['strippedFields']._options = None
 _ACTUATORANALOGMOCK._options = None
 # @@protoc_insertion_point(module_scope)
