@@ -123,8 +123,9 @@ async def test_convert_id(app, client, store, mocker, ctrl):
         await resolver.add_sid({OBJECT_NID_KEY: 'testey'})
 
     # Service ID not found: create placeholder
-    generated = await resolver.add_sid({OBJECT_NID_KEY: 456})
+    generated = await resolver.add_sid({OBJECT_NID_KEY: 456, OBJECT_TYPE_KEY: 'Edgecase,driven'})
     assert generated[OBJECT_SID_KEY].startswith(GENERATED_ID_PREFIX)
+    assert ',driven' not in generated[OBJECT_SID_KEY]
 
 
 async def test_resolve_links(app, client, store):
