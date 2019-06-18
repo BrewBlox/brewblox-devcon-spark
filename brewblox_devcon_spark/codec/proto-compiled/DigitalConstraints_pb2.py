@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x18\x44igitalConstraints.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\xa4\x01\n\x11\x44igitalConstraint\x12$\n\x06minOff\x18\x01 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x04\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12#\n\x05minOn\x18\x02 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x04\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12\x1c\n\x05mutex\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x08\x92?\x02\x38\x10H\x00\x12\x18\n\x08limiting\x18\x64 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x42\x0c\n\nconstraint\"|\n\x12\x44igitalConstraints\x12\x33\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32\x17.blox.DigitalConstraintB\x05\x92?\x02\x10\x08\x12\x31\n\runconstrained\x18\x02 \x01(\x0e\x32\x12.blox.DigitalStateB\x06\x8a\xb5\x18\x02(\x01\x62\x06proto3')
+  serialized_pb=_b('\n\x18\x44igitalConstraints.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\xa4\x01\n\x11\x44igitalConstraint\x12$\n\x06minOff\x18\x01 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x04\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12#\n\x05minOn\x18\x02 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x04\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12\x1c\n\x05mutex\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x08\x92?\x02\x38\x10H\x00\x12\x18\n\x08limiting\x18\x64 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x42\x0c\n\nconstraint\"I\n\x12\x44igitalConstraints\x12\x33\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32\x17.blox.DigitalConstraintB\x05\x92?\x02\x10\x08\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,IoArray__pb2.DESCRIPTOR,])
 
@@ -98,13 +98,6 @@ _DIGITALCONSTRAINTS = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\222?\002\020\010'), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='unconstrained', full_name='blox.DigitalConstraints.unconstrained', index=1,
-      number=2, type=14, cpp_type=8, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002(\001'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -118,7 +111,7 @@ _DIGITALCONSTRAINTS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=246,
-  serialized_end=370,
+  serialized_end=319,
 )
 
 _DIGITALCONSTRAINT.oneofs_by_name['constraint'].fields.append(
@@ -131,7 +124,6 @@ _DIGITALCONSTRAINT.oneofs_by_name['constraint'].fields.append(
   _DIGITALCONSTRAINT.fields_by_name['mutex'])
 _DIGITALCONSTRAINT.fields_by_name['mutex'].containing_oneof = _DIGITALCONSTRAINT.oneofs_by_name['constraint']
 _DIGITALCONSTRAINTS.fields_by_name['constraints'].message_type = _DIGITALCONSTRAINT
-_DIGITALCONSTRAINTS.fields_by_name['unconstrained'].enum_type = IoArray__pb2._DIGITALSTATE
 DESCRIPTOR.message_types_by_name['DigitalConstraint'] = _DIGITALCONSTRAINT
 DESCRIPTOR.message_types_by_name['DigitalConstraints'] = _DIGITALCONSTRAINTS
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -156,5 +148,4 @@ _DIGITALCONSTRAINT.fields_by_name['minOn']._options = None
 _DIGITALCONSTRAINT.fields_by_name['mutex']._options = None
 _DIGITALCONSTRAINT.fields_by_name['limiting']._options = None
 _DIGITALCONSTRAINTS.fields_by_name['constraints']._options = None
-_DIGITALCONSTRAINTS.fields_by_name['unconstrained']._options = None
 # @@protoc_insertion_point(module_scope)
