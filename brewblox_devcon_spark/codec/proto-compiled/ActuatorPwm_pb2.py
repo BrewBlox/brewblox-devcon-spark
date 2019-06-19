@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x11\x41\x63tuatorPwm.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x17\x41nalogConstraints.proto\"\xc2\x02\n\x0b\x41\x63tuatorPwm\x12\x1f\n\nactuatorId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x06\x92?\x02\x38\x10\x12\x1d\n\x06period\x18\x03 \x01(\rB\r\x8a\xb5\x18\x02\x08\x04\x8a\xb5\x18\x03\x10\xe8\x07\x12#\n\x07setting\x18\x04 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\'\n\x05value\x18\x05 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12.\n\rconstrainedBy\x18\x06 \x01(\x0b\x32\x17.blox.AnalogConstraints\x12\x31\n\x10\x64rivenActuatorId\x18\x07 \x01(\rB\x17\x8a\xb5\x18\x02\x18\x01\x8a\xb5\x18\x02@\x01\x92?\x02\x38\x10\x8a\xb5\x18\x02(\x01\x12\x0f\n\x07\x65nabled\x18\x08 \x01(\x08\x12(\n\x0estrippedFields\x18\x63 \x03(\rB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x02:\x07\x8a\xb5\x18\x03\x18\xb3\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x11\x41\x63tuatorPwm.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x17\x41nalogConstraints.proto\"\x80\x03\n\x0b\x41\x63tuatorPwm\x12\x1f\n\nactuatorId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x06\x92?\x02\x38\x10\x12\x1d\n\x06period\x18\x03 \x01(\rB\r\x8a\xb5\x18\x02\x08\x04\x8a\xb5\x18\x03\x10\xe8\x07\x12)\n\x07setting\x18\x04 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\'\n\x05value\x18\x05 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12.\n\rconstrainedBy\x18\x06 \x01(\x0b\x32\x17.blox.AnalogConstraints\x12\x31\n\x10\x64rivenActuatorId\x18\x07 \x01(\rB\x17\x8a\xb5\x18\x02\x18\x01\x8a\xb5\x18\x02@\x01\x92?\x02\x38\x10\x8a\xb5\x18\x02(\x01\x12\x0f\n\x07\x65nabled\x18\x08 \x01(\x08\x12*\n\x0e\x64\x65siredSetting\x18\t \x01(\x11\x42\x12\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12(\n\x0estrippedFields\x18\x63 \x03(\rB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x02:\x13\x8a\xb5\x18\x03\x18\xb3\x02\x8a\xb5\x18\x02H\x01\x8a\xb5\x18\x02H\x05\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,AnalogConstraints__pb2.DESCRIPTOR,])
 
@@ -56,7 +56,7 @@ _ACTUATORPWM = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\0020\001\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\0020\001\212\265\030\002(\001\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='value', full_name='blox.ActuatorPwm.value', index=3,
       number=5, type=17, cpp_type=1, label=1,
@@ -86,7 +86,14 @@ _ACTUATORPWM = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='strippedFields', full_name='blox.ActuatorPwm.strippedFields', index=7,
+      name='desiredSetting', full_name='blox.ActuatorPwm.desiredSetting', index=7,
+      number=9, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\0020\001\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='strippedFields', full_name='blox.ActuatorPwm.strippedFields', index=8,
       number=99, type=13, cpp_type=3, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -98,14 +105,14 @@ _ACTUATORPWM = _descriptor.Descriptor(
   nested_types=[],
   enum_types=[
   ],
-  serialized_options=_b('\212\265\030\003\030\263\002'),
+  serialized_options=_b('\212\265\030\003\030\263\002\212\265\030\002H\001\212\265\030\002H\005'),
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
   serialized_start=83,
-  serialized_end=405,
+  serialized_end=467,
 )
 
 _ACTUATORPWM.fields_by_name['constrainedBy'].message_type = AnalogConstraints__pb2._ANALOGCONSTRAINTS
@@ -125,6 +132,7 @@ _ACTUATORPWM.fields_by_name['period']._options = None
 _ACTUATORPWM.fields_by_name['setting']._options = None
 _ACTUATORPWM.fields_by_name['value']._options = None
 _ACTUATORPWM.fields_by_name['drivenActuatorId']._options = None
+_ACTUATORPWM.fields_by_name['desiredSetting']._options = None
 _ACTUATORPWM.fields_by_name['strippedFields']._options = None
 _ACTUATORPWM._options = None
 # @@protoc_insertion_point(module_scope)

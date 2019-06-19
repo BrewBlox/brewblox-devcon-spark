@@ -138,19 +138,18 @@ async def test_stripped_fields(app, client, cdc, sim_cdc):
 
 async def test_codec_config(app, client, cdc):
     state = status.get_status(app)
+    await state.wait_synchronized()
 
     updated = cdc.update_unit_config({'Temp': 'degF'})
     assert updated['Temp'] == 'degF'
     assert cdc.get_unit_config() == updated
 
     # disconnect
-    state.connected.clear()
-    state.disconnected.set()
+    await state.on_disconnect()
     await asyncio.sleep(0.01)
     # connect
-    state.disconnected.clear()
-    state.connected.set()
-    await asyncio.sleep(0.01)
+    await state.on_connect()
+    await state.wait_synchronized()
 
     assert cdc.get_unit_config()['Temp'] == 'degC'
 
@@ -183,3 +182,8 @@ async def test_point_presence(app, client, cdc):
     dec_id_absent, dec_val_absent = await cdc.decode(enc_id_absent, enc_val_absent)
 
     assert dec_val_present['points'][0]['time'] == 0
+
+
+async def test_compatible_types(app, client, cdc):
+    tree = cdc.compatible_types()
+    assert len(tree['TempSensorInterface']) > 0

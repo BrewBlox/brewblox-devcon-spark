@@ -26,6 +26,7 @@ ONEWIREBUS_NID = 4
 WIFI_SETTINGS_NID = 5
 TOUCH_SETTINGS_NID = 6
 DISPLAY_SETTINGS_NID = 7
+SPARK_PINS_NID = 19
 
 
 FLUSH_DELAY_S = 5
@@ -39,17 +40,7 @@ SYS_OBJECT_KEYS = [
     ['WiFiSettings', WIFI_SETTINGS_NID],
     ['TouchSettings', TOUCH_SETTINGS_NID],
     ['DisplaySettings', DISPLAY_SETTINGS_NID],
-    # Spark V3
-    ['Pin-Bottom-1', 10],
-    ['Pin-Bottom-2', 11],
-    ['Pin-Top-1', 12],
-    ['Pin-Top-2', 13],
-    ['Pin-Top-3', 14],
-    # Spark V1/V2
-    ['Actuator-0', 15],
-    ['Actuator-1', 16],
-    ['Actuator-2', 17],
-    ['Actuator-3', 18],
+    ['SparkPins', SPARK_PINS_NID],
 ]
 SYS_OBJECTS = [
     {'keys': keys, 'data': {}}
@@ -60,7 +51,6 @@ SYS_OBJECTS = [
 def setup(app: web.Application):
     features.add(app, CouchDBBlockStore(app, defaults=SYS_OBJECTS))
     features.add(app, CouchDBConfig(app), key='config')
-    features.add(app, CouchDBConfig(app), key='savepoints')
 
 
 def get_datastore(app: web.Application) -> TwinKeyDict:
@@ -69,10 +59,6 @@ def get_datastore(app: web.Application) -> TwinKeyDict:
 
 def get_config(app: web.Application) -> 'CouchDBConfig':
     return features.get(app, key='config')
-
-
-def get_savepoints(app: web.Application) -> 'CouchDBConfig':
-    return features.get(app, key='savepoints')
 
 
 def non_volatile(func):

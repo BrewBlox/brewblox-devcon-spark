@@ -19,13 +19,10 @@ from brewblox_devcon_spark.commands import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
                                             OBJECT_INTERFACE_KEY,
                                             OBJECT_LIST_KEY, OBJECT_NID_KEY,
                                             OBJECT_TYPE_KEY, SYSTEM_GROUP)
-from brewblox_devcon_spark.datastore import (DISPLAY_SETTINGS_NID,
-                                             GROUPS_NID,
-                                             OBJECT_NID_START,
-                                             ONEWIREBUS_NID,
-                                             SYSINFO_NID,
-                                             SYSTIME_NID,
-                                             TOUCH_SETTINGS_NID,
+from brewblox_devcon_spark.datastore import (DISPLAY_SETTINGS_NID, GROUPS_NID,
+                                             OBJECT_NID_START, ONEWIREBUS_NID,
+                                             SPARK_PINS_NID, SYSINFO_NID,
+                                             SYSTIME_NID, TOUCH_SETTINGS_NID,
                                              WIFI_SETTINGS_NID)
 
 LOGGER = brewblox_logger(__name__)
@@ -123,6 +120,21 @@ class SimulationResponder():
                 GROUP_LIST_KEY: [SYSTEM_GROUP],
                 OBJECT_DATA_KEY: {},
             },
+            SPARK_PINS_NID: {
+                OBJECT_NID_KEY: SPARK_PINS_NID,
+                OBJECT_TYPE_KEY: 'Spark3Pins',
+                GROUP_LIST_KEY: [SYSTEM_GROUP],
+                OBJECT_DATA_KEY: {
+                    'pins': [
+                        {'top1': {}},
+                        {'top2': {}},
+                        {'top3': {}},
+                        {'bottom1': {}},
+                        {'bottom2': {}},
+                    ]
+                },
+            }
+
         }
 
     @property
@@ -279,7 +291,7 @@ class SimulationCommander(commander.SparkCommander):
 
     async def startup(self, app: web.Application):
         await self._responder.startup(app)
-        status.get_status(app).connected.set()
+        await status.get_status(app).on_matched()
 
     async def shutdown(self, _):
         pass

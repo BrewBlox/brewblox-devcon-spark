@@ -228,15 +228,13 @@ class SparkConduit(features.ServiceFeature):
                 self._address, self._transport, self._protocol = await connect_func()
 
                 await self._protocol.connected
+                await spark_status.on_connect()
                 LOGGER.info(f'Connected {self}')
-                spark_status.disconnected.clear()
-                spark_status.connected.set()
                 last_ok = True
 
                 await self._protocol.disconnected
+                await spark_status.on_disconnect()
                 LOGGER.info(f'Disconnected {self}')
-                spark_status.connected.clear()
-                spark_status.disconnected.set()
 
             except CancelledError:
                 with suppress(Exception):
@@ -289,15 +287,18 @@ class SparkProtocol(asyncio.Protocol):
         # Annotations use < and > as start/end characters
         # Most annotations can be discarded, except for event messages
         # Event messages are annotations that start with !
-        for event in self._coerce_message_from_buffer(start='<', end='>', filter_expr=r'^!(.*)'):
-            self._on_event(event)
+        for msg in self._coerce_message_from_buffer(start='<', end='>'):
+            if msg.startswith('!'):  # Event
+                self._on_event(msg[1:])
+            else:
+                LOGGER.info(f'Spark log: {msg}')
 
         # Once annotations are filtered, all that remains is data
         # Data is newline-separated
         for data in self._coerce_message_from_buffer(start='^', end='\n'):
             self._on_data(data)
 
-    def _coerce_message_from_buffer(self, start: str, end: str, filter_expr: str = None):
+    def _coerce_message_from_buffer(self, start: str, end: str):
         """ Filters separate messages from the buffer.
 
         It makes some assumptions about messages:
@@ -305,7 +306,6 @@ class SparkProtocol(asyncio.Protocol):
         * Start/end characters should not be included in yielded messages
         * Messages do not include start/end characters of other message types
         * Messages can be nested
-        * If a filter expression is specified, each capture should be a separate message
 
         Returned messages are ordered on the position of their end character.
         Given the buffer: (< and > are start/end characters)
@@ -327,12 +327,7 @@ class SparkProtocol(asyncio.Protocol):
 
         def extract_message(matchobj) -> str:
             msg = matchobj.group('message').rstrip()
-
-            if filter_expr is None:
-                messages.append(msg)
-            else:
-                [messages.append(m) for m in re.findall(filter_expr, msg)]
-
+            messages.append(msg)
             return ''
 
         while re.search(f'.*{start}.*{end}', self._buffer):

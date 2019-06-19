@@ -10,7 +10,7 @@ import pytest
 from asynctest import CoroutineMock
 from brewblox_service import scheduler
 
-from brewblox_devcon_spark import commander, commands, exceptions
+from brewblox_devcon_spark import commander, commands, exceptions, status
 
 TESTED = commander.__name__
 
@@ -31,6 +31,7 @@ def conduit_mock(mocker):
 @pytest.fixture
 def app(app, conduit_mock, mocker):
     mocker.patch(TESTED + '.REQUEST_TIMEOUT', timedelta(seconds=1))
+    status.setup(app)
     scheduler.setup(app)
     commander.setup(app)
     return app
@@ -80,6 +81,15 @@ async def test_on_event(mocker, conduit_mock, sparky):
     logger_mock = mocker.spy(commander, 'LOGGER')
     await sparky._on_event(conduit_mock, 'hello')
     assert logger_mock.info.call_count == 1
+
+
+async def test_on_welcome(app, mocker, conduit_mock, sparky):
+    assert not status.get_status(app).is_matched
+    await sparky._on_event(conduit_mock, 'BREWBLOX,ed70d66f0,3f2243a,2019-06-18,2019-06-18,78,00')
+    assert status.get_status(app).is_matched
+
+    with pytest.warns(UserWarning, match='Firmware version check failed'):
+        await sparky._on_event(conduit_mock, 'BREWBLOX,ed70d66f0,NOPE,2019-06-18,2019-06-18,78,00')
 
 
 async def test_command(conduit_mock, sparky, reset_msgid):

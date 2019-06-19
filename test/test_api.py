@@ -251,7 +251,7 @@ async def test_validate_sid(sid):
     'word'*51,
     'brackey><',
     'ActiveGroups',
-    'Actuator-0',
+    'SparkPins',
     'a;ljfoihoewr*&(%&^&*%*&^(*&^(',
 ])
 async def test_validate_sid_error(sid):
@@ -343,6 +343,9 @@ async def test_codec_api(app, client, object_args):
     await client.put('/codec/units', json={})
     retd = await response(client.get(f'/objects/{object_args[API_SID_KEY]}'))
     assert retd[API_DATA_KEY]['offset[delta_degC]'] == pytest.approx(degC_offset, 0.1)
+
+    retd = await response(client.get('/codec/compatible_types'))
+    assert 'TempSensorOneWire' in retd['TempSensorInterface']
 
 
 async def test_list_compatible(app, client, object_args):
@@ -442,13 +445,16 @@ async def test_system_status(app, client):
     resp = await response(client.get('/system/status'))
     assert resp == {
         'connected': True,
+        'matched': True,
         'synchronized': True,
+        'issues': [],
     }
-    status.get_status(app).connected.clear()
-    status.get_status(app).disconnected.set()
+    await status.get_status(app).on_disconnect()
     await asyncio.sleep(0.01)
     resp = await response(client.get('/system/status'))
     assert resp == {
         'connected': False,
+        'matched': False,
         'synchronized': False,
+        'issues': [],
     }

@@ -3,6 +3,7 @@ Offers a functional interface to the device functionality
 """
 
 import itertools
+import re
 from contextlib import suppress
 from functools import partialmethod
 from typing import Awaitable, Callable, List, Optional, Type, Union
@@ -68,8 +69,9 @@ class SparkResolver():
         return objects_to_process
 
     def _assign_id(self, input_type: str):
+        clean_name = re.sub(r',driven', '', input_type)
         for i in itertools.count(start=1):  # pragma: no cover
-            name = f'{GENERATED_ID_PREFIX}{input_type}-{i}'
+            name = f'{GENERATED_ID_PREFIX}{clean_name}-{i}'
             if (name, None) not in self._datastore:
                 return name
 

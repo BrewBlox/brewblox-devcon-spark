@@ -8,7 +8,7 @@ import warnings
 from datetime import datetime
 
 from aiohttp import web
-from brewblox_service import brewblox_logger, features, scheduler
+from brewblox_service import brewblox_logger, features, scheduler, strex
 
 from brewblox_devcon_spark import datastore, status
 from brewblox_devcon_spark.api import object_api
@@ -32,6 +32,7 @@ class Seeder(features.ServiceFeature):
 
         self._config = app['config']
         self._task: asyncio.Task = None
+        self._seeding_done: asyncio.Event = None
 
     @property
     def active(self):
@@ -40,6 +41,7 @@ class Seeder(features.ServiceFeature):
     async def startup(self, app: web.Application):
         await self.shutdown(app)
         self._task = await scheduler.create_task(app, self._seed())
+        self._seeding_done = asyncio.Event()
 
     async def shutdown(self, _):
         await scheduler.cancel_task(self.app, self._task)
@@ -49,13 +51,26 @@ class Seeder(features.ServiceFeature):
         spark_status = status.get_status(self.app)
 
         while True:
-            await spark_status.connected.wait()
-            await self._seed_datastore()
-            await self._seed_time()
-            spark_status.synchronized.set()
+            try:
+                self._seeding_done.clear()
+                await spark_status.wait_matched()
+                await self._seed_datastore()
+                await self._seed_time()
+                await spark_status.on_synchronize()
 
-            await spark_status.disconnected.wait()
-            spark_status.synchronized.clear()
+            except asyncio.CancelledError:
+                raise
+
+            except Exception as ex:
+                LOGGER.error(f'Failed to seed: {strex(ex)}')
+
+            finally:
+                self._seeding_done.set()
+
+            await spark_status.wait_disconnected()
+
+    async def seeding_done(self):
+        return await self._seeding_done.wait()
 
     ##########
 
@@ -69,14 +84,11 @@ class Seeder(features.ServiceFeature):
             await asyncio.gather(
                 datastore.get_datastore(self.app).read(f'{device_id}-blocks-db'),
                 datastore.get_config(self.app).read(f'{device_id}-config-db'),
-                datastore.get_savepoints(self.app).read(f'{device_id}-savepoints-db'),
             )
-
-        except asyncio.CancelledError:
-            raise
 
         except Exception as ex:
             warnings.warn(f'Failed to seed datastore - {type(ex).__name__}({ex})')
+            raise
 
     async def _seed_time(self):
         try:
@@ -90,8 +102,6 @@ class Seeder(features.ServiceFeature):
                     'secondsSinceEpoch': now.timestamp()
                 })
 
-        except asyncio.CancelledError:
-            raise
-
         except Exception as ex:
             warnings.warn(f'Failed to seed controller time - {type(ex).__name__}({ex})')
+            raise
