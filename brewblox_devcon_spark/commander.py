@@ -168,7 +168,7 @@ class SparkCommander(features.ServiceFeature):
             await state.on_matched()
         else:
             issues = [
-                'Firmware version check failed'
+                'Firmware version check failed',
                 f'Firmware protocol version: {welcome.proto_version}',
                 f'Service protocol version: {service_proto_version}',
                 f'Service build date: {service_proto_date}',
