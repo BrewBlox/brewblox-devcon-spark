@@ -42,10 +42,6 @@ steps:
   displayName: Docker login
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
-- bash: |
-    bash setup.sh
-  displayName: Perform additional build-only setup steps
-
 - bash: >
     bbt-localbuild
     --arch amd arm
