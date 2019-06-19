@@ -48,8 +48,7 @@ async def disabled_app(app):
 
 @pytest.fixture
 async def connected(app, client):
-    status.get_status(app).connected.set()
-    status.get_status(app).synchronized.set()
+    await status.get_status(app).on_synchronize()
 
 
 async def test_startup_shutdown(app, client):

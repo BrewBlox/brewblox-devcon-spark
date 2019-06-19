@@ -12,6 +12,13 @@ from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
 TESTED = main.__name__
 
 
+@pytest.fixture(autouse=True)
+def mocked_parse(mocker, app_settings):
+    m = mocker.patch(TESTED + '.parse_settings')
+    m.return_value = app_settings
+    return m
+
+
 @pytest.fixture
 def list_device_app(sys_args):
     sys_args.append('--list-devices')

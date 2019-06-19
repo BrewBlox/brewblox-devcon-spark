@@ -68,7 +68,7 @@ async def _broadcast(app: web.Application,
 
     while True:
         try:
-            await spark_status.connected.wait()
+            await spark_status.wait_synchronized()
             await asyncio.sleep(interval)
             obj = await ctrl.read_object({OBJECT_SID_KEY: sid})
 

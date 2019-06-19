@@ -59,7 +59,16 @@ def sys_args(app_config) -> list:
         '--mdns-host', app_config['mdns_host'],
         '--mdns-port', app_config['mdns_port'],
         '--volatile',
+        '--skip-version-check',
     ]]
+
+
+@pytest.fixture
+def app_settings() -> dict:
+    return {
+        'proto_version': '3f2243a',
+        'proto_date': '2019/06/06',
+    }
 
 
 @pytest.fixture
@@ -70,9 +79,10 @@ def event_loop(loop):
 
 
 @pytest.fixture
-def app(sys_args):
+def app(sys_args, app_settings):
     parser = create_parser('default')
     app = service.create_app(parser=parser, raw_args=sys_args[1:])
+    app['settings'] = app_settings
     return app
 
 

@@ -6,14 +6,18 @@ import asyncio
 import warnings
 from collections import defaultdict
 from concurrent.futures import CancelledError, TimeoutError
+from dataclasses import dataclass
 from datetime import datetime, timedelta
+from enum import Enum
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, scheduler
 
-from brewblox_devcon_spark import commands, communication, exceptions
+from brewblox_devcon_spark import commands, communication, exceptions, status
 
 LOGGER = brewblox_logger(__name__)
+
+WELCOME_PREFIX = 'BREWBLOX'
 
 # Spark protocol is to echo the request in the response
 # To prevent decoding ambiguity, a non-hexadecimal character separates the request and response
@@ -50,6 +54,37 @@ def setup(app: web.Application):
 
 def get_commander(app: web.Application):
     return features.get(app, SparkCommander)
+
+
+@dataclass
+class WelcomeMessage:
+    name: str
+    firmware_version: str
+    proto_version: str
+    firmware_date: str
+    proto_date: str
+    reset_reason_hex: str
+    reset_data_hex: str
+
+
+class ResetReason(Enum):
+    NONE = '00'
+    UNKNOWN = '0A'
+    # Hardware
+    PIN_RESET = '14'
+    POWER_MANAGEMENT = '1E'
+    POWER_DOWN = '28'
+    POWER_BROWNOUT = '32'
+    WATCHDOG = '3C'
+    # Software
+    UPDATE = '46'
+    UPDATE_ERROR = '50'
+    UPDATE_TIMEOUT = '5A'
+    FACTORY_RESET = '64'
+    SAFE_MODE = '6E'
+    DFU_MODE = '78'
+    PANIC = '82'
+    USER = '8C'
 
 
 class TimestampedQueue():
@@ -119,8 +154,33 @@ class SparkCommander(features.ServiceFeature):
             except Exception as ex:
                 warnings.warn(f'{self} cleanup task error: {type(ex).__name__}({ex})')
 
+    async def _on_welcome(self, msg: str):
+        state = status.get_status(self.app)
+
+        welcome = WelcomeMessage(*msg.split(','))
+        LOGGER.info(welcome)
+        LOGGER.info(f'Controller reboot reason: {ResetReason(welcome.reset_reason_hex).name}')
+
+        service_proto_version = self.app['settings']['proto_version']
+        service_proto_date = self.app['settings']['proto_date']
+
+        if service_proto_version == welcome.proto_version:
+            await state.on_matched()
+        else:
+            issues = [
+                'Firmware version check failed'
+                f'Firmware protocol version: {welcome.proto_version}',
+                f'Service protocol version: {service_proto_version}',
+                f'Service build date: {service_proto_date}',
+                f'Firmware build date: {welcome.proto_date}',
+            ]
+            state.add_issues(issues)
+            warnings.warn('\n\t\t'.join(issues))
+
     async def _on_event(self, conduit, msg: str):
         LOGGER.info(f'Spark event: "{msg}"')
+        if msg.startswith(WELCOME_PREFIX):
+            await self._on_welcome(msg)
 
     async def _on_data(self, conduit, msg: str):
         try:
