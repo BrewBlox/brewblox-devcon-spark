@@ -43,14 +43,6 @@ def app_config() -> dict:
 
 
 @pytest.fixture
-def app_settings() -> dict:
-    return {
-        'proto_version': '3f2243a',
-        'proto_date': '2019/06/06',
-    }
-
-
-@pytest.fixture
 def sys_args(app_config) -> list:
     return [str(v) for v in [
         'app_name',
@@ -69,6 +61,14 @@ def sys_args(app_config) -> list:
         '--volatile',
         '--skip-version-check',
     ]]
+
+
+@pytest.fixture
+def app_settings() -> dict:
+    return {
+        'proto_version': '3f2243a',
+        'proto_date': '2019/06/06',
+    }
 
 
 @pytest.fixture

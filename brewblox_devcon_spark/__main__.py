@@ -79,14 +79,17 @@ def create_parser(default_name='spark'):
     return parser
 
 
+def parse_settings(app):  # pragma: no cover
+    cfg = ConfigParser()
+    cfg.read('config/settings.ini')
+    return dict(cfg['SETTINGS'].items())
+
+
 def main():
     app = service.create_app(parser=create_parser())
     logging.captureWarnings(True)
     config = app['config']
-
-    cfg = ConfigParser()
-    cfg.read('config/settings.ini')
-    app['settings'] = dict(cfg['SETTINGS'].items())
+    app['settings'] = parse_settings(app)
 
     if config['list_devices']:
         LOGGER.info('Listing connected devices: ')
