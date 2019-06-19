@@ -445,13 +445,16 @@ async def test_system_status(app, client):
     resp = await response(client.get('/system/status'))
     assert resp == {
         'connected': True,
+        'matched': True,
         'synchronized': True,
+        'issues': [],
     }
-    status.get_status(app).connected.clear()
-    status.get_status(app).disconnected.set()
+    await status.get_status(app).on_disconnect()
     await asyncio.sleep(0.01)
     resp = await response(client.get('/system/status'))
     assert resp == {
         'connected': False,
+        'matched': False,
         'synchronized': False,
+        'issues': [],
     }

@@ -93,7 +93,4 @@ async def check_status(request: web.Request) -> web.Response:
     - application/json
     """
     _status = status.get_status(request.app)
-    return web.json_response({
-        'connected': _status.connected.is_set(),
-        'synchronized': _status.synchronized.is_set(),
-    })
+    return web.json_response(_status.state)

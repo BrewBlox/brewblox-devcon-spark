@@ -3,6 +3,7 @@ Example of how to import and use the brewblox service
 """
 
 import logging
+from configparser import ConfigParser
 
 from brewblox_service import brewblox_logger, events, scheduler, service
 
@@ -44,6 +45,9 @@ def create_parser(default_name='spark'):
                        '--device-id specifies which discovered device is valid. ',
                        choices=['all', 'usb', 'wifi'],
                        default='all')
+    group.add_argument('--skip-version-check',
+                       help='Skip protobuf version check: will not raise error on mismatch',
+                       action='store_true')
     group.add_argument('--list-devices',
                        action='store_true',
                        help='List connected devices and exit. [%(default)s]')
@@ -79,6 +83,10 @@ def main():
     app = service.create_app(parser=create_parser())
     logging.captureWarnings(True)
     config = app['config']
+
+    cfg = ConfigParser()
+    cfg.read('config/settings.ini')
+    app['settings'] = dict(cfg['SETTINGS'].items())
 
     if config['list_devices']:
         LOGGER.info('Listing connected devices: ')

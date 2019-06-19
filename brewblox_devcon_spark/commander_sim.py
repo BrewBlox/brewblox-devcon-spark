@@ -291,7 +291,7 @@ class SimulationCommander(commander.SparkCommander):
 
     async def startup(self, app: web.Application):
         await self._responder.startup(app)
-        status.get_status(app).connected.set()
+        await status.get_status(app).on_matched()
 
     async def shutdown(self, _):
         pass

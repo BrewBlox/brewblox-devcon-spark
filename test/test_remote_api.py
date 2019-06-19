@@ -83,7 +83,7 @@ async def app(app, mock_publisher, dummy_listener):
 
 @pytest.fixture
 async def created(app, client, object_args):
-    status.get_status(app).connected.set()
+    await status.get_status(app).on_synchronize()
     retv = await client.post('/objects', json={
         API_SID_KEY: object_args[OBJECT_SID_KEY],
         GROUP_LIST_KEY: object_args[GROUP_LIST_KEY],
