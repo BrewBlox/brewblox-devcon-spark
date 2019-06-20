@@ -158,8 +158,9 @@ class SparkCommander(features.ServiceFeature):
         state = status.get_status(self.app)
 
         welcome = WelcomeMessage(*msg.split(','))
+        reboot_reason = ResetReason(welcome.reset_reason_hex.upper()).name
         LOGGER.info(welcome)
-        LOGGER.info(f'Controller reboot reason: {ResetReason(welcome.reset_reason_hex).name}')
+        LOGGER.info(f'Controller reboot reason: {reboot_reason}')
 
         service_proto_version = self.app['settings']['proto_version']
         service_proto_date = self.app['settings']['proto_date']
