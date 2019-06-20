@@ -158,4 +158,4 @@ class Codec(features.ServiceFeature):
         except Exception as ex:
             msg = f'{type(ex).__name__}({ex})'
             LOGGER.debug(msg, exc_info=True)
-            return 'UnknownType' if no_content else ('ErrorObject', {'error': msg, 'type': type_name})
+            return ('UnknownType', {}) if no_content else ('ErrorObject', {'error': msg, 'type': type_name})

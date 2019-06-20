@@ -85,7 +85,7 @@ async def test_decode_errors(app, client, cdc):
         == ('ErrorObject', {'error': ANY, 'type': 'TempSensorOneWire'})
 
     assert await cdc.decode(1e6, b'\x00') == ('ErrorObject', {'error': ANY, 'type': 1e6})
-    assert await cdc.decode(1e6) == 'UnknownType'
+    assert await cdc.decode(1e6) == ('UnknownType', {})
 
 
 async def test_invalid_object(app, client, cdc):
