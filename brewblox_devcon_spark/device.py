@@ -23,7 +23,7 @@ from brewblox_devcon_spark.commands import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
 OBJECT_SID_KEY = 'object_sid'
 OBJECT_LINK_POSTFIX_START = '<'
 OBJECT_LINK_POSTFIX_END = '>'
-GENERATED_ID_PREFIX = 'UNKNOWN|'
+GENERATED_ID_PREFIX = 'New|'
 ObjectId_ = Union[str, int]
 FindIdFunc_ = Callable[[twinkeydict.TwinKeyDict, ObjectId_, str], Awaitable[ObjectId_]]
 

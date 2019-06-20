@@ -146,12 +146,12 @@ class ObjectApi():
         })
         return self._as_api_object(response)
 
-    async def all_stored(self) -> Awaitable[dict]:
+    async def all_stored(self) -> Awaitable[list]:
         await self.wait_for_sync()
         response = await self._ctrl.list_stored_objects()
         return [self._as_api_object(obj) for obj in response.get(OBJECT_LIST_KEY, [])]
 
-    async def all_logged(self) -> Awaitable[dict]:
+    async def all_logged(self) -> Awaitable[list]:
         await self.wait_for_sync()
         response = await self._ctrl.log_objects()
         return [self._as_api_object(obj) for obj in response.get(OBJECT_LIST_KEY, [])]
@@ -174,6 +174,14 @@ class ObjectApi():
         await self._ctrl.clear_objects()
         self._store.clear()
         return {}
+
+    async def cleanup_names(self) -> Awaitable[list]:
+        await self.wait_for_sync()
+        actual = [obj[API_SID_KEY] for obj in await self.all()]
+        unused = [sid for (sid, nid) in self._store if sid not in actual]
+        for sid in unused:
+            del self._store[sid, None]
+        return unused
 
     async def export_objects(self) -> Awaitable[dict]:
         await self.wait_for_sync()
@@ -449,6 +457,23 @@ async def clear_objects(request: web.Request) -> web.Response:
     """
     return web.json_response(
         await ObjectApi(request.app).clear_objects()
+    )
+
+
+@routes.delete('/unused_names')
+async def cleanup_names(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Clear all unused object names
+    tags:
+    - Spark
+    - Objects
+    operationId: controller.spark.objects.cleanup_names
+    produces:
+    - application/json
+    """
+    return web.json_response(
+        await ObjectApi(request.app).cleanup_names()
     )
 
 
