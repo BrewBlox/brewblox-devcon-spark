@@ -230,6 +230,18 @@ async def test_clear(app, client, object_args):
     assert len(await response(client.get('/objects'))) == n_sys_obj
 
 
+async def test_unused(app, client, object_args):
+    new_alias = dict(
+        sid='unused',
+        nid=456
+    )
+    await client.post('/aliases', json=new_alias)
+    await client.post('/objects', json=object_args)
+    retv = await response(client.delete('/unused_names'))
+    assert 'unused' in retv
+    assert object_args[API_SID_KEY] not in retv
+
+
 @pytest.mark.parametrize('sid', [
     'flabber',
     'FLABBER',
