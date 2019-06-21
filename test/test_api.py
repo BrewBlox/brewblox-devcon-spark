@@ -306,6 +306,10 @@ async def test_alias_delete(app, client, object_args):
     assert retv.status == 400
 
 
+async def test_ping(app, client):
+    await response(client.get('/system/ping'))
+
+
 async def test_groups(app, client):
     groups = await response(client.get('/system/groups'))
     assert groups == [0, device.SYSTEM_GROUP]  # Initialized value
@@ -456,17 +460,19 @@ async def test_logged_objects(app, client):
 async def test_system_status(app, client):
     resp = await response(client.get('/system/status'))
     assert resp == {
-        'connected': True,
-        'matched': True,
-        'synchronized': True,
-        'issues': [],
+        'connect': True,
+        'handshake': True,
+        'synchronize': True,
+        'compatible': True,
+        'info': ANY,
     }
     await status.get_status(app).on_disconnect()
     await asyncio.sleep(0.01)
     resp = await response(client.get('/system/status'))
     assert resp == {
-        'connected': False,
-        'matched': False,
-        'synchronized': False,
-        'issues': [],
+        'connect': False,
+        'handshake': False,
+        'synchronize': False,
+        'compatible': True,
+        'info': [],
     }

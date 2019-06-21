@@ -58,8 +58,7 @@ def sys_args(app_config) -> list:
         '--sync-exchange', app_config['sync_exchange'],
         '--mdns-host', app_config['mdns_host'],
         '--mdns-port', app_config['mdns_port'],
-        '--volatile',
-        '--skip-version-check',
+        '--volatile'
     ]]
 
 

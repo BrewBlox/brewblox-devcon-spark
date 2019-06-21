@@ -158,25 +158,24 @@ class SparkCommander(features.ServiceFeature):
         state = status.get_status(self.app)
 
         welcome = WelcomeMessage(*msg.split(','))
-        reboot_reason = ResetReason(welcome.reset_reason_hex.upper()).name
         LOGGER.info(welcome)
+
+        reboot_reason = ResetReason(welcome.reset_reason_hex.upper()).name
         LOGGER.info(f'Controller reboot reason: {reboot_reason}')
 
         service_proto_version = self.app['settings']['proto_version']
         service_proto_date = self.app['settings']['proto_date']
 
-        if service_proto_version == welcome.proto_version:
-            await state.on_matched()
-        else:
-            issues = [
-                'Firmware version check failed',
-                f'Firmware protocol version: {welcome.proto_version}',
-                f'Service protocol version: {service_proto_version}',
-                f'Service build date: {service_proto_date}',
-                f'Firmware build date: {welcome.proto_date}',
-            ]
-            state.add_issues(issues)
-            warnings.warn('\n\t\t'.join(issues))
+        info = [
+            f'Firmware version: {welcome.firmware_version}',
+            f'Firmware date: {welcome.firmware_date}',
+            f'Firmware protocol version: {welcome.proto_version}',
+            f'Service protocol version: {service_proto_version}',
+            f'Firmware protocol date: {welcome.proto_date}',
+            f'Service protocol date: {service_proto_date}',
+        ]
+        version_ok = service_proto_version == welcome.proto_version
+        await state.on_handshake(version_ok, info)
 
     async def _on_event(self, conduit, msg: str):
         LOGGER.info(f'Spark event: "{msg}"')

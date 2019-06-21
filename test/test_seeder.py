@@ -27,7 +27,7 @@ def states(app):
 
 async def synchronized(app):
     state = status.get_status(app)
-    await state.wait_synchronized()
+    await state.wait_synchronize()
 
 
 async def connect(app):
@@ -39,7 +39,7 @@ async def connect(app):
 async def disconnect(app):
     state = status.get_status(app)
     await state.on_disconnect()
-    await state.wait_disconnected()
+    await state.wait_disconnect()
     await asyncio.sleep(0.01)
 
 
@@ -109,6 +109,19 @@ async def test_seed_errors(app, client, mocker, api_mock):
 
     assert states(app) == [False, True, False]
     assert seeder.get_seeder(app).active
+
+
+async def test_seed_ping_error(app, client, mocker):
+    await synchronized(app)
+
+    mocker.patch.object(device.get_controller(app), 'noop', CoroutineMock(side_effect=RuntimeError))
+
+    await disconnect(app)
+
+    with pytest.warns(UserWarning, match='Failed to ping controller'):
+        await connect(app)
+
+    assert states(app) == [False, True, False]
 
 
 async def test_cancel_datastore(app, client, mocker, api_mock):

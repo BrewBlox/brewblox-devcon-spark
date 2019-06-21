@@ -12,7 +12,7 @@ from brewblox_service import brewblox_logger, features, scheduler, strex
 
 from brewblox_devcon_spark import datastore, status
 from brewblox_devcon_spark.api import object_api
-from brewblox_devcon_spark.device import SYSTEM_GROUP
+from brewblox_devcon_spark.device import SYSTEM_GROUP, get_controller
 
 LOGGER = brewblox_logger(__name__)
 
@@ -53,9 +53,14 @@ class Seeder(features.ServiceFeature):
         while True:
             try:
                 self._seeding_done.clear()
-                await spark_status.wait_matched()
+
+                await spark_status.wait_connect()
+                await self._ping_controller()
+
+                await spark_status.wait_handshake()
                 await self._seed_datastore()
                 await self._seed_time()
+
                 await spark_status.on_synchronize()
 
             except asyncio.CancelledError:
@@ -67,12 +72,20 @@ class Seeder(features.ServiceFeature):
             finally:
                 self._seeding_done.set()
 
-            await spark_status.wait_disconnected()
+            await spark_status.wait_disconnect()
 
     async def seeding_done(self):
         return await self._seeding_done.wait()
 
     ##########
+
+    async def _ping_controller(self):
+        try:
+            await get_controller(self.app).noop()
+
+        except Exception as ex:
+            warnings.warn(f'Failed to ping controller - {strex(ex)}')
+            raise ex
 
     async def _seed_datastore(self):
         try:
@@ -87,8 +100,8 @@ class Seeder(features.ServiceFeature):
             )
 
         except Exception as ex:
-            warnings.warn(f'Failed to seed datastore - {type(ex).__name__}({ex})')
-            raise
+            warnings.warn(f'Failed to seed datastore - {strex(ex)}')
+            raise ex
 
     async def _seed_time(self):
         try:
@@ -103,5 +116,5 @@ class Seeder(features.ServiceFeature):
                 })
 
         except Exception as ex:
-            warnings.warn(f'Failed to seed controller time - {type(ex).__name__}({ex})')
-            raise
+            warnings.warn(f'Failed to seed controller time - {strex(ex)}')
+            raise ex

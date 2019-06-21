@@ -3,12 +3,12 @@ Specific endpoints for using system objects
 """
 
 
-from typing import List
+from typing import Awaitable, List
 
 from aiohttp import web
 from brewblox_service import brewblox_logger
 
-from brewblox_devcon_spark import status
+from brewblox_devcon_spark import device, status
 from brewblox_devcon_spark.api import API_DATA_KEY, object_api
 from brewblox_devcon_spark.datastore import GROUPS_NID
 
@@ -25,11 +25,11 @@ class SystemApi():
     def __init__(self, app: web.Application):
         self._obj_api: object_api.ObjectApi = object_api.ObjectApi(app)
 
-    async def read_groups(self) -> List[int]:
+    async def read_groups(self) -> Awaitable[List[int]]:
         groups = await self._obj_api.read(GROUPS_NID)
         return groups[API_DATA_KEY]['active']
 
-    async def write_groups(self, groups: List[int]) -> List[int]:
+    async def write_groups(self, groups: List[int]) -> Awaitable[List[int]]:
         group_obj = await self._obj_api.write(
             sid=GROUPS_NID,
             groups=[],
@@ -94,3 +94,20 @@ async def check_status(request: web.Request) -> web.Response:
     """
     _status = status.get_status(request.app)
     return web.json_response(_status.state)
+
+
+@routes.get('/system/ping')
+async def ping(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Ping controller
+    tags:
+    - Spark
+    - System
+    operationId: controller.spark.system.ping
+    produces:
+    - application/json
+    """
+    return web.json_response(
+        await device.get_controller(request.app).noop()
+    )

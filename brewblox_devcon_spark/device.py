@@ -260,6 +260,7 @@ class SparkController(features.ServiceFeature):
             LOGGER.debug(f'Failed to execute {command_type}: {type(ex).__name__}({ex})')
             raise ex
 
+    noop = partialmethod(_execute, commands.NoopCommand, None)
     read_object = partialmethod(_execute, commands.ReadObjectCommand, None)
     write_object = partialmethod(_execute, commands.WriteObjectCommand, None)
     create_object = partialmethod(_execute, commands.CreateObjectCommand, None)

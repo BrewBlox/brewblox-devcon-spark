@@ -52,6 +52,7 @@ class SimulationResponder():
         self._codec = features.get(app, key='sim_codec')
 
         self._command_funcs = {
+            commands.NoopCommand: self._noop_command,
             commands.ReadObjectCommand: self._read_object,
             commands.WriteObjectCommand: self._write_object,
             commands.CreateObjectCommand: self._create_object,
@@ -206,6 +207,12 @@ class SimulationResponder():
                 OBJECT_DATA_KEY: {'actualType': obj[OBJECT_TYPE_KEY]},
             }
 
+    async def _noop_command(self, request):
+        # Shortcut for actual behavior
+        # Noop triggers a welcome message
+        # Welcome message is checked, and triggers on_handshake()
+        await status.get_status(self._app).on_handshake(True, ['Brought to you by commander_sim'])
+
     async def _read_object(self, request):
         try:
             return self._get_obj(request[OBJECT_NID_KEY])
@@ -291,7 +298,7 @@ class SimulationCommander(commander.SparkCommander):
 
     async def startup(self, app: web.Application):
         await self._responder.startup(app)
-        await status.get_status(app).on_matched()
+        await status.get_status(app).on_connect()
 
     async def shutdown(self, _):
         pass
