@@ -79,9 +79,10 @@ class SparkStatus(features.ServiceFeature):
         self._connect_ev.set()
 
     async def on_handshake(self, compatible: bool, info: List[str]):
-        await self.on_connect()
         self._info = info
         self._compatible = self.app['config']['skip_version_check'] or compatible
+
+        await self.on_connect()
         self._handshake_ev.set()
 
         if not compatible:

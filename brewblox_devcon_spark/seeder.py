@@ -49,15 +49,21 @@ class Seeder(features.ServiceFeature):
 
     async def _seed(self):
         spark_status = status.get_status(self.app)
+        ping_task = None
 
         while True:
             try:
                 self._seeding_done.clear()
 
                 await spark_status.wait_connect()
-                await self._ping_controller()
+                # Will trigger the backup handshake
+                # We don't need to wait for this - we just want the side effect
+                ping_task = await scheduler.create_task(self.app, self._ping_controller())
 
                 await spark_status.wait_handshake()
+                if not spark_status.is_compatible:  # pragma: no cover
+                    raise RuntimeError('Incompatible firmware version')
+
                 await self._seed_datastore()
                 await self._seed_time()
 
@@ -71,6 +77,7 @@ class Seeder(features.ServiceFeature):
 
             finally:
                 self._seeding_done.set()
+                await scheduler.cancel_task(self.app, ping_task)
 
             await spark_status.wait_disconnect()
 
@@ -83,9 +90,8 @@ class Seeder(features.ServiceFeature):
         try:
             await get_controller(self.app).noop()
 
-        except Exception as ex:
+        except Exception as ex:  # pragma: no cover
             warnings.warn(f'Failed to ping controller - {strex(ex)}')
-            raise ex
 
     async def _seed_datastore(self):
         try:

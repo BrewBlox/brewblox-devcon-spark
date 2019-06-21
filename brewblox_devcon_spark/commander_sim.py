@@ -299,6 +299,7 @@ class SimulationCommander(commander.SparkCommander):
     async def startup(self, app: web.Application):
         await self._responder.startup(app)
         await status.get_status(app).on_connect()
+        await status.get_status(app).on_handshake(True, ['Automatic handshake'])
 
     async def shutdown(self, _):
         pass

@@ -111,19 +111,6 @@ async def test_seed_errors(app, client, mocker, api_mock):
     assert seeder.get_seeder(app).active
 
 
-async def test_seed_ping_error(app, client, mocker):
-    await synchronized(app)
-
-    mocker.patch.object(device.get_controller(app), 'noop', CoroutineMock(side_effect=RuntimeError))
-
-    await disconnect(app)
-
-    with pytest.warns(UserWarning, match='Failed to ping controller'):
-        await connect(app)
-
-    assert states(app) == [False, True, False]
-
-
 async def test_cancel_datastore(app, client, mocker, api_mock):
     await synchronized(app)
     api_mock.read = CoroutineMock(side_effect=asyncio.CancelledError)
