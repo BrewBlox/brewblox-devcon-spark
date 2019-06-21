@@ -84,12 +84,21 @@ async def test_on_event(mocker, conduit_mock, sparky):
 
 
 async def test_on_welcome(app, mocker, conduit_mock, sparky):
-    assert not status.get_status(app).is_matched
+    state = status.get_status(app)
+    assert not state.info
     await sparky._on_event(conduit_mock, 'BREWBLOX,ed70d66f0,3f2243a,2019-06-18,2019-06-18,78,00')
-    assert status.get_status(app).is_matched
+    assert state.is_compatible
 
-    with pytest.warns(UserWarning, match='Firmware version check failed'):
+    app['config']['skip_version_check'] = True
+    with pytest.warns(UserWarning, match='Handshake failed'):
         await sparky._on_event(conduit_mock, 'BREWBLOX,ed70d66f0,NOPE,2019-06-18,2019-06-18,78,00')
+    assert state.is_compatible
+
+    app['config']['skip_version_check'] = False
+    with pytest.warns(UserWarning, match='Handshake failed'):
+        await sparky._on_event(conduit_mock, 'BREWBLOX,ed70d66f0,NOPE,2019-06-18,2019-06-18,78,00')
+    assert not state.is_compatible
+    assert not state.is_synchronized
 
 
 async def test_command(conduit_mock, sparky, reset_msgid):

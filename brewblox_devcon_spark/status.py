@@ -4,6 +4,7 @@ Awaitable events for tracking device and network status
 
 
 import asyncio
+import warnings
 from typing import List
 
 from aiohttp import web
@@ -24,79 +25,85 @@ class SparkStatus(features.ServiceFeature):
 
     def __init__(self, app: web.Application):
         super().__init__(app)
-        self._issues: List[str] = []
-        self._connected: asyncio.Event = None
-        self._matched: asyncio.Event = None
-        self._synchronized: asyncio.Event = None
-        self._disconnected: asyncio.Event = None
+        self._info: List[str] = []
+        self._compatible: bool = True  # until proven otherwise
+        self._connect_ev: asyncio.Event = None
+        self._handshake_ev: asyncio.Event = None
+        self._synchronize_ev: asyncio.Event = None
+        self._disconnect_ev: asyncio.Event = None
 
     @property
     def is_connected(self):
-        return self._connected.is_set()
+        return self._connect_ev.is_set()
 
     @property
-    def is_matched(self):
-        return self._matched.is_set()
+    def is_compatible(self):
+        return self._compatible
 
     @property
     def is_synchronized(self):
-        return self._synchronized.is_set()
+        return self._synchronize_ev.is_set()
 
     @property
     def is_disconnected(self):
-        return self._disconnected.is_set()
+        return self._disconnect_ev.is_set()
+
+    @property
+    def info(self):
+        return self._info
 
     @property
     def state(self) -> dict:
         return {
-            'connected': self._connected.is_set(),
-            'matched': self._matched.is_set(),
-            'synchronized': self._synchronized.is_set(),
-            'issues': self._issues,
+            'connect': self._connect_ev.is_set(),
+            'handshake': self._handshake_ev.is_set(),
+            'synchronize': self._synchronize_ev.is_set(),
+            'compatible': self._compatible,
+            'info': self._info,
         }
 
-    async def wait_connected(self):  # pragma: no cover
-        await self._connected.wait()
+    async def wait_connect(self):
+        await self._connect_ev.wait()
 
-    async def wait_matched(self):
-        await self._matched.wait()
+    async def wait_handshake(self):
+        await self._handshake_ev.wait()
 
-    async def wait_synchronized(self):
-        await self._synchronized.wait()
+    async def wait_synchronize(self):
+        await self._synchronize_ev.wait()
 
-    async def wait_disconnected(self):
-        await self._disconnected.wait()
+    async def wait_disconnect(self):
+        await self._disconnect_ev.wait()
 
     async def on_connect(self):
-        self._issues.clear()
-        self._disconnected.clear()
+        self._disconnect_ev.clear()
+        self._connect_ev.set()
 
-        self._connected.set()
-        if self.app['config']['skip_version_check']:  # pragma: no cover
-            self._matched.set()
+    async def on_handshake(self, compatible: bool, info: List[str]):
+        self._info = info
+        self._compatible = self.app['config']['skip_version_check'] or compatible
 
-    async def on_matched(self):
         await self.on_connect()
-        self._matched.set()
+        self._handshake_ev.set()
+
+        if not compatible:
+            self._synchronize_ev.clear()
+            warnings.warn('Handshake failed: firmware incompatible')
 
     async def on_synchronize(self):
-        await self.on_matched()
-        self._synchronized.set()
+        self._synchronize_ev.set()
 
     async def on_disconnect(self):
-        self._connected.clear()
-        self._matched.clear()
-        self._synchronized.clear()
-        self._disconnected.set()
-
-    def add_issues(self, issues: List[str]):
-        self._issues += issues
+        self._info = []
+        self._connect_ev.clear()
+        self._handshake_ev.clear()
+        self._synchronize_ev.clear()
+        self._disconnect_ev.set()
 
     async def startup(self, app: web.Application):
-        self._connected = asyncio.Event()
-        self._matched = asyncio.Event()
-        self._synchronized = asyncio.Event()
-        self._disconnected = asyncio.Event()
+        self._connect_ev = asyncio.Event()
+        self._handshake_ev = asyncio.Event()
+        self._synchronize_ev = asyncio.Event()
+        self._disconnect_ev = asyncio.Event()
 
     async def shutdown(self, app: web.Application):
         pass

@@ -27,7 +27,7 @@ def states(app):
 
 async def synchronized(app):
     state = status.get_status(app)
-    await state.wait_synchronized()
+    await state.wait_synchronize()
 
 
 async def connect(app):
@@ -39,7 +39,7 @@ async def connect(app):
 async def disconnect(app):
     state = status.get_status(app)
     await state.on_disconnect()
-    await state.wait_disconnected()
+    await state.wait_disconnect()
     await asyncio.sleep(0.01)
 
 

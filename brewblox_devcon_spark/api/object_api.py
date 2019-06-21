@@ -48,7 +48,7 @@ class ObjectApi():
 
     async def wait_for_sync(self):
         if self._wait_sync and self._status.is_connected:
-            await asyncio.wait_for(self._status.wait_synchronized(), SYNC_WAIT_TIMEOUT_S)
+            await asyncio.wait_for(self._status.wait_synchronize(), SYNC_WAIT_TIMEOUT_S)
 
     async def create(self,
                      sid: str,

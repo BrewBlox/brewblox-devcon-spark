@@ -401,6 +401,13 @@ _DISCOVERY = _OBJECT_ID + _OBJECT_INTERFACE
 _CREATE_ID = Struct(OBJECT_NID_KEY / Default(Int16ul, 0))  # 0 == assigned by controller
 
 
+class NoopCommand(Command):
+    _OPCODE = OpcodeEnum.NONE
+    _REQUEST = None
+    _RESPONSE = None
+    _VALUES = None
+
+
 class ReadObjectCommand(Command):
     _OPCODE = OpcodeEnum.READ_OBJECT
     _REQUEST = _OBJECT_ID
