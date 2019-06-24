@@ -9,7 +9,7 @@ from functools import partialmethod
 from typing import Awaitable, Callable, List, Optional, Type, Union
 
 from aiohttp import web
-from brewblox_service import brewblox_logger, features
+from brewblox_service import brewblox_logger, features, strex
 
 from brewblox_devcon_spark import (commander, commands, datastore, exceptions,
                                    twinkeydict)
@@ -257,9 +257,10 @@ class SparkController(features.ServiceFeature):
             return retval
 
         except Exception as ex:
-            LOGGER.debug(f'Failed to execute {command_type}: {type(ex).__name__}({ex})')
+            LOGGER.debug(f'Failed to execute {command_type}: {strex(ex)}')
             raise ex
 
+    noop = partialmethod(_execute, commands.NoopCommand, None)
     read_object = partialmethod(_execute, commands.ReadObjectCommand, None)
     write_object = partialmethod(_execute, commands.WriteObjectCommand, None)
     create_object = partialmethod(_execute, commands.CreateObjectCommand, None)
