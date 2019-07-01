@@ -171,7 +171,9 @@ def spark_blocks():
                 'sensorId<>': 'sensor-1',
                 'setting': 0,
                 'value': 0,
-                'settingEnabled': True
+                'settingEnabled': True,
+                'filter': 'FILT_30s',
+                'filterThreshold': 2
             }
         },
         {
@@ -259,8 +261,6 @@ def spark_blocks():
             'data': {
                 'inputId<>': 'setpoint-sensor-pair-1',
                 'outputId<>': 'actuator-pwm-1',
-                'filter': 'FILT_30s',
-                'filterThreshold': 2,
                 'enabled': True,
                 'active': True,
                 'kp': 20,
