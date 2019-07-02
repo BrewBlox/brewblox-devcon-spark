@@ -42,6 +42,20 @@ async def sparky(app, client):
     return commander.get_commander(app)
 
 
+@pytest.fixture
+async def welcome():
+    return [
+        'BREWBLOX',
+        'ed70d66f0',
+        '3f2243a',
+        '2019-06-18',
+        '2019-06-18',
+        '1.2.1-rc.2',
+        '78',
+        '00',
+    ]
+
+
 async def test_init(conduit_mock, app, client):
     spock = commander.SparkCommander(app)
 
@@ -83,20 +97,24 @@ async def test_on_event(mocker, conduit_mock, sparky):
     assert logger_mock.info.call_count == 1
 
 
-async def test_on_welcome(app, mocker, conduit_mock, sparky):
+async def test_on_welcome(app, mocker, conduit_mock, sparky, welcome):
     state = status.get_status(app)
+    ok_msg = ','.join(welcome)
+    nok_welcome = welcome.copy()
+    nok_welcome[2] = 'NOPE'
+    nok_msg = ','.join(nok_welcome)
     assert not state.info
-    await sparky._on_event(conduit_mock, 'BREWBLOX,ed70d66f0,3f2243a,2019-06-18,2019-06-18,78,00')
+    await sparky._on_event(conduit_mock, ok_msg)
     assert state.is_compatible
 
     app['config']['skip_version_check'] = True
     with pytest.warns(UserWarning, match='Handshake failed'):
-        await sparky._on_event(conduit_mock, 'BREWBLOX,ed70d66f0,NOPE,2019-06-18,2019-06-18,78,00')
+        await sparky._on_event(conduit_mock, nok_msg)
     assert state.is_compatible
 
     app['config']['skip_version_check'] = False
     with pytest.warns(UserWarning, match='Handshake failed'):
-        await sparky._on_event(conduit_mock, 'BREWBLOX,ed70d66f0,NOPE,2019-06-18,2019-06-18,78,00')
+        await sparky._on_event(conduit_mock, nok_msg)
     assert not state.is_compatible
     assert not state.is_synchronized
 

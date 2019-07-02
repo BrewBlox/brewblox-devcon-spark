@@ -83,6 +83,7 @@ class HandshakeMessage:
     proto_version: str
     firmware_date: str
     proto_date: str
+    system_version: str
     reset_reason_hex: str
     reset_data_hex: str
     reset_reason: str = field(init=False)
@@ -174,6 +175,7 @@ class SparkCommander(features.ServiceFeature):
             f'Service protocol version: {service_proto_version}',
             f'Firmware protocol date: {welcome.proto_date}',
             f'Service protocol date: {service_proto_date}',
+            f'Firmware system version: {welcome.system_version}',
         ]
         version_ok = service_proto_version == welcome.proto_version
         await state.on_handshake(version_ok, info)
