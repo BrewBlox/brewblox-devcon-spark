@@ -41,7 +41,7 @@ class SystemApi():
         )
         return group_obj[API_DATA_KEY]['active']
 
-    async def flash(self) -> Awaitable[dict]:
+    async def flash(self) -> Awaitable[dict]:  # pragma: no cover
         address = status.get_status(self._app).address
 
         if not address or ':' not in address:

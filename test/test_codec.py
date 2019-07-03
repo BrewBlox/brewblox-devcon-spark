@@ -148,7 +148,7 @@ async def test_codec_config(app, client, cdc):
     await state.on_disconnect()
     await asyncio.sleep(0.01)
     # connect
-    await state.on_connect()
+    await state.on_connect('codec test')
     await state.wait_synchronize()
 
     assert cdc.get_unit_config()['Temp'] == 'degC'

@@ -6,6 +6,7 @@ import asyncio
 from unittest.mock import ANY
 
 import pytest
+from asynctest import CoroutineMock
 from brewblox_service import scheduler
 
 from brewblox_devcon_spark import (commander_sim, datastore, device,
@@ -476,3 +477,13 @@ async def test_system_status(app, client):
         'compatible': True,
         'info': [],
     }
+
+
+async def test_system_flash(app, client, mocker):
+    sys_api = system_api.__name__
+    mocker.patch(sys_api + '.REBOOT_WINDOW_S', 0.001)
+    sender = mocker.patch(sys_api + '.ymodem.FileSender')
+    transfer_mock = CoroutineMock()
+    sender.return_value.transfer = transfer_mock
+
+    await response(client.post('/system/flash'))

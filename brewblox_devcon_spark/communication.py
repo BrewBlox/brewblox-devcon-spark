@@ -205,12 +205,14 @@ class SparkConduit(features.ServiceFeature):
         self._active = None
 
     async def pause(self):
-        self._active.clear()
+        if self._active:
+            self._active.clear()
         if self._transport:
             self._transport.close()
 
     async def resume(self):
-        self._active.set()
+        if self._active:
+            self._active.set()
 
     async def write(self, data: str):
         return await self.write_encoded(data.encode())
@@ -244,6 +246,9 @@ class SparkConduit(features.ServiceFeature):
                 await spark_status.on_connect(self._address)
                 LOGGER.info(f'Connected {self}')
                 last_ok = True
+
+                if not self._active.is_set():  # pragma: no cover
+                    self._transport.close()
 
                 await self._protocol.disconnected
                 await spark_status.on_disconnect()
