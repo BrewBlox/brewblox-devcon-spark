@@ -1,7 +1,6 @@
-version: '3'
+version: "3"
 
 services:
-
   eventbus:
     image: rabbitmq:alpine
 
@@ -12,8 +11,8 @@ services:
     # volumes:
     #   - "./couchdb:/opt/couchdb/data"
 
-  sparksimulator:
-    image: brewblox/firmware-simulator:develop
+  # sparksimulator:
+  #   image: brewblox/firmware-simulator:local
 
   spark:
     image: brewblox/brewblox-devcon-spark:develop
@@ -21,14 +20,14 @@ services:
     depends_on:
       - eventbus
       - datastore
-      - sparksimulator
+    # - sparksimulator
     labels:
       - "traefik.port=5000"
       - "traefik.frontend.rule=PathPrefix: /spark"
     volumes:
       - "./:/app/"
     command: >
-      --device-host=sparksimulator
+      --device-host=192.168.0.88
     #   --device-id=3f0025000851353532343835
     #   --volatile
 

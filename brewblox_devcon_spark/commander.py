@@ -84,6 +84,7 @@ class HandshakeMessage:
     firmware_date: str
     proto_date: str
     system_version: str
+    platform: str
     reset_reason_hex: str
     reset_data_hex: str
     reset_reason: str = field(init=False)
@@ -226,6 +227,14 @@ class SparkCommander(features.ServiceFeature):
                 raise decoded
 
             return decoded
+
+    async def pause(self):
+        if self._conduit:
+            await self._conduit.pause()
+
+    async def resume(self):
+        if self._conduit:
+            await self._conduit.resume()
 
     async def startup(self, app: web.Application):
         await self.shutdown()

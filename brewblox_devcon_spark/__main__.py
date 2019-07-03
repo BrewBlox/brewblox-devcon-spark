@@ -76,6 +76,12 @@ def create_parser(default_name='spark'):
                        action='store_true',
                        help='Disable all outgoing network calls. [%(default)s]')
 
+    # Updater options
+    group = parser.add_argument_group('Firmware updates')
+    group.add_argument('--firmware-port',
+                       help='Port used for firmware updates. [%(default)s]',
+                       type=int,
+                       default=8333)
     return parser
 
 

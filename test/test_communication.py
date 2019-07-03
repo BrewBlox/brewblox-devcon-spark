@@ -400,6 +400,33 @@ async def test_reconnect(app, client, interval_mock, tcp_create_connection_mock)
     assert tcp_create_connection_mock.call_count == 3
 
 
+async def test_pause_resume(app, client, interval_mock, tcp_create_connection_mock):
+    app['config']['device_serial'] = None
+    app['config']['device_host'] = 'enterprise'
+
+    spock = communication.SparkConduit(app)
+    await spock.startup(app)
+
+    await asyncio.sleep(0.01)
+    assert tcp_create_connection_mock.call_count == 1
+
+    await spock.pause()
+    assert spock._transport.close.call_count == 1
+    spock._protocol.connection_lost(None)
+    await asyncio.sleep(0.01)
+    # Waiting for the resume call before it reconnects
+    assert tcp_create_connection_mock.call_count == 1
+
+    await spock.resume()
+    await asyncio.sleep(0.01)
+    assert tcp_create_connection_mock.call_count == 2
+
+    await spock.shutdown(app)
+    await asyncio.sleep(0.01)
+    await spock.pause()
+    await spock.resume()
+
+
 async def test_discover_all(discover_all_app,
                             client,
                             mocker,

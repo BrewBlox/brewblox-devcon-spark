@@ -32,7 +32,7 @@ async def synchronized(app):
 
 async def connect(app):
     state = status.get_status(app)
-    await state.on_connect()
+    await state.on_connect('seeder test')
     await seeder.get_seeder(app).seeding_done()
 
 

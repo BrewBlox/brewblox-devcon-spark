@@ -1,0 +1,30 @@
+#! /usr/bin/env bash
+set -e
+
+USB_FLASH="node_modules/.bin/particle --no-update-check flash --usb --yes"
+
+if [[ -n $(lsusb -d 2b04:d006) ]]; then
+    echo "Flashing Photon..."
+    echo "Flashing System 1 file..."
+    ${USB_FLASH} system-part1-photon.bin
+    echo "Flashing System 2 file..."
+    ${USB_FLASH} system-part2-photon.bin
+    echo "Flashing Firmware file..."
+    ${USB_FLASH} brewblox-photon.bin
+    sleep 5
+    exit
+fi
+
+if [[ -n $(lsusb -d 2b04:d008) ]]; then
+    echo "Flashing P1..."
+    echo "Flashing System 1 file..."
+    ${USB_FLASH} system-part1-p1.bin
+    echo "Flashing System 2 file..."
+    ${USB_FLASH} system-part2-p1.bin
+    echo "Flashing Firmware file..."
+    ${USB_FLASH} brewblox-p1.bin
+    sleep 5
+    exit
+fi
+
+echo "No compatible USB devices found"
