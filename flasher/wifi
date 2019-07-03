@@ -1,0 +1,6 @@
+#! /usr/bin/env bash
+set -e
+
+./trigger-listening
+echo "Important: Select no when asked to scan for Wi-Fi networks"
+node_modules/.bin/particle --no-update-check serial wifi

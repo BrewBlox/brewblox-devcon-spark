@@ -61,6 +61,29 @@ steps:
   # brewblox-tools looks for $TRAVIS_BRANCH to determine branch tag
     TRAVIS_BRANCH: $(brewblox.branch)
 
+- bash: >
+    bbt-localbuild
+    --context flasher
+    --arch amd arm
+    --tags newest-tag $(brewblox.tag)
+    --no-setup
+    --push
+  displayName: Deploy flasher newest-tag and version tag to Docker Hub on tagged commits
+  condition: and(succeeded(), variables['brewblox.tag'])
+
+- bash: >
+    bbt-localbuild
+    --context flasher
+    --arch amd arm
+    --branch-tag
+    --no-setup
+    --push
+  displayName: Deploy flasher branch to Docker Hub on any push to the GitHub repository
+  condition: and(succeeded(), variables['brewblox.branch'], not(variables['brewblox.tag']))
+  env:
+  # brewblox-tools looks for $TRAVIS_BRANCH to determine branch tag
+    TRAVIS_BRANCH: $(brewblox.branch)
+
 - bash: |
     pip install twine
     python setup.py sdist

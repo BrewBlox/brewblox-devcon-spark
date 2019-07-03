@@ -227,6 +227,14 @@ class SparkCommander(features.ServiceFeature):
 
             return decoded
 
+    async def pause(self):
+        if self._conduit:
+            await self._conduit.pause()
+
+    async def resume(self):
+        if self._conduit:
+            await self._conduit.resume()
+
     async def startup(self, app: web.Application):
         await self.shutdown()
         self._conduit = communication.get_conduit(app)

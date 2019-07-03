@@ -25,6 +25,7 @@ class SparkStatus(features.ServiceFeature):
 
     def __init__(self, app: web.Application):
         super().__init__(app)
+        self._address: str = None
         self._info: List[str] = []
         self._compatible: bool = True  # until proven otherwise
         self._connect_ev: asyncio.Event = None
@@ -47,6 +48,10 @@ class SparkStatus(features.ServiceFeature):
     @property
     def is_disconnected(self):
         return self._disconnect_ev.is_set()
+
+    @property
+    def address(self):
+        return self._address
 
     @property
     def info(self):
@@ -74,7 +79,8 @@ class SparkStatus(features.ServiceFeature):
     async def wait_disconnect(self):
         await self._disconnect_ev.wait()
 
-    async def on_connect(self):
+    async def on_connect(self, address: str):
+        self._address = address
         self._disconnect_ev.clear()
         self._connect_ev.set()
 
@@ -82,7 +88,7 @@ class SparkStatus(features.ServiceFeature):
         self._info = info
         self._compatible = self.app['config']['skip_version_check'] or compatible
 
-        await self.on_connect()
+        await self.on_connect(self._address)
         self._handshake_ev.set()
 
         if not compatible:
