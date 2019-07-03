@@ -397,10 +397,10 @@
         },
         "brewblox-tools": {
             "hashes": [
-                "sha256:2118f5ab57bbd5a75d82cfc88a91af59bdf425bc4729760a6e35bd247e97a76e"
+                "sha256:1ea53d5417845506e36df2c0406bd8d770bc69fcbff1eb0da7a38a10d67d9a0a"
             ],
             "index": "pypi",
-            "version": "==0.8.0"
+            "version": "==0.9.0"
         },
         "certifi": {
             "hashes": [
