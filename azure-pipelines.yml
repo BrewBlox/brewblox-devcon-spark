@@ -42,8 +42,11 @@ steps:
   displayName: Docker login
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
+# Python
+
 - bash: >
     bbt-localbuild
+    --distcopy config binaries
     --arch amd arm
     --tags newest-tag $(brewblox.tag)
     --push
@@ -52,6 +55,7 @@ steps:
 
 - bash: >
     bbt-localbuild
+    --distcopy config binaries
     --arch amd arm
     --branch-tag
     --push
@@ -67,3 +71,32 @@ steps:
     twine upload -u $(PYPI_USER) -p $(PYPI_PASSWORD) --skip-existing dist/*
   displayName: Deploy to PyPi
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+
+# Flasher
+
+- bash: >
+    bbt-localbuild
+    --context flasher
+    --repo brewblox/firmware-flasher
+    --no-setup
+    --distcopy binaries
+    --arch amd arm
+    --tags newest-tag $(brewblox.tag)
+    --push
+  displayName: Deploy flasher newest-tag and version tag to Docker Hub on tagged commits
+  condition: and(succeeded(), variables['brewblox.tag'])
+
+- bash: >
+    bbt-localbuild
+    --context flasher
+    --repo brewblox/firmware-flasher
+    --no-setup
+    --distcopy binaries
+    --arch amd arm
+    --branch-tag
+    --push
+  displayName: Deploy flasher branch to Docker Hub on any push to the GitHub repository
+  condition: and(succeeded(), variables['brewblox.branch'], not(variables['brewblox.tag']))
+  env:
+  # brewblox-tools looks for $TRAVIS_BRANCH to determine branch tag
+    TRAVIS_BRANCH: $(brewblox.branch)

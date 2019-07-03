@@ -25,6 +25,8 @@ def conduit_mock(mocker):
     m = mocker.patch(TESTED + '.communication.get_conduit')
     m.return_value.bind = CoroutineMock()
     m.return_value.write = CoroutineMock()
+    m.return_value.pause = CoroutineMock()
+    m.return_value.resume = CoroutineMock()
     return m.return_value
 
 
@@ -51,6 +53,7 @@ async def welcome():
         '2019-06-18',
         '2019-06-18',
         '1.2.1-rc.2',
+        'p1',
         '78',
         '00',
     ]
@@ -99,6 +102,9 @@ async def test_on_event(mocker, conduit_mock, sparky):
 
 async def test_on_welcome(app, mocker, conduit_mock, sparky, welcome):
     state = status.get_status(app)
+    await state.on_connect('addr')
+    assert state.address == 'addr'
+
     ok_msg = ','.join(welcome)
     nok_welcome = welcome.copy()
     nok_welcome[2] = 'NOPE'
@@ -212,3 +218,18 @@ async def test_queue_cleanup_error(mocker, sparky, app):
     await asyncio.sleep(0.1)
     assert warning_spy.warn.call_count > 0
     assert not sparky._cleanup_task.done()
+
+
+async def test_pause_resume(mocker, conduit_mock, sparky, app):
+    await sparky.pause()
+    assert conduit_mock.pause.call_count == 1
+
+    await sparky.resume()
+    assert conduit_mock.resume.call_count == 1
+
+    # No-op when conduit is not available
+    await sparky.shutdown()
+    await sparky.pause()
+    await sparky.resume()
+    assert conduit_mock.pause.call_count == 1
+    assert conduit_mock.resume.call_count == 1

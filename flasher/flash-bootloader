@@ -1,0 +1,24 @@
+#! /usr/bin/env bash
+set -e
+
+SERIAL_FLASH="node_modules/.bin/particle --no-update-check serial flash"
+
+if [[ -n $(lsusb -d 2b04:c006) ]]; then
+    echo "Triggering listening mode"
+    ./trigger-listening
+    echo "Flashing Photon bootloader..."
+    # We've already triggered listening mode. Automatically press enter at the prompt
+    echo -ne '\n' | ${SERIAL_FLASH} bootloader-photon.bin
+    exit
+fi
+
+if [[ -n $(lsusb -d 2b04:c008) ]]; then
+    echo "Triggering listening mode"
+    ./trigger-listening
+    echo "Flashing P1 bootloader..."
+    # We've already triggered listening mode. Automatically press enter at the prompt
+    echo -ne '\n' | ${SERIAL_FLASH} bootloader-p1.bin
+    exit
+fi
+
+echo "No compatible USB devices found"
