@@ -53,11 +53,11 @@ class SystemApi():
         try:
             LOGGER.info('Starting firmware update')
             await commander.get_commander(self._app).pause()
-            await ymodem.FileSender(host, port).transfer('brewblox.bin')
+            await ymodem.FileSender().transfer(host, port)
+            LOGGER.info('Firmware updated!')
         except Exception as ex:
             LOGGER.error(f'Failed to update firmware {strex(ex)}')
         finally:
-            LOGGER.info('Firmware updated!')
             await asyncio.sleep(REBOOT_WINDOW_S)
             await commander.get_commander(self._app).resume()
 

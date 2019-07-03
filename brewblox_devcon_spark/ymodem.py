@@ -5,7 +5,10 @@ Communicates with devices using the YMODEM protocol
 import asyncio
 import math
 import os
-from typing import Any, Awaitable, ByteString, List, NamedTuple
+import re
+from configparser import ConfigParser
+from dataclasses import dataclass
+from typing import Any, Awaitable, ByteString, List, NamedTuple, Tuple
 
 import aiofiles
 from brewblox_service import brewblox_logger
@@ -25,6 +28,16 @@ class Connection(NamedTuple):
     address: Any
     transport: asyncio.Transport
     protocol: asyncio.Protocol
+
+
+@dataclass
+class WelcomeMessage:
+    git_version: str
+    proto_version: str
+    git_date: str
+    proto_date: str
+    sys_version: str
+    platform: str
 
 
 async def _connect_tcp(host, port, factory) -> Connection:  # pragma: no cover
@@ -90,12 +103,13 @@ class FileSender():
     DATA_LEN = 1024 if PACKET_MARK == STX else 128
     PACKET_LEN = DATA_LEN + 5
 
-    def __init__(self, host: str, port: int):
-        self._host = host
-        self._port = port
+    async def transfer(self, host, port):
+        conn, welcome = await self._connect(host, port)
+        filename = f'binaries/brewblox-{welcome.platform}.bin'
 
-    async def transfer(self, filename: str):
-        conn = await self._connect()
+        cfg = ConfigParser()
+        cfg.read('binaries/firmware.ini')
+        LOGGER.info(f'Now flashing: {dict(cfg["FIRMWARE"].items())}')
 
         try:
             LOGGER.info(f'Controller is in transfer mode, sending file {filename}')
@@ -127,10 +141,11 @@ class FileSender():
         finally:
             conn.transport.close()
 
-    async def _connect(self):
+    async def _connect(self, host, port) -> Awaitable[Tuple[Connection, WelcomeMessage]]:
         # Connect
-        LOGGER.info(f'Connecting to {self._host}:{self._port}...')
-        conn = await _connect_tcp(self._host, self._port, FileSenderProtocol)
+        LOGGER.info(f'Connecting to {host}:{port}...')
+        conn = await _connect_tcp(host, port, FileSenderProtocol)
+        welcome = None
         await conn.protocol.connected
 
         # Trigger welcome message
@@ -139,7 +154,10 @@ class FileSender():
         for i in range(10):
             buffer += (await conn.protocol.message).decode()
             if '\n' in buffer:
-                LOGGER.info(f'Received update welcome message: {buffer}')
+                LOGGER.debug(f'Received update welcome message: {buffer}')
+                welcome = re.search(r'<!BREWBLOX_DEBUG,(?P<welcome>[^>]*)>', buffer).group('welcome')
+                welcome = WelcomeMessage(*welcome.split(','))
+                LOGGER.info(welcome)
                 break
         else:
             raise TimeoutError('Controller did not send welcome message')
@@ -161,7 +179,7 @@ class FileSender():
             if (await conn.protocol.message)[0] == FileSender.ACK:
                 ack += 1
 
-        return conn
+        return conn, welcome
 
     async def _send_close(self, conn: Connection):
         # Send End Of Transfer

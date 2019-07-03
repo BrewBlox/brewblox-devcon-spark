@@ -84,6 +84,7 @@ class HandshakeMessage:
     firmware_date: str
     proto_date: str
     system_version: str
+    platform: str
     reset_reason_hex: str
     reset_data_hex: str
     reset_reason: str = field(init=False)
