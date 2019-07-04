@@ -465,6 +465,7 @@ async def test_system_status(app, client):
         'handshake': True,
         'synchronize': True,
         'compatible': True,
+        'latest': True,
         'info': ANY,
     }
     await status.get_status(app).on_disconnect()
@@ -475,6 +476,7 @@ async def test_system_status(app, client):
         'handshake': False,
         'synchronize': False,
         'compatible': True,
+        'latest': True,
         'info': [],
     }
 

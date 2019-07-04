@@ -3,7 +3,7 @@ Specific endpoints for using system objects
 """
 
 import asyncio
-from typing import Awaitable, List
+from typing import Awaitable, List, Optional
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, strex
@@ -41,27 +41,39 @@ class SystemApi():
         )
         return group_obj[API_DATA_KEY]['active']
 
-    async def flash(self) -> Awaitable[dict]:  # pragma: no cover
+    async def flash(self, args: Optional[dict]) -> Awaitable[dict]:  # pragma: no cover
+        args = args or {}
+        config = self._app['config']
+        ini = self._app['ini']
+        sender = ymodem.FileSender()
+
         address = status.get_status(self._app).address
 
         if not address or ':' not in address:
-            raise ConnectionAbortedError(f'Invalid address {address} (flashing over USB is not yet supported)')
+            raise ConnectionAbortedError(f'Invalid address {address}. Flashing over USB is not yet supported.')
 
         host = address.split(':')[0]
-        port = self._app['config']['firmware_port']
+        port = config['firmware_port']
+        version = ini['firmware_version']
+
+        LOGGER.info(f'Started updating firmware to {version}')
 
         try:
-            LOGGER.info('Starting firmware update')
             await commander.get_commander(self._app).pause()
-            await ymodem.FileSender().transfer(host, port)
-            LOGGER.info('Firmware updated!')
+            conn = await sender.connect_tcp(host, port)  # TODO(Bob): support connect_serial
+
+            with conn.autoclose():
+                await sender.transfer(conn)
+                LOGGER.info('Firmware updated!')
+
         except Exception as ex:
             LOGGER.error(f'Failed to update firmware {strex(ex)}')
+
         finally:
             await asyncio.sleep(REBOOT_WINDOW_S)
             await commander.get_commander(self._app).resume()
 
-        return {'host': host, 'port': port}
+        return {'host': host, 'port': port, 'version': version}
 
 
 @routes.get('/system/groups')
@@ -149,7 +161,20 @@ async def flash(request: web.Request) -> web.Response:
     operationId: controller.spark.system.flash
     produces:
     - application/json
+    parameters:
+    -
+        in: body
+        name: body
+        description: object
+        required: false
+        schema:
+            type: object
+            properties:
+                force:
+                    type: boolean
+                    example: false
     """
+    args = await request.json() if request.body_exists else None
     return web.json_response(
-        await SystemApi(request.app).flash()
+        await SystemApi(request.app).flash(args)
     )

@@ -6,13 +6,13 @@ SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 pushd "${SCRIPT_DIR}" > /dev/null
 
 # Write to settings file #####
-FILE="config/settings.ini"
+FILE="config/protobuf.ini"
 
 rm $FILE 2> /dev/null || true
 touch $FILE
 
 # Needs an update if we get a second submodule
-echo "[SETTINGS]" >> $FILE
+echo "[PROTOBUF]" >> $FILE
 echo "proto_version=$(git submodule --quiet foreach git rev-parse --short HEAD)" >> $FILE
 echo "proto_date=$(git submodule --quiet foreach git show -s --format=%ci)" >> $FILE
 
