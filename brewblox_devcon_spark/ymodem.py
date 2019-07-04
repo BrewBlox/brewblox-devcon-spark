@@ -6,9 +6,9 @@ import asyncio
 import math
 import os
 import re
-from configparser import ConfigParser
+from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, Awaitable, ByteString, List, NamedTuple, Tuple
+from typing import Any, Awaitable, ByteString, List
 
 import aiofiles
 from brewblox_service import brewblox_logger
@@ -19,30 +19,35 @@ YMODEM_TRANSFER_BAUD_RATE = 9600
 LOGGER = brewblox_logger(__name__)
 
 
-class SendState(NamedTuple):
+@dataclass
+class SendState:
     seq: int
     response: int
 
 
-class Connection(NamedTuple):
+@dataclass
+class Connection:
     address: Any
     transport: asyncio.Transport
     protocol: asyncio.Protocol
 
+    @contextmanager
+    def autoclose(self):
+        try:
+            yield
+        finally:
+            self.transport.close()
+
 
 @dataclass
-class WelcomeMessage:
+class HandshakeMessage:
+    name: str
     git_version: str
     proto_version: str
     git_date: str
     proto_date: str
     sys_version: str
     platform: str
-
-
-async def _connect_tcp(host, port, factory) -> Connection:  # pragma: no cover
-    transport, protocol = await asyncio.get_event_loop().create_connection(factory, host, port)
-    return Connection(f'{host}:{port}', transport, protocol)
 
 
 class FileSenderProtocol(asyncio.Protocol):
@@ -103,64 +108,58 @@ class FileSender():
     DATA_LEN = 1024 if PACKET_MARK == STX else 128
     PACKET_LEN = DATA_LEN + 5
 
-    async def transfer(self, host, port):
-        conn, welcome = await self._connect(host, port)
-        filename = f'binaries/brewblox-{welcome.platform}.bin'
+    async def connect_tcp(self, host, port) -> Awaitable[Connection]:
+        LOGGER.info(f'Connecting to {host}:{port}...')
+        transport, protocol = await asyncio.get_event_loop().create_connection(FileSenderProtocol, host, port)
+        conn = Connection(f'{host}:{port}', transport, protocol)
+        await conn.protocol.connected
+        return conn
 
-        cfg = ConfigParser()
-        cfg.read('binaries/firmware.ini')
-        LOGGER.info(f'Now flashing: {dict(cfg["FIRMWARE"].items())}')
+    async def transfer(self, conn: Connection):
+        handshake = await self._trigger(conn)
+        filename = f'binaries/brewblox-{handshake.platform}.bin'
 
-        try:
-            LOGGER.info(f'Controller is in transfer mode, sending file {filename}')
-            async with aiofiles.open(filename, 'rb') as file:
-                await file.seek(0, os.SEEK_END)
-                fsize = await file.tell()
-                num_packets = math.ceil(fsize / FileSender.DATA_LEN)
-                await file.seek(0, os.SEEK_SET)
+        LOGGER.info(f'Controller is in transfer mode, sending file {filename}')
+        async with aiofiles.open(filename, 'rb') as file:
+            await file.seek(0, os.SEEK_END)
+            fsize = await file.tell()
+            num_packets = math.ceil(fsize / FileSender.DATA_LEN)
+            await file.seek(0, os.SEEK_SET)
 
-                LOGGER.info('Sending header...')
-                state: SendState = await self._send_header(conn, 'binary', fsize)
+            LOGGER.info('Sending header...')
+            state: SendState = await self._send_header(conn, 'binary', fsize)
+
+            if state.response != FileSender.ACK:
+                raise ConnectionAbortedError(f'Failed with code {state.response} while sending header')
+
+            LOGGER.info('Sending firmware...')
+            for i in range(num_packets):
+                current = i + 1  # packet 0 was the header
+                LOGGER.debug(f'Sending packet {current} / {num_packets}')
+                data = await file.read(FileSender.DATA_LEN)
+                state = await self._send_data(conn, current, list(data))
 
                 if state.response != FileSender.ACK:
-                    raise ConnectionAbortedError(f'Failed with code {state.response} while sending header')
+                    raise ConnectionAbortedError(
+                        f'Failed with code {state.response} while sending package {current}')
 
-                LOGGER.info('Sending firmware...')
-                for i in range(num_packets):
-                    current = i + 1  # packet 0 was the header
-                    LOGGER.debug(f'Sending packet {current} / {num_packets}')
-                    data = await file.read(FileSender.DATA_LEN)
-                    state = await self._send_data(conn, current, list(data))
+            await self._send_close(conn)
 
-                    if state.response != FileSender.ACK:
-                        raise ConnectionAbortedError(
-                            f'Failed with code {state.response} while sending package {current}')
+    async def _trigger(self, conn: Connection) -> Awaitable[HandshakeMessage]:
+        message = None
 
-                await self._send_close(conn)
-
-        finally:
-            conn.transport.close()
-
-    async def _connect(self, host, port) -> Awaitable[Tuple[Connection, WelcomeMessage]]:
-        # Connect
-        LOGGER.info(f'Connecting to {host}:{port}...')
-        conn = await _connect_tcp(host, port, FileSenderProtocol)
-        welcome = None
-        await conn.protocol.connected
-
-        # Trigger welcome message
+        # Trigger handshake
         buffer = ''
         conn.transport.write(b'\n')
         for i in range(10):
             buffer += (await conn.protocol.message).decode()
             if '\n' in buffer:
-                LOGGER.debug(f'Received update welcome message: {buffer}')
-                welcome = re.search(r'<!BREWBLOX_DEBUG,(?P<welcome>[^>]*)>', buffer).group('welcome')
-                welcome = WelcomeMessage(*welcome.split(','))
-                LOGGER.info(welcome)
+                args = re.search(r'<!(?P<message>[^>]*)>', buffer).group('message').split(',')
+                message = HandshakeMessage(*args)
+                LOGGER.info(message)
                 break
         else:
-            raise TimeoutError('Controller did not send welcome message')
+            raise TimeoutError('Controller did not send handshake message')
 
         # Trigger YMODEM mode
         buffer = ''
@@ -179,7 +178,7 @@ class FileSender():
             if (await conn.protocol.message)[0] == FileSender.ACK:
                 ack += 1
 
-        return conn, welcome
+        return message
 
     async def _send_close(self, conn: Connection):
         # Send End Of Transfer

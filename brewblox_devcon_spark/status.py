@@ -28,6 +28,7 @@ class SparkStatus(features.ServiceFeature):
         self._address: str = None
         self._info: List[str] = []
         self._compatible: bool = True  # until proven otherwise
+        self._latest: bool = True
         self._connect_ev: asyncio.Event = None
         self._handshake_ev: asyncio.Event = None
         self._synchronize_ev: asyncio.Event = None
@@ -57,6 +58,10 @@ class SparkStatus(features.ServiceFeature):
     def info(self):
         return self._info
 
+    @info.setter
+    def info(self, new_vals):
+        self._info = new_vals.copy()
+
     @property
     def state(self) -> dict:
         return {
@@ -64,6 +69,7 @@ class SparkStatus(features.ServiceFeature):
             'handshake': self._handshake_ev.is_set(),
             'synchronize': self._synchronize_ev.is_set(),
             'compatible': self._compatible,
+            'latest': self._latest,
             'info': self._info,
         }
 
@@ -84,11 +90,10 @@ class SparkStatus(features.ServiceFeature):
         self._disconnect_ev.clear()
         self._connect_ev.set()
 
-    async def on_handshake(self, compatible: bool, info: List[str]):
-        self._info = info
+    async def on_handshake(self, compatible: bool, latest: bool):
         self._compatible = self.app['config']['skip_version_check'] or compatible
+        self._latest = latest
 
-        await self.on_connect(self._address)
         self._handshake_ev.set()
 
         if not compatible:
