@@ -166,20 +166,28 @@ class SparkCommander(features.ServiceFeature):
         welcome = HandshakeMessage(*msg.split(','))
         LOGGER.info(welcome)
 
-        service_proto_version = self.app['settings']['proto_version']
-        service_proto_date = self.app['settings']['proto_date']
+        app_ini = self.app['ini']
+        service_proto_version = app_ini['proto_version']
+        service_proto_date = app_ini['proto_date']
+        service_firmware_version = app_ini['firmware_version']
+        service_firmware_date = app_ini['firmware_date']
 
         info = [
-            f'Firmware version: {welcome.firmware_version}',
-            f'Firmware date: {welcome.firmware_date}',
-            f'Firmware protocol version: {welcome.proto_version}',
-            f'Service protocol version: {service_proto_version}',
-            f'Firmware protocol date: {welcome.proto_date}',
-            f'Service protocol date: {service_proto_date}',
-            f'Firmware system version: {welcome.system_version}',
+            f'Firmware version (service): {service_firmware_version}'
+            f'Firmware version (controller): {welcome.firmware_version}',
+            f'Firmware date (service): {welcome.firmware_date}',
+            f'Firmware date (controller): {service_firmware_date}'
+            f'Protocol version (service): {service_proto_version}',
+            f'Protocol version (controller): {welcome.proto_version}',
+            f'Protocol date (service): {service_proto_date}',
+            f'Protocol date (controller): {welcome.proto_date}',
+            f'System version (controller): {welcome.system_version}',
         ]
-        version_ok = service_proto_version == welcome.proto_version
-        await state.on_handshake(version_ok, info)
+        version_compatible = service_proto_version == welcome.proto_version
+        version_latest = service_firmware_version == welcome.firmware_version
+
+        state.info = info
+        await state.on_handshake(version_compatible, version_latest)
 
     async def _on_event(self, conduit, msg: str):
         if msg.startswith(WELCOME_PREFIX):

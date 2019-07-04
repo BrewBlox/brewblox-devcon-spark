@@ -13,9 +13,9 @@ TESTED = main.__name__
 
 
 @pytest.fixture(autouse=True)
-def mocked_parse(mocker, app_settings):
-    m = mocker.patch(TESTED + '.parse_settings')
-    m.return_value = app_settings
+def mocked_parse(mocker, app_ini):
+    m = mocker.patch(TESTED + '.parse_ini')
+    m.return_value = app_ini
     return m
 
 

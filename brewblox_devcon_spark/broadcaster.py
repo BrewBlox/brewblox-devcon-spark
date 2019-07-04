@@ -4,7 +4,6 @@ Intermittently broadcasts controller state to the eventbus
 
 
 import asyncio
-import warnings
 from concurrent.futures import CancelledError
 
 from aiohttp import web
@@ -97,5 +96,5 @@ class Broadcaster(features.ServiceFeature):
 
             except Exception as ex:
                 if last_broadcast_ok:
-                    warnings.warn(f'{self} encountered an error: {type(ex).__name__}({ex})')
+                    LOGGER.error(f'{self} encountered an error: {type(ex).__name__}({ex})')
                     last_broadcast_ok = False
