@@ -3,7 +3,8 @@
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 pushd "${SCRIPT_DIR}" > /dev/null
 
-TAG=${2:-"newest-tag"}
+TAG=${1:-"develop"}
+echo "Using brewblox/firmware-bin:${TAG}"
 
 # Pull image
 docker rm bin-box 2> /dev/null || true
@@ -15,6 +16,6 @@ rm -rf ./binaries 2> /dev/null || true
 docker cp bin-box:/binaries ./
 
 # Remove image
-docker rm bin-box
+docker rm bin-box > /dev/null
 
 popd > /dev/null
