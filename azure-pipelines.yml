@@ -46,7 +46,6 @@ steps:
 
 - bash: >
     bbt-localbuild
-    --distcopy config binaries
     --arch amd arm
     --tags newest-tag $(brewblox.tag)
     --push
@@ -55,7 +54,6 @@ steps:
 
 - bash: >
     bbt-localbuild
-    --distcopy config binaries
     --arch amd arm
     --branch-tag
     --push
@@ -79,7 +77,6 @@ steps:
     --context flasher
     --repo brewblox/firmware-flasher
     --no-setup
-    --distcopy binaries
     --arch amd arm
     --tags newest-tag $(brewblox.tag)
     --push
@@ -91,7 +88,6 @@ steps:
     --context flasher
     --repo brewblox/firmware-flasher
     --no-setup
-    --distcopy binaries
     --arch amd arm
     --branch-tag
     --push
