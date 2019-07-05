@@ -173,10 +173,10 @@ class SparkCommander(features.ServiceFeature):
         service_firmware_date = app_ini['firmware_date']
 
         info = [
-            f'Firmware version (service): {service_firmware_version}'
+            f'Firmware version (service): {service_firmware_version}',
             f'Firmware version (controller): {welcome.firmware_version}',
             f'Firmware date (service): {welcome.firmware_date}',
-            f'Firmware date (controller): {service_firmware_date}'
+            f'Firmware date (controller): {service_firmware_date}',
             f'Protocol version (service): {service_proto_version}',
             f'Protocol version (controller): {welcome.proto_version}',
             f'Protocol date (service): {service_proto_date}',
