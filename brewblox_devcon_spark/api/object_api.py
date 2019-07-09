@@ -173,6 +173,12 @@ class ObjectApi():
         await self.wait_for_sync()
         await self._ctrl.clear_objects()
         self._store.clear()
+        await self._ctrl.write_object({
+            OBJECT_NID_KEY: datastore.DISPLAY_SETTINGS_NID,
+            GROUP_LIST_KEY: [],
+            OBJECT_TYPE_KEY: 'DisplaySettings',
+            OBJECT_DATA_KEY: {},
+        })
         return {}
 
     async def cleanup_names(self) -> Awaitable[list]:
