@@ -11,7 +11,9 @@ from dataclasses import dataclass
 from typing import Any, Awaitable, ByteString, List
 
 import aiofiles
+import serial
 from brewblox_service import brewblox_logger
+from serial_asyncio import SerialTransport
 
 YMODEM_TRIGGER_BAUD_RATE = 28800
 YMODEM_TRANSFER_BAUD_RATE = 9600
@@ -79,6 +81,37 @@ class FileSenderProtocol(asyncio.Protocol):
             self._queue.get_nowait()
 
 
+async def connect_tcp(host, port) -> Awaitable[Connection]:
+    LOGGER.info(f'Connecting over TCP to {host}:{port}...')
+    transport, protocol = await asyncio.get_event_loop().create_connection(FileSenderProtocol, host, port)
+    conn = Connection(f'{host}:{port}', transport, protocol)
+    await conn.protocol.connected
+    return conn
+
+
+async def connect_serial(address) -> Awaitable[Connection]:
+    LOGGER.info(f'Connecting over Serial to {address}')
+    protocol = FileSenderProtocol()
+
+    ser = serial.serial_for_url(address, baudrate=YMODEM_TRANSFER_BAUD_RATE)
+
+    transport = SerialTransport(asyncio.get_event_loop(), protocol, ser)
+    transport.serial.rts = False
+    transport.set_write_buffer_limits(high=255)  # receiver RX buffer is 256, so limit send buffer to 255
+
+    conn = Connection(address, transport, protocol)
+    await conn.protocol.connected
+    return conn
+
+
+async def connect(address) -> Awaitable[Connection]:
+    if ':' in address:
+        host, port = address.split(':')
+        return await connect_tcp(host, port)
+    else:
+        return await connect_serial(address)
+
+
 class FileSender():
     """
     Receive_Packet
@@ -107,13 +140,6 @@ class FileSender():
     PACKET_MARK = STX
     DATA_LEN = 1024 if PACKET_MARK == STX else 128
     PACKET_LEN = DATA_LEN + 5
-
-    async def connect_tcp(self, host, port) -> Awaitable[Connection]:
-        LOGGER.info(f'Connecting to {host}:{port}...')
-        transport, protocol = await asyncio.get_event_loop().create_connection(FileSenderProtocol, host, port)
-        conn = Connection(f'{host}:{port}', transport, protocol)
-        await conn.protocol.connected
-        return conn
 
     async def transfer(self, conn: Connection):
         handshake = await self._trigger(conn)
@@ -148,11 +174,20 @@ class FileSender():
     async def _trigger(self, conn: Connection) -> Awaitable[HandshakeMessage]:
         message = None
 
+        async def _read():
+            return (await conn.protocol.message).decode()
+
         # Trigger handshake
         buffer = ''
         conn.transport.write(b'\n')
-        for i in range(10):
-            buffer += (await conn.protocol.message).decode()
+        for i in range(100):
+            try:
+                buffer += await asyncio.wait_for(_read(), 1)
+            except asyncio.TimeoutError:
+                LOGGER.debug('Repeating handshake trigger...')
+                conn.transport.write(b'\n')
+                continue
+
             if '\n' in buffer:
                 args = re.search(r'<!(?P<message>[^>]*)>', buffer).group('message').split(',')
                 message = HandshakeMessage(*args)
