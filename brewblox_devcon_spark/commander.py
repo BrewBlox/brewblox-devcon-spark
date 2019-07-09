@@ -205,7 +205,7 @@ class SparkCommander(features.ServiceFeature):
             await queue.put(TimestampedResponse(raw_response))
 
         except Exception as ex:
-            LOGGER.error(f'Response error in {self} : {ex}', exc_info=True)
+            LOGGER.error(f'Response error in {self} parsing `{msg}` : {ex}', exc_info=True)
 
     async def execute(self, command: commands.Command) -> dict:
         encoded_request = command.encoded_request.upper()
