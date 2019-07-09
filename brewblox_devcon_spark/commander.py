@@ -18,6 +18,7 @@ from brewblox_devcon_spark import commands, communication, exceptions, status
 LOGGER = brewblox_logger(__name__)
 
 WELCOME_PREFIX = 'BREWBLOX'
+UPDATER_PREFIX = 'FIRMWARE_UPDATER'
 
 # Spark protocol is to echo the request in the response
 # To prevent decoding ambiguity, a non-hexadecimal character separates the request and response
@@ -192,6 +193,9 @@ class SparkCommander(features.ServiceFeature):
     async def _on_event(self, conduit, msg: str):
         if msg.startswith(WELCOME_PREFIX):
             await self._on_welcome(msg)
+        elif msg.startswith(UPDATER_PREFIX):
+            LOGGER.error('Update protocol was activated by another connection')
+            await self.pause()
         else:
             LOGGER.info(f'Spark event: "{msg}"')
 
@@ -205,7 +209,7 @@ class SparkCommander(features.ServiceFeature):
             await queue.put(TimestampedResponse(raw_response))
 
         except Exception as ex:
-            LOGGER.error(f'Response error in {self} parsing `{msg}` : {ex}', exc_info=True)
+            LOGGER.error(f'Response error parsing message `{msg}` : {strex(ex)}')
 
     async def execute(self, command: commands.Command) -> dict:
         encoded_request = command.encoded_request.upper()
@@ -236,9 +240,9 @@ class SparkCommander(features.ServiceFeature):
 
             return decoded
 
-    async def pause(self):
+    async def pause(self, disconnect: bool = True):
         if self._conduit:
-            await self._conduit.pause()
+            await self._conduit.pause(disconnect)
 
     async def resume(self):
         if self._conduit:
