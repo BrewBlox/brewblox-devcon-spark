@@ -15,6 +15,7 @@ from brewblox_devcon_spark.datastore import GROUPS_NID
 REBOOT_WINDOW_S = 5
 TRANSFER_TIMEOUT_S = 30
 CONNECT_INTERVAL_S = 1
+CONNECT_ATTEMPTS = 5
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -43,8 +44,8 @@ class SystemApi():
         )
         return group_obj[API_DATA_KEY]['active']
 
-    async def _connect(self, address) -> ymodem.Connection:
-        for i in range(5):
+    async def _connect(self, address) -> ymodem.Connection:  # pragma: no cover
+        for i in range(CONNECT_ATTEMPTS):
             try:
                 await asyncio.sleep(CONNECT_INTERVAL_S)
                 return await ymodem.connect(address)
@@ -53,14 +54,13 @@ class SystemApi():
         raise ConnectionRefusedError()
 
     async def flash(self, args: Optional[dict]) -> Awaitable[dict]:  # pragma: no cover
-        ini = self._app['ini']
         sender = ymodem.FileSender()
         address = status.get_status(self._app).address
+        version = self._app['ini']['firmware_version']
 
         if not address:
             raise ConnectionAbortedError(f'Invalid address `{address}`.')
 
-        version = ini['firmware_version']
         LOGGER.info(f'Started updating firmware to {version}')
 
         try:
