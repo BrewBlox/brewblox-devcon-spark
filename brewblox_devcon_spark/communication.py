@@ -204,10 +204,10 @@ class SparkConduit(features.ServiceFeature):
         self._connection_task = None
         self._active = None
 
-    async def pause(self):
+    async def pause(self, disconnect: bool):
         if self._active:
             self._active.clear()
-        if self._transport:
+        if disconnect and self._transport:
             self._transport.close()
 
     async def resume(self):
@@ -246,9 +246,6 @@ class SparkConduit(features.ServiceFeature):
                 await spark_status.on_connect(self._address)
                 LOGGER.info(f'Connected {self}')
                 last_ok = True
-
-                if not self._active.is_set():  # pragma: no cover
-                    self._transport.close()
 
                 await self._protocol.disconnected
                 await spark_status.on_disconnect()

@@ -125,6 +125,14 @@ async def test_on_welcome(app, mocker, conduit_mock, sparky, welcome):
     assert not state.is_synchronized
 
 
+async def test_on_update(app, mocker, conduit_mock, sparky):
+    state = status.get_status(app)
+    await state.on_connect('addr')
+
+    await sparky._on_event(conduit_mock, commander.UPDATER_PREFIX + '-message')
+    assert conduit_mock.pause.call_count == 1
+
+
 async def test_command(conduit_mock, sparky, reset_msgid):
     await sparky._on_data(conduit_mock, '01 00 07 28 | 00 00 00')
 
