@@ -18,6 +18,7 @@ from brewblox_devcon_spark import commands, communication, exceptions, status
 LOGGER = brewblox_logger(__name__)
 
 WELCOME_PREFIX = 'BREWBLOX'
+UPDATER_PREFIX = 'FIRMWARE_UPDATER'
 
 # Spark protocol is to echo the request in the response
 # To prevent decoding ambiguity, a non-hexadecimal character separates the request and response
@@ -83,6 +84,8 @@ class HandshakeMessage:
     proto_version: str
     firmware_date: str
     proto_date: str
+    system_version: str
+    platform: str
     reset_reason_hex: str
     reset_data_hex: str
     reset_reason: str = field(init=False)
@@ -164,23 +167,35 @@ class SparkCommander(features.ServiceFeature):
         welcome = HandshakeMessage(*msg.split(','))
         LOGGER.info(welcome)
 
-        service_proto_version = self.app['settings']['proto_version']
-        service_proto_date = self.app['settings']['proto_date']
+        app_ini = self.app['ini']
+        service_proto_version = app_ini['proto_version']
+        service_proto_date = app_ini['proto_date']
+        service_firmware_version = app_ini['firmware_version']
+        service_firmware_date = app_ini['firmware_date']
 
         info = [
-            f'Firmware version: {welcome.firmware_version}',
-            f'Firmware date: {welcome.firmware_date}',
-            f'Firmware protocol version: {welcome.proto_version}',
-            f'Service protocol version: {service_proto_version}',
-            f'Firmware protocol date: {welcome.proto_date}',
-            f'Service protocol date: {service_proto_date}',
+            f'Firmware version (service): {service_firmware_version}',
+            f'Firmware version (controller): {welcome.firmware_version}',
+            f'Firmware date (service): {welcome.firmware_date}',
+            f'Firmware date (controller): {service_firmware_date}',
+            f'Protocol version (service): {service_proto_version}',
+            f'Protocol version (controller): {welcome.proto_version}',
+            f'Protocol date (service): {service_proto_date}',
+            f'Protocol date (controller): {welcome.proto_date}',
+            f'System version (controller): {welcome.system_version}',
         ]
-        version_ok = service_proto_version == welcome.proto_version
-        await state.on_handshake(version_ok, info)
+        version_compatible = service_proto_version == welcome.proto_version
+        version_latest = service_firmware_version == welcome.firmware_version
+
+        state.info = info
+        await state.on_handshake(version_compatible, version_latest)
 
     async def _on_event(self, conduit, msg: str):
         if msg.startswith(WELCOME_PREFIX):
             await self._on_welcome(msg)
+        elif msg.startswith(UPDATER_PREFIX):
+            LOGGER.error('Update protocol was activated by another connection')
+            await self.pause()
         else:
             LOGGER.info(f'Spark event: "{msg}"')
 
@@ -194,7 +209,7 @@ class SparkCommander(features.ServiceFeature):
             await queue.put(TimestampedResponse(raw_response))
 
         except Exception as ex:
-            LOGGER.error(f'Response error in {self} : {ex}', exc_info=True)
+            LOGGER.error(f'Response error parsing message `{msg}` : {strex(ex)}')
 
     async def execute(self, command: commands.Command) -> dict:
         encoded_request = command.encoded_request.upper()
@@ -224,6 +239,14 @@ class SparkCommander(features.ServiceFeature):
                 raise decoded
 
             return decoded
+
+    async def pause(self, disconnect: bool = True):
+        if self._conduit:
+            await self._conduit.pause(disconnect)
+
+    async def resume(self):
+        if self._conduit:
+            await self._conduit.resume()
 
     async def startup(self, app: web.Application):
         await self.shutdown()

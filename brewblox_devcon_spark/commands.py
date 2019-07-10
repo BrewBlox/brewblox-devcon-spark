@@ -49,6 +49,7 @@ OpcodeEnum = Enum(Int8ul,
                   FACTORY_RESET=10,
                   LIST_COMPATIBLE_OBJECTS=11,
                   DISCOVER_OBJECTS=12,
+                  FIRMWARE_UPDATE=100,
                   )
 
 ErrorcodeEnum = Enum(Int8ul,
@@ -490,3 +491,10 @@ class DiscoverObjectsCommand(Command):
     _REQUEST = None
     _RESPONSE = None
     _VALUES = (OBJECT_LIST_KEY, _DISCOVERY)
+
+
+class FirmwareUpdateCommand(Command):
+    _OPCODE = OpcodeEnum.FIRMWARE_UPDATE
+    _REQUEST = None
+    _RESPONSE = None
+    _VALUES = None
