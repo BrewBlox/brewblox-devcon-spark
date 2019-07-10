@@ -410,7 +410,7 @@ async def test_pause_resume(app, client, interval_mock, tcp_create_connection_mo
     await asyncio.sleep(0.01)
     assert tcp_create_connection_mock.call_count == 1
 
-    await spock.pause()
+    await spock.pause(True)
     assert spock._transport.close.call_count == 1
     spock._protocol.connection_lost(None)
     await asyncio.sleep(0.01)
@@ -423,7 +423,7 @@ async def test_pause_resume(app, client, interval_mock, tcp_create_connection_mo
 
     await spock.shutdown(app)
     await asyncio.sleep(0.01)
-    await spock.pause()
+    await spock.pause(True)
     await spock.resume()
 
 
