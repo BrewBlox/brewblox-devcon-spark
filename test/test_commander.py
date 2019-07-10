@@ -25,6 +25,8 @@ def conduit_mock(mocker):
     m = mocker.patch(TESTED + '.communication.get_conduit')
     m.return_value.bind = CoroutineMock()
     m.return_value.write = CoroutineMock()
+    m.return_value.pause = CoroutineMock()
+    m.return_value.resume = CoroutineMock()
     return m.return_value
 
 
@@ -40,6 +42,21 @@ def app(app, conduit_mock, mocker):
 @pytest.fixture
 async def sparky(app, client):
     return commander.get_commander(app)
+
+
+@pytest.fixture
+async def welcome():
+    return [
+        'BREWBLOX',
+        'ed70d66f0',
+        '3f2243a',
+        '2019-06-18',
+        '2019-06-18',
+        '1.2.1-rc.2',
+        'p1',
+        '78',
+        '00',
+    ]
 
 
 async def test_init(conduit_mock, app, client):
@@ -83,22 +100,37 @@ async def test_on_event(mocker, conduit_mock, sparky):
     assert logger_mock.info.call_count == 1
 
 
-async def test_on_welcome(app, mocker, conduit_mock, sparky):
+async def test_on_welcome(app, mocker, conduit_mock, sparky, welcome):
     state = status.get_status(app)
+    await state.on_connect('addr')
+    assert state.address == 'addr'
+
+    ok_msg = ','.join(welcome)
+    nok_welcome = welcome.copy()
+    nok_welcome[2] = 'NOPE'
+    nok_msg = ','.join(nok_welcome)
     assert not state.info
-    await sparky._on_event(conduit_mock, 'BREWBLOX,ed70d66f0,3f2243a,2019-06-18,2019-06-18,78,00')
+    await sparky._on_event(conduit_mock, ok_msg)
     assert state.is_compatible
 
     app['config']['skip_version_check'] = True
     with pytest.warns(UserWarning, match='Handshake failed'):
-        await sparky._on_event(conduit_mock, 'BREWBLOX,ed70d66f0,NOPE,2019-06-18,2019-06-18,78,00')
+        await sparky._on_event(conduit_mock, nok_msg)
     assert state.is_compatible
 
     app['config']['skip_version_check'] = False
     with pytest.warns(UserWarning, match='Handshake failed'):
-        await sparky._on_event(conduit_mock, 'BREWBLOX,ed70d66f0,NOPE,2019-06-18,2019-06-18,78,00')
+        await sparky._on_event(conduit_mock, nok_msg)
     assert not state.is_compatible
     assert not state.is_synchronized
+
+
+async def test_on_update(app, mocker, conduit_mock, sparky):
+    state = status.get_status(app)
+    await state.on_connect('addr')
+
+    await sparky._on_event(conduit_mock, commander.UPDATER_PREFIX + '-message')
+    assert conduit_mock.pause.call_count == 1
 
 
 async def test_command(conduit_mock, sparky, reset_msgid):
@@ -194,3 +226,18 @@ async def test_queue_cleanup_error(mocker, sparky, app):
     await asyncio.sleep(0.1)
     assert warning_spy.warn.call_count > 0
     assert not sparky._cleanup_task.done()
+
+
+async def test_pause_resume(mocker, conduit_mock, sparky, app):
+    await sparky.pause()
+    assert conduit_mock.pause.call_count == 1
+
+    await sparky.resume()
+    assert conduit_mock.resume.call_count == 1
+
+    # No-op when conduit is not available
+    await sparky.shutdown()
+    await sparky.pause()
+    await sparky.resume()
+    assert conduit_mock.pause.call_count == 1
+    assert conduit_mock.resume.call_count == 1

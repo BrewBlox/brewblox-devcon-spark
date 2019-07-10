@@ -45,9 +45,6 @@ def create_parser(default_name='spark'):
                        '--device-id specifies which discovered device is valid. ',
                        choices=['all', 'usb', 'wifi'],
                        default='all')
-    group.add_argument('--skip-version-check',
-                       help='Skip protobuf version check: will not raise error on mismatch',
-                       action='store_true')
     group.add_argument('--list-devices',
                        action='store_true',
                        help='List connected devices and exit. [%(default)s]')
@@ -76,20 +73,32 @@ def create_parser(default_name='spark'):
                        action='store_true',
                        help='Disable all outgoing network calls. [%(default)s]')
 
+    # Updater options
+    group = parser.add_argument_group('Firmware')
+    group.add_argument('--skip-version-check',
+                       help='Skip firmware version check: will not raise error on mismatch',
+                       action='store_true')
+    group.add_argument('--firmware-port',
+                       help='Port used for firmware updates. [%(default)s]',
+                       type=int,
+                       default=8333)
     return parser
 
 
-def parse_settings(app):  # pragma: no cover
-    cfg = ConfigParser()
-    cfg.read('config/settings.ini')
-    return dict(cfg['SETTINGS'].items())
+def parse_ini(app):  # pragma: no cover
+    parser = ConfigParser()
+    parser.read(['config/protobuf.ini', 'binaries/firmware.ini'])
+    return {
+        **dict(parser['PROTOBUF'].items()),
+        **dict(parser['FIRMWARE'].items()),
+    }
 
 
 def main():
     app = service.create_app(parser=create_parser())
     logging.captureWarnings(True)
     config = app['config']
-    app['settings'] = parse_settings(app)
+    app['ini'] = parse_ini(app)
 
     if config['list_devices']:
         LOGGER.info('Listing connected devices: ')
@@ -97,6 +106,9 @@ def main():
             LOGGER.info(f'>> {" | ".join(dev)}')
         # Exit application
         return
+
+    LOGGER.info('INI: ' + ', '.join([f"{k}='{v}'" for k, v in app['ini'].items()]))
+    LOGGER.info('CONFIG: ' + ', '.join([f"{k}='{v}'" for k, v in app['config'].items()]))
 
     status.setup(app)
     http_client.setup(app)

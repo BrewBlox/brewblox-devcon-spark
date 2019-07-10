@@ -1,7 +1,6 @@
-version: '3'
+version: "3"
 
 services:
-
   eventbus:
     image: rabbitmq:alpine
 
@@ -21,7 +20,7 @@ services:
     depends_on:
       - eventbus
       - datastore
-      - sparksimulator
+    # - sparksimulator
     labels:
       - "traefik.port=5000"
       - "traefik.frontend.rule=PathPrefix: /spark"

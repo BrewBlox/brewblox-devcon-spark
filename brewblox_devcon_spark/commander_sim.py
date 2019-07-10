@@ -211,7 +211,7 @@ class SimulationResponder():
         # Shortcut for actual behavior
         # Noop triggers a welcome message
         # Welcome message is checked, and triggers on_handshake()
-        await status.get_status(self._app).on_handshake(True, ['Brought to you by commander_sim'])
+        await status.get_status(self._app).on_handshake(True, True)
 
     async def _read_object(self, request):
         try:
@@ -298,8 +298,8 @@ class SimulationCommander(commander.SparkCommander):
 
     async def startup(self, app: web.Application):
         await self._responder.startup(app)
-        await status.get_status(app).on_connect()
-        await status.get_status(app).on_handshake(True, ['Automatic handshake'])
+        await status.get_status(app).on_connect('simulation:1234')
+        await status.get_status(app).on_handshake(True, True)
 
     async def shutdown(self, _):
         pass

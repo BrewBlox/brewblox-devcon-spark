@@ -63,10 +63,12 @@ def sys_args(app_config) -> list:
 
 
 @pytest.fixture
-def app_settings() -> dict:
+def app_ini() -> dict:
     return {
         'proto_version': '3f2243a',
-        'proto_date': '2019/06/06',
+        'proto_date': '2019-06-06',
+        'firmware_version': 'd264dc6c',
+        'firmware_date': '2019-07-03',
     }
 
 
@@ -78,10 +80,10 @@ def event_loop(loop):
 
 
 @pytest.fixture
-def app(sys_args, app_settings):
+def app(sys_args, app_ini):
     parser = create_parser('default')
     app = service.create_app(parser=parser, raw_args=sys_args[1:])
-    app['settings'] = app_settings
+    app['ini'] = app_ini
     return app
 
 
@@ -172,7 +174,7 @@ def spark_blocks():
                 'setting': 0,
                 'value': 0,
                 'settingEnabled': True,
-                'filter': 'FILT_30s',
+                'filter': 'FILT_15s',
                 'filterThreshold': 2
             }
         },

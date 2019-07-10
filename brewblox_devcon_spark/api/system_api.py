@@ -2,15 +2,20 @@
 Specific endpoints for using system objects
 """
 
-
-from typing import Awaitable, List
+import asyncio
+from typing import Awaitable, List, Optional
 
 from aiohttp import web
-from brewblox_service import brewblox_logger
+from brewblox_service import brewblox_logger, strex
 
-from brewblox_devcon_spark import device, status
+from brewblox_devcon_spark import commander, device, status, ymodem
 from brewblox_devcon_spark.api import API_DATA_KEY, object_api
 from brewblox_devcon_spark.datastore import GROUPS_NID
+
+REBOOT_WINDOW_S = 5
+TRANSFER_TIMEOUT_S = 30
+CONNECT_INTERVAL_S = 1
+CONNECT_ATTEMPTS = 5
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -23,6 +28,7 @@ def setup(app: web.Application):
 class SystemApi():
 
     def __init__(self, app: web.Application):
+        self._app = app
         self._obj_api: object_api.ObjectApi = object_api.ObjectApi(app)
 
     async def read_groups(self) -> Awaitable[List[int]]:
@@ -37,6 +43,43 @@ class SystemApi():
             input_data={'active': groups}
         )
         return group_obj[API_DATA_KEY]['active']
+
+    async def _connect(self, address) -> ymodem.Connection:  # pragma: no cover
+        for i in range(CONNECT_ATTEMPTS):
+            try:
+                await asyncio.sleep(CONNECT_INTERVAL_S)
+                return await ymodem.connect(address)
+            except ConnectionRefusedError:
+                LOGGER.debug('Connection refused, retrying...')
+        raise ConnectionRefusedError()
+
+    async def flash(self, args: Optional[dict]) -> Awaitable[dict]:  # pragma: no cover
+        sender = ymodem.FileSender()
+        address = status.get_status(self._app).address
+        version = self._app['ini']['firmware_version']
+
+        if not address:
+            raise ConnectionAbortedError(f'Invalid address `{address}`.')
+
+        LOGGER.info(f'Started updating firmware to {version}')
+
+        try:
+            await commander.get_commander(self._app).pause(False)
+            await device.get_controller(self._app).firmware_update()
+            conn = await self._connect(address)
+
+            with conn.autoclose():
+                await asyncio.wait_for(sender.transfer(conn), TRANSFER_TIMEOUT_S)
+                LOGGER.info('Firmware updated!')
+
+        except Exception as ex:
+            LOGGER.error(f'Failed to update firmware {strex(ex)}')
+
+        finally:
+            await asyncio.sleep(REBOOT_WINDOW_S)
+            await commander.get_commander(self._app).resume()
+
+        return {'address': address, 'version': version}
 
 
 @routes.get('/system/groups')
@@ -110,4 +153,34 @@ async def ping(request: web.Request) -> web.Response:
     """
     return web.json_response(
         await device.get_controller(request.app).noop()
+    )
+
+
+@routes.post('/system/flash')
+async def flash(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Flash controller
+    tags:
+    - Spark
+    - System
+    operationId: controller.spark.system.flash
+    produces:
+    - application/json
+    parameters:
+    -
+        in: body
+        name: body
+        description: object
+        required: false
+        schema:
+            type: object
+            properties:
+                force:
+                    type: boolean
+                    example: false
+    """
+    args = await request.json() if request.body_exists else None
+    return web.json_response(
+        await SystemApi(request.app).flash(args)
     )

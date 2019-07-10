@@ -152,6 +152,7 @@ class SparkConduit(features.ServiceFeature):
         super().__init__(app)
 
         self._connection_task: asyncio.Task = None
+        self._active: asyncio.Event = None
 
         self._address: Any = None
         self._transport: asyncio.Transport = None
@@ -177,6 +178,7 @@ class SparkConduit(features.ServiceFeature):
 
     async def startup(self, app: web.Application):
         await self.shutdown()
+        self._active = asyncio.Event()
 
         def factory():
             return SparkProtocol(
@@ -191,6 +193,7 @@ class SparkConduit(features.ServiceFeature):
         else:
             connect_func = partial(connect_discovered, self.app, factory)
 
+        self._active.set()
         self._connection_task = await scheduler.create_task(
             self.app,
             self._maintain_connection(connect_func)
@@ -199,6 +202,17 @@ class SparkConduit(features.ServiceFeature):
     async def shutdown(self, *_):
         await scheduler.cancel_task(self.app, self._connection_task)
         self._connection_task = None
+        self._active = None
+
+    async def pause(self, disconnect: bool):
+        if self._active:
+            self._active.clear()
+        if disconnect and self._transport:
+            self._transport.close()
+
+    async def resume(self):
+        if self._active:
+            self._active.set()
 
     async def write(self, data: str):
         return await self.write_encoded(data.encode())
@@ -224,11 +238,12 @@ class SparkConduit(features.ServiceFeature):
         last_ok = True
         while True:
             try:
+                await self._active.wait()
                 spark_status = status.get_status(self.app)
                 self._address, self._transport, self._protocol = await connect_func()
 
                 await self._protocol.connected
-                await spark_status.on_connect()
+                await spark_status.on_connect(self._address)
                 LOGGER.info(f'Connected {self}')
                 last_ok = True
 
