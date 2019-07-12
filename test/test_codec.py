@@ -93,6 +93,11 @@ async def test_invalid_object(app, client, cdc):
     assert await cdc.decode(0, b'\xAA') == ('Invalid', {})
 
 
+async def test_deprecated_object(app, client, cdc):
+    assert await cdc.encode('DeprecatedObject', {'actualId': 100}) == (65533, b'\x64\x00')
+    assert await cdc.decode(65533, b'\x64\x00') == ('DeprecatedObject', {'actualId': 100})
+
+
 async def test_encode_constraint(app, client, cdc):
     assert await cdc.decode('ActuatorPwm', b'\x00')
     assert await cdc.encode('ActuatorPwm', {
