@@ -130,6 +130,26 @@ class InactiveObjectTranscoder(Transcoder):
         return {'actualType': Transcoder.get(type_id, self.mod).type_str()}
 
 
+class DeprecatedObjectTranscoder(Transcoder):
+
+    @classmethod
+    def type_int(cls) -> int:
+        return 65533
+
+    @classmethod
+    def type_str(cls) -> str:
+        return 'DeprecatedObject'
+
+    def encode(self, values: Decoded_, _) -> Encoded_:
+        actual_id = values['actualId']
+        encoded = actual_id.to_bytes(2, 'little')
+        return encoded
+
+    def decode(self, encoded: Encoded_, _) -> Decoded_:
+        actual_id = int.from_bytes(encoded, 'little')
+        return {'actualId': actual_id}
+
+
 class GroupsTranscoder(Transcoder):
 
     @classmethod
@@ -226,6 +246,7 @@ def _generate_mapping(vals: Iterable[Transcoder]):
 _TRANSCODERS = [
     # Raw system objects
     InactiveObjectTranscoder,
+    DeprecatedObjectTranscoder,
     GroupsTranscoder,
 
     # Interface objects
