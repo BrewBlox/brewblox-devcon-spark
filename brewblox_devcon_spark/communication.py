@@ -22,7 +22,7 @@ from brewblox_devcon_spark import exceptions, http_client, status
 
 LOGGER = brewblox_logger(__name__)
 DNS_DISCOVER_TIMEOUT_S = 20
-DEFAULT_BAUD_RATE = 57600
+DEFAULT_BAUD_RATE = 115200
 RETRY_INTERVAL_S = 2
 DISCOVER_INTERVAL_S = 10
 DISCOVERY_RETRY_COUNT = 5

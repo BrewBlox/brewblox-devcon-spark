@@ -16,7 +16,7 @@ from brewblox_service import brewblox_logger
 from serial_asyncio import SerialTransport
 
 YMODEM_TRIGGER_BAUD_RATE = 28800
-YMODEM_TRANSFER_BAUD_RATE = 9600
+YMODEM_TRANSFER_BAUD_RATE = 115200
 
 LOGGER = brewblox_logger(__name__)
 
