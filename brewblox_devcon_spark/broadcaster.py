@@ -7,9 +7,10 @@ import asyncio
 from concurrent.futures import CancelledError
 
 from aiohttp import web
-from brewblox_service import brewblox_logger, events, features, scheduler
+from brewblox_service import (brewblox_logger, events, features, scheduler,
+                              strex)
 
-from brewblox_devcon_spark import status
+from brewblox_devcon_spark import exceptions, status
 from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_SID_KEY,
                                                   ObjectApi)
 from brewblox_devcon_spark.device import GENERATED_ID_PREFIX
@@ -94,7 +95,11 @@ class Broadcaster(features.ServiceFeature):
             except CancelledError:
                 break
 
+            except exceptions.ConnectionPaused:
+                LOGGER.debug(f'{self} interrupted: connection paused')
+                last_broadcast_ok = False
+
             except Exception as ex:
                 if last_broadcast_ok:
-                    LOGGER.error(f'{self} encountered an error: {type(ex).__name__}({ex})')
+                    LOGGER.error(f'{self} encountered an error: {strex(ex)}')
                     last_broadcast_ok = False

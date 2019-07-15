@@ -9,7 +9,7 @@ import pytest
 from asynctest import CoroutineMock
 from brewblox_service import scheduler
 
-from brewblox_devcon_spark import broadcaster, status
+from brewblox_devcon_spark import broadcaster, exceptions, status
 from brewblox_devcon_spark.api.object_api import API_DATA_KEY, API_SID_KEY
 
 TESTED = broadcaster.__name__
@@ -90,11 +90,15 @@ async def test_broadcast(mock_api, mock_publisher, client, connected):
     assert call(exchange='testcast', routing='test_app', message=objects) in mock_publisher.publish.mock_calls
 
 
-async def test_error(app, client, mock_api, mock_publisher, connected):
+@pytest.mark.parametrize('err', [
+    RuntimeError,
+    exceptions.ConnectionPaused,
+])
+async def test_error(err, app, client, mock_api, mock_publisher, connected):
     b = broadcaster.get_broadcaster(app)
 
     # Don't exit after error
-    mock_api.all_logged.side_effect = RuntimeError
+    mock_api.all_logged.side_effect = err
 
     await asyncio.sleep(0.1)
     assert not b._task.done()

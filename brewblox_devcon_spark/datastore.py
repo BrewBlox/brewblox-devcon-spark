@@ -12,7 +12,7 @@ from functools import wraps
 from typing import Any, Callable, List
 
 from aiohttp import web
-from brewblox_service import brewblox_logger, features, scheduler
+from brewblox_service import brewblox_logger, features, scheduler, strex
 
 from brewblox_devcon_spark import couchdb_client
 from brewblox_devcon_spark.twinkeydict import TwinKeyDict, TwinKeyError
@@ -154,7 +154,7 @@ class FlushedStore(features.ServiceFeature):
                 break
 
             except Exception as ex:
-                warnings.warn(f'{self} flush error {type(ex).__name__}({ex})')
+                warnings.warn(f'{self} flush error {strex(ex)}')
 
 
 class CouchDBBlockStore(FlushedStore, TwinKeyDict):
@@ -194,7 +194,7 @@ class CouchDBBlockStore(FlushedStore, TwinKeyDict):
             raise
 
         except Exception as ex:
-            warnings.warn(f'{self} read error {type(ex).__name__}({ex})')
+            warnings.warn(f'{self} read error {strex(ex)}')
 
         finally:
             # Clear -> load from database -> merge defaults
@@ -282,7 +282,7 @@ class CouchDBConfig(FlushedStore):
             raise
 
         except Exception as ex:
-            warnings.warn(f'{self} read error {type(ex).__name__}({ex})')
+            warnings.warn(f'{self} read error {strex(ex)}')
 
         finally:
             self._config = data
