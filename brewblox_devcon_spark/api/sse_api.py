@@ -4,7 +4,6 @@ SSE API for subscribing to periodic updates
 
 import asyncio
 import json
-import warnings
 import weakref
 from typing import Set
 
@@ -12,7 +11,7 @@ from aiohttp import hdrs, web
 from aiohttp_sse import sse_response
 from brewblox_service import brewblox_logger, features, scheduler, strex
 
-from brewblox_devcon_spark import status
+from brewblox_devcon_spark import exceptions, status
 from brewblox_devcon_spark.api.object_api import ObjectApi
 
 PUBLISH_INTERVAL_S = 5
@@ -93,9 +92,12 @@ class SSEPublisher(features.ServiceFeature):
             except asyncio.CancelledError:
                 break
 
+            except exceptions.ConnectionPaused:  # pragma: no cover
+                self._current = None
+
             except Exception as ex:
                 self._current = None
-                warnings.warn(f'{self} encountered an error: {strex(ex)}')
+                LOGGER.error(f'{self} encountered an error: {strex(ex)}')
 
 
 def _cors_headers(request):
