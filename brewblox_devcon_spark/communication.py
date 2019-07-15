@@ -22,7 +22,7 @@ from brewblox_devcon_spark import exceptions, http_client, status
 
 LOGGER = brewblox_logger(__name__)
 DNS_DISCOVER_TIMEOUT_S = 20
-DEFAULT_BAUD_RATE = 57600
+DEFAULT_BAUD_RATE = 115200
 RETRY_INTERVAL_S = 2
 DISCOVER_INTERVAL_S = 10
 DISCOVERY_RETRY_COUNT = 5
@@ -204,10 +204,12 @@ class SparkConduit(features.ServiceFeature):
         self._connection_task = None
         self._active = None
 
-    async def pause(self, disconnect: bool):
+    async def pause(self):
         if self._active:
             self._active.clear()
-        if disconnect and self._transport:
+
+    async def disconnect(self):
+        if self._transport:
             self._transport.close()
 
     async def resume(self):
@@ -218,10 +220,13 @@ class SparkConduit(features.ServiceFeature):
         return await self.write_encoded(data.encode())
 
     async def write_encoded(self, data: bytes):
-        if not self.connected:
+        if self.connected:
+            LOGGER.debug(f'{self} writing: {data}')
+            self._transport.write(data + b'\n')
+        elif self._active and not self._active.is_set():
+            raise exceptions.ConnectionPaused()
+        else:
             raise exceptions.NotConnected(f'{self} not connected')
-        LOGGER.debug(f'{self} writing: {data}')
-        self._transport.write(data + b'\n')
 
     def _do_callbacks(self, callbacks: List[MessageCallback_], message: str):
         async def call_cb(cb: MessageCallback_, message: str):

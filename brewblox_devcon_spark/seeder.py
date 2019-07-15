@@ -4,15 +4,17 @@ Regulates actions that should be taken when the service connects to a controller
 
 
 import asyncio
-import warnings
 from datetime import datetime
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, scheduler, strex
 
-from brewblox_devcon_spark import datastore, status
+from brewblox_devcon_spark import datastore, exceptions, status
 from brewblox_devcon_spark.api import object_api
 from brewblox_devcon_spark.device import SYSTEM_GROUP, get_controller
+
+HANDSHAKE_TIMEOUT_S = 30
+PING_INTERVAL_S = 1
 
 LOGGER = brewblox_logger(__name__)
 
@@ -54,26 +56,36 @@ class Seeder(features.ServiceFeature):
         while True:
             try:
                 self._seeding_done.clear()
-
                 await spark_status.wait_connect()
                 # Will trigger the backup handshake
                 # We don't need to wait for this - we just want the side effect
                 ping_task = await scheduler.create_task(self.app, self._ping_controller())
 
-                await spark_status.wait_handshake()
+                await asyncio.wait_for(spark_status.wait_handshake(), HANDSHAKE_TIMEOUT_S)
+                await scheduler.cancel_task(self.app, ping_task, wait_for=False)
+
                 if not spark_status.is_compatible:  # pragma: no cover
-                    raise RuntimeError('Incompatible firmware version')
+                    raise exceptions.IncompatibleFirmware()
 
                 await self._seed_datastore()
                 await self._seed_time()
 
                 await spark_status.on_synchronize()
+                LOGGER.info('Service synchronized!')
 
             except asyncio.CancelledError:
                 raise
 
+            except asyncio.TimeoutError:
+                LOGGER.error('Seeding timeout. Exiting now...')
+                raise SystemExit(1)
+
+            except exceptions.IncompatibleFirmware:  # pragma: no cover
+                LOGGER.error('Incompatible firmware version detected')
+
             except Exception as ex:
                 LOGGER.error(f'Failed to seed: {strex(ex)}')
+                raise SystemExit(1)
 
             finally:
                 self._seeding_done.set()
@@ -87,11 +99,18 @@ class Seeder(features.ServiceFeature):
     ##########
 
     async def _ping_controller(self):
-        try:
-            await get_controller(self.app).noop()
+        while True:
+            try:
+                await asyncio.sleep(PING_INTERVAL_S)
+                await get_controller(self.app).noop()
 
-        except Exception as ex:  # pragma: no cover
-            warnings.warn(f'Failed to ping controller - {strex(ex)}')
+            except asyncio.CancelledError:  # pragma: no cover
+                LOGGER.debug('Cancelled handshake ping')
+                return
+
+            except Exception as ex:  # pragma: no cover
+                LOGGER.error(f'Failed to ping controller - {strex(ex)}')
+                return
 
     async def _seed_datastore(self):
         try:
@@ -105,8 +124,12 @@ class Seeder(features.ServiceFeature):
                 datastore.get_config(self.app).read(f'{device_id}-config-db'),
             )
 
+        except asyncio.CancelledError:  # pragma: no cover
+            LOGGER.debug('Cancelled datastore seeding')
+            raise
+
         except Exception as ex:
-            warnings.warn(f'Failed to seed datastore - {strex(ex)}')
+            LOGGER.error(f'Failed to seed datastore - {strex(ex)}')
             raise ex
 
     async def _seed_time(self):
@@ -121,6 +144,10 @@ class Seeder(features.ServiceFeature):
                     'secondsSinceEpoch': now.timestamp()
                 })
 
+        except asyncio.CancelledError:  # pragma: no cover
+            LOGGER.debug('Cancelled time seeding')
+            raise
+
         except Exception as ex:
-            warnings.warn(f'Failed to seed controller time - {strex(ex)}')
+            LOGGER.error(f'Failed to seed controller time - {strex(ex)}')
             raise ex
