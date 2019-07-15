@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x10Spark3Pins.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\xc1\x03\n\nSpark3Pins\x12\x36\n\x04pins\x18\x01 \x03(\x0b\x32\x16.blox.Spark3Pins.IoPinB\x10\x92?\x02\x10\x05\x92?\x02x\x01\x8a\xb5\x18\x02(\x01\x12\x18\n\x10\x65nableIoSupply5V\x18\x02 \x01(\x08\x12\x19\n\x11\x65nableIoSupply12V\x18\x03 \x01(\x08\x12\x1a\n\x12\x65nableLcdBacklight\x18\x04 \x01(\x08\x12\x12\n\nsoundAlarm\x18\x05 \x01(\x08\x12$\n\x08voltage5\x18\x06 \x01(\rB\x12\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x8a\xb5\x18\x03\x10\x9a\x03\x12%\n\tvoltage12\x18\x07 \x01(\rB\x12\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x8a\xb5\x18\x03\x10\x95\x01\x1a\xb9\x01\n\x05IoPin\x12\x1f\n\x04top1\x18\x01 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1f\n\x04top2\x18\x02 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1f\n\x04top3\x18\x03 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\"\n\x07\x62ottom1\x18\x04 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\"\n\x07\x62ottom2\x18\x05 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x42\x05\n\x03Pin:\r\x8a\xb5\x18\x03\x18\xbf\x02\x8a\xb5\x18\x02H\nb\x06proto3')
+  serialized_pb=_b('\n\x10Spark3Pins.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\xa5\x03\n\nSpark3Pins\x12\x36\n\x04pins\x18\x01 \x03(\x0b\x32\x16.blox.Spark3Pins.IoPinB\x10\x92?\x02\x10\x05\x92?\x02x\x01\x8a\xb5\x18\x02(\x01\x12\x18\n\x10\x65nableIoSupply5V\x18\x02 \x01(\x08\x12\x19\n\x11\x65nableIoSupply12V\x18\x03 \x01(\x08\x12\x12\n\nsoundAlarm\x18\x05 \x01(\x08\x12$\n\x08voltage5\x18\x06 \x01(\rB\x12\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x8a\xb5\x18\x03\x10\x9a\x03\x12%\n\tvoltage12\x18\x07 \x01(\rB\x12\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x8a\xb5\x18\x03\x10\x95\x01\x1a\xb9\x01\n\x05IoPin\x12\x1f\n\x04top1\x18\x01 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1f\n\x04top2\x18\x02 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1f\n\x04top3\x18\x03 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\"\n\x07\x62ottom1\x18\x04 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\"\n\x07\x62ottom2\x18\x05 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x42\x05\n\x03Pin:\r\x8a\xb5\x18\x03\x18\xbf\x02\x8a\xb5\x18\x02H\nb\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,IoArray__pb2.DESCRIPTOR,])
 
@@ -86,8 +86,8 @@ _SPARK3PINS_IOPIN = _descriptor.Descriptor(
       name='Pin', full_name='blox.Spark3Pins.IoPin.Pin',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=321,
-  serialized_end=506,
+  serialized_start=293,
+  serialized_end=478,
 )
 
 _SPARK3PINS = _descriptor.Descriptor(
@@ -119,28 +119,21 @@ _SPARK3PINS = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='enableLcdBacklight', full_name='blox.Spark3Pins.enableLcdBacklight', index=3,
-      number=4, type=8, cpp_type=7, label=1,
-      has_default_value=False, default_value=False,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='soundAlarm', full_name='blox.Spark3Pins.soundAlarm', index=4,
+      name='soundAlarm', full_name='blox.Spark3Pins.soundAlarm', index=3,
       number=5, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='voltage5', full_name='blox.Spark3Pins.voltage5', index=5,
+      name='voltage5', full_name='blox.Spark3Pins.voltage5', index=4,
       number=6, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\212\265\030\002(\001\222?\0028\020\212\265\030\003\020\232\003'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='voltage12', full_name='blox.Spark3Pins.voltage12', index=6,
+      name='voltage12', full_name='blox.Spark3Pins.voltage12', index=5,
       number=7, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -159,7 +152,7 @@ _SPARK3PINS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=72,
-  serialized_end=521,
+  serialized_end=493,
 )
 
 _SPARK3PINS_IOPIN.fields_by_name['top1'].message_type = IoArray__pb2._IOCHANNEL
