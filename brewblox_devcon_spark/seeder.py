@@ -62,6 +62,8 @@ class Seeder(features.ServiceFeature):
                 ping_task = await scheduler.create_task(self.app, self._ping_controller())
 
                 await asyncio.wait_for(spark_status.wait_handshake(), HANDSHAKE_TIMEOUT_S)
+                await scheduler.cancel_task(self.app, ping_task, wait_for=False)
+
                 if not spark_status.is_compatible:  # pragma: no cover
                     raise exceptions.IncompatibleFirmware()
 
