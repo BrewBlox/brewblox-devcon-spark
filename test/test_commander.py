@@ -26,6 +26,7 @@ def conduit_mock(mocker):
     m.return_value.bind = CoroutineMock()
     m.return_value.write = CoroutineMock()
     m.return_value.pause = CoroutineMock()
+    m.return_value.disconnect = CoroutineMock()
     m.return_value.resume = CoroutineMock()
     return m.return_value
 
@@ -131,6 +132,7 @@ async def test_on_update(app, mocker, conduit_mock, sparky):
 
     await sparky._on_event(conduit_mock, commander.UPDATER_PREFIX + '-message')
     assert conduit_mock.pause.call_count == 1
+    assert conduit_mock.disconnect.call_count == 1
 
 
 async def test_command(conduit_mock, sparky, reset_msgid):
@@ -238,6 +240,7 @@ async def test_pause_resume(mocker, conduit_mock, sparky, app):
     # No-op when conduit is not available
     await sparky.shutdown()
     await sparky.pause()
+    await sparky.disconnect()
     await sparky.resume()
     assert conduit_mock.pause.call_count == 1
     assert conduit_mock.resume.call_count == 1

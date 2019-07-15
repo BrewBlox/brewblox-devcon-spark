@@ -78,20 +78,14 @@ def create_parser(default_name='spark'):
     group.add_argument('--skip-version-check',
                        help='Skip firmware version check: will not raise error on mismatch',
                        action='store_true')
-    group.add_argument('--firmware-port',
-                       help='Port used for firmware updates. [%(default)s]',
-                       type=int,
-                       default=8333)
+
     return parser
 
 
 def parse_ini(app):  # pragma: no cover
     parser = ConfigParser()
-    parser.read(['config/protobuf.ini', 'binaries/firmware.ini'])
-    return {
-        **dict(parser['PROTOBUF'].items()),
-        **dict(parser['FIRMWARE'].items()),
-    }
+    parser.read('binaries/firmware.ini')
+    return dict(parser['FIRMWARE'].items())
 
 
 def main():

@@ -70,7 +70,7 @@ class FileSenderProtocol(asyncio.Protocol):
         self._connection_made_event.set()
 
     def connection_lost(self, exc):
-        pass
+        LOGGER.info('Firmware update connection closed')
 
     def data_received(self, data):
         LOGGER.debug(f'recv: {data}')

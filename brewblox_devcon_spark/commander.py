@@ -196,6 +196,7 @@ class SparkCommander(features.ServiceFeature):
         elif msg.startswith(UPDATER_PREFIX):
             LOGGER.error('Update protocol was activated by another connection')
             await self.pause()
+            await self.disconnect()
         else:
             LOGGER.info(f'Spark event: "{msg}"')
 
@@ -240,9 +241,13 @@ class SparkCommander(features.ServiceFeature):
 
             return decoded
 
-    async def pause(self, disconnect: bool = True):
+    async def pause(self):
         if self._conduit:
-            await self._conduit.pause(disconnect)
+            await self._conduit.pause()
+
+    async def disconnect(self):
+        if self._conduit:
+            await self._conduit.disconnect()
 
     async def resume(self):
         if self._conduit:
