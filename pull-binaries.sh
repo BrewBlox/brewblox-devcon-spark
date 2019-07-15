@@ -8,7 +8,10 @@ echo "Using brewblox/firmware-bin:${TAG}"
 
 # Pull image
 docker rm bin-box 2> /dev/null || true
-docker pull brewblox/firmware-bin:${TAG}
+if [ $TAG != "local" ]
+then
+    docker pull brewblox/firmware-bin:${TAG}
+fi
 docker create --name bin-box brewblox/firmware-bin:${TAG}
 
 # Get files
