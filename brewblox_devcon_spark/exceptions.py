@@ -103,3 +103,11 @@ class NotConnected(ConnectionException):
 
 class ConnectionImpossible(ConnectionException):
     pass
+
+
+class ConnectionPaused(ConnectionException):
+    pass
+
+
+class IncompatibleFirmware(ConnectionException):
+    pass

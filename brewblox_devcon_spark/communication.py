@@ -204,10 +204,12 @@ class SparkConduit(features.ServiceFeature):
         self._connection_task = None
         self._active = None
 
-    async def pause(self, disconnect: bool):
+    async def pause(self):
         if self._active:
             self._active.clear()
-        if disconnect and self._transport:
+
+    async def disconnect(self):
+        if self._transport:
             self._transport.close()
 
     async def resume(self):
@@ -218,10 +220,13 @@ class SparkConduit(features.ServiceFeature):
         return await self.write_encoded(data.encode())
 
     async def write_encoded(self, data: bytes):
-        if not self.connected:
+        if self.connected:
+            LOGGER.debug(f'{self} writing: {data}')
+            self._transport.write(data + b'\n')
+        elif self._active and not self._active.is_set():
+            raise exceptions.ConnectionPaused()
+        else:
             raise exceptions.NotConnected(f'{self} not connected')
-        LOGGER.debug(f'{self} writing: {data}')
-        self._transport.write(data + b'\n')
 
     def _do_callbacks(self, callbacks: List[MessageCallback_], message: str):
         async def call_cb(cb: MessageCallback_, message: str):

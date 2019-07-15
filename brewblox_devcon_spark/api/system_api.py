@@ -3,7 +3,7 @@ Specific endpoints for using system objects
 """
 
 import asyncio
-from typing import Awaitable, List, Optional
+from typing import Awaitable, List
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, strex
@@ -14,7 +14,7 @@ from brewblox_devcon_spark.datastore import GROUPS_NID
 
 REBOOT_WINDOW_S = 5
 TRANSFER_TIMEOUT_S = 30
-CONNECT_INTERVAL_S = 1
+CONNECT_INTERVAL_S = 2
 CONNECT_ATTEMPTS = 5
 
 LOGGER = brewblox_logger(__name__)
@@ -53,9 +53,12 @@ class SystemApi():
                 LOGGER.debug('Connection refused, retrying...')
         raise ConnectionRefusedError()
 
-    async def flash(self, args: Optional[dict]) -> Awaitable[dict]:  # pragma: no cover
+    async def flash(self) -> Awaitable[dict]:  # pragma: no cover
         sender = ymodem.FileSender()
-        address = status.get_status(self._app).address
+        state = status.get_status(self._app)
+        cmder = commander.get_commander(self._app)
+        ctrl = device.get_controller(self._app)
+        address = state.address
         version = self._app['ini']['firmware_version']
 
         if not address:
@@ -64,16 +67,20 @@ class SystemApi():
         LOGGER.info(f'Started updating firmware to {version}')
 
         try:
-            await commander.get_commander(self._app).pause(False)
-            await device.get_controller(self._app).firmware_update()
+            await cmder.pause()
+            await ctrl.firmware_update()
+            await cmder.disconnect()
+            await state.wait_disconnect()
+
             conn = await self._connect(address)
 
             with conn.autoclose():
                 await asyncio.wait_for(sender.transfer(conn), TRANSFER_TIMEOUT_S)
+                await asyncio.sleep(CONNECT_INTERVAL_S)
                 LOGGER.info('Firmware updated!')
 
         except Exception as ex:
-            LOGGER.error(f'Failed to update firmware {strex(ex)}')
+            LOGGER.error(f'Failed to update firmware: {strex(ex)}')
 
         finally:
             await asyncio.sleep(REBOOT_WINDOW_S)
@@ -167,20 +174,7 @@ async def flash(request: web.Request) -> web.Response:
     operationId: controller.spark.system.flash
     produces:
     - application/json
-    parameters:
-    -
-        in: body
-        name: body
-        description: object
-        required: false
-        schema:
-            type: object
-            properties:
-                force:
-                    type: boolean
-                    example: false
     """
-    args = await request.json() if request.body_exists else None
     return web.json_response(
-        await SystemApi(request.app).flash(args)
+        await SystemApi(request.app).flash()
     )

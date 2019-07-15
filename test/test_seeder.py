@@ -34,6 +34,7 @@ async def connect(app):
     state = status.get_status(app)
     await state.on_connect('seeder test')
     await seeder.get_seeder(app).seeding_done()
+    await asyncio.sleep(0.01)
 
 
 async def disconnect(app):
@@ -41,6 +42,17 @@ async def disconnect(app):
     await state.on_disconnect()
     await state.wait_disconnect()
     await asyncio.sleep(0.01)
+
+
+@pytest.fixture(autouse=True)
+async def ping_interval_mock(mocker):
+    mocker.patch(TESTED + '.PING_INTERVAL_S', 0.0001)
+
+
+@pytest.fixture(autouse=True)
+async def system_exit_mock(mocker):
+    m = mocker.patch(TESTED + '.SystemExit')
+    return m
 
 
 @pytest.fixture
@@ -68,6 +80,7 @@ def store(app):
 @pytest.fixture
 def api_mock(mocker):
     m = mocker.patch(TESTED + '.object_api.ObjectApi').return_value
+    m.read = CoroutineMock()
     m.write = CoroutineMock()
     return m
 
@@ -88,46 +101,37 @@ async def test_seed_status(app, client, mocker, spark_status):
     assert states(app) == [False, True, True]
 
 
-async def test_seed_errors(app, client, mocker, api_mock):
+async def test_seed_errors(app, client, mocker, api_mock, system_exit_mock):
     await synchronized(app)
 
     api_mock.read = CoroutineMock(side_effect=RuntimeError)
     await disconnect(app)
 
-    with pytest.warns(UserWarning, match='Failed to seed datastore'):
-        await connect(app)
-
-    assert states(app) == [False, True, False]
-    assert seeder.get_seeder(app).active
-
-    api_mock.read = CoroutineMock()
-    api_mock.write = CoroutineMock(side_effect=RuntimeError)
-    await disconnect(app)
-
-    with pytest.warns(UserWarning, match='Failed to seed controller time'):
-        await connect(app)
-
-    assert states(app) == [False, True, False]
-    assert seeder.get_seeder(app).active
-
-
-async def test_cancel_datastore(app, client, mocker, api_mock):
-    await synchronized(app)
-    api_mock.read = CoroutineMock(side_effect=asyncio.CancelledError)
-
-    await disconnect(app)
     await connect(app)
 
     assert states(app) == [False, True, False]
+    assert system_exit_mock.call_count == 1
     assert not seeder.get_seeder(app).active
 
 
-async def test_cancel_time(app, client, mocker, api_mock):
+async def test_write_error(app, client, mocker, api_mock, system_exit_mock):
     await synchronized(app)
-    api_mock.read = CoroutineMock(side_effect=asyncio.CancelledError)
-
+    api_mock.write = CoroutineMock(side_effect=RuntimeError)
     await disconnect(app)
     await connect(app)
 
     assert states(app) == [False, True, False]
+    assert system_exit_mock.call_count == 1
+    assert not seeder.get_seeder(app).active
+
+
+async def test_timeout(app, client, mocker, api_mock, system_exit_mock):
+    await synchronized(app)
+    await disconnect(app)
+    mocker.patch(TESTED + '.HANDSHAKE_TIMEOUT_S', 0.0001)
+    s = seeder.get_seeder(app)
+    mocker.patch.object(s, '_ping_controller', CoroutineMock())
+
+    await connect(app)
+    assert system_exit_mock.call_count == 1
     assert not seeder.get_seeder(app).active
