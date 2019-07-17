@@ -38,7 +38,7 @@ popd > /dev/null
 
 # Get bootloader and system files
 PARTICLE_VERSION=1.2.1-rc.2
-PARTICLE_RELEASES=https://github.com/particle-iot/firmware/releases/download/v${PARTICLE_VERSION}
+PARTICLE_RELEASES=https://github.com/particle-iot/device-os/releases/download/v${PARTICLE_VERSION}
 
 curl -sL -o ./binaries/bootloader-p1.bin ${PARTICLE_RELEASES}/p1-bootloader@${PARTICLE_VERSION}.bin
 curl -sL -o ./binaries/system-part1-p1.bin ${PARTICLE_RELEASES}/p1-system-part1@${PARTICLE_VERSION}.bin
