@@ -36,17 +36,5 @@ rm -f ./proto-compiled/*_pb2.py
 protoc -I=./proto --python_out=./proto-compiled ./proto/*.proto
 popd > /dev/null
 
-# Get bootloader and system files
-PARTICLE_VERSION=1.2.1-rc.2
-PARTICLE_RELEASES=https://github.com/particle-iot/device-os/releases/download/v${PARTICLE_VERSION}
-
-curl -sL -o ./binaries/bootloader-p1.bin ${PARTICLE_RELEASES}/p1-bootloader@${PARTICLE_VERSION}.bin
-curl -sL -o ./binaries/system-part1-p1.bin ${PARTICLE_RELEASES}/p1-system-part1@${PARTICLE_VERSION}.bin
-curl -sL -o ./binaries/system-part2-p1.bin ${PARTICLE_RELEASES}/p1-system-part2@${PARTICLE_VERSION}.bin
-
-curl -sL -o ./binaries/bootloader-photon.bin ${PARTICLE_RELEASES}/photon-bootloader@${PARTICLE_VERSION}.bin
-curl -sL -o ./binaries/system-part1-photon.bin ${PARTICLE_RELEASES}/photon-system-part1@${PARTICLE_VERSION}.bin
-curl -sL -o ./binaries/system-part2-photon.bin ${PARTICLE_RELEASES}/photon-system-part2@${PARTICLE_VERSION}.bin
-
 # Pop script dir
 popd > /dev/null
