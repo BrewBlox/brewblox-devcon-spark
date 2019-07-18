@@ -67,8 +67,8 @@ class SystemApi():
         LOGGER.info(f'Started updating firmware to {version}')
 
         try:
-            await cmder.pause()
             await ctrl.firmware_update()
+            await cmder.pause()
             await cmder.disconnect()
             await state.wait_disconnect()
 
@@ -86,7 +86,7 @@ class SystemApi():
 
         finally:
             await asyncio.sleep(REBOOT_WINDOW_S)
-            await commander.get_commander(self._app).resume()
+            await cmder.resume()
 
         return {'address': address, 'version': version}
 
