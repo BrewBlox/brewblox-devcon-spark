@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
+set -e
 
-SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
-pushd "${SCRIPT_DIR}" > /dev/null
-
+# Args
 TAG=${1:-"develop"}
 echo "Using brewblox/firmware-bin:${TAG}"
+
+# Nagivate to script dir
+SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
+pushd "${SCRIPT_DIR}" > /dev/null
 
 # Pull image
 docker rm bin-box 2> /dev/null || true

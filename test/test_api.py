@@ -484,6 +484,8 @@ async def test_system_status(app, client):
 async def test_system_flash(app, client, mocker):
     sys_api = system_api.__name__
     mocker.patch(sys_api + '.REBOOT_WINDOW_S', 0.001)
+    mocker.patch(sys_api + '.CONNECT_INTERVAL_S', 0.001)
+    mocker.patch(sys_api + '.ymodem.connect', CoroutineMock())
     sender = mocker.patch(sys_api + '.ymodem.FileSender')
     transfer_mock = CoroutineMock()
     sender.return_value.transfer = transfer_mock

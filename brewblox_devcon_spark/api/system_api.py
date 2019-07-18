@@ -8,7 +8,7 @@ from typing import Awaitable, List
 from aiohttp import web
 from brewblox_service import brewblox_logger, strex
 
-from brewblox_devcon_spark import commander, device, status, ymodem
+from brewblox_devcon_spark import commander, device, exceptions, status, ymodem
 from brewblox_devcon_spark.api import API_DATA_KEY, object_api
 from brewblox_devcon_spark.datastore import GROUPS_NID
 
@@ -67,8 +67,8 @@ class SystemApi():
         LOGGER.info(f'Started updating firmware to {version}')
 
         try:
-            await cmder.pause()
             await ctrl.firmware_update()
+            await cmder.pause()
             await cmder.disconnect()
             await state.wait_disconnect()
 
@@ -80,11 +80,13 @@ class SystemApi():
                 LOGGER.info('Firmware updated!')
 
         except Exception as ex:
-            LOGGER.error(f'Failed to update firmware: {strex(ex)}')
+            msg = f'Failed to update firmware: {strex(ex)}'
+            LOGGER.error(msg)
+            raise exceptions.FirmwareUpdateFailed(msg)
 
         finally:
             await asyncio.sleep(REBOOT_WINDOW_S)
-            await commander.get_commander(self._app).resume()
+            await cmder.resume()
 
         return {'address': address, 'version': version}
 

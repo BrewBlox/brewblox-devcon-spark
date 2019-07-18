@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -e
+
+for bin in ./*.bin; do
+    res="$(npx particle binary inspect ./${bin})"
+    echo "$res"
+    grep -q "CRC is ok" <<< "$res"
+
+    echo "Checking compile target..."
+    if grep -q "photon" <<< "$bin"; then
+        grep -q "Compiled for photon" <<< "$res"
+    else
+        grep -q "Compiled for p1" <<< "$res"
+    fi
+done
