@@ -65,6 +65,7 @@ class SimulationResponder():
             commands.RebootCommand: self._reboot,
             commands.ListCompatibleObjectsCommand: self._list_compatible_objects,
             commands.DiscoverObjectsCommand: self._discover_objects,
+            commands.FirmwareUpdateCommand: self._firmware_update,
         }
 
         self._modifiers = {
@@ -289,6 +290,9 @@ class SimulationResponder():
     async def _reboot(self, request):
         self._start_time = datetime.now()
 
+    async def _firmware_update(self, request):
+        pass
+
 
 class SimulationCommander(commander.SparkCommander):
 
@@ -306,3 +310,6 @@ class SimulationCommander(commander.SparkCommander):
 
     async def execute(self, command: commands.Command) -> dict:
         return (await self._responder.respond(command)).decoded_response
+
+    async def disconnect(self):
+        await status.get_status(self.app).on_disconnect()
