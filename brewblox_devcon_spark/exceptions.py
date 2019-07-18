@@ -109,5 +109,17 @@ class ConnectionPaused(ConnectionException):
     pass
 
 
-class IncompatibleFirmware(ConnectionException):
+##################################################################################################
+# Firmware exceptions
+##################################################################################################
+
+class FirmwareException(BrewBloxException):
+    status_code = 424  # HTTP failed dependency
+
+
+class IncompatibleFirmware(FirmwareException):
+    pass
+
+
+class FirmwareUpdateFailed(FirmwareException):
     pass
