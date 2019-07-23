@@ -180,7 +180,7 @@ class FileSender():
         # Trigger handshake
         buffer = ''
         conn.transport.write(b'\n')
-        for i in range(100):
+        for i in range(20):
             try:
                 buffer += await asyncio.wait_for(_read(), 1)
             except asyncio.TimeoutError:
@@ -188,8 +188,12 @@ class FileSender():
                 conn.transport.write(b'\n')
                 continue
 
-            if '\n' in buffer:
-                args = re.search(r'<!(?P<message>[^>]*)>', buffer).group('message').split(',')
+            if re.search(r'<!(?P<message>BREWBLOX[^>]*)>', buffer):
+                raise ConnectionResetError('Connected to wrong protocol (controlbox handshake received)')
+
+            match = re.search(r'<!(?P<message>FIRMWARE_UPDATER[^>]*)>', buffer)
+            if match:
+                args = match.group('message').split(',')
                 message = HandshakeMessage(*args)
                 LOGGER.info(message)
                 break
