@@ -14,7 +14,8 @@ from brewblox_devcon_spark.datastore import GROUPS_NID
 
 REBOOT_WINDOW_S = 5
 TRANSFER_TIMEOUT_S = 30
-CONNECT_INTERVAL_S = 2
+STATE_TIMEOUT_S = 20
+CONNECT_INTERVAL_S = 3
 CONNECT_ATTEMPTS = 5
 
 LOGGER = brewblox_logger(__name__)
@@ -63,11 +64,13 @@ class SystemApi():
         LOGGER.info(f'Started updating firmware to {version}')
 
         try:
-            await asyncio.wait_for(state.wait_connect(), TRANSFER_TIMEOUT_S)
-            await ctrl.firmware_update()
+            if not state.is_connected:
+                raise exceptions.NotConnected()
+
             await cmder.pause()
+            await ctrl.firmware_update()
             await cmder.disconnect()
-            await state.wait_disconnect()
+            await asyncio.wait_for(state.wait_disconnect(), STATE_TIMEOUT_S)
 
             conn = await self._connect(state.address)
 
@@ -77,9 +80,8 @@ class SystemApi():
                 LOGGER.info('Firmware updated!')
 
         except Exception as ex:
-            msg = f'Failed to update firmware: {strex(ex)}'
-            LOGGER.error(msg)
-            raise exceptions.FirmwareUpdateFailed(msg)
+            LOGGER.error(f'Failed to update firmware: {strex(ex)}')
+            raise exceptions.FirmwareUpdateFailed(strex(ex))
 
         finally:
             await asyncio.sleep(REBOOT_WINDOW_S)
