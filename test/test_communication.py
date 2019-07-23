@@ -294,7 +294,6 @@ async def test_conduit_write(bound_collector, bound_conduit, transport_mock):
 async def test_paused_write(bound_collector, bound_conduit, transport_mock):
     await bound_conduit.pause()
     await bound_conduit.disconnect()
-    transport_mock.is_closing.return_value = True
 
     with pytest.raises(exceptions.ConnectionPaused):
         await bound_conduit.write('stuff')

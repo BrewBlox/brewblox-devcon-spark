@@ -14,7 +14,8 @@ from brewblox_devcon_spark.datastore import GROUPS_NID
 
 REBOOT_WINDOW_S = 5
 TRANSFER_TIMEOUT_S = 30
-CONNECT_INTERVAL_S = 2
+STATE_TIMEOUT_S = 20
+CONNECT_INTERVAL_S = 3
 CONNECT_ATTEMPTS = 5
 
 LOGGER = brewblox_logger(__name__)
@@ -58,21 +59,20 @@ class SystemApi():
         state = status.get_status(self._app)
         cmder = commander.get_commander(self._app)
         ctrl = device.get_controller(self._app)
-        address = state.address
         version = self._app['ini']['firmware_version']
-
-        if not address:
-            raise ConnectionAbortedError(f'Invalid address `{address}`.')
 
         LOGGER.info(f'Started updating firmware to {version}')
 
         try:
-            await ctrl.firmware_update()
-            await cmder.pause()
-            await cmder.disconnect()
-            await state.wait_disconnect()
+            if not state.is_connected:
+                raise exceptions.NotConnected()
 
-            conn = await self._connect(address)
+            await cmder.pause()
+            await ctrl.firmware_update()
+            await cmder.disconnect()
+            await asyncio.wait_for(state.wait_disconnect(), STATE_TIMEOUT_S)
+
+            conn = await self._connect(state.address)
 
             with conn.autoclose():
                 await asyncio.wait_for(sender.transfer(conn), TRANSFER_TIMEOUT_S)
@@ -80,15 +80,14 @@ class SystemApi():
                 LOGGER.info('Firmware updated!')
 
         except Exception as ex:
-            msg = f'Failed to update firmware: {strex(ex)}'
-            LOGGER.error(msg)
-            raise exceptions.FirmwareUpdateFailed(msg)
+            LOGGER.error(f'Failed to update firmware: {strex(ex)}')
+            raise exceptions.FirmwareUpdateFailed(strex(ex))
 
         finally:
             await asyncio.sleep(REBOOT_WINDOW_S)
             await cmder.resume()
 
-        return {'address': address, 'version': version}
+        return {'address': state.address, 'version': version}
 
 
 @routes.get('/system/groups')

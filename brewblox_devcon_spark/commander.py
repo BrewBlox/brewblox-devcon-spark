@@ -214,7 +214,8 @@ class SparkCommander(features.ServiceFeature):
 
     async def execute(self, command: commands.Command) -> dict:
         encoded_request = command.encoded_request.upper()
-        await self._conduit.write(encoded_request)
+        ignore_pause = isinstance(command, commands.FirmwareUpdateCommand)
+        await self._conduit.write(encoded_request, ignore_pause)
 
         while True:
             # Wait for a request resolution (matched by request)
