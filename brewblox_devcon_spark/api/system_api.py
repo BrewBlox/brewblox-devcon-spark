@@ -69,7 +69,6 @@ class SystemApi():
 
             await cmder.pause()
             await ctrl.firmware_update()
-            # The firmware closes the connection after receiving the firmware update command
             await cmder.disconnect()
             await asyncio.wait_for(state.wait_disconnect(), STATE_TIMEOUT_S)
 
