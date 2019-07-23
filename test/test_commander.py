@@ -144,7 +144,7 @@ async def test_command(conduit_mock, sparky, reset_msgid):
     resp = await sparky.execute(command)
     assert resp['objects'] == []
 
-    conduit_mock.write.assert_called_once_with('01000728')
+    conduit_mock.write.assert_called_once_with('01000728', False)
 
 
 async def test_error_command(conduit_mock, sparky, reset_msgid):
