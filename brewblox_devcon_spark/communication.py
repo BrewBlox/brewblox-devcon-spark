@@ -216,17 +216,18 @@ class SparkConduit(features.ServiceFeature):
         if self._active:
             self._active.set()
 
-    async def write(self, data: str):
-        return await self.write_encoded(data.encode())
+    async def write(self, data: str, ignore_pause: bool = False):
+        return await self.write_encoded(data.encode(), ignore_pause)
 
-    async def write_encoded(self, data: bytes):
-        if self.connected:
-            LOGGER.debug(f'{self} writing: {data}')
-            self._transport.write(data + b'\n')
-        elif self._active and not self._active.is_set():
+    async def write_encoded(self, data: bytes, ignore_pause: bool = False):
+        if not ignore_pause and self._active and not self._active.is_set():
             raise exceptions.ConnectionPaused()
-        else:
+
+        if not self.connected:
             raise exceptions.NotConnected(f'{self} not connected')
+
+        LOGGER.debug(f'{self} writing: {data}')
+        self._transport.write(data + b'\n')
 
     def _do_callbacks(self, callbacks: List[MessageCallback_], message: str):
         async def call_cb(cb: MessageCallback_, message: str):
