@@ -58,21 +58,18 @@ class SystemApi():
         state = status.get_status(self._app)
         cmder = commander.get_commander(self._app)
         ctrl = device.get_controller(self._app)
-        address = state.address
         version = self._app['ini']['firmware_version']
-
-        if not address:
-            raise ConnectionAbortedError(f'Invalid address `{address}`.')
 
         LOGGER.info(f'Started updating firmware to {version}')
 
         try:
+            await asyncio.wait_for(state.wait_connect(), TRANSFER_TIMEOUT_S)
             await ctrl.firmware_update()
             await cmder.pause()
             await cmder.disconnect()
             await state.wait_disconnect()
 
-            conn = await self._connect(address)
+            conn = await self._connect(state.address)
 
             with conn.autoclose():
                 await asyncio.wait_for(sender.transfer(conn), TRANSFER_TIMEOUT_S)
@@ -88,7 +85,7 @@ class SystemApi():
             await asyncio.sleep(REBOOT_WINDOW_S)
             await cmder.resume()
 
-        return {'address': address, 'version': version}
+        return {'address': state.address, 'version': version}
 
 
 @routes.get('/system/groups')
