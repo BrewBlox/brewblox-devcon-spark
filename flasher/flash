@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 set -e
 
-USB_FLASH="node_modules/.bin/particle --no-update-check flash --usb --yes"
+USB_FLASH="npx particle --no-update-check flash --usb --yes"
 
 if [[ -n $(lsusb -d 2b04:d006) ]]; then
     echo "Flashing Photon..."
