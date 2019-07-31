@@ -1,6 +1,9 @@
 #! /usr/bin/env bash
 set -e
 
+echo "Flashing the bootloader is disabled while we fix a bug."
+exit
+
 SERIAL_FLASH="npx particle --no-update-check serial flash"
 
 if [[ -n $(lsusb -d 2b04:c006) ]]; then
