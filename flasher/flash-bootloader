@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 set -e
 
-SERIAL_FLASH="node_modules/.bin/particle --no-update-check serial flash"
+SERIAL_FLASH="npx particle --no-update-check serial flash"
 
 if [[ -n $(lsusb -d 2b04:c006) ]]; then
     echo "Triggering listening mode"

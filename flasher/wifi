@@ -2,5 +2,7 @@
 set -e
 
 ./trigger-listening
-echo "Automatically skipping Wifi scan..."
-echo -ne 'no\n' | node_modules/.bin/particle --no-update-check serial wifi
+echo ""
+echo "IMPORTANT: answer 'no' when asked to scan for Wifi networks"
+echo ""
+npx particle --no-update-check serial wifi
