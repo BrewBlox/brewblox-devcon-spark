@@ -14,11 +14,11 @@ from typing import Any, Awaitable, Callable, Iterable, Iterator, List, Tuple
 
 import serial
 from aiohttp import web
-from brewblox_service import brewblox_logger, features, scheduler
+from brewblox_service import brewblox_logger, features, http_client, scheduler
 from serial.tools import list_ports
 from serial_asyncio import SerialTransport
 
-from brewblox_devcon_spark import exceptions, http_client, status
+from brewblox_devcon_spark import exceptions, status
 
 LOGGER = brewblox_logger(__name__)
 DNS_DISCOVER_TIMEOUT_S = 20

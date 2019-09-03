@@ -5,11 +5,12 @@ Example of how to import and use the brewblox service
 import logging
 from configparser import ConfigParser
 
-from brewblox_service import brewblox_logger, events, scheduler, service
+from brewblox_service import (brewblox_logger, couchdb_client, events,
+                              http_client, scheduler, service)
 
 from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
-                                   communication, couchdb_client, datastore,
-                                   device, http_client, seeder, status)
+                                   communication, datastore, device, seeder,
+                                   status)
 from brewblox_devcon_spark.api import (alias_api, codec_api, debug_api,
                                        error_response, object_api, remote_api,
                                        sse_api, system_api)

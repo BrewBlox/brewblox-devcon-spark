@@ -12,9 +12,9 @@ from functools import wraps
 from typing import Any, Callable, List
 
 from aiohttp import web
-from brewblox_service import brewblox_logger, features, scheduler, strex
+from brewblox_service import (brewblox_logger, couchdb_client, features,
+                              scheduler, strex)
 
-from brewblox_devcon_spark import couchdb_client
 from brewblox_devcon_spark.twinkeydict import TwinKeyDict, TwinKeyError
 
 LOGGER = brewblox_logger(__name__)

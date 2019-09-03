@@ -10,10 +10,9 @@ import pytest
 from aiohttp import web
 from aresponses import ResponsesMockServer
 from asynctest import CoroutineMock
-from brewblox_service import scheduler
+from brewblox_service import http_client, scheduler
 
-from brewblox_devcon_spark import (communication, exceptions, http_client,
-                                   status)
+from brewblox_devcon_spark import communication, exceptions, status
 
 DummyPortInfo = namedtuple('DummyPortInfo', ['device', 'description', 'hwid', 'serial_number'])
 
