@@ -88,10 +88,10 @@
         },
         "brewblox-service": {
             "hashes": [
-                "sha256:e9db6166b5209e85dab6b6a86ffe4183e37c36e242b37cbad2c40eaf9bced73d"
+                "sha256:4bc07be3cf1e8f534f8b80e8cec80de6053cf630ff2e95561bc20a0b336e04f9"
             ],
             "index": "pypi",
-            "version": "==0.17.2"
+            "version": "==0.18.0"
         },
         "cchardet": {
             "hashes": [
@@ -484,11 +484,11 @@
         },
         "importlib-metadata": {
             "hashes": [
-                "sha256:23d3d873e008a513952355379d93cbcab874c58f4f034ff657c7a87422fa64e8",
-                "sha256:80d2de76188eabfbfcf27e6a37342c2827801e59c4cc14b0371c56fed43820e3"
+                "sha256:9ff1b1c5a354142de080b8a4e9803e5d0d59283c93aed808617c787d16768375",
+                "sha256:b7143592e374e50584564794fcb8aaf00a23025f9db866627f89a21491847a8d"
             ],
             "markers": "python_version < '3.8'",
-            "version": "==0.19"
+            "version": "==0.20"
         },
         "mccabe": {
             "hashes": [
