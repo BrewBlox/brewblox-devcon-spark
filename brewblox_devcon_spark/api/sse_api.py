@@ -9,7 +9,7 @@ from typing import Set
 
 from aiohttp import hdrs, web
 from aiohttp_sse import sse_response
-from brewblox_service import brewblox_logger, features, scheduler, strex
+from brewblox_service import brewblox_logger, features, repeater, strex
 
 from brewblox_devcon_spark import exceptions, status
 from brewblox_devcon_spark.api.object_api import ObjectApi
@@ -29,16 +29,12 @@ def setup(app: web.Application):
     features.add(app, SSEPublisher(app))
 
 
-class SSEPublisher(features.ServiceFeature):
+class SSEPublisher(repeater.RepeaterFeature):
 
     def __init__(self, app: web.Application):
         super().__init__(app)
-        self._task: asyncio.Task = None
         self._queues: Set[asyncio.Queue] = weakref.WeakSet()
         self._current = None
-
-    def __str__(self):
-        return f'{type(self).__name__}'
 
     async def subscribe(self, queue: asyncio.Queue):
         self._queues.add(queue)
@@ -53,51 +49,31 @@ class SSEPublisher(features.ServiceFeature):
         except Exception as ex:
             LOGGER.info(f'Initial subscription push failed: {strex(ex)}')
 
-    async def startup(self, app: web.Application):
-        await self.shutdown(app)
-        self._task = await scheduler.create_task(app, self._broadcast())
-
     async def before_shutdown(self, _):
         for queue in self._queues:
             await queue.put(asyncio.CancelledError())
 
-    async def shutdown(self, _):
-        await scheduler.cancel_task(self.app, self._task)
-        self._task = None
-
-    async def _broadcast(self):
+    async def prepare(self):
         LOGGER.info(f'Starting {self}')
 
+    async def run(self):
+        api = ObjectApi(self.app)
+        spark_status: status.SparkStatus = status.get_status(self.app)
+
         try:
-            api = ObjectApi(self.app)
-            spark_status: status.SparkStatus = status.get_status(self.app)
+            await spark_status.wait_synchronize()
+            await asyncio.sleep(PUBLISH_INTERVAL_S)
 
-        except Exception as ex:
-            LOGGER.error(strex(ex), exc_info=True)
-            raise ex
-
-        while True:
-            try:
-                await spark_status.wait_synchronize()
-                await asyncio.sleep(PUBLISH_INTERVAL_S)
-
-                if not self._queues:
-                    self._current = None
-                    continue
-
-                self._current = await api.all()
-                coros = [q.put(self._current) for q in self._queues]
-                await asyncio.wait_for(asyncio.gather(*coros, return_exceptions=True), PUBLISH_INTERVAL_S)
-
-            except asyncio.CancelledError:
-                break
-
-            except exceptions.ConnectionPaused:  # pragma: no cover
+            if not self._queues:
                 self._current = None
+                return
 
-            except Exception as ex:
-                self._current = None
-                LOGGER.error(f'{self} encountered an error: {strex(ex)}')
+            self._current = await api.all()
+            coros = [q.put(self._current) for q in self._queues]
+            await asyncio.wait_for(asyncio.gather(*coros, return_exceptions=True), PUBLISH_INTERVAL_S)
+
+        except exceptions.ConnectionPaused:
+            self._current = None
 
 
 def _cors_headers(request):
