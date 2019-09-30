@@ -22,6 +22,7 @@ from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_NID_KEY,
                                                   OBJECT_SID_KEY,
                                                   OBJECT_TYPE_KEY)
 from brewblox_devcon_spark.codec import codec
+from brewblox_devcon_spark.validation import SYSTEM_GROUP
 
 
 def ret_ids(objects):
@@ -292,7 +293,7 @@ async def test_ping(app, client):
 
 async def test_groups(app, client):
     groups = await response(client.get('/system/groups'))
-    assert groups == [0, device.SYSTEM_GROUP]  # Initialized value
+    assert groups == [0, SYSTEM_GROUP]  # Initialized value
     updated = await response(client.put('/system/groups', json=[0, 1, 2]))
     assert updated == [0, 1, 2]
     assert updated == (await response(client.get('/system/groups')))
