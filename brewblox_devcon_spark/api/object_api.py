@@ -169,6 +169,18 @@ class ObjectApi():
         response = await self._ctrl.discover_objects()
         return [obj[OBJECT_SID_KEY] for obj in response[OBJECT_LIST_KEY]]
 
+    async def validate(self,
+                       input_type: str,
+                       input_data: dict) -> Awaitable[dict]:
+        response = await self._ctrl.validate({
+            OBJECT_TYPE_KEY: input_type,
+            OBJECT_DATA_KEY: input_data
+        })
+        return {
+            API_TYPE_KEY: response[OBJECT_TYPE_KEY],
+            API_DATA_KEY: response[OBJECT_DATA_KEY]
+        }
+
     async def clear_objects(self) -> Awaitable[dict]:
         await self.wait_for_sync()
         await self._ctrl.clear_objects()
@@ -584,6 +596,52 @@ async def discover(request: web.Request) -> web.Response:
     - application/json
     """
     return web.json_response(await ObjectApi(request.app).discover())
+
+
+@routes.post('/validate_object')
+async def validate(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Checks block data encoding and links
+    tags:
+    - Spark
+    - Objects
+    operationId: controller.spark.validate
+    produces:
+    - application/json
+    parameters:
+    -
+        name: body
+        in: body
+        description: object
+        required: true
+        schema:
+            type: object
+            properties:
+                type:
+                    type: string
+                    example: TempSensorOneWire
+                data:
+                    type: object
+                    example:
+                        {
+                            "address": "FF",
+                            "offset[delta_degF]": 20,
+                            "value": 200
+                        }
+    """
+
+    request_args = await request.json()
+
+    with utils.collecting_input():
+        args = (
+            request_args[API_TYPE_KEY],
+            request_args[API_DATA_KEY],
+        )
+
+    return web.json_response(
+        await ObjectApi(request.app).validate(*args)
+    )
 
 
 @routes.get('/export_objects')
