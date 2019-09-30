@@ -9,15 +9,16 @@ from aiohttp import web
 from brewblox_service import brewblox_logger, strex
 
 from brewblox_devcon_spark import (datastore, device, exceptions, status,
-                                   twinkeydict)
-from brewblox_devcon_spark.api import (API_DATA_KEY, API_INTERFACE_KEY,
-                                       API_NID_KEY, API_SID_KEY, API_TYPE_KEY,
-                                       alias_api, utils)
-from brewblox_devcon_spark.device import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
-                                          OBJECT_ID_LIST_KEY,
-                                          OBJECT_INTERFACE_KEY,
-                                          OBJECT_LIST_KEY, OBJECT_NID_KEY,
-                                          OBJECT_SID_KEY, OBJECT_TYPE_KEY)
+                                   twinkeydict, validation)
+from brewblox_devcon_spark.api import alias_api, utils
+from brewblox_devcon_spark.validation import (API_DATA_KEY, API_INTERFACE_KEY,
+                                              API_NID_KEY, API_SID_KEY,
+                                              API_TYPE_KEY, GROUP_LIST_KEY,
+                                              OBJECT_DATA_KEY,
+                                              OBJECT_ID_LIST_KEY,
+                                              OBJECT_INTERFACE_KEY,
+                                              OBJECT_LIST_KEY, OBJECT_NID_KEY,
+                                              OBJECT_SID_KEY, OBJECT_TYPE_KEY)
 
 SYNC_WAIT_TIMEOUT_S = 20
 
@@ -226,6 +227,7 @@ class ObjectApi():
                 OBJECT_DATA_KEY: input_data
             })
 
+        validation.ExportedObjects.validate(exported)
         await self.wait_for_sync()
         await self.clear_objects()
 
@@ -648,7 +650,7 @@ async def validate(request: web.Request) -> web.Response:
 async def export_objects(request: web.Request) -> web.Response:
     """
     ---
-    summary: Lists all objects and metadata
+    summary: Exports all blocks and datastore entries
     tags:
     - Spark
     - Objects
@@ -665,7 +667,7 @@ async def export_objects(request: web.Request) -> web.Response:
 async def import_objects(request: web.Request) -> web.Response:
     """
     ---
-    summary: Delete all blocks on controller, and set to given state
+    summary: Imports all blocks and datastore entries
     tags:
     - Spark
     - Objects

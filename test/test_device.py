@@ -8,10 +8,10 @@ from brewblox_service import features, scheduler
 from brewblox_devcon_spark import (commander, commander_sim, datastore, device,
                                    exceptions, status)
 from brewblox_devcon_spark.codec import codec
-from brewblox_devcon_spark.device import (GENERATED_ID_PREFIX, GROUP_LIST_KEY,
-                                          OBJECT_DATA_KEY, OBJECT_LIST_KEY,
-                                          OBJECT_NID_KEY, OBJECT_SID_KEY,
-                                          OBJECT_TYPE_KEY)
+from brewblox_devcon_spark.validation import (GENERATED_ID_PREFIX,
+                                              GROUP_LIST_KEY, OBJECT_DATA_KEY,
+                                              OBJECT_LIST_KEY, OBJECT_NID_KEY,
+                                              OBJECT_SID_KEY, OBJECT_TYPE_KEY)
 
 TESTED = device.__name__
 

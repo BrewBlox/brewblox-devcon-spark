@@ -11,6 +11,7 @@ from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.commands import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
                                             OBJECT_LIST_KEY, OBJECT_NID_KEY,
                                             OBJECT_TYPE_KEY)
+from brewblox_devcon_spark.validation import SYSTEM_GROUP
 
 
 @pytest.fixture
@@ -73,7 +74,7 @@ async def test_crud(app, client, object_args, sim):
 
     with pytest.raises(exceptions.CommandException):
         # Can't assign system group
-        await sim.execute(write_cmd.from_args(**{**created, **{GROUP_LIST_KEY: [0, commands.SYSTEM_GROUP]}}))
+        await sim.execute(write_cmd.from_args(**{**created, **{GROUP_LIST_KEY: [0, SYSTEM_GROUP]}}))
 
     await sim.execute(delete_cmd.from_args(object_nid=read_args[OBJECT_NID_KEY]))
 
@@ -88,7 +89,7 @@ async def test_crud(app, client, object_args, sim):
         await sim.execute(read_cmd.from_args(**read_args))
 
     with pytest.raises(exceptions.CommandException):
-        await sim.execute(create_cmd.from_args(**{**object_args, **{GROUP_LIST_KEY: [commands.SYSTEM_GROUP]}}))
+        await sim.execute(create_cmd.from_args(**{**object_args, **{GROUP_LIST_KEY: [SYSTEM_GROUP]}}))
 
 
 async def test_stored(app, client, object_args, sim):
