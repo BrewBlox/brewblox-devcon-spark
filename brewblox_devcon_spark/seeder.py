@@ -11,7 +11,8 @@ from brewblox_service import brewblox_logger, features, scheduler, strex
 
 from brewblox_devcon_spark import datastore, exceptions, status
 from brewblox_devcon_spark.api import object_api
-from brewblox_devcon_spark.device import SYSTEM_GROUP, get_controller
+from brewblox_devcon_spark.device import get_controller
+from brewblox_devcon_spark.validation import SYSTEM_GROUP
 
 HANDSHAKE_TIMEOUT_S = 30
 PING_INTERVAL_S = 1
