@@ -220,6 +220,25 @@ class SparkController(features.ServiceFeature):
     async def shutdown(self, _):
         pass
 
+    async def validate(self, content_: dict = None, **kwargs) -> Awaitable[dict]:
+        content = content_ or dict()
+        content.update(kwargs)
+        opts = {}
+
+        resolver = SparkResolver(self.app)
+
+        for afunc in [
+            resolver.convert_sid_nid,
+            resolver.convert_links_nid,
+            resolver.encode_data,
+            resolver.decode_data,
+            resolver.convert_links_sid,
+            resolver.add_sid,
+        ]:
+            content = await afunc(content, opts)
+
+        return content
+
     async def _execute(self,
                        command_type: Type[commands.Command],
                        command_opts: Optional[dict],
