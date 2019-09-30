@@ -20,7 +20,7 @@ from brewblox_service import brewblox_logger, events, scheduler, strex
 
 from brewblox_devcon_spark import device, status
 from brewblox_devcon_spark.api import utils
-from brewblox_devcon_spark.device import OBJECT_DATA_KEY, OBJECT_SID_KEY
+from brewblox_devcon_spark.validation import OBJECT_DATA_KEY, OBJECT_SID_KEY
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
