@@ -17,22 +17,17 @@ from construct import (Adapter, Byte, Const, Container, Default, Enum,
                        GreedyBytes, Int8ul, Int16ul, Struct)
 
 from brewblox_devcon_spark import exceptions
+from brewblox_devcon_spark.validation import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
+                                              OBJECT_ID_LIST_KEY,
+                                              OBJECT_INTERFACE_KEY,
+                                              OBJECT_LIST_KEY, OBJECT_NID_KEY,
+                                              OBJECT_TYPE_KEY)
 
 LOGGER = brewblox_logger(__name__)
 
 HexStr_ = str
 
-
 VALUE_SEPARATOR = ','
-
-OBJECT_NID_KEY = 'object_nid'
-OBJECT_INTERFACE_KEY = 'object_if'
-OBJECT_TYPE_KEY = 'object_type'
-OBJECT_DATA_KEY = 'object_data'
-OBJECT_LIST_KEY = 'objects'
-GROUP_LIST_KEY = 'groups'
-OBJECT_ID_LIST_KEY = 'object_ids'
-SYSTEM_GROUP = 7
 
 
 OpcodeEnum = Enum(Int8ul,

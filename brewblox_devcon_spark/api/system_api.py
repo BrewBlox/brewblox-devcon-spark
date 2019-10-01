@@ -9,8 +9,9 @@ from aiohttp import web
 from brewblox_service import brewblox_logger, strex
 
 from brewblox_devcon_spark import commander, device, exceptions, status, ymodem
-from brewblox_devcon_spark.api import API_DATA_KEY, object_api
+from brewblox_devcon_spark.api import object_api
 from brewblox_devcon_spark.datastore import GROUPS_NID
+from brewblox_devcon_spark.validation import API_DATA_KEY
 
 REBOOT_WINDOW_S = 5
 TRANSFER_TIMEOUT_S = 30

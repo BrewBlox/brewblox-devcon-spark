@@ -30,6 +30,7 @@ setup(
         'pint',
         'aiofiles',
         'aiohttp-sse',
+        'schema',
     ],
     python_requires='>=3.7',
     setup_requires=['setuptools_scm'],

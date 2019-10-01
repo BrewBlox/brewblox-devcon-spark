@@ -14,32 +14,17 @@ from brewblox_service import brewblox_logger, features, strex
 from brewblox_devcon_spark import (commander, commands, datastore, exceptions,
                                    twinkeydict)
 from brewblox_devcon_spark.codec import codec
-from brewblox_devcon_spark.commands import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
-                                            OBJECT_ID_LIST_KEY,
-                                            OBJECT_INTERFACE_KEY,
-                                            OBJECT_LIST_KEY, OBJECT_NID_KEY,
-                                            OBJECT_TYPE_KEY, SYSTEM_GROUP)
+from brewblox_devcon_spark.validation import (GENERATED_ID_PREFIX,
+                                              OBJECT_DATA_KEY,
+                                              OBJECT_ID_LIST_KEY,
+                                              OBJECT_INTERFACE_KEY,
+                                              OBJECT_LINK_POSTFIX_END,
+                                              OBJECT_LINK_POSTFIX_START,
+                                              OBJECT_LIST_KEY, OBJECT_NID_KEY,
+                                              OBJECT_SID_KEY, OBJECT_TYPE_KEY)
 
-OBJECT_SID_KEY = 'object_sid'
-OBJECT_LINK_POSTFIX_START = '<'
-OBJECT_LINK_POSTFIX_END = '>'
-GENERATED_ID_PREFIX = 'New|'
 ObjectId_ = Union[str, int]
 FindIdFunc_ = Callable[[twinkeydict.TwinKeyDict, ObjectId_, str], Awaitable[ObjectId_]]
-
-# Keys are imported from commands for use in this module
-# but also to allow other modules (eg. API) to import them from here
-# "use" them here to avoid lint errors
-_FORWARDED = (
-    OBJECT_NID_KEY,
-    OBJECT_DATA_KEY,
-    OBJECT_TYPE_KEY,
-    OBJECT_LIST_KEY,
-    GROUP_LIST_KEY,
-    OBJECT_ID_LIST_KEY,
-    OBJECT_INTERFACE_KEY,
-    SYSTEM_GROUP,
-)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -219,6 +204,25 @@ class SparkController(features.ServiceFeature):
 
     async def shutdown(self, _):
         pass
+
+    async def validate(self, content_: dict = None, **kwargs) -> Awaitable[dict]:
+        content = content_ or dict()
+        content.update(kwargs)
+        opts = {}
+
+        resolver = SparkResolver(self.app)
+
+        for afunc in [
+            resolver.convert_sid_nid,
+            resolver.convert_links_nid,
+            resolver.encode_data,
+            resolver.decode_data,
+            resolver.convert_links_sid,
+            resolver.add_sid,
+        ]:
+            content = await afunc(content, opts)
+
+        return content
 
     async def _execute(self,
                        command_type: Type[commands.Command],

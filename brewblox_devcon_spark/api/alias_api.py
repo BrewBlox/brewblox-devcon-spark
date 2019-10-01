@@ -11,7 +11,8 @@ from aiohttp import web
 from brewblox_service import brewblox_logger
 
 from brewblox_devcon_spark import datastore, exceptions
-from brewblox_devcon_spark.api import API_SID_KEY, utils
+from brewblox_devcon_spark.api import utils
+from brewblox_devcon_spark.validation import API_SID_KEY
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()

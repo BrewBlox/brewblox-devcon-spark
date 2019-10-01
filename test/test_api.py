@@ -6,6 +6,7 @@ import asyncio
 from unittest.mock import ANY
 
 import pytest
+from aiohttp.client_exceptions import ContentTypeError
 from asynctest import CoroutineMock
 from brewblox_service import scheduler
 
@@ -21,6 +22,7 @@ from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_NID_KEY,
                                                   OBJECT_SID_KEY,
                                                   OBJECT_TYPE_KEY)
 from brewblox_devcon_spark.codec import codec
+from brewblox_devcon_spark.validation import SYSTEM_GROUP
 
 
 def ret_ids(objects):
@@ -78,10 +80,15 @@ async def production_app(app, loop):
     return app
 
 
-async def response(request):
+async def response(request, status=200):
     retv = await request
-    assert retv.status == 200
-    return await retv.json()
+    if retv.status != status:
+        print(retv)
+        assert retv == status
+    try:
+        return await retv.json()
+    except ContentTypeError:
+        return await retv.text()
 
 
 async def test_do(app, client):
@@ -106,10 +113,8 @@ async def test_do(app, client):
         'data': {}
     }
 
-    retv = await client.post('/_debug/do', json=error_command)
-    assert retv.status == 500
-    retd = await retv.text()
-    assert 'KeyError' in retd
+    retv = await response(client.post('/_debug/do', json=error_command), 500)
+    assert 'KeyError' in retv['error']
 
 
 async def test_production_do(production_app, client):
@@ -118,8 +123,7 @@ async def test_production_do(production_app, client):
         'data': {}
     }
 
-    retv = await client.post('/_debug/do', json=error_command)
-    assert retv.status == 500
+    await response(client.post('/_debug/do', json=error_command), 500)
 
 
 async def test_create(app, client, object_args):
@@ -128,8 +132,7 @@ async def test_create(app, client, object_args):
     assert retd[API_SID_KEY] == object_args[API_SID_KEY]
 
     # Conflict error: name already taken
-    retv = await client.post('/objects', json=object_args)
-    assert retv.status == 409
+    await response(client.post('/objects', json=object_args), 409)
 
     object_args[API_SID_KEY] = 'other_obj'
     retd = await response(client.post('/objects', json=object_args))
@@ -138,11 +141,9 @@ async def test_create(app, client, object_args):
 
 async def test_invalid_input(app, client, object_args):
     del object_args['groups']
-    retv = await client.post('/objects', json=object_args)
-    assert retv.status == 400
-    errtext = await retv.text()
-    assert 'MissingInput' in errtext
-    assert 'groups' in errtext
+    retv = await response(client.post('/objects', json=object_args), 400)
+    assert 'MissingInput' in retv['error']
+    assert 'groups' in retv['error']
 
 
 async def test_create_performance(app, client, object_args):
@@ -150,18 +151,14 @@ async def test_create_performance(app, client, object_args):
     ids = [f'id{num}' for num in range(num_items)]
     objs = multi_objects(ids, object_args)
 
-    coros = [client.post('/objects', json=obj) for obj in objs]
-    responses = await asyncio.gather(*coros)
-    assert [retv.status for retv in responses] == [200]*num_items
+    await asyncio.gather(*(response(client.post('/objects', json=obj)) for obj in objs))
 
     retd = await response(client.get('/objects'))
     assert set(ids).issubset(ret_ids(retd))
 
 
 async def test_read(app, client, object_args):
-    retv = await client.get('/objects/testobj')
-    assert retv.status == 400  # Object does not exist
-
+    await response(client.get('/objects/testobj'), 400)  # Object does not exist
     await client.post('/objects', json=object_args)
 
     retd = await response(client.get('/objects/testobj'))
@@ -170,10 +167,7 @@ async def test_read(app, client, object_args):
 
 async def test_read_performance(app, client, object_args):
     await client.post('/objects', json=object_args)
-
-    coros = [client.get('/objects/testobj') for _ in range(100)]
-    responses = await asyncio.gather(*coros)
-    assert [retv.status for retv in responses] == [200]*100
+    await asyncio.gather(*(response(client.get('/objects/testobj')) for _ in range(100)))
 
 
 async def test_update(app, client, object_args):
@@ -187,8 +181,7 @@ async def test_delete(app, client, object_args):
     retd = await response(client.delete('/objects/testobj'))
     assert retd[API_SID_KEY] == 'testobj'
 
-    retv = await client.get('/objects/testobj')
-    assert retv.status == 400
+    await response(client.get('/objects/testobj'), 400)
 
 
 async def test_nid_crud(app, client, object_args):
@@ -200,8 +193,7 @@ async def test_nid_crud(app, client, object_args):
     await response(client.put(f'/objects/{nid}', json=created))
     await response(client.delete(f'/objects/{nid}'))
 
-    retv = await client.get('/objects/testobj')
-    assert retv.status == 400
+    await response(client.get('/objects/testobj'), 400)
 
 
 async def test_stored_objects(app, client, object_args):
@@ -215,8 +207,7 @@ async def test_stored_objects(app, client, object_args):
     retd = await response(client.get('/stored_objects/testobj'))
     assert retd[API_SID_KEY] == 'testobj'
 
-    retv = await client.get('/stored_objects/flappy')
-    assert retv.status == 400
+    await response(client.get('/stored_objects/flappy'), 400)
 
 
 async def test_clear(app, client, object_args):
@@ -277,34 +268,23 @@ async def test_alias_create(app, client):
         sid='name',
         nid=456
     )
-    retv = await client.post('/aliases', json=new_alias)
-    assert retv.status == 200
-
-    retv = await client.post('/aliases', json=new_alias)
-    assert retv.status == 200
+    await response(client.post('/aliases', json=new_alias))
+    await response(client.post('/aliases', json=new_alias))
 
 
 async def test_alias_update(app, client, object_args):
     await client.post('/objects', json=object_args)
 
-    retv = await client.get('/objects/newname')
-    assert retv.status == 400
-
-    retv = await client.put('/aliases/testobj', json={'id': 'newname'})
-    assert retv.status == 200
-
-    retv = await client.get('/objects/newname')
-    assert retv.status == 200
+    await response(client.get('/objects/newname'), 400)
+    await response(client.put('/aliases/testobj', json={'id': 'newname'}))
+    await response(client.get('/objects/newname'))
 
 
 async def test_alias_delete(app, client, object_args):
     await client.post('/objects', json=object_args)
 
-    retv = await client.delete('/aliases/testobj')
-    assert retv.status == 200
-
-    retv = await client.get('/objects/testobj')
-    assert retv.status == 400
+    await response(client.delete('/aliases/testobj'))
+    await response(client.get('/objects/testobj'), 400)
 
 
 async def test_ping(app, client):
@@ -313,7 +293,7 @@ async def test_ping(app, client):
 
 async def test_groups(app, client):
     groups = await response(client.get('/system/groups'))
-    assert groups == [0, device.SYSTEM_GROUP]  # Initialized value
+    assert groups == [0, SYSTEM_GROUP]  # Initialized value
     updated = await response(client.put('/system/groups', json=[0, 1, 2]))
     assert updated == [0, 1, 2]
     assert updated == (await response(client.get('/system/groups')))
@@ -374,6 +354,33 @@ async def test_discover_objects(app, client):
     resp = await response(client.get('/discover_objects'))
     # Commander sim always returns the groups object
     assert resp == ['DisplaySettings']
+
+
+async def test_validate_object(app, client, object_args):
+    validate_args = {
+        API_TYPE_KEY: object_args[API_TYPE_KEY],
+        API_DATA_KEY: object_args[API_DATA_KEY],
+    }
+    await response(client.post('/validate_object', json=validate_args))
+
+    invalid_data_obj = {
+        API_TYPE_KEY: object_args[API_TYPE_KEY],
+        API_DATA_KEY: {**object_args[API_DATA_KEY], 'invalid': True}
+    }
+    await response(client.post('/validate_object', json=invalid_data_obj), 400)
+
+    invalid_link_obj = {
+        API_TYPE_KEY: 'SetpointSensorPair',
+        API_DATA_KEY: {
+            'sensorId<>': 'Santa',
+            'setting': 0,
+            'value': 0,
+            'settingEnabled': True,
+            'filter': 'FILT_15s',
+            'filterThreshold': 2
+        }
+    }
+    await response(client.post('/validate_object', json=invalid_link_obj), 400)
 
 
 async def test_export_objects(app, client, object_args):

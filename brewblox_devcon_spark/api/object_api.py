@@ -9,15 +9,16 @@ from aiohttp import web
 from brewblox_service import brewblox_logger, strex
 
 from brewblox_devcon_spark import (datastore, device, exceptions, status,
-                                   twinkeydict)
-from brewblox_devcon_spark.api import (API_DATA_KEY, API_INTERFACE_KEY,
-                                       API_NID_KEY, API_SID_KEY, API_TYPE_KEY,
-                                       alias_api, utils)
-from brewblox_devcon_spark.device import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
-                                          OBJECT_ID_LIST_KEY,
-                                          OBJECT_INTERFACE_KEY,
-                                          OBJECT_LIST_KEY, OBJECT_NID_KEY,
-                                          OBJECT_SID_KEY, OBJECT_TYPE_KEY)
+                                   twinkeydict, validation)
+from brewblox_devcon_spark.api import alias_api, utils
+from brewblox_devcon_spark.validation import (API_DATA_KEY, API_INTERFACE_KEY,
+                                              API_NID_KEY, API_SID_KEY,
+                                              API_TYPE_KEY, GROUP_LIST_KEY,
+                                              OBJECT_DATA_KEY,
+                                              OBJECT_ID_LIST_KEY,
+                                              OBJECT_INTERFACE_KEY,
+                                              OBJECT_LIST_KEY, OBJECT_NID_KEY,
+                                              OBJECT_SID_KEY, OBJECT_TYPE_KEY)
 
 SYNC_WAIT_TIMEOUT_S = 20
 
@@ -169,6 +170,18 @@ class ObjectApi():
         response = await self._ctrl.discover_objects()
         return [obj[OBJECT_SID_KEY] for obj in response[OBJECT_LIST_KEY]]
 
+    async def validate(self,
+                       input_type: str,
+                       input_data: dict) -> Awaitable[dict]:
+        response = await self._ctrl.validate({
+            OBJECT_TYPE_KEY: input_type,
+            OBJECT_DATA_KEY: input_data
+        })
+        return {
+            API_TYPE_KEY: response[OBJECT_TYPE_KEY],
+            API_DATA_KEY: response[OBJECT_DATA_KEY]
+        }
+
     async def clear_objects(self) -> Awaitable[dict]:
         await self.wait_for_sync()
         await self._ctrl.clear_objects()
@@ -214,6 +227,7 @@ class ObjectApi():
                 OBJECT_DATA_KEY: input_data
             })
 
+        validation.ExportedObjects.validate(exported)
         await self.wait_for_sync()
         await self.clear_objects()
 
@@ -586,11 +600,57 @@ async def discover(request: web.Request) -> web.Response:
     return web.json_response(await ObjectApi(request.app).discover())
 
 
+@routes.post('/validate_object')
+async def validate(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Checks block data encoding and links
+    tags:
+    - Spark
+    - Objects
+    operationId: controller.spark.validate
+    produces:
+    - application/json
+    parameters:
+    -
+        name: body
+        in: body
+        description: object
+        required: true
+        schema:
+            type: object
+            properties:
+                type:
+                    type: string
+                    example: TempSensorOneWire
+                data:
+                    type: object
+                    example:
+                        {
+                            "address": "FF",
+                            "offset[delta_degF]": 20,
+                            "value": 200
+                        }
+    """
+
+    request_args = await request.json()
+
+    with utils.collecting_input():
+        args = (
+            request_args[API_TYPE_KEY],
+            request_args[API_DATA_KEY],
+        )
+
+    return web.json_response(
+        await ObjectApi(request.app).validate(*args)
+    )
+
+
 @routes.get('/export_objects')
 async def export_objects(request: web.Request) -> web.Response:
     """
     ---
-    summary: Lists all objects and metadata
+    summary: Exports all blocks and datastore entries
     tags:
     - Spark
     - Objects
@@ -607,7 +667,7 @@ async def export_objects(request: web.Request) -> web.Response:
 async def import_objects(request: web.Request) -> web.Response:
     """
     ---
-    summary: Delete all blocks on controller, and set to given state
+    summary: Imports all blocks and datastore entries
     tags:
     - Spark
     - Objects

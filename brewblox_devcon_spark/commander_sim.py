@@ -14,16 +14,16 @@ from brewblox_service import brewblox_logger, features
 
 from brewblox_devcon_spark import commander, commands, exceptions, status
 from brewblox_devcon_spark.codec import codec
-from brewblox_devcon_spark.commands import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
-                                            OBJECT_ID_LIST_KEY,
-                                            OBJECT_INTERFACE_KEY,
-                                            OBJECT_LIST_KEY, OBJECT_NID_KEY,
-                                            OBJECT_TYPE_KEY, SYSTEM_GROUP)
 from brewblox_devcon_spark.datastore import (DISPLAY_SETTINGS_NID, GROUPS_NID,
                                              OBJECT_NID_START, ONEWIREBUS_NID,
                                              SPARK_PINS_NID, SYSINFO_NID,
                                              SYSTIME_NID, TOUCH_SETTINGS_NID,
                                              WIFI_SETTINGS_NID)
+from brewblox_devcon_spark.validation import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
+                                              OBJECT_ID_LIST_KEY,
+                                              OBJECT_INTERFACE_KEY,
+                                              OBJECT_LIST_KEY, OBJECT_NID_KEY,
+                                              OBJECT_TYPE_KEY, SYSTEM_GROUP)
 
 LOGGER = brewblox_logger(__name__)
 
