@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x17\x41nalogConstraints.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x8f\x02\n\x10\x41nalogConstraint\x12\x1b\n\x03min\x18\x01 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 H\x00\x12\x1b\n\x03max\x18\x02 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 H\x00\x12\x33\n\x08\x62\x61lanced\x18\x03 \x01(\x0b\x32\x1f.blox.AnalogConstraint.BalancedH\x00\x12\x18\n\x08limiting\x18\x64 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x1a\x64\n\x08\x42\x61lanced\x12\x1f\n\nbalancerId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x07\x92?\x02\x38\x10\x12\x1e\n\x07granted\x18\x02 \x01(\rB\r\x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02(\x01\x12\x17\n\x02id\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x42\x0c\n\nconstraint\"G\n\x11\x41nalogConstraints\x12\x32\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32\x16.blox.AnalogConstraintB\x05\x92?\x02\x10\x08\x62\x06proto3')
+  serialized_pb=_b('\n\x17\x41nalogConstraints.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x88\x02\n\x10\x41nalogConstraint\x12\x1a\n\x03min\x18\x01 \x01(\x11\x42\x0b\x9a?\x03\x10\x80 \x92?\x02\x38 H\x00\x12\x1a\n\x03max\x18\x02 \x01(\x11\x42\x0b\x9a?\x03\x10\x80 \x92?\x02\x38 H\x00\x12\x33\n\x08\x62\x61lanced\x18\x03 \x01(\x0b\x32\x1f.blox.AnalogConstraint.BalancedH\x00\x12\x17\n\x08limiting\x18\x64 \x01(\x08\x42\x05\x9a?\x02(\x01\x1a`\n\x08\x42\x61lanced\x12\x1e\n\nbalancerId\x18\x01 \x01(\rB\n\x9a?\x02\x18\x07\x92?\x02\x38\x10\x12\x1c\n\x07granted\x18\x02 \x01(\rB\x0b\x9a?\x03\x10\x80 \x9a?\x02(\x01\x12\x16\n\x02id\x18\x03 \x01(\rB\n\x9a?\x02(\x01\x92?\x02\x38\x08\x42\x0c\n\nconstraint\"G\n\x11\x41nalogConstraints\x12\x32\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32\x16.blox.AnalogConstraintB\x05\x92?\x02\x10\x08\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -41,21 +41,21 @@ _ANALOGCONSTRAINT_BALANCED = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002\030\007\222?\0028\020'), file=DESCRIPTOR),
+      serialized_options=_b('\232?\002\030\007\222?\0028\020'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='granted', full_name='blox.AnalogConstraint.Balanced.granted', index=1,
       number=2, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\003\020\200 \212\265\030\002(\001'), file=DESCRIPTOR),
+      serialized_options=_b('\232?\003\020\200 \232?\002(\001'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='id', full_name='blox.AnalogConstraint.Balanced.id', index=2,
       number=3, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002(\001\222?\0028\010'), file=DESCRIPTOR),
+      serialized_options=_b('\232?\002(\001\222?\0028\010'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -68,8 +68,8 @@ _ANALOGCONSTRAINT_BALANCED = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=221,
-  serialized_end=321,
+  serialized_start=218,
+  serialized_end=314,
 )
 
 _ANALOGCONSTRAINT = _descriptor.Descriptor(
@@ -85,14 +85,14 @@ _ANALOGCONSTRAINT = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
+      serialized_options=_b('\232?\003\020\200 \222?\0028 '), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='max', full_name='blox.AnalogConstraint.max', index=1,
       number=2, type=17, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
+      serialized_options=_b('\232?\003\020\200 \222?\0028 '), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='balanced', full_name='blox.AnalogConstraint.balanced', index=2,
       number=3, type=11, cpp_type=10, label=1,
@@ -106,7 +106,7 @@ _ANALOGCONSTRAINT = _descriptor.Descriptor(
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002(\001'), file=DESCRIPTOR),
+      serialized_options=_b('\232?\002(\001'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -123,7 +123,7 @@ _ANALOGCONSTRAINT = _descriptor.Descriptor(
       index=0, containing_type=None, fields=[]),
   ],
   serialized_start=64,
-  serialized_end=335,
+  serialized_end=328,
 )
 
 
@@ -153,8 +153,8 @@ _ANALOGCONSTRAINTS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=337,
-  serialized_end=408,
+  serialized_start=330,
+  serialized_end=401,
 )
 
 _ANALOGCONSTRAINT_BALANCED.containing_type = _ANALOGCONSTRAINT
