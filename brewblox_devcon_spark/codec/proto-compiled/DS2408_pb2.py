@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0c\x44S2408.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\x8c\x03\n\x06\x44S2408\x12\x17\n\x07\x61\x64\x64ress\x18\x01 \x01(\x06\x42\x06\x8a\xb5\x18\x02 \x01\x12\x19\n\tconnected\x18\x06 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12\x32\n\x04pins\x18\x07 \x03(\x0b\x32\x12.blox.DS2408.IoPinB\x10\x92?\x02\x10\x08\x92?\x02x\x01\x8a\xb5\x18\x02(\x01\x1a\xfe\x01\n\x05IoPin\x12\x1c\n\x01\x41\x18\x01 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1c\n\x01\x42\x18\x02 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1c\n\x01\x43\x18\x03 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1c\n\x01\x44\x18\x04 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1c\n\x01\x45\x18\x05 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1c\n\x01\x46\x18\x06 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1c\n\x01G\x18\x07 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1c\n\x01H\x18\x08 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x42\x05\n\x03Pin:\x19\x8a\xb5\x18\x03\x18\xbd\x02\x8a\xb5\x18\x02H\n\x8a\xb5\x18\x02H\x0b\x8a\xb5\x18\x02H\tb\x06proto3')
+  serialized_pb=_b('\n\x0c\x44S2408.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\x85\x03\n\x06\x44S2408\x12\x16\n\x07\x61\x64\x64ress\x18\x01 \x01(\x06\x42\x05\x9a?\x02 \x01\x12\x18\n\tconnected\x18\x06 \x01(\x08\x42\x05\x9a?\x02(\x01\x12\x31\n\x04pins\x18\x07 \x03(\x0b\x32\x12.blox.DS2408.IoPinB\x0f\x92?\x02\x10\x08\x92?\x02x\x01\x9a?\x02(\x01\x1a\xfe\x01\n\x05IoPin\x12\x1c\n\x01\x41\x18\x01 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1c\n\x01\x42\x18\x02 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1c\n\x01\x43\x18\x03 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1c\n\x01\x44\x18\x04 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1c\n\x01\x45\x18\x05 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1c\n\x01\x46\x18\x06 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1c\n\x01G\x18\x07 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1c\n\x01H\x18\x08 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x42\x05\n\x03Pin:\x15\x9a?\x03\x18\xbd\x02\x9a?\x02H\n\x9a?\x02H\x0b\x9a?\x02H\tb\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,IoArray__pb2.DESCRIPTOR,])
 
@@ -107,8 +107,8 @@ _DS2408_IOPIN = _descriptor.Descriptor(
       name='Pin', full_name='blox.DS2408.IoPin.Pin',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=183,
-  serialized_end=437,
+  serialized_start=180,
+  serialized_end=434,
 )
 
 _DS2408 = _descriptor.Descriptor(
@@ -124,35 +124,35 @@ _DS2408 = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002 \001'), file=DESCRIPTOR),
+      serialized_options=_b('\232?\002 \001'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='connected', full_name='blox.DS2408.connected', index=1,
       number=6, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002(\001'), file=DESCRIPTOR),
+      serialized_options=_b('\232?\002(\001'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='pins', full_name='blox.DS2408.pins', index=2,
       number=7, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\222?\002\020\010\222?\002x\001\212\265\030\002(\001'), file=DESCRIPTOR),
+      serialized_options=_b('\222?\002\020\010\222?\002x\001\232?\002(\001'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[_DS2408_IOPIN, ],
   enum_types=[
   ],
-  serialized_options=_b('\212\265\030\003\030\275\002\212\265\030\002H\n\212\265\030\002H\013\212\265\030\002H\t'),
+  serialized_options=_b('\232?\003\030\275\002\232?\002H\n\232?\002H\013\232?\002H\t'),
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
   serialized_start=68,
-  serialized_end=464,
+  serialized_end=457,
 )
 
 _DS2408_IOPIN.fields_by_name['A'].message_type = IoArray__pb2._IOCHANNEL
