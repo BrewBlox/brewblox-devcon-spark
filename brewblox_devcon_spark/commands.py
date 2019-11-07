@@ -7,6 +7,7 @@ based on the defined construct Struct.
 Each child class of Command defines how the syntax for itself looks like.
 """
 
+import enum
 from abc import ABC
 from binascii import hexlify, unhexlify
 from functools import reduce
@@ -30,63 +31,86 @@ HexStr_ = str
 VALUE_SEPARATOR = ','
 
 
-OpcodeEnum = Enum(Int8ul,
-                  NONE=0,
-                  READ_OBJECT=1,
-                  WRITE_OBJECT=2,
-                  CREATE_OBJECT=3,
-                  DELETE_OBJECT=4,
-                  LIST_OBJECTS=5,
-                  READ_STORED_OBJECT=6,
-                  LIST_STORED_OBJECTS=7,
-                  CLEAR_OBJECTS=8,
-                  REBOOT=9,
-                  FACTORY_RESET=10,
-                  LIST_COMPATIBLE_OBJECTS=11,
-                  DISCOVER_OBJECTS=12,
-                  FIRMWARE_UPDATE=100,
-                  )
+class ResetReason(enum.Enum):
+    NONE = '00'
+    UNKNOWN = '0A'
+    # Hardware
+    PIN_RESET = '14'
+    POWER_MANAGEMENT = '1E'
+    POWER_DOWN = '28'
+    POWER_BROWNOUT = '32'
+    WATCHDOG = '3C'
+    # Software
+    UPDATE = '46'
+    UPDATE_ERROR = '50'
+    UPDATE_TIMEOUT = '5A'
+    FACTORY_RESET = '64'
+    SAFE_MODE = '6E'
+    DFU_MODE = '78'
+    PANIC = '82'
+    USER = '8C'
 
-ErrorcodeEnum = Enum(Int8ul,
-                     OK=0,
-                     UNKNOWN_ERROR=1,
 
-                     # object creation
-                     INSUFFICIENT_HEAP=4,
+class Opcode(enum.IntEnum):
+    NONE = 0
+    READ_OBJECT = 1
+    WRITE_OBJECT = 2
+    CREATE_OBJECT = 3
+    DELETE_OBJECT = 4
+    LIST_OBJECTS = 5
+    READ_STORED_OBJECT = 6
+    LIST_STORED_OBJECTS = 7
+    CLEAR_OBJECTS = 8
+    REBOOT = 9
+    FACTORY_RESET = 10
+    LIST_COMPATIBLE_OBJECTS = 11
+    DISCOVER_OBJECTS = 12
+    FIRMWARE_UPDATE = 100
 
-                     # generic stream errors
-                     STREAM_ERROR_UNSPECIFIED=8,
-                     OUTPUT_STREAM_WRITE_ERROR=9,
-                     INPUT_STREAM_READ_ERROR=10,
-                     INPUT_STREAM_DECODING_ERROR=11,
-                     OUTPUT_STREAM_ENCODING_ERROR=12,
 
-                     # storage errors
-                     INSUFFICIENT_PERSISTENT_STORAGE=16,
-                     PERSISTED_OBJECT_NOT_FOUND=17,
-                     INVALID_PERSISTED_BLOCK_TYPE=18,
-                     COULD_NOT_READ_PERSISTED_BLOCK_SIZE=19,
-                     PERSISTED_BLOCK_STREAM_ERROR=20,
-                     PERSISTED_STORAGE_WRITE_ERROR=21,
-                     CRC_ERROR_IN_STORED_OBJECT=22,
+class Errorcode(enum.IntEnum):
+    OK = 0
+    UNKNOWN_ERROR = 1
 
-                     # invalid actions
-                     OBJECT_NOT_WRITABLE=32,
-                     OBJECT_NOT_READABLE=33,
-                     OBJECT_NOT_CREATABLE=34,
-                     OBJECT_NOT_DELETABLE=35,
+    # object creation
+    INSUFFICIENT_HEAP = 4
 
-                     # invalid parameters
-                     INVALID_COMMAND=63,
-                     INVALID_OBJECT_ID=64,
-                     INVALID_OBJECT_TYPE=65,
-                     INVALID_OBJECT_GROUPS=66,
-                     CRC_ERROR_IN_COMMAND=67,
-                     OBJECT_DATA_NOT_ACCEPTED=68,
+    # generic stream errors
+    STREAM_ERROR_UNSPECIFIED = 8
+    OUTPUT_STREAM_WRITE_ERROR = 9
+    INPUT_STREAM_READ_ERROR = 10
+    INPUT_STREAM_DECODING_ERROR = 11
+    OUTPUT_STREAM_ENCODING_ERROR = 12
 
-                     # freak events that should not be possible
-                     WRITE_TO_INACTIVE_OBJECT=200,
-                     )
+    # storage errors
+    INSUFFICIENT_PERSISTENT_STORAGE = 16
+    PERSISTED_OBJECT_NOT_FOUND = 17
+    INVALID_PERSISTED_BLOCK_TYPE = 18
+    COULD_NOT_READ_PERSISTED_BLOCK_SIZE = 19
+    PERSISTED_BLOCK_STREAM_ERROR = 20
+    PERSISTED_STORAGE_WRITE_ERROR = 21
+    CRC_ERROR_IN_STORED_OBJECT = 22
+
+    # invalid actions
+    OBJECT_NOT_WRITABLE = 32
+    OBJECT_NOT_READABLE = 33
+    OBJECT_NOT_CREATABLE = 34
+    OBJECT_NOT_DELETABLE = 35
+
+    # invalid parameters
+    INVALID_COMMAND = 63
+    INVALID_OBJECT_ID = 64
+    INVALID_OBJECT_TYPE = 65
+    INVALID_OBJECT_GROUPS = 66
+    CRC_ERROR_IN_COMMAND = 67
+    OBJECT_DATA_NOT_ACCEPTED = 68
+
+    # freak events that should not be possible
+    WRITE_TO_INACTIVE_OBJECT = 200
+
+
+OpcodeEnum = Enum(Int8ul, **dict(Opcode.__members__.items()))
+ErrorcodeEnum = Enum(Int8ul, **dict(Errorcode.__members__.items()))
 
 
 class GroupListAdapter(Adapter):
