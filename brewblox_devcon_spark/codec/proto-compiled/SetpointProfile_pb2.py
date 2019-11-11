@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x15SetpointProfile.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x89\x02\n\x0fSetpointProfile\x12+\n\x06points\x18\x01 \x03(\x0b\x32\x1b.blox.SetpointProfile.Point\x12\x0f\n\x07\x65nabled\x18\x03 \x01(\x08\x12\x1d\n\x08targetId\x18\x04 \x01(\rB\x0b\x9a?\x03\x18\xaf\x02\x92?\x02\x38\x10\x12-\n\x0e\x64rivenTargetId\x18\x05 \x01(\rB\x15\x9a?\x03\x18\xaf\x02\x9a?\x02@\x01\x92?\x02\x38\x10\x9a?\x02(\x01\x12\r\n\x05start\x18\x06 \x01(\r\x1aS\n\x05Point\x12\x0c\n\x04time\x18\x01 \x01(\r\x12\'\n\x0btemperature\x18\x02 \x01(\x05\x42\x10\x9a?\x02\x08\x01\x9a?\x03\x10\x80 \x92?\x02\x38 H\x00\x42\x13\n\x11temperature_oneof:\x06\x9a?\x03\x18\xb7\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x15SetpointProfile.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x90\x02\n\x0fSetpointProfile\x12+\n\x06points\x18\x01 \x03(\x0b\x32\x1b.blox.SetpointProfile.Point\x12\x0f\n\x07\x65nabled\x18\x03 \x01(\x08\x12\x1e\n\x08targetId\x18\x04 \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xaf\x02\x92?\x02\x38\x10\x12\x30\n\x0e\x64rivenTargetId\x18\x05 \x01(\rB\x18\x8a\xb5\x18\x03\x18\xaf\x02\x8a\xb5\x18\x02@\x01\x92?\x02\x38\x10\x8a\xb5\x18\x02(\x01\x12\r\n\x05start\x18\x06 \x01(\r\x1aU\n\x05Point\x12\x0c\n\x04time\x18\x01 \x01(\r\x12)\n\x0btemperature\x18\x02 \x01(\x05\x42\x12\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 H\x00\x42\x13\n\x11temperature_oneof:\x07\x8a\xb5\x18\x03\x18\xb7\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -48,7 +48,7 @@ _SETPOINTPROFILE_POINT = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\002\010\001\232?\003\020\200 \222?\0028 '), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002\010\001\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -64,8 +64,8 @@ _SETPOINTPROFILE_POINT = _descriptor.Descriptor(
       name='temperature_oneof', full_name='blox.SetpointProfile.Point.temperature_oneof',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=236,
-  serialized_end=319,
+  serialized_start=240,
+  serialized_end=325,
 )
 
 _SETPOINTPROFILE = _descriptor.Descriptor(
@@ -95,14 +95,14 @@ _SETPOINTPROFILE = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\003\030\257\002\222?\0028\020'), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\003\030\257\002\222?\0028\020'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='drivenTargetId', full_name='blox.SetpointProfile.drivenTargetId', index=3,
       number=5, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\232?\003\030\257\002\232?\002@\001\222?\0028\020\232?\002(\001'), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\003\030\257\002\212\265\030\002@\001\222?\0028\020\212\265\030\002(\001'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='start', full_name='blox.SetpointProfile.start', index=4,
       number=6, type=13, cpp_type=3, label=1,
@@ -116,14 +116,14 @@ _SETPOINTPROFILE = _descriptor.Descriptor(
   nested_types=[_SETPOINTPROFILE_POINT, ],
   enum_types=[
   ],
-  serialized_options=_b('\232?\003\030\267\002'),
+  serialized_options=_b('\212\265\030\003\030\267\002'),
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
   serialized_start=62,
-  serialized_end=327,
+  serialized_end=334,
 )
 
 _SETPOINTPROFILE_POINT.containing_type = _SETPOINTPROFILE

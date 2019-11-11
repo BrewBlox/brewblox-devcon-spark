@@ -60,6 +60,14 @@ async def welcome():
     ]
 
 
+@pytest.fixture
+async def cbox_err():
+    return [
+        'CBOXERROR',
+        '0C',
+    ]
+
+
 async def test_init(conduit_mock, app, client):
     spock = commander.SparkCommander(app)
 
@@ -124,6 +132,23 @@ async def test_on_welcome(app, mocker, conduit_mock, sparky, welcome):
         await sparky._on_event(conduit_mock, nok_msg)
     assert not state.is_compatible
     assert not state.is_synchronized
+
+
+async def test_on_cbox_err(app, mocker, conduit_mock, sparky, cbox_err):
+    state = status.get_status(app)
+    await state.on_connect('addr')
+    assert state.address == 'addr'
+
+    msg = ':'.join(cbox_err)
+    await sparky._on_event(conduit_mock, msg)
+
+    # shouldn't fail on non-existent error message
+    msg = ':'.join([cbox_err[0], 'ffff'])
+    await sparky._on_event(conduit_mock, msg)
+
+    # shouldn't fail on invalid error
+    msg = ':'.join([cbox_err[0], 'not hex'])
+    await sparky._on_event(conduit_mock, msg)
 
 
 async def test_on_update(app, mocker, conduit_mock, sparky):

@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x13TouchSettings.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xe5\x01\n\rTouchSettings\x12\x32\n\ncalibrated\x18\x01 \x01(\x0e\x32\x1e.blox.TouchSettings.Calibrated\x12\x16\n\x07xOffset\x18\x02 \x01(\x05\x42\x05\x92?\x02\x38\x10\x12\x16\n\x07yOffset\x18\x03 \x01(\x05\x42\x05\x92?\x02\x38\x10\x12\x1f\n\x10xBitsPerPixelX16\x18\x04 \x01(\rB\x05\x92?\x02\x38\x10\x12\x1f\n\x10yBitsPerPixelX16\x18\x05 \x01(\rB\x05\x92?\x02\x38\x10\"&\n\nCalibrated\x12\x06\n\x02NO\x10\x00\x12\x07\n\x03YES\x10\x01\x12\x07\n\x03NEW\x10\x02:\x06\x9a?\x03\x18\xb9\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x13TouchSettings.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xe6\x01\n\rTouchSettings\x12\x32\n\ncalibrated\x18\x01 \x01(\x0e\x32\x1e.blox.TouchSettings.Calibrated\x12\x16\n\x07xOffset\x18\x02 \x01(\x05\x42\x05\x92?\x02\x38\x10\x12\x16\n\x07yOffset\x18\x03 \x01(\x05\x42\x05\x92?\x02\x38\x10\x12\x1f\n\x10xBitsPerPixelX16\x18\x04 \x01(\rB\x05\x92?\x02\x38\x10\x12\x1f\n\x10yBitsPerPixelX16\x18\x05 \x01(\rB\x05\x92?\x02\x38\x10\"&\n\nCalibrated\x12\x06\n\x02NO\x10\x00\x12\x07\n\x03YES\x10\x01\x12\x07\n\x03NEW\x10\x02:\x07\x8a\xb5\x18\x03\x18\xb9\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -103,14 +103,14 @@ _TOUCHSETTINGS = _descriptor.Descriptor(
   enum_types=[
     _TOUCHSETTINGS_CALIBRATED,
   ],
-  serialized_options=_b('\232?\003\030\271\002'),
+  serialized_options=_b('\212\265\030\003\030\271\002'),
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
   serialized_start=60,
-  serialized_end=289,
+  serialized_end=290,
 )
 
 _TOUCHSETTINGS.fields_by_name['calibrated'].enum_type = _TOUCHSETTINGS_CALIBRATED
