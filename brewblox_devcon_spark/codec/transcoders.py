@@ -68,7 +68,7 @@ class Transcoder(ABC):
         pass  # pragma: no cover
 
     @abstractmethod
-    def decode(encoded: Encoded_, opts: dict) -> Decoded_:
+    def decode(self, encoded: Encoded_, opts: dict) -> Decoded_:
         pass  # pragma: no cover
 
     @classmethod
