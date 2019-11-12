@@ -7,6 +7,7 @@ from brewblox_devcon_spark.codec import _path_extension  # isort:skip
 import re
 from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
+from dataclasses import dataclass
 from functools import reduce
 from typing import Iterator, List
 
@@ -17,7 +18,6 @@ from google.protobuf.message import Message
 
 import brewblox_pb2
 from brewblox_devcon_spark.codec.unit_conversion import UnitConverter
-from dataclasses import dataclass
 
 STRIP_UNLOGGED_KEY = 'strip_unlogged'
 STRIP_FIELDS_KEY = 'strippedFields'
@@ -110,10 +110,10 @@ class Modifier():
         return field.GetOptions().Extensions[provider]
 
     def _unit_name(self, unit_num: int) -> str:
-        return brewblox_pb2.BrewbloxOptions.UnitType.Name(unit_num)
+        return brewblox_pb2.BrewBloxTypes.UnitType.Name(unit_num)
 
     def _objtype_name(self, objtype_num: int) -> str:
-        return brewblox_pb2.BrewbloxOptions.BlockType.Name(objtype_num)
+        return brewblox_pb2.BrewBloxTypes.BlockType.Name(objtype_num)
 
     def encode_options(self, message: Message, obj: dict, codec_opts: dict) -> dict:
         """

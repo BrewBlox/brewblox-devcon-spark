@@ -68,7 +68,7 @@ class Transcoder(ABC):
         pass  # pragma: no cover
 
     @abstractmethod
-    def decode(encoded: Encoded_, opts: dict) -> Decoded_:
+    def decode(self, encoded: Encoded_, opts: dict) -> Decoded_:
         pass  # pragma: no cover
 
     @classmethod
@@ -96,7 +96,7 @@ class BlockInterfaceTranscoder(Transcoder):
 
     @classmethod
     def type_str(cls) -> str:
-        return brewblox_pb2.BrewbloxOptions.BlockType.Name(cls._ENUM_VAL)
+        return brewblox_pb2.BrewBloxTypes.BlockType.Name(cls._ENUM_VAL)
 
     def encode(self, values: Decoded_, _) -> Encoded_:
         return b'\x00'
@@ -106,7 +106,7 @@ class BlockInterfaceTranscoder(Transcoder):
 
 
 def interface_factory(value: int) -> BlockInterfaceTranscoder:
-    name = f'{brewblox_pb2.BrewbloxOptions.BlockType.Name(value)}TranscoderStub'
+    name = f'{brewblox_pb2.BrewBloxTypes.BlockType.Name(value)}TranscoderStub'
     return type(name, (BlockInterfaceTranscoder, ), {'_ENUM_VAL': value})
 
 
@@ -251,7 +251,7 @@ _TRANSCODERS = [
 
     # Interface objects
     # Actual implementations will override this later
-    *[interface_factory(v) for v in brewblox_pb2.BrewbloxOptions.BlockType.values()],
+    *[interface_factory(v) for v in brewblox_pb2.BrewBloxTypes.BlockType.values()],
 
     # Protobuf objects
     *[options_type_factory(msg) for msg in [

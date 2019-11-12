@@ -8,7 +8,6 @@ from collections import defaultdict
 from concurrent.futures import CancelledError, TimeoutError
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from enum import Enum
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, scheduler, strex
@@ -19,6 +18,8 @@ LOGGER = brewblox_logger(__name__)
 
 WELCOME_PREFIX = 'BREWBLOX'
 UPDATER_PREFIX = 'FIRMWARE_UPDATER'
+CBOX_ERR_PREFIX = 'CBOXERROR'
+SETUP_MODE_PREFIX = 'SETUP_MODE'
 
 # Spark protocol is to echo the request in the response
 # To prevent decoding ambiguity, a non-hexadecimal character separates the request and response
@@ -57,26 +58,6 @@ def get_commander(app: web.Application):
     return features.get(app, SparkCommander)
 
 
-class ResetReason(Enum):
-    NONE = '00'
-    UNKNOWN = '0A'
-    # Hardware
-    PIN_RESET = '14'
-    POWER_MANAGEMENT = '1E'
-    POWER_DOWN = '28'
-    POWER_BROWNOUT = '32'
-    WATCHDOG = '3C'
-    # Software
-    UPDATE = '46'
-    UPDATE_ERROR = '50'
-    UPDATE_TIMEOUT = '5A'
-    FACTORY_RESET = '64'
-    SAFE_MODE = '6E'
-    DFU_MODE = '78'
-    PANIC = '82'
-    USER = '8C'
-
-
 @dataclass
 class HandshakeMessage:
     name: str
@@ -91,7 +72,7 @@ class HandshakeMessage:
     reset_reason: str = field(init=False)
 
     def __post_init__(self):
-        self.reset_reason = ResetReason(self.reset_reason_hex.upper()).name
+        self.reset_reason = commands.ResetReason(self.reset_reason_hex.upper()).name
 
 
 class TimestampedQueue():
@@ -193,10 +174,22 @@ class SparkCommander(features.ServiceFeature):
     async def _on_event(self, conduit, msg: str):
         if msg.startswith(WELCOME_PREFIX):
             await self._on_welcome(msg)
+
         elif msg.startswith(UPDATER_PREFIX):
-            LOGGER.error('Update protocol was activated by another connection')
+            LOGGER.error('Update protocol was activated by another connection.')
             await self.pause()
             await self.disconnect()
+
+        elif msg.startswith(CBOX_ERR_PREFIX):
+            try:
+                LOGGER.error('Spark CBOX error: ' + commands.Errorcode(int(msg[-2:], 16)).name)
+            except ValueError:
+                LOGGER.error('Unknown Spark CBOX error: ' + msg)
+
+        elif msg.startswith(SETUP_MODE_PREFIX):
+            LOGGER.error('Controller entered listening mode. Exiting service now.')
+            raise SystemExit(1)
+
         else:
             LOGGER.info(f'Spark event: "{msg}"')
 

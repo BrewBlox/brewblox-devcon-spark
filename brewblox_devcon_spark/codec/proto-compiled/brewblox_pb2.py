@@ -13,16 +13,17 @@ _sym_db = _symbol_database.Default()
 
 
 from google.protobuf import descriptor_pb2 as google_dot_protobuf_dot_descriptor__pb2
+import nanopb_pb2 as nanopb__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='brewblox.proto',
   package='',
-  syntax='proto3',
+  syntax='proto2',
   serialized_options=None,
-  serialized_pb=_b('\n\x0e\x62rewblox.proto\x1a google/protobuf/descriptor.proto\"\x91\t\n\x0f\x42rewbloxOptions\x12\'\n\x04unit\x18\x01 \x01(\x0e\x32\x19.BrewbloxOptions.UnitType\x12\r\n\x05scale\x18\x02 \x01(\r\x12+\n\x07objtype\x18\x03 \x01(\x0e\x32\x1a.BrewbloxOptions.BlockType\x12\r\n\x05hexed\x18\x04 \x01(\x08\x12\x10\n\x08readonly\x18\x05 \x01(\x08\x12\x0e\n\x06logged\x18\x06 \x01(\x08\x12\x0e\n\x06hexstr\x18\x07 \x01(\x08\x12\x0e\n\x06\x64riven\x18\x08 \x01(\x08\x12(\n\x04impl\x18\t \x03(\x0e\x32\x1a.BrewbloxOptions.BlockType\"\xe8\x05\n\tBlockType\x12\x0b\n\x07Invalid\x10\x00\x12\x19\n\x15ProcessValueInterface\x10\x01\x12\x17\n\x13TempSensorInterface\x10\x02\x12\x1f\n\x1bSetpointSensorPairInterface\x10\x04\x12\x1b\n\x17\x41\x63tuatorAnalogInterface\x10\x05\x12\x1c\n\x18\x41\x63tuatorDigitalInterface\x10\x06\x12\x15\n\x11\x42\x61lancerInterface\x10\x07\x12\x12\n\x0eMutexInterface\x10\x08\x12\x1a\n\x16OneWireDeviceInterface\x10\t\x12\x14\n\x10IoArrayInterface\x10\n\x12\x13\n\x0f\x44S2408Interface\x10\x0b\x12\x08\n\x03\x41ny\x10\xff\x01\x12\x0c\n\x07SysInfo\x10\x80\x02\x12\n\n\x05Ticks\x10\x81\x02\x12\x0f\n\nOneWireBus\x10\x82\x02\x12\x0e\n\tBoardPins\x10\x83\x02\x12\x13\n\x0eTempSensorMock\x10\xad\x02\x12\x16\n\x11TempSensorOneWire\x10\xae\x02\x12\x17\n\x12SetpointSensorPair\x10\xaf\x02\x12\x08\n\x03Pid\x10\xb0\x02\x12\x17\n\x12\x41\x63tuatorAnalogMock\x10\xb1\x02\x12\x10\n\x0b\x41\x63tuatorPin\x10\xb2\x02\x12\x10\n\x0b\x41\x63tuatorPwm\x10\xb3\x02\x12\x13\n\x0e\x41\x63tuatorOffset\x10\xb4\x02\x12\r\n\x08\x42\x61lancer\x10\xb5\x02\x12\n\n\x05Mutex\x10\xb6\x02\x12\x14\n\x0fSetpointProfile\x10\xb7\x02\x12\x11\n\x0cWiFiSettings\x10\xb8\x02\x12\x12\n\rTouchSettings\x10\xb9\x02\x12\x14\n\x0f\x44isplaySettings\x10\xba\x02\x12\x0b\n\x06\x44S2413\x10\xbb\x02\x12\x14\n\x0f\x41\x63tuatorOneWire\x10\xbc\x02\x12\x0b\n\x06\x44S2408\x10\xbd\x02\x12\x14\n\x0f\x44igitalActuator\x10\xbe\x02\x12\x0f\n\nSpark3Pins\x10\xbf\x02\x12\x0f\n\nSpark2Pins\x10\xc0\x02\x12\x0f\n\nMotorValve\x10\xc1\x02\"\xb2\x01\n\x08UnitType\x12\n\n\x06NotSet\x10\x00\x12\x08\n\x04Temp\x10\x01\x12\r\n\tDeltaTemp\x10\x02\x12\x14\n\x10\x44\x65ltaTempPerTime\x10\x03\x12\x08\n\x04Time\x10\x04\x12\x0f\n\x0bInverseTemp\x10\x05\x12\x11\n\rDeltaTempTime\x10\x06\x12\x0c\n\x08LongTime\x10\x07\x12\x15\n\x11\x44\x65ltaTempLongTime\x10\x08\x12\x18\n\x14\x44\x65ltaTempPerLongTime\x10\t:C\n\x08\x62rewblox\x12\x1d.google.protobuf.FieldOptions\x18\xd1\x86\x03 \x01(\x0b\x32\x10.BrewbloxOptions:I\n\x0c\x62rewblox_msg\x12\x1f.google.protobuf.MessageOptions\x18\xd1\x86\x03 \x01(\x0b\x32\x10.BrewbloxOptionsb\x06proto3')
+  serialized_pb=_b('\n\x0e\x62rewblox.proto\x1a google/protobuf/descriptor.proto\x1a\x0cnanopb.proto\"\xaf\x07\n\rBrewBloxTypes\"\xb2\x01\n\x08UnitType\x12\n\n\x06NotSet\x10\x00\x12\x08\n\x04Temp\x10\x01\x12\r\n\tDeltaTemp\x10\x02\x12\x14\n\x10\x44\x65ltaTempPerTime\x10\x03\x12\x08\n\x04Time\x10\x04\x12\x0f\n\x0bInverseTemp\x10\x05\x12\x11\n\rDeltaTempTime\x10\x06\x12\x0c\n\x08LongTime\x10\x07\x12\x15\n\x11\x44\x65ltaTempLongTime\x10\x08\x12\x18\n\x14\x44\x65ltaTempPerLongTime\x10\t\"\xe8\x05\n\tBlockType\x12\x0b\n\x07Invalid\x10\x00\x12\x19\n\x15ProcessValueInterface\x10\x01\x12\x17\n\x13TempSensorInterface\x10\x02\x12\x1f\n\x1bSetpointSensorPairInterface\x10\x04\x12\x1b\n\x17\x41\x63tuatorAnalogInterface\x10\x05\x12\x1c\n\x18\x41\x63tuatorDigitalInterface\x10\x06\x12\x15\n\x11\x42\x61lancerInterface\x10\x07\x12\x12\n\x0eMutexInterface\x10\x08\x12\x1a\n\x16OneWireDeviceInterface\x10\t\x12\x14\n\x10IoArrayInterface\x10\n\x12\x13\n\x0f\x44S2408Interface\x10\x0b\x12\x08\n\x03\x41ny\x10\xff\x01\x12\x0c\n\x07SysInfo\x10\x80\x02\x12\n\n\x05Ticks\x10\x81\x02\x12\x0f\n\nOneWireBus\x10\x82\x02\x12\x0e\n\tBoardPins\x10\x83\x02\x12\x13\n\x0eTempSensorMock\x10\xad\x02\x12\x16\n\x11TempSensorOneWire\x10\xae\x02\x12\x17\n\x12SetpointSensorPair\x10\xaf\x02\x12\x08\n\x03Pid\x10\xb0\x02\x12\x17\n\x12\x41\x63tuatorAnalogMock\x10\xb1\x02\x12\x10\n\x0b\x41\x63tuatorPin\x10\xb2\x02\x12\x10\n\x0b\x41\x63tuatorPwm\x10\xb3\x02\x12\x13\n\x0e\x41\x63tuatorOffset\x10\xb4\x02\x12\r\n\x08\x42\x61lancer\x10\xb5\x02\x12\n\n\x05Mutex\x10\xb6\x02\x12\x14\n\x0fSetpointProfile\x10\xb7\x02\x12\x11\n\x0cWiFiSettings\x10\xb8\x02\x12\x12\n\rTouchSettings\x10\xb9\x02\x12\x14\n\x0f\x44isplaySettings\x10\xba\x02\x12\x0b\n\x06\x44S2413\x10\xbb\x02\x12\x14\n\x0f\x41\x63tuatorOneWire\x10\xbc\x02\x12\x0b\n\x06\x44S2408\x10\xbd\x02\x12\x14\n\x0f\x44igitalActuator\x10\xbe\x02\x12\x0f\n\nSpark3Pins\x10\xbf\x02\x12\x0f\n\nSpark2Pins\x10\xc0\x02\x12\x0f\n\nMotorValve\x10\xc1\x02\"y\n\x16\x42rewBloxMessageOptions\x12)\n\x07objtype\x18\x03 \x01(\x0e\x32\x18.BrewBloxTypes.BlockType\x12-\n\x04impl\x18\t \x03(\x0e\x32\x18.BrewBloxTypes.BlockTypeB\x05\x92?\x02\x10\x05:\x05\x92?\x02\x30\x01\"\xcf\x01\n\x14\x42rewBloxFieldOptions\x12%\n\x04unit\x18\x01 \x01(\x0e\x32\x17.BrewBloxTypes.UnitType\x12\r\n\x05scale\x18\x02 \x01(\r\x12)\n\x07objtype\x18\x03 \x01(\x0e\x32\x18.BrewBloxTypes.BlockType\x12\r\n\x05hexed\x18\x04 \x01(\x08\x12\x10\n\x08readonly\x18\x05 \x01(\x08\x12\x0e\n\x06logged\x18\x06 \x01(\x08\x12\x0e\n\x06hexstr\x18\x07 \x01(\x08\x12\x0e\n\x06\x64riven\x18\x08 \x01(\x08:\x05\x92?\x02\x30\x01:O\n\x08\x62rewblox\x12\x1d.google.protobuf.FieldOptions\x18\xd1\x86\x03 \x01(\x0b\x32\x15.BrewBloxFieldOptionsB\x05\x92?\x02\x18\x03:W\n\x0c\x62rewblox_msg\x12\x1f.google.protobuf.MessageOptions\x18\xd1\x86\x03 \x01(\x0b\x32\x17.BrewBloxMessageOptionsB\x05\x92?\x02\x18\x03')
   ,
-  dependencies=[google_dot_protobuf_dot_descriptor__pb2.DESCRIPTOR,])
+  dependencies=[google_dot_protobuf_dot_descriptor__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
 
 BREWBLOX_FIELD_NUMBER = 50001
@@ -32,7 +33,7 @@ brewblox = _descriptor.FieldDescriptor(
   has_default_value=False, default_value=None,
   message_type=None, enum_type=None, containing_type=None,
   is_extension=True, extension_scope=None,
-  serialized_options=None, file=DESCRIPTOR)
+  serialized_options=_b('\222?\002\030\003'), file=DESCRIPTOR)
 BREWBLOX_MSG_FIELD_NUMBER = 50001
 brewblox_msg = _descriptor.FieldDescriptor(
   name='brewblox_msg', full_name='brewblox_msg', index=1,
@@ -40,11 +41,65 @@ brewblox_msg = _descriptor.FieldDescriptor(
   has_default_value=False, default_value=None,
   message_type=None, enum_type=None, containing_type=None,
   is_extension=True, extension_scope=None,
-  serialized_options=None, file=DESCRIPTOR)
+  serialized_options=_b('\222?\002\030\003'), file=DESCRIPTOR)
 
-_BREWBLOXOPTIONS_BLOCKTYPE = _descriptor.EnumDescriptor(
+_BREWBLOXTYPES_UNITTYPE = _descriptor.EnumDescriptor(
+  name='UnitType',
+  full_name='BrewBloxTypes.UnitType',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='NotSet', index=0, number=0,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='Temp', index=1, number=1,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='DeltaTemp', index=2, number=2,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='DeltaTempPerTime', index=3, number=3,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='Time', index=4, number=4,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='InverseTemp', index=5, number=5,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='DeltaTempTime', index=6, number=6,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='LongTime', index=7, number=7,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='DeltaTempLongTime', index=8, number=8,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='DeltaTempPerLongTime', index=9, number=9,
+      serialized_options=None,
+      type=None),
+  ],
+  containing_type=None,
+  serialized_options=None,
+  serialized_start=85,
+  serialized_end=263,
+)
+_sym_db.RegisterEnumDescriptor(_BREWBLOXTYPES_UNITTYPE)
+
+_BREWBLOXTYPES_BLOCKTYPE = _descriptor.EnumDescriptor(
   name='BlockType',
-  full_name='BrewbloxOptions.BlockType',
+  full_name='BrewBloxTypes.BlockType',
   filename=None,
   file=DESCRIPTOR,
   values=[
@@ -199,133 +254,136 @@ _BREWBLOXOPTIONS_BLOCKTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=297,
-  serialized_end=1041,
+  serialized_start=266,
+  serialized_end=1010,
 )
-_sym_db.RegisterEnumDescriptor(_BREWBLOXOPTIONS_BLOCKTYPE)
+_sym_db.RegisterEnumDescriptor(_BREWBLOXTYPES_BLOCKTYPE)
 
-_BREWBLOXOPTIONS_UNITTYPE = _descriptor.EnumDescriptor(
-  name='UnitType',
-  full_name='BrewbloxOptions.UnitType',
+
+_BREWBLOXTYPES = _descriptor.Descriptor(
+  name='BrewBloxTypes',
+  full_name='BrewBloxTypes',
   filename=None,
   file=DESCRIPTOR,
-  values=[
-    _descriptor.EnumValueDescriptor(
-      name='NotSet', index=0, number=0,
-      serialized_options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='Temp', index=1, number=1,
-      serialized_options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='DeltaTemp', index=2, number=2,
-      serialized_options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='DeltaTempPerTime', index=3, number=3,
-      serialized_options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='Time', index=4, number=4,
-      serialized_options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='InverseTemp', index=5, number=5,
-      serialized_options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='DeltaTempTime', index=6, number=6,
-      serialized_options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='LongTime', index=7, number=7,
-      serialized_options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='DeltaTempLongTime', index=8, number=8,
-      serialized_options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='DeltaTempPerLongTime', index=9, number=9,
-      serialized_options=None,
-      type=None),
-  ],
   containing_type=None,
+  fields=[
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+    _BREWBLOXTYPES_UNITTYPE,
+    _BREWBLOXTYPES_BLOCKTYPE,
+  ],
   serialized_options=None,
-  serialized_start=1044,
-  serialized_end=1222,
+  is_extendable=False,
+  syntax='proto2',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=67,
+  serialized_end=1010,
 )
-_sym_db.RegisterEnumDescriptor(_BREWBLOXOPTIONS_UNITTYPE)
 
 
-_BREWBLOXOPTIONS = _descriptor.Descriptor(
-  name='BrewbloxOptions',
-  full_name='BrewbloxOptions',
+_BREWBLOXMESSAGEOPTIONS = _descriptor.Descriptor(
+  name='BrewBloxMessageOptions',
+  full_name='BrewBloxMessageOptions',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='unit', full_name='BrewbloxOptions.unit', index=0,
-      number=1, type=14, cpp_type=8, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='scale', full_name='BrewbloxOptions.scale', index=1,
-      number=2, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='objtype', full_name='BrewbloxOptions.objtype', index=2,
+      name='objtype', full_name='BrewBloxMessageOptions.objtype', index=0,
       number=3, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='hexed', full_name='BrewbloxOptions.hexed', index=3,
+      name='impl', full_name='BrewBloxMessageOptions.impl', index=1,
+      number=9, type=14, cpp_type=8, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\222?\002\020\005'), file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=_b('\222?\0020\001'),
+  is_extendable=False,
+  syntax='proto2',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1012,
+  serialized_end=1133,
+)
+
+
+_BREWBLOXFIELDOPTIONS = _descriptor.Descriptor(
+  name='BrewBloxFieldOptions',
+  full_name='BrewBloxFieldOptions',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='unit', full_name='BrewBloxFieldOptions.unit', index=0,
+      number=1, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='scale', full_name='BrewBloxFieldOptions.scale', index=1,
+      number=2, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='objtype', full_name='BrewBloxFieldOptions.objtype', index=2,
+      number=3, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='hexed', full_name='BrewBloxFieldOptions.hexed', index=3,
       number=4, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='readonly', full_name='BrewbloxOptions.readonly', index=4,
+      name='readonly', full_name='BrewBloxFieldOptions.readonly', index=4,
       number=5, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='logged', full_name='BrewbloxOptions.logged', index=5,
+      name='logged', full_name='BrewBloxFieldOptions.logged', index=5,
       number=6, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='hexstr', full_name='BrewbloxOptions.hexstr', index=6,
+      name='hexstr', full_name='BrewBloxFieldOptions.hexstr', index=6,
       number=7, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='driven', full_name='BrewbloxOptions.driven', index=7,
+      name='driven', full_name='BrewBloxFieldOptions.driven', index=7,
       number=8, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='impl', full_name='BrewbloxOptions.impl', index=8,
-      number=9, type=14, cpp_type=8, label=3,
-      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
@@ -334,39 +392,59 @@ _BREWBLOXOPTIONS = _descriptor.Descriptor(
   ],
   nested_types=[],
   enum_types=[
-    _BREWBLOXOPTIONS_BLOCKTYPE,
-    _BREWBLOXOPTIONS_UNITTYPE,
   ],
-  serialized_options=None,
+  serialized_options=_b('\222?\0020\001'),
   is_extendable=False,
-  syntax='proto3',
+  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=53,
-  serialized_end=1222,
+  serialized_start=1136,
+  serialized_end=1343,
 )
 
-_BREWBLOXOPTIONS.fields_by_name['unit'].enum_type = _BREWBLOXOPTIONS_UNITTYPE
-_BREWBLOXOPTIONS.fields_by_name['objtype'].enum_type = _BREWBLOXOPTIONS_BLOCKTYPE
-_BREWBLOXOPTIONS.fields_by_name['impl'].enum_type = _BREWBLOXOPTIONS_BLOCKTYPE
-_BREWBLOXOPTIONS_BLOCKTYPE.containing_type = _BREWBLOXOPTIONS
-_BREWBLOXOPTIONS_UNITTYPE.containing_type = _BREWBLOXOPTIONS
-DESCRIPTOR.message_types_by_name['BrewbloxOptions'] = _BREWBLOXOPTIONS
+_BREWBLOXTYPES_UNITTYPE.containing_type = _BREWBLOXTYPES
+_BREWBLOXTYPES_BLOCKTYPE.containing_type = _BREWBLOXTYPES
+_BREWBLOXMESSAGEOPTIONS.fields_by_name['objtype'].enum_type = _BREWBLOXTYPES_BLOCKTYPE
+_BREWBLOXMESSAGEOPTIONS.fields_by_name['impl'].enum_type = _BREWBLOXTYPES_BLOCKTYPE
+_BREWBLOXFIELDOPTIONS.fields_by_name['unit'].enum_type = _BREWBLOXTYPES_UNITTYPE
+_BREWBLOXFIELDOPTIONS.fields_by_name['objtype'].enum_type = _BREWBLOXTYPES_BLOCKTYPE
+DESCRIPTOR.message_types_by_name['BrewBloxTypes'] = _BREWBLOXTYPES
+DESCRIPTOR.message_types_by_name['BrewBloxMessageOptions'] = _BREWBLOXMESSAGEOPTIONS
+DESCRIPTOR.message_types_by_name['BrewBloxFieldOptions'] = _BREWBLOXFIELDOPTIONS
 DESCRIPTOR.extensions_by_name['brewblox'] = brewblox
 DESCRIPTOR.extensions_by_name['brewblox_msg'] = brewblox_msg
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-BrewbloxOptions = _reflection.GeneratedProtocolMessageType('BrewbloxOptions', (_message.Message,), dict(
-  DESCRIPTOR = _BREWBLOXOPTIONS,
+BrewBloxTypes = _reflection.GeneratedProtocolMessageType('BrewBloxTypes', (_message.Message,), dict(
+  DESCRIPTOR = _BREWBLOXTYPES,
   __module__ = 'brewblox_pb2'
-  # @@protoc_insertion_point(class_scope:BrewbloxOptions)
+  # @@protoc_insertion_point(class_scope:BrewBloxTypes)
   ))
-_sym_db.RegisterMessage(BrewbloxOptions)
+_sym_db.RegisterMessage(BrewBloxTypes)
 
-brewblox.message_type = _BREWBLOXOPTIONS
+BrewBloxMessageOptions = _reflection.GeneratedProtocolMessageType('BrewBloxMessageOptions', (_message.Message,), dict(
+  DESCRIPTOR = _BREWBLOXMESSAGEOPTIONS,
+  __module__ = 'brewblox_pb2'
+  # @@protoc_insertion_point(class_scope:BrewBloxMessageOptions)
+  ))
+_sym_db.RegisterMessage(BrewBloxMessageOptions)
+
+BrewBloxFieldOptions = _reflection.GeneratedProtocolMessageType('BrewBloxFieldOptions', (_message.Message,), dict(
+  DESCRIPTOR = _BREWBLOXFIELDOPTIONS,
+  __module__ = 'brewblox_pb2'
+  # @@protoc_insertion_point(class_scope:BrewBloxFieldOptions)
+  ))
+_sym_db.RegisterMessage(BrewBloxFieldOptions)
+
+brewblox.message_type = _BREWBLOXFIELDOPTIONS
 google_dot_protobuf_dot_descriptor__pb2.FieldOptions.RegisterExtension(brewblox)
-brewblox_msg.message_type = _BREWBLOXOPTIONS
+brewblox_msg.message_type = _BREWBLOXMESSAGEOPTIONS
 google_dot_protobuf_dot_descriptor__pb2.MessageOptions.RegisterExtension(brewblox_msg)
 
+brewblox._options = None
+brewblox_msg._options = None
+_BREWBLOXMESSAGEOPTIONS.fields_by_name['impl']._options = None
+_BREWBLOXMESSAGEOPTIONS._options = None
+_BREWBLOXFIELDOPTIONS._options = None
 # @@protoc_insertion_point(module_scope)
