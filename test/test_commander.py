@@ -151,6 +151,16 @@ async def test_on_cbox_err(app, mocker, conduit_mock, sparky, cbox_err):
     await sparky._on_event(conduit_mock, msg)
 
 
+async def test_on_setup_mode(app, mocker, conduit_mock, sparky):
+    state = status.get_status(app)
+    await state.on_connect('addr')
+    assert state.address == 'addr'
+
+    mocker.patch(TESTED + '.SystemExit', RuntimeError)
+    with pytest.raises(RuntimeError):
+        await sparky._on_event(conduit_mock, 'SETUP_MODE')
+
+
 async def test_on_update(app, mocker, conduit_mock, sparky):
     state = status.get_status(app)
     await state.on_connect('addr')
