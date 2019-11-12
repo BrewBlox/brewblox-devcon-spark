@@ -19,6 +19,7 @@ LOGGER = brewblox_logger(__name__)
 WELCOME_PREFIX = 'BREWBLOX'
 UPDATER_PREFIX = 'FIRMWARE_UPDATER'
 CBOX_ERR_PREFIX = 'CBOXERROR'
+SETUP_MODE_PREFIX = 'SETUP_MODE'
 
 # Spark protocol is to echo the request in the response
 # To prevent decoding ambiguity, a non-hexadecimal character separates the request and response
@@ -173,15 +174,22 @@ class SparkCommander(features.ServiceFeature):
     async def _on_event(self, conduit, msg: str):
         if msg.startswith(WELCOME_PREFIX):
             await self._on_welcome(msg)
+
         elif msg.startswith(UPDATER_PREFIX):
-            LOGGER.error('Update protocol was activated by another connection')
+            LOGGER.error('Update protocol was activated by another connection.')
             await self.pause()
             await self.disconnect()
+
         elif msg.startswith(CBOX_ERR_PREFIX):
             try:
                 LOGGER.error('Spark CBOX error: ' + commands.Errorcode(int(msg[-2:], 16)).name)
             except ValueError:
                 LOGGER.error('Unknown Spark CBOX error: ' + msg)
+
+        elif msg.startswith(SETUP_MODE_PREFIX):
+            LOGGER.error('Controller entered listening mode. Exiting service now.')
+            raise SystemExit(1)
+
         else:
             LOGGER.info(f'Spark event: "{msg}"')
 
