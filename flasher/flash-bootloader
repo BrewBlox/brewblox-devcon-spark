@@ -1,8 +1,12 @@
 #! /usr/bin/env bash
 set -e
 
-echo "Flashing the bootloader is disabled while we fix a bug."
-exit
+
+if [[ $1 != "--force" ]]; then
+    echo "Flashing the bootloader is disabled."
+    echo "Your Spark will automatically install bootloader updates when it is connected to the internet."
+    exit
+fi
 
 SERIAL_FLASH="npx particle --no-update-check serial flash"
 
