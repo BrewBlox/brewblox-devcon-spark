@@ -23,9 +23,9 @@ pytest-aiohttp = "*"
 asynctest = "*"
 "flake8" = "*"
 "autopep8" = "*"
-brewblox-tools = "*"
 aresponses = "*"
 pytest-sugar = "*"
+brewblox-dev = "*"
 
 [requires]
 python_version = "3.7"
