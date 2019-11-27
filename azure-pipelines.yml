@@ -45,22 +45,22 @@ steps:
 # Python
 
 - bash: >
-    bbt-localbuild
-    --arch amd arm
-    --tags newest-tag $(brewblox.tag)
+    brewblox-dev localbuild
+    --arch amd --arch arm
+    --tag newest-tag --tag $(brewblox.tag)
     --push
   displayName: Deploy newest-tag and version tag to Docker Hub on tagged commits
   condition: and(succeeded(), variables['brewblox.tag'])
 
 - bash: >
-    bbt-localbuild
-    --arch amd arm
+    brewblox-dev localbuild
+    --arch amd --arch arm
     --branch-tag
     --push
   displayName: Deploy branch to Docker Hub on any push to the GitHub repository
   condition: and(succeeded(), variables['brewblox.branch'], not(variables['brewblox.tag']))
   env:
-  # brewblox-tools looks for $TRAVIS_BRANCH to determine branch tag
+  # brewblox-dev looks for $TRAVIS_BRANCH to determine branch tag
     TRAVIS_BRANCH: $(brewblox.branch)
 
 - bash: |
@@ -73,22 +73,22 @@ steps:
 # Flasher
 
 - bash: >
-    bbt-localbuild
+    brewblox-dev localbuild
     --context flasher
     --repo brewblox/firmware-flasher
     --no-setup
-    --arch amd arm
-    --tags newest-tag $(brewblox.tag)
+    --arch amd --arch arm
+    --tag newest-tag --tag $(brewblox.tag)
     --push
   displayName: Deploy flasher newest-tag and version tag to Docker Hub on tagged commits
   condition: and(succeeded(), variables['brewblox.tag'])
 
 - bash: >
-    bbt-localbuild
+    brewblox-dev localbuild
     --context flasher
     --repo brewblox/firmware-flasher
     --no-setup
-    --arch amd arm
+    --arch amd --arch arm
     --branch-tag
     --push
   displayName: Deploy flasher branch to Docker Hub on any push to the GitHub repository
