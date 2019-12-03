@@ -123,3 +123,7 @@ class IncompatibleFirmware(FirmwareException):
 
 class FirmwareUpdateFailed(FirmwareException):
     pass
+
+
+class InvalidDeviceId(ConnectionException):
+    pass
