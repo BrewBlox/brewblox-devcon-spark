@@ -68,6 +68,9 @@ class Seeder(features.ServiceFeature):
                 if not spark_status.is_compatible:  # pragma: no cover
                     raise exceptions.IncompatibleFirmware()
 
+                if not spark_status.is_valid:  # pragma: no cover
+                    raise exceptions.InvalidDeviceId()
+
                 await self._seed_datastore()
                 await self._seed_time()
 
@@ -83,6 +86,9 @@ class Seeder(features.ServiceFeature):
 
             except exceptions.IncompatibleFirmware:  # pragma: no cover
                 LOGGER.error('Incompatible firmware version detected')
+
+            except exceptions.InvalidDeviceId:  # pragma: no cover
+                LOGGER.error('Invalid device ID detected')
 
             except Exception as ex:
                 LOGGER.error(f'Failed to seed: {strex(ex)}')
