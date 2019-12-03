@@ -167,6 +167,8 @@ class SparkCommander(features.ServiceFeature):
             f'Protocol date (service): {service_proto_date}',
             f'Protocol date (controller): {welcome.proto_date}',
             f'System version (controller): {welcome.system_version}',
+            f'Desired device ID (service): {desired_id or "----"}',
+            f'Actual device ID (controller): {welcome.device_id}',
         ]
         version_compatible = service_proto_version == welcome.proto_version
         version_latest = service_firmware_version == welcome.firmware_version
