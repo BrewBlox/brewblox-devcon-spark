@@ -44,6 +44,10 @@ class SparkStatus(features.ServiceFeature):
         return self._compatible
 
     @property
+    def is_valid(self):
+        return self._valid
+
+    @property
     def is_synchronized(self):
         return self._synchronize_ev.is_set()
 
