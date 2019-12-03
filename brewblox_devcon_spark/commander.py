@@ -69,6 +69,7 @@ class HandshakeMessage:
     platform: str
     reset_reason_hex: str
     reset_data_hex: str
+    device_id: str = field(default=None)
     reset_reason: str = field(init=False)
 
     def __post_init__(self):
@@ -148,6 +149,8 @@ class SparkCommander(features.ServiceFeature):
         welcome = HandshakeMessage(*msg.split(','))
         LOGGER.info(welcome)
 
+        app_config = self.app['config']
+        desired_id = app_config['device_id']
         app_ini = self.app['ini']
         service_proto_version = app_ini['proto_version']
         service_proto_date = app_ini['proto_date']
@@ -167,9 +170,10 @@ class SparkCommander(features.ServiceFeature):
         ]
         version_compatible = service_proto_version == welcome.proto_version
         version_latest = service_firmware_version == welcome.firmware_version
+        valid_id = not desired_id or desired_id == welcome.device_id
 
         state.info = info
-        await state.on_handshake(version_compatible, version_latest)
+        await state.on_handshake(version_compatible, version_latest, valid_id)
 
     async def _on_event(self, conduit, msg: str):
         if msg.startswith(WELCOME_PREFIX):
