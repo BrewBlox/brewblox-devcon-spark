@@ -28,6 +28,7 @@ class SparkStatus(features.ServiceFeature):
         self._address: str = None
         self._info: List[str] = []
         self._compatible: bool = True  # until proven otherwise
+        self._valid = True
         self._latest: bool = True
         self._connect_ev: asyncio.Event = None
         self._handshake_ev: asyncio.Event = None
@@ -41,6 +42,10 @@ class SparkStatus(features.ServiceFeature):
     @property
     def is_compatible(self):
         return self._compatible
+
+    @property
+    def is_valid(self):
+        return self._valid
 
     @property
     def is_synchronized(self):
@@ -70,6 +75,7 @@ class SparkStatus(features.ServiceFeature):
             'synchronize': self._synchronize_ev.is_set(),
             'compatible': self._compatible,
             'latest': self._latest,
+            'valid': self._valid,
             'info': self._info,
         }
 
@@ -90,15 +96,20 @@ class SparkStatus(features.ServiceFeature):
         self._disconnect_ev.clear()
         self._connect_ev.set()
 
-    async def on_handshake(self, compatible: bool, latest: bool):
+    async def on_handshake(self, compatible: bool, latest: bool, valid: bool):
         self._compatible = self.app['config']['skip_version_check'] or compatible
         self._latest = latest
+        self._valid = valid
 
         self._handshake_ev.set()
 
         if not compatible:
             self._synchronize_ev.clear()
             warnings.warn('Handshake failed: firmware incompatible')
+
+        if not valid:
+            self._synchronize_ev.clear()
+            warnings.warn('Handshake failed: invalid device ID')
 
     async def on_synchronize(self):
         self._synchronize_ev.set()
