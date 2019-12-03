@@ -473,6 +473,7 @@ async def test_system_status(app, client):
         'synchronize': True,
         'compatible': True,
         'latest': True,
+        'valid': True,
         'info': ANY,
     }
     await status.get_status(app).on_disconnect()
@@ -484,6 +485,7 @@ async def test_system_status(app, client):
         'synchronize': False,
         'compatible': True,
         'latest': True,
+        'valid': True,
         'info': [],
     }
 
