@@ -69,7 +69,7 @@ class HandshakeMessage:
     platform: str
     reset_reason_hex: str
     reset_data_hex: str
-    device_id: str = field(default=None)
+    device_id: str = field(default='')
     reset_reason: str = field(init=False)
 
     def __post_init__(self):
@@ -172,7 +172,7 @@ class SparkCommander(features.ServiceFeature):
         ]
         version_compatible = service_proto_version == welcome.proto_version
         version_latest = service_firmware_version == welcome.firmware_version
-        valid_id = not desired_id or desired_id == welcome.device_id
+        valid_id = not desired_id or desired_id.lower() == welcome.device_id.lower()
 
         state.info = info
         await state.on_handshake(version_compatible, version_latest, valid_id)
