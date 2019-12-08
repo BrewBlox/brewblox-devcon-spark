@@ -57,6 +57,7 @@ async def welcome():
         'p1',
         '78',
         '00',
+        '1234567F0CASE'
     ]
 
 
@@ -122,6 +123,16 @@ async def test_on_welcome(app, mocker, conduit_mock, sparky, welcome):
     await sparky._on_event(conduit_mock, ok_msg)
     assert state.is_compatible
 
+    app['config']['device_id'] = '1234567f0case'
+    await sparky._on_event(conduit_mock, ok_msg)
+    assert state.is_valid
+
+    app['config']['device_id'] = '01345'
+    with pytest.warns(UserWarning, match='Handshake failed'):
+        await sparky._on_event(conduit_mock, ok_msg)
+    assert not state.is_valid
+
+    app['config']['device_id'] = None
     app['config']['skip_version_check'] = True
     with pytest.warns(UserWarning, match='Handshake failed'):
         await sparky._on_event(conduit_mock, nok_msg)
