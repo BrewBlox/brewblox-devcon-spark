@@ -11,7 +11,7 @@ import pytest
 from brewblox_service import features, scheduler
 
 from brewblox_devcon_spark import (commander_sim, datastore, device,
-                                   exceptions, seeder, status)
+                                   exceptions, seeder, state)
 from brewblox_devcon_spark.codec import codec
 
 _path_extension.avoid_lint_errors()
@@ -19,7 +19,7 @@ _path_extension.avoid_lint_errors()
 
 @pytest.fixture
 def app(app):
-    status.setup(app)
+    state.setup(app)
     scheduler.setup(app)
     datastore.setup(app)
     commander_sim.setup(app)
@@ -142,19 +142,18 @@ async def test_stripped_fields(app, client, cdc, sim_cdc):
 
 
 async def test_codec_config(app, client, cdc):
-    state = status.get_status(app)
-    await state.wait_synchronize()
+    await state.wait_synchronize(app)
 
     updated = cdc.update_unit_config({'Temp': 'degF'})
     assert updated['Temp'] == 'degF'
     assert cdc.get_unit_config() == updated
 
     # disconnect
-    await state.on_disconnect()
+    await state.on_disconnect(app)
     await asyncio.sleep(0.01)
     # connect
-    await state.on_connect('codec test')
-    await state.wait_synchronize()
+    await state.on_connect(app, 'codec test')
+    await state.wait_synchronize(app)
 
     assert cdc.get_unit_config()['Temp'] == 'degC'
 

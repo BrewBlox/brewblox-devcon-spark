@@ -18,7 +18,7 @@ import dpath
 from aiohttp import web
 from brewblox_service import brewblox_logger, events, scheduler, strex
 
-from brewblox_devcon_spark import device, status
+from brewblox_devcon_spark import device, state
 from brewblox_devcon_spark.api import utils
 from brewblox_devcon_spark.validation import OBJECT_DATA_KEY, OBJECT_SID_KEY
 
@@ -62,13 +62,12 @@ async def _broadcast(app: web.Application,
                      interval: int
                      ):
     publisher = events.get_publisher(app)
-    spark_status = status.get_status(app)
     ctrl = device.get_controller(app)
     last_broadcast_ok = True
 
     while True:
         try:
-            await spark_status.wait_synchronize()
+            await state.wait_synchronize(app)
             await asyncio.sleep(interval)
             obj = await ctrl.read_object({OBJECT_SID_KEY: sid})
 
