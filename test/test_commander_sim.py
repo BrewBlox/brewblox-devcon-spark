@@ -6,7 +6,7 @@ import pytest
 from brewblox_service import scheduler
 
 from brewblox_devcon_spark import (commander, commander_sim, commands,
-                                   datastore, exceptions, status)
+                                   datastore, exceptions, state)
 from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.commands import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
                                             OBJECT_LIST_KEY, OBJECT_NID_KEY,
@@ -17,7 +17,7 @@ from brewblox_devcon_spark.validation import SYSTEM_GROUP
 @pytest.fixture
 def app(app):
     scheduler.setup(app)
-    status.setup(app)
+    state.setup(app)
     commander_sim.setup(app)
     datastore.setup(app)
     codec.setup(app)
