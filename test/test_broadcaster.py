@@ -6,7 +6,7 @@ import pytest
 from asynctest import CoroutineMock
 from brewblox_service import repeater, scheduler
 
-from brewblox_devcon_spark import broadcaster, exceptions, status
+from brewblox_devcon_spark import broadcaster, exceptions, state
 from brewblox_devcon_spark.api.object_api import API_DATA_KEY, API_SID_KEY
 
 TESTED = broadcaster.__name__
@@ -31,14 +31,14 @@ async def app(app, mock_api, mock_publisher):
     app['config']['broadcast_interval'] = 0.01
     app['config']['broadcast_exchange'] = 'testcast'
     app['config']['volatile'] = False
-    status.setup(app)
+    state.setup(app)
     scheduler.setup(app)
     return app
 
 
 @pytest.fixture
 async def connected(app, client):
-    await status.get_status(app).on_synchronize()
+    await state.on_synchronize(app)
 
 
 async def test_noop_broadcast(app, mock_api, mock_publisher, client, connected):

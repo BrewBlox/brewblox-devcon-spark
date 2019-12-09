@@ -11,7 +11,7 @@ from aiohttp import hdrs, web
 from aiohttp_sse import sse_response
 from brewblox_service import brewblox_logger, features, repeater, strex
 
-from brewblox_devcon_spark import exceptions, status
+from brewblox_devcon_spark import exceptions, state
 from brewblox_devcon_spark.api.object_api import ObjectApi
 
 PUBLISH_INTERVAL_S = 5
@@ -58,10 +58,9 @@ class SSEPublisher(repeater.RepeaterFeature):
 
     async def run(self):
         api = ObjectApi(self.app)
-        spark_status: status.SparkStatus = status.get_status(self.app)
 
         try:
-            await spark_status.wait_synchronize()
+            await state.wait_synchronize(self.app)
             await asyncio.sleep(PUBLISH_INTERVAL_S)
 
             if not self._queues:

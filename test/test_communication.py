@@ -12,7 +12,7 @@ from aresponses import ResponsesMockServer
 from asynctest import CoroutineMock
 from brewblox_service import http_client, scheduler
 
-from brewblox_devcon_spark import communication, exceptions, status
+from brewblox_devcon_spark import communication, exceptions, state
 
 DummyPortInfo = namedtuple('DummyPortInfo', ['device', 'description', 'hwid', 'serial_number'])
 
@@ -152,7 +152,7 @@ def bound_collector(loop):
 @pytest.fixture
 def app(app, serial_mock, transport_mock):
     app['config']['device_host'] = None
-    status.setup(app)
+    state.setup(app)
     http_client.setup(app)
     scheduler.setup(app)
     communication.setup(app)

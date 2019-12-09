@@ -3,12 +3,13 @@ Specific endpoints for using system objects
 """
 
 import asyncio
+from dataclasses import asdict
 from typing import Awaitable, List
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, strex
 
-from brewblox_devcon_spark import commander, device, exceptions, status, ymodem
+from brewblox_devcon_spark import commander, device, exceptions, state, ymodem
 from brewblox_devcon_spark.api import object_api
 from brewblox_devcon_spark.datastore import GROUPS_NID
 from brewblox_devcon_spark.validation import API_DATA_KEY
@@ -30,7 +31,7 @@ def setup(app: web.Application):
 class SystemApi():
 
     def __init__(self, app: web.Application):
-        self._app = app
+        self.app = app
         self._obj_api: object_api.ObjectApi = object_api.ObjectApi(app)
 
     async def read_groups(self) -> Awaitable[List[int]]:
@@ -57,23 +58,23 @@ class SystemApi():
 
     async def flash(self) -> Awaitable[dict]:  # pragma: no cover
         sender = ymodem.FileSender()
-        state = status.get_status(self._app)
-        cmder = commander.get_commander(self._app)
-        ctrl = device.get_controller(self._app)
-        version = self._app['ini']['firmware_version']
+        cmder = commander.get_commander(self.app)
+        ctrl = device.get_controller(self.app)
+        version = self.app['ini']['firmware_version']
+        address = state.summary(self.app).address
 
         LOGGER.info(f'Started updating firmware to {version}')
 
         try:
-            if not state.is_connected:
+            if not state.summary(self.app).connect:
                 raise exceptions.NotConnected()
 
             await cmder.pause()
             await ctrl.firmware_update()
             await cmder.disconnect()
-            await asyncio.wait_for(state.wait_disconnect(), STATE_TIMEOUT_S)
+            await asyncio.wait_for(state.wait_disconnect(self.app), STATE_TIMEOUT_S)
 
-            conn = await self._connect(state.address)
+            conn = await self._connect(address)
 
             with conn.autoclose():
                 await asyncio.wait_for(sender.transfer(conn), TRANSFER_TIMEOUT_S)
@@ -88,7 +89,7 @@ class SystemApi():
             await asyncio.sleep(REBOOT_WINDOW_S)
             await cmder.resume()
 
-        return {'address': state.address, 'version': version}
+        return {'address': address, 'version': version}
 
 
 @routes.get('/system/groups')
@@ -144,8 +145,7 @@ async def check_status(request: web.Request) -> web.Response:
     produces:
     - application/json
     """
-    _status = status.get_status(request.app)
-    return web.json_response(_status.state)
+    return web.json_response(asdict(state.summary(request.app)))
 
 
 @routes.get('/system/ping')

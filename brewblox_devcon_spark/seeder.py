@@ -9,7 +9,7 @@ from datetime import datetime
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, scheduler, strex
 
-from brewblox_devcon_spark import datastore, exceptions, status
+from brewblox_devcon_spark import datastore, exceptions, state
 from brewblox_devcon_spark.api import object_api
 from brewblox_devcon_spark.device import get_controller
 from brewblox_devcon_spark.validation import SYSTEM_GROUP
@@ -51,30 +51,31 @@ class Seeder(features.ServiceFeature):
         self._task = None
 
     async def _seed(self):
-        spark_status = status.get_status(self.app)
         ping_task = None
 
         while True:
             try:
                 self._seeding_done.clear()
-                await spark_status.wait_connect()
+                await state.wait_connect(self.app)
                 # Will trigger the backup handshake
                 # We don't need to wait for this - we just want the side effect
                 ping_task = await scheduler.create_task(self.app, self._ping_controller())
 
-                await asyncio.wait_for(spark_status.wait_handshake(), HANDSHAKE_TIMEOUT_S)
+                await asyncio.wait_for(state.wait_handshake(self.app), HANDSHAKE_TIMEOUT_S)
                 await scheduler.cancel_task(self.app, ping_task, wait_for=False)
 
-                if not spark_status.is_compatible:  # pragma: no cover
+                summary = state.summary(self.app)
+
+                if not summary.compatible:  # pragma: no cover
                     raise exceptions.IncompatibleFirmware()
 
-                if not spark_status.is_valid:  # pragma: no cover
+                if not summary.valid:  # pragma: no cover
                     raise exceptions.InvalidDeviceId()
 
                 await self._seed_datastore()
                 await self._seed_time()
 
-                await spark_status.on_synchronize()
+                await state.on_synchronize(self.app)
                 LOGGER.info('Service synchronized!')
 
             except asyncio.CancelledError:
@@ -98,7 +99,7 @@ class Seeder(features.ServiceFeature):
                 self._seeding_done.set()
                 await scheduler.cancel_task(self.app, ping_task)
 
-            await spark_status.wait_disconnect()
+            await state.wait_disconnect(self.app)
 
     async def seeding_done(self):
         return await self._seeding_done.wait()
@@ -121,9 +122,7 @@ class Seeder(features.ServiceFeature):
 
     async def _seed_datastore(self):
         try:
-            api = object_api.ObjectApi(self.app, wait_sync=False)
-            sys_block = await api.read(datastore.SYSINFO_NID)
-            device_id = sys_block[object_api.API_DATA_KEY]['deviceId']
+            device_id = state.get_status(self.app).device.device_id
 
             await datastore.check_remote(self.app)
             await asyncio.gather(

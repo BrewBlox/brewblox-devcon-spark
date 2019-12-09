@@ -11,7 +11,7 @@ from asynctest import CoroutineMock
 from brewblox_service import scheduler
 
 from brewblox_devcon_spark import (commander_sim, datastore, device, seeder,
-                                   status)
+                                   state)
 from brewblox_devcon_spark.api import object_api, remote_api
 from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_SID_KEY,
                                                   API_TYPE_KEY, GROUP_LIST_KEY,
@@ -68,7 +68,7 @@ def dummy_listener(mocker):
 async def app(app, mock_publisher, dummy_listener):
     """App + controller routes"""
 
-    status.setup(app)
+    state.setup(app)
     scheduler.setup(app)
     datastore.setup(app)
     commander_sim.setup(app)
@@ -83,7 +83,7 @@ async def app(app, mock_publisher, dummy_listener):
 
 @pytest.fixture
 async def created(app, client, object_args):
-    await status.get_status(app).on_synchronize()
+    await state.on_synchronize(app)
     retv = await client.post('/objects', json={
         API_SID_KEY: object_args[OBJECT_SID_KEY],
         GROUP_LIST_KEY: object_args[GROUP_LIST_KEY],
