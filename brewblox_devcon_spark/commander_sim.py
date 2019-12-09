@@ -12,7 +12,7 @@ from typing import List
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
 
-from brewblox_devcon_spark import commander, commands, exceptions, status
+from brewblox_devcon_spark import commander, commands, exceptions, state
 from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.datastore import (DISPLAY_SETTINGS_NID, GROUPS_NID,
                                              OBJECT_NID_START, ONEWIREBUS_NID,
@@ -36,6 +36,22 @@ def setup(app: web.Application):
     features.add(app, codec.Codec(app, strip_readonly=False), key='sim_codec')
 
 
+def make_device(app: web.Application):
+    config = app['config']
+    ini = app['ini']
+
+    return state.DeviceInfo(
+        ini['firmware_version'],
+        ini['proto_version'],
+        ini['firmware_date'],
+        ini['proto_date'],
+        config['device_id'],
+        'sys_version',
+        'Simulator',
+        'Simulator reset',
+    )
+
+
 def modify_ticks(start_time, obj):
     elapsed = datetime.now() - start_time
     obj_data = obj[OBJECT_DATA_KEY]
@@ -46,7 +62,7 @@ def modify_ticks(start_time, obj):
 class SimulationResponder():
 
     async def startup(self, app: web.Application):
-        self._app = app
+        self.app = app
         self._start_time = datetime.now()
         self._id_counter = count(start=OBJECT_NID_START)
         self._codec = features.get(app, key='sim_codec')
@@ -212,7 +228,7 @@ class SimulationResponder():
         # Shortcut for actual behavior
         # Noop triggers a welcome message
         # Welcome message is checked, and triggers on_handshake()
-        await status.get_status(self._app).on_handshake(True, True, True)
+        await state.on_handshake(self.app, make_device(self.app))
 
     async def _read_object(self, request):
         try:
@@ -285,7 +301,7 @@ class SimulationResponder():
         self._objects = {k: v for k, v in self._objects.items() if k < OBJECT_NID_START}
 
     async def _factory_reset(self, request):
-        await self.startup(self._app)
+        await self.startup(self.app)
 
     async def _reboot(self, request):
         self._start_time = datetime.now()
@@ -302,8 +318,8 @@ class SimulationCommander(commander.SparkCommander):
 
     async def startup(self, app: web.Application):
         await self._responder.startup(app)
-        await status.get_status(app).on_connect('simulation:1234')
-        await status.get_status(app).on_handshake(True, True, True)
+        await state.on_connect(app, 'simulation:1234')
+        await state.on_handshake(app, make_device(app))
 
     async def shutdown(self, _):
         pass
@@ -312,4 +328,4 @@ class SimulationCommander(commander.SparkCommander):
         return (await self._responder.respond(command)).decoded_response
 
     async def disconnect(self):
-        await status.get_status(self.app).on_disconnect()
+        await state.on_disconnect(self.app)

@@ -9,7 +9,7 @@ from asynctest import CoroutineMock
 from brewblox_service import brewblox_logger, scheduler
 
 from brewblox_devcon_spark import (commander_sim, datastore, device, seeder,
-                                   status)
+                                   state)
 from brewblox_devcon_spark.codec import codec
 
 TESTED = seeder.__name__
@@ -17,30 +17,23 @@ LOGGER = brewblox_logger(__name__)
 
 
 def states(app):
-    state = status.get_status(app)
+    events = state.get_events(app)
     return [
-        state.is_disconnected,
-        state.is_connected,
-        state.is_synchronized,
+        events.disconnect_ev.is_set(),
+        events.connect_ev.is_set(),
+        events.synchronize_ev.is_set(),
     ]
 
 
-async def synchronized(app):
-    state = status.get_status(app)
-    await state.wait_synchronize()
-
-
 async def connect(app):
-    state = status.get_status(app)
-    await state.on_connect('seeder test')
+    await state.on_connect(app, 'seeder test')
     await seeder.get_seeder(app).seeding_done()
     await asyncio.sleep(0.01)
 
 
 async def disconnect(app):
-    state = status.get_status(app)
-    await state.on_disconnect()
-    await state.wait_disconnect()
+    await state.on_disconnect(app)
+    await state.wait_disconnect(app)
     await asyncio.sleep(0.01)
 
 
@@ -57,7 +50,7 @@ async def system_exit_mock(mocker):
 
 @pytest.fixture
 async def app(app):
-    status.setup(app)
+    state.setup(app)
     scheduler.setup(app)
     datastore.setup(app)
     commander_sim.setup(app)
@@ -65,11 +58,6 @@ async def app(app):
     device.setup(app)
     seeder.setup(app)
     return app
-
-
-@pytest.fixture
-async def spark_status(app):
-    return status.get_status(app)
 
 
 @pytest.fixture
@@ -90,8 +78,8 @@ def config(app):
     return datastore.get_config(app)
 
 
-async def test_seed_status(app, client, mocker, spark_status):
-    await synchronized(app)
+async def test_seed_status(app, client, mocker):
+    await state.wait_synchronize(app)
     assert states(app) == [False, True, True]
 
     await disconnect(app)
@@ -101,12 +89,11 @@ async def test_seed_status(app, client, mocker, spark_status):
     assert states(app) == [False, True, True]
 
 
-async def test_seed_errors(app, client, mocker, api_mock, system_exit_mock):
-    await synchronized(app)
+async def test_seed_errors(app, client, mocker, system_exit_mock):
+    await state.wait_synchronize(app)
+    mocker.patch(TESTED + '.datastore.check_remote', CoroutineMock(side_effect=RuntimeError))
 
-    api_mock.read = CoroutineMock(side_effect=RuntimeError)
     await disconnect(app)
-
     await connect(app)
 
     assert states(app) == [False, True, False]
@@ -115,7 +102,7 @@ async def test_seed_errors(app, client, mocker, api_mock, system_exit_mock):
 
 
 async def test_write_error(app, client, mocker, api_mock, system_exit_mock):
-    await synchronized(app)
+    await state.wait_synchronize(app)
     api_mock.write = CoroutineMock(side_effect=RuntimeError)
     await disconnect(app)
     await connect(app)
@@ -126,7 +113,7 @@ async def test_write_error(app, client, mocker, api_mock, system_exit_mock):
 
 
 async def test_timeout(app, client, mocker, api_mock, system_exit_mock):
-    await synchronized(app)
+    await state.wait_synchronize(app)
     await disconnect(app)
     mocker.patch(TESTED + '.HANDSHAKE_TIMEOUT_S', 0.0001)
     s = seeder.get_seeder(app)
