@@ -202,7 +202,6 @@ class ServiceEvents(features.ServiceFeature):
 
     async def on_handshake(self):
         self.handshake_ev.set()
-        self.synchronize_ev.clear()
 
     async def on_synchronize(self):
         self.synchronize_ev.set()
