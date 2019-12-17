@@ -374,7 +374,7 @@ def recognized_ports(
     matcher = f'(?:{"|".join([dev.hwid for dev in allowed])})'
 
     for port in list_ports.grep(matcher):
-        if serial_number is None or serial_number == port.serial_number:
+        if serial_number is None or serial_number.lower() == port.serial_number.lower():
             yield port
 
 
