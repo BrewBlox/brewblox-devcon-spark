@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, scheduler, strex
 
-from brewblox_devcon_spark import commands, communication, exceptions, status
+from brewblox_devcon_spark import commands, communication, exceptions, state
 
 LOGGER = brewblox_logger(__name__)
 
@@ -69,7 +69,7 @@ class HandshakeMessage:
     platform: str
     reset_reason_hex: str
     reset_data_hex: str
-    device_id: str = field(default=None)
+    device_id: str = field(default='')
     reset_reason: str = field(init=False)
 
     def __post_init__(self):
@@ -144,38 +144,20 @@ class SparkCommander(features.ServiceFeature):
                 warnings.warn(f'{self} cleanup task error: {strex(ex)}')
 
     async def _on_welcome(self, msg: str):
-        state = status.get_status(self.app)
-
         welcome = HandshakeMessage(*msg.split(','))
         LOGGER.info(welcome)
 
-        app_config = self.app['config']
-        desired_id = app_config['device_id']
-        app_ini = self.app['ini']
-        service_proto_version = app_ini['proto_version']
-        service_proto_date = app_ini['proto_date']
-        service_firmware_version = app_ini['firmware_version']
-        service_firmware_date = app_ini['firmware_date']
-
-        info = [
-            f'Firmware version (service): {service_firmware_version}',
-            f'Firmware version (controller): {welcome.firmware_version}',
-            f'Firmware date (service): {welcome.firmware_date}',
-            f'Firmware date (controller): {service_firmware_date}',
-            f'Protocol version (service): {service_proto_version}',
-            f'Protocol version (controller): {welcome.proto_version}',
-            f'Protocol date (service): {service_proto_date}',
-            f'Protocol date (controller): {welcome.proto_date}',
-            f'System version (controller): {welcome.system_version}',
-            f'Desired device ID (service): {desired_id or "----"}',
-            f'Actual device ID (controller): {welcome.device_id}',
-        ]
-        version_compatible = service_proto_version == welcome.proto_version
-        version_latest = service_firmware_version == welcome.firmware_version
-        valid_id = not desired_id or desired_id == welcome.device_id
-
-        state.info = info
-        await state.on_handshake(version_compatible, version_latest, valid_id)
+        device = state.DeviceInfo(
+            welcome.firmware_version,
+            welcome.proto_version,
+            welcome.firmware_date,
+            welcome.proto_date,
+            welcome.device_id,
+            welcome.system_version,
+            welcome.platform,
+            welcome.reset_reason,
+        )
+        await state.on_handshake(self.app, device)
 
     async def _on_event(self, conduit, msg: str):
         if msg.startswith(WELCOME_PREFIX):

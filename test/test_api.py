@@ -11,7 +11,7 @@ from asynctest import CoroutineMock
 from brewblox_service import scheduler
 
 from brewblox_devcon_spark import (commander_sim, datastore, device,
-                                   exceptions, seeder, status)
+                                   exceptions, seeder, state)
 from brewblox_devcon_spark.api import (alias_api, codec_api, debug_api,
                                        error_response, object_api, sse_api,
                                        system_api)
@@ -55,7 +55,7 @@ def multi_objects(ids, args):
 @pytest.fixture
 async def app(app, loop):
     """App + controller routes"""
-    status.setup(app)
+    state.setup(app)
     scheduler.setup(app)
     commander_sim.setup(app)
     datastore.setup(app)
@@ -468,24 +468,30 @@ async def test_logged_objects(app, client):
 async def test_system_status(app, client):
     resp = await response(client.get('/system/status'))
     assert resp == {
+        'address': 'simulation:1234',
         'connect': True,
         'handshake': True,
         'synchronize': True,
         'compatible': True,
         'latest': True,
         'valid': True,
+        'device': ANY,
+        'service': ANY,
         'info': ANY,
     }
-    await status.get_status(app).on_disconnect()
+    await state.on_disconnect(app)
     await asyncio.sleep(0.01)
     resp = await response(client.get('/system/status'))
     assert resp == {
+        'address': 'simulation:1234',
         'connect': False,
         'handshake': False,
         'synchronize': False,
         'compatible': True,
         'latest': True,
         'valid': True,
+        'device': ANY,
+        'service': ANY,
         'info': [],
     }
 

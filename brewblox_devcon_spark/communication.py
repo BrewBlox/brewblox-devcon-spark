@@ -18,7 +18,7 @@ from brewblox_service import brewblox_logger, features, http_client, scheduler
 from serial.tools import list_ports
 from serial_asyncio import SerialTransport
 
-from brewblox_devcon_spark import exceptions, status
+from brewblox_devcon_spark import exceptions, state
 
 LOGGER = brewblox_logger(__name__)
 DNS_DISCOVER_TIMEOUT_S = 20
@@ -245,16 +245,15 @@ class SparkConduit(features.ServiceFeature):
         while True:
             try:
                 await self._active.wait()
-                spark_status = status.get_status(self.app)
                 self._address, self._transport, self._protocol = await connect_func()
 
                 await self._protocol.connected
-                await spark_status.on_connect(self._address)
+                await state.on_connect(self.app, self._address)
                 LOGGER.info(f'Connected {self}')
                 last_ok = True
 
                 await self._protocol.disconnected
-                await spark_status.on_disconnect()
+                await state.on_disconnect(self.app)
                 LOGGER.info(f'Disconnected {self}')
 
             except CancelledError:
@@ -375,7 +374,7 @@ def recognized_ports(
     matcher = f'(?:{"|".join([dev.hwid for dev in allowed])})'
 
     for port in list_ports.grep(matcher):
-        if serial_number is None or serial_number == port.serial_number:
+        if serial_number is None or serial_number.lower() == port.serial_number.lower():
             yield port
 
 

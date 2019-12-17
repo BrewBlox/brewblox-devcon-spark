@@ -10,7 +10,7 @@ from asynctest import CoroutineMock
 from brewblox_service import scheduler
 
 from brewblox_devcon_spark import (commander_sim, datastore, device,
-                                   exceptions, seeder, status)
+                                   exceptions, seeder, state)
 from brewblox_devcon_spark.api import error_response, sse_api
 from brewblox_devcon_spark.codec import codec
 
@@ -22,7 +22,7 @@ async def app(app, mocker):
     """App + controller routes"""
     mocker.patch(TESTED + '.PUBLISH_INTERVAL_S', 0.001)
 
-    status.setup(app)
+    state.setup(app)
     scheduler.setup(app)
     commander_sim.setup(app)
     datastore.setup(app)

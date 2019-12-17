@@ -10,7 +10,7 @@ from brewblox_service import (brewblox_logger, couchdb_client, events,
 
 from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
                                    communication, datastore, device, seeder,
-                                   status)
+                                   state)
 from brewblox_devcon_spark.api import (alias_api, codec_api, debug_api,
                                        error_response, object_api, remote_api,
                                        sse_api, system_api)
@@ -105,7 +105,7 @@ def main():
     LOGGER.info('INI: ' + ', '.join([f"{k}='{v}'" for k, v in app['ini'].items()]))
     LOGGER.info('CONFIG: ' + ', '.join([f"{k}='{v}'" for k, v in app['config'].items()]))
 
-    status.setup(app)
+    state.setup(app)
     http_client.setup(app)
 
     if config['simulation']:

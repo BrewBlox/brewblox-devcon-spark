@@ -12,7 +12,7 @@ from aresponses import ResponsesMockServer
 from asynctest import CoroutineMock
 from brewblox_service import http_client, scheduler
 
-from brewblox_devcon_spark import communication, exceptions, status
+from brewblox_devcon_spark import communication, exceptions, state
 
 DummyPortInfo = namedtuple('DummyPortInfo', ['device', 'description', 'hwid', 'serial_number'])
 
@@ -152,7 +152,7 @@ def bound_collector(loop):
 @pytest.fixture
 def app(app, serial_mock, transport_mock):
     app['config']['device_host'] = None
-    status.setup(app)
+    state.setup(app)
     http_client.setup(app)
     scheduler.setup(app)
     communication.setup(app)
@@ -214,8 +214,8 @@ async def bound_conduit(app, client, bound_collector):
 def comports_mock(mocker):
     m = mocker.patch(TESTED + '.list_ports.comports')
     m.return_value = [
-        DummyPortInfo('/dev/dummy', 'Dummy', 'USB VID:PID=1a02:b123', '1234'),
-        DummyPortInfo('/dev/ttyX', 'Electron', 'USB VID:PID=2d04:c00a', '4321'),
+        DummyPortInfo('/dev/dummy', 'Dummy', 'USB VID:PID=1a02:b123', '1234AB'),
+        DummyPortInfo('/dev/ttyX', 'Electron', 'USB VID:PID=2d04:c00a', '4321BA'),
     ]
     return m
 
@@ -224,8 +224,8 @@ def comports_mock(mocker):
 def grep_ports_mock(mocker):
     m = mocker.patch(TESTED + '.list_ports.grep')
     m.return_value = [
-        DummyPortInfo('/dev/ttyX', 'Electron', 'USB VID:PID=2d04:c00a', '1234'),
-        DummyPortInfo('/dev/ttyX', 'Electron', 'USB VID:PID=2d04:c00a', '4321'),
+        DummyPortInfo('/dev/ttyX', 'Electron', 'USB VID:PID=2d04:c00a', '1234AB'),
+        DummyPortInfo('/dev/ttyX', 'Electron', 'USB VID:PID=2d04:c00a', '4321BA'),
     ]
     return m
 
@@ -360,11 +360,11 @@ async def test_detect_device(grep_ports_mock):
     dummy = grep_ports_mock()
     assert communication.detect_device('dave') == 'dave'
     assert communication.detect_device() == dummy[0].device
-    assert communication.detect_device(serial_number='4321') == dummy[1].device
+    assert communication.detect_device(serial_number='4321ba') == dummy[1].device
 
     grep_ports_mock.return_value = [dummy[0]]
     with pytest.raises(exceptions.ConnectionImpossible):
-        communication.detect_device(serial_number='4321')
+        communication.detect_device(serial_number='4321BA')
 
 
 async def test_tcp_connection(app, client, mocker, tcp_create_connection_mock):

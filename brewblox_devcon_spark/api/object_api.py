@@ -8,7 +8,7 @@ from typing import Awaitable
 from aiohttp import web
 from brewblox_service import brewblox_logger, strex
 
-from brewblox_devcon_spark import (datastore, device, exceptions, status,
+from brewblox_devcon_spark import (datastore, device, exceptions, state,
                                    twinkeydict, validation)
 from brewblox_devcon_spark.api import alias_api, utils
 from brewblox_devcon_spark.validation import (API_DATA_KEY, API_INTERFACE_KEY,
@@ -33,8 +33,8 @@ def setup(app: web.Application):
 class ObjectApi():
 
     def __init__(self, app: web.Application, wait_sync=True):
+        self.app = app
         self._wait_sync = wait_sync
-        self._status = status.get_status(app)
         self._ctrl: device.SparkController = device.get_controller(app)
         self._store: twinkeydict.TwinKeyDict = datastore.get_datastore(app)
 
@@ -48,8 +48,7 @@ class ObjectApi():
         }
 
     async def wait_for_sync(self):
-        if self._wait_sync and self._status.is_connected:
-            await asyncio.wait_for(self._status.wait_synchronize(), SYNC_WAIT_TIMEOUT_S)
+        await asyncio.wait_for(state.wait_synchronize(self.app, self._wait_sync), SYNC_WAIT_TIMEOUT_S)
 
     async def create(self,
                      sid: str,
