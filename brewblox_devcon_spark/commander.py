@@ -47,7 +47,7 @@ CLEANUP_INTERVAL = timedelta(seconds=60)
 #
 # In this scenario, the response will only be t=10 old, as it was stored at t=100
 RESPONSE_VALID_DURATION = timedelta(seconds=5)
-REQUEST_TIMEOUT = timedelta(seconds=60)
+REQUEST_TIMEOUT = timedelta(seconds=20)
 
 
 def setup(app: web.Application):
