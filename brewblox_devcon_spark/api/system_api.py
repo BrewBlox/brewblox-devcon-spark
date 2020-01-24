@@ -3,7 +3,6 @@ Specific endpoints for using system objects
 """
 
 import asyncio
-from dataclasses import asdict
 from typing import Awaitable, List
 
 from aiohttp import web
@@ -145,7 +144,7 @@ async def check_status(request: web.Request) -> web.Response:
     produces:
     - application/json
     """
-    return web.json_response(asdict(state.summary(request.app)))
+    return web.json_response(state.summary_dict(request.app))
 
 
 @routes.get('/system/ping')

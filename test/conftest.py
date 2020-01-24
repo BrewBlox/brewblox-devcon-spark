@@ -34,7 +34,8 @@ def app_config() -> dict:
         'discovery': 'all',
         'simulation': False,
         'broadcast_interval': 5,
-        'broadcast_exchange': 'brewcast',
+        'history_exchange': 'brewcast.history',
+        'state_exchange': 'brewcast.state',
         'sync_exchange': 'syncast',
         'mdns_host': '172.17.0.1',
         'mdns_port': 5000,
@@ -54,11 +55,12 @@ def sys_args(app_config) -> list:
         '--device-id', app_config['device_id'],
         '--discovery', app_config['discovery'],
         '--broadcast-interval', app_config['broadcast_interval'],
-        '--broadcast-exchange', app_config['broadcast_exchange'],
+        '--history-exchange', app_config['history_exchange'],
+        '--state-exchange', app_config['state_exchange'],
         '--sync-exchange', app_config['sync_exchange'],
         '--mdns-host', app_config['mdns_host'],
         '--mdns-port', app_config['mdns_port'],
-        '--volatile'
+        '--volatile',
     ]]
 
 
