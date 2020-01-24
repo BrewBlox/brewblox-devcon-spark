@@ -5,7 +5,7 @@ Awaitable events for tracking device and network status
 
 import asyncio
 import warnings
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import List
 
 from aiohttp import web
@@ -257,3 +257,7 @@ def summary(app: web.Application) -> StateSummary:
         **get_status(app).summary(),
         **get_events(app).summary(),
     )
+
+
+def summary_dict(app: web.Application) -> dict:
+    return asdict(summary(app))
