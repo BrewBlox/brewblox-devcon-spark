@@ -52,9 +52,12 @@ def create_parser(default_name='spark'):
 
     # Service network options
     group = parser.add_argument_group('Service communication')
-    group.add_argument('--broadcast-exchange',
-                       help='Eventbus exchange to which controller state should be broadcasted. [%(default)s]',
-                       default='brewcast')
+    group.add_argument('--history-exchange',
+                       help='Eventbus exchange to which logged controller state should be broadcast. [%(default)s]',
+                       default='brewcast.history')
+    group.add_argument('--state-exchange',
+                       help='Eventbus exchange to which volatile controller state should be broadcast. [%(default)s]',
+                       default='brewcast.state')
     group.add_argument('--broadcast-interval',
                        help='Interval (in seconds) between broadcasts of controller state.'
                        'Set to a value <= 0 to disable broadcasting. [%(default)s]',
