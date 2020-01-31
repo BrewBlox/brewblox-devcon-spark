@@ -4,13 +4,11 @@ Tests brewblox_devcon_spark.commander
 
 import asyncio
 from datetime import timedelta
-from unittest.mock import PropertyMock
+from unittest.mock import AsyncMock, PropertyMock
 
 import pytest
-from asynctest import CoroutineMock
-from brewblox_service import scheduler
-
 from brewblox_devcon_spark import commander, commands, exceptions, state
+from brewblox_service import scheduler
 
 TESTED = commander.__name__
 
@@ -23,11 +21,11 @@ def reset_msgid():
 @pytest.fixture
 def conduit_mock(mocker):
     m = mocker.patch(TESTED + '.communication.get_conduit')
-    m.return_value.bind = CoroutineMock()
-    m.return_value.write = CoroutineMock()
-    m.return_value.pause = CoroutineMock()
-    m.return_value.disconnect = CoroutineMock()
-    m.return_value.resume = CoroutineMock()
+    m.return_value.bind = AsyncMock()
+    m.return_value.write = AsyncMock()
+    m.return_value.pause = AsyncMock()
+    m.return_value.disconnect = AsyncMock()
+    m.return_value.resume = AsyncMock()
     return m.return_value
 
 

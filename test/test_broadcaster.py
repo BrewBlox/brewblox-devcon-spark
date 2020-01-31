@@ -2,14 +2,12 @@
 Tests brewblox_devcon_spark.broadcaster
 """
 
-from unittest.mock import call
+from unittest.mock import AsyncMock, call
 
 import pytest
-from asynctest import CoroutineMock
-from brewblox_service import repeater, scheduler
-
 from brewblox_devcon_spark import broadcaster, exceptions, state
 from brewblox_devcon_spark.api.object_api import API_DATA_KEY, API_SID_KEY
+from brewblox_service import repeater, scheduler
 
 TESTED = broadcaster.__name__
 
@@ -17,15 +15,15 @@ TESTED = broadcaster.__name__
 @pytest.fixture
 def mock_api(mocker):
     m = mocker.patch(TESTED + '.ObjectApi', autospec=True)
-    m.return_value.all = CoroutineMock(return_value=[])
-    m.return_value.all_logged = CoroutineMock(return_value=[])
+    m.return_value.all = AsyncMock(return_value=[])
+    m.return_value.all_logged = AsyncMock(return_value=[])
     return m.return_value
 
 
 @pytest.fixture
 def mock_publisher(mocker):
     m = mocker.patch(TESTED + '.events.get_publisher')
-    m.return_value.publish = CoroutineMock()
+    m.return_value.publish = AsyncMock()
     return m.return_value
 
 

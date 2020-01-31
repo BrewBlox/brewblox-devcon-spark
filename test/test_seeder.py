@@ -3,14 +3,14 @@ Tests brewblox_devcon_spark.seeder
 """
 
 import asyncio
+from unittest.mock import AsyncMock
 
 import pytest
-from asynctest import CoroutineMock
-from brewblox_service import brewblox_logger, scheduler
 
 from brewblox_devcon_spark import (commander_sim, datastore, device, seeder,
                                    state)
 from brewblox_devcon_spark.codec import codec
+from brewblox_service import brewblox_logger, scheduler
 
 TESTED = seeder.__name__
 LOGGER = brewblox_logger(__name__)
@@ -68,8 +68,8 @@ def store(app):
 @pytest.fixture
 def api_mock(mocker):
     m = mocker.patch(TESTED + '.object_api.ObjectApi').return_value
-    m.read = CoroutineMock()
-    m.write = CoroutineMock()
+    m.read = AsyncMock()
+    m.write = AsyncMock()
     return m
 
 
@@ -91,7 +91,7 @@ async def test_seed_status(app, client, mocker):
 
 async def test_seed_errors(app, client, mocker, system_exit_mock):
     await state.wait_synchronize(app)
-    mocker.patch(TESTED + '.datastore.check_remote', CoroutineMock(side_effect=RuntimeError))
+    mocker.patch(TESTED + '.datastore.check_remote', AsyncMock(side_effect=RuntimeError))
 
     await disconnect(app)
     await connect(app)
@@ -103,7 +103,7 @@ async def test_seed_errors(app, client, mocker, system_exit_mock):
 
 async def test_write_error(app, client, mocker, api_mock, system_exit_mock):
     await state.wait_synchronize(app)
-    api_mock.write = CoroutineMock(side_effect=RuntimeError)
+    api_mock.write = AsyncMock(side_effect=RuntimeError)
     await disconnect(app)
     await connect(app)
 
@@ -117,7 +117,7 @@ async def test_timeout(app, client, mocker, api_mock, system_exit_mock):
     await disconnect(app)
     mocker.patch(TESTED + '.HANDSHAKE_TIMEOUT_S', 0.0001)
     s = seeder.get_seeder(app)
-    mocker.patch.object(s, '_ping_controller', CoroutineMock())
+    mocker.patch.object(s, '_ping_controller', AsyncMock())
 
     await connect(app)
     assert system_exit_mock.call_count == 1

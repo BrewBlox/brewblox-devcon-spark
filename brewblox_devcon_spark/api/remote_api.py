@@ -10,17 +10,17 @@ they write the object data to the controller.
 import asyncio
 import glob
 import warnings
-from concurrent.futures import CancelledError
+from asyncio import CancelledError
 from contextlib import suppress
 from functools import partial
 
-import dpath
+import dpath.util as dpath
 from aiohttp import web
-from brewblox_service import brewblox_logger, events, scheduler, strex
 
 from brewblox_devcon_spark import device, state
 from brewblox_devcon_spark.api import utils
 from brewblox_devcon_spark.validation import OBJECT_DATA_KEY, OBJECT_SID_KEY
+from brewblox_service import brewblox_logger, events, scheduler, strex
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -46,8 +46,8 @@ async def _receive(app: web.Application,
     if translations:
         for remote_path, local_path in translations.items():
             with suppress(KeyError):
-                val = dpath.util.get(incoming, glob.escape(remote_path))
-                dpath.util.new(existing, local_path, val)
+                val = dpath.get(incoming, glob.escape(remote_path))
+                dpath.new(existing, local_path, val)
     else:
         # No translations -> use the remote object in its entirety
         obj[OBJECT_DATA_KEY] = incoming
