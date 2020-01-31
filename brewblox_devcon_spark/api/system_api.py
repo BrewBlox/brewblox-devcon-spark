@@ -6,12 +6,12 @@ import asyncio
 from typing import Awaitable, List
 
 from aiohttp import web
-from brewblox_service import brewblox_logger, strex
 
 from brewblox_devcon_spark import commander, device, exceptions, state, ymodem
 from brewblox_devcon_spark.api import object_api
 from brewblox_devcon_spark.datastore import GROUPS_NID
 from brewblox_devcon_spark.validation import API_DATA_KEY
+from brewblox_service import brewblox_logger, strex
 
 REBOOT_WINDOW_S = 5
 TRANSFER_TIMEOUT_S = 30

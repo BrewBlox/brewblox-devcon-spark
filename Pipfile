@@ -20,7 +20,6 @@ pytest = "*"
 pytest-cov = "*"
 pytest-mock = "*"
 pytest-aiohttp = "*"
-asynctest = "*"
 "flake8" = "*"
 "autopep8" = "*"
 aresponses = "*"
@@ -28,4 +27,4 @@ pytest-sugar = "*"
 brewblox-dev = "*"
 
 [requires]
-python_version = "3.7"
+python_version = "3.8"

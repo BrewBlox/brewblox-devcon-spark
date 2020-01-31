@@ -3,13 +3,12 @@ Tests brewblox_devcon_spark.datastore
 """
 
 import asyncio
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
-from asynctest import CoroutineMock, return_once
-from brewblox_service import scheduler
 
 from brewblox_devcon_spark import datastore
+from brewblox_service import scheduler
 
 TESTED = datastore.__name__
 
@@ -24,9 +23,9 @@ def read_objects():
 @pytest.fixture
 def client_mock(mocker):
     m = mocker.patch(TESTED + '.couchdb_client.get_client')
-    m.return_value.check_remote = CoroutineMock()
-    m.return_value.read = CoroutineMock(return_value=('rev_read', read_objects()))
-    m.return_value.write = CoroutineMock(return_value='rev_write')
+    m.return_value.check_remote = AsyncMock()
+    m.return_value.read = AsyncMock(return_value=('rev_read', read_objects()))
+    m.return_value.write = AsyncMock(return_value='rev_write')
     return m.return_value
 
 
@@ -95,7 +94,10 @@ async def test_store(app, client, store, client_mock):
     assert client_mock.write.call_count == 3
 
     # handle read error
-    client_mock.read.side_effect = return_once(RuntimeError, then=('rev_read', read_objects()))
+    client_mock.read.side_effect = [
+        RuntimeError,
+        ('rev_read', read_objects())
+    ]
     with pytest.warns(UserWarning, match='read error'):
         await store.read('doc')
 
@@ -109,7 +111,13 @@ async def test_store(app, client, store, client_mock):
 
     # continue on write error
     with pytest.warns(UserWarning, match='flush error'):
-        client_mock.write.side_effect = return_once(RuntimeError, then='rev_write')
+        client_mock.write.side_effect = [
+            RuntimeError,
+            'rev_write',
+            'rev_write',
+            'rev_write',
+            'rev_write',
+        ]
         store['inserted2', 9002] = 'val'
         await asyncio.sleep(0.05)
     assert client_mock.write.call_count == 5
@@ -164,7 +172,10 @@ async def test_config(app, client, config, client_mock):
     assert client_mock.write.call_count == 1
 
     # handle read error
-    client_mock.read.side_effect = return_once(RuntimeError, then=('rev_read', vals()))
+    client_mock.read.side_effect = [
+        RuntimeError,
+        ('rev_read', vals())
+    ]
     with pytest.warns(UserWarning, match='read error'):
         await config.read('doc')
 
@@ -183,7 +194,11 @@ async def test_config(app, client, config, client_mock):
 
     # continue on write error
     with pytest.warns(UserWarning, match='flush error'):
-        client_mock.write.side_effect = return_once(RuntimeError, then='rev_write')
+        client_mock.write.side_effect = [
+            RuntimeError,
+            'rev_write',
+            'rev_write'
+        ]
         with config.open() as cfg:
             cfg['insert'] = 'outsert'
         await asyncio.sleep(0.05)

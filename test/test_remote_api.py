@@ -4,12 +4,9 @@ Tests brewblox_devcon_spark.api.remote_api
 
 import asyncio
 from copy import deepcopy
-from unittest.mock import call
+from unittest.mock import AsyncMock, call
 
 import pytest
-from asynctest import CoroutineMock
-from brewblox_service import scheduler
-
 from brewblox_devcon_spark import (commander_sim, datastore, device, seeder,
                                    state)
 from brewblox_devcon_spark.api import object_api, remote_api
@@ -19,6 +16,7 @@ from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_SID_KEY,
                                                   OBJECT_SID_KEY,
                                                   OBJECT_TYPE_KEY)
 from brewblox_devcon_spark.codec import codec
+from brewblox_service import scheduler
 
 TESTED = remote_api.__name__
 
@@ -53,7 +51,7 @@ def object_args():
 @pytest.fixture
 def mock_publisher(mocker):
     m = mocker.patch(TESTED + '.events.get_publisher')
-    m.return_value.publish = CoroutineMock()
+    m.return_value.publish = AsyncMock()
     return m.return_value
 
 
