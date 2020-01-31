@@ -3,16 +3,16 @@ Tests brewblox_devcon_spark.api.sse_api
 """
 
 import asyncio
+from unittest.mock import AsyncMock
 
 import pytest
 from aiohttp.client_exceptions import ClientPayloadError
-from asynctest import CoroutineMock
-from brewblox_service import scheduler
 
 from brewblox_devcon_spark import (commander_sim, datastore, device,
                                    exceptions, seeder, state)
 from brewblox_devcon_spark.api import error_response, sse_api
 from brewblox_devcon_spark.codec import codec
+from brewblox_service import scheduler
 
 TESTED = sse_api.__name__
 
@@ -43,7 +43,7 @@ async def sse(app):
 @pytest.fixture
 async def api_mock(mocker):
     m = mocker.patch(TESTED + '.ObjectApi').return_value
-    m.all = CoroutineMock()
+    m.all = AsyncMock()
     return m
 
 
@@ -84,7 +84,7 @@ async def test_empty_call(app, client):
 
 async def test_error_call(app, client, mocker):
     api_mock = mocker.patch(TESTED + '.ObjectApi').return_value
-    api_mock.all = CoroutineMock()
+    api_mock.all = AsyncMock()
 
     pub = sse_api.SSEPublisher(app)
     queue = asyncio.Queue()

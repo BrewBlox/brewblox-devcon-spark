@@ -4,15 +4,14 @@ Tests brewblox_devcon_spark.communication
 
 import asyncio
 from collections import namedtuple
-from unittest.mock import Mock, call
+from unittest.mock import AsyncMock, Mock, call
 
 import pytest
 from aiohttp import web
 from aresponses import ResponsesMockServer
-from asynctest import CoroutineMock
-from brewblox_service import http_client, scheduler
 
 from brewblox_devcon_spark import communication, exceptions, state
+from brewblox_service import http_client, scheduler
 
 DummyPortInfo = namedtuple('DummyPortInfo', ['device', 'description', 'hwid', 'serial_number'])
 
@@ -20,9 +19,9 @@ TESTED = communication.__name__
 
 
 class Collector():
-    def __init__(self, loop):
-        self.events = asyncio.Queue(loop=loop)
-        self.data = asyncio.Queue(loop=loop)
+    def __init__(self):
+        self.events = asyncio.Queue()
+        self.data = asyncio.Queue()
 
     def on_event(self, e):
         self.events.put_nowait(e)
@@ -122,7 +121,7 @@ def tcp_create_connection_mock(app, mocker):
 
     create_connection_mock = mocker.patch(
         TESTED + '.create_connection',
-        CoroutineMock(side_effect=connect)
+        AsyncMock(side_effect=connect)
     )
     return create_connection_mock
 
@@ -139,14 +138,14 @@ def serial_create_connection_mock(app, mocker):
 
     serial_connection_mock = mocker.patch(
         TESTED + '.connect_serial',
-        CoroutineMock(side_effect=connect)
+        AsyncMock(side_effect=connect)
     )
     return serial_connection_mock
 
 
 @pytest.fixture
 def bound_collector(loop):
-    return Collector(loop)
+    return Collector()
 
 
 @pytest.fixture
@@ -240,7 +239,7 @@ def _send_chunks(protocol, data=None):
 
 async def test_protocol_funcs(loop):
     transport_mock = Mock()
-    coll = Collector(loop)
+    coll = Collector()
     p = communication.SparkProtocol(coll.on_event, coll.on_data)
 
     p.connection_made(transport_mock)
@@ -248,7 +247,7 @@ async def test_protocol_funcs(loop):
 
 
 async def test_coerce_messages(loop):
-    coll = Collector(loop)
+    coll = Collector()
     p = communication.SparkProtocol(coll.on_event, coll.on_data)
 
     _send_chunks(p)
@@ -256,7 +255,7 @@ async def test_coerce_messages(loop):
 
 
 async def test_coerce_partial(loop):
-    coll = Collector(loop)
+    coll = Collector()
     p = communication.SparkProtocol(coll.on_event, coll.on_data)
 
     p.data_received(serial_data()[0])
@@ -306,7 +305,7 @@ async def test_paused_write(bound_collector, bound_conduit, transport_mock):
 
 async def test_conduit_callback_multiple(loop, bound_collector, bound_conduit):
     # Change callback handler
-    coll2 = Collector(loop)
+    coll2 = Collector()
     bound_conduit.event_callbacks.add(coll2.async_on_event)
     bound_conduit.data_callbacks.add(coll2.async_on_data)
 
@@ -337,7 +336,7 @@ async def test_conduit_remove_callbacks(bound_collector, bound_conduit):
 
 
 async def test_conduit_err_callback(bound_conduit):
-    error_cb = CoroutineMock(side_effect=RuntimeError('boom!'))
+    error_cb = AsyncMock(side_effect=RuntimeError('boom!'))
     bound_conduit.event_callbacks.add(error_cb)
 
     # no errors should be thrown
@@ -488,7 +487,7 @@ async def test_discover_usb(discover_usb_app,
     assert tcp_create_connection_mock.call_count == 0
     assert serial_create_connection_mock.call_count == 1
 
-    mocker.patch(TESTED + '.discover_serial', CoroutineMock(return_value=None))
+    mocker.patch(TESTED + '.discover_serial', AsyncMock(return_value=None))
     spock._protocol.connection_lost(None)
     await asyncio.sleep(0.1)
 
@@ -503,8 +502,8 @@ async def test_discover_retry(discover_all_app,
                               tcp_create_connection_mock,
                               serial_create_connection_mock,
                               interval_mock):
-    ser_mock = mocker.patch(TESTED + '.discover_serial', CoroutineMock(return_value=None))
-    tcp_mock = mocker.patch(TESTED + '.discover_tcp', CoroutineMock(return_value=None))
+    ser_mock = mocker.patch(TESTED + '.discover_serial', AsyncMock(return_value=None))
+    tcp_mock = mocker.patch(TESTED + '.discover_tcp', AsyncMock(return_value=None))
     exit_discovery_mock = mocker.patch(TESTED + '.exit_discovery')
 
     spock = communication.SparkConduit(discover_all_app)
