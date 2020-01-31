@@ -4,15 +4,15 @@ Command-based device communication
 
 import asyncio
 import warnings
+from asyncio import CancelledError, TimeoutError
 from collections import defaultdict
-from concurrent.futures import CancelledError, TimeoutError
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
 from aiohttp import web
-from brewblox_service import brewblox_logger, features, scheduler, strex
 
 from brewblox_devcon_spark import commands, communication, exceptions, state
+from brewblox_service import brewblox_logger, features, scheduler, strex
 
 LOGGER = brewblox_logger(__name__)
 

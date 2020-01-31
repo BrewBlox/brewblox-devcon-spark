@@ -9,10 +9,10 @@ from typing import Set
 
 from aiohttp import hdrs, web
 from aiohttp_sse import sse_response
-from brewblox_service import brewblox_logger, features, repeater, strex
 
 from brewblox_devcon_spark import exceptions, state
 from brewblox_devcon_spark.api.object_api import ObjectApi
+from brewblox_service import brewblox_logger, features, repeater, strex
 
 PUBLISH_INTERVAL_S = 5
 
@@ -105,7 +105,7 @@ async def subscribe(request: web.Request) -> web.Response:
 
         while True:
             data = await queue.get()
-            if isinstance(data, Exception):
+            if isinstance(data, (Exception, asyncio.CancelledError)):
                 raise data
             await resp.send(json.dumps(data))
 

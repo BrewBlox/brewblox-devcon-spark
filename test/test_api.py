@@ -3,15 +3,13 @@ Tests brewblox_devcon_spark.api
 """
 
 import asyncio
-from unittest.mock import ANY
+from unittest.mock import ANY, AsyncMock
 
 import pytest
 from aiohttp.client_exceptions import ContentTypeError
-from asynctest import CoroutineMock
-from brewblox_service import scheduler
 
 from brewblox_devcon_spark import (commander_sim, datastore, device,
-                                   exceptions, seeder, state)
+                                   exceptions, seeder, state, ymodem)
 from brewblox_devcon_spark.api import (alias_api, codec_api, debug_api,
                                        error_response, object_api, sse_api,
                                        system_api)
@@ -23,6 +21,7 @@ from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_NID_KEY,
                                                   OBJECT_TYPE_KEY)
 from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.validation import SYSTEM_GROUP
+from brewblox_service import scheduler
 
 
 def ret_ids(objects):
@@ -500,9 +499,10 @@ async def test_system_flash(app, client, mocker):
     sys_api = system_api.__name__
     mocker.patch(sys_api + '.REBOOT_WINDOW_S', 0.001)
     mocker.patch(sys_api + '.CONNECT_INTERVAL_S', 0.001)
-    mocker.patch(sys_api + '.ymodem.connect', CoroutineMock())
-    sender = mocker.patch(sys_api + '.ymodem.FileSender')
-    transfer_mock = CoroutineMock()
-    sender.return_value.transfer = transfer_mock
+    conn_mock = mocker.patch(sys_api + '.ymodem.connect', AsyncMock())
+    conn_mock.return_value = AsyncMock(ymodem.Connection)
+    sender_mock = mocker.patch(sys_api + '.ymodem.FileSender')
+    sender_mock.return_value.transfer = AsyncMock()
 
     await response(client.post('/system/flash'))
+    sender_mock.return_value.transfer.assert_awaited()

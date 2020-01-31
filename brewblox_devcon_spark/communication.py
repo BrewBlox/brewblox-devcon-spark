@@ -5,20 +5,19 @@ Implements a protocol and a conduit for async serial communication.
 import asyncio
 import re
 import warnings
-from asyncio import TimeoutError
+from asyncio import CancelledError, TimeoutError
 from collections import namedtuple
-from concurrent.futures import CancelledError
 from contextlib import suppress
 from functools import partial
 from typing import Any, Awaitable, Callable, Iterable, Iterator, List, Tuple
 
 import serial
 from aiohttp import web
-from brewblox_service import brewblox_logger, features, http_client, scheduler
 from serial.tools import list_ports
 from serial_asyncio import SerialTransport
 
 from brewblox_devcon_spark import exceptions, state
+from brewblox_service import brewblox_logger, features, http_client, scheduler
 
 LOGGER = brewblox_logger(__name__)
 DNS_DISCOVER_TIMEOUT_S = 20

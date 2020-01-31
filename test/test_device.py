@@ -2,8 +2,9 @@
 Tests brewblox_devcon_spark.device
 """
 
+from unittest.mock import AsyncMock
+
 import pytest
-from brewblox_service import features, scheduler
 
 from brewblox_devcon_spark import (commander, commander_sim, datastore, device,
                                    exceptions, state)
@@ -12,6 +13,7 @@ from brewblox_devcon_spark.validation import (GENERATED_ID_PREFIX,
                                               GROUP_LIST_KEY, OBJECT_DATA_KEY,
                                               OBJECT_LIST_KEY, OBJECT_NID_KEY,
                                               OBJECT_SID_KEY, OBJECT_TYPE_KEY)
+from brewblox_service import features, scheduler
 
 TESTED = device.__name__
 
@@ -62,7 +64,7 @@ async def store(app, client):
     return datastore.get_datastore(app)
 
 
-async def test_transcoding(app, client, cmder, store, ctrl, mocker):
+async def test_transcoding(app, client, cmder, store, ctrl):
     c = codec.get_codec(app)
     obj_type, obj_data = generate_obj()
     enc_type, enc_data = await c.encode(obj_type, obj_data)
@@ -76,14 +78,14 @@ async def test_transcoding(app, client, cmder, store, ctrl, mocker):
 
     store['alias', 300] = dict()
 
-    encode_spy = mocker.spy(c, 'encode')
-    decode_spy = mocker.spy(c, 'decode')
+    c.encode = AsyncMock(wraps=c.encode)
+    c.decode = AsyncMock(wraps=c.decode)
 
     retval = await ctrl.create_object(object_args)
     assert retval[OBJECT_DATA_KEY]['settings']['address'] == 'ff'.rjust(16, '0')
 
-    encode_spy.assert_any_call(obj_type, obj_data, None)
-    decode_spy.assert_any_call(enc_type, enc_data, None)
+    c.encode.assert_any_await(obj_type, obj_data, opts=None)
+    c.decode.assert_any_await(enc_type, enc_data, opts=None)
 
 
 async def test_list_transcoding(app, client, cmder, store, ctrl, mocker):
