@@ -2,12 +2,13 @@
 Tests brewblox_devcon_spark.broadcaster
 """
 
-from unittest.mock import AsyncMock, call
+from unittest.mock import ANY, AsyncMock, call
 
 import pytest
+from brewblox_service import repeater, scheduler
+
 from brewblox_devcon_spark import broadcaster, exceptions, state
 from brewblox_devcon_spark.api.object_api import API_DATA_KEY, API_SID_KEY
-from brewblox_service import repeater, scheduler
 
 TESTED = broadcaster.__name__
 
@@ -50,7 +51,7 @@ async def test_noop_broadcast(app, mock_api, mock_publisher, client, connected):
     await b.run()
     assert mock_api.all_logged.call_count == 1
     assert mock_api.all.call_count == 1
-    assert mock_publisher.publish.call_count == 1
+    assert mock_publisher.publish.call_count == 2
 
 
 async def test_disabled(app, mock_api, mock_publisher, client, connected):
@@ -58,6 +59,18 @@ async def test_disabled(app, mock_api, mock_publisher, client, connected):
     b = broadcaster.Broadcaster(app)
     with pytest.raises(repeater.RepeaterCancelled):
         await b.prepare()
+
+
+async def test_broadcast_unsync(app, mock_api, mock_publisher, client, connected, mocker):
+    m_wait_sync = mocker.patch(TESTED + '.state.wait_synchronize', AsyncMock())
+    m_wait_sync.return_value = False
+
+    b = broadcaster.Broadcaster(app)
+    await b.prepare()
+    await b.run()
+
+    assert m_wait_sync.call_count == 1
+    assert mock_publisher.publish.call_count == 1
 
 
 async def test_broadcast(app, mock_api, mock_publisher, client, connected):
@@ -78,13 +91,21 @@ async def test_broadcast(app, mock_api, mock_publisher, client, connected):
              routing='test_app',
              message={
                  'key': 'test_app',
-                 'type': 'Spark',
+                 'type': 'Spark.service',
+                 'duration': '30s',
+                 'data': ANY,
+             }),
+        call(exchange='testcast.state',
+             routing='test_app',
+             message={
+                 'key': 'test_app',
+                 'type': 'Spark.blocks',
                  'duration': '30s',
                  'data': object_list,
              }),
         call(exchange='testcast.history',
              routing='test_app',
-             message=objects
+             message=objects,
              )
     ])
 
@@ -108,4 +129,4 @@ async def test_error(app, mock_api, mock_publisher, client, connected):
     ]
 
     await b.run()
-    assert mock_publisher.publish.call_count == 1
+    assert mock_publisher.publish.call_count == 3 + 1

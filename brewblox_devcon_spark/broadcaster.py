@@ -30,6 +30,7 @@ class Broadcaster(repeater.RepeaterFeature):
         config = self.app['config']
         self.name = config['name']
         self.interval = config['broadcast_interval']
+        self.validity = '30s'
         self.history_exchange = config['history_exchange']
         self.state_exchange = config['state_exchange']
 
@@ -41,20 +42,36 @@ class Broadcaster(repeater.RepeaterFeature):
 
     async def run(self):
         try:
-            await state.wait_synchronize(self.app)
             await asyncio.sleep(self.interval)
 
-            state_message = {
+            state_service = {
                 'key': self.name,
-                'type': 'Spark',
-                'duration': '30s',
+                'type': 'Spark.service',
+                'duration': self.validity,
+                'data': state.summary_dict(self.app),
+            }
+
+            await self.publisher.publish(
+                exchange=self.state_exchange,
+                routing=self.name,
+                message=state_service,
+            )
+
+            # Return early if we can't fetch blocks
+            if not await state.wait_synchronize(self.app, wait=False):
+                return
+
+            state_blocks = {
+                'key': self.name,
+                'type': 'Spark.blocks',
+                'duration': self.validity,
                 'data': await self.api.all(),
             }
 
             await self.publisher.publish(
                 exchange=self.state_exchange,
                 routing=self.name,
-                message=state_message
+                message=state_blocks
             )
 
             history_message = {
