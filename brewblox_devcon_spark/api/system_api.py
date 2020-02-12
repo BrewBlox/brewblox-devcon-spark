@@ -3,16 +3,15 @@ Specific endpoints for using system objects
 """
 
 import asyncio
-from dataclasses import asdict
 from typing import Awaitable, List
 
 from aiohttp import web
-from brewblox_service import brewblox_logger, strex
 
 from brewblox_devcon_spark import commander, device, exceptions, state, ymodem
 from brewblox_devcon_spark.api import object_api
 from brewblox_devcon_spark.datastore import GROUPS_NID
 from brewblox_devcon_spark.validation import API_DATA_KEY
+from brewblox_service import brewblox_logger, strex
 
 REBOOT_WINDOW_S = 5
 TRANSFER_TIMEOUT_S = 30
@@ -145,7 +144,7 @@ async def check_status(request: web.Request) -> web.Response:
     produces:
     - application/json
     """
-    return web.json_response(asdict(state.summary(request.app)))
+    return web.json_response(state.summary_dict(request.app))
 
 
 @routes.get('/system/ping')

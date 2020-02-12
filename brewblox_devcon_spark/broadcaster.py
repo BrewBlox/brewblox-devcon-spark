@@ -27,11 +27,14 @@ def setup(app: web.Application):
 class Broadcaster(repeater.RepeaterFeature):
 
     async def prepare(self):
-        self.name = self.app['config']['name']
-        self.interval = self.app['config']['broadcast_interval']
-        self.exchange = self.app['config']['broadcast_exchange']
+        config = self.app['config']
+        self.name = config['name']
+        self.interval = config['broadcast_interval']
+        self.validity = '30s'
+        self.history_exchange = config['history_exchange']
+        self.state_exchange = config['state_exchange']
 
-        if self.interval <= 0 or self.app['config']['volatile']:
+        if self.interval <= 0 or config['volatile']:
             raise repeater.RepeaterCancelled()
 
         self.api = ObjectApi(self.app)
@@ -39,23 +42,51 @@ class Broadcaster(repeater.RepeaterFeature):
 
     async def run(self):
         try:
-            await state.wait_synchronize(self.app)
             await asyncio.sleep(self.interval)
-            current_objects = {
+
+            state_service = {
+                'key': self.name,
+                'type': 'Spark.service',
+                'duration': self.validity,
+                'data': state.summary_dict(self.app),
+            }
+
+            await self.publisher.publish(
+                exchange=self.state_exchange,
+                routing=self.name,
+                message=state_service,
+            )
+
+            # Return early if we can't fetch blocks
+            if not await state.wait_synchronize(self.app, wait=False):
+                return
+
+            state_blocks = {
+                'key': self.name,
+                'type': 'Spark.blocks',
+                'duration': self.validity,
+                'data': await self.api.all(),
+            }
+
+            await self.publisher.publish(
+                exchange=self.state_exchange,
+                routing=self.name,
+                message=state_blocks
+            )
+
+            history_message = {
                 obj[API_SID_KEY]: obj[API_DATA_KEY]
                 for obj in await self.api.all_logged()
                 if not obj[API_SID_KEY].startswith(GENERATED_ID_PREFIX)
             }
 
-            # Don't broadcast when empty
-            if not current_objects:
-                return
-
-            await self.publisher.publish(
-                exchange=self.exchange,
-                routing=self.name,
-                message=current_objects
-            )
+            # Don't broadcast history when empty
+            if history_message:
+                await self.publisher.publish(
+                    exchange=self.history_exchange,
+                    routing=self.name,
+                    message=history_message
+                )
 
         except exceptions.ConnectionPaused:
             LOGGER.debug(f'{self} interrupted: connection paused')
