@@ -11,7 +11,7 @@ from aiohttp import web
 from aresponses import ResponsesMockServer
 
 from brewblox_devcon_spark import communication, exceptions, state
-from brewblox_service import http_client, scheduler
+from brewblox_service import http, scheduler
 
 DummyPortInfo = namedtuple('DummyPortInfo', ['device', 'description', 'hwid', 'serial_number'])
 
@@ -152,7 +152,7 @@ def bound_collector(loop):
 def app(app, serial_mock, transport_mock):
     app['config']['device_host'] = None
     state.setup(app)
-    http_client.setup(app)
+    http.setup(app)
     scheduler.setup(app)
     communication.setup(app)
     return app

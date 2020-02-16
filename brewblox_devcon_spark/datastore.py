@@ -14,8 +14,8 @@ from typing import Any, Callable, List
 from aiohttp import web
 
 from brewblox_devcon_spark.twinkeydict import TwinKeyDict, TwinKeyError
-from brewblox_service import (brewblox_logger, couchdb_client, features,
-                              repeater, strex)
+from brewblox_service import (brewblox_logger, couchdb, features, repeater,
+                              strex)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -60,7 +60,7 @@ def non_volatile(func):
 async def check_remote(app: web.Application):
     if app['config']['volatile']:
         return
-    await couchdb_client.check_remote(app)
+    await couchdb.check_remote(app)
 
 
 class FlushedStore(repeater.RepeaterFeature):
@@ -164,7 +164,7 @@ class CouchDBBlockStore(FlushedStore, TwinKeyDict):
             self.document = None
             self._ready_event.clear()
             if not self.volatile:
-                self.rev, data = await couchdb_client.read(self.app, DB_NAME, document, [])
+                self.rev, data = await couchdb.read(self.app, DB_NAME, document, [])
                 self.document = document
                 LOGGER.info(f'{self} Read {len(data)} blocks. Rev = {self.rev}')
 
@@ -192,7 +192,7 @@ class CouchDBBlockStore(FlushedStore, TwinKeyDict):
             {'keys': keys, 'data': content}
             for keys, content in self.items()
         ]
-        self.rev = await couchdb_client.write(self.app, DB_NAME, self.document, self.rev, data)
+        self.rev = await couchdb.write(self.app, DB_NAME, self.document, self.rev, data)
         LOGGER.info(f'{self} Saved {len(data)} block(s). Rev = {self.rev}')
 
     def __setitem__(self, keys, item):
@@ -247,7 +247,7 @@ class CouchDBConfig(FlushedStore):
             self.document = None
             self._ready_event.clear()
             if not self.volatile:
-                self.rev, data = await couchdb_client.read(self.app, DB_NAME, document, {})
+                self.rev, data = await couchdb.read(self.app, DB_NAME, document, {})
                 self.document = document
                 LOGGER.info(f'{self} Read {len(data)} setting(s). Rev = {self.rev}')
 
@@ -267,7 +267,7 @@ class CouchDBConfig(FlushedStore):
         await self._ready_event.wait()
         if self.rev is None or self.document is None:
             raise RuntimeError('Document or revision unknown - did read() fail?')
-        self.rev = await couchdb_client.write(self.app, DB_NAME, self.document, self.rev, self._config)
+        self.rev = await couchdb.write(self.app, DB_NAME, self.document, self.rev, self._config)
         LOGGER.info(f'{self} Saved {len(self._config)} settings. Rev = {self.rev}')
 
 
