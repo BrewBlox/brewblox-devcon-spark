@@ -9,22 +9,10 @@ from dataclasses import asdict, dataclass
 from typing import List
 
 from aiohttp import web
+
 from brewblox_service import brewblox_logger, features
 
 LOGGER = brewblox_logger(__name__)
-
-
-def setup(app: web.Application):
-    features.add(app, ServiceStatus(app))
-    features.add(app, ServiceEvents(app))
-
-
-def get_status(app: web.Application) -> 'ServiceStatus':
-    return features.get(app, ServiceStatus)
-
-
-def get_events(app: web.Application) -> 'ServiceEvents':
-    return features.get(app, ServiceEvents)
 
 
 @dataclass
@@ -214,6 +202,20 @@ class ServiceEvents(features.ServiceFeature):
 
 
 # Public functions
+
+
+def setup(app: web.Application):
+    features.add(app, ServiceStatus(app))
+    features.add(app, ServiceEvents(app))
+
+
+def get_status(app: web.Application) -> ServiceStatus:
+    return features.get(app, ServiceStatus)
+
+
+def get_events(app: web.Application) -> ServiceEvents:
+    return features.get(app, ServiceEvents)
+
 
 async def wait_connect(app: web.Application) -> bool:
     return await get_events(app).connect_ev.wait()

@@ -13,7 +13,6 @@ from binascii import hexlify, unhexlify
 from functools import reduce
 from typing import List
 
-from brewblox_service import brewblox_logger
 from construct import (Adapter, Byte, Const, Container, Default, Enum,
                        GreedyBytes, Int8ul, Int16ul, Struct)
 
@@ -23,6 +22,7 @@ from brewblox_devcon_spark.validation import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
                                               OBJECT_INTERFACE_KEY,
                                               OBJECT_LIST_KEY, OBJECT_NID_KEY,
                                               OBJECT_TYPE_KEY)
+from brewblox_service import brewblox_logger
 
 LOGGER = brewblox_logger(__name__)
 
@@ -208,6 +208,7 @@ class Command(ABC):
             'response_list': [4, 5, 6]
         }
     """
+    _OPCODE = OpcodeEnum.NONE
     _msgid = 0
 
     @staticmethod
