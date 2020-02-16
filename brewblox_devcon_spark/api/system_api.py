@@ -3,7 +3,7 @@ Specific endpoints for using system objects
 """
 
 import asyncio
-from typing import Awaitable, List
+from typing import List
 
 from aiohttp import web
 
@@ -33,11 +33,11 @@ class SystemApi():
         self.app = app
         self._obj_api: object_api.ObjectApi = object_api.ObjectApi(app)
 
-    async def read_groups(self) -> Awaitable[List[int]]:
+    async def read_groups(self) -> List[int]:
         groups = await self._obj_api.read(GROUPS_NID)
         return groups[API_DATA_KEY]['active']
 
-    async def write_groups(self, groups: List[int]) -> Awaitable[List[int]]:
+    async def write_groups(self, groups: List[int]) -> List[int]:
         group_obj = await self._obj_api.write(
             sid=GROUPS_NID,
             groups=[],
@@ -55,7 +55,7 @@ class SystemApi():
                 LOGGER.debug('Connection refused, retrying...')
         raise ConnectionRefusedError()
 
-    async def flash(self) -> Awaitable[dict]:  # pragma: no cover
+    async def flash(self) -> dict:  # pragma: no cover
         sender = ymodem.FileSender()
         cmder = commander.get_commander(self.app)
         ctrl = device.get_controller(self.app)

@@ -3,13 +3,12 @@ Master file for pytest fixtures.
 Any fixtures declared here are available to all test functions in this directory.
 """
 
-
 import logging
 
 import pytest
-from brewblox_service import brewblox_logger, features, service
 
 from brewblox_devcon_spark.__main__ import create_parser
+from brewblox_service import brewblox_logger, features, service
 
 LOGGER = brewblox_logger(__name__)
 
@@ -90,7 +89,7 @@ def app(sys_args, app_ini):
 
 
 @pytest.fixture
-def client(app, aiohttp_client, loop):
+async def client(app, aiohttp_client, aiohttp_server):
     """Allows patching the app or aiohttp_client before yielding it.
 
     Any tests wishing to add custom behavior to app can override the fixture
@@ -100,7 +99,7 @@ def client(app, aiohttp_client, loop):
         LOGGER.debug(f'Feature "{name}" = {impl}')
     LOGGER.debug(app.on_startup)
 
-    return loop.run_until_complete(aiohttp_client(app))
+    return await aiohttp_client(await aiohttp_server(app))
 
 
 @pytest.fixture

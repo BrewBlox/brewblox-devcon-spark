@@ -9,7 +9,6 @@ from functools import partialmethod
 from typing import Awaitable, Callable, List, Optional, Type, Union
 
 from aiohttp import web
-from brewblox_service import brewblox_logger, features, strex
 
 from brewblox_devcon_spark import (commander, commands, datastore, exceptions,
                                    twinkeydict)
@@ -22,19 +21,12 @@ from brewblox_devcon_spark.validation import (GENERATED_ID_PREFIX,
                                               OBJECT_LINK_POSTFIX_START,
                                               OBJECT_LIST_KEY, OBJECT_NID_KEY,
                                               OBJECT_SID_KEY, OBJECT_TYPE_KEY)
+from brewblox_service import brewblox_logger, features, strex
 
 ObjectId_ = Union[str, int]
 FindIdFunc_ = Callable[[twinkeydict.TwinKeyDict, ObjectId_, str], Awaitable[ObjectId_]]
 
 LOGGER = brewblox_logger(__name__)
-
-
-def get_controller(app: web.Application) -> 'SparkController':
-    return features.get(app, SparkController)
-
-
-def setup(app: web.Application):
-    features.add(app, SparkController(name=app['config']['name'], app=app))
 
 
 class SparkResolver():
@@ -64,7 +56,7 @@ class SparkResolver():
                             codec_func: codec.TranscodeFunc_,
                             content: dict,
                             opts: Optional[dict]
-                            ) -> Awaitable[dict]:
+                            ) -> dict:
         objects_to_process = self._get_content_objects(content)
 
         for obj in objects_to_process:
@@ -123,7 +115,7 @@ class SparkResolver():
     async def _resolve_links(self,
                              finder_func: FindIdFunc_,
                              content: dict
-                             ) -> Awaitable[dict]:
+                             ) -> dict:
         store = self._datastore
         objects_to_process = self._get_content_objects(content)
 
@@ -146,13 +138,13 @@ class SparkResolver():
 
         return content
 
-    async def encode_data(self, content: dict, opts: Optional[dict]) -> Awaitable[dict]:
+    async def encode_data(self, content: dict, opts: Optional[dict]) -> dict:
         return await self._process_data(self._codec.encode, content, opts)
 
-    async def decode_data(self, content: dict, opts: Optional[dict]) -> Awaitable[dict]:
+    async def decode_data(self, content: dict, opts: Optional[dict]) -> dict:
         return await self._process_data(self._codec.decode, content, opts)
 
-    async def convert_sid_nid(self, content: dict, _=None) -> Awaitable[dict]:
+    async def convert_sid_nid(self, content: dict, _=None) -> dict:
         objects_to_process = self._get_content_objects(content)
 
         for obj in objects_to_process:
@@ -169,7 +161,7 @@ class SparkResolver():
 
         return content
 
-    async def add_sid(self, content: dict, _=None) -> Awaitable[dict]:
+    async def add_sid(self, content: dict, _=None) -> dict:
         objects_to_process = self._get_content_objects(content)
 
         for obj in objects_to_process:
@@ -186,10 +178,10 @@ class SparkResolver():
 
         return content
 
-    async def convert_links_nid(self, content: dict, _=None) -> Awaitable[dict]:
+    async def convert_links_nid(self, content: dict, _=None) -> dict:
         return await self._resolve_links(self._find_nid, content)
 
-    async def convert_links_sid(self, content: dict, _=None) -> Awaitable[dict]:
+    async def convert_links_sid(self, content: dict, _=None) -> dict:
         return await self._resolve_links(self._find_sid, content)
 
 
@@ -205,7 +197,7 @@ class SparkController(features.ServiceFeature):
     async def shutdown(self, _):
         pass
 
-    async def validate(self, content_: dict = None, **kwargs) -> Awaitable[dict]:
+    async def validate(self, content_: dict = None, **kwargs) -> dict:
         content = content_ or dict()
         content.update(kwargs)
         opts = {}
@@ -229,7 +221,7 @@ class SparkController(features.ServiceFeature):
                        command_opts: Optional[dict],
                        content_: dict = None,
                        **kwargs
-                       ) -> Awaitable[dict]:
+                       ) -> dict:
         # Allow a combination of a dict containing arguments, and loose kwargs
         content = content_ or dict()
         content.update(kwargs)
@@ -279,3 +271,11 @@ class SparkController(features.ServiceFeature):
     list_compatible_objects = partialmethod(_execute, commands.ListCompatibleObjectsCommand, None)
     discover_objects = partialmethod(_execute, commands.DiscoverObjectsCommand, None)
     firmware_update = partialmethod(_execute, commands.FirmwareUpdateCommand, None)
+
+
+def setup(app: web.Application):
+    features.add(app, SparkController(name=app['config']['name'], app=app))
+
+
+def get_controller(app: web.Application) -> SparkController:
+    return features.get(app, SparkController)
