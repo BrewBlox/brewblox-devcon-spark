@@ -22,20 +22,20 @@ def read_objects():
 
 @pytest.fixture
 def m_check(mocker):
-    m = mocker.patch(TESTED + '.couchdb_client.check_remote', AsyncMock())
+    m = mocker.patch(TESTED + '.couchdb.check_remote', AsyncMock())
     return m
 
 
 @pytest.fixture
 def m_read(mocker):
-    m = mocker.patch(TESTED + '.couchdb_client.read',
+    m = mocker.patch(TESTED + '.couchdb.read',
                      AsyncMock(return_value=('rev_read', read_objects())))
     return m
 
 
 @pytest.fixture
 def m_write(mocker):
-    m = mocker.patch(TESTED + '.couchdb_client.write',
+    m = mocker.patch(TESTED + '.couchdb.write',
                      AsyncMock(return_value='rev_write'))
     return m
 

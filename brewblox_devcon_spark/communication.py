@@ -17,7 +17,7 @@ from serial.tools import list_ports
 from serial_asyncio import SerialTransport
 
 from brewblox_devcon_spark import exceptions, state
-from brewblox_service import brewblox_logger, features, http_client, repeater
+from brewblox_service import brewblox_logger, features, http, repeater
 
 LOGGER = brewblox_logger(__name__)
 DNS_DISCOVER_TIMEOUT_S = 20
@@ -100,8 +100,8 @@ async def discover_tcp(app: web.Application, factory: ProtocolFactory_) -> Conne
     mdns_port = config['mdns_port']
     try:
         retv = await asyncio.wait_for(
-            http_client.session(app).post(f'http://{mdns_host}:{mdns_port}/mdns/discover',
-                                          json={'id': id}),
+            http.session(app).post(f'http://{mdns_host}:{mdns_port}/mdns/discover',
+                                   json={'id': id}),
             DNS_DISCOVER_TIMEOUT_S
         )
         resp = await retv.json()
