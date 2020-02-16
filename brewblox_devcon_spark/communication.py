@@ -17,7 +17,7 @@ from serial.tools import list_ports
 from serial_asyncio import SerialTransport
 
 from brewblox_devcon_spark import exceptions, state
-from brewblox_service import brewblox_logger, features, http_client, scheduler
+from brewblox_service import brewblox_logger, features, http, repeater
 
 LOGGER = brewblox_logger(__name__)
 DNS_DISCOVER_TIMEOUT_S = 20
@@ -49,14 +49,6 @@ async def _default_on_message(conduit: 'SparkConduit', message: str):
     LOGGER.info(f'Unhandled message: conduit={conduit}, message={message}')
 
 
-def setup(app: web.Application):
-    features.add(app, SparkConduit(app))
-
-
-def get_conduit(app: web.Application) -> 'SparkConduit':
-    return features.get(app, SparkConduit)
-
-
 async def create_connection(*args, **kwargs):  # pragma: no cover
     """asyncio.create_connection() wrapper, for easier testing"""
     return await asyncio.get_event_loop().create_connection(*args, **kwargs)
@@ -70,7 +62,7 @@ def exit_discovery():  # pragma: no cover
 
 async def connect_serial(app: web.Application,
                          factory: ProtocolFactory_
-                         ) -> Awaitable[ConnectionResult_]:
+                         ) -> ConnectionResult_:
     config = app['config']
     port = config['device_serial']
     id = config['device_id']
@@ -87,29 +79,29 @@ async def connect_serial(app: web.Application,
 
 async def connect_tcp(app: web.Application,
                       factory: ProtocolFactory_
-                      ) -> Awaitable[ConnectionResult_]:
+                      ) -> ConnectionResult_:
     host = app['config']['device_host']
     port = app['config']['device_port']
     transport, protocol = await create_connection(factory, host, port)
     return f'{host}:{port}', transport, protocol
 
 
-async def discover_serial(app: web.Application, factory: ProtocolFactory_) -> Awaitable[ConnectionResult_]:
+async def discover_serial(app: web.Application, factory: ProtocolFactory_) -> ConnectionResult_:
     try:
         return await connect_serial(app, factory)
     except exceptions.ConnectionImpossible:
         return None
 
 
-async def discover_tcp(app: web.Application, factory: ProtocolFactory_) -> Awaitable[ConnectionResult_]:
+async def discover_tcp(app: web.Application, factory: ProtocolFactory_) -> ConnectionResult_:
     config = app['config']
     id = config['device_id']
     mdns_host = config['mdns_host']
     mdns_port = config['mdns_port']
     try:
-        session = http_client.get_client(app).session
         retv = await asyncio.wait_for(
-            session.post(f'http://{mdns_host}:{mdns_port}/mdns/discover', json={'id': id}),
+            http.session(app).post(f'http://{mdns_host}:{mdns_port}/mdns/discover',
+                                   json={'id': id}),
             DNS_DISCOVER_TIMEOUT_S
         )
         resp = await retv.json()
@@ -123,7 +115,7 @@ async def discover_tcp(app: web.Application, factory: ProtocolFactory_) -> Await
 
 async def connect_discovered(app: web.Application,
                              factory: ProtocolFactory_
-                             ) -> Awaitable[ConnectionResult_]:
+                             ) -> ConnectionResult_:
     discovery_type = app['config']['discovery']
     LOGGER.info(f'Starting device discovery, type={discovery_type}')
 
@@ -145,17 +137,18 @@ async def connect_discovered(app: web.Application,
     exit_discovery()
 
 
-class SparkConduit(features.ServiceFeature):
+class SparkConduit(repeater.RepeaterFeature):
 
     def __init__(self, app: web.Application):
         super().__init__(app)
 
-        self._connection_task: asyncio.Task = None
+        self._active_init: bool = True
         self._active: asyncio.Event = None
 
         self._address: Any = None
         self._transport: asyncio.Transport = None
         self._protocol: 'SparkProtocol' = None
+        self._connect_func: Callable[[], ConnectionResult_] = None
 
         self._event_callbacks = set()
         self._data_callbacks = set()
@@ -175,35 +168,56 @@ class SparkConduit(features.ServiceFeature):
     def data_callbacks(self):
         return self._data_callbacks
 
-    async def startup(self, app: web.Application):
-        await self.shutdown()
-        self._active = asyncio.Event()
-
+    async def prepare(self):
+        """Implements RepeaterFeature.prepare"""
         def factory():
             return SparkProtocol(
                 on_event=partial(self._do_callbacks, self._event_callbacks),
                 on_data=partial(self._do_callbacks, self._data_callbacks)
             )
 
-        if app['config']['device_serial']:
-            connect_func = partial(connect_serial, self.app, factory)
-        elif app['config']['device_host']:
-            connect_func = partial(connect_tcp, self.app, factory)
+        if self.app['config']['device_serial']:
+            self._connect_func = partial(connect_serial, self.app, factory)
+        elif self.app['config']['device_host']:
+            self._connect_func = partial(connect_tcp, self.app, factory)
         else:
-            connect_func = partial(connect_discovered, self.app, factory)
+            self._connect_func = partial(connect_discovered, self.app, factory)
 
-        self._active.set()
-        self._connection_task = await scheduler.create_task(
-            self.app,
-            self._maintain_connection(connect_func)
-        )
+        self._active = asyncio.Event()
+        if self._active_init:
+            self._active.set()
 
-    async def shutdown(self, *_):
-        await scheduler.cancel_task(self.app, self._connection_task)
-        self._connection_task = None
-        self._active = None
+    async def run(self):
+        """Implements RepeaterFeature.run"""
+        try:
+            await self._active.wait()
+            self._address, self._transport, self._protocol = await self._connect_func()
+
+            await self._protocol.connected
+            await state.on_connect(self.app, self._address)
+            LOGGER.info(f'Connected {self}')
+
+            await self._protocol.disconnected
+            await state.on_disconnect(self.app)
+            LOGGER.info(f'Disconnected {self}')
+
+        except CancelledError:
+            with suppress(Exception):
+                LOGGER.debug(f'Closing {self}')
+                await self._transport.close()
+            raise
+
+        except Exception:
+            await asyncio.sleep(RETRY_INTERVAL_S)
+            raise
+
+        finally:
+            # Keep last known address
+            self._transport = None
+            self._protocol = None
 
     async def pause(self):
+        self._active_init = False
         if self._active:
             self._active.clear()
 
@@ -212,6 +226,7 @@ class SparkConduit(features.ServiceFeature):
             self._transport.close()
 
     async def resume(self):
+        self._active_init = True
         if self._active:
             self._active.set()
 
@@ -235,41 +250,8 @@ class SparkConduit(features.ServiceFeature):
             except Exception as ex:
                 warnings.warn(f'Unhandled exception in {cb}, message={message}, ex={ex}')
 
-        loop = asyncio.get_event_loop()
         for cb in callbacks or [_default_on_message]:
-            loop.create_task(call_cb(cb, message))
-
-    async def _maintain_connection(self, connect_func: Callable[[], Awaitable[ConnectionResult_]]):
-        last_ok = True
-        while True:
-            try:
-                await self._active.wait()
-                self._address, self._transport, self._protocol = await connect_func()
-
-                await self._protocol.connected
-                await state.on_connect(self.app, self._address)
-                LOGGER.info(f'Connected {self}')
-                last_ok = True
-
-                await self._protocol.disconnected
-                await state.on_disconnect(self.app)
-                LOGGER.info(f'Disconnected {self}')
-
-            except CancelledError:
-                with suppress(Exception):
-                    await self._transport.close()
-                break
-
-            except Exception as ex:
-                if last_ok:
-                    LOGGER.info(f'Connection failed: {type(ex).__name__}({ex})')
-                    last_ok = False
-                await asyncio.sleep(RETRY_INTERVAL_S)
-
-            finally:
-                # Keep last known address
-                self._transport = None
-                self._protocol = None
+            asyncio.create_task(call_cb(cb, message))
 
 
 class SparkProtocol(asyncio.Protocol):
@@ -388,3 +370,11 @@ def detect_device(device: str = None, serial_number: str = None) -> str:
                 f'Could not find recognized device. Known={[{v for v in p} for p in all_ports()]}')
 
     return device
+
+
+def setup(app: web.Application):
+    features.add(app, SparkConduit(app))
+
+
+def get_conduit(app: web.Application) -> SparkConduit:
+    return features.get(app, SparkConduit)

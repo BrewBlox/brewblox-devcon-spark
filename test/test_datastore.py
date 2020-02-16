@@ -21,16 +21,27 @@ def read_objects():
 
 
 @pytest.fixture
-def client_mock(mocker):
-    m = mocker.patch(TESTED + '.couchdb_client.get_client')
-    m.return_value.check_remote = AsyncMock()
-    m.return_value.read = AsyncMock(return_value=('rev_read', read_objects()))
-    m.return_value.write = AsyncMock(return_value='rev_write')
-    return m.return_value
+def m_check(mocker):
+    m = mocker.patch(TESTED + '.couchdb.check_remote', AsyncMock())
+    return m
 
 
 @pytest.fixture
-async def app(app, client_mock, mocker):
+def m_read(mocker):
+    m = mocker.patch(TESTED + '.couchdb.read',
+                     AsyncMock(return_value=('rev_read', read_objects())))
+    return m
+
+
+@pytest.fixture
+def m_write(mocker):
+    m = mocker.patch(TESTED + '.couchdb.write',
+                     AsyncMock(return_value='rev_write'))
+    return m
+
+
+@pytest.fixture
+async def app(app, m_check, m_read, m_write, mocker):
     mocker.patch(TESTED + '.FLUSH_DELAY_S', 0.01)
     app['config']['volatile'] = False
     scheduler.setup(app)
@@ -61,8 +72,7 @@ async def test_non_volatile(app, loop):
     assert await VolatileTester(False).func('testey') == 'testey'
 
 
-async def test_store(app, client, store, client_mock):
-    await store.startup(app)
+async def test_store(app, client, store, m_read, m_write):
     assert store.active
     assert not store.volatile
     assert store.rev is None
@@ -78,23 +88,23 @@ async def test_store(app, client, store, client_mock):
 
     # Defaults were added to read objects, so those were flushed
     await asyncio.sleep(0.05)
-    assert client_mock.write.call_count == 1
+    assert m_write.call_count == 1
     assert store.rev == 'rev_write'
 
     # write on add
     store['inserted', 9001] = 'val'
     await asyncio.sleep(0.05)
-    assert client_mock.write.call_count == 2
+    assert m_write.call_count == 2
     assert len(store.items()) == read_length + 1
 
     # write on delete
     del store['inserted', 9001]
     assert len(store.items()) == read_length
     await asyncio.sleep(0.05)
-    assert client_mock.write.call_count == 3
+    assert m_write.call_count == 3
 
     # handle read error
-    client_mock.read.side_effect = [
+    m_read.side_effect = [
         RuntimeError,
         ('rev_read', read_objects())
     ]
@@ -111,7 +121,7 @@ async def test_store(app, client, store, client_mock):
 
     # continue on write error
     with pytest.warns(UserWarning, match='flush error'):
-        client_mock.write.side_effect = [
+        m_write.side_effect = [
             RuntimeError,
             'rev_write',
             'rev_write',
@@ -120,16 +130,16 @@ async def test_store(app, client, store, client_mock):
         ]
         store['inserted2', 9002] = 'val'
         await asyncio.sleep(0.05)
-    assert client_mock.write.call_count == 5
+    assert m_write.call_count == 5
 
     # write on shutdown
     store['inserted3', 9003] = 'val'
     await store.shutdown(app)
-    assert client_mock.write.call_count == 6
+    assert m_write.call_count == 6
 
 
-async def test_store_read_error(app, client, store, client_mock):
-    client_mock.read.side_effect = RuntimeError
+async def test_store_read_error(app, client, store, m_read):
+    m_read.side_effect = RuntimeError
 
     await store.startup(app)
     with pytest.warns(UserWarning, match='read error'):
@@ -139,12 +149,11 @@ async def test_store_read_error(app, client, store, client_mock):
     assert len(store.items()) == len(datastore.SYS_OBJECTS)
 
 
-async def test_config(app, client, config, client_mock):
+async def test_config(app, client, config, m_read, m_write):
     def vals():
         return {'k1': 1, 'k2': 2}
-    client_mock.read.return_value = ('rev_read', vals())
+    m_read.return_value = ('rev_read', vals())
 
-    await config.startup(app)
     assert config.active
     assert config.rev is None
 
@@ -161,7 +170,7 @@ async def test_config(app, client, config, client_mock):
     await config.read('doc')
     cb.assert_called_once_with(vals())
     assert config.rev == 'rev_read'
-    assert client_mock.write.call_count == 0
+    assert m_write.call_count == 0
 
     with config.open() as cfg:
         assert cfg == vals()
@@ -169,10 +178,10 @@ async def test_config(app, client, config, client_mock):
 
     await asyncio.sleep(0.05)
     assert config.rev == 'rev_write'
-    assert client_mock.write.call_count == 1
+    assert m_write.call_count == 1
 
     # handle read error
-    client_mock.read.side_effect = [
+    m_read.side_effect = [
         RuntimeError,
         ('rev_read', vals())
     ]
@@ -194,7 +203,7 @@ async def test_config(app, client, config, client_mock):
 
     # continue on write error
     with pytest.warns(UserWarning, match='flush error'):
-        client_mock.write.side_effect = [
+        m_write.side_effect = [
             RuntimeError,
             'rev_write',
             'rev_write'
@@ -202,4 +211,4 @@ async def test_config(app, client, config, client_mock):
         with config.open() as cfg:
             cfg['insert'] = 'outsert'
         await asyncio.sleep(0.05)
-    assert client_mock.write.call_count == 3
+    assert m_write.call_count == 3

@@ -111,23 +111,27 @@ async def test_convert_id(app, client, store, mocker, ctrl):
     store['4-2', 24] = dict()
 
     resolver = device.SparkResolver(app)
+    sidk = OBJECT_SID_KEY
+    nidk = OBJECT_NID_KEY
 
-    assert await resolver.convert_sid_nid({OBJECT_SID_KEY: 'alias'}) == {OBJECT_NID_KEY: 123}
-    assert await resolver.convert_sid_nid({OBJECT_NID_KEY: 840}) == {OBJECT_NID_KEY: 840}
-    assert await resolver.convert_sid_nid({OBJECT_SID_KEY: 840}) == {OBJECT_NID_KEY: 840}
+    assert await resolver.convert_sid_nid({sidk: 'alias'}) == {nidk: 123}
+    assert await resolver.convert_sid_nid({nidk: 840}) == {nidk: 840}
+    assert await resolver.convert_sid_nid({sidk: 840}) == {nidk: 840}
+    # When both present, NID takes precedence
+    assert await resolver.convert_sid_nid({sidk: 'alias', nidk: 444}) == {nidk: 444}
     assert await resolver.convert_sid_nid({}) == {}
 
-    assert await resolver.add_sid({OBJECT_NID_KEY: 123}) == {OBJECT_NID_KEY: 123, OBJECT_SID_KEY: 'alias'}
-    assert await resolver.add_sid({OBJECT_SID_KEY: 'testey'}) == {OBJECT_SID_KEY: 'testey'}
+    assert await resolver.add_sid({nidk: 123}) == {nidk: 123, sidk: 'alias'}
+    assert await resolver.add_sid({sidk: 'testey'}) == {sidk: 'testey'}
     assert await resolver.add_sid({}) == {}
 
     with pytest.raises(exceptions.DecodeException):
-        await resolver.add_sid({OBJECT_NID_KEY: 'testey'})
+        await resolver.add_sid({nidk: 'testey'})
 
     # Service ID not found: create placeholder
-    generated = await resolver.add_sid({OBJECT_NID_KEY: 456, OBJECT_TYPE_KEY: 'Edgecase,driven'})
-    assert generated[OBJECT_SID_KEY].startswith(GENERATED_ID_PREFIX)
-    assert ',driven' not in generated[OBJECT_SID_KEY]
+    generated = await resolver.add_sid({nidk: 456, OBJECT_TYPE_KEY: 'Edgecase,driven'})
+    assert generated[sidk].startswith(GENERATED_ID_PREFIX)
+    assert ',driven' not in generated[sidk]
 
 
 async def test_resolve_links(app, client, store):

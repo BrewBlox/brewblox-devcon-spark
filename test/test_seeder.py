@@ -10,7 +10,7 @@ import pytest
 from brewblox_devcon_spark import (commander_sim, datastore, device, seeder,
                                    state)
 from brewblox_devcon_spark.codec import codec
-from brewblox_service import brewblox_logger, scheduler
+from brewblox_service import brewblox_logger, repeater, scheduler
 
 TESTED = seeder.__name__
 LOGGER = brewblox_logger(__name__)
@@ -44,7 +44,8 @@ async def ping_interval_mock(mocker):
 
 @pytest.fixture(autouse=True)
 async def system_exit_mock(mocker):
-    m = mocker.patch(TESTED + '.SystemExit')
+    m = mocker.patch(TESTED + '.SystemExit',
+                     side_effect=repeater.RepeaterCancelled)
     return m
 
 

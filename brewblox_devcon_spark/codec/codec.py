@@ -8,7 +8,6 @@ from copy import deepcopy
 from typing import Awaitable, Callable, Dict, Optional, Tuple, Union
 
 from aiohttp import web
-from brewblox_service import brewblox_logger, features
 
 from brewblox_devcon_spark import datastore, exceptions
 from brewblox_devcon_spark.codec.modifiers import STRIP_UNLOGGED_KEY, Modifier
@@ -16,6 +15,7 @@ from brewblox_devcon_spark.codec.transcoders import (Decoded_, Encoded_,
                                                      ObjType_, Transcoder)
 from brewblox_devcon_spark.codec.unit_conversion import (UNIT_ALTERNATIVES,
                                                          UnitConverter)
+from brewblox_service import brewblox_logger, features
 
 TranscodeFunc_ = Callable[
     [ObjType_, Union[Encoded_, Decoded_]],
@@ -25,14 +25,6 @@ UNIT_CONFIG_KEY = 'user_units'
 STRIP_UNLOGGED_KEY = STRIP_UNLOGGED_KEY
 
 LOGGER = brewblox_logger(__name__)
-
-
-def setup(app: web.Application):
-    features.add(app, Codec(app))
-
-
-def get_codec(app: web.Application) -> 'Codec':
-    return features.get(app, Codec)
 
 
 class Codec(features.ServiceFeature):
@@ -159,3 +151,11 @@ class Codec(features.ServiceFeature):
             msg = f'{type(ex).__name__}({ex})'
             LOGGER.debug(msg, exc_info=True)
             return 'UnknownType' if no_content else ('ErrorObject', {'error': msg, 'type': type_name})
+
+
+def setup(app: web.Application):
+    features.add(app, Codec(app))
+
+
+def get_codec(app: web.Application) -> Codec:
+    return features.get(app, Codec)

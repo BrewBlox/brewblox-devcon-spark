@@ -11,7 +11,7 @@ from aiohttp import web
 from aresponses import ResponsesMockServer
 
 from brewblox_devcon_spark import communication, exceptions, state
-from brewblox_service import http_client, scheduler
+from brewblox_service import http, scheduler
 
 DummyPortInfo = namedtuple('DummyPortInfo', ['device', 'description', 'hwid', 'serial_number'])
 
@@ -152,7 +152,7 @@ def bound_collector(loop):
 def app(app, serial_mock, transport_mock):
     app['config']['device_host'] = None
     state.setup(app)
-    http_client.setup(app)
+    http.setup(app)
     scheduler.setup(app)
     communication.setup(app)
     return app
@@ -384,13 +384,12 @@ async def test_connect_error(app, client, interval_mock, tcp_create_connection_m
     tcp_create_connection_mock.side_effect = ConnectionRefusedError
 
     spock = communication.SparkConduit(app)
-    await spock.startup(app)
+    await spock.prepare()
+    with pytest.raises(ConnectionRefusedError):
+        await spock.run()
 
-    await asyncio.sleep(0.01)
     assert not spock.connected
-    await spock.shutdown(app)
-
-    assert tcp_create_connection_mock.call_count > 1
+    assert tcp_create_connection_mock.call_count == 1
 
 
 async def test_reconnect(app, client, interval_mock, tcp_create_connection_mock):
@@ -417,28 +416,28 @@ async def test_pause_resume(app, client, interval_mock, tcp_create_connection_mo
     app['config']['device_host'] = 'enterprise'
 
     spock = communication.SparkConduit(app)
-    await spock.startup(app)
 
-    await asyncio.sleep(0.01)
-    assert tcp_create_connection_mock.call_count == 1
-
+    await spock.disconnect()  # noop
+    await spock.resume()
     await spock.pause()
-    await spock.disconnect()
-    assert spock._transport.close.call_count == 1
-    spock._protocol.connection_lost(None)
-    await asyncio.sleep(0.01)
-    # Waiting for the resume call before it reconnects
-    assert tcp_create_connection_mock.call_count == 1
+
+    await spock.prepare()
+    rt = asyncio.create_task(spock.run())
+    assert not spock._active.is_set()
 
     await spock.resume()
     await asyncio.sleep(0.01)
-    assert tcp_create_connection_mock.call_count == 2
+    assert not rt.done()
 
-    await spock.shutdown(app)
+    transport = spock._transport
+    protocol = spock._protocol
+
+    protocol.connection_lost(None)
     await asyncio.sleep(0.01)
-    await spock.pause()
-    await spock.disconnect()
-    await spock.resume()
+    assert rt.done()
+
+    assert tcp_create_connection_mock.call_count == 1
+    assert transport.close.call_count == 0
 
 
 async def test_discover_all(discover_all_app,

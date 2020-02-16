@@ -10,7 +10,6 @@ from itertools import count
 from typing import List
 
 from aiohttp import web
-from brewblox_service import brewblox_logger, features
 
 from brewblox_devcon_spark import commander, commands, exceptions, state
 from brewblox_devcon_spark.codec import codec
@@ -24,16 +23,9 @@ from brewblox_devcon_spark.validation import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
                                               OBJECT_INTERFACE_KEY,
                                               OBJECT_LIST_KEY, OBJECT_NID_KEY,
                                               OBJECT_TYPE_KEY, SYSTEM_GROUP)
+from brewblox_service import brewblox_logger, features
 
 LOGGER = brewblox_logger(__name__)
-
-
-def setup(app: web.Application):
-    # Register as a SparkCommander, so features.get(app, SparkCommander) still works
-    features.add(app, SimulationCommander(app), key=commander.SparkCommander)
-    # Before returning, the simulator encodes + decodes values
-    # We want to avoid stripping readonly values here
-    features.add(app, codec.Codec(app, strip_readonly=False), key='sim_codec')
 
 
 def make_device(app: web.Application):
@@ -329,3 +321,11 @@ class SimulationCommander(commander.SparkCommander):
 
     async def disconnect(self):
         await state.on_disconnect(self.app)
+
+
+def setup(app: web.Application):
+    # Register as a SparkCommander, so features.get(app, SparkCommander) still works
+    features.add(app, SimulationCommander(app), key=commander.SparkCommander)
+    # Before returning, the simulator encodes + decodes values
+    # We want to avoid stripping readonly values here
+    features.add(app, codec.Codec(app, strip_readonly=False), key='sim_codec')

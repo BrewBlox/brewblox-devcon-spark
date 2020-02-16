@@ -16,7 +16,6 @@ ARG service_info=UNKNOWN
 ENV SERVICE_INFO=${service_info}
 
 COPY --from=base /wheeley /wheeley
-COPY ./config /app/config
 COPY ./binaries /app/binaries
 
 RUN pip3 install --no-index --find-links=/wheeley brewblox-devcon-spark \
