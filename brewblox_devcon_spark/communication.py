@@ -17,8 +17,7 @@ from serial.tools import list_ports
 from serial_asyncio import SerialTransport
 
 from brewblox_devcon_spark import exceptions, state
-from brewblox_service import (brewblox_logger, features, http_client, repeater,
-                              strex)
+from brewblox_service import brewblox_logger, features, http_client, repeater
 
 LOGGER = brewblox_logger(__name__)
 DNS_DISCOVER_TIMEOUT_S = 20
@@ -143,7 +142,7 @@ class SparkConduit(repeater.RepeaterFeature):
     def __init__(self, app: web.Application):
         super().__init__(app)
 
-        self._connection_task: asyncio.Task = None
+        self._active_init: bool = True
         self._active: asyncio.Event = None
 
         self._address: Any = None
@@ -169,14 +168,6 @@ class SparkConduit(repeater.RepeaterFeature):
     def data_callbacks(self):
         return self._data_callbacks
 
-    async def startup(self, app: web.Application):
-        await super().startup(app)
-        self._active = asyncio.Event()
-
-    async def shutdown(self, app: web.Application):
-        await super().shutdown(app)
-        self._active = None
-
     async def prepare(self):
         """Implements RepeaterFeature.prepare"""
         def factory():
@@ -192,11 +183,12 @@ class SparkConduit(repeater.RepeaterFeature):
         else:
             self._connect_func = partial(connect_discovered, self.app, factory)
 
-        self._active.set()
+        self._active = asyncio.Event()
+        if self._active_init:
+            self._active.set()
 
     async def run(self):
         """Implements RepeaterFeature.run"""
-        last_ok = True
         try:
             await self._active.wait()
             self._address, self._transport, self._protocol = await self._connect_func()
@@ -204,7 +196,6 @@ class SparkConduit(repeater.RepeaterFeature):
             await self._protocol.connected
             await state.on_connect(self.app, self._address)
             LOGGER.info(f'Connected {self}')
-            last_ok = True
 
             await self._protocol.disconnected
             await state.on_disconnect(self.app)
@@ -216,11 +207,9 @@ class SparkConduit(repeater.RepeaterFeature):
                 await self._transport.close()
             raise
 
-        except Exception as ex:
-            if last_ok:
-                LOGGER.info(f'Connection failed: {strex(ex)}')
-                last_ok = False
+        except Exception:
             await asyncio.sleep(RETRY_INTERVAL_S)
+            raise
 
         finally:
             # Keep last known address
@@ -228,6 +217,7 @@ class SparkConduit(repeater.RepeaterFeature):
             self._protocol = None
 
     async def pause(self):
+        self._active_init = False
         if self._active:
             self._active.clear()
 
@@ -236,6 +226,7 @@ class SparkConduit(repeater.RepeaterFeature):
             self._transport.close()
 
     async def resume(self):
+        self._active_init = True
         if self._active:
             self._active.set()
 
