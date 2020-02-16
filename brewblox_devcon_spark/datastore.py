@@ -12,10 +12,10 @@ from functools import wraps
 from typing import Any, Callable, List
 
 from aiohttp import web
-from brewblox_service import (brewblox_logger, couchdb_client, features,
-                              scheduler, strex)
 
 from brewblox_devcon_spark.twinkeydict import TwinKeyDict, TwinKeyError
+from brewblox_service import (brewblox_logger, couchdb, features, repeater,
+                              strex)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -48,19 +48,6 @@ SYS_OBJECTS = [
 ]
 
 
-def setup(app: web.Application):
-    features.add(app, CouchDBBlockStore(app, defaults=SYS_OBJECTS))
-    features.add(app, CouchDBConfig(app), key='config')
-
-
-def get_datastore(app: web.Application) -> TwinKeyDict:
-    return features.get(app, CouchDBBlockStore)
-
-
-def get_config(app: web.Application) -> 'CouchDBConfig':
-    return features.get(app, key='config')
-
-
 def non_volatile(func):
     @wraps(func)
     async def wrapper(self, *args, **kwargs):
@@ -73,16 +60,15 @@ def non_volatile(func):
 async def check_remote(app: web.Application):
     if app['config']['volatile']:
         return
-    await couchdb_client.get_client(app).check_remote()
+    await couchdb.check_remote(app)
 
 
-class FlushedStore(features.ServiceFeature):
+class FlushedStore(repeater.RepeaterFeature):
 
     def __init__(self, app: web.Application):
         super().__init__(app)
         self._volatile = app['config']['volatile']
 
-        self._flush_task: asyncio.Task = None
         self._changed_event: asyncio.Event = None
 
         self._document: str = None
@@ -90,10 +76,6 @@ class FlushedStore(features.ServiceFeature):
 
     def __str__(self):
         return f'<{type(self).__name__} for {DB_NAME}/{self._document}>'
-
-    @property
-    def active(self):
-        return self._flush_task and not self._flush_task.done()
 
     @property
     def volatile(self):
@@ -119,42 +101,39 @@ class FlushedStore(features.ServiceFeature):
         if self._changed_event:
             self._changed_event.set()
 
-    async def startup(self, app: web.Application):
-        await self.shutdown(app)
-        if self._volatile:
-            LOGGER.info(f'{self} is volatile (will not read/write datastore)')
-            return
-
-        self._flush_task = await scheduler.create_task(app, self._autoflush())
-        self._changed_event = asyncio.Event()
-
     async def before_shutdown(self, app: web.Application):
-        await self.shutdown(app)
-
-    async def shutdown(self, app: web.Application):
-        await scheduler.cancel_task(app, self._flush_task)
-        self._flush_task = None
+        await super().before_shutdown(app)
+        await self.end()
         self._changed_event = None
 
-    @abstractmethod
-    async def write():
-        pass  # pragma: no cover
+    async def prepare(self):
+        self._changed_event = asyncio.Event()
+        if self._volatile:
+            LOGGER.info(f'{self} is volatile (will not read/write datastore)')
+            raise repeater.RepeaterCancelled()
 
-    async def _autoflush(self):
-        while True:
-            try:
-                await self._changed_event.wait()
-                await asyncio.sleep(FLUSH_DELAY_S)
+    async def run(self):
+        try:
+            await self._changed_event.wait()
+            await asyncio.sleep(FLUSH_DELAY_S)
+            await self.write()
+            self._changed_event.clear()
+
+        except asyncio.CancelledError:
+            LOGGER.debug(f'Writing data while closing {self}')
+            if self._changed_event.is_set():
                 await self.write()
-                self._changed_event.clear()
+            raise
 
-            except asyncio.CancelledError:
-                if self._changed_event.is_set():
-                    await self.write()
-                break
+        except Exception as ex:
+            warnings.warn(f'{self} flush error {strex(ex)}')
 
-            except Exception as ex:
-                warnings.warn(f'{self} flush error {strex(ex)}')
+    @abstractmethod
+    async def write(self):
+        """
+        Must be implemented by child classes.
+        FlushedStore handles how and when write() is called.
+        """
 
 
 class CouchDBBlockStore(FlushedStore, TwinKeyDict):
@@ -185,13 +164,9 @@ class CouchDBBlockStore(FlushedStore, TwinKeyDict):
             self.document = None
             self._ready_event.clear()
             if not self.volatile:
-                client = couchdb_client.get_client(self.app)
-                self.rev, data = await client.read(DB_NAME, document, [])
+                self.rev, data = await couchdb.read(self.app, DB_NAME, document, [])
                 self.document = document
                 LOGGER.info(f'{self} Read {len(data)} blocks. Rev = {self.rev}')
-
-        except asyncio.CancelledError:  # pragma: no cover
-            raise
 
         except Exception as ex:
             warnings.warn(f'{self} read error {strex(ex)}')
@@ -217,8 +192,7 @@ class CouchDBBlockStore(FlushedStore, TwinKeyDict):
             {'keys': keys, 'data': content}
             for keys, content in self.items()
         ]
-        client = couchdb_client.get_client(self.app)
-        self.rev = await client.write(DB_NAME, self.document, self.rev, data)
+        self.rev = await couchdb.write(self.app, DB_NAME, self.document, self.rev, data)
         LOGGER.info(f'{self} Saved {len(data)} block(s). Rev = {self.rev}')
 
     def __setitem__(self, keys, item):
@@ -273,13 +247,9 @@ class CouchDBConfig(FlushedStore):
             self.document = None
             self._ready_event.clear()
             if not self.volatile:
-                client = couchdb_client.get_client(self.app)
-                self.rev, data = await client.read(DB_NAME, document, {})
+                self.rev, data = await couchdb.read(self.app, DB_NAME, document, {})
                 self.document = document
                 LOGGER.info(f'{self} Read {len(data)} setting(s). Rev = {self.rev}')
-
-        except asyncio.CancelledError:  # pragma: no cover
-            raise
 
         except Exception as ex:
             warnings.warn(f'{self} read error {strex(ex)}')
@@ -297,6 +267,18 @@ class CouchDBConfig(FlushedStore):
         await self._ready_event.wait()
         if self.rev is None or self.document is None:
             raise RuntimeError('Document or revision unknown - did read() fail?')
-        client = couchdb_client.get_client(self.app)
-        self.rev = await client.write(DB_NAME, self.document, self.rev, self._config)
+        self.rev = await couchdb.write(self.app, DB_NAME, self.document, self.rev, self._config)
         LOGGER.info(f'{self} Saved {len(self._config)} settings. Rev = {self.rev}')
+
+
+def setup(app: web.Application):
+    features.add(app, CouchDBBlockStore(app, defaults=SYS_OBJECTS))
+    features.add(app, CouchDBConfig(app), key='config')
+
+
+def get_datastore(app: web.Application) -> CouchDBBlockStore:
+    return features.get(app, CouchDBBlockStore)
+
+
+def get_config(app: web.Application) -> CouchDBConfig:
+    return features.get(app, key='config')

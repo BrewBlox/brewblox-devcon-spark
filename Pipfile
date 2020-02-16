@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-brewblox-service = ">=0.15.0"
+brewblox-service = ">=0.23.0"
 dpath = "*"
 pyserial-asyncio = "*"
 construct = "*"
@@ -25,6 +25,7 @@ pytest-aiohttp = "*"
 aresponses = "*"
 pytest-sugar = "*"
 brewblox-dev = "*"
+flake8-quotes = "*"
 
 [requires]
 python_version = "3.8"

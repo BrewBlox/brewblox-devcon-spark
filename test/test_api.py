@@ -6,13 +6,11 @@ import asyncio
 from unittest.mock import ANY, AsyncMock
 
 import pytest
-from aiohttp.client_exceptions import ContentTypeError
 
 from brewblox_devcon_spark import (commander_sim, datastore, device,
                                    exceptions, seeder, state, ymodem)
 from brewblox_devcon_spark.api import (alias_api, codec_api, debug_api,
-                                       error_response, object_api, sse_api,
-                                       system_api)
+                                       error_response, object_api, system_api)
 from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_NID_KEY,
                                                   API_SID_KEY, API_TYPE_KEY,
                                                   GROUP_LIST_KEY,
@@ -22,6 +20,7 @@ from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_NID_KEY,
 from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.validation import SYSTEM_GROUP
 from brewblox_service import scheduler
+from brewblox_service.testing import response
 
 
 def ret_ids(objects):
@@ -68,7 +67,6 @@ async def app(app, loop):
     object_api.setup(app)
     system_api.setup(app)
     codec_api.setup(app)
-    sse_api.setup(app)
 
     return app
 
@@ -77,17 +75,6 @@ async def app(app, loop):
 async def production_app(app, loop):
     app['config']['debug'] = False
     return app
-
-
-async def response(request, status=200):
-    retv = await request
-    if retv.status != status:
-        print(retv)
-        assert retv == status
-    try:
-        return await retv.json()
-    except ContentTypeError:
-        return await retv.text()
 
 
 async def test_do(app, client):

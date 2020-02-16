@@ -2,13 +2,12 @@
 Catches Python error, and returns appropriate error codes
 """
 
-import asyncio
 import traceback
 
 from aiohttp import web, web_exceptions
-from brewblox_service import brewblox_logger, strex
 
 from brewblox_devcon_spark.exceptions import BrewBloxException
+from brewblox_service import brewblox_logger, strex
 
 LOGGER = brewblox_logger(__name__)
 
@@ -32,12 +31,9 @@ def error_response(request: web.Request, ex: Exception, status: int) -> web.Resp
 
 
 @web.middleware
-async def controller_error_middleware(request: web.Request, handler: web.RequestHandler) -> web.Response:
+async def controller_error_middleware(request: web.Request, handler) -> web.Response:
     try:
         return await handler(request)
-
-    except asyncio.CancelledError:
-        raise  # pragma: no cover
 
     except web_exceptions.HTTPError:
         raise  # pragma: no cover

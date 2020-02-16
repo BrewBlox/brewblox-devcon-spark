@@ -3,10 +3,8 @@ REST API for Spark objects
 """
 
 import asyncio
-from typing import Awaitable
 
 from aiohttp import web
-from brewblox_service import brewblox_logger, strex
 
 from brewblox_devcon_spark import (datastore, device, exceptions, state,
                                    twinkeydict, validation)
@@ -19,6 +17,7 @@ from brewblox_devcon_spark.validation import (API_DATA_KEY, API_INTERFACE_KEY,
                                               OBJECT_INTERFACE_KEY,
                                               OBJECT_LIST_KEY, OBJECT_NID_KEY,
                                               OBJECT_SID_KEY, OBJECT_TYPE_KEY)
+from brewblox_service import brewblox_logger, strex
 
 SYNC_WAIT_TIMEOUT_S = 20
 
@@ -56,7 +55,7 @@ class ObjectApi():
                      groups: list,
                      input_type: int,
                      input_data: dict
-                     ) -> Awaitable[dict]:
+                     ) -> dict:
         """
         Creates a new object in the datastore and controller.
         """
@@ -90,7 +89,7 @@ class ObjectApi():
             API_DATA_KEY: created[OBJECT_DATA_KEY],
         }
 
-    async def read(self, sid: str) -> Awaitable[dict]:
+    async def read(self, sid: str) -> dict:
         await self.wait_for_sync()
         response = await self._ctrl.read_object({
             OBJECT_SID_KEY: sid
@@ -102,7 +101,7 @@ class ObjectApi():
                     groups: list,
                     input_type: str,
                     input_data: dict
-                    ) -> Awaitable[dict]:
+                    ) -> dict:
         """
         Writes new values to existing object on controller
         """
@@ -115,7 +114,7 @@ class ObjectApi():
         })
         return self._as_api_object(response)
 
-    async def delete(self, sid: str) -> Awaitable[dict]:
+    async def delete(self, sid: str) -> dict:
         """
         Deletes object from controller and data store
         """
@@ -134,29 +133,29 @@ class ObjectApi():
             API_SID_KEY: sid
         }
 
-    async def all(self) -> Awaitable[list]:
+    async def all(self) -> list:
         await self.wait_for_sync()
         response = await self._ctrl.list_objects()
         return [self._as_api_object(obj) for obj in response.get(OBJECT_LIST_KEY, [])]
 
-    async def read_stored(self, sid: str) -> Awaitable[dict]:
+    async def read_stored(self, sid: str) -> dict:
         await self.wait_for_sync()
         response = await self._ctrl.read_stored_object({
             OBJECT_SID_KEY: sid
         })
         return self._as_api_object(response)
 
-    async def all_stored(self) -> Awaitable[list]:
+    async def all_stored(self) -> list:
         await self.wait_for_sync()
         response = await self._ctrl.list_stored_objects()
         return [self._as_api_object(obj) for obj in response.get(OBJECT_LIST_KEY, [])]
 
-    async def all_logged(self) -> Awaitable[list]:
+    async def all_logged(self) -> list:
         await self.wait_for_sync()
         response = await self._ctrl.log_objects()
         return [self._as_api_object(obj) for obj in response.get(OBJECT_LIST_KEY, [])]
 
-    async def list_compatible(self, interface: str) -> Awaitable[list]:
+    async def list_compatible(self, interface: str) -> list:
         await self.wait_for_sync()
         response = await self._ctrl.list_compatible_objects({
             OBJECT_INTERFACE_KEY: interface,
@@ -164,14 +163,14 @@ class ObjectApi():
 
         return [obj[OBJECT_SID_KEY] for obj in response[OBJECT_ID_LIST_KEY]]
 
-    async def discover(self) -> Awaitable[list]:
+    async def discover(self) -> list:
         await self.wait_for_sync()
         response = await self._ctrl.discover_objects()
         return [obj[OBJECT_SID_KEY] for obj in response[OBJECT_LIST_KEY]]
 
     async def validate(self,
                        input_type: str,
-                       input_data: dict) -> Awaitable[dict]:
+                       input_data: dict) -> dict:
         response = await self._ctrl.validate({
             OBJECT_TYPE_KEY: input_type,
             OBJECT_DATA_KEY: input_data
@@ -181,7 +180,7 @@ class ObjectApi():
             API_DATA_KEY: response[OBJECT_DATA_KEY]
         }
 
-    async def clear_objects(self) -> Awaitable[dict]:
+    async def clear_objects(self) -> dict:
         await self.wait_for_sync()
         await self._ctrl.clear_objects()
         self._store.clear()
@@ -193,7 +192,7 @@ class ObjectApi():
         })
         return {}
 
-    async def cleanup_names(self) -> Awaitable[list]:
+    async def cleanup_names(self) -> list:
         await self.wait_for_sync()
         actual = [obj[API_SID_KEY] for obj in await self.all()]
         unused = [sid for (sid, nid) in self._store if sid not in actual]
@@ -201,7 +200,7 @@ class ObjectApi():
             del self._store[sid, None]
         return unused
 
-    async def export_objects(self) -> Awaitable[dict]:
+    async def export_objects(self) -> dict:
         await self.wait_for_sync()
         store_data = [
             {'keys': keys, 'data': content}
@@ -216,7 +215,7 @@ class ObjectApi():
             'store': store_data,
         }
 
-    async def import_objects(self, exported: dict) -> Awaitable[list]:
+    async def import_objects(self, exported: dict) -> list:
 
         async def reset_create(sid: str, groups: list, input_type: str, input_data: dict):
             await self._ctrl.create_object({
