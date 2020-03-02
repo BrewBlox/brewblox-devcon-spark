@@ -13,16 +13,17 @@ from typing import Any, Awaitable, Callable, Iterable, Iterator, List, Tuple
 
 import serial
 from aiohttp import web
+from brewblox_service import brewblox_logger, features, http, repeater
 from serial.tools import list_ports
 from serial_asyncio import SerialTransport
 
 from brewblox_devcon_spark import exceptions, state
-from brewblox_service import brewblox_logger, features, http, repeater
 
 LOGGER = brewblox_logger(__name__)
 DNS_DISCOVER_TIMEOUT_S = 20
 DEFAULT_BAUD_RATE = 115200
 RETRY_INTERVAL_S = 2
+CONNECT_RETRY_COUNT = 20
 DISCOVER_INTERVAL_S = 10
 DISCOVERY_RETRY_COUNT = 5
 
@@ -50,13 +51,19 @@ async def _default_on_message(conduit: 'SparkConduit', message: str):
 
 
 async def create_connection(*args, **kwargs):  # pragma: no cover
-    """asyncio.create_connection() wrapper, for easier testing"""
+    """asyncio create_connection() wrapper, for easier testing"""
     return await asyncio.get_event_loop().create_connection(*args, **kwargs)
 
 
 def exit_discovery():  # pragma: no cover
     """SystemExit wrapper, to allow mocking"""
     LOGGER.error('Device discovery failed. Exiting now.')
+    raise SystemExit(1)
+
+
+def exit_connection():  # pragma: no cover
+    """SystemExit wrapper, to allow mocking"""
+    LOGGER.error('Connection retry attempts exhausted. Exiting now.')
     raise SystemExit(1)
 
 
@@ -144,6 +151,7 @@ class SparkConduit(repeater.RepeaterFeature):
 
         self._active_init: bool = True
         self._active: asyncio.Event = None
+        self._retry_count: int = 0
 
         self._address: Any = None
         self._transport: asyncio.Transport = None
@@ -195,6 +203,7 @@ class SparkConduit(repeater.RepeaterFeature):
 
             await self._protocol.connected
             await state.on_connect(self.app, self._address)
+            self._retry_count = 0
             LOGGER.info(f'Connected {self}')
 
             await self._protocol.disconnected
@@ -208,6 +217,9 @@ class SparkConduit(repeater.RepeaterFeature):
             raise
 
         except Exception:
+            self._retry_count += 1
+            if self._retry_count > CONNECT_RETRY_COUNT:  # pragma: no cover
+                exit_connection()
             await asyncio.sleep(RETRY_INTERVAL_S)
             raise
 
