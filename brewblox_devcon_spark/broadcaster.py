@@ -6,12 +6,14 @@ Intermittently broadcasts controller state to the eventbus
 import asyncio
 
 from aiohttp import web
+from brewblox_service import brewblox_logger, events, features, repeater
 
 from brewblox_devcon_spark import exceptions, state
 from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_SID_KEY,
                                                   ObjectApi)
 from brewblox_devcon_spark.device import GENERATED_ID_PREFIX
-from brewblox_service import brewblox_logger, events, features, repeater
+
+MAX_RETRY_COUNT = 3
 
 LOGGER = brewblox_logger(__name__)
 
@@ -25,6 +27,8 @@ class Broadcaster(repeater.RepeaterFeature):
         self.validity = '30s'
         self.history_exchange = config['history_exchange']
         self.state_exchange = config['state_exchange']
+
+        self._retry_count = 0
 
         if self.interval <= 0 or config['volatile']:
             raise repeater.RepeaterCancelled()
@@ -76,8 +80,16 @@ class Broadcaster(repeater.RepeaterFeature):
                                      routing=self.name,
                                      message=history_message)
 
+            self._retry_count = 0
         except exceptions.ConnectionPaused:
             LOGGER.debug(f'{self} interrupted: connection paused')
+
+        except Exception:
+            self._retry_count += 1
+            if self._retry_count > MAX_RETRY_COUNT:  # pragma: no cover
+                LOGGER.error('Broadcast retry attemps exhaused. Exiting now.')
+                raise SystemExit(1)
+            raise
 
 
 def setup(app: web.Application):
