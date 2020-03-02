@@ -12,9 +12,8 @@ from typing import Any, Awaitable, ByteString, List
 
 import aiofiles
 import serial
-from serial_asyncio import SerialTransport
-
 from brewblox_service import brewblox_logger
+from serial_asyncio import SerialTransport
 
 YMODEM_TRIGGER_BAUD_RATE = 28800
 YMODEM_TRANSFER_BAUD_RATE = 115200
@@ -74,7 +73,7 @@ class FileSenderProtocol(asyncio.Protocol):
 
     def data_received(self, data):
         LOGGER.debug(f'recv: {data}')
-        self._queue.put_nowait()
+        self._queue.put_nowait(data)
 
     def clear(self):
         for i in range(self._queue.qsize()):
