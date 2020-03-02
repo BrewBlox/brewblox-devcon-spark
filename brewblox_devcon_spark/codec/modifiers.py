@@ -125,6 +125,7 @@ class Modifier():
         * objtype:      strip link key postfix (<TempSensorInterface> or <>)
         * hexed:        convert hexadecimal string to int64
         * readonly:     strip value from protobuf input
+        * ignored:      strip value from protobuf input
         * hexstr:       convert hexadecimal string to base64 string
 
         The output is a dict where values use controller units.
@@ -169,6 +170,10 @@ class Modifier():
             options = self._field_options(element.field)
             val = element.obj[element.key]
             new_key = element.base_key
+
+            if options.ignored:
+                del element.obj[element.key]
+                continue
 
             if options.readonly and self._strip_readonly:
                 del element.obj[element.key]
@@ -222,6 +227,7 @@ class Modifier():
         * hexed:        converts base64 decoder output to int
         * hexstr:       converts base64 decoder output to hexadecimal string
         * readonly:     ignored: decoding means reading from controller
+        * ignored:      strip value from output
 
         Supported special field names:
         * strippedFields:  lists all fields that should be set to None in the current message
@@ -271,6 +277,10 @@ class Modifier():
             options = self._field_options(element.field)
             val = element.obj[element.key]
             new_key = element.key
+
+            if options.ignored:
+                del element.obj[element.key]
+                continue
 
             if not options.logged and strip_unlogged:
                 del element.obj[element.key]

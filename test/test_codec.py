@@ -7,11 +7,11 @@ from brewblox_devcon_spark.codec import _path_extension  # isort:skip
 from unittest.mock import ANY
 
 import pytest
+from brewblox_service import features, scheduler
 
 from brewblox_devcon_spark import (commander_sim, datastore, device,
                                    exceptions, state)
 from brewblox_devcon_spark.codec import codec
-from brewblox_service import features, scheduler
 
 _path_extension.avoid_lint_errors()
 
