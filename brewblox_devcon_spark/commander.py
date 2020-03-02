@@ -4,15 +4,15 @@ Command-based device communication
 
 import asyncio
 import warnings
-from asyncio import CancelledError, TimeoutError
+from asyncio import TimeoutError
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
 from aiohttp import web
+from brewblox_service import brewblox_logger, features, repeater, strex
 
 from brewblox_devcon_spark import commands, communication, exceptions, state
-from brewblox_service import brewblox_logger, features, scheduler, strex
 
 LOGGER = brewblox_logger(__name__)
 
@@ -47,15 +47,7 @@ CLEANUP_INTERVAL = timedelta(seconds=60)
 #
 # In this scenario, the response will only be t=10 old, as it was stored at t=100
 RESPONSE_VALID_DURATION = timedelta(seconds=5)
-REQUEST_TIMEOUT = timedelta(seconds=20)
-
-
-def setup(app: web.Application):
-    features.add(app, SparkCommander(app))
-
-
-def get_commander(app: web.Application):
-    return features.get(app, SparkCommander)
+REQUEST_TIMEOUT = timedelta(seconds=10)
 
 
 @dataclass
@@ -110,38 +102,43 @@ class TimestampedResponse():
         return self._timestamp + RESPONSE_VALID_DURATION > datetime.utcnow()
 
 
-class SparkCommander(features.ServiceFeature):
+class SparkCommander(repeater.RepeaterFeature):
 
     def __init__(self, app: web.Application):
         super().__init__(app)
 
         self._requests = defaultdict(TimestampedQueue)
         self._conduit: communication.SparkConduit = None
-        self._cleanup_task: asyncio.Task = None
 
     def __str__(self):
         return f'<{type(self).__name__} for {self._conduit} at {hex(id(self))}>'
 
-    async def _cleanup(self):
-        while True:
-            try:
+    async def startup(self, app: web.Application):
+        await super().startup(app)
+        self._conduit = communication.get_conduit(app)
+        self._conduit.data_callbacks.add(self._on_data)
+        self._conduit.event_callbacks.add(self._on_event)
 
-                await asyncio.sleep(CLEANUP_INTERVAL.seconds)
-                stale = [k for k, queue in self._requests.items()
-                         if not queue.fresh]
+    async def shutdown(self, app: web.Application):
+        await super().shutdown(app)
+        if self._conduit:
+            self._conduit.data_callbacks.discard(self._on_data)
+            self._conduit.event_callbacks.discard(self._on_event)
+            self._conduit = None
 
-                if stale:
-                    LOGGER.debug(f'Cleaning stale queues: {stale}')
+    async def prepare(self):
+        pass
 
-                for key in stale:
-                    del self._requests[key]
+    async def run(self):
+        await asyncio.sleep(CLEANUP_INTERVAL.seconds)
+        stale = [k for k, queue in self._requests.items()
+                 if not queue.fresh]
 
-            except CancelledError:
-                LOGGER.debug(f'{self} cleanup task shutdown')
-                break
+        if stale:
+            LOGGER.debug(f'Cleaning stale queues: {stale}')
 
-            except Exception as ex:
-                warnings.warn(f'{self} cleanup task error: {strex(ex)}')
+        for key in stale:
+            del self._requests[key]
 
     async def _on_welcome(self, msg: str):
         welcome = HandshakeMessage(*msg.split(','))
@@ -235,18 +232,10 @@ class SparkCommander(features.ServiceFeature):
         if self._conduit:
             await self._conduit.resume()
 
-    async def startup(self, app: web.Application):
-        await self.shutdown()
-        self._conduit = communication.get_conduit(app)
-        self._conduit.data_callbacks.add(self._on_data)
-        self._conduit.event_callbacks.add(self._on_event)
-        self._cleanup_task = await scheduler.create_task(app, self._cleanup())
 
-    async def shutdown(self, *_):
-        if self._conduit:
-            self._conduit.data_callbacks.discard(self._on_data)
-            self._conduit.event_callbacks.discard(self._on_event)
-            self._conduit = None
+def setup(app: web.Application):
+    features.add(app, SparkCommander(app))
 
-        await scheduler.cancel_task(self.app, self._cleanup_task)
-        self._cleanup_task = None
+
+def get_commander(app: web.Application) -> SparkCommander:
+    return features.get(app, SparkCommander)

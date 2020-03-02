@@ -5,16 +5,14 @@ Example of how to import and use the brewblox service
 import logging
 from configparser import ConfigParser
 
-from brewblox_service import (brewblox_logger, couchdb_client, events,
-                              http_client, scheduler, service)
-
 from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
                                    communication, datastore, device, seeder,
                                    state)
 from brewblox_devcon_spark.api import (alias_api, codec_api, debug_api,
-                                       error_response, object_api, remote_api,
-                                       sse_api, system_api)
+                                       error_response, object_api, system_api)
 from brewblox_devcon_spark.codec import codec
+from brewblox_service import (brewblox_logger, couchdb, events,
+                              http, scheduler, service)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -109,7 +107,7 @@ def main():
     LOGGER.info('CONFIG: ' + ', '.join([f"{k}='{v}'" for k, v in app['config'].items()]))
 
     state.setup(app)
-    http_client.setup(app)
+    http.setup(app)
 
     if config['simulation']:
         commander_sim.setup(app)
@@ -120,7 +118,7 @@ def main():
     scheduler.setup(app)
     events.setup(app)
 
-    couchdb_client.setup(app)
+    couchdb.setup(app)
     datastore.setup(app)
     codec.setup(app)
     device.setup(app)
@@ -131,9 +129,7 @@ def main():
     alias_api.setup(app)
     object_api.setup(app)
     system_api.setup(app)
-    remote_api.setup(app)
     codec_api.setup(app)
-    sse_api.setup(app)
 
     seeder.setup(app)
 

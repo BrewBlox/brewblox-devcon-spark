@@ -68,9 +68,7 @@ target/
 
 # pytest
 .pytest_cache/
-
-# IDE local files
-.vscode/
+.mypy_cache/
 
 # Python package files for building Docker
 docker/pkg/*
@@ -84,3 +82,6 @@ rpi-docker/pkg/*
 brewblox_db.json
 brewblox_cfg.json
 couchdb/
+
+# May exist when debugging service / devcon interactions
+brewblox_service

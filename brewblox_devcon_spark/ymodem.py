@@ -54,7 +54,6 @@ class HandshakeMessage:
 
 class FileSenderProtocol(asyncio.Protocol):
     def __init__(self):
-        self._loop = asyncio.get_event_loop()
         self._connection_made_event = asyncio.Event()
         self._queue = asyncio.Queue()
 
@@ -74,14 +73,14 @@ class FileSenderProtocol(asyncio.Protocol):
 
     def data_received(self, data):
         LOGGER.debug(f'recv: {data}')
-        self._loop.create_task(self._queue.put(data))
+        self._queue.put_nowait(data)
 
     def clear(self):
         for i in range(self._queue.qsize()):
             self._queue.get_nowait()
 
 
-async def connect_tcp(host, port) -> Awaitable[Connection]:
+async def connect_tcp(host, port) -> Connection:
     LOGGER.info(f'Connecting over TCP to {host}:{port}...')
     transport, protocol = await asyncio.get_event_loop().create_connection(FileSenderProtocol, host, port)
     conn = Connection(f'{host}:{port}', transport, protocol)
@@ -89,7 +88,7 @@ async def connect_tcp(host, port) -> Awaitable[Connection]:
     return conn
 
 
-async def connect_serial(address) -> Awaitable[Connection]:
+async def connect_serial(address) -> Connection:
     LOGGER.info(f'Connecting over Serial to {address}')
     protocol = FileSenderProtocol()
 
@@ -104,7 +103,7 @@ async def connect_serial(address) -> Awaitable[Connection]:
     return conn
 
 
-async def connect(address) -> Awaitable[Connection]:
+async def connect(address) -> Connection:
     if ':' in address:
         host, port = address.split(':')
         return await connect_tcp(host, port)

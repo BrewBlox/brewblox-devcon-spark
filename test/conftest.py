@@ -3,7 +3,6 @@ Master file for pytest fixtures.
 Any fixtures declared here are available to all test functions in this directory.
 """
 
-
 import logging
 
 import pytest
@@ -90,7 +89,7 @@ def app(sys_args, app_ini):
 
 
 @pytest.fixture
-def client(app, aiohttp_client, loop):
+async def client(app, aiohttp_client, aiohttp_server):
     """Allows patching the app or aiohttp_client before yielding it.
 
     Any tests wishing to add custom behavior to app can override the fixture
@@ -100,7 +99,7 @@ def client(app, aiohttp_client, loop):
         LOGGER.debug(f'Feature "{name}" = {impl}')
     LOGGER.debug(app.on_startup)
 
-    return loop.run_until_complete(aiohttp_client(app))
+    return await aiohttp_client(await aiohttp_server(app))
 
 
 @pytest.fixture
@@ -242,6 +241,14 @@ def spark_blocks():
                     'constraints': [
                         {
                             'mutex<>': 'mutex-1'
+                        },
+                        {
+                            'mutexed': {
+                                'mutexId<>': 'mutex-1',
+                                'extraHoldTime[s]': 5,
+                                'hasCustomHoldTime': True,
+                            },
+                            'limiting': True,
                         }
                     ]
                 }
