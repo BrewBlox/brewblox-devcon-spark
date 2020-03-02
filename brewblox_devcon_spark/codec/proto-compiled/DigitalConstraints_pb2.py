@@ -22,11 +22,63 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x18\x44igitalConstraints.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\xa4\x01\n\x11\x44igitalConstraint\x12$\n\x06minOff\x18\x01 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x04\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12#\n\x05minOn\x18\x02 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x04\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12\x1c\n\x05mutex\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x08\x92?\x02\x38\x10H\x00\x12\x18\n\x08limiting\x18\x64 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x42\x0c\n\nconstraint\"I\n\x12\x44igitalConstraints\x12\x33\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32\x17.blox.DigitalConstraintB\x05\x92?\x02\x10\x08\x62\x06proto3')
+  serialized_pb=_b('\n\x18\x44igitalConstraints.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\x86\x01\n\x07Mutexed\x12\x1c\n\x07mutexId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x08\x92?\x02\x38\x10\x12)\n\rextraHoldTime\x18\x02 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x04\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 \x12\x19\n\x11hasCustomHoldTime\x18\x03 \x01(\x08\x12\x17\n\x07hasLock\x18\x04 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\"\xf8\x01\n\x11\x44igitalConstraint\x12$\n\x06minOff\x18\x01 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x04\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12#\n\x05minOn\x18\x02 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x04\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12 \n\x07mutexed\x18\x04 \x01(\x0b\x32\r.blox.MutexedH\x00\x12\x1c\n\x05mutex\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x08\x92?\x02\x38\x10H\x00\x12\x1d\n\x08limiting\x18\x64 \x01(\rB\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03\x12+\n\tremaining\x18\x65 \x01(\rB\x18\x8a\xb5\x18\x02\x08\x04\x8a\xb5\x18\x03\x10\xe8\x07\x8a\xb5\x18\x02(\x01\x92?\x02\x38 B\x0c\n\nconstraint\"I\n\x12\x44igitalConstraints\x12\x33\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32\x17.blox.DigitalConstraintB\x05\x92?\x02\x10\x08\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,IoArray__pb2.DESCRIPTOR,])
 
 
+
+
+_MUTEXED = _descriptor.Descriptor(
+  name='Mutexed',
+  full_name='blox.Mutexed',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='mutexId', full_name='blox.Mutexed.mutexId', index=0,
+      number=1, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\002\030\010\222?\0028\020'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='extraHoldTime', full_name='blox.Mutexed.extraHoldTime', index=1,
+      number=2, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\002\010\004\212\265\030\003\020\350\007\222?\0028 '), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='hasCustomHoldTime', full_name='blox.Mutexed.hasCustomHoldTime', index=2,
+      number=3, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='hasLock', full_name='blox.Mutexed.hasLock', index=3,
+      number=4, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\002(\001'), file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=80,
+  serialized_end=214,
+)
 
 
 _DIGITALCONSTRAINT = _descriptor.Descriptor(
@@ -51,19 +103,33 @@ _DIGITALCONSTRAINT = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=_b('\212\265\030\002\010\004\212\265\030\003\020\350\007\222?\0028 '), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='mutex', full_name='blox.DigitalConstraint.mutex', index=2,
+      name='mutexed', full_name='blox.DigitalConstraint.mutexed', index=2,
+      number=4, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='mutex', full_name='blox.DigitalConstraint.mutex', index=3,
       number=3, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\212\265\030\002\030\010\222?\0028\020'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='limiting', full_name='blox.DigitalConstraint.limiting', index=3,
-      number=100, type=8, cpp_type=7, label=1,
-      has_default_value=False, default_value=False,
+      name='limiting', full_name='blox.DigitalConstraint.limiting', index=4,
+      number=100, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002(\001'), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002H\001\222?\002\030\003'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='remaining', full_name='blox.DigitalConstraint.remaining', index=5,
+      number=101, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\002\010\004\212\265\030\003\020\350\007\212\265\030\002(\001\222?\0028 '), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -79,8 +145,8 @@ _DIGITALCONSTRAINT = _descriptor.Descriptor(
       name='constraint', full_name='blox.DigitalConstraint.constraint',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=80,
-  serialized_end=244,
+  serialized_start=217,
+  serialized_end=465,
 )
 
 
@@ -110,10 +176,11 @@ _DIGITALCONSTRAINTS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=246,
-  serialized_end=319,
+  serialized_start=467,
+  serialized_end=540,
 )
 
+_DIGITALCONSTRAINT.fields_by_name['mutexed'].message_type = _MUTEXED
 _DIGITALCONSTRAINT.oneofs_by_name['constraint'].fields.append(
   _DIGITALCONSTRAINT.fields_by_name['minOff'])
 _DIGITALCONSTRAINT.fields_by_name['minOff'].containing_oneof = _DIGITALCONSTRAINT.oneofs_by_name['constraint']
@@ -121,12 +188,23 @@ _DIGITALCONSTRAINT.oneofs_by_name['constraint'].fields.append(
   _DIGITALCONSTRAINT.fields_by_name['minOn'])
 _DIGITALCONSTRAINT.fields_by_name['minOn'].containing_oneof = _DIGITALCONSTRAINT.oneofs_by_name['constraint']
 _DIGITALCONSTRAINT.oneofs_by_name['constraint'].fields.append(
+  _DIGITALCONSTRAINT.fields_by_name['mutexed'])
+_DIGITALCONSTRAINT.fields_by_name['mutexed'].containing_oneof = _DIGITALCONSTRAINT.oneofs_by_name['constraint']
+_DIGITALCONSTRAINT.oneofs_by_name['constraint'].fields.append(
   _DIGITALCONSTRAINT.fields_by_name['mutex'])
 _DIGITALCONSTRAINT.fields_by_name['mutex'].containing_oneof = _DIGITALCONSTRAINT.oneofs_by_name['constraint']
 _DIGITALCONSTRAINTS.fields_by_name['constraints'].message_type = _DIGITALCONSTRAINT
+DESCRIPTOR.message_types_by_name['Mutexed'] = _MUTEXED
 DESCRIPTOR.message_types_by_name['DigitalConstraint'] = _DIGITALCONSTRAINT
 DESCRIPTOR.message_types_by_name['DigitalConstraints'] = _DIGITALCONSTRAINTS
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
+
+Mutexed = _reflection.GeneratedProtocolMessageType('Mutexed', (_message.Message,), dict(
+  DESCRIPTOR = _MUTEXED,
+  __module__ = 'DigitalConstraints_pb2'
+  # @@protoc_insertion_point(class_scope:blox.Mutexed)
+  ))
+_sym_db.RegisterMessage(Mutexed)
 
 DigitalConstraint = _reflection.GeneratedProtocolMessageType('DigitalConstraint', (_message.Message,), dict(
   DESCRIPTOR = _DIGITALCONSTRAINT,
@@ -143,9 +221,13 @@ DigitalConstraints = _reflection.GeneratedProtocolMessageType('DigitalConstraint
 _sym_db.RegisterMessage(DigitalConstraints)
 
 
+_MUTEXED.fields_by_name['mutexId']._options = None
+_MUTEXED.fields_by_name['extraHoldTime']._options = None
+_MUTEXED.fields_by_name['hasLock']._options = None
 _DIGITALCONSTRAINT.fields_by_name['minOff']._options = None
 _DIGITALCONSTRAINT.fields_by_name['minOn']._options = None
 _DIGITALCONSTRAINT.fields_by_name['mutex']._options = None
 _DIGITALCONSTRAINT.fields_by_name['limiting']._options = None
+_DIGITALCONSTRAINT.fields_by_name['remaining']._options = None
 _DIGITALCONSTRAINTS.fields_by_name['constraints']._options = None
 # @@protoc_insertion_point(module_scope)

@@ -6,9 +6,9 @@ Any fixtures declared here are available to all test functions in this directory
 import logging
 
 import pytest
+from brewblox_service import brewblox_logger, features, service
 
 from brewblox_devcon_spark.__main__ import create_parser
-from brewblox_service import brewblox_logger, features, service
 
 LOGGER = brewblox_logger(__name__)
 
@@ -241,6 +241,14 @@ def spark_blocks():
                     'constraints': [
                         {
                             'mutex<>': 'mutex-1'
+                        },
+                        {
+                            'mutexed': {
+                                'mutexId<>': 'mutex-1',
+                                'extraHoldTime[s]': 5,
+                                'hasCustomHoldTime': True,
+                            },
+                            'limiting': True,
                         }
                     ]
                 }
