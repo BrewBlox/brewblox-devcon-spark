@@ -9,9 +9,9 @@ from unittest.mock import AsyncMock, Mock, call
 import pytest
 from aiohttp import web
 from aresponses import ResponsesMockServer
+from brewblox_service import http, scheduler
 
 from brewblox_devcon_spark import communication, exceptions, state
-from brewblox_service import http, scheduler
 
 DummyPortInfo = namedtuple('DummyPortInfo', ['device', 'description', 'hwid', 'serial_number'])
 
@@ -149,7 +149,12 @@ def bound_collector(loop):
 
 
 @pytest.fixture
-def app(app, serial_mock, transport_mock):
+def m_exit_connection(mocker):
+    return mocker.patch(TESTED + '.exit_connection')
+
+
+@pytest.fixture
+def app(app, serial_mock, transport_mock, m_exit_connection):
     app['config']['device_host'] = None
     state.setup(app)
     http.setup(app)
