@@ -7,13 +7,13 @@ import asyncio
 from datetime import datetime
 
 from aiohttp import web
+from brewblox_service import (brewblox_logger, features, repeater, scheduler,
+                              strex)
 
 from brewblox_devcon_spark import datastore, exceptions, state
 from brewblox_devcon_spark.api import object_api
 from brewblox_devcon_spark.device import get_controller
 from brewblox_devcon_spark.validation import SYSTEM_GROUP
-from brewblox_service import (brewblox_logger, features, repeater, scheduler,
-                              strex)
 
 HANDSHAKE_TIMEOUT_S = 30
 PING_INTERVAL_S = 1
@@ -24,7 +24,6 @@ LOGGER = brewblox_logger(__name__)
 class Seeder(repeater.RepeaterFeature):
 
     async def before_shutdown(self, app: web.Application):
-        LOGGER.info('before shutdown')
         await self.end()
 
     async def prepare(self):
@@ -77,7 +76,6 @@ class Seeder(repeater.RepeaterFeature):
             await scheduler.cancel(self.app, ping_task, wait_for=False)
 
         await state.wait_disconnect(self.app)
-        LOGGER.info('end')
 
     async def seeding_done(self):
         return await self._seeding_done.wait()
