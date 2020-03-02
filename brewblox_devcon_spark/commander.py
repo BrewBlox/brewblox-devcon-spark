@@ -10,9 +10,9 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
 from aiohttp import web
+from brewblox_service import brewblox_logger, features, repeater, strex
 
 from brewblox_devcon_spark import commands, communication, exceptions, state
-from brewblox_service import brewblox_logger, features, repeater, strex
 
 LOGGER = brewblox_logger(__name__)
 
@@ -47,7 +47,7 @@ CLEANUP_INTERVAL = timedelta(seconds=60)
 #
 # In this scenario, the response will only be t=10 old, as it was stored at t=100
 RESPONSE_VALID_DURATION = timedelta(seconds=5)
-REQUEST_TIMEOUT = timedelta(seconds=20)
+REQUEST_TIMEOUT = timedelta(seconds=10)
 
 
 @dataclass
