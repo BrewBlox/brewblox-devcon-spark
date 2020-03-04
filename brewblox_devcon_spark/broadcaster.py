@@ -4,6 +4,7 @@ Intermittently broadcasts controller state to the eventbus
 
 
 import asyncio
+from time import monotonic
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, events, features, repeater
@@ -13,7 +14,7 @@ from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_SID_KEY,
                                                   ObjectApi)
 from brewblox_devcon_spark.device import GENERATED_ID_PREFIX
 
-MAX_RETRY_COUNT = 3
+ERROR_TIMEOUT_S = 60
 
 LOGGER = brewblox_logger(__name__)
 
@@ -28,7 +29,7 @@ class Broadcaster(repeater.RepeaterFeature):
         self.history_exchange = config['history_exchange']
         self.state_exchange = config['state_exchange']
 
-        self._retry_count = 0
+        self._last_ok = monotonic()
 
         if self.interval <= 0 or config['volatile']:
             raise repeater.RepeaterCancelled()
@@ -53,6 +54,7 @@ class Broadcaster(repeater.RepeaterFeature):
 
             # Return early if we can't fetch blocks
             if not await state.wait_synchronize(self.app, wait=False):
+                self._last_ok = monotonic()
                 return
 
             state_blocks = {
@@ -80,13 +82,12 @@ class Broadcaster(repeater.RepeaterFeature):
                                      routing=self.name,
                                      message=history_message)
 
-            self._retry_count = 0
+            self._last_ok = monotonic()
         except exceptions.ConnectionPaused:
             LOGGER.debug(f'{self} interrupted: connection paused')
 
         except Exception:
-            self._retry_count += 1
-            if self._retry_count > MAX_RETRY_COUNT:  # pragma: no cover
+            if self._last_ok + ERROR_TIMEOUT_S < monotonic():  # pragma: no cover
                 LOGGER.error('Broadcast retry attemps exhaused. Exiting now.')
                 raise SystemExit(1)
             raise
