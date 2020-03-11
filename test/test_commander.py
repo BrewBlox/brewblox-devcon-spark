@@ -7,9 +7,9 @@ from datetime import timedelta
 from unittest.mock import AsyncMock, PropertyMock
 
 import pytest
+from brewblox_service import scheduler
 
 from brewblox_devcon_spark import commander, commands, exceptions, state
-from brewblox_service import scheduler
 
 TESTED = commander.__name__
 
@@ -32,7 +32,7 @@ def conduit_mock(mocker):
 
 @pytest.fixture
 def app(app, conduit_mock, mocker):
-    mocker.patch(TESTED + '.REQUEST_TIMEOUT', timedelta(seconds=1))
+    app['config']['command_timeout'] = 1
     state.setup(app)
     scheduler.setup(app)
     commander.setup(app)
@@ -197,7 +197,7 @@ async def test_error_command(conduit_mock, sparky, reset_msgid):
 
 
 async def test_timeout_command(conduit_mock, sparky, mocker):
-    mocker.patch(TESTED + '.REQUEST_TIMEOUT', timedelta(microseconds=1))
+    mocker.patch.object(sparky, '_timeout', 0.001)
     with pytest.raises(exceptions.CommandTimeout):
         await sparky.execute(commands.ListStoredObjectsCommand.from_args())
 

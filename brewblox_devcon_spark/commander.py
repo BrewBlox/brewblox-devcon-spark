@@ -47,7 +47,6 @@ CLEANUP_INTERVAL = timedelta(seconds=60)
 #
 # In this scenario, the response will only be t=10 old, as it was stored at t=100
 RESPONSE_VALID_DURATION = timedelta(seconds=5)
-REQUEST_TIMEOUT = timedelta(seconds=10)
 
 
 @dataclass
@@ -107,6 +106,7 @@ class SparkCommander(repeater.RepeaterFeature):
     def __init__(self, app: web.Application):
         super().__init__(app)
 
+        self._timeout = app['config']['command_timeout']
         self._requests = defaultdict(TimestampedQueue)
         self._conduit: communication.SparkConduit = None
 
@@ -201,7 +201,7 @@ class SparkCommander(repeater.RepeaterFeature):
             queue = self._requests[encoded_request].queue
 
             try:
-                response = await asyncio.wait_for(queue.get(), timeout=REQUEST_TIMEOUT.seconds)
+                response = await asyncio.wait_for(queue.get(), timeout=self._timeout)
             except TimeoutError:
                 raise exceptions.CommandTimeout(f'{type(command).__name__}')
 
