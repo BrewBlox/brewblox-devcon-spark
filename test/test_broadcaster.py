@@ -92,7 +92,7 @@ async def test_broadcast(app, m_api, m_publish, client, connected):
              message={
                  'key': 'test_app',
                  'type': 'Spark.service',
-                 'duration': '60.0s',
+                 'ttl': '60.0s',
                  'data': ANY,
              }),
         call(app,
@@ -101,7 +101,7 @@ async def test_broadcast(app, m_api, m_publish, client, connected):
              message={
                  'key': 'test_app',
                  'type': 'Spark.blocks',
-                 'duration': '60.0s',
+                 'ttl': '60.0s',
                  'data': object_list,
              }),
         call(app,
