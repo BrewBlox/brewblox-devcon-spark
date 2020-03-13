@@ -42,7 +42,7 @@ class Broadcaster(repeater.RepeaterFeature):
             state_service = {
                 'key': self.name,
                 'type': 'Spark.service',
-                'duration': self.validity,
+                'ttl': self.validity,
                 'data': state.summary_dict(self.app),
             }
 
@@ -59,7 +59,7 @@ class Broadcaster(repeater.RepeaterFeature):
             state_blocks = {
                 'key': self.name,
                 'type': 'Spark.blocks',
-                'duration': self.validity,
+                'ttl': self.validity,
                 'data': await self.api.all(),
             }
 
