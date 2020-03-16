@@ -13,6 +13,7 @@ from binascii import hexlify, unhexlify
 from functools import reduce
 from typing import List
 
+from brewblox_service import brewblox_logger
 from construct import (Adapter, Byte, Const, Container, Default, Enum,
                        GreedyBytes, Int8ul, Int16ul, Struct)
 
@@ -22,7 +23,6 @@ from brewblox_devcon_spark.validation import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
                                               OBJECT_INTERFACE_KEY,
                                               OBJECT_LIST_KEY, OBJECT_NID_KEY,
                                               OBJECT_TYPE_KEY)
-from brewblox_service import brewblox_logger
 
 LOGGER = brewblox_logger(__name__)
 
@@ -49,6 +49,14 @@ class ResetReason(enum.Enum):
     DFU_MODE = '78'
     PANIC = '82'
     USER = '8C'
+
+
+class ResetData(enum.Enum):
+    NOT_SPECIFIED = '00'
+    WATCHDOG = '01'
+    CBOX_RESET = '02'
+    CBOX_FACTORY_RESET = '03'
+    FIRMWARE_UPDATE_FAILED = '04'
 
 
 class Opcode(enum.IntEnum):

@@ -62,9 +62,11 @@ class HandshakeMessage:
     reset_data_hex: str
     device_id: str = field(default='')
     reset_reason: str = field(init=False)
+    reset_data: str = field(init=False)
 
     def __post_init__(self):
         self.reset_reason = commands.ResetReason(self.reset_reason_hex.upper()).name
+        self.reset_data = commands.ResetData(self.reset_data_hex.upper()).name
 
 
 class TimestampedQueue():
