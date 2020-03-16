@@ -9,6 +9,11 @@ trigger:
     include:
       - refs/heads/*
 
+pr:
+  branches:
+    include:
+      - '*'
+
 variables:
   # Variables imported from brewblox group:
   # DOCKER_USER
