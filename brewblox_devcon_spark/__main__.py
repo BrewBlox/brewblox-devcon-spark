@@ -5,14 +5,15 @@ Example of how to import and use the brewblox service
 import logging
 from configparser import ConfigParser
 
+from brewblox_service import (brewblox_logger, couchdb, events, http,
+                              scheduler, service)
+
 from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
                                    communication, datastore, device, seeder,
                                    state)
 from brewblox_devcon_spark.api import (alias_api, codec_api, debug_api,
                                        error_response, object_api, system_api)
 from brewblox_devcon_spark.codec import codec
-from brewblox_service import (brewblox_logger, couchdb, events,
-                              http, scheduler, service)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -56,19 +57,32 @@ def create_parser(default_name='spark'):
     group.add_argument('--state-exchange',
                        help='Eventbus exchange to which volatile controller state should be broadcast. [%(default)s]',
                        default='brewcast.state')
+    group.add_argument('--command-timeout',
+                       help='Timeout period (in seconds) for controller commands. [$(default)s]',
+                       type=float,
+                       default=10)
     group.add_argument('--broadcast-interval',
-                       help='Interval (in seconds) between broadcasts of controller state.'
+                       help='Interval (in seconds) between broadcasts of controller state. '
                        'Set to a value <= 0 to disable broadcasting. [%(default)s]',
                        type=float,
                        default=5)
-    group.add_argument('--sync-exchange',
-                       help='Eventbus exchange used to synchronize remote blocks. [%(default)s]',
-                       default='syncast')
+    group.add_argument('--broadcast-timeout',
+                       help='Timeout period (in seconds) for the broadcaster. '
+                       'This is measured from the last successful broadcast. '
+                       'If the timeout triggers, the service restarts. '
+                       'Set to a value <= 0 to prevent timeouts. [%(default)s]',
+                       type=float,
+                       default=60)
+    group.add_argument('--broadcast-valid',
+                       help='Period after which broadcast data should be discarded. '
+                       'This does not apply to history data. [%(default)s]',
+                       type=float,
+                       default=60)
     group.add_argument('--mdns-host',
-                       help='Address of the BrewBlox mdns discovery service. [%(default)s]',
+                       help='Address of the Brewblox mdns discovery service. [%(default)s]',
                        default='172.17.0.1')
     group.add_argument('--mdns-port',
-                       help='Port of the BrewBlox mdns discovery service. [%(default)s]',
+                       help='Port of the Brewblox mdns discovery service. [%(default)s]',
                        type=int,
                        default=5000)
     group.add_argument('--volatile',

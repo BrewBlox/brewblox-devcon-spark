@@ -5,10 +5,10 @@ Tests brewblox_devcon_spark.broadcaster
 from unittest.mock import ANY, AsyncMock, call
 
 import pytest
+from brewblox_service import repeater, scheduler
 
 from brewblox_devcon_spark import broadcaster, exceptions, state
 from brewblox_devcon_spark.api.object_api import API_DATA_KEY, API_SID_KEY
-from brewblox_service import repeater, scheduler
 
 TESTED = broadcaster.__name__
 
@@ -92,7 +92,7 @@ async def test_broadcast(app, m_api, m_publish, client, connected):
              message={
                  'key': 'test_app',
                  'type': 'Spark.service',
-                 'duration': '30s',
+                 'ttl': '60.0s',
                  'data': ANY,
              }),
         call(app,
@@ -101,7 +101,7 @@ async def test_broadcast(app, m_api, m_publish, client, connected):
              message={
                  'key': 'test_app',
                  'type': 'Spark.blocks',
-                 'duration': '30s',
+                 'ttl': '60.0s',
                  'data': object_list,
              }),
         call(app,

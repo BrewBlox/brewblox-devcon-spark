@@ -14,8 +14,6 @@ from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_SID_KEY,
                                                   ObjectApi)
 from brewblox_devcon_spark.device import GENERATED_ID_PREFIX
 
-ERROR_TIMEOUT_S = 60
-
 LOGGER = brewblox_logger(__name__)
 
 
@@ -25,7 +23,8 @@ class Broadcaster(repeater.RepeaterFeature):
         config = self.app['config']
         self.name = config['name']
         self.interval = config['broadcast_interval']
-        self.validity = '30s'
+        self.timeout = config['broadcast_timeout']
+        self.validity = str(config['broadcast_valid']) + 's'
         self.history_exchange = config['history_exchange']
         self.state_exchange = config['state_exchange']
 
@@ -43,7 +42,7 @@ class Broadcaster(repeater.RepeaterFeature):
             state_service = {
                 'key': self.name,
                 'type': 'Spark.service',
-                'duration': self.validity,
+                'ttl': self.validity,
                 'data': state.summary_dict(self.app),
             }
 
@@ -60,7 +59,7 @@ class Broadcaster(repeater.RepeaterFeature):
             state_blocks = {
                 'key': self.name,
                 'type': 'Spark.blocks',
-                'duration': self.validity,
+                'ttl': self.validity,
                 'data': await self.api.all(),
             }
 
@@ -87,7 +86,8 @@ class Broadcaster(repeater.RepeaterFeature):
             LOGGER.debug(f'{self} interrupted: connection paused')
 
         except Exception:
-            if self._last_ok + ERROR_TIMEOUT_S < monotonic():  # pragma: no cover
+            if self.timeout > 0 \
+                    and self._last_ok + self.timeout < monotonic():  # pragma: no cover
                 LOGGER.error('Broadcast retry attemps exhaused. Exiting now.')
                 raise SystemExit(1)
             raise
