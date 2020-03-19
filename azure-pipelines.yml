@@ -30,7 +30,7 @@ steps:
 - bash: |
     set -o allexport; source .env; set +o allexport
     echo "##vso[task.setvariable variable=DOCKER_REPO]$DOCKER_REPO"
-    echo "##vso[task.setvariable variable=GITHUB_REPO]$GITHUB_REPO"
+    echo "##vso[task.setvariable variable=FLASHER_REPO]$FLASHER_REPO"
   displayName: Export .env variables
 
 - bash: |
@@ -111,28 +111,24 @@ steps:
 
 - bash: >-
     docker buildx build
-    --tag ${FLASHER_REPO}:$(TAG)
-    --tag ${FLASHER_REPO}:rpi-$(TAG)
+    --tag $(FLASHER_REPO):$(TAG)
+    --tag $(FLASHER_REPO):rpi-$(TAG)
     --build-arg service_info="$(git describe) @ $(date)"
     --push
     --platform linux/amd64,linux/arm/v7
     flasher
   displayName: (Flasher) Deploy Docker images with branch tags
   condition: and(succeeded(), variables['BRANCH'], not(variables['RELEASE']))
-  env:
-    FLASHER_REPO: brewblox/firmware-flasher
 
 - bash: >-
     docker buildx build
-    --tag ${FLASHER_REPO}:newest-tag
-    --tag ${FLASHER_REPO}:rpi-newest-tag
-    --tag ${FLASHER_REPO}:$(RELEASE)
-    --tag ${FLASHER_REPO}:rpi-$(RELEASE)
+    --tag $(FLASHER_REPO):newest-tag
+    --tag $(FLASHER_REPO):rpi-newest-tag
+    --tag $(FLASHER_REPO):$(RELEASE)
+    --tag $(FLASHER_REPO):rpi-$(RELEASE)
     --build-arg service_info="$(git describe) @ $(date)"
     --push
     --platform linux/amd64,linux/arm/v7
     flasher
   displayName: (Flasher) Deploy Docker images with release tags
   condition: and(succeeded(), variables['RELEASE'])
-  env:
-    FLASHER_REPO: brewblox/firmware-flasher
