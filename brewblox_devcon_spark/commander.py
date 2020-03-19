@@ -66,7 +66,10 @@ class HandshakeMessage:
 
     def __post_init__(self):
         self.reset_reason = commands.ResetReason(self.reset_reason_hex.upper()).name
-        self.reset_data = commands.ResetData(self.reset_data_hex.upper()).name
+        try:
+            self.reset_data = commands.ResetData(self.reset_data_hex.upper()).name
+        except Exception:
+            self.reset_data = self.reset_data_hex.upper()
 
 
 class TimestampedQueue():
