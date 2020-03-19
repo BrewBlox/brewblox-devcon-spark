@@ -91,8 +91,8 @@ steps:
 
 - bash: >-
     docker buildx build
-    --tag newest-tag
-    --tag rpi-newest-tag
+    --tag $(DOCKER_REPO):newest-tag
+    --tag $(DOCKER_REPO):rpi-newest-tag
     --tag $(DOCKER_REPO):$(RELEASE)
     --tag $(DOCKER_REPO):rpi-$(RELEASE)
     --build-arg service_info="$(git describe) @ $(date)"
@@ -111,24 +111,28 @@ steps:
 
 - bash: >-
     docker buildx build
-    --tag brewblox/firmware-flasher:$(TAG)
-    --tag brewblox/firmware-flasher:rpi-$(TAG)
+    --tag ${FLASHER_REPO}:$(TAG)
+    --tag ${FLASHER_REPO}:rpi-$(TAG)
     --build-arg service_info="$(git describe) @ $(date)"
     --push
     --platform linux/amd64,linux/arm/v7
     flasher
   displayName: Deploy Docker images with branch tags (flasher)
   condition: and(succeeded(), variables['BRANCH'], not(variables['RELEASE']))
+  env:
+    FLASHER_REPO: brewblox/firmware-flasher
 
 - bash: >-
     docker buildx build
-    --tag newest-tag
-    --tag rpi-newest-tag
-    --tag brewblox/firmware-flasher:$(RELEASE)
-    --tag brewblox/firmware-flasher:rpi-$(RELEASE)
+    --tag ${FLASHER_REPO}:newest-tag
+    --tag ${FLASHER_REPO}:rpi-newest-tag
+    --tag ${FLASHER_REPO}:$(RELEASE)
+    --tag ${FLASHER_REPO}:rpi-$(RELEASE)
     --build-arg service_info="$(git describe) @ $(date)"
     --push
     --platform linux/amd64,linux/arm/v7
     flasher
   displayName: Deploy Docker images with release tags (flasher)
   condition: and(succeeded(), variables['RELEASE'])
+  env:
+    FLASHER_REPO: brewblox/firmware-flasher
