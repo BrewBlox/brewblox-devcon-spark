@@ -73,7 +73,7 @@ steps:
   displayName: Copy files to docker context
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
-- bash: ./before_build.sh
+- bash: docker/before_build.sh
   displayName: Run before_build.sh script
   workingDirectory: docker
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
@@ -104,7 +104,7 @@ steps:
 
 # Flasher
 
-- bash: ./before_build.sh
+- bash: flasher/before_build.sh
   displayName: Run before_build.sh script (flasher)
   workingDirectory: flasher
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
