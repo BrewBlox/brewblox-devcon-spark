@@ -73,7 +73,7 @@ steps:
   displayName: Copy files to docker context
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
-- bash: docker/before_build.sh
+- bash: bash ./before_build.sh
   displayName: Run before_build.sh script
   workingDirectory: docker
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
@@ -104,8 +104,8 @@ steps:
 
 # Flasher
 
-- bash: flasher/before_build.sh
-  displayName: Run before_build.sh script (flasher)
+- bash: bash ./before_build.sh
+  displayName: (Flasher) Run before_build.sh script
   workingDirectory: flasher
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
@@ -117,7 +117,7 @@ steps:
     --push
     --platform linux/amd64,linux/arm/v7
     flasher
-  displayName: Deploy Docker images with branch tags (flasher)
+  displayName: (Flasher) Deploy Docker images with branch tags
   condition: and(succeeded(), variables['BRANCH'], not(variables['RELEASE']))
   env:
     FLASHER_REPO: brewblox/firmware-flasher
@@ -132,7 +132,7 @@ steps:
     --push
     --platform linux/amd64,linux/arm/v7
     flasher
-  displayName: Deploy Docker images with release tags (flasher)
+  displayName: (Flasher) Deploy Docker images with release tags
   condition: and(succeeded(), variables['RELEASE'])
   env:
     FLASHER_REPO: brewblox/firmware-flasher
