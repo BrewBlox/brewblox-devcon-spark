@@ -113,7 +113,6 @@ steps:
     docker buildx build
     --tag $(FLASHER_REPO):$(TAG)
     --tag $(FLASHER_REPO):rpi-$(TAG)
-    --build-arg service_info="$(git describe) @ $(date)"
     --push
     --platform linux/amd64,linux/arm/v7
     flasher
@@ -126,7 +125,6 @@ steps:
     --tag $(FLASHER_REPO):rpi-newest-tag
     --tag $(FLASHER_REPO):$(RELEASE)
     --tag $(FLASHER_REPO):rpi-$(RELEASE)
-    --build-arg service_info="$(git describe) @ $(date)"
     --push
     --platform linux/amd64,linux/arm/v7
     flasher

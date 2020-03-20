@@ -2,7 +2,7 @@
 set -e
 
 for bin in ./*.bin; do
-    res="$(npx particle binary inspect ./${bin})"
+    res="$(npx particle binary inspect ./"${bin}")"
     echo "$res"
     grep -q "CRC is ok" <<< "$res"
 
