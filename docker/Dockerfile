@@ -3,7 +3,7 @@ FROM python:3.8 as base
 COPY ./dist /app/dist
 COPY ./requirements.txt /app/requirements.txt
 
-RUN pip3 install wheel \
+RUN pip3 install wheel poetry \
     && pip3 wheel --wheel-dir=/wheeley -r /app/requirements.txt \
     && pip3 wheel --wheel-dir=/wheeley --find-links=/wheeley --no-index /app/dist/*
 
