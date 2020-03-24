@@ -45,7 +45,7 @@ steps:
 - bash: |
     pip install poetry
     poetry install
-    python build --format sdist
+    poetry build --format sdist
   displayName: Build Python package
 
 - bash: poetry run pytest
