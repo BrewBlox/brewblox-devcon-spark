@@ -192,6 +192,9 @@ class SparkCommander(repeater.RepeaterFeature):
             queue = self._requests[raw_request].queue
             await queue.put(TimestampedResponse(raw_response))
 
+        except asyncio.CancelledError:  # pragma: no cover
+            raise
+
         except Exception as ex:
             LOGGER.error(f'Response error parsing message `{msg}` : {strex(ex)}')
 

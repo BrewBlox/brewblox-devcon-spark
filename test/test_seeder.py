@@ -3,14 +3,14 @@ Tests brewblox_devcon_spark.seeder
 """
 
 import asyncio
-from unittest.mock import AsyncMock
 
 import pytest
+from brewblox_service import brewblox_logger, repeater, scheduler
+from mock import AsyncMock
 
 from brewblox_devcon_spark import (commander_sim, datastore, device, seeder,
                                    state)
 from brewblox_devcon_spark.codec import codec
-from brewblox_service import brewblox_logger, repeater, scheduler
 
 TESTED = seeder.__name__
 LOGGER = brewblox_logger(__name__)

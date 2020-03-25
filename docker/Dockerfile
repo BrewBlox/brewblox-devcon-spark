@@ -1,14 +1,13 @@
-FROM python:3.8 as base
+FROM python:3.7 as base
 
 COPY ./dist /app/dist
 COPY ./requirements.txt /app/requirements.txt
 
 RUN pip3 install wheel \
-    && pip3 wheel --wheel-dir=/wheeley poetry \
-    && pip3 wheel --wheel-dir=/wheeley -r /app/requirements.txt \
+    && pip3 wheel --wheel-dir=/wheeley --extra-index-url=https://www.piwheels.org/simple -r /app/requirements.txt \
     && pip3 wheel --wheel-dir=/wheeley --find-links=/wheeley --no-index /app/dist/*
 
-FROM python:3.8-slim
+FROM python:3.7-slim
 EXPOSE 5000
 WORKDIR /app
 
