@@ -123,6 +123,9 @@ def main():
     LOGGER.info('INI: ' + ', '.join([f"{k}='{v}'" for k, v in app['ini'].items()]))
     LOGGER.info('CONFIG: ' + ', '.join([f"{k}='{v}'" for k, v in app['config'].items()]))
 
+    if config['simulator']:  # pragma: no cover
+        simulator.start()
+
     state.setup(app)
     http.setup(app)
 
@@ -131,9 +134,6 @@ def main():
     else:
         communication.setup(app)
         commander.setup(app)
-
-    if config['simulator']:
-        simulator.start()
 
     scheduler.setup(app)
     events.setup(app)
