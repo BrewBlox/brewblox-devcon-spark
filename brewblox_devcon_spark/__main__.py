@@ -10,7 +10,7 @@ from brewblox_service import (brewblox_logger, couchdb, events, http,
 
 from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
                                    communication, datastore, device, seeder,
-                                   state)
+                                   simulator, state)
 from brewblox_devcon_spark.api import (alias_api, codec_api, debug_api,
                                        error_response, object_api, system_api)
 from brewblox_devcon_spark.codec import codec
@@ -24,6 +24,9 @@ def create_parser(default_name='spark'):
     # Device options
     group = parser.add_argument_group('Device communication')
     group.add_argument('--simulation',
+                       help='Start in simulation mode. Will not connect to a physical device. [%(default)s]',
+                       action='store_true')
+    group.add_argument('--simulator',
                        help='Start in simulation mode. Will not connect to a physical device. [%(default)s]',
                        action='store_true')
     group.add_argument('--device-host',
@@ -128,6 +131,9 @@ def main():
     else:
         communication.setup(app)
         commander.setup(app)
+
+    if config['simulator']:
+        simulator.start()
 
     scheduler.setup(app)
     events.setup(app)
