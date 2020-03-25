@@ -11,15 +11,18 @@ pushd "${SCRIPT_DIR}" > /dev/null
 
 # Pull image
 docker rm bin-box 2> /dev/null || true
-if [ $TAG != "local" ]
+if [ "${TAG}" != "local" ]
 then
-    docker pull brewblox/firmware-bin:${TAG}
+    docker pull brewblox/firmware-bin:"${TAG}"
 fi
-docker create --name bin-box brewblox/firmware-bin:${TAG}
+docker create --name bin-box brewblox/firmware-bin:"${TAG}"
 
 # Get files
 rm -rf ./binaries 2> /dev/null || true
 docker cp bin-box:/binaries ./
+
+# Make simulator executable
+chmod a+x ./binaries/brewblox-amd
 
 # Remove image
 docker rm bin-box > /dev/null
