@@ -2,10 +2,9 @@
 Tests brewblox_devcon_spark.broadcaster
 """
 
-from unittest.mock import ANY, AsyncMock, call
-
 import pytest
 from brewblox_service import repeater, scheduler
+from mock import ANY, AsyncMock, call
 
 from brewblox_devcon_spark import broadcaster, exceptions, state
 from brewblox_devcon_spark.api.object_api import API_DATA_KEY, API_SID_KEY

@@ -3,9 +3,11 @@ Tests brewblox_devcon_spark.api
 """
 
 import asyncio
-from unittest.mock import ANY, AsyncMock
 
 import pytest
+from brewblox_service import scheduler
+from brewblox_service.testing import response
+from mock import ANY, AsyncMock
 
 from brewblox_devcon_spark import (commander_sim, datastore, device,
                                    exceptions, seeder, state, ymodem)
@@ -19,8 +21,6 @@ from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_NID_KEY,
                                                   OBJECT_TYPE_KEY)
 from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.validation import SYSTEM_GROUP
-from brewblox_service import scheduler
-from brewblox_service.testing import response
 
 
 def ret_ids(objects):
