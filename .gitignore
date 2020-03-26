@@ -63,3 +63,8 @@ docs/_build/
 
 # May exist when debugging service / devcon interactions
 brewblox_service
+
+# Generated when running simulator
+device_key.der
+server_key.der
+eeprom.bin
