@@ -13,7 +13,4 @@ poetry export --without-hashes -f requirements.txt -o docker/requirements.txt
 cp -rf dist/ docker/
 cp -rf binaries/ docker/
 
-cd docker/binaries
-touch device_key.der server_key.der eeprom.bin
-
 popd > /dev/null
