@@ -4,10 +4,12 @@ Offers encoding and decoding of objects.
 """
 
 
+import asyncio
 from copy import deepcopy
 from typing import Awaitable, Callable, Dict, Optional, Tuple, Union
 
 from aiohttp import web
+from brewblox_service import brewblox_logger, features
 
 from brewblox_devcon_spark import datastore, exceptions
 from brewblox_devcon_spark.codec.modifiers import STRIP_UNLOGGED_KEY, Modifier
@@ -15,7 +17,6 @@ from brewblox_devcon_spark.codec.transcoders import (Decoded_, Encoded_,
                                                      ObjType_, Transcoder)
 from brewblox_devcon_spark.codec.unit_conversion import (UNIT_ALTERNATIVES,
                                                          UnitConverter)
-from brewblox_service import brewblox_logger, features
 
 TranscodeFunc_ = Callable[
     [ObjType_, Union[Encoded_, Decoded_]],
@@ -146,6 +147,9 @@ class Codec(features.ServiceFeature):
             trc = Transcoder.get(obj_type, self._mod)
             type_name = trc.type_str()
             return type_name if no_content else (type_name, trc.decode(encoded, opts))
+
+        except asyncio.CancelledError:  # pragma: no cover
+            raise
 
         except Exception as ex:
             msg = f'{type(ex).__name__}({ex})'

@@ -4,10 +4,10 @@ Tests brewblox_devcon_spark.commander
 
 import asyncio
 from datetime import timedelta
-from unittest.mock import AsyncMock, PropertyMock
 
 import pytest
 from brewblox_service import scheduler
+from mock import AsyncMock, PropertyMock
 
 from brewblox_devcon_spark import commander, commands, exceptions, state
 

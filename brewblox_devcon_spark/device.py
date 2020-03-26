@@ -2,6 +2,7 @@
 Offers a functional interface to the device functionality
 """
 
+import asyncio
 import itertools
 import re
 from contextlib import suppress
@@ -9,6 +10,7 @@ from functools import partialmethod
 from typing import Awaitable, Callable, List, Optional, Type, Union
 
 from aiohttp import web
+from brewblox_service import brewblox_logger, features, strex
 
 from brewblox_devcon_spark import (commander, commands, datastore, exceptions,
                                    twinkeydict)
@@ -21,7 +23,6 @@ from brewblox_devcon_spark.validation import (GENERATED_ID_PREFIX,
                                               OBJECT_LINK_POSTFIX_START,
                                               OBJECT_LIST_KEY, OBJECT_NID_KEY,
                                               OBJECT_SID_KEY, OBJECT_TYPE_KEY)
-from brewblox_service import brewblox_logger, features, strex
 
 ObjectId_ = Union[str, int]
 FindIdFunc_ = Callable[[twinkeydict.TwinKeyDict, ObjectId_, str], Awaitable[ObjectId_]]
@@ -251,6 +252,9 @@ class SparkController(features.ServiceFeature):
                 retval = await afunc(retval, command_opts)
 
             return retval
+
+        except asyncio.CancelledError:  # pragma: no cover
+            raise
 
         except Exception as ex:
             LOGGER.debug(f'Failed to execute {command_type}: {strex(ex)}')

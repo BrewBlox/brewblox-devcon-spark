@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "brewblox-devcon-spark"
+version = "0.5.2"
+description = "Communication with Spark controllers"
+authors = ["BrewPi <development@brewpi.com>"]
+license = "GPL-3.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.7"
+brewblox-service = "^0.25.0"
+pyserial-asyncio = "^0.4"
+construct = "^2.10.56"
+protobuf = "^3.11.3"
+pint = "^0.11"
+aiofiles = "^0.4.0"
+aiohttp-sse = "^2.0.0"
+schema = "^0.7.1"
+poetry = "^1.0.5"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.4.1"
+pytest-flake8 = "^1.0.4"
+pytest-cov = "^2.8.1"
+pytest-mock = "^2.0.0"
+pytest-aiohttp = "^0.3.0"
+flake8 = "^3.7.9"
+autopep8 = "^1.5"
+aresponses = "^2.0.0"
+brewblox-dev = "^1.4.0"
+flake8-quotes = "^2.1.1"
+asyncmock = "^0.4.2"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"

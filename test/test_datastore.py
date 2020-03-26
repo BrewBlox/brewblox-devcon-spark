@@ -3,12 +3,12 @@ Tests brewblox_devcon_spark.datastore
 """
 
 import asyncio
-from unittest.mock import AsyncMock, Mock
 
 import pytest
+from brewblox_service import scheduler
+from mock import AsyncMock, Mock
 
 from brewblox_devcon_spark import datastore
-from brewblox_service import scheduler
 
 TESTED = datastore.__name__
 

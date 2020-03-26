@@ -12,10 +12,10 @@ from functools import wraps
 from typing import Any, Callable, List
 
 from aiohttp import web
-
-from brewblox_devcon_spark.twinkeydict import TwinKeyDict, TwinKeyError
 from brewblox_service import (brewblox_logger, couchdb, features, repeater,
                               strex)
+
+from brewblox_devcon_spark.twinkeydict import TwinKeyDict, TwinKeyError
 
 LOGGER = brewblox_logger(__name__)
 
@@ -168,6 +168,9 @@ class CouchDBBlockStore(FlushedStore, TwinKeyDict):
                 self.document = document
                 LOGGER.info(f'{self} Read {len(data)} blocks. Rev = {self.rev}')
 
+        except asyncio.CancelledError:  # pragma: no cover
+            raise
+
         except Exception as ex:
             warnings.warn(f'{self} read error {strex(ex)}')
 
@@ -250,6 +253,9 @@ class CouchDBConfig(FlushedStore):
                 self.rev, data = await couchdb.read(self.app, DB_NAME, document, {})
                 self.document = document
                 LOGGER.info(f'{self} Read {len(data)} setting(s). Rev = {self.rev}')
+
+        except asyncio.CancelledError:  # pragma: no cover
+            raise
 
         except Exception as ex:
             warnings.warn(f'{self} read error {strex(ex)}')

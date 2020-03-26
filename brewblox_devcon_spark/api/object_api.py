@@ -5,6 +5,7 @@ REST API for Spark objects
 import asyncio
 
 from aiohttp import web
+from brewblox_service import brewblox_logger, strex
 
 from brewblox_devcon_spark import (datastore, device, exceptions, state,
                                    twinkeydict, validation)
@@ -17,7 +18,6 @@ from brewblox_devcon_spark.validation import (API_DATA_KEY, API_INTERFACE_KEY,
                                               OBJECT_INTERFACE_KEY,
                                               OBJECT_LIST_KEY, OBJECT_NID_KEY,
                                               OBJECT_SID_KEY, OBJECT_TYPE_KEY)
-from brewblox_service import brewblox_logger, strex
 
 SYNC_WAIT_TIMEOUT_S = 20
 
@@ -255,6 +255,8 @@ class ObjectApi():
 
             try:
                 await func(obj_sid, obj_groups, obj_type, obj_data)
+            except asyncio.CancelledError:  # pragma: no cover
+                raise
             except Exception as ex:
                 message = f'failed to import [{obj_sid},{obj_nid},{obj_type}] with {strex(ex)}'
                 error_log.append(message)

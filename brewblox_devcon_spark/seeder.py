@@ -56,6 +56,9 @@ class Seeder(repeater.RepeaterFeature):
             await state.on_synchronize(self.app)
             LOGGER.info('Service synchronized!')
 
+        except asyncio.CancelledError:
+            raise
+
         except asyncio.TimeoutError:
             LOGGER.error('Seeding timeout. Exiting now...')
             raise SystemExit(1)
@@ -88,6 +91,9 @@ class Seeder(repeater.RepeaterFeature):
                 await asyncio.sleep(PING_INTERVAL_S)
                 await get_controller(self.app).noop()
 
+            except asyncio.CancelledError:  # pragma: no cover
+                raise
+
             except Exception as ex:  # pragma: no cover
                 LOGGER.error(f'Failed to ping controller - {strex(ex)}')
                 return
@@ -101,6 +107,9 @@ class Seeder(repeater.RepeaterFeature):
                 datastore.get_datastore(self.app).read(f'{device_id}-blocks-db'),
                 datastore.get_config(self.app).read(f'{device_id}-config-db'),
             )
+
+        except asyncio.CancelledError:  # pragma: no cover
+            raise
 
         except Exception as ex:
             LOGGER.error(f'Failed to seed datastore - {strex(ex)}')
@@ -117,6 +126,9 @@ class Seeder(repeater.RepeaterFeature):
                 input_data={
                     'secondsSinceEpoch': now.timestamp()
                 })
+
+        except asyncio.CancelledError:  # pragma: no cover
+            raise
 
         except Exception as ex:
             LOGGER.error(f'Failed to seed controller time - {strex(ex)}')
