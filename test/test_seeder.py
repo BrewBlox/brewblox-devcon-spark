@@ -90,6 +90,22 @@ async def test_seed_status(app, client, mocker):
     assert states(app) == [False, True, True]
 
 
+async def test_seed_datastore(app, client, mocker, store, config, api_mock):
+    await state.wait_synchronize(app)
+    m_store_read = AsyncMock()
+    m_config_read = AsyncMock()
+    mocker.patch.object(store, 'read', m_store_read)
+    mocker.patch.object(config, 'read', m_config_read)
+
+    app['config']['simulation'] = True
+    app['config']['device_id'] = '1234'
+
+    await disconnect(app)
+    await connect(app)
+    m_store_read.assert_awaited_once_with('1234-sim-blocks-db')
+    m_config_read.assert_awaited_once_with('1234-sim-config-db')
+
+
 async def test_seed_errors(app, client, mocker, system_exit_mock):
     await state.wait_synchronize(app)
     mocker.patch(TESTED + '.datastore.check_remote', AsyncMock(side_effect=RuntimeError))

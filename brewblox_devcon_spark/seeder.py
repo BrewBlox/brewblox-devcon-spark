@@ -100,12 +100,16 @@ class Seeder(repeater.RepeaterFeature):
 
     async def _seed_datastore(self):
         try:
-            device_id = state.get_status(self.app).device.device_id
+            name = state.get_status(self.app).device.device_id
+
+            # Allow users to add --simulation to existing services without causing errors
+            if self.app['config']['simulation']:
+                name += '-sim'
 
             await datastore.check_remote(self.app)
             await asyncio.gather(
-                datastore.get_datastore(self.app).read(f'{device_id}-blocks-db'),
-                datastore.get_config(self.app).read(f'{device_id}-config-db'),
+                datastore.get_datastore(self.app).read(f'{name}-blocks-db'),
+                datastore.get_config(self.app).read(f'{name}-config-db'),
             )
 
         except asyncio.CancelledError:  # pragma: no cover
