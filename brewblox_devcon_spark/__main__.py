@@ -8,9 +8,8 @@ from configparser import ConfigParser
 from brewblox_service import (brewblox_logger, couchdb, events, http,
                               scheduler, service)
 
-from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
-                                   communication, datastore, device, seeder,
-                                   state)
+from brewblox_devcon_spark import (broadcaster, commander, communication,
+                                   datastore, device, seeder, simulator, state)
 from brewblox_devcon_spark.api import (alias_api, codec_api, debug_api,
                                        error_response, object_api, system_api)
 from brewblox_devcon_spark.codec import codec
@@ -24,11 +23,15 @@ def create_parser(default_name='spark'):
     # Device options
     group = parser.add_argument_group('Device communication')
     group.add_argument('--simulation',
-                       help='Start in simulation mode. Will not connect to a physical device. [%(default)s]',
+                       help='Start in simulation mode. Will not connect to a physical device. '
+                       'This option takes precedence over other connection options. '
+                       'The simulator is assigned the --device-id value if set or 123456789012345678901234. '
+                       'If you are using multiple simulators, you need to assign them unique device IDs. '
+                       '[%(default)s]',
                        action='store_true')
     group.add_argument('--device-host',
                        help='Spark device URL host. '
-                       'Will connect to this URL regardless of advertised device ID. [%(default)s]')
+                       'Will only connect if device ID matches advertised ID, or is not set. [%(default)s]')
     group.add_argument('--device-port',
                        help='Spark device URL port when accessing a device over WiFi. [%(default)s]',
                        type=int,
@@ -37,8 +40,7 @@ def create_parser(default_name='spark'):
                        help='Spark device serial port. Takes precedence over URL connections. '
                        'Will only connect if device ID matches advertised ID, or is not set. [%(default)s]')
     group.add_argument('--device-id',
-                       help='Spark serial number. Any spark is valid if not set. '
-                       'This will be ignored if --device-host is used. [%(default)s]')
+                       help='Spark serial number. Any spark is valid if not set. [%(default)s]')
     group.add_argument('--discovery',
                        help='Enabled types of device discovery. '
                        '--device-serial and --device-host disable discovery. '
@@ -120,14 +122,18 @@ def main():
     LOGGER.info('INI: ' + ', '.join([f"{k}='{v}'" for k, v in app['ini'].items()]))
     LOGGER.info('CONFIG: ' + ', '.join([f"{k}='{v}'" for k, v in app['config'].items()]))
 
+    if config['simulation']:
+        config['device_id'] = config['device_id'] or '123456789012345678901234'
+        config['device_host'] = 'localhost'
+        config['device_port'] = 8332
+        config['device_serial'] = None
+        simulator.setup(app)
+
     state.setup(app)
     http.setup(app)
 
-    if config['simulation']:
-        commander_sim.setup(app)
-    else:
-        communication.setup(app)
-        commander.setup(app)
+    communication.setup(app)
+    commander.setup(app)
 
     scheduler.setup(app)
     events.setup(app)

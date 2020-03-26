@@ -6,8 +6,8 @@ import pytest
 from brewblox_service import events, service
 
 from brewblox_devcon_spark import __main__ as main
-from brewblox_devcon_spark import (broadcaster, commander, commander_sim,
-                                   datastore, device)
+from brewblox_devcon_spark import (broadcaster, commander, datastore, device,
+                                   simulator)
 
 TESTED = main.__name__
 
@@ -62,7 +62,8 @@ def test_simulation(simulation, mocker, app):
 
     main.main()
 
-    assert simulation == isinstance(
-        commander.get_commander(app),
-        commander_sim.SimulationCommander
-    )
+    if simulation:
+        assert simulator.get_simulator(app) is not None
+    else:
+        with pytest.raises(KeyError):
+            simulator.get_simulator(app)
