@@ -30,6 +30,7 @@ docker rm bin-box > /dev/null
 # Pull submodule
 proto_version=$(awk -F "=" '/proto_version/ {print $2}' binaries/firmware.ini)
 pushd brewblox_devcon_spark/codec/proto > /dev/null
+git fetch
 git checkout "${proto_version}"
 popd > /dev/null
 
