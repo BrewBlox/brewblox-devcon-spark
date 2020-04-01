@@ -13,6 +13,7 @@ from google.protobuf import json_format
 from google.protobuf.message import Message
 
 import ActuatorAnalogMock_pb2
+import ActuatorLogic_pb2
 import ActuatorOffset_pb2
 import ActuatorPwm_pb2
 import Balancer_pb2
@@ -256,6 +257,7 @@ _TRANSCODERS = [
     # Protobuf objects
     *[options_type_factory(msg) for msg in [
         ActuatorAnalogMock_pb2.ActuatorAnalogMock,
+        ActuatorLogic_pb2.ActuatorLogic,
         ActuatorOffset_pb2.ActuatorOffset,
         ActuatorPwm_pb2.ActuatorPwm,
         Balancer_pb2.Balancer,
