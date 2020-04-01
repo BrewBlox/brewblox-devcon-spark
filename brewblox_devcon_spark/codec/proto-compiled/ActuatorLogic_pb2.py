@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x13\x41\x63tuatorLogic.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\xeb\x08\n\rActuatorLogic\x12\x1d\n\x08targetId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x06\x92?\x02\x38\x10\x12\x0f\n\x07\x65nabled\x18\x02 \x01(\x08\x12\x38\n\x06result\x18\x03 \x01(\x0e\x32\x1a.blox.ActuatorLogic.ResultB\x0c\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x12\x19\n\nexpression\x18\x04 \x01(\tB\x05\x92?\x02p@\x12:\n\x07\x64igital\x18\x05 \x03(\x0b\x32\".blox.ActuatorLogic.DigitalCompareB\x05\x92?\x02\x10\x10\x12\x38\n\x06\x61nalog\x18\x06 \x03(\x0b\x32!.blox.ActuatorLogic.AnalogCompareB\x05\x92?\x02\x10\x10\x12\x17\n\x08\x65rrorPos\x18\x07 \x01(\rB\x05\x92?\x02\x38\x08\x1a\xa8\x01\n\x0e\x44igitalCompare\x12\x30\n\x02op\x18\x01 \x01(\x0e\x32$.blox.ActuatorLogic.DigitalCompareOp\x12*\n\x06result\x18\x02 \x01(\x0e\x32\x1a.blox.ActuatorLogic.Result\x12\x17\n\x02id\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x06\x92?\x02\x38\x10\x12\x1f\n\x03rhs\x18\x04 \x01(\x0e\x32\x12.blox.DigitalState\x1a\xa0\x01\n\rAnalogCompare\x12/\n\x02op\x18\x01 \x01(\x0e\x32#.blox.ActuatorLogic.AnalogCompareOp\x12*\n\x06result\x18\x02 \x01(\x0e\x32\x1a.blox.ActuatorLogic.Result\x12\x17\n\x02id\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x01\x92?\x02\x38\x10\x12\x19\n\x03rhs\x18\x04 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \"T\n\x10\x44igitalCompareOp\x12\x0c\n\x08VALUE_IS\x10\x00\x12\x0f\n\x0bVALUE_ISNOT\x10\x01\x12\x0e\n\nDESIRED_IS\x10\n\x12\x11\n\rDESIRED_ISNOT\x10\x0b\"M\n\x0f\x41nalogCompareOp\x12\x0c\n\x08VALUE_LE\x10\x00\x12\x0c\n\x08VALUE_GE\x10\x01\x12\x0e\n\nSETTING_LE\x10\n\x12\x0e\n\nSETTING_GE\x10\x0b\"\xc9\x02\n\x06Result\x12\t\n\x05\x46\x41LSE\x10\x00\x12\x08\n\x04TRUE\x10\x01\x12\x16\n\x12INVALID_DIGITAL_OP\x10\x02\x12\x15\n\x11INVALID_ANALOG_OP\x10\x03\x12\x13\n\x0f\x42LOCK_NOT_FOUND\x10\x04\x12\x16\n\x12INVALID_EXPRESSION\x10\x05\x12\x1b\n\x17INVALID_DIG_COMPARE_IDX\x10\x06\x12\x1b\n\x17INVALID_ANA_COMPARE_IDX\x10\x07\x12\x12\n\x0eUNEXPECTED_END\x10\x08\x12\x1e\n\x1aUNEXPECTED_CLOSING_BRACKET\x10\t\x12\x1b\n\x17MISSING_CLOSING_BRACKET\x10\n\x12\x1e\n\x1aUNEXPECTED_OPENING_BRACKET\x10\x0b\x12\x18\n\x14UNEXPECTED_CHARACTER\x10\x0c\x12\t\n\x05\x45MPTY\x10\r:\x07\x8a\xb5\x18\x03\x18\xc2\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x13\x41\x63tuatorLogic.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\x9b\t\n\rActuatorLogic\x12\x1d\n\x08targetId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x06\x92?\x02\x38\x10\x12/\n\x0e\x64rivenTargetId\x18\x02 \x01(\rB\x17\x8a\xb5\x18\x02\x18\x06\x92?\x02\x38\x10\x8a\xb5\x18\x02@\x01\x8a\xb5\x18\x02(\x01\x12\x0f\n\x07\x65nabled\x18\x03 \x01(\x08\x12\x38\n\x06result\x18\x04 \x01(\x0e\x32\x1a.blox.ActuatorLogic.ResultB\x0c\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x12\x19\n\nexpression\x18\x05 \x01(\tB\x05\x92?\x02p@\x12:\n\x07\x64igital\x18\x06 \x03(\x0b\x32\".blox.ActuatorLogic.DigitalCompareB\x05\x92?\x02\x10\x10\x12\x38\n\x06\x61nalog\x18\x07 \x03(\x0b\x32!.blox.ActuatorLogic.AnalogCompareB\x05\x92?\x02\x10\x10\x12\x1d\n\x08\x65rrorPos\x18\x08 \x01(\rB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x1a\xb0\x01\n\x0e\x44igitalCompare\x12\x30\n\x02op\x18\x01 \x01(\x0e\x32$.blox.ActuatorLogic.DigitalCompareOp\x12\x32\n\x06result\x18\x02 \x01(\x0e\x32\x1a.blox.ActuatorLogic.ResultB\x06\x8a\xb5\x18\x02(\x01\x12\x17\n\x02id\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x06\x92?\x02\x38\x10\x12\x1f\n\x03rhs\x18\x04 \x01(\x0e\x32\x12.blox.DigitalState\x1a\xa8\x01\n\rAnalogCompare\x12/\n\x02op\x18\x01 \x01(\x0e\x32#.blox.ActuatorLogic.AnalogCompareOp\x12\x32\n\x06result\x18\x02 \x01(\x0e\x32\x1a.blox.ActuatorLogic.ResultB\x06\x8a\xb5\x18\x02(\x01\x12\x17\n\x02id\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x01\x92?\x02\x38\x10\x12\x19\n\x03rhs\x18\x04 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \"T\n\x10\x44igitalCompareOp\x12\x0c\n\x08VALUE_IS\x10\x00\x12\x0f\n\x0bVALUE_ISNOT\x10\x01\x12\x0e\n\nDESIRED_IS\x10\n\x12\x11\n\rDESIRED_ISNOT\x10\x0b\"M\n\x0f\x41nalogCompareOp\x12\x0c\n\x08VALUE_LE\x10\x00\x12\x0c\n\x08VALUE_GE\x10\x01\x12\x0e\n\nSETTING_LE\x10\n\x12\x0e\n\nSETTING_GE\x10\x0b\"\xb2\x02\n\x06Result\x12\t\n\x05\x46\x41LSE\x10\x00\x12\x08\n\x04TRUE\x10\x01\x12\t\n\x05\x45MPTY\x10\x02\x12\x13\n\x0f\x45MPTY_SUBSTRING\x10\x03\x12\x13\n\x0f\x42LOCK_NOT_FOUND\x10\x04\x12\x16\n\x12INVALID_DIGITAL_OP\x10\x05\x12\x15\n\x11INVALID_ANALOG_OP\x10\x06\x12\x1b\n\x17INVALID_ANA_COMPARE_IDX\x10\x07\x12\x1b\n\x17INVALID_DIG_COMPARE_IDX\x10\x08\x12\x1e\n\x1aUNEXPECTED_CLOSING_BRACKET\x10\t\x12\x1b\n\x17MISSING_CLOSING_BRACKET\x10\n\x12\x1e\n\x1aUNEXPECTED_OPENING_BRACKET\x10\x0b\x12\x18\n\x14UNEXPECTED_CHARACTER\x10\x0c:\x07\x8a\xb5\x18\x03\x18\xc2\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,IoArray__pb2.DESCRIPTOR,])
 
@@ -53,8 +53,8 @@ _ACTUATORLOGIC_DIGITALCOMPAREOP = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=702,
-  serialized_end=786,
+  serialized_start=773,
+  serialized_end=857,
 )
 _sym_db.RegisterEnumDescriptor(_ACTUATORLOGIC_DIGITALCOMPAREOP)
 
@@ -83,8 +83,8 @@ _ACTUATORLOGIC_ANALOGCOMPAREOP = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=788,
-  serialized_end=865,
+  serialized_start=859,
+  serialized_end=936,
 )
 _sym_db.RegisterEnumDescriptor(_ACTUATORLOGIC_ANALOGCOMPAREOP)
 
@@ -103,11 +103,11 @@ _ACTUATORLOGIC_RESULT = _descriptor.EnumDescriptor(
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='INVALID_DIGITAL_OP', index=2, number=2,
+      name='EMPTY', index=2, number=2,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='INVALID_ANALOG_OP', index=3, number=3,
+      name='EMPTY_SUBSTRING', index=3, number=3,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
@@ -115,11 +115,11 @@ _ACTUATORLOGIC_RESULT = _descriptor.EnumDescriptor(
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='INVALID_EXPRESSION', index=5, number=5,
+      name='INVALID_DIGITAL_OP', index=5, number=5,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='INVALID_DIG_COMPARE_IDX', index=6, number=6,
+      name='INVALID_ANALOG_OP', index=6, number=6,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
@@ -127,7 +127,7 @@ _ACTUATORLOGIC_RESULT = _descriptor.EnumDescriptor(
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='UNEXPECTED_END', index=8, number=8,
+      name='INVALID_DIG_COMPARE_IDX', index=8, number=8,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
@@ -146,15 +146,11 @@ _ACTUATORLOGIC_RESULT = _descriptor.EnumDescriptor(
       name='UNEXPECTED_CHARACTER', index=12, number=12,
       serialized_options=None,
       type=None),
-    _descriptor.EnumValueDescriptor(
-      name='EMPTY', index=13, number=13,
-      serialized_options=None,
-      type=None),
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=868,
-  serialized_end=1197,
+  serialized_start=939,
+  serialized_end=1245,
 )
 _sym_db.RegisterEnumDescriptor(_ACTUATORLOGIC_RESULT)
 
@@ -179,7 +175,7 @@ _ACTUATORLOGIC_DIGITALCOMPARE = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002(\001'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='id', full_name='blox.ActuatorLogic.DigitalCompare.id', index=2,
       number=3, type=13, cpp_type=3, label=1,
@@ -206,8 +202,8 @@ _ACTUATORLOGIC_DIGITALCOMPARE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=369,
-  serialized_end=537,
+  serialized_start=424,
+  serialized_end=600,
 )
 
 _ACTUATORLOGIC_ANALOGCOMPARE = _descriptor.Descriptor(
@@ -230,7 +226,7 @@ _ACTUATORLOGIC_ANALOGCOMPARE = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002(\001'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='id', full_name='blox.ActuatorLogic.AnalogCompare.id', index=2,
       number=3, type=13, cpp_type=3, label=1,
@@ -257,8 +253,8 @@ _ACTUATORLOGIC_ANALOGCOMPARE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=540,
-  serialized_end=700,
+  serialized_start=603,
+  serialized_end=771,
 )
 
 _ACTUATORLOGIC = _descriptor.Descriptor(
@@ -276,47 +272,54 @@ _ACTUATORLOGIC = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=_b('\212\265\030\002\030\006\222?\0028\020'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='enabled', full_name='blox.ActuatorLogic.enabled', index=1,
-      number=2, type=8, cpp_type=7, label=1,
+      name='drivenTargetId', full_name='blox.ActuatorLogic.drivenTargetId', index=1,
+      number=2, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\002\030\006\222?\0028\020\212\265\030\002@\001\212\265\030\002(\001'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='enabled', full_name='blox.ActuatorLogic.enabled', index=2,
+      number=3, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='result', full_name='blox.ActuatorLogic.result', index=2,
-      number=3, type=14, cpp_type=8, label=1,
+      name='result', full_name='blox.ActuatorLogic.result', index=3,
+      number=4, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\212\265\030\0020\001\212\265\030\002(\001'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='expression', full_name='blox.ActuatorLogic.expression', index=3,
-      number=4, type=9, cpp_type=9, label=1,
+      name='expression', full_name='blox.ActuatorLogic.expression', index=4,
+      number=5, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\222?\002p@'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='digital', full_name='blox.ActuatorLogic.digital', index=4,
-      number=5, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\222?\002\020\020'), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='analog', full_name='blox.ActuatorLogic.analog', index=5,
+      name='digital', full_name='blox.ActuatorLogic.digital', index=5,
       number=6, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\222?\002\020\020'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='errorPos', full_name='blox.ActuatorLogic.errorPos', index=6,
-      number=7, type=13, cpp_type=3, label=1,
+      name='analog', full_name='blox.ActuatorLogic.analog', index=6,
+      number=7, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\222?\002\020\020'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='errorPos', full_name='blox.ActuatorLogic.errorPos', index=7,
+      number=8, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\222?\0028\010'), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002(\001\222?\0028\010'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -333,7 +336,7 @@ _ACTUATORLOGIC = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=75,
-  serialized_end=1206,
+  serialized_end=1254,
 )
 
 _ACTUATORLOGIC_DIGITALCOMPARE.fields_by_name['op'].enum_type = _ACTUATORLOGIC_DIGITALCOMPAREOP
@@ -376,10 +379,13 @@ _sym_db.RegisterMessage(ActuatorLogic.DigitalCompare)
 _sym_db.RegisterMessage(ActuatorLogic.AnalogCompare)
 
 
+_ACTUATORLOGIC_DIGITALCOMPARE.fields_by_name['result']._options = None
 _ACTUATORLOGIC_DIGITALCOMPARE.fields_by_name['id']._options = None
+_ACTUATORLOGIC_ANALOGCOMPARE.fields_by_name['result']._options = None
 _ACTUATORLOGIC_ANALOGCOMPARE.fields_by_name['id']._options = None
 _ACTUATORLOGIC_ANALOGCOMPARE.fields_by_name['rhs']._options = None
 _ACTUATORLOGIC.fields_by_name['targetId']._options = None
+_ACTUATORLOGIC.fields_by_name['drivenTargetId']._options = None
 _ACTUATORLOGIC.fields_by_name['result']._options = None
 _ACTUATORLOGIC.fields_by_name['expression']._options = None
 _ACTUATORLOGIC.fields_by_name['digital']._options = None
