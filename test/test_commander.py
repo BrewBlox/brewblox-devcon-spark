@@ -4,10 +4,10 @@ Tests brewblox_devcon_spark.commander
 
 import asyncio
 from datetime import timedelta
-from unittest.mock import AsyncMock, PropertyMock
 
 import pytest
 from brewblox_service import scheduler
+from mock import AsyncMock, PropertyMock
 
 from brewblox_devcon_spark import commander, commands, exceptions, state
 
@@ -55,7 +55,7 @@ async def welcome():
         '1.2.1-rc.2',
         'p1',
         '78',
-        '00',
+        '0A',
         '1234567F0CASE'
     ]
 
@@ -256,19 +256,6 @@ async def test_queue_cleanup(mocker, conduit_mock, sparky, app):
     fresh_mock.return_value = False
     await asyncio.sleep(0.1)
     assert len(sparky._requests) == 0
-
-
-# async def test_queue_cleanup_error(mocker, sparky, app):
-#     mocker.patch(TESTED + '.CLEANUP_INTERVAL', timedelta(milliseconds=10))
-#     warning_spy = mocker.spy(commander, 'warnings')
-
-#     # Trigger an error
-#     sparky._requests = None
-
-#     await sparky.startup(app)
-#     await asyncio.sleep(0.1)
-#     assert warning_spy.warn.call_count > 0
-#     assert not sparky._cleanup_task.done()
 
 
 async def test_pause_resume(mocker, conduit_mock, sparky, app):

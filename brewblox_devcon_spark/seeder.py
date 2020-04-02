@@ -56,6 +56,9 @@ class Seeder(repeater.RepeaterFeature):
             await state.on_synchronize(self.app)
             LOGGER.info('Service synchronized!')
 
+        except asyncio.CancelledError:
+            raise
+
         except asyncio.TimeoutError:
             LOGGER.error('Seeding timeout. Exiting now...')
             raise SystemExit(1)
@@ -88,19 +91,29 @@ class Seeder(repeater.RepeaterFeature):
                 await asyncio.sleep(PING_INTERVAL_S)
                 await get_controller(self.app).noop()
 
+            except asyncio.CancelledError:  # pragma: no cover
+                raise
+
             except Exception as ex:  # pragma: no cover
                 LOGGER.error(f'Failed to ping controller - {strex(ex)}')
                 return
 
     async def _seed_datastore(self):
         try:
-            device_id = state.get_status(self.app).device.device_id
+            name = state.get_status(self.app).device.device_id
+
+            # Allow users to add --simulation to existing services without causing errors
+            if self.app['config']['simulation']:
+                name += '-sim'
 
             await datastore.check_remote(self.app)
             await asyncio.gather(
-                datastore.get_datastore(self.app).read(f'{device_id}-blocks-db'),
-                datastore.get_config(self.app).read(f'{device_id}-config-db'),
+                datastore.get_datastore(self.app).read(f'{name}-blocks-db'),
+                datastore.get_config(self.app).read(f'{name}-config-db'),
             )
+
+        except asyncio.CancelledError:  # pragma: no cover
+            raise
 
         except Exception as ex:
             LOGGER.error(f'Failed to seed datastore - {strex(ex)}')
@@ -117,6 +130,9 @@ class Seeder(repeater.RepeaterFeature):
                 input_data={
                     'secondsSinceEpoch': now.timestamp()
                 })
+
+        except asyncio.CancelledError:  # pragma: no cover
+            raise
 
         except Exception as ex:
             LOGGER.error(f'Failed to seed controller time - {strex(ex)}')

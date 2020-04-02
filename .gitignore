@@ -49,39 +49,22 @@ coverage.xml
 *.mo
 *.pot
 
-# Django stuff:
-*.log
-local_settings.py
-
 # Sphinx documentation
 docs/_build/
-
-# PyBuilder
-target/
-
-# IPython Notebook
-.ipynb_checkpoints
 
 # pyenv
 .python-version
 .idea/
+.venv/
 
 # pytest
 .pytest_cache/
 .mypy_cache/
 
-# Python package files for building Docker
-docker/pkg/*
-!docker/pkg/.gitkeep
-
-# Python package files for building Docker
-rpi-docker/pkg/*
-!rpi-docker/pkg/.gitkeep
-
-# Default persistence files
-brewblox_db.json
-brewblox_cfg.json
-couchdb/
-
 # May exist when debugging service / devcon interactions
 brewblox_service
+
+# Generated when running simulator
+device_key.der
+server_key.der
+eeprom.bin

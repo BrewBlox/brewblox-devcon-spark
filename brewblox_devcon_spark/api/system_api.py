@@ -6,12 +6,12 @@ import asyncio
 from typing import List
 
 from aiohttp import web
+from brewblox_service import brewblox_logger, scheduler, strex
 
 from brewblox_devcon_spark import commander, device, exceptions, state, ymodem
 from brewblox_devcon_spark.api import object_api
 from brewblox_devcon_spark.datastore import GROUPS_NID
 from brewblox_devcon_spark.validation import API_DATA_KEY
-from brewblox_service import brewblox_logger, strex
 
 REBOOT_WINDOW_S = 5
 TRANSFER_TIMEOUT_S = 30
@@ -25,6 +25,11 @@ routes = web.RouteTableDef()
 
 def setup(app: web.Application):
     app.router.add_routes(routes)
+
+
+async def shutdown_soon():  # pragma: no cover
+    await asyncio.sleep(REBOOT_WINDOW_S)
+    raise SystemExit()
 
 
 class SystemApi():
@@ -85,8 +90,7 @@ class SystemApi():
             raise exceptions.FirmwareUpdateFailed(strex(ex))
 
         finally:
-            await asyncio.sleep(REBOOT_WINDOW_S)
-            await cmder.resume()
+            await scheduler.create(self.app, shutdown_soon())
 
         return {'address': address, 'version': version}
 

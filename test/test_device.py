@@ -2,9 +2,9 @@
 Tests brewblox_devcon_spark.device
 """
 
-from unittest.mock import AsyncMock
-
 import pytest
+from brewblox_service import features, scheduler
+from mock import AsyncMock
 
 from brewblox_devcon_spark import (commander, commander_sim, datastore, device,
                                    exceptions, state)
@@ -13,7 +13,6 @@ from brewblox_devcon_spark.validation import (GENERATED_ID_PREFIX,
                                               GROUP_LIST_KEY, OBJECT_DATA_KEY,
                                               OBJECT_LIST_KEY, OBJECT_NID_KEY,
                                               OBJECT_SID_KEY, OBJECT_TYPE_KEY)
-from brewblox_service import features, scheduler
 
 TESTED = device.__name__
 

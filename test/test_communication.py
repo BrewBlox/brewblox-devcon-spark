@@ -4,12 +4,12 @@ Tests brewblox_devcon_spark.communication
 
 import asyncio
 from collections import namedtuple
-from unittest.mock import AsyncMock, Mock, call
 
 import pytest
 from aiohttp import web
 from aresponses import ResponsesMockServer
 from brewblox_service import http, scheduler
+from mock import AsyncMock, Mock, call
 
 from brewblox_devcon_spark import communication, exceptions, state
 

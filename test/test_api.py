@@ -3,9 +3,11 @@ Tests brewblox_devcon_spark.api
 """
 
 import asyncio
-from unittest.mock import ANY, AsyncMock
 
 import pytest
+from brewblox_service import scheduler
+from brewblox_service.testing import response
+from mock import ANY, AsyncMock
 
 from brewblox_devcon_spark import (commander_sim, datastore, device,
                                    exceptions, seeder, state, ymodem)
@@ -19,8 +21,6 @@ from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_NID_KEY,
                                                   OBJECT_TYPE_KEY)
 from brewblox_devcon_spark.codec import codec
 from brewblox_devcon_spark.validation import SYSTEM_GROUP
-from brewblox_service import scheduler
-from brewblox_service.testing import response
 
 
 def ret_ids(objects):
@@ -484,12 +484,13 @@ async def test_system_status(app, client):
 
 async def test_system_flash(app, client, mocker):
     sys_api = system_api.__name__
-    mocker.patch(sys_api + '.REBOOT_WINDOW_S', 0.001)
     mocker.patch(sys_api + '.CONNECT_INTERVAL_S', 0.001)
-    conn_mock = mocker.patch(sys_api + '.ymodem.connect', AsyncMock())
-    conn_mock.return_value = AsyncMock(ymodem.Connection)
-    sender_mock = mocker.patch(sys_api + '.ymodem.FileSender')
-    sender_mock.return_value.transfer = AsyncMock()
+    m_shutdown = mocker.patch(sys_api + '.shutdown_soon', AsyncMock())
+    m_conn = mocker.patch(sys_api + '.ymodem.connect', AsyncMock())
+    m_conn.return_value = AsyncMock(ymodem.Connection)
+    m_sender = mocker.patch(sys_api + '.ymodem.FileSender')
+    m_sender.return_value.transfer = AsyncMock()
 
     await response(client.post('/system/flash'))
-    sender_mock.return_value.transfer.assert_awaited()
+    m_sender.return_value.transfer.assert_awaited()
+    m_shutdown.assert_awaited()

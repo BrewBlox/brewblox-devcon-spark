@@ -66,7 +66,10 @@ class HandshakeMessage:
 
     def __post_init__(self):
         self.reset_reason = commands.ResetReason(self.reset_reason_hex.upper()).name
-        self.reset_data = commands.ResetData(self.reset_data_hex.upper()).name
+        try:
+            self.reset_data = commands.ResetData(self.reset_data_hex.upper()).name
+        except Exception:
+            self.reset_data = self.reset_data_hex.upper()
 
 
 class TimestampedQueue():
@@ -188,6 +191,9 @@ class SparkCommander(repeater.RepeaterFeature):
             # key is the encoded request
             queue = self._requests[raw_request].queue
             await queue.put(TimestampedResponse(raw_response))
+
+        except asyncio.CancelledError:  # pragma: no cover
+            raise
 
         except Exception as ex:
             LOGGER.error(f'Response error parsing message `{msg}` : {strex(ex)}')

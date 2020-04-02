@@ -13,6 +13,7 @@ from google.protobuf import json_format
 from google.protobuf.message import Message
 
 import ActuatorAnalogMock_pb2
+import ActuatorLogic_pb2
 import ActuatorOffset_pb2
 import ActuatorPwm_pb2
 import Balancer_pb2
@@ -22,6 +23,7 @@ import DisplaySettings_pb2
 import DS2408_pb2
 import DS2413_pb2
 import EdgeCase_pb2
+import MockPins_pb2
 import MotorValve_pb2
 import Mutex_pb2
 import OneWireBus_pb2
@@ -256,6 +258,7 @@ _TRANSCODERS = [
     # Protobuf objects
     *[options_type_factory(msg) for msg in [
         ActuatorAnalogMock_pb2.ActuatorAnalogMock,
+        ActuatorLogic_pb2.ActuatorLogic,
         ActuatorOffset_pb2.ActuatorOffset,
         ActuatorPwm_pb2.ActuatorPwm,
         Balancer_pb2.Balancer,
@@ -263,6 +266,7 @@ _TRANSCODERS = [
         DisplaySettings_pb2.DisplaySettings,
         DS2408_pb2.DS2408,
         DS2413_pb2.DS2413,
+        MockPins_pb2.MockPins,
         MotorValve_pb2.MotorValve,
         Mutex_pb2.Mutex,
         OneWireBus_pb2.OneWireBus,

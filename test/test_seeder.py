@@ -3,14 +3,14 @@ Tests brewblox_devcon_spark.seeder
 """
 
 import asyncio
-from unittest.mock import AsyncMock
 
 import pytest
+from brewblox_service import brewblox_logger, repeater, scheduler
+from mock import AsyncMock
 
 from brewblox_devcon_spark import (commander_sim, datastore, device, seeder,
                                    state)
 from brewblox_devcon_spark.codec import codec
-from brewblox_service import brewblox_logger, repeater, scheduler
 
 TESTED = seeder.__name__
 LOGGER = brewblox_logger(__name__)
@@ -88,6 +88,22 @@ async def test_seed_status(app, client, mocker):
 
     await connect(app)
     assert states(app) == [False, True, True]
+
+
+async def test_seed_datastore(app, client, mocker, store, config, api_mock):
+    await state.wait_synchronize(app)
+    m_store_read = AsyncMock()
+    m_config_read = AsyncMock()
+    mocker.patch.object(store, 'read', m_store_read)
+    mocker.patch.object(config, 'read', m_config_read)
+
+    app['config']['simulation'] = True
+    app['config']['device_id'] = '1234'
+
+    await disconnect(app)
+    await connect(app)
+    m_store_read.assert_awaited_once_with('1234-sim-blocks-db')
+    m_config_read.assert_awaited_once_with('1234-sim-config-db')
 
 
 async def test_seed_errors(app, client, mocker, system_exit_mock):
