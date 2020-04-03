@@ -484,10 +484,13 @@ async def test_system_status(app, client):
 
 async def test_system_flash(app, client, mocker):
     sys_api = system_api.__name__
+
     mocker.patch(sys_api + '.CONNECT_INTERVAL_S', 0.001)
     m_shutdown = mocker.patch(sys_api + '.shutdown_soon', AsyncMock())
+
     m_conn = mocker.patch(sys_api + '.ymodem.connect', AsyncMock())
     m_conn.return_value = AsyncMock(ymodem.Connection)
+
     m_sender = mocker.patch(sys_api + '.ymodem.FileSender')
     m_sender.return_value.transfer = AsyncMock()
 

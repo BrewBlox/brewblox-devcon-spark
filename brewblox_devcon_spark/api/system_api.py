@@ -13,11 +13,13 @@ from brewblox_devcon_spark.api import object_api
 from brewblox_devcon_spark.datastore import GROUPS_NID
 from brewblox_devcon_spark.validation import API_DATA_KEY
 
-REBOOT_WINDOW_S = 5
 TRANSFER_TIMEOUT_S = 30
 STATE_TIMEOUT_S = 20
 CONNECT_INTERVAL_S = 3
 CONNECT_ATTEMPTS = 5
+
+FLUSH_PERIOD_S = 3
+REBOOT_WINDOW_S = 5
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -63,7 +65,6 @@ class SystemApi():
     async def flash(self) -> dict:  # pragma: no cover
         sender = ymodem.FileSender()
         cmder = commander.get_commander(self.app)
-        ctrl = device.get_controller(self.app)
         version = self.app['ini']['firmware_version']
         address = state.summary(self.app).address
 
@@ -73,9 +74,7 @@ class SystemApi():
             if not state.summary(self.app).connect:
                 raise exceptions.NotConnected()
 
-            await cmder.pause()
-            await ctrl.firmware_update()
-            await cmder.disconnect()
+            await cmder.start_update(FLUSH_PERIOD_S)
             await asyncio.wait_for(state.wait_disconnect(self.app), STATE_TIMEOUT_S)
 
             conn = await self._connect(address)
@@ -92,6 +91,7 @@ class SystemApi():
         finally:
             await scheduler.create(self.app, shutdown_soon())
 
+        LOGGER.info(f'New version: {version}')
         return {'address': address, 'version': version}
 
 
