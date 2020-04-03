@@ -80,8 +80,13 @@ class FileSenderProtocol(asyncio.Protocol):
             self._queue.get_nowait()
 
 
-async def connect_tcp(host, port) -> Connection:
-    LOGGER.info(f'Connecting over TCP to {host}:{port}...')
+def is_tcp(address) -> str:
+    return ':' in address
+
+
+async def connect_tcp(address) -> Connection:
+    LOGGER.info(f'Connecting over TCP to {address}...')
+    host, port = address.split(':')
     transport, protocol = await asyncio.get_event_loop().create_connection(FileSenderProtocol, host, port)
     conn = Connection(f'{host}:{port}', transport, protocol)
     await conn.protocol.connected
@@ -104,9 +109,8 @@ async def connect_serial(address) -> Connection:
 
 
 async def connect(address) -> Connection:
-    if ':' in address:
-        host, port = address.split(':')
-        return await connect_tcp(host, port)
+    if is_tcp(address):
+        return await connect_tcp(address)
     else:
         return await connect_serial(address)
 
