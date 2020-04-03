@@ -1,8 +1,8 @@
-#!/usr/bin/env bash
+#! /usr/bin/env bash
 set -e
 
 for bin in ./*.bin; do
-    res="$(npx particle binary inspect ./"${bin}")"
+    res="$(particle binary inspect ./"${bin}")"
     echo "$res"
     grep -q "CRC is ok" <<< "$res"
 
