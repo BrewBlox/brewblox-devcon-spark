@@ -77,7 +77,10 @@ class SystemApi():
                 raise exceptions.NotConnected()
 
             await cmder.start_update(FLUSH_PERIOD_S)
-            await asyncio.wait_for(state.wait_disconnect(self.app), STATE_TIMEOUT_S)
+
+            # Serial connections don't generate a disconnected event
+            if ymodem.is_tcp(address):
+                await asyncio.wait_for(state.wait_disconnect(self.app), STATE_TIMEOUT_S)
 
             conn = await self._connect(address)
 
