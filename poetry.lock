@@ -145,7 +145,7 @@ description = "Scaffolding for Brewblox backend services"
 name = "brewblox-service"
 optional = false
 python-versions = ">=3.7"
-version = "0.25.0"
+version = "0.25.1"
 
 [package.dependencies]
 aioamqp = ">=0.14.0,<0.15.0"
@@ -976,7 +976,7 @@ multidict = ">=4.0"
 [[package]]
 category = "main"
 description = "Backport of pathlib-compatible object wrapper for zip files"
-marker = "python_version >= \"3.5\" and python_version < \"3.8\" or python_version < \"3.8\""
+marker = "python_version >= \"3.5\" and python_version < \"3.8\" or python_version < \"3.8\" or python_version >= \"3.5\" and python_version < \"3.8\" and (python_version >= \"3.5\" and python_version < \"3.8\" or python_version < \"3.8\")"
 name = "zipp"
 optional = false
 python-versions = ">=3.6"
@@ -1047,8 +1047,8 @@ brewblox-dev = [
     {file = "brewblox-dev-1.4.0.tar.gz", hash = "sha256:18fc0e8b24fb39d4ae13a7fff9b244902e0b53228d321a26c2abe1d66dbda426"},
 ]
 brewblox-service = [
-    {file = "brewblox-service-0.25.0.tar.gz", hash = "sha256:1d5abd305b0ba8d34b97f77c5b17b6e19fdbf9d725499a69e834ff025e972349"},
-    {file = "brewblox_service-0.25.0-py3-none-any.whl", hash = "sha256:0073b760f266af6f5c514ee34f7c063581fe00090a73acb01128fdd2c9564485"},
+    {file = "brewblox-service-0.25.1.tar.gz", hash = "sha256:497afda0c8da9839fe7d7a43b3cc214fbf08e323d750a4f7492eaf709bc28824"},
+    {file = "brewblox_service-0.25.1-py3-none-any.whl", hash = "sha256:fdb51845b5f3799d3d9a29f41b4ea8ab776187fc5a9e15ddb351a26296d6f4aa"},
 ]
 cachecontrol = [
     {file = "CacheControl-0.12.6-py2.py3-none-any.whl", hash = "sha256:10d056fa27f8563a271b345207402a6dcce8efab7e5b377e270329c62471b10d"},

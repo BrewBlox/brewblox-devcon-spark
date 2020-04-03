@@ -149,8 +149,6 @@ class SparkConduit(repeater.RepeaterFeature):
     def __init__(self, app: web.Application):
         super().__init__(app)
 
-        self._active_init: bool = True
-        self._active: asyncio.Event = None
         self._retry_count: int = 0
 
         self._address: Any = None
@@ -191,14 +189,9 @@ class SparkConduit(repeater.RepeaterFeature):
         else:
             self._connect_func = partial(connect_discovered, self.app, factory)
 
-        self._active = asyncio.Event()
-        if self._active_init:
-            self._active.set()
-
     async def run(self):
         """Implements RepeaterFeature.run"""
         try:
-            await self._active.wait()
             self._address, self._transport, self._protocol = await self._connect_func()
 
             await self._protocol.connected
@@ -228,27 +221,10 @@ class SparkConduit(repeater.RepeaterFeature):
             self._transport = None
             self._protocol = None
 
-    async def pause(self):
-        self._active_init = False
-        if self._active:
-            self._active.clear()
+    async def write(self, data: str):
+        return await self.write_encoded(data.encode())
 
-    async def disconnect(self):
-        if self._transport:
-            self._transport.close()
-
-    async def resume(self):
-        self._active_init = True
-        if self._active:
-            self._active.set()
-
-    async def write(self, data: str, ignore_pause: bool = False):
-        return await self.write_encoded(data.encode(), ignore_pause)
-
-    async def write_encoded(self, data: bytes, ignore_pause: bool = False):
-        if not ignore_pause and self._active and not self._active.is_set():
-            raise exceptions.ConnectionPaused()
-
+    async def write_encoded(self, data: bytes):
         if not self.connected:
             raise exceptions.NotConnected(f'{self} not connected')
 

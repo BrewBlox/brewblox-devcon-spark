@@ -8,7 +8,7 @@ import traceback
 from aiohttp import web, web_exceptions
 from brewblox_service import brewblox_logger, strex
 
-from brewblox_devcon_spark.exceptions import BrewBloxException
+from brewblox_devcon_spark.exceptions import BrewbloxException
 
 LOGGER = brewblox_logger(__name__)
 
@@ -42,7 +42,7 @@ async def controller_error_middleware(request: web.Request, handler) -> web.Resp
     except web_exceptions.HTTPError:  # pragma: no cover
         raise
 
-    except BrewBloxException as ex:
+    except BrewbloxException as ex:
         return error_response(request, ex, status=ex.status_code)
 
     except Exception as ex:
