@@ -2,8 +2,11 @@
 set -e
 
 function flash() {
-    npx particle --no-update-check flash --usb --yes "$1"
+    particle flash --usb --yes "$1"
 }
+
+node ./serial-trigger.js
+sleep 5
 
 if [[ -n $(lsusb -d 2b04:d006) ]]; then
     echo "Flashing Photon..."
