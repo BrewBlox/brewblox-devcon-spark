@@ -4,7 +4,7 @@ This improves clarity as to what actually went wrong.
 """
 
 
-class BrewBloxException(Exception):
+class BrewbloxException(Exception):
     status_code = 500
 
 
@@ -13,7 +13,7 @@ class BrewBloxException(Exception):
 ##################################################################################################
 
 
-class InvalidInput(BrewBloxException):
+class InvalidInput(BrewbloxException):
     status_code = 400  # HTTP bad request
 
 
@@ -26,7 +26,7 @@ class MissingInput(InvalidInput):
 ##################################################################################################
 
 
-class IdException(BrewBloxException):
+class IdException(BrewbloxException):
     status_code = 400  # HTTP bad request
 
 
@@ -47,7 +47,7 @@ class UnknownId(IdException):
 ##################################################################################################
 
 
-class CommandException(BrewBloxException):
+class CommandException(BrewbloxException):
     pass
 
 
@@ -67,12 +67,16 @@ class CommandTimeout(CommandException):
     status_code = 424  # HTTP failed dependency
 
 
+class UpdateInProgress(CommandException):
+    status_code = 424  # HTTP failed dependency
+
+
 ##################################################################################################
 # Codec exceptions
 ##################################################################################################
 
 
-class CodecException(BrewBloxException):
+class CodecException(BrewbloxException):
     pass
 
 
@@ -93,7 +97,7 @@ class UnknownCodecType(CodecException):
 ##################################################################################################
 
 
-class ConnectionException(BrewBloxException):
+class ConnectionException(BrewbloxException):
     status_code = 424  # HTTP failed dependency
 
 
@@ -113,7 +117,7 @@ class ConnectionPaused(ConnectionException):
 # Firmware exceptions
 ##################################################################################################
 
-class FirmwareException(BrewBloxException):
+class FirmwareException(BrewbloxException):
     status_code = 424  # HTTP failed dependency
 
 

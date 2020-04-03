@@ -294,20 +294,6 @@ async def test_conduit_write(bound_collector, bound_conduit, transport_mock):
     transport_mock.write.assert_called_once_with(b'stuff\n')
 
 
-async def test_paused_write(bound_collector, bound_conduit, transport_mock):
-    await bound_conduit.pause()
-    await bound_conduit.disconnect()
-
-    with pytest.raises(exceptions.ConnectionPaused):
-        await bound_conduit.write('stuff')
-    assert transport_mock.write.call_count == 0
-
-    await bound_conduit.resume()
-    transport_mock.is_closing.return_value = False
-    await bound_conduit.write('stuff')
-    assert transport_mock.write.call_count == 1
-
-
 async def test_conduit_callback_multiple(loop, bound_collector, bound_conduit):
     # Change callback handler
     coll2 = Collector()
@@ -414,35 +400,6 @@ async def test_reconnect(app, client, interval_mock, tcp_create_connection_mock)
     spock._protocol.connection_lost(None)
     await asyncio.sleep(0.01)
     assert tcp_create_connection_mock.call_count == 3
-
-
-async def test_pause_resume(app, client, interval_mock, tcp_create_connection_mock):
-    app['config']['device_serial'] = None
-    app['config']['device_host'] = 'enterprise'
-
-    spock = communication.SparkConduit(app)
-
-    await spock.disconnect()  # noop
-    await spock.resume()
-    await spock.pause()
-
-    await spock.prepare()
-    rt = asyncio.create_task(spock.run())
-    assert not spock._active.is_set()
-
-    await spock.resume()
-    await asyncio.sleep(0.01)
-    assert not rt.done()
-
-    transport = spock._transport
-    protocol = spock._protocol
-
-    protocol.connection_lost(None)
-    await asyncio.sleep(0.01)
-    assert rt.done()
-
-    assert tcp_create_connection_mock.call_count == 1
-    assert transport.close.call_count == 0
 
 
 async def test_discover_all(discover_all_app,
