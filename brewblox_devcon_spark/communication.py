@@ -55,18 +55,6 @@ async def create_connection(*args, **kwargs):  # pragma: no cover
     return await asyncio.get_event_loop().create_connection(*args, **kwargs)
 
 
-def exit_discovery():  # pragma: no cover
-    """SystemExit wrapper, to allow mocking"""
-    LOGGER.error('Device discovery failed. Exiting now.')
-    raise SystemExit(1)
-
-
-def exit_connection():  # pragma: no cover
-    """SystemExit wrapper, to allow mocking"""
-    LOGGER.error('Connection retry attempts exhausted. Exiting now.')
-    raise SystemExit(1)
-
-
 async def connect_serial(app: web.Application,
                          factory: ProtocolFactory_
                          ) -> ConnectionResult_:
@@ -141,7 +129,8 @@ async def connect_discovered(app: web.Application,
 
         await asyncio.sleep(DISCOVER_INTERVAL_S)
 
-    exit_discovery()
+    LOGGER.error('Device discovery failed. Exiting now.')
+    raise web.GracefulExit()
 
 
 class SparkConduit(repeater.RepeaterFeature):
@@ -212,7 +201,8 @@ class SparkConduit(repeater.RepeaterFeature):
         except Exception:
             self._retry_count += 1
             if self._retry_count > CONNECT_RETRY_COUNT:  # pragma: no cover
-                exit_connection()
+                LOGGER.error('Connection retry attempts exhausted. Exiting now.')
+                raise web.GracefulExit()
             await asyncio.sleep(RETRY_INTERVAL_S)
             raise
 
