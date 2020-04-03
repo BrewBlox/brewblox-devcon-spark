@@ -150,7 +150,7 @@ def bound_collector(loop):
 
 @pytest.fixture
 def m_exit_connection(mocker):
-    return mocker.patch(TESTED + '.exit_connection')
+    return mocker.patch(TESTED + '.web.GracefulExit')
 
 
 @pytest.fixture
@@ -465,7 +465,7 @@ async def test_discover_retry(discover_all_app,
                               interval_mock):
     ser_mock = mocker.patch(TESTED + '.discover_serial', AsyncMock(return_value=None))
     tcp_mock = mocker.patch(TESTED + '.discover_tcp', AsyncMock(return_value=None))
-    exit_discovery_mock = mocker.patch(TESTED + '.exit_discovery')
+    exit_mock = mocker.patch(TESTED + '.web.GracefulExit')
 
     spock = communication.SparkConduit(discover_all_app)
 
@@ -475,7 +475,7 @@ async def test_discover_retry(discover_all_app,
     assert not spock.connected
     assert ser_mock.call_count > 1
     assert tcp_mock.call_count > 1
-    assert exit_discovery_mock.call_count >= 1
+    assert exit_mock.call_count >= 1
 
 
 async def test_mdns_repeat(app, client, mocker, tcp_create_connection_mock, discovery_resp):

@@ -161,7 +161,7 @@ async def test_on_setup_mode(app, mocker, conduit_mock, sparky):
     await state.on_connect(app, 'addr')
     assert state.summary(app).address == 'addr'
 
-    mocker.patch(TESTED + '.SystemExit', RuntimeError)
+    mocker.patch(TESTED + '.web.GracefulExit', RuntimeError)
     with pytest.raises(RuntimeError):
         await sparky._on_event(conduit_mock, 'SETUP_MODE')
 

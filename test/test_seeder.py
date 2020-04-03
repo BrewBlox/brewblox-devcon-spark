@@ -44,7 +44,7 @@ async def ping_interval_mock(mocker):
 
 @pytest.fixture(autouse=True)
 async def system_exit_mock(mocker):
-    m = mocker.patch(TESTED + '.SystemExit',
+    m = mocker.patch(TESTED + '.web.GracefulExit',
                      side_effect=repeater.RepeaterCancelled)
     return m
 
