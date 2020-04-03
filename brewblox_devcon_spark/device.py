@@ -274,7 +274,6 @@ class SparkController(features.ServiceFeature):
     reboot = partialmethod(_execute, commands.RebootCommand, None)
     list_compatible_objects = partialmethod(_execute, commands.ListCompatibleObjectsCommand, None)
     discover_objects = partialmethod(_execute, commands.DiscoverObjectsCommand, None)
-    firmware_update = partialmethod(_execute, commands.FirmwareUpdateCommand, None)
 
 
 def setup(app: web.Application):
