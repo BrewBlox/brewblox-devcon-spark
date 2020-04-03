@@ -1,4 +1,9 @@
-#!/usr/bin/env bash
+#! /usr/bin/env bash
 # Automatically executed by CI
+set -e
 
-cp -rf ../binaries ./
+pushd "$(dirname "$(readlink -f "$0")")/.." > /dev/null
+
+cp -rf binaries/ flasher/
+
+popd > /dev/null
