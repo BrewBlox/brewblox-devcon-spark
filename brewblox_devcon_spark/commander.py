@@ -182,7 +182,7 @@ class SparkCommander(repeater.RepeaterFeature):
 
         elif msg.startswith(SETUP_MODE_PREFIX):
             LOGGER.error('Controller entered listening mode. Exiting service now.')
-            raise SystemExit(1)
+            raise web.GracefulExit()
 
         else:
             LOGGER.info(f'Spark event: "{msg}"')

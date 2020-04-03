@@ -61,7 +61,7 @@ class Seeder(repeater.RepeaterFeature):
 
         except asyncio.TimeoutError:
             LOGGER.error('Seeding timeout. Exiting now...')
-            raise SystemExit(1)
+            raise web.GracefulExit(1)
 
         except exceptions.IncompatibleFirmware:  # pragma: no cover
             LOGGER.error('Incompatible firmware version detected')
@@ -71,7 +71,7 @@ class Seeder(repeater.RepeaterFeature):
 
         except Exception as ex:
             LOGGER.error(f'Failed to seed: {strex(ex)}')
-            raise SystemExit(1)
+            raise web.GracefulExit(1)
 
         finally:
             self._seeding_done.set()
