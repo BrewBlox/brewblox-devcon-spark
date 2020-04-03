@@ -89,7 +89,7 @@ class Broadcaster(repeater.RepeaterFeature):
             if self.timeout > 0 \
                     and self._last_ok + self.timeout < monotonic():  # pragma: no cover
                 LOGGER.error('Broadcast retry attemps exhaused. Exiting now.')
-                raise SystemExit(1)
+                raise web.GracefulExit()
             raise
 
 
