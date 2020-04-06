@@ -119,6 +119,9 @@ def main():
         # Exit application
         return
 
+    # This publishes a debug message for every event
+    logging.getLogger('aioamqp.channel').disabled = True
+
     LOGGER.info('INI: ' + ', '.join([f"{k}='{v}'" for k, v in app['ini'].items()]))
     LOGGER.info('CONFIG: ' + ', '.join([f"{k}='{v}'" for k, v in app['config'].items()]))
 

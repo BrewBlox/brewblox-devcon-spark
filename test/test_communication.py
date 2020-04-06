@@ -150,7 +150,7 @@ def bound_collector(loop):
 
 @pytest.fixture
 def m_exit_connection(mocker):
-    return mocker.patch(TESTED + '.exit_connection')
+    return mocker.patch(TESTED + '.web.GracefulExit')
 
 
 @pytest.fixture
@@ -294,20 +294,6 @@ async def test_conduit_write(bound_collector, bound_conduit, transport_mock):
     transport_mock.write.assert_called_once_with(b'stuff\n')
 
 
-async def test_paused_write(bound_collector, bound_conduit, transport_mock):
-    await bound_conduit.pause()
-    await bound_conduit.disconnect()
-
-    with pytest.raises(exceptions.ConnectionPaused):
-        await bound_conduit.write('stuff')
-    assert transport_mock.write.call_count == 0
-
-    await bound_conduit.resume()
-    transport_mock.is_closing.return_value = False
-    await bound_conduit.write('stuff')
-    assert transport_mock.write.call_count == 1
-
-
 async def test_conduit_callback_multiple(loop, bound_collector, bound_conduit):
     # Change callback handler
     coll2 = Collector()
@@ -416,35 +402,6 @@ async def test_reconnect(app, client, interval_mock, tcp_create_connection_mock)
     assert tcp_create_connection_mock.call_count == 3
 
 
-async def test_pause_resume(app, client, interval_mock, tcp_create_connection_mock):
-    app['config']['device_serial'] = None
-    app['config']['device_host'] = 'enterprise'
-
-    spock = communication.SparkConduit(app)
-
-    await spock.disconnect()  # noop
-    await spock.resume()
-    await spock.pause()
-
-    await spock.prepare()
-    rt = asyncio.create_task(spock.run())
-    assert not spock._active.is_set()
-
-    await spock.resume()
-    await asyncio.sleep(0.01)
-    assert not rt.done()
-
-    transport = spock._transport
-    protocol = spock._protocol
-
-    protocol.connection_lost(None)
-    await asyncio.sleep(0.01)
-    assert rt.done()
-
-    assert tcp_create_connection_mock.call_count == 1
-    assert transport.close.call_count == 0
-
-
 async def test_discover_all(discover_all_app,
                             client,
                             mocker,
@@ -508,7 +465,7 @@ async def test_discover_retry(discover_all_app,
                               interval_mock):
     ser_mock = mocker.patch(TESTED + '.discover_serial', AsyncMock(return_value=None))
     tcp_mock = mocker.patch(TESTED + '.discover_tcp', AsyncMock(return_value=None))
-    exit_discovery_mock = mocker.patch(TESTED + '.exit_discovery')
+    exit_mock = mocker.patch(TESTED + '.web.GracefulExit')
 
     spock = communication.SparkConduit(discover_all_app)
 
@@ -518,7 +475,7 @@ async def test_discover_retry(discover_all_app,
     assert not spock.connected
     assert ser_mock.call_count > 1
     assert tcp_mock.call_count > 1
-    assert exit_discovery_mock.call_count >= 1
+    assert exit_mock.call_count >= 1
 
 
 async def test_mdns_repeat(app, client, mocker, tcp_create_connection_mock, discovery_resp):

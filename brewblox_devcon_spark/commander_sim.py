@@ -10,6 +10,7 @@ from itertools import count
 from typing import List
 
 from aiohttp import web
+from brewblox_service import brewblox_logger, features
 
 from brewblox_devcon_spark import commander, commands, exceptions, state
 from brewblox_devcon_spark.codec import codec
@@ -23,7 +24,6 @@ from brewblox_devcon_spark.validation import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
                                               OBJECT_INTERFACE_KEY,
                                               OBJECT_LIST_KEY, OBJECT_NID_KEY,
                                               OBJECT_TYPE_KEY, SYSTEM_GROUP)
-from brewblox_service import brewblox_logger, features
 
 LOGGER = brewblox_logger(__name__)
 
@@ -317,9 +317,13 @@ class SimulationCommander(commander.SparkCommander):
         pass
 
     async def execute(self, command: commands.Command) -> dict:
+        if self.updating and not isinstance(command, commands.FirmwareUpdateCommand):
+            raise exceptions.UpdateInProgress('Update is in progress')
+
         return (await self._responder.respond(command)).decoded_response
 
-    async def disconnect(self):
+    async def start_update(self, flush_period):
+        await super().start_update(0)
         await state.on_disconnect(self.app)
 
 

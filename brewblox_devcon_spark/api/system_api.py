@@ -3,6 +3,7 @@ Specific endpoints for using system objects
 """
 
 import asyncio
+import logging
 from typing import List
 
 from aiohttp import web
@@ -13,11 +14,13 @@ from brewblox_devcon_spark.api import object_api
 from brewblox_devcon_spark.datastore import GROUPS_NID
 from brewblox_devcon_spark.validation import API_DATA_KEY
 
-REBOOT_WINDOW_S = 5
 TRANSFER_TIMEOUT_S = 30
 STATE_TIMEOUT_S = 20
 CONNECT_INTERVAL_S = 3
 CONNECT_ATTEMPTS = 5
+
+FLUSH_PERIOD_S = 3
+REBOOT_WINDOW_S = 5
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -29,7 +32,8 @@ def setup(app: web.Application):
 
 async def shutdown_soon():  # pragma: no cover
     await asyncio.sleep(REBOOT_WINDOW_S)
-    raise SystemExit()
+    logging.getLogger('aioamqp.protocol').disabled = True
+    raise web.GracefulExit()
 
 
 class SystemApi():
@@ -63,7 +67,6 @@ class SystemApi():
     async def flash(self) -> dict:  # pragma: no cover
         sender = ymodem.FileSender()
         cmder = commander.get_commander(self.app)
-        ctrl = device.get_controller(self.app)
         version = self.app['ini']['firmware_version']
         address = state.summary(self.app).address
 
@@ -73,10 +76,11 @@ class SystemApi():
             if not state.summary(self.app).connect:
                 raise exceptions.NotConnected()
 
-            await cmder.pause()
-            await ctrl.firmware_update()
-            await cmder.disconnect()
-            await asyncio.wait_for(state.wait_disconnect(self.app), STATE_TIMEOUT_S)
+            await cmder.start_update(FLUSH_PERIOD_S)
+
+            # Serial connections don't generate a disconnected event
+            if ymodem.is_tcp(address):
+                await asyncio.wait_for(state.wait_disconnect(self.app), STATE_TIMEOUT_S)
 
             conn = await self._connect(address)
 
@@ -92,6 +96,7 @@ class SystemApi():
         finally:
             await scheduler.create(self.app, shutdown_soon())
 
+        LOGGER.info(f'New version: {version}')
         return {'address': address, 'version': version}
 
 

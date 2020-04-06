@@ -111,12 +111,17 @@ class SparkCommander(repeater.RepeaterFeature):
     def __init__(self, app: web.Application):
         super().__init__(app)
 
+        self._updating = False
         self._timeout = app['config']['command_timeout']
         self._requests = defaultdict(TimestampedQueue)
         self._conduit: communication.SparkConduit = None
 
     def __str__(self):
         return f'<{type(self).__name__} for {self._conduit} at {hex(id(self))}>'
+
+    @property
+    def updating(self) -> bool:
+        return self._updating
 
     async def startup(self, app: web.Application):
         await super().startup(app)
@@ -127,6 +132,7 @@ class SparkCommander(repeater.RepeaterFeature):
     async def shutdown(self, app: web.Application):
         await super().shutdown(app)
         if self._conduit:
+            await self._conduit.shutdown(app)
             self._conduit.data_callbacks.discard(self._on_data)
             self._conduit.event_callbacks.discard(self._on_event)
             self._conduit = None
@@ -165,10 +171,8 @@ class SparkCommander(repeater.RepeaterFeature):
         if msg.startswith(WELCOME_PREFIX):
             await self._on_welcome(msg)
 
-        elif msg.startswith(UPDATER_PREFIX):
+        elif msg.startswith(UPDATER_PREFIX) and not self.updating:
             LOGGER.error('Update protocol was activated by another connection.')
-            await self.pause()
-            await self.disconnect()
 
         elif msg.startswith(CBOX_ERR_PREFIX):
             try:
@@ -178,7 +182,7 @@ class SparkCommander(repeater.RepeaterFeature):
 
         elif msg.startswith(SETUP_MODE_PREFIX):
             LOGGER.error('Controller entered listening mode. Exiting service now.')
-            raise SystemExit(1)
+            raise web.GracefulExit()
 
         else:
             LOGGER.info(f'Spark event: "{msg}"')
@@ -199,9 +203,11 @@ class SparkCommander(repeater.RepeaterFeature):
             LOGGER.error(f'Response error parsing message `{msg}` : {strex(ex)}')
 
     async def execute(self, command: commands.Command) -> dict:
+        if self.updating and not isinstance(command, commands.FirmwareUpdateCommand):
+            raise exceptions.UpdateInProgress('Update is in progress')
+
         encoded_request = command.encoded_request.upper()
-        ignore_pause = isinstance(command, commands.FirmwareUpdateCommand)
-        await self._conduit.write(encoded_request, ignore_pause)
+        await self._conduit.write(encoded_request)
 
         while True:
             # Wait for a request resolution (matched by request)
@@ -228,17 +234,12 @@ class SparkCommander(repeater.RepeaterFeature):
 
             return decoded
 
-    async def pause(self):
-        if self._conduit:
-            await self._conduit.pause()
-
-    async def disconnect(self):
-        if self._conduit:
-            await self._conduit.disconnect()
-
-    async def resume(self):
-        if self._conduit:
-            await self._conduit.resume()
+    async def start_update(self, flush_period: float):
+        self._updating = True
+        await asyncio.sleep(max(flush_period, 0.01))
+        await self.execute(commands.FirmwareUpdateCommand.from_args())
+        LOGGER.info('Shutting down normal communication')
+        await self.shutdown(self.app)
 
 
 def setup(app: web.Application):

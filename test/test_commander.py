@@ -24,9 +24,8 @@ def conduit_mock(mocker):
     m = mocker.patch(TESTED + '.communication.get_conduit')
     m.return_value.bind = AsyncMock()
     m.return_value.write = AsyncMock()
-    m.return_value.pause = AsyncMock()
+    m.return_value.shutdown = AsyncMock()
     m.return_value.disconnect = AsyncMock()
-    m.return_value.resume = AsyncMock()
     return m.return_value
 
 
@@ -162,7 +161,7 @@ async def test_on_setup_mode(app, mocker, conduit_mock, sparky):
     await state.on_connect(app, 'addr')
     assert state.summary(app).address == 'addr'
 
-    mocker.patch(TESTED + '.SystemExit', RuntimeError)
+    mocker.patch(TESTED + '.web.GracefulExit', RuntimeError)
     with pytest.raises(RuntimeError):
         await sparky._on_event(conduit_mock, 'SETUP_MODE')
 
@@ -172,8 +171,6 @@ async def test_on_update(app, mocker, conduit_mock, sparky):
     assert state.summary(app).address == 'addr'
 
     await sparky._on_event(conduit_mock, commander.UPDATER_PREFIX + '-message')
-    assert conduit_mock.pause.call_count == 1
-    assert conduit_mock.disconnect.call_count == 1
 
 
 async def test_command(conduit_mock, sparky, reset_msgid):
@@ -185,7 +182,7 @@ async def test_command(conduit_mock, sparky, reset_msgid):
     resp = await sparky.execute(command)
     assert resp['objects'] == []
 
-    conduit_mock.write.assert_called_once_with('01000728', False)
+    conduit_mock.write.assert_called_once_with('01000728')
 
 
 async def test_error_command(conduit_mock, sparky, reset_msgid):
@@ -258,17 +255,11 @@ async def test_queue_cleanup(mocker, conduit_mock, sparky, app):
     assert len(sparky._requests) == 0
 
 
-async def test_pause_resume(mocker, conduit_mock, sparky, app):
-    await sparky.pause()
-    assert conduit_mock.pause.call_count == 1
+async def test_start_update(mocker, conduit_mock, sparky, app, reset_msgid):
 
-    await sparky.resume()
-    assert conduit_mock.resume.call_count == 1
+    await sparky._on_data(conduit_mock, '01 00 64 AF |00 00 00')
+    await sparky.start_update(0.001)
+    conduit_mock.shutdown.assert_awaited()
 
-    # No-op when conduit is not available
-    await sparky.shutdown(app)
-    await sparky.pause()
-    await sparky.disconnect()
-    await sparky.resume()
-    assert conduit_mock.pause.call_count == 1
-    assert conduit_mock.resume.call_count == 1
+    with pytest.raises(exceptions.UpdateInProgress):
+        await sparky.execute(commands.ListStoredObjectsCommand.from_args())

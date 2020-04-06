@@ -55,18 +55,6 @@ async def create_connection(*args, **kwargs):  # pragma: no cover
     return await asyncio.get_event_loop().create_connection(*args, **kwargs)
 
 
-def exit_discovery():  # pragma: no cover
-    """SystemExit wrapper, to allow mocking"""
-    LOGGER.error('Device discovery failed. Exiting now.')
-    raise SystemExit(1)
-
-
-def exit_connection():  # pragma: no cover
-    """SystemExit wrapper, to allow mocking"""
-    LOGGER.error('Connection retry attempts exhausted. Exiting now.')
-    raise SystemExit(1)
-
-
 async def connect_serial(app: web.Application,
                          factory: ProtocolFactory_
                          ) -> ConnectionResult_:
@@ -141,7 +129,8 @@ async def connect_discovered(app: web.Application,
 
         await asyncio.sleep(DISCOVER_INTERVAL_S)
 
-    exit_discovery()
+    LOGGER.error('Device discovery failed. Exiting now.')
+    raise web.GracefulExit()
 
 
 class SparkConduit(repeater.RepeaterFeature):
@@ -149,8 +138,6 @@ class SparkConduit(repeater.RepeaterFeature):
     def __init__(self, app: web.Application):
         super().__init__(app)
 
-        self._active_init: bool = True
-        self._active: asyncio.Event = None
         self._retry_count: int = 0
 
         self._address: Any = None
@@ -191,14 +178,9 @@ class SparkConduit(repeater.RepeaterFeature):
         else:
             self._connect_func = partial(connect_discovered, self.app, factory)
 
-        self._active = asyncio.Event()
-        if self._active_init:
-            self._active.set()
-
     async def run(self):
         """Implements RepeaterFeature.run"""
         try:
-            await self._active.wait()
             self._address, self._transport, self._protocol = await self._connect_func()
 
             await self._protocol.connected
@@ -219,7 +201,8 @@ class SparkConduit(repeater.RepeaterFeature):
         except Exception:
             self._retry_count += 1
             if self._retry_count > CONNECT_RETRY_COUNT:  # pragma: no cover
-                exit_connection()
+                LOGGER.error('Connection retry attempts exhausted. Exiting now.')
+                raise web.GracefulExit()
             await asyncio.sleep(RETRY_INTERVAL_S)
             raise
 
@@ -228,27 +211,10 @@ class SparkConduit(repeater.RepeaterFeature):
             self._transport = None
             self._protocol = None
 
-    async def pause(self):
-        self._active_init = False
-        if self._active:
-            self._active.clear()
+    async def write(self, data: str):
+        return await self.write_encoded(data.encode())
 
-    async def disconnect(self):
-        if self._transport:
-            self._transport.close()
-
-    async def resume(self):
-        self._active_init = True
-        if self._active:
-            self._active.set()
-
-    async def write(self, data: str, ignore_pause: bool = False):
-        return await self.write_encoded(data.encode(), ignore_pause)
-
-    async def write_encoded(self, data: bytes, ignore_pause: bool = False):
-        if not ignore_pause and self._active and not self._active.is_set():
-            raise exceptions.ConnectionPaused()
-
+    async def write_encoded(self, data: bytes):
         if not self.connected:
             raise exceptions.NotConnected(f'{self} not connected')
 
