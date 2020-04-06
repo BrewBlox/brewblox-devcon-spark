@@ -14,7 +14,7 @@ async function main() {
             .find(f => f && deviceMatch.test(f))
         : undefined;
 
-    const path = devicePath ?? defaultPath;
+    const path = devicePath || defaultPath;
     console.log(`Triggering dfu on port ${path}`);
 
     const serial = new SerialPort(path, { baudRate, autoOpen: false });
