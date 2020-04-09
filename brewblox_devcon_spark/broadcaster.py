@@ -4,6 +4,7 @@ Intermittently broadcasts controller state to the eventbus
 
 
 import asyncio
+import logging
 from time import monotonic
 
 from aiohttp import web
@@ -34,6 +35,11 @@ class Broadcaster(repeater.RepeaterFeature):
             raise repeater.RepeaterCancelled()
 
         self.api = ObjectApi(self.app)
+
+        # Logs a debug message for every event
+        logging.getLogger('aioamqp.channel').disabled = True
+        # Logs stack traces when the connection is closed
+        logging.getLogger('aioamqp.protocol').disabled = True
 
     async def run(self):
         try:
