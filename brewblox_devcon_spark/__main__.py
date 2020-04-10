@@ -47,9 +47,6 @@ def create_parser(default_name='spark'):
                        '--device-id specifies which discovered device is valid. ',
                        choices=['all', 'usb', 'wifi'],
                        default='all')
-    group.add_argument('--list-devices',
-                       action='store_true',
-                       help='List connected devices and exit. [%(default)s]')
 
     # Service network options
     group = parser.add_argument_group('Service communication')
@@ -80,6 +77,13 @@ def create_parser(default_name='spark'):
                        'This does not apply to history data. [%(default)s]',
                        type=float,
                        default=60)
+    group.add_argument('--read-timeout',
+                       help='Timeout period (in seconds) for communication. '
+                       'The timeout is triggered if no data is received for this duration'
+                       'If the timeout triggers, the service attempts to reconnect. '
+                       'Set to a value <= 0 to prevent timeouts. [%(default)s]',
+                       type=float,
+                       default=30)
     group.add_argument('--mdns-host',
                        help='Address of the Brewblox mdns discovery service. [%(default)s]',
                        default='172.17.0.1')
@@ -112,15 +116,10 @@ def main():
     config = app['config']
     app['ini'] = parse_ini(app)
 
-    if config['list_devices']:
-        LOGGER.info('Listing connected devices: ')
-        for dev in [[v for v in p] for p in communication.all_ports()]:
-            LOGGER.info(f'>> {" | ".join(dev)}')
-        # Exit application
-        return
-
-    # This publishes a debug message for every event
-    logging.getLogger('aioamqp.channel').disabled = True
+    # Logs a debug message for every event
+    logging.getLogger('aioamqp.channel').setLevel(logging.CRITICAL)
+    # Logs stack traces when the connection is closed
+    logging.getLogger('aioamqp.protocol').setLevel(logging.CRITICAL)
 
     LOGGER.info('INI: ' + ', '.join([f"{k}='{v}'" for k, v in app['ini'].items()]))
     LOGGER.info('CONFIG: ' + ', '.join([f"{k}='{v}'" for k, v in app['config'].items()]))

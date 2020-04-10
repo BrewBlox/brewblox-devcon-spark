@@ -3,7 +3,6 @@ Specific endpoints for using system objects
 """
 
 import asyncio
-import logging
 from typing import List
 
 from aiohttp import web
@@ -32,7 +31,6 @@ def setup(app: web.Application):
 
 async def shutdown_soon():  # pragma: no cover
     await asyncio.sleep(REBOOT_WINDOW_S)
-    logging.getLogger('aioamqp.protocol').disabled = True
     raise web.GracefulExit()
 
 
