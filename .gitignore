@@ -65,6 +65,7 @@ docs/_build/
 brewblox_service
 
 # Generated when running simulator
+simulator/
 device_key.der
 server_key.der
 eeprom.bin
