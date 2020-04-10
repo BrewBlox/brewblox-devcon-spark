@@ -4,7 +4,6 @@ Launches the firmware simulator in a subprocess
 
 
 import subprocess
-from os import getcwd, path
 from pathlib import Path
 
 from aiohttp import web
@@ -21,13 +20,13 @@ class FirmwareSimulator(features.ServiceFeature):
 
     async def startup(self, app: web.Application):
         await self.shutdown(app)
-        workdir = path.join(getcwd(), 'simulator/')
         device_id = app['config']['device_id']
 
-        Path(workdir).mkdir(mode=0o777, exist_ok=True)
-        Path(path.join(workdir, 'device_key.der')).touch(mode=0o777, exist_ok=True)
-        Path(path.join(workdir, 'server_key.der')).touch(mode=0o777, exist_ok=True)
-        Path(path.join(workdir, 'eeprom.bin')).touch(mode=0o777, exist_ok=True)
+        workdir = Path('simulator/').resolve()
+        workdir.mkdir(mode=0o777, exist_ok=True)
+        workdir.joinpath('device_key.der').touch(mode=0o777, exist_ok=True)
+        workdir.joinpath('server_key.der').touch(mode=0o777, exist_ok=True)
+        workdir.joinpath('eeprom.bin').touch(mode=0o777, exist_ok=True)
 
         self.proc = subprocess.Popen(['../binaries/brewblox-amd', '--device_id', device_id], cwd=workdir)
         LOGGER.info(f'Firmware simulator start ok: {self.proc.poll() is None}')
