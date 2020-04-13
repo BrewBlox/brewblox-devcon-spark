@@ -294,9 +294,11 @@ class SimulationResponder():
 
     async def _factory_reset(self, request):
         await self.startup(self.app)
+        raise exceptions.CommandTimeout()
 
     async def _reboot(self, request):
         self._start_time = datetime.now()
+        raise exceptions.CommandTimeout()
 
     async def _firmware_update(self, request):
         pass

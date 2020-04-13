@@ -97,6 +97,28 @@ class SystemApi():
         LOGGER.info(f'New version: {version}')
         return {'address': address, 'version': version}
 
+    async def reboot(self):
+        async def wrapper():
+            try:
+                await device.get_controller(self.app).reboot()
+            except exceptions.CommandTimeout:
+                pass
+            except Exception as ex:  # pragma: no cover
+                LOGGER.error(f'Unexpected error in reboot command: {strex(ex)}')
+        asyncio.create_task(wrapper())
+        return {}
+
+    async def factory_reset(self):
+        async def wrapper():
+            try:
+                await device.get_controller(self.app).factory_reset()
+            except exceptions.CommandTimeout:
+                pass
+            except Exception as ex:  # pragma: no cover
+                LOGGER.error(f'Unexpected error in factory reset command: {strex(ex)}')
+        asyncio.create_task(wrapper())
+        return {}
+
 
 @routes.get('/system/groups')
 async def groups_read(request: web.Request) -> web.Response:
@@ -168,6 +190,40 @@ async def ping(request: web.Request) -> web.Response:
     """
     return web.json_response(
         await device.get_controller(request.app).noop()
+    )
+
+
+@routes.get('/system/reboot')
+async def reboot(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Reboot controller
+    tags:
+    - Spark
+    - System
+    operationId: controller.spark.system.reboot
+    produces:
+    - application/json
+    """
+    return web.json_response(
+        await SystemApi(request.app).reboot()
+    )
+
+
+@routes.get('/system/factory_reset')
+async def factory_reset(request: web.Request) -> web.Response:
+    """
+    ---
+    summary: Factory reset controller
+    tags:
+    - Spark
+    - System
+    operationId: controller.spark.system.reset
+    produces:
+    - application/json
+    """
+    return web.json_response(
+        await SystemApi(request.app).factory_reset()
     )
 
 

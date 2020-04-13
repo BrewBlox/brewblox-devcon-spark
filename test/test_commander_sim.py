@@ -121,12 +121,13 @@ async def test_clear(app, client, object_args, sim):
     assert len(post[OBJECT_LIST_KEY]) == len(pre[OBJECT_LIST_KEY]) - 1
 
 
-async def test_noops(app, client, sim):
+async def test_non_responsive(app, client, sim):
     for cmd in [
         commands.FactoryResetCommand,
         commands.RebootCommand
     ]:
-        assert await sim.execute(cmd.from_args()) == {}
+        with pytest.raises(exceptions.CommandTimeout):
+            await sim.execute(cmd.from_args())
 
 
 async def test_updating(app, client, sim):
