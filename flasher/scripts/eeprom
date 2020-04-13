@@ -1,0 +1,28 @@
+#! /usr/bin/env bash
+set -e
+
+function dump() {
+    dfu-util -d "$1" -a 0 -s 0x800C000:0x20000 -U eeprom.bin
+    echo ""
+    echo "IMPORTANT: Copy the following bashupload url. The line starts with 'wget'"
+    curl https://bashupload.com/eeprom.bin --data-binary @eeprom.bin
+    rm eeprom.bin
+    particle usb reset
+}
+
+node ./serial-trigger.js
+sleep 5
+
+if [[ -n $(lsusb -d 2b04:d006) ]]; then
+    echo "Dumping Photon eeprom..."
+    dump "2b04:d006"
+    exit
+fi
+
+if [[ -n $(lsusb -d 2b04:d008) ]]; then
+    echo "Dumping P1 eeprom..."
+    dump "2b04:d008"
+    exit
+fi
+
+echo "No compatible USB devices found"
