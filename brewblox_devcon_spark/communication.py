@@ -68,7 +68,7 @@ class SparkConduit(repeater.RepeaterFeature):
             self._address, self._reader, self._writer = await connection.connect(self.app)
             self._parser = cbox_parser.ControlboxParser()
 
-            await state.on_connect(self.app, self._address)
+            await state.set_connect(self.app, self._address)
             self._retry_count = 0
             LOGGER.info(f'Connected {self}')
 
@@ -106,7 +106,7 @@ class SparkConduit(repeater.RepeaterFeature):
             except Exception:
                 pass
             finally:
-                await state.on_disconnect(self.app)
+                await state.set_disconnect(self.app)
                 self._reader = None
                 self._writer = None
                 self._parser = None

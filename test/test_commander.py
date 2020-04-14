@@ -109,7 +109,7 @@ async def test_on_event(mocker, conduit_mock, sparky):
 
 
 async def test_on_welcome(app, mocker, conduit_mock, sparky, welcome):
-    await state.on_connect(app, 'addr')
+    await state.set_connect(app, 'addr')
     assert state.summary(app).address == 'addr'
 
     ok_msg = ','.join(welcome)
@@ -142,7 +142,7 @@ async def test_on_welcome(app, mocker, conduit_mock, sparky, welcome):
 
 
 async def test_on_cbox_err(app, mocker, conduit_mock, sparky, cbox_err):
-    await state.on_connect(app, 'addr')
+    await state.set_connect(app, 'addr')
     assert state.summary(app).address == 'addr'
 
     msg = ':'.join(cbox_err)
@@ -158,7 +158,7 @@ async def test_on_cbox_err(app, mocker, conduit_mock, sparky, cbox_err):
 
 
 async def test_on_setup_mode(app, mocker, conduit_mock, sparky):
-    await state.on_connect(app, 'addr')
+    await state.set_connect(app, 'addr')
     assert state.summary(app).address == 'addr'
 
     mocker.patch(TESTED + '.web.GracefulExit', RuntimeError)
@@ -167,7 +167,7 @@ async def test_on_setup_mode(app, mocker, conduit_mock, sparky):
 
 
 async def test_on_update(app, mocker, conduit_mock, sparky):
-    await state.on_connect(app, 'addr')
+    await state.set_connect(app, 'addr')
     assert state.summary(app).address == 'addr'
 
     await sparky._on_event(conduit_mock, commander.UPDATER_PREFIX + '-message')
