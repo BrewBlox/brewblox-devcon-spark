@@ -140,18 +140,18 @@ async def test_stripped_fields(app, client, cdc, sim_cdc):
 
 
 async def test_codec_config(app, client, cdc):
-    await state.on_synchronize(app)
+    await state.set_synchronize(app)
 
     updated = cdc.update_unit_config({'Temp': 'degF'})
     assert updated['Temp'] == 'degF'
     assert cdc.get_unit_config() == updated
 
     # # disconnect
-    # await state.on_disconnect(app)
+    # await state.set_disconnect(app)
     # await asyncio.sleep(0.01)
     # # connect
-    # await state.on_connect(app, 'codec test')
-    # await state.on_synchronize(app)
+    # await state.set_connect(app, 'codec test')
+    # await state.set_synchronize(app)
 
     # assert cdc.get_unit_config()['Temp'] == 'degC'
 

@@ -165,7 +165,7 @@ class SparkCommander(repeater.RepeaterFeature):
             welcome.platform,
             welcome.reset_reason,
         )
-        await state.on_handshake(self.app, device)
+        await state.set_handshake(self.app, device)
 
     async def _on_event(self, conduit, msg: str):
         if msg.startswith(WELCOME_PREFIX):

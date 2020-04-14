@@ -17,7 +17,7 @@ LOGGER = brewblox_logger(__name__)
 
 
 def states(app):
-    events = state.get_events(app)
+    events = state._events(app)
     return [
         events.disconnect_ev.is_set(),
         events.connect_ev.is_set(),
@@ -26,13 +26,13 @@ def states(app):
 
 
 async def connect(app):
-    await state.on_connect(app, 'seeder test')
+    await state.set_connect(app, 'seeder test')
     await seeder.get_seeder(app).seeding_done()
     await asyncio.sleep(0.01)
 
 
 async def disconnect(app):
-    await state.on_disconnect(app)
+    await state.set_disconnect(app)
     await state.wait_disconnect(app)
     await asyncio.sleep(0.01)
 
