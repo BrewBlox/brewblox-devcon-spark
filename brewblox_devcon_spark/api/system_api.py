@@ -39,6 +39,7 @@ class FirmwareUpdater():
     def __init__(self, app: web.Application):
         self.app = app
         self.name = app['config']['name']
+        self.simulation = app['config']['simulation']
         self.state_exchange = app['config']['state_exchange']
         self.version = app['ini']['firmware_version']
         self.date = app['ini']['firmware_date']
@@ -76,6 +77,9 @@ class FirmwareUpdater():
             if not state.summary(self.app).connect:
                 self._notify('Controller is not connected. Aborting update.')
                 raise exceptions.NotConnected()
+
+            if self.simulation:
+                raise NotImplementedError('Firmware updates not available for simulation controllers')
 
             self._notify('Sending update command to controller')
             await cmder.start_update(FLUSH_PERIOD_S)
