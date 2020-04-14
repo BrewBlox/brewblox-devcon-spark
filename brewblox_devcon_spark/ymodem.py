@@ -144,24 +144,27 @@ class FileSender():
     DATA_LEN = 1024 if PACKET_MARK == STX else 128
     PACKET_LEN = DATA_LEN + 5
 
+    def __init__(self, notify_cb):
+        self._notify = notify_cb
+
     async def transfer(self, conn: Connection):
         handshake = await self._trigger(conn)
         filename = f'binaries/brewblox-{handshake.platform}.bin'
 
-        LOGGER.info(f'Controller is in transfer mode, sending file {filename}')
+        self._notify(f'Controller is in transfer mode, sending file {filename}')
         async with aiofiles.open(filename, 'rb') as file:
             await file.seek(0, os.SEEK_END)
             fsize = await file.tell()
             num_packets = math.ceil(fsize / FileSender.DATA_LEN)
             await file.seek(0, os.SEEK_SET)
 
-            LOGGER.info('Sending header...')
+            self._notify('Sending file header')
             state: SendState = await self._send_header(conn, 'binary', fsize)
 
             if state.response != FileSender.ACK:
                 raise ConnectionAbortedError(f'Failed with code {state.response} while sending header')
 
-            LOGGER.info('Sending firmware...')
+            self._notify('Sending file data')
             for i in range(num_packets):
                 current = i + 1  # packet 0 was the header
                 LOGGER.debug(f'Sending packet {current} / {num_packets}')
@@ -198,7 +201,7 @@ class FileSender():
             if match:
                 args = match.group('message').split(',')
                 message = HandshakeMessage(*args)
-                LOGGER.info(message)
+                self._notify(f'Handshake received: {message}')
                 break
         else:
             raise TimeoutError('Controller did not send handshake message')
@@ -209,7 +212,7 @@ class FileSender():
         for i in range(10):
             buffer += (await conn.protocol.message).decode()
             if '<!READY_FOR_FIRMWARE>' in buffer:
-                LOGGER.info('Controller is ready for firmware')
+                self._notify('Controller is ready for firmware')
                 break
         else:
             raise TimeoutError('Controller did not enter file transfer mode')
@@ -247,7 +250,7 @@ class FileSender():
         response = await self._send_packet(conn, packet)
 
         if response == FileSender.NAK:
-            LOGGER.info('Retrying packet...')
+            LOGGER.debug('Retrying packet...')
             await asyncio.sleep(1)
             response = await self._send_packet(conn, packet)
 
