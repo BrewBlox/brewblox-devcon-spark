@@ -4,7 +4,6 @@ Implements a protocol and a conduit for async serial communication.
 
 import asyncio
 from asyncio import CancelledError
-from contextlib import suppress
 from typing import Awaitable, Callable, List, Set
 
 from aiohttp import web
@@ -98,16 +97,19 @@ class SparkConduit(repeater.RepeaterFeature):
 
         except Exception:
             self._retry_count += 1
-            await state.on_disconnect(self.app)
             raise
 
         finally:
-            with suppress(Exception):
+            try:
                 self._writer.close()
                 LOGGER.info(f'Closed {self}')
-            self._reader = None
-            self._writer = None
-            self._parser = None
+            except Exception:
+                pass
+            finally:
+                await state.on_disconnect(self.app)
+                self._reader = None
+                self._writer = None
+                self._parser = None
 
     def _do_callbacks(self, callbacks: List[MessageCallback_], message: str):
         async def call_cb(cb: MessageCallback_, message: str):
