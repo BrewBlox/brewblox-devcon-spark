@@ -22,4 +22,4 @@ async def managed_dir():
 
 
 async def test_sim(app, client, managed_dir):
-    assert simulator.get_simulator(app).proc.poll() is None
+    assert simulator.get_simulator(app).sim.proc.poll() is None

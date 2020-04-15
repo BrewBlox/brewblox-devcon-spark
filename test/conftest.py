@@ -13,6 +13,26 @@ from brewblox_devcon_spark.__main__ import create_parser
 LOGGER = brewblox_logger(__name__)
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        '--integration', action='store_true', default=False, help='run integration tests'
+    )
+
+
+def pytest_configure(config):
+    config.addinivalue_line('markers', 'integration: mark test as (slow) integration test')
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption('--integration'):
+        # --integration given in cli: do not skip tests
+        return
+    skip_integration = pytest.mark.skip(reason='need --integration option to run')
+    for item in items:
+        if 'integration' in item.keywords:
+            item.add_marker(skip_integration)
+
+
 @pytest.fixture(scope='session', autouse=True)
 def log_enabled():
     """Sets log level to DEBUG for all test functions.
@@ -81,7 +101,7 @@ def app_ini() -> dict:
 
 @pytest.fixture
 def event_loop(loop):
-    # aresponses uses the "event_loop" fixture
+    # aresponses uses the 'event_loop' fixture
     # this makes loop available under either name
     yield loop
 
