@@ -78,5 +78,16 @@ async def test_ping(app, client):
 
 
 @pytest.mark.integration
-async def test_ping2(app, client):
-    await response(client.get('/system/ping'))
+async def test_create_read(app, client):
+    await response(client.post('/objects', json={
+        'id': 'sensor-1',
+        'groups': [0],
+        'type': 'TempSensorMock',
+        'data': {
+            'value[celsius]': 20.89789201,
+            'connected': True
+        }
+    }))
+    obj = await response(client.get('/objects/sensor-1'))
+    assert obj['id'] == 'sensor-1'
+    assert obj['data']
