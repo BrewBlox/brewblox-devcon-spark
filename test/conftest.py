@@ -148,7 +148,7 @@ def spark_blocks():
             }
         },
         {
-            'id': 'group-1',
+            'id': 'profile-1',
             'nid': 201,
             'groups': [0],
             'type': 'SetpointProfile',
