@@ -38,19 +38,19 @@ async def disconnect(app):
 
 
 @pytest.fixture(autouse=True)
-async def ping_interval_mock(mocker):
+def ping_interval_mock(mocker):
     mocker.patch(TESTED + '.PING_INTERVAL_S', 0.0001)
 
 
 @pytest.fixture(autouse=True)
-async def system_exit_mock(mocker):
+def system_exit_mock(mocker):
     m = mocker.patch(TESTED + '.web.GracefulExit',
                      side_effect=repeater.RepeaterCancelled)
     return m
 
 
 @pytest.fixture
-async def app(app):
+async def app(app, loop):
     state.setup(app)
     scheduler.setup(app)
     datastore.setup(app)
@@ -62,7 +62,7 @@ async def app(app):
 
 
 @pytest.fixture
-def store(app):
+async def store(app, loop):
     return datastore.get_datastore(app)
 
 
