@@ -53,7 +53,7 @@ class Seeder(repeater.RepeaterFeature):
             await self._seed_datastore()
             await self._seed_time()
 
-            await state.on_synchronize(self.app)
+            await state.set_synchronize(self.app)
             LOGGER.info('Service synchronized!')
 
         except asyncio.CancelledError:
@@ -100,7 +100,7 @@ class Seeder(repeater.RepeaterFeature):
 
     async def _seed_datastore(self):
         try:
-            name = state.get_status(self.app).device.device_id
+            name = state.summary(self.app).device.device_id
 
             # Allow users to add --simulation to existing services without causing errors
             if self.app['config']['simulation']:

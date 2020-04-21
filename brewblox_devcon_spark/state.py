@@ -9,7 +9,6 @@ from dataclasses import asdict, dataclass
 from typing import List
 
 from aiohttp import web
-
 from brewblox_service import brewblox_logger, features
 
 LOGGER = brewblox_logger(__name__)
@@ -55,7 +54,7 @@ class StateSummary:
     synchronize: bool
 
 
-class ServiceStatus(features.ServiceFeature):
+class ServiceState(features.ServiceFeature):
 
     def __init__(self, app: web.Application):
         super().__init__(app)
@@ -140,20 +139,6 @@ class ServiceStatus(features.ServiceFeature):
         if not self._valid:
             warnings.warn('Handshake error: invalid device ID')
 
-        self._info = [
-            f'Firmware version (service): {service.firmware_version}',
-            f'Firmware version (controller): {device.firmware_version}',
-            f'Firmware date (service): {service.firmware_date}',
-            f'Firmware date (controller): {device.firmware_date}',
-            f'Protocol version (service): {service.proto_version}',
-            f'Protocol version (controller): {device.proto_version}',
-            f'Protocol date (service): {service.proto_date}',
-            f'Protocol date (controller): {device.proto_date}',
-            f'System version (controller): {device.system_version}',
-            f'Desired device ID (service): {service.device_id}',
-            f'Actual device ID (controller): {device.device_id}',
-        ]
-
     def reset(self):
         self._device = None
         self._info = []
@@ -184,17 +169,17 @@ class ServiceEvents(features.ServiceFeature):
             'synchronize': self.synchronize_ev.is_set(),
         }
 
-    async def on_connect(self):
+    async def set_connect(self):
         self.disconnect_ev.clear()
         self.connect_ev.set()
 
-    async def on_handshake(self):
+    async def set_handshake(self):
         self.handshake_ev.set()
 
-    async def on_synchronize(self):
+    async def set_synchronize(self):
         self.synchronize_ev.set()
 
-    async def on_disconnect(self):
+    async def set_disconnect(self):
         self.connect_ev.clear()
         self.handshake_ev.clear()
         self.synchronize_ev.clear()
@@ -205,59 +190,59 @@ class ServiceEvents(features.ServiceFeature):
 
 
 def setup(app: web.Application):
-    features.add(app, ServiceStatus(app))
+    features.add(app, ServiceState(app))
     features.add(app, ServiceEvents(app))
 
 
-def get_status(app: web.Application) -> ServiceStatus:
-    return features.get(app, ServiceStatus)
+def _state(app: web.Application) -> ServiceState:
+    return features.get(app, ServiceState)
 
 
-def get_events(app: web.Application) -> ServiceEvents:
+def _events(app: web.Application) -> ServiceEvents:
     return features.get(app, ServiceEvents)
 
 
+async def set_connect(app: web.Application, address: str):
+    _state(app).set_address(address)
+    await _events(app).set_connect()
+
+
+async def set_handshake(app: web.Application, device: DeviceInfo):
+    _state(app).set_device(device)
+    await _events(app).set_handshake()
+
+
+async def set_synchronize(app: web.Application):
+    await _events(app).set_synchronize()
+
+
+async def set_disconnect(app: web.Application):
+    _state(app).reset()
+    await _events(app).set_disconnect()
+
+
 async def wait_connect(app: web.Application) -> bool:
-    return await get_events(app).connect_ev.wait()
+    return await _events(app).connect_ev.wait()
 
 
 async def wait_handshake(app: web.Application) -> bool:
-    return await get_events(app).handshake_ev.wait()
+    return await _events(app).handshake_ev.wait()
 
 
 async def wait_synchronize(app: web.Application, wait: bool = True) -> bool:
     if not wait:
-        return get_events(app).synchronize_ev.is_set()
-    return await get_events(app).synchronize_ev.wait()
+        return _events(app).synchronize_ev.is_set()
+    return await _events(app).synchronize_ev.wait()
 
 
 async def wait_disconnect(app: web.Application) -> bool:
-    await get_events(app).disconnect_ev.wait()
-
-
-async def on_connect(app: web.Application, address: str):
-    get_status(app).set_address(address)
-    await get_events(app).on_connect()
-
-
-async def on_handshake(app: web.Application, device: DeviceInfo):
-    get_status(app).set_device(device)
-    await get_events(app).on_handshake()
-
-
-async def on_synchronize(app: web.Application):
-    await get_events(app).on_synchronize()
-
-
-async def on_disconnect(app: web.Application):
-    get_status(app).reset()
-    await get_events(app).on_disconnect()
+    await _events(app).disconnect_ev.wait()
 
 
 def summary(app: web.Application) -> StateSummary:
     return StateSummary(
-        **get_status(app).summary(),
-        **get_events(app).summary(),
+        **_state(app).summary(),
+        **_events(app).summary(),
     )
 
 

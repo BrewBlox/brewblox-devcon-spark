@@ -219,8 +219,8 @@ class SimulationResponder():
     async def _noop_command(self, request):
         # Shortcut for actual behavior
         # Noop triggers a welcome message
-        # Welcome message is checked, and triggers on_handshake()
-        await state.on_handshake(self.app, make_device(self.app))
+        # Welcome message is checked, and triggers set_handshake()
+        await state.set_handshake(self.app, make_device(self.app))
 
     async def _read_object(self, request):
         try:
@@ -294,9 +294,11 @@ class SimulationResponder():
 
     async def _factory_reset(self, request):
         await self.startup(self.app)
+        raise exceptions.CommandTimeout()
 
     async def _reboot(self, request):
         self._start_time = datetime.now()
+        raise exceptions.CommandTimeout()
 
     async def _firmware_update(self, request):
         pass
@@ -310,8 +312,8 @@ class SimulationCommander(commander.SparkCommander):
 
     async def startup(self, app: web.Application):
         await self._responder.startup(app)
-        await state.on_connect(app, 'simulation:1234')
-        await state.on_handshake(app, make_device(app))
+        await state.set_connect(app, 'simulation:1234')
+        await state.set_handshake(app, make_device(app))
 
     async def shutdown(self, _):
         pass
@@ -324,7 +326,7 @@ class SimulationCommander(commander.SparkCommander):
 
     async def start_update(self, flush_period):
         await super().start_update(0)
-        await state.on_disconnect(self.app)
+        await state.set_disconnect(self.app)
 
 
 def setup(app: web.Application):

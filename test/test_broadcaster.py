@@ -27,7 +27,7 @@ def m_publish(mocker):
 
 
 @pytest.fixture
-async def app(app, m_api, m_publish):
+def app(app, m_api, m_publish):
     app['config']['broadcast_interval'] = 0.01
     app['config']['history_exchange'] = 'testcast.history'
     app['config']['state_exchange'] = 'testcast.state'
@@ -39,7 +39,7 @@ async def app(app, m_api, m_publish):
 
 @pytest.fixture
 async def connected(app, client):
-    await state.on_synchronize(app)
+    await state.set_synchronize(app)
 
 
 async def test_noop_broadcast(app, m_api, m_publish, client, connected):

@@ -41,7 +41,7 @@ def m_write(mocker):
 
 
 @pytest.fixture
-async def app(app, m_check, m_read, m_write, mocker):
+def app(app, m_check, m_read, m_write, mocker):
     mocker.patch(TESTED + '.FLUSH_DELAY_S', 0.01)
     app['config']['volatile'] = False
     scheduler.setup(app)

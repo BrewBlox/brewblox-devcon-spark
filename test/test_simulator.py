@@ -2,6 +2,8 @@
 Tests brewblox_devcon_spark.simulator
 """
 
+from shutil import rmtree
+
 import pytest
 
 from brewblox_devcon_spark import simulator
@@ -13,5 +15,11 @@ async def app(app, loop):
     return app
 
 
-async def test_sim(app, client):
-    assert simulator.get_simulator(app).proc.poll() is None
+@pytest.fixture
+async def managed_dir():
+    yield
+    rmtree('simulator/', ignore_errors=True)
+
+
+async def test_sim(app, client, managed_dir):
+    assert simulator.get_simulator(app).sim.proc.poll() is None

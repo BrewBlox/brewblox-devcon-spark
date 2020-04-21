@@ -465,7 +465,7 @@ async def test_system_status(app, client):
         'service': ANY,
         'info': ANY,
     }
-    await state.on_disconnect(app)
+    await state.set_disconnect(app)
     await asyncio.sleep(0.01)
     resp = await response(client.get('/system/status'))
     assert resp == {
@@ -497,3 +497,8 @@ async def test_system_flash(app, client, mocker):
     await response(client.post('/system/flash'))
     m_sender.return_value.transfer.assert_awaited()
     m_shutdown.assert_awaited()
+
+
+async def test_system_resets(app, client, mocker):
+    await response(client.get('/system/reboot'))
+    await response(client.get('/system/factory_reset'))

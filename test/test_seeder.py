@@ -17,7 +17,7 @@ LOGGER = brewblox_logger(__name__)
 
 
 def states(app):
-    events = state.get_events(app)
+    events = state._events(app)
     return [
         events.disconnect_ev.is_set(),
         events.connect_ev.is_set(),
@@ -26,31 +26,31 @@ def states(app):
 
 
 async def connect(app):
-    await state.on_connect(app, 'seeder test')
+    await state.set_connect(app, 'seeder test')
     await seeder.get_seeder(app).seeding_done()
     await asyncio.sleep(0.01)
 
 
 async def disconnect(app):
-    await state.on_disconnect(app)
+    await state.set_disconnect(app)
     await state.wait_disconnect(app)
     await asyncio.sleep(0.01)
 
 
 @pytest.fixture(autouse=True)
-async def ping_interval_mock(mocker):
+def ping_interval_mock(mocker):
     mocker.patch(TESTED + '.PING_INTERVAL_S', 0.0001)
 
 
 @pytest.fixture(autouse=True)
-async def system_exit_mock(mocker):
+def system_exit_mock(mocker):
     m = mocker.patch(TESTED + '.web.GracefulExit',
                      side_effect=repeater.RepeaterCancelled)
     return m
 
 
 @pytest.fixture
-async def app(app):
+async def app(app, loop):
     state.setup(app)
     scheduler.setup(app)
     datastore.setup(app)
@@ -62,7 +62,7 @@ async def app(app):
 
 
 @pytest.fixture
-def store(app):
+async def store(app, loop):
     return datastore.get_datastore(app)
 
 

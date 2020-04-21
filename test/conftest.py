@@ -13,6 +13,26 @@ from brewblox_devcon_spark.__main__ import create_parser
 LOGGER = brewblox_logger(__name__)
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        '--integration', action='store_true', default=False, help='run integration tests'
+    )
+
+
+def pytest_configure(config):
+    config.addinivalue_line('markers', 'integration: mark test as (slow) integration test')
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption('--integration'):
+        # --integration given in cli: do not skip tests
+        return
+    skip_integration = pytest.mark.skip(reason='need --integration option to run')
+    for item in items:
+        if 'integration' in item.keywords:
+            item.add_marker(skip_integration)
+
+
 @pytest.fixture(scope='session', autouse=True)
 def log_enabled():
     """Sets log level to DEBUG for all test functions.
@@ -36,6 +56,7 @@ def app_config() -> dict:
         'broadcast_interval': 5,
         'broadcast_timeout': 60,
         'broadcast_valid': 60,
+        'read_timeout': 10,
         'history_exchange': 'brewcast.history',
         'state_exchange': 'brewcast.state',
         'mdns_host': '172.17.0.1',
@@ -59,6 +80,7 @@ def sys_args(app_config) -> list:
         '--broadcast-interval', app_config['broadcast_interval'],
         '--broadcast-timeout', app_config['broadcast_timeout'],
         '--broadcast-valid', app_config['broadcast_valid'],
+        '--read-timeout', app_config['read_timeout'],
         '--history-exchange', app_config['history_exchange'],
         '--state-exchange', app_config['state_exchange'],
         '--mdns-host', app_config['mdns_host'],
@@ -79,7 +101,7 @@ def app_ini() -> dict:
 
 @pytest.fixture
 def event_loop(loop):
-    # aresponses uses the "event_loop" fixture
+    # aresponses uses the 'event_loop' fixture
     # this makes loop available under either name
     yield loop
 
@@ -126,7 +148,7 @@ def spark_blocks():
             }
         },
         {
-            'id': 'group-1',
+            'id': 'profile-1',
             'nid': 201,
             'groups': [0],
             'type': 'SetpointProfile',
