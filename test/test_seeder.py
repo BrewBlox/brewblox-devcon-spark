@@ -98,12 +98,12 @@ async def test_seed_datastore(app, client, mocker, store, config, api_mock):
     mocker.patch.object(config, 'read', m_config_read)
 
     app['config']['simulation'] = True
-    app['config']['device_id'] = '1234'
+    app['config']['name'] = 'testey'
 
     await disconnect(app)
     await connect(app)
-    m_store_read.assert_awaited_once_with('1234-sim-blocks-db')
-    m_config_read.assert_awaited_once_with('1234-sim-config-db')
+    m_store_read.assert_awaited_once_with('simulator__testey-blocks-db')
+    m_config_read.assert_awaited_once_with('simulator__testey-config-db')
 
 
 async def test_seed_errors(app, client, mocker, system_exit_mock):
