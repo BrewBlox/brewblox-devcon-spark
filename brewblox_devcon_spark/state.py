@@ -42,6 +42,7 @@ class DeviceInfo(SharedInfo):
 @dataclass
 class StateSummary:
     address: str
+    connection: str
     compatible: bool
     latest: bool
     valid: bool
@@ -59,6 +60,7 @@ class ServiceState(features.ServiceFeature):
     def __init__(self, app: web.Application):
         super().__init__(app)
         self._address: str = None
+        self._simulation: bool = app['config']['simulation']
         self._compatible: bool = True  # until proven otherwise
         self._latest: bool = True
         self._valid: bool = True
@@ -76,6 +78,17 @@ class ServiceState(features.ServiceFeature):
     @property
     def address(self) -> str:
         return self._address
+
+    @property
+    def connection(self) -> str:
+        if not self._address:
+            return None
+        if self._simulation:
+            return 'simulation'
+        if ':' in self._address:
+            return 'wifi'
+        else:
+            return 'usb'
 
     @property
     def compatible(self) -> bool:
@@ -104,6 +117,7 @@ class ServiceState(features.ServiceFeature):
     def summary(self) -> dict:
         return {
             'address': self.address,
+            'connection': self.connection,
             'compatible': self.compatible,
             'latest': self.latest,
             'valid': self.valid,
