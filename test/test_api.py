@@ -455,6 +455,7 @@ async def test_system_status(app, client):
     resp = await response(client.get('/system/status'))
     assert resp == {
         'address': 'simulation:1234',
+        'connection': 'wifi',
         'connect': True,
         'handshake': True,
         'synchronize': True,
@@ -470,6 +471,7 @@ async def test_system_status(app, client):
     resp = await response(client.get('/system/status'))
     assert resp == {
         'address': 'simulation:1234',
+        'connection': 'wifi',
         'connect': False,
         'handshake': False,
         'synchronize': False,
