@@ -102,9 +102,9 @@ class Seeder(repeater.RepeaterFeature):
         try:
             name = state.summary(self.app).device.device_id
 
-            # Allow users to add --simulation to existing services without causing errors
+            # Simulation services are identified by service name
             if self.app['config']['simulation']:
-                name += '-sim'
+                name = 'simulator__' + self.app['config']['name']
 
             await datastore.check_remote(self.app)
             await asyncio.gather(
