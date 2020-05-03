@@ -8,7 +8,6 @@ ENV PIP_FIND_LINKS=/wheeley
 
 RUN pip3 install wheel \
     && pip3 wheel --wheel-dir=/wheeley -r /app/requirements.txt \
-    && pip3 install poetry \
     && pip3 wheel --wheel-dir=/wheeley /app/dist/*
 
 FROM python:3.7-slim
