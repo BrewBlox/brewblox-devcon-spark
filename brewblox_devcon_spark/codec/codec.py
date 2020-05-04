@@ -15,8 +15,7 @@ from brewblox_devcon_spark import datastore, exceptions
 from brewblox_devcon_spark.codec.modifiers import STRIP_UNLOGGED_KEY, Modifier
 from brewblox_devcon_spark.codec.transcoders import (Decoded_, Encoded_,
                                                      ObjType_, Transcoder)
-from brewblox_devcon_spark.codec.unit_conversion import (UNIT_ALTERNATIVES,
-                                                         UnitConverter)
+from brewblox_devcon_spark.codec.unit_conversion import UnitConverter
 
 TranscodeFunc_ = Callable[
     [ObjType_, Union[Encoded_, Decoded_]],
@@ -58,7 +57,7 @@ class Codec(features.ServiceFeature):
         return updated
 
     def get_unit_alternatives(self):
-        return UNIT_ALTERNATIVES
+        return self._converter.unit_alternatives
 
     def compatible_types(self) -> Awaitable[dict]:
         """
@@ -75,7 +74,7 @@ class Codec(features.ServiceFeature):
                      obj_type: ObjType_,
                      values: Decoded_ = ...,
                      opts: Optional[dict] = None
-                     ) -> Awaitable[Tuple[ObjType_, Encoded_]]:
+                     ) -> Tuple[ObjType_, Encoded_]:
         """
         Encode given data to a serializable type.
 
@@ -114,7 +113,7 @@ class Codec(features.ServiceFeature):
                      obj_type: ObjType_,
                      encoded: Encoded_ = ...,
                      opts: Optional[dict] = None
-                     ) -> Awaitable[Tuple[ObjType_, Decoded_]]:
+                     ) -> Tuple[ObjType_, Decoded_]:
         """
         Decodes given data to a Python-compatible type.
 
