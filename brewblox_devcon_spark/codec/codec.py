@@ -9,13 +9,14 @@ from copy import deepcopy
 from typing import Awaitable, Callable, Dict, Optional, Tuple, Union
 
 from aiohttp import web
-from brewblox_service import brewblox_logger, features
+from brewblox_service import brewblox_logger, features, strex
 
 from brewblox_devcon_spark import datastore, exceptions
 from brewblox_devcon_spark.codec.modifiers import STRIP_UNLOGGED_KEY, Modifier
 from brewblox_devcon_spark.codec.transcoders import (Decoded_, Encoded_,
                                                      ObjType_, Transcoder)
 from brewblox_devcon_spark.codec.unit_conversion import UnitConverter
+from brewblox_devcon_spark.exceptions import InvalidInput
 
 TranscodeFunc_ = Callable[
     [ObjType_, Union[Encoded_, Decoded_]],
@@ -46,7 +47,10 @@ class Codec(features.ServiceFeature):
         return self._converter.user_units
 
     def _on_config_change(self, config):
-        self._converter.user_units = config.get(UNIT_CONFIG_KEY, {})
+        try:
+            self._converter.user_units = config.get(UNIT_CONFIG_KEY, {})
+        except InvalidInput as ex:
+            LOGGER.warn(f'Discarding user units due to error: {strex(ex)}')
         config[UNIT_CONFIG_KEY] = self._converter.user_units
 
     def update_unit_config(self, units: Dict[str, str] = None) -> Dict[str, str]:
