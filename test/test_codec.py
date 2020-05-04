@@ -146,14 +146,8 @@ async def test_codec_config(app, client, cdc):
     assert updated['Temp'] == 'degF'
     assert cdc.get_unit_config() == updated
 
-    # # disconnect
-    # await state.set_disconnect(app)
-    # await asyncio.sleep(0.01)
-    # # connect
-    # await state.set_connect(app, 'codec test')
-    # await state.set_synchronize(app)
-
-    # assert cdc.get_unit_config()['Temp'] == 'degC'
+    cdc._on_config_change({codec.UNIT_CONFIG_KEY: {'Temp': 'pancakes'}})
+    assert cdc.get_unit_config() == updated
 
 
 async def test_driven_fields(app, client, cdc):
