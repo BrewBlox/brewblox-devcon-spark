@@ -9,14 +9,14 @@ from copy import deepcopy
 from typing import Awaitable, Callable, Dict, Optional, Tuple, Union
 
 from aiohttp import web
-from brewblox_service import brewblox_logger, features
+from brewblox_service import brewblox_logger, features, strex
 
 from brewblox_devcon_spark import datastore, exceptions
 from brewblox_devcon_spark.codec.modifiers import STRIP_UNLOGGED_KEY, Modifier
 from brewblox_devcon_spark.codec.transcoders import (Decoded_, Encoded_,
                                                      ObjType_, Transcoder)
-from brewblox_devcon_spark.codec.unit_conversion import (UNIT_ALTERNATIVES,
-                                                         UnitConverter)
+from brewblox_devcon_spark.codec.unit_conversion import UnitConverter
+from brewblox_devcon_spark.exceptions import InvalidInput
 
 TranscodeFunc_ = Callable[
     [ObjType_, Union[Encoded_, Decoded_]],
@@ -47,7 +47,10 @@ class Codec(features.ServiceFeature):
         return self._converter.user_units
 
     def _on_config_change(self, config):
-        self._converter.user_units = config.get(UNIT_CONFIG_KEY, {})
+        try:
+            self._converter.user_units = config.get(UNIT_CONFIG_KEY, {})
+        except InvalidInput as ex:
+            LOGGER.warn(f'Discarding user units due to error: {strex(ex)}')
         config[UNIT_CONFIG_KEY] = self._converter.user_units
 
     def update_unit_config(self, units: Dict[str, str] = None) -> Dict[str, str]:
@@ -58,7 +61,7 @@ class Codec(features.ServiceFeature):
         return updated
 
     def get_unit_alternatives(self):
-        return UNIT_ALTERNATIVES
+        return self._converter.unit_alternatives
 
     def compatible_types(self) -> Awaitable[dict]:
         """
@@ -75,7 +78,7 @@ class Codec(features.ServiceFeature):
                      obj_type: ObjType_,
                      values: Decoded_ = ...,
                      opts: Optional[dict] = None
-                     ) -> Awaitable[Tuple[ObjType_, Encoded_]]:
+                     ) -> Tuple[ObjType_, Encoded_]:
         """
         Encode given data to a serializable type.
 
@@ -114,7 +117,7 @@ class Codec(features.ServiceFeature):
                      obj_type: ObjType_,
                      encoded: Encoded_ = ...,
                      opts: Optional[dict] = None
-                     ) -> Awaitable[Tuple[ObjType_, Decoded_]]:
+                     ) -> Tuple[ObjType_, Decoded_]:
         """
         Decodes given data to a Python-compatible type.
 

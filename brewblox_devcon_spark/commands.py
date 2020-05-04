@@ -362,7 +362,7 @@ class Command(ABC):
         errcode = self._parse(ErrorcodeEnum, combined[0], False)
 
         try:
-            if int(errcode) != 0:
+            if errcode != 'OK':  # Enum value can be compared to string name
                 raise exceptions.CommandException(f'{self.name} failed with code {errcode}')
 
             response = self._parse(self.response, combined[0])

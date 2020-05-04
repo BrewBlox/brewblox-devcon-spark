@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x14TempSensorMock.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xc9\x02\n\x0eTempSensorMock\x12-\n\x05value\x18\x01 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02(\x01\x92?\x02\x38 \x12\x19\n\tconnected\x18\x03 \x01(\x08\x42\x06\x8a\xb5\x18\x02\x30\x01\x12#\n\x07setting\x18\x04 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x36\n\x0c\x66luctuations\x18\x05 \x03(\x0b\x32 .blox.TempSensorMock.Fluctuation\x12(\n\x0estrippedFields\x18\x63 \x03(\rB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x01\x1aW\n\x0b\x46luctuation\x12+\n\tamplitude\x18\x01 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\x02\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x1b\n\x06period\x18\x02 \x01(\rB\x0b\x8a\xb5\x18\x02\x08\x04\x92?\x02\x38\x10:\r\x8a\xb5\x18\x03\x18\xad\x02\x8a\xb5\x18\x02H\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x14TempSensorMock.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xd0\x02\n\x0eTempSensorMock\x12-\n\x05value\x18\x01 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02(\x01\x92?\x02\x38 \x12\x19\n\tconnected\x18\x03 \x01(\x08\x42\x06\x8a\xb5\x18\x02\x30\x01\x12#\n\x07setting\x18\x04 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x36\n\x0c\x66luctuations\x18\x05 \x03(\x0b\x32 .blox.TempSensorMock.Fluctuation\x12(\n\x0estrippedFields\x18\x63 \x03(\rB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x01\x1a^\n\x0b\x46luctuation\x12+\n\tamplitude\x18\x01 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\x06\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\"\n\x06period\x18\x02 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 :\r\x8a\xb5\x18\x03\x18\xad\x02\x8a\xb5\x18\x02H\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -41,14 +41,14 @@ _TEMPSENSORMOCK_FLUCTUATION = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\0020\001\212\265\030\002\010\002\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\0020\001\212\265\030\002\010\006\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='period', full_name='blox.TempSensorMock.Fluctuation.period', index=1,
       number=2, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002\010\004\222?\0028\020'), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002\010\003\212\265\030\003\020\350\007\222?\0028 '), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -62,7 +62,7 @@ _TEMPSENSORMOCK_FLUCTUATION = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=288,
-  serialized_end=375,
+  serialized_end=382,
 )
 
 _TEMPSENSORMOCK = _descriptor.Descriptor(
@@ -120,7 +120,7 @@ _TEMPSENSORMOCK = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=61,
-  serialized_end=390,
+  serialized_end=397,
 )
 
 _TEMPSENSORMOCK_FLUCTUATION.containing_type = _TEMPSENSORMOCK

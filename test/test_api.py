@@ -307,7 +307,7 @@ async def test_codec_api(app, client, object_args):
     await client.post('/objects', json=object_args)
 
     default_units = await response(client.get('/codec/units'))
-    assert {'Temp', 'Time', 'LongTime'} == default_units.keys()
+    assert {'Temp'} == default_units.keys()
 
     alternative_units = await response(client.get('/codec/unit_alternatives'))
     assert alternative_units.keys() == default_units.keys()
@@ -318,10 +318,6 @@ async def test_codec_api(app, client, object_args):
     await client.put('/codec/units', json={'Temp': 'degF'})
     retd = await response(client.get(f'/objects/{object_args[API_SID_KEY]}'))
     assert retd[API_DATA_KEY]['offset[delta_degF]'] == pytest.approx(degF_offset, 0.1)
-
-    await client.put('/codec/units', json={'Temp': 'degK'})
-    retd = await response(client.get(f'/objects/{object_args[API_SID_KEY]}'))
-    assert retd[API_DATA_KEY]['offset[degK]'] == pytest.approx(degC_offset, 0.1)
 
     await client.put('/codec/units', json={})
     retd = await response(client.get(f'/objects/{object_args[API_SID_KEY]}'))
@@ -455,6 +451,7 @@ async def test_system_status(app, client):
     resp = await response(client.get('/system/status'))
     assert resp == {
         'address': 'simulation:1234',
+        'connection': 'wifi',
         'connect': True,
         'handshake': True,
         'synchronize': True,
@@ -470,6 +467,7 @@ async def test_system_status(app, client):
     resp = await response(client.get('/system/status'))
     assert resp == {
         'address': 'simulation:1234',
+        'connection': 'wifi',
         'connect': False,
         'handshake': False,
         'synchronize': False,
