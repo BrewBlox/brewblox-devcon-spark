@@ -192,7 +192,7 @@ class Modifier():
 
             if options.unit and element.postfix:
                 unit = self._unit_name(options.unit)
-                val = [self._converter.to_sys(v, unit, element.postfix) for v in val]
+                val = [self._converter.to_sys_value(v, unit, element.postfix) for v in val]
 
             if options.scale:
                 val = [v * options.scale for v in val]
@@ -296,9 +296,9 @@ class Modifier():
 
             if options.unit:
                 unit = self._unit_name(options.unit)
-                new_key += f'[{self._converter.user_unit(unit)}]'
+                new_key += f'[{self._converter.to_user_unit(unit)}]'
                 val = [
-                    self._converter.to_user(v, unit)
+                    self._converter.to_user_value(v, unit)
                     for v in val
                 ]
 
