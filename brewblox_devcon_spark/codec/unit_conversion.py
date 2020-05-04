@@ -2,6 +2,8 @@
 User-configurable unit conversion
 """
 
+from typing import Dict, List, Tuple
+
 from brewblox_service import brewblox_logger
 from pint import UnitRegistry
 
@@ -14,71 +16,55 @@ LOGGER = brewblox_logger(__name__)
 # This significantly reduces setup time for unit tests
 _UREG = UnitRegistry()
 
+SYSTEM_TEMP = 'degC'
 
-UNIT_ALTERNATIVES = {
-    'Temp': [
-        'degC',
-        'degF',
-        'degK',
-    ],
-    'Time': [
-        'millisecond',
-        'second',
-        'minute',
-        'hour',
-    ],
-    'LongTime': [
-        'hour',
-        'day',
-    ],
+FORMATS = {
+    'Temp': '{temp}',
+    'InverseTemp': '1 / {temp}',
+    'Second': 'second',
+    'Minute': 'minute',
+    'Hour': 'hour',
+    'DeltaTemp': 'delta_{temp}',
+    'DeltaTempPerSecond': 'delta_{temp} / second',
+    'DeltaTempPerMinute': 'delta_{temp} / minute',
+    'DeltaTempPerHour': 'delta_{temp} / hour',
+    'DeltaTempMultSecond': 'delta_{temp} * second',
+    'DeltaTempMultMinute': 'delta_{temp} * minute',
+    'DeltaTempMultHour': 'delta_{temp} * hour',
 }
 
 
-def derived_cfg(base_cfg):
-    temps = base_cfg['Temp']
-    times = base_cfg['Time']
-    long_times = base_cfg['LongTime']
-    inverse_temps = [f'1 / {temp}' for temp in temps]
-    delta_temps = [temp if temp in ['degK', 'kelvin'] else f'delta_{temp}' for temp in temps]
-    delta_temp_per_times = [f'{delta_temp} / {time}' for delta_temp, time in zip(delta_temps, times)]
-    delta_temp_times = [f'{delta_temp} * {time}' for delta_temp, time in zip(delta_temps, times)]
-    delta_temp_per_long_times = [f'{delta_temp} / {time}' for delta_temp, time in zip(delta_temps, long_times)]
-    delta_temp_long_times = [f'{delta_temp} * {time}' for delta_temp, time in zip(delta_temps, long_times)]
+def derived_table(user_temp) -> Dict[str, Tuple[str, str]]:
+    # Python 3.6+ guarantees values being insertion-ordered
+    sys_vals = [s.format(temp=SYSTEM_TEMP) for s in FORMATS.values()]
+    user_vals = [s.format(temp=user_temp) for s in FORMATS.values()]
 
     return {
-        'Temp': temps,
-        'Time': times,
-        'LongTime': long_times,
-        'InverseTemp': inverse_temps,
-        'DeltaTemp': delta_temps,
-        'DeltaTempPerTime': delta_temp_per_times,
-        'DeltaTempTime': delta_temp_times,
-        'DeltaTempPerLongTime': delta_temp_per_long_times,
-        'DeltaTempLongTime': delta_temp_long_times,
+        k: [sys_val, user_val]
+        for (k, sys_val, user_val)
+        in zip(FORMATS.keys(), sys_vals, user_vals)
     }
 
 
 class UnitConverter():
 
     def __init__(self):
-        # ID: [system_unit, user_unit]
-        self._table = derived_cfg({k: [v, v] for k, v in self.system_units.items()})
+        # UnitType: [system_unit, user_unit]
+        # Init with system temp
+        self._table = derived_table(SYSTEM_TEMP)
 
     @property
-    def system_units(self):
-        return {
-            'Temp': 'degC',
-            'Time': 'second',
-            'LongTime': 'hour',
-        }
+    def unit_alternatives(self) -> Dict[str, List[str]]:
+        return {'Temp': ['degC', 'degF']}
 
     @property
-    def user_units(self):
-        return {k: self._table[k][1] for k in self.system_units.keys()}
+    def user_units(self) -> Dict[str, str]:
+        return {'Temp': self._table['Temp'][1]}
 
     @user_units.setter
-    def user_units(self, new_cfg: dict):
-        cfg = derived_cfg({k: [v, new_cfg.get(k, v)] for k, v in self.system_units.items()})
+    def user_units(self, newV: Dict[str, str]):
+        temp = newV.get('Temp', SYSTEM_TEMP)
+        cfg = derived_table(temp)
 
         for id, units in cfg.items():
             try:
@@ -88,13 +74,16 @@ class UnitConverter():
 
         self._table = cfg
 
-    def to_sys(self, amount, id, custom=None):
+    def to_sys_value(self, amount: float, id: str, custom=None) -> float:
         conversion = self._table[id]
         return _UREG.Quantity(amount, custom or conversion[1]).to(conversion[0]).magnitude
 
-    def to_user(self, amount, id):
+    def to_user_value(self, amount: float, id: str) -> float:
         conversion = self._table[id]
         return _UREG.Quantity(amount, conversion[0]).to(conversion[1]).magnitude
 
-    def user_unit(self, id):
+    def to_sys_unit(self, id):
+        return self._table[id][0]
+
+    def to_user_unit(self, id):
         return self._table[id][1]

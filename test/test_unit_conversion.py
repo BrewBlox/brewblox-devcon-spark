@@ -13,10 +13,10 @@ def unit_ids():
     return [
         ('Temp', 'degC'),
         ('DeltaTemp', 'delta_degC'),
-        ('DeltaTempPerTime', 'delta_degC / second'),
-        ('Time', 'second'),
+        ('DeltaTempPerSecond', 'delta_degC / second'),
+        ('Second', 'second'),
         ('InverseTemp', '1 / degC'),
-        ('DeltaTempTime', 'delta_degC * second'),
+        ('DeltaTempMultSecond', 'delta_degC * second'),
     ]
 
 
@@ -24,17 +24,20 @@ def test_convert_default(unit_ids):
     cv = unit_conversion.UnitConverter()
     for tup in unit_ids:
         id, unit = tup
-        assert cv.to_sys(10, id) == 10
-        assert cv.to_user(10, id) == 10
-        assert unit == cv.user_unit(id)
+        assert cv.to_sys_value(10, id) == 10
+        assert cv.to_user_value(10, id) == 10
+        assert unit == cv.to_user_unit(id)
 
 
 def test_update_config(unit_ids):
     cv = unit_conversion.UnitConverter()
-    cv.user_units = {'Temp': 'kelvin'}
-    assert cv.to_user(10, 'Temp') == pytest.approx(10 + 273.15)
-    assert cv.user_unit('Temp') == 'kelvin'
-    assert cv.to_sys(10, 'DeltaTemp') == 10
+    cv.user_units = {'Temp': 'degF'}
+    assert cv.to_user_value(10, 'Temp') == pytest.approx((10 * 9 / 5) + 32)
+    assert cv.user_units['Temp'] == 'degF'
+    assert cv.to_sys_value(10, 'DeltaTemp') == pytest.approx(10 * 5 / 9)
 
     with pytest.raises(InvalidInput):
         cv.user_units = {'Temp': 'cm'}
+
+    assert cv.to_sys_unit('Temp') == 'degC'
+    assert cv.to_user_unit('Temp') == 'degF'

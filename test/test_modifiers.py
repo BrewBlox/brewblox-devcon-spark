@@ -27,15 +27,14 @@ def mod():
 def k_mod():
     c = unit_conversion.UnitConverter()
     c.user_units = {
-        'Temp': 'kelvin',
-        'DeltaTemp': 'kelvin'
+        'Temp': 'degC',
     }
     return modifiers.Modifier(c)
 
 
 def generate_encoding_data():
     return {
-        'value[degF]': 10,
+        'value[degF]': 100,
         'offset[delta_degF]': 20,
         'address': 'aabbccdd',
     }
@@ -43,7 +42,7 @@ def generate_encoding_data():
 
 def generate_decoding_data():
     return {
-        'value': -50062,
+        'value': 154738,
         'offset': 45511,
         'address': 3721182122,
     }
@@ -63,14 +62,14 @@ def test_decode_options(mod):
     vals = generate_decoding_data()
     mod.decode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals, {})
     assert vals['offset[delta_degF]'] == pytest.approx(20, 0.1)
-    assert vals['value[degF]'] == pytest.approx(10, 0.1)
+    assert vals['value[degF]'] == pytest.approx(100, 0.1)
 
 
 def test_decode_no_system(k_mod):
     vals = generate_decoding_data()
     k_mod.decode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals, {})
-    assert vals['offset[kelvin]'] > 0
-    assert vals['value[kelvin]'] > 0
+    assert vals['offset[delta_degC]'] > 0
+    assert vals['value[degC]'] > 0
 
 
 def test_pack_bit_flags(mod):
