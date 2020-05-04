@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x18\x44igitalConstraints.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\x86\x01\n\x07Mutexed\x12\x1c\n\x07mutexId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x08\x92?\x02\x38\x10\x12)\n\rextraHoldTime\x18\x02 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x04\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 \x12\x19\n\x11hasCustomHoldTime\x18\x03 \x01(\x08\x12\x17\n\x07hasLock\x18\x04 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\"\xcb\x02\n\x11\x44igitalConstraint\x12$\n\x06minOff\x18\x01 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x04\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12#\n\x05minOn\x18\x02 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x04\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12 \n\x07mutexed\x18\x04 \x01(\x0b\x32\r.blox.MutexedH\x00\x12(\n\ndelayedOff\x18\x05 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x04\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12\'\n\tdelayedOn\x18\x06 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x04\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12\x1c\n\x05mutex\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x08\x92?\x02\x38\x10H\x00\x12\x1d\n\x08limiting\x18\x64 \x01(\rB\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03\x12+\n\tremaining\x18\x65 \x01(\rB\x18\x8a\xb5\x18\x02\x08\x04\x8a\xb5\x18\x03\x10\xe8\x07\x8a\xb5\x18\x02(\x01\x92?\x02\x38 B\x0c\n\nconstraint\"I\n\x12\x44igitalConstraints\x12\x33\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32\x17.blox.DigitalConstraintB\x05\x92?\x02\x10\x08\x62\x06proto3')
+  serialized_pb=_b('\n\x18\x44igitalConstraints.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\x86\x01\n\x07Mutexed\x12\x1c\n\x07mutexId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x08\x92?\x02\x38\x10\x12)\n\rextraHoldTime\x18\x02 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 \x12\x19\n\x11hasCustomHoldTime\x18\x03 \x01(\x08\x12\x17\n\x07hasLock\x18\x04 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\"\xcb\x02\n\x11\x44igitalConstraint\x12$\n\x06minOff\x18\x01 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12#\n\x05minOn\x18\x02 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12 \n\x07mutexed\x18\x04 \x01(\x0b\x32\r.blox.MutexedH\x00\x12(\n\ndelayedOff\x18\x05 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12\'\n\tdelayedOn\x18\x06 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12\x1c\n\x05mutex\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x08\x92?\x02\x38\x10H\x00\x12\x1d\n\x08limiting\x18\x64 \x01(\rB\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03\x12+\n\tremaining\x18\x65 \x01(\rB\x18\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x8a\xb5\x18\x02(\x01\x92?\x02\x38 B\x0c\n\nconstraint\"I\n\x12\x44igitalConstraints\x12\x33\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32\x17.blox.DigitalConstraintB\x05\x92?\x02\x10\x08\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,IoArray__pb2.DESCRIPTOR,])
 
@@ -49,7 +49,7 @@ _MUTEXED = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002\010\004\212\265\030\003\020\350\007\222?\0028 '), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002\010\003\212\265\030\003\020\350\007\222?\0028 '), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='hasCustomHoldTime', full_name='blox.Mutexed.hasCustomHoldTime', index=2,
       number=3, type=8, cpp_type=7, label=1,
@@ -94,14 +94,14 @@ _DIGITALCONSTRAINT = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002\010\004\212\265\030\003\020\350\007\222?\0028 '), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002\010\003\212\265\030\003\020\350\007\222?\0028 '), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='minOn', full_name='blox.DigitalConstraint.minOn', index=1,
       number=2, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002\010\004\212\265\030\003\020\350\007\222?\0028 '), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002\010\003\212\265\030\003\020\350\007\222?\0028 '), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='mutexed', full_name='blox.DigitalConstraint.mutexed', index=2,
       number=4, type=11, cpp_type=10, label=1,
@@ -115,14 +115,14 @@ _DIGITALCONSTRAINT = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002\010\004\212\265\030\003\020\350\007\222?\0028 '), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002\010\003\212\265\030\003\020\350\007\222?\0028 '), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='delayedOn', full_name='blox.DigitalConstraint.delayedOn', index=4,
       number=6, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002\010\004\212\265\030\003\020\350\007\222?\0028 '), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002\010\003\212\265\030\003\020\350\007\222?\0028 '), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='mutex', full_name='blox.DigitalConstraint.mutex', index=5,
       number=3, type=13, cpp_type=3, label=1,
@@ -143,7 +143,7 @@ _DIGITALCONSTRAINT = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002\010\004\212\265\030\003\020\350\007\212\265\030\002(\001\222?\0028 '), file=DESCRIPTOR),
+      serialized_options=_b('\212\265\030\002\010\003\212\265\030\003\020\350\007\212\265\030\002(\001\222?\0028 '), file=DESCRIPTOR),
   ],
   extensions=[
   ],
