@@ -8,7 +8,7 @@ from mock import AsyncMock
 
 from brewblox_devcon_spark import (commander, commander_sim, datastore, device,
                                    exceptions, state)
-from brewblox_devcon_spark.codec import codec
+from brewblox_devcon_spark.codec import codec, unit_conversion
 from brewblox_devcon_spark.validation import (GENERATED_ID_PREFIX,
                                               GROUP_LIST_KEY, OBJECT_DATA_KEY,
                                               OBJECT_LIST_KEY, OBJECT_NID_KEY,
@@ -43,6 +43,7 @@ def app(app):
     datastore.setup(app)
     commander_sim.setup(app)
     scheduler.setup(app)
+    unit_conversion.setup(app)
     codec.setup(app)
     device.setup(app)
     return app
@@ -60,7 +61,7 @@ def ctrl(app):
 
 @pytest.fixture
 async def store(app, client):
-    return datastore.get_datastore(app)
+    return datastore.get_block_store(app)
 
 
 async def test_transcoding(app, client, cmder, store, ctrl):

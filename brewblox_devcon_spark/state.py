@@ -50,6 +50,7 @@ class StateSummary:
     device: DeviceInfo
     info: List[str]
 
+    autoconnecting: bool
     connect: bool
     handshake: bool
     synchronize: bool
@@ -162,12 +163,14 @@ class ServiceEvents(features.ServiceFeature):
 
     def __init__(self, app: web.Application):
         super().__init__(app)
+        self.autoconnecting_ev: asyncio.Event = None
         self.connect_ev: asyncio.Event = None
         self.handshake_ev: asyncio.Event = None
         self.synchronize_ev: asyncio.Event = None
         self.disconnect_ev: asyncio.Event = None
 
     async def startup(self, app: web.Application):
+        self.autoconnecting_ev = asyncio.Event()
         self.connect_ev = asyncio.Event()
         self.handshake_ev = asyncio.Event()
         self.synchronize_ev = asyncio.Event()
@@ -178,10 +181,17 @@ class ServiceEvents(features.ServiceFeature):
 
     def summary(self) -> dict:
         return {
+            'autoconnecting': self.autoconnecting_ev.is_set(),
             'connect': self.connect_ev.is_set(),
             'handshake': self.handshake_ev.is_set(),
             'synchronize': self.synchronize_ev.is_set(),
         }
+
+    async def set_autoconnecting(self, enabled: bool):
+        if enabled:
+            self.autoconnecting_ev.set()
+        else:
+            self.autoconnecting_ev.clear()
 
     async def set_connect(self):
         self.disconnect_ev.clear()
@@ -216,6 +226,10 @@ def _events(app: web.Application) -> ServiceEvents:
     return features.get(app, ServiceEvents)
 
 
+async def set_autoconnecting(app: web.Application, enabled: bool):
+    await _events(app).set_autoconnecting(enabled)
+
+
 async def set_connect(app: web.Application, address: str):
     _state(app).set_address(address)
     await _events(app).set_connect()
@@ -235,22 +249,30 @@ async def set_disconnect(app: web.Application):
     await _events(app).set_disconnect()
 
 
-async def wait_connect(app: web.Application) -> bool:
-    return await _events(app).connect_ev.wait()
+async def _wait_ev(ev: asyncio.Event, wait: bool) -> bool:
+    if not wait:
+        return ev.is_set()
+    return await ev.wait()
 
 
-async def wait_handshake(app: web.Application) -> bool:
-    return await _events(app).handshake_ev.wait()
+async def wait_autoconnecting(app: web.Application, wait: bool = True) -> bool:
+    return await _wait_ev(_events(app).autoconnecting_ev, wait)
+
+
+async def wait_connect(app: web.Application, wait: bool = True) -> bool:
+    return await _wait_ev(_events(app).connect_ev, wait)
+
+
+async def wait_handshake(app: web.Application, wait: bool = True) -> bool:
+    return await _wait_ev(_events(app).handshake_ev, wait)
 
 
 async def wait_synchronize(app: web.Application, wait: bool = True) -> bool:
-    if not wait:
-        return _events(app).synchronize_ev.is_set()
-    return await _events(app).synchronize_ev.wait()
+    return await _wait_ev(_events(app).synchronize_ev, wait)
 
 
-async def wait_disconnect(app: web.Application) -> bool:
-    await _events(app).disconnect_ev.wait()
+async def wait_disconnect(app: web.Application, wait: bool = True) -> bool:
+    return await _wait_ev(_events(app).disconnect_ev, wait)
 
 
 def summary(app: web.Application) -> StateSummary:

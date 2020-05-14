@@ -14,11 +14,11 @@ from brewblox_service import events, scheduler
 from brewblox_service.testing import response
 
 from brewblox_devcon_spark import (commander, communication, datastore, device,
-                                   seeder, simulator, state)
+                                   simulator, state, synchronization)
 from brewblox_devcon_spark.__main__ import parse_ini
-from brewblox_devcon_spark.api import (alias_api, codec_api, debug_api,
-                                       error_response, object_api, system_api)
-from brewblox_devcon_spark.codec import codec
+from brewblox_devcon_spark.api import (alias_api, debug_api, error_response,
+                                       object_api, settings_api, system_api)
+from brewblox_devcon_spark.codec import codec, unit_conversion
 
 DEVICE_ID = '123456789012345678901234'
 
@@ -53,6 +53,7 @@ def app(app):
     events.setup(app)
 
     datastore.setup(app)
+    unit_conversion.setup(app)
     codec.setup(app)
     device.setup(app)
 
@@ -61,9 +62,9 @@ def app(app):
     alias_api.setup(app)
     object_api.setup(app)
     system_api.setup(app)
-    codec_api.setup(app)
+    settings_api.setup(app)
 
-    seeder.setup(app)
+    synchronization.setup(app)
     return app
 
 
