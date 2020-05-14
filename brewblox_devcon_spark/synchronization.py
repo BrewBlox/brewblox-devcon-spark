@@ -14,11 +14,15 @@ from brewblox_service import (brewblox_logger, features, repeater, scheduler,
 
 from brewblox_devcon_spark import datastore, exceptions, state
 from brewblox_devcon_spark.api import object_api
+from brewblox_devcon_spark.codec import unit_conversion
 from brewblox_devcon_spark.device import get_controller
+from brewblox_devcon_spark.exceptions import InvalidInput
 from brewblox_devcon_spark.validation import SYSTEM_GROUP
 
 HANDSHAKE_TIMEOUT_S = 30
 PING_INTERVAL_S = 1
+UNIT_CONFIG_KEY = 'user_units'
+AUTOCONNECTING_KEY = 'autoconnecting'
 
 LOGGER = brewblox_logger(__name__)
 
@@ -37,7 +41,7 @@ def subroutine(desc: str):
             except asyncio.CancelledError:  # pragma: no cover
                 raise
             except Exception as ex:
-                LOGGER.error(f'Failed to {desc} - {strex(ex)}')
+                LOGGER.error(f'Sync subroutine failed: {desc} - {strex(ex)}')
                 raise ex
         return wrapped
     return wrapper
@@ -117,6 +121,10 @@ class Syncher(repeater.RepeaterFeature):
         await state.wait_disconnect(self.app)
 
     @property
+    def sync_done(self) -> asyncio.Event:
+        return self._sync_done
+
+    @property
     def device_name(self) -> str:
         # Simulation services are identified by service name
         if self.app['config']['simulation']:
@@ -124,20 +132,54 @@ class Syncher(repeater.RepeaterFeature):
 
         return state.summary(self.app).device.device_id
 
+    def get_user_units(self):
+        return unit_conversion.get_converter(self.app).user_units
+
+    async def set_user_units(self, units):
+        try:
+            converter = unit_conversion.get_converter(self.app)
+            converter.user_units = units
+            with datastore.get_service_store(self.app).open() as config:
+                config[UNIT_CONFIG_KEY] = converter.user_units
+        except InvalidInput as ex:
+            LOGGER.warn(f'Discarding user units due to error: {strex(ex)}')
+        return converter.user_units
+
+    def get_autoconnecting(self):
+        return state.summary(self.app).autoconnecting
+
+    async def set_autoconnecting(self, enabled):
+        enabled = bool(enabled)
+        await state.set_autoconnecting(self.app, enabled)
+        with datastore.get_service_store(self.app).open() as config:
+            config[AUTOCONNECTING_KEY] = enabled
+        return enabled
+
+    async def _apply_service_config(self, config):
+        converter = unit_conversion.get_converter(self.app)
+        enabled = config.get(AUTOCONNECTING_KEY, True)
+        await state.set_autoconnecting(self.app, enabled)
+        config[AUTOCONNECTING_KEY] = enabled
+
+        units = config.get(UNIT_CONFIG_KEY, {})
+        converter.user_units = units
+        config[UNIT_CONFIG_KEY] = converter.user_units
+
     @subroutine('sync service store')
     async def _sync_service_store(self):
         service_store = datastore.get_service_store(self.app)
+
         await datastore.check_remote(self.app)
         await service_store.read()
 
         with service_store.open() as config:
-            enabled = config.setdefault('autoconnecting', True)
-            await state.set_autoconnecting(self.app, enabled)
+            await self._apply_service_config(config)
 
     @subroutine('sync handshake')
     async def _sync_handshake(self):
         start = monotonic()
-        handshake_task = await scheduler.create(self.app, state.wait_handshake(self.app))
+        handshake_task = await scheduler.create(self.app,
+                                                state.wait_handshake(self.app))
 
         while not handshake_task.done():
             if start + HANDSHAKE_TIMEOUT_S < monotonic():
@@ -167,20 +209,20 @@ class Syncher(repeater.RepeaterFeature):
     @subroutine('migrate config store')
     async def _migrate_config_store(self):
         service_store = datastore.get_service_store(self.app)
-        config_store = datastore.CouchDBConfigStore(self.app)
-
-        with service_store.open() as new_config:
-            if new_config.get('version') != 'v1':
+        with service_store.open() as config:
+            if config.get('version') != 'v1':
                 # We don't need to re-check datastore availability
+                config_store = datastore.CouchDBConfigStore(self.app)
                 await config_store.startup(self.app)
                 await config_store.read(self.device_name)
                 with config_store.open() as old_config:
                     LOGGER.info('Migrating to service config...')
-                    new_config.update(**{
+                    config.update(**{
                         **old_config,
-                        **new_config,
+                        **config,
                         'version': 'v1'
                     })
+                await self._apply_service_config(config)
                 await config_store.shutdown(self.app)
 
     @subroutine('sync controller time')

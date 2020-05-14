@@ -12,9 +12,9 @@ from brewblox_devcon_spark.codec import modifiers, unit_conversion
 _path_extension.avoid_lint_errors()
 
 
-@pytest.fixture(scope='module')
-def mod():
-    c = unit_conversion.UnitConverter()
+@pytest.fixture
+def mod(app):
+    c = unit_conversion.UnitConverter(app)
     c.user_units = {
         'Temp': 'degF',
         'DeltaTemp': 'delta_degF'
@@ -23,9 +23,9 @@ def mod():
     return m
 
 
-@pytest.fixture(scope='module')
-def k_mod():
-    c = unit_conversion.UnitConverter()
+@pytest.fixture
+def k_mod(app):
+    c = unit_conversion.UnitConverter(app)
     c.user_units = {
         'Temp': 'degC',
     }
