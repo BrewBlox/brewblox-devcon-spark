@@ -23,7 +23,7 @@ def app(app):
     commander_sim.setup(app)
     codec.setup(app)
     device.setup(app)
-    # seeder.setup(app)
+    # synchronization.setup(app)
     return app
 
 

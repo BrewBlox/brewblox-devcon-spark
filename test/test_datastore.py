@@ -51,7 +51,7 @@ def app(app, m_check, m_read, m_write, mocker):
 
 @pytest.fixture
 def store(app):
-    return datastore.get_datastore(app)
+    return datastore.get_block_store(app)
 
 
 @pytest.fixture

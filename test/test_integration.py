@@ -14,7 +14,7 @@ from brewblox_service import events, scheduler
 from brewblox_service.testing import response
 
 from brewblox_devcon_spark import (commander, communication, datastore, device,
-                                   seeder, simulator, state)
+                                   synchronization, simulator, state)
 from brewblox_devcon_spark.__main__ import parse_ini
 from brewblox_devcon_spark.api import (alias_api, codec_api, debug_api,
                                        error_response, object_api, system_api)
@@ -63,7 +63,7 @@ def app(app):
     system_api.setup(app)
     codec_api.setup(app)
 
-    seeder.setup(app)
+    synchronization.setup(app)
     return app
 
 

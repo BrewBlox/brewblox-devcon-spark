@@ -65,6 +65,7 @@ class SparkConduit(repeater.RepeaterFeature):
                 await asyncio.sleep(RETRY_INTERVAL_S)
                 LOGGER.info('Retrying connection...')
 
+            await state.wait_autoconnecting(self.app)
             self._address, self._reader, self._writer = await connection.connect(self.app)
             self._parser = cbox_parser.ControlboxParser()
 
