@@ -97,7 +97,7 @@ async def autoconnect_put(request: web.Request) -> web.Response:
         schema:
             type: object
             properties:
-                Enabled:
+                enabled:
                     type: boolean
                     example: true
     """
