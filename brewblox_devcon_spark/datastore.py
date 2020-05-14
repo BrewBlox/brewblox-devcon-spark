@@ -9,7 +9,7 @@ import warnings
 from abc import abstractmethod
 from contextlib import contextmanager, suppress
 from functools import wraps
-from typing import Any, Callable, List
+from typing import List
 
 from aiohttp import web
 from brewblox_service import (brewblox_logger, couchdb, features, repeater,
@@ -46,6 +46,10 @@ SYS_OBJECTS = [
     {'keys': keys, 'data': {}}
     for keys in SYS_OBJECT_KEYS
 ]
+
+BLOCK_DOC_FMT = '{id}-blocks-db'
+CONFIG_DOC_FMT = '{id}-config-db'
+SERVICE_DOC_FMT = '{name}-service-db'
 
 
 def non_volatile(func):
@@ -156,7 +160,8 @@ class CouchDBBlockStore(FlushedStore, TwinKeyDict):
         await FlushedStore.shutdown(self, app)
         self._ready_event = None
 
-    async def read(self, document: str):
+    async def read(self, device_id: str):
+        document = BLOCK_DOC_FMT.format(id=device_id)
         data = []
 
         try:
@@ -220,7 +225,6 @@ class CouchDBConfig(FlushedStore):
     def __init__(self, app: web.Application):
         FlushedStore.__init__(self, app)
         self._config: dict = {}
-        self._listeners = set()
         self._ready_event: asyncio.Event = None
 
     async def startup(self, app: web.Application):
@@ -230,9 +234,6 @@ class CouchDBConfig(FlushedStore):
     async def shutdown(self, app: web.Application):
         await FlushedStore.shutdown(self, app)
         self._ready_event = None
-
-    def subscribe(self, func: Callable[[dict], Any]):
-        self._listeners.add(func)
 
     @contextmanager
     def open(self):
@@ -262,10 +263,6 @@ class CouchDBConfig(FlushedStore):
 
         finally:
             self._config = data
-            with self.open() as cfg:
-                for func in self._listeners:
-                    func(cfg)
-
             self._ready_event.set()
 
     @non_volatile
@@ -277,14 +274,28 @@ class CouchDBConfig(FlushedStore):
         LOGGER.info(f'{self} Saved {len(self._config)} settings. Rev = {self.rev}')
 
 
+class CouchDBServiceStore(CouchDBConfig):
+
+    async def read(self):
+        name = self.app['config']['name']
+        return await super().read(SERVICE_DOC_FMT.format(name=name))
+
+
+# Deprecated
+class CouchDBConfigStore(CouchDBConfig):
+
+    async def read(self, device_id: str):
+        return await super().read(CONFIG_DOC_FMT.format(id=device_id))
+
+
 def setup(app: web.Application):
     features.add(app, CouchDBBlockStore(app, defaults=SYS_OBJECTS))
-    features.add(app, CouchDBConfig(app), key='config')
+    features.add(app, CouchDBServiceStore(app))
 
 
-def get_datastore(app: web.Application) -> CouchDBBlockStore:
+def get_block_store(app: web.Application) -> CouchDBBlockStore:
     return features.get(app, CouchDBBlockStore)
 
 
-def get_config(app: web.Application) -> CouchDBConfig:
-    return features.get(app, key='config')
+def get_service_store(app: web.Application) -> CouchDBServiceStore:
+    return features.get(app, CouchDBServiceStore)

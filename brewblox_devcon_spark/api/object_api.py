@@ -35,7 +35,7 @@ class ObjectApi():
         self.app = app
         self._wait_sync = wait_sync
         self._ctrl: device.SparkController = device.get_controller(app)
-        self._store: twinkeydict.TwinKeyDict = datastore.get_datastore(app)
+        self._store: twinkeydict.TwinKeyDict = datastore.get_block_store(app)
 
     def _as_api_object(self, obj: dict):
         return {

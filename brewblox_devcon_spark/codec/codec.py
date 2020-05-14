@@ -6,23 +6,21 @@ Offers encoding and decoding of objects.
 
 import asyncio
 from copy import deepcopy
-from typing import Awaitable, Callable, Dict, Optional, Tuple, Union
+from typing import Awaitable, Callable, Optional, Tuple, Union
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, strex
 
-from brewblox_devcon_spark import datastore, exceptions
+from brewblox_devcon_spark import exceptions
 from brewblox_devcon_spark.codec.modifiers import STRIP_UNLOGGED_KEY, Modifier
 from brewblox_devcon_spark.codec.transcoders import (Decoded_, Encoded_,
                                                      ObjType_, Transcoder)
-from brewblox_devcon_spark.codec.unit_conversion import UnitConverter
-from brewblox_devcon_spark.exceptions import InvalidInput
+from brewblox_devcon_spark.codec.unit_conversion import get_converter
 
 TranscodeFunc_ = Callable[
     [ObjType_, Union[Encoded_, Decoded_]],
     Awaitable[Tuple[ObjType_, Union[Encoded_, Decoded_]]]
 ]
-UNIT_CONFIG_KEY = 'user_units'
 STRIP_UNLOGGED_KEY = STRIP_UNLOGGED_KEY
 
 LOGGER = brewblox_logger(__name__)
@@ -32,36 +30,14 @@ class Codec(features.ServiceFeature):
     def __init__(self, app: web.Application, strip_readonly=True):
         super().__init__(app)
         self._strip_readonly = strip_readonly
-        self._converter: UnitConverter = None
         self._mod: Modifier = None
 
     async def startup(self, app: web.Application):
-        self._converter = UnitConverter()
-        self._mod = Modifier(self._converter, self._strip_readonly)
-        datastore.get_config(app).subscribe(self._on_config_change)
+        converter = get_converter(app)
+        self._mod = Modifier(converter, self._strip_readonly)
 
     async def shutdown(self, app: web.Application):
         pass
-
-    def get_unit_config(self) -> Dict[str, str]:
-        return self._converter.user_units
-
-    def _on_config_change(self, config):
-        try:
-            self._converter.user_units = config.get(UNIT_CONFIG_KEY, {})
-        except InvalidInput as ex:
-            LOGGER.warn(f'Discarding user units due to error: {strex(ex)}')
-        config[UNIT_CONFIG_KEY] = self._converter.user_units
-
-    def update_unit_config(self, units: Dict[str, str] = None) -> Dict[str, str]:
-        self._converter.user_units = units
-        updated = self._converter.user_units
-        with datastore.get_config(self.app).open() as config:
-            config[UNIT_CONFIG_KEY] = updated
-        return updated
-
-    def get_unit_alternatives(self):
-        return self._converter.unit_alternatives
 
     def compatible_types(self) -> Awaitable[dict]:
         """
@@ -109,7 +85,7 @@ class Codec(features.ServiceFeature):
             return trc.type_int() if values is ... \
                 else (trc.type_int(), trc.encode(deepcopy(values), opts))
         except Exception as ex:
-            msg = f'{type(ex).__name__}({ex})'
+            msg = strex(ex)
             LOGGER.debug(msg, exc_info=True)
             raise exceptions.EncodeException(msg)
 
@@ -155,7 +131,7 @@ class Codec(features.ServiceFeature):
             raise
 
         except Exception as ex:
-            msg = f'{type(ex).__name__}({ex})'
+            msg = strex(ex)
             LOGGER.debug(msg, exc_info=True)
             return 'UnknownType' if no_content else ('ErrorObject', {'error': msg, 'type': type_name})
 

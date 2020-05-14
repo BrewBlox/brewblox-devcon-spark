@@ -61,6 +61,7 @@ def init_app(app):
 
 
 async def test_write(init_app, client, m_writer):
+    await state.set_autoconnecting(init_app, True)
     await asyncio.sleep(0.01)
     conduit = communication.get_conduit(init_app)
     assert conduit.connected
@@ -78,6 +79,7 @@ async def test_write(init_app, client, m_writer):
 
 
 async def test_callback(init_app, client, m_reader, m_writer):
+    await state.set_autoconnecting(init_app, True)
     await asyncio.sleep(0.01)
     conduit = communication.get_conduit(init_app)
     m_event_cb = AsyncMock()
@@ -107,6 +109,7 @@ async def test_callback(init_app, client, m_reader, m_writer):
 
 
 async def test_error_callback(init_app, client, m_reader, m_writer):
+    await state.set_autoconnecting(init_app, True)
     conduit = communication.get_conduit(init_app)
     m_event_cb = AsyncMock(side_effect=RuntimeError)
     m_data_cb = AsyncMock()
@@ -125,6 +128,7 @@ async def test_retry_exhausted(app, client, m_writer, mocker):
     mocker.patch(TESTED + '.CONNECT_RETRY_COUNT', 2)
     mocker.patch(TESTED + '.connection.connect', AsyncMock(side_effect=ConnectionRefusedError))
 
+    await state.set_autoconnecting(app, True)
     conduit = communication.SparkConduit(app)
 
     await conduit.prepare()

@@ -10,7 +10,7 @@ from mock import ANY
 
 from brewblox_devcon_spark import (commander_sim, datastore, device,
                                    exceptions, state)
-from brewblox_devcon_spark.codec import codec
+from brewblox_devcon_spark.codec import codec, unit_conversion
 
 _path_extension.avoid_lint_errors()
 
@@ -21,9 +21,9 @@ def app(app):
     scheduler.setup(app)
     datastore.setup(app)
     commander_sim.setup(app)
+    unit_conversion.setup(app)
     codec.setup(app)
     device.setup(app)
-    # seeder.setup(app)
     return app
 
 
@@ -137,17 +137,6 @@ async def test_stripped_fields(app, client, cdc, sim_cdc):
     assert dec_val['deltaV[delta_degC / second]'] is None
     assert dec_val['logged'] == 10
     assert 'strippedFields' not in dec_val.keys()
-
-
-async def test_codec_config(app, client, cdc):
-    await state.set_synchronize(app)
-
-    updated = cdc.update_unit_config({'Temp': 'degF'})
-    assert updated['Temp'] == 'degF'
-    assert cdc.get_unit_config() == updated
-
-    cdc._on_config_change({codec.UNIT_CONFIG_KEY: {'Temp': 'pancakes'}})
-    assert cdc.get_unit_config() == updated
 
 
 async def test_driven_fields(app, client, cdc):
