@@ -6,7 +6,7 @@ import asyncio
 
 import pytest
 from brewblox_service import scheduler
-from mock import AsyncMock, Mock
+from mock import AsyncMock
 
 from brewblox_devcon_spark import datastore
 
@@ -51,12 +51,12 @@ def app(app, m_check, m_read, m_write, mocker):
 
 @pytest.fixture
 def store(app):
-    return datastore.get_datastore(app)
+    return datastore.get_block_store(app)
 
 
 @pytest.fixture
 def config(app):
-    return datastore.get_config(app)
+    return datastore.get_service_store(app)
 
 
 async def test_non_volatile(app, loop):
@@ -157,9 +157,6 @@ async def test_config(app, client, config, m_read, m_write):
     assert config.active
     assert config.rev is None
 
-    cb = Mock()
-    config.subscribe(cb)
-
     with config.open() as cfg:
         cfg['key'] = 'val'
 
@@ -167,8 +164,7 @@ async def test_config(app, client, config, m_read, m_write):
         assert 'key' in cfg
 
     # values are cleared when reading
-    await config.read('doc')
-    cb.assert_called_once_with(vals())
+    await config.read()
     assert config.rev == 'rev_read'
     assert m_write.call_count == 0
 
@@ -186,7 +182,7 @@ async def test_config(app, client, config, m_read, m_write):
         ('rev_read', vals())
     ]
     with pytest.warns(UserWarning, match='read error'):
-        await config.read('doc')
+        await config.read()
 
     assert config.rev is None
     assert config.document is None
@@ -199,7 +195,7 @@ async def test_config(app, client, config, m_read, m_write):
         await asyncio.sleep(0.05)
 
     # reset to normal
-    await config.read('doc')
+    await config.read()
 
     # continue on write error
     with pytest.warns(UserWarning, match='flush error'):

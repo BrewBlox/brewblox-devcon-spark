@@ -40,7 +40,7 @@ def validate_sid(sid: str):
 class AliasApi():
 
     def __init__(self, app: web.Application):
-        self._store = datastore.get_datastore(app)
+        self._store = datastore.get_block_store(app)
 
     async def create(self, sid: str, nid: int) -> dict:
         validate_sid(sid)

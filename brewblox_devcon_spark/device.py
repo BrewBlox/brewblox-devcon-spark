@@ -34,7 +34,7 @@ class SparkResolver():
 
     def __init__(self, app: web.Application):
         self._app = app
-        self._datastore = datastore.get_datastore(app)
+        self._datastore = datastore.get_block_store(app)
         self._codec = codec.get_codec(app)
 
     @staticmethod

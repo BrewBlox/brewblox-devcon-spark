@@ -10,16 +10,16 @@ from brewblox_service.testing import response
 from mock import ANY, AsyncMock
 
 from brewblox_devcon_spark import (commander_sim, datastore, device,
-                                   exceptions, seeder, state, ymodem)
-from brewblox_devcon_spark.api import (alias_api, codec_api, debug_api,
-                                       error_response, object_api, system_api)
+                                   exceptions, state, synchronization, ymodem)
+from brewblox_devcon_spark.api import (alias_api, debug_api, error_response,
+                                       object_api, settings_api, system_api)
 from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_NID_KEY,
                                                   API_SID_KEY, API_TYPE_KEY,
                                                   GROUP_LIST_KEY,
                                                   OBJECT_DATA_KEY,
                                                   OBJECT_SID_KEY,
                                                   OBJECT_TYPE_KEY)
-from brewblox_devcon_spark.codec import codec
+from brewblox_devcon_spark.codec import codec, unit_conversion
 from brewblox_devcon_spark.validation import SYSTEM_GROUP
 
 
@@ -57,8 +57,9 @@ async def app(app, loop):
     scheduler.setup(app)
     commander_sim.setup(app)
     datastore.setup(app)
+    unit_conversion.setup(app)
     codec.setup(app)
-    seeder.setup(app)
+    synchronization.setup(app)
     device.setup(app)
 
     error_response.setup(app)
@@ -66,7 +67,7 @@ async def app(app, loop):
     alias_api.setup(app)
     object_api.setup(app)
     system_api.setup(app)
-    codec_api.setup(app)
+    settings_api.setup(app)
 
     return app
 
@@ -301,30 +302,32 @@ async def test_inactive_objects(app, client, object_args):
     }
 
 
-async def test_codec_api(app, client, object_args):
+async def test_settings_api(app, client, object_args):
     degC_offset = object_args[API_DATA_KEY]['offset']
     degF_offset = degC_offset * (9/5)  # delta_degC to delta_degF
     await client.post('/objects', json=object_args)
 
-    default_units = await response(client.get('/codec/units'))
+    default_units = await response(client.get('/settings/units'))
     assert {'Temp'} == default_units.keys()
-
-    alternative_units = await response(client.get('/codec/unit_alternatives'))
-    assert alternative_units.keys() == default_units.keys()
 
     # offset is a delta_degC value
     # We'd expect to get the same value in delta_celsius as in degK
 
-    await client.put('/codec/units', json={'Temp': 'degF'})
+    await response(client.put('/settings/units', json={'Temp': 'degF'}))
     retd = await response(client.get(f'/objects/{object_args[API_SID_KEY]}'))
     assert retd[API_DATA_KEY]['offset[delta_degF]'] == pytest.approx(degF_offset, 0.1)
 
-    await client.put('/codec/units', json={})
+    await response(client.put('/settings/units', json={}))
     retd = await response(client.get(f'/objects/{object_args[API_SID_KEY]}'))
     assert retd[API_DATA_KEY]['offset[delta_degC]'] == pytest.approx(degC_offset, 0.1)
 
-    retd = await response(client.get('/codec/compatible_types'))
-    assert 'TempSensorOneWire' in retd['TempSensorInterface']
+    retd = await response(client.get('/settings/autoconnecting'))
+    assert retd == {'enabled': True}
+
+    retd = await response(client.put('/settings/autoconnecting', json={'enabled': False}))
+    assert retd == {'enabled': False}
+    retd = await response(client.get('/settings/autoconnecting'))
+    assert retd == {'enabled': False}
 
 
 async def test_list_compatible(app, client, object_args):
@@ -452,6 +455,7 @@ async def test_system_status(app, client):
     assert resp == {
         'address': 'simulation:1234',
         'connection': 'wifi',
+        'autoconnecting': True,
         'connect': True,
         'handshake': True,
         'synchronize': True,
@@ -468,6 +472,7 @@ async def test_system_status(app, client):
     assert resp == {
         'address': 'simulation:1234',
         'connection': 'wifi',
+        'autoconnecting': True,
         'connect': False,
         'handshake': False,
         'synchronize': False,
