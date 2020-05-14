@@ -2,9 +2,10 @@
 User-configurable unit conversion
 """
 
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 
-from brewblox_service import brewblox_logger
+from aiohttp import web
+from brewblox_service import brewblox_logger, features
 from pint import UnitRegistry
 
 from brewblox_devcon_spark.exceptions import InvalidInput
@@ -46,16 +47,19 @@ def derived_table(user_temp) -> Dict[str, Tuple[str, str]]:
     }
 
 
-class UnitConverter():
+class UnitConverter(features.ServiceFeature):
 
-    def __init__(self):
+    def __init__(self, app: web.Application):
+        super().__init__(app)
         # UnitType: [system_unit, user_unit]
         # Init with system temp
         self._table = derived_table(SYSTEM_TEMP)
 
-    @property
-    def unit_alternatives(self) -> Dict[str, List[str]]:
-        return {'Temp': ['degC', 'degF']}
+    async def startup(self, app: web.Application):
+        pass
+
+    async def shutdown(self, app: web.Application):
+        pass
 
     @property
     def user_units(self) -> Dict[str, str]:
@@ -87,3 +91,11 @@ class UnitConverter():
 
     def to_user_unit(self, id):
         return self._table[id][1]
+
+
+def setup(app: web.Application):
+    features.add(app, UnitConverter(app))
+
+
+def get_converter(app: web.Application) -> UnitConverter:
+    return features.get(app, UnitConverter)

@@ -9,7 +9,7 @@ import warnings
 from abc import abstractmethod
 from contextlib import contextmanager, suppress
 from functools import wraps
-from typing import Any, Callable, List
+from typing import List
 
 from aiohttp import web
 from brewblox_service import (brewblox_logger, couchdb, features, repeater,
@@ -225,7 +225,6 @@ class CouchDBConfig(FlushedStore):
     def __init__(self, app: web.Application):
         FlushedStore.__init__(self, app)
         self._config: dict = {}
-        self._listeners = set()
         self._ready_event: asyncio.Event = None
 
     async def startup(self, app: web.Application):
@@ -235,9 +234,6 @@ class CouchDBConfig(FlushedStore):
     async def shutdown(self, app: web.Application):
         await FlushedStore.shutdown(self, app)
         self._ready_event = None
-
-    def subscribe(self, func: Callable[[dict], Any]):
-        self._listeners.add(func)
 
     @contextmanager
     def open(self):
@@ -267,10 +263,6 @@ class CouchDBConfig(FlushedStore):
 
         finally:
             self._config = data
-            with self.open() as cfg:
-                for func in self._listeners:
-                    func(cfg)
-
             self._ready_event.set()
 
     @non_volatile
