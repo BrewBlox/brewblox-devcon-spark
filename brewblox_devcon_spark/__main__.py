@@ -9,7 +9,7 @@ from brewblox_service import (brewblox_logger, couchdb, events, http,
                               scheduler, service)
 
 from brewblox_devcon_spark import (broadcaster, commander, communication,
-                                   datastore, device, seeder, simulator, state)
+                                   datastore, device, synchronization, simulator, state)
 from brewblox_devcon_spark.api import (alias_api, codec_api, debug_api,
                                        error_response, object_api, system_api)
 from brewblox_devcon_spark.codec import codec
@@ -153,7 +153,7 @@ def main():
     system_api.setup(app)
     codec_api.setup(app)
 
-    seeder.setup(app)
+    synchronization.setup(app)
 
     service.furnish(app)
     service.run(app)

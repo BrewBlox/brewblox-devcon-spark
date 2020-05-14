@@ -1,5 +1,5 @@
 """
-Tests brewblox_devcon_spark.seeder
+Tests brewblox_devcon_spark.synchronization
 """
 
 import asyncio
@@ -8,11 +8,11 @@ import pytest
 from brewblox_service import brewblox_logger, repeater, scheduler
 from mock import AsyncMock
 
-from brewblox_devcon_spark import (commander_sim, datastore, device, seeder,
+from brewblox_devcon_spark import (commander_sim, datastore, device, synchronization,
                                    state)
 from brewblox_devcon_spark.codec import codec
 
-TESTED = seeder.__name__
+TESTED = synchronization.__name__
 LOGGER = brewblox_logger(__name__)
 
 
@@ -26,8 +26,8 @@ def states(app):
 
 
 async def connect(app):
-    await state.set_connect(app, 'seeder test')
-    await seeder.get_seeder(app).seeding_done()
+    await state.set_connect(app, 'synchronization test')
+    await synchronization.get_syncher(app).seeding_done()
     await asyncio.sleep(0.01)
 
 
@@ -57,13 +57,13 @@ async def app(app, loop):
     commander_sim.setup(app)
     codec.setup(app)
     device.setup(app)
-    seeder.setup(app)
+    synchronization.setup(app)
     return app
 
 
 @pytest.fixture
 async def store(app, loop):
-    return datastore.get_datastore(app)
+    return datastore.get_block_store(app)
 
 
 @pytest.fixture
@@ -79,7 +79,7 @@ def config(app):
     return datastore.get_config(app)
 
 
-async def test_seed_status(app, client, mocker):
+async def test_sync_status(app, client, mocker):
     await state.wait_synchronize(app)
     assert states(app) == [False, True, True]
 
@@ -90,7 +90,7 @@ async def test_seed_status(app, client, mocker):
     assert states(app) == [False, True, True]
 
 
-async def test_seed_datastore(app, client, mocker, store, config, api_mock):
+async def test_sync_datastore(app, client, mocker, store, config, api_mock):
     await state.wait_synchronize(app)
     m_store_read = AsyncMock()
     m_config_read = AsyncMock()
@@ -106,7 +106,7 @@ async def test_seed_datastore(app, client, mocker, store, config, api_mock):
     m_config_read.assert_awaited_once_with('simulator__testey-config-db')
 
 
-async def test_seed_errors(app, client, mocker, system_exit_mock):
+async def test_sync_errors(app, client, mocker, system_exit_mock):
     await state.wait_synchronize(app)
     mocker.patch(TESTED + '.datastore.check_remote', AsyncMock(side_effect=RuntimeError))
 
@@ -115,7 +115,7 @@ async def test_seed_errors(app, client, mocker, system_exit_mock):
 
     assert states(app) == [False, True, False]
     assert system_exit_mock.call_count == 1
-    assert not seeder.get_seeder(app).active
+    assert not synchronization.get_syncher(app).active
 
 
 async def test_write_error(app, client, mocker, api_mock, system_exit_mock):
@@ -126,16 +126,16 @@ async def test_write_error(app, client, mocker, api_mock, system_exit_mock):
 
     assert states(app) == [False, True, False]
     assert system_exit_mock.call_count == 1
-    assert not seeder.get_seeder(app).active
+    assert not synchronization.get_syncher(app).active
 
 
 async def test_timeout(app, client, mocker, api_mock, system_exit_mock):
     await state.wait_synchronize(app)
     await disconnect(app)
     mocker.patch(TESTED + '.HANDSHAKE_TIMEOUT_S', 0.0001)
-    s = seeder.get_seeder(app)
+    s = synchronization.get_syncher(app)
     mocker.patch.object(s, '_ping_controller', AsyncMock())
 
     await connect(app)
     assert system_exit_mock.call_count == 1
-    assert not seeder.get_seeder(app).active
+    assert not synchronization.get_syncher(app).active

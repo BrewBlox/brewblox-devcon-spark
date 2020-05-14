@@ -38,7 +38,7 @@ class Codec(features.ServiceFeature):
     async def startup(self, app: web.Application):
         self._converter = UnitConverter()
         self._mod = Modifier(self._converter, self._strip_readonly)
-        datastore.get_config(app).subscribe(self._on_config_change)
+        datastore.get_service_store(app).subscribe(self._on_config_change)
 
     async def shutdown(self, app: web.Application):
         pass
@@ -56,7 +56,7 @@ class Codec(features.ServiceFeature):
     def update_unit_config(self, units: Dict[str, str] = None) -> Dict[str, str]:
         self._converter.user_units = units
         updated = self._converter.user_units
-        with datastore.get_config(self.app).open() as config:
+        with datastore.get_service_store(self.app).open() as config:
             config[UNIT_CONFIG_KEY] = updated
         return updated
 
@@ -109,7 +109,7 @@ class Codec(features.ServiceFeature):
             return trc.type_int() if values is ... \
                 else (trc.type_int(), trc.encode(deepcopy(values), opts))
         except Exception as ex:
-            msg = f'{type(ex).__name__}({ex})'
+            msg = strex(ex)
             LOGGER.debug(msg, exc_info=True)
             raise exceptions.EncodeException(msg)
 
@@ -155,7 +155,7 @@ class Codec(features.ServiceFeature):
             raise
 
         except Exception as ex:
-            msg = f'{type(ex).__name__}({ex})'
+            msg = strex(ex)
             LOGGER.debug(msg, exc_info=True)
             return 'UnknownType' if no_content else ('ErrorObject', {'error': msg, 'type': type_name})
 

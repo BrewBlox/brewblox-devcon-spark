@@ -60,7 +60,7 @@ def ctrl(app):
 
 @pytest.fixture
 async def store(app, client):
-    return datastore.get_datastore(app)
+    return datastore.get_block_store(app)
 
 
 async def test_transcoding(app, client, cmder, store, ctrl):

@@ -47,6 +47,10 @@ SYS_OBJECTS = [
     for keys in SYS_OBJECT_KEYS
 ]
 
+BLOCK_DOC_FMT = '{id}-blocks-db'
+CONFIG_DOC_FMT = '{id}-config-db'
+SERVICE_DOC_FMT = '{name}-service-db'
+
 
 def non_volatile(func):
     @wraps(func)
@@ -156,7 +160,8 @@ class CouchDBBlockStore(FlushedStore, TwinKeyDict):
         await FlushedStore.shutdown(self, app)
         self._ready_event = None
 
-    async def read(self, document: str):
+    async def read(self, device_id: str):
+        document = BLOCK_DOC_FMT.format(id=device_id)
         data = []
 
         try:
@@ -277,14 +282,28 @@ class CouchDBConfig(FlushedStore):
         LOGGER.info(f'{self} Saved {len(self._config)} settings. Rev = {self.rev}')
 
 
+class CouchDBServiceStore(CouchDBConfig):
+
+    async def read(self):
+        name = self.app['config']['name']
+        return await super().read(SERVICE_DOC_FMT.format(name=name))
+
+
+# Deprecated
+class CouchDBConfigStore(CouchDBConfig):
+
+    async def read(self, device_id: str):
+        return await super().read(CONFIG_DOC_FMT.format(id=device_id))
+
+
 def setup(app: web.Application):
     features.add(app, CouchDBBlockStore(app, defaults=SYS_OBJECTS))
-    features.add(app, CouchDBConfig(app), key='config')
+    features.add(app, CouchDBServiceStore(app))
 
 
-def get_datastore(app: web.Application) -> CouchDBBlockStore:
+def get_block_store(app: web.Application) -> CouchDBBlockStore:
     return features.get(app, CouchDBBlockStore)
 
 
-def get_config(app: web.Application) -> CouchDBConfig:
-    return features.get(app, key='config')
+def get_service_store(app: web.Application) -> CouchDBServiceStore:
+    return features.get(app, CouchDBServiceStore)

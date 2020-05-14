@@ -10,7 +10,7 @@ from brewblox_service.testing import response
 from mock import ANY, AsyncMock
 
 from brewblox_devcon_spark import (commander_sim, datastore, device,
-                                   exceptions, seeder, state, ymodem)
+                                   exceptions, state, synchronization, ymodem)
 from brewblox_devcon_spark.api import (alias_api, codec_api, debug_api,
                                        error_response, object_api, system_api)
 from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_NID_KEY,
@@ -58,7 +58,7 @@ async def app(app, loop):
     commander_sim.setup(app)
     datastore.setup(app)
     codec.setup(app)
-    seeder.setup(app)
+    synchronization.setup(app)
     device.setup(app)
 
     error_response.setup(app)
@@ -309,9 +309,6 @@ async def test_codec_api(app, client, object_args):
     default_units = await response(client.get('/codec/units'))
     assert {'Temp'} == default_units.keys()
 
-    alternative_units = await response(client.get('/codec/unit_alternatives'))
-    assert alternative_units.keys() == default_units.keys()
-
     # offset is a delta_degC value
     # We'd expect to get the same value in delta_celsius as in degK
 
@@ -322,9 +319,6 @@ async def test_codec_api(app, client, object_args):
     await client.put('/codec/units', json={})
     retd = await response(client.get(f'/objects/{object_args[API_SID_KEY]}'))
     assert retd[API_DATA_KEY]['offset[delta_degC]'] == pytest.approx(degC_offset, 0.1)
-
-    retd = await response(client.get('/codec/compatible_types'))
-    assert 'TempSensorOneWire' in retd['TempSensorInterface']
 
 
 async def test_list_compatible(app, client, object_args):

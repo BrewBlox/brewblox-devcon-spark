@@ -28,6 +28,7 @@ class Broadcaster(repeater.RepeaterFeature):
         self.history_exchange = config['history_exchange']
         self.state_exchange = config['state_exchange']
 
+        self._synched = False
         self._last_ok = monotonic()
 
         if self.interval <= 0 or config['volatile']:
@@ -52,7 +53,8 @@ class Broadcaster(repeater.RepeaterFeature):
                                  message=state_service)
 
             # Return early if we can't fetch blocks
-            if not await state.wait_synchronize(self.app, wait=False):
+            self._synched = await state.wait_synchronize(self.app, wait=False)
+            if not self._synched:
                 self._last_ok = monotonic()
                 return
 
@@ -86,7 +88,8 @@ class Broadcaster(repeater.RepeaterFeature):
             LOGGER.debug(f'{self} interrupted: connection paused')
 
         except Exception:
-            if self.timeout > 0 \
+            if self._synched \
+                    and self.timeout > 0 \
                     and self._last_ok + self.timeout < monotonic():  # pragma: no cover
                 LOGGER.error('Broadcast retry attemps exhaused. Exiting now.')
                 raise web.GracefulExit()
