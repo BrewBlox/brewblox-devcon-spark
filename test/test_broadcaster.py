@@ -30,7 +30,7 @@ def m_publish(mocker):
 def app(app, m_api, m_publish):
     app['config']['broadcast_interval'] = 0.01
     app['config']['history_exchange'] = 'testcast.history'
-    app['config']['state_exchange'] = 'testcast.state'
+    app['config']['state_topic'] = 'testcast.state'
     app['config']['volatile'] = False
     state.setup(app)
     scheduler.setup(app)
@@ -86,23 +86,25 @@ async def test_broadcast(app, m_api, m_publish, client, connected):
 
     m_publish.assert_has_calls([
         call(app,
-             exchange='testcast.state',
-             routing='test_app',
+             exchange=broadcaster.EXCHANGE,
+             routing='testcast.state',
              message={
                  'key': 'test_app',
                  'type': 'Spark.service',
                  'ttl': '60.0s',
                  'data': ANY,
-             }),
+             },
+             exchange_declare=False),
         call(app,
-             exchange='testcast.state',
-             routing='test_app',
+             exchange=broadcaster.EXCHANGE,
+             routing='testcast.state',
              message={
                  'key': 'test_app',
                  'type': 'Spark.blocks',
                  'ttl': '60.0s',
                  'data': object_list,
-             }),
+             },
+             exchange_declare=False),
         call(app,
              exchange='testcast.history',
              routing='test_app',

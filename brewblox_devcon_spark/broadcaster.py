@@ -15,6 +15,7 @@ from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_SID_KEY,
 from brewblox_devcon_spark.device import GENERATED_ID_PREFIX
 
 LOGGER = brewblox_logger(__name__)
+EXCHANGE = 'amq.topic'
 
 
 class Broadcaster(repeater.RepeaterFeature):
@@ -26,7 +27,7 @@ class Broadcaster(repeater.RepeaterFeature):
         self.timeout = config['broadcast_timeout']
         self.validity = str(config['broadcast_valid']) + 's'
         self.history_exchange = config['history_exchange']
-        self.state_exchange = config['state_exchange']
+        self.state_topic = config['state_topic']
 
         self._synched = False
         self._last_ok = monotonic()
@@ -48,9 +49,10 @@ class Broadcaster(repeater.RepeaterFeature):
             }
 
             await events.publish(self.app,
-                                 exchange=self.state_exchange,
-                                 routing=self.name,
-                                 message=state_service)
+                                 exchange=EXCHANGE,
+                                 routing=self.state_topic,
+                                 message=state_service,
+                                 exchange_declare=False)
 
             # Return early if we can't fetch blocks
             self._synched = await state.wait_synchronize(self.app, wait=False)
@@ -66,9 +68,10 @@ class Broadcaster(repeater.RepeaterFeature):
             }
 
             await events.publish(self.app,
-                                 exchange=self.state_exchange,
-                                 routing=self.name,
-                                 message=state_blocks)
+                                 exchange=EXCHANGE,
+                                 routing=self.state_topic,
+                                 message=state_blocks,
+                                 exchange_declare=False)
 
             history_message = {
                 obj[API_SID_KEY]: obj[API_DATA_KEY]

@@ -54,8 +54,8 @@ def create_parser(default_name='spark'):
     group.add_argument('--history-exchange',
                        help='Eventbus exchange to which logged controller state should be broadcast. [%(default)s]',
                        default='brewcast.history')
-    group.add_argument('--state-exchange',
-                       help='Eventbus exchange to which volatile controller state should be broadcast. [%(default)s]',
+    group.add_argument('--state-topic',
+                       help='Eventbus topic to which volatile controller state should be broadcast. [%(default)s]',
                        default='brewcast.state')
     group.add_argument('--command-timeout',
                        help='Timeout period (in seconds) for controller commands. [$(default)s]',
