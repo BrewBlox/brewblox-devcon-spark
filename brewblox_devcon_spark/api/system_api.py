@@ -40,7 +40,7 @@ class FirmwareUpdater():
         self.app = app
         self.name = app['config']['name']
         self.simulation = app['config']['simulation']
-        self.state_exchange = app['config']['state_exchange']
+        self.state_topic = app['config']['state_topic']
         self.version = app['ini']['firmware_version']
         self.date = app['ini']['firmware_date']
 
@@ -48,14 +48,15 @@ class FirmwareUpdater():
         LOGGER.info(msg)
         asyncio.create_task(
             events.publish(self.app,
-                           exchange=self.state_exchange,
-                           routing=self.name,
+                           exchange='amq.topic',
+                           routing=self.state_topic,
                            message={
                                'key': self.name,
                                'type': 'Spark.update',
                                'ttl': '10s',
                                'data': [msg]
-                           }))
+                           },
+                           exchange_declare=False))
 
     async def _connect(self, address) -> ymodem.Connection:  # pragma: no cover
         for i in range(CONNECT_ATTEMPTS):
