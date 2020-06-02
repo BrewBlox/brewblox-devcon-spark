@@ -10,7 +10,7 @@ from shutil import rmtree
 from unittest.mock import patch
 
 import pytest
-from brewblox_service import events, scheduler
+from brewblox_service import mqtt, scheduler
 from brewblox_service.testing import response
 
 from brewblox_devcon_spark import (commander, communication, datastore, device,
@@ -50,7 +50,7 @@ def app(app):
     commander.setup(app)
 
     scheduler.setup(app)
-    events.setup(app)
+    mqtt.setup(app)
 
     datastore.setup(app)
     unit_conversion.setup(app)

@@ -22,15 +22,15 @@ def m_api(mocker):
 
 @pytest.fixture
 def m_publish(mocker):
-    m = mocker.patch(TESTED + '.events.publish', AsyncMock())
+    m = mocker.patch(TESTED + '.mqtt.publish', AsyncMock())
     return m
 
 
 @pytest.fixture
 def app(app, m_api, m_publish):
     app['config']['broadcast_interval'] = 0.01
-    app['config']['history_exchange'] = 'testcast.history'
-    app['config']['state_topic'] = 'testcast.state'
+    app['config']['history_topic'] = 'testcast/history'
+    app['config']['state_topic'] = 'testcast/state'
     app['config']['volatile'] = False
     state.setup(app)
     scheduler.setup(app)
@@ -86,30 +86,30 @@ async def test_broadcast(app, m_api, m_publish, client, connected):
 
     m_publish.assert_has_calls([
         call(app,
-             exchange=broadcaster.EXCHANGE,
-             routing='testcast.state',
-             message={
+             'testcast/state/test_app/service',
+             {
                  'key': 'test_app',
                  'type': 'Spark.service',
                  'ttl': '60.0s',
                  'data': ANY,
              },
-             exchange_declare=False),
+             err=False),
         call(app,
-             exchange=broadcaster.EXCHANGE,
-             routing='testcast.state',
-             message={
+             'testcast/state/test_app/blocks',
+             {
                  'key': 'test_app',
                  'type': 'Spark.blocks',
                  'ttl': '60.0s',
                  'data': object_list,
              },
-             exchange_declare=False),
+             err=False),
         call(app,
-             exchange='testcast.history',
-             routing='test_app',
-             message=objects,
-             )
+             'testcast/history/test_app',
+             {
+                 'key': 'test_app',
+                 'data': objects,
+             },
+             err=False),
     ])
 
 
