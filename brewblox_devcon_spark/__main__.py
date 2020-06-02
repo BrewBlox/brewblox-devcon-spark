@@ -5,8 +5,8 @@ Example of how to import and use the brewblox service
 import logging
 from configparser import ConfigParser
 
-from brewblox_service import (brewblox_logger, couchdb, events, http,
-                              scheduler, service)
+from brewblox_service import (brewblox_logger, couchdb, http, mqtt, scheduler,
+                              service)
 
 from brewblox_devcon_spark import (broadcaster, commander, communication,
                                    datastore, device, simulator, state,
@@ -51,12 +51,6 @@ def create_parser(default_name='spark'):
 
     # Service network options
     group = parser.add_argument_group('Service communication')
-    group.add_argument('--history-exchange',
-                       help='Eventbus exchange to which logged controller state should be broadcast. [%(default)s]',
-                       default='brewcast.history')
-    group.add_argument('--state-topic',
-                       help='Eventbus topic to which volatile controller state should be broadcast. [%(default)s]',
-                       default='brewcast.state')
     group.add_argument('--command-timeout',
                        help='Timeout period (in seconds) for controller commands. [$(default)s]',
                        type=float,
@@ -139,7 +133,7 @@ def main():
     commander.setup(app)
 
     scheduler.setup(app)
-    events.setup(app)
+    mqtt.setup(app)
 
     couchdb.setup(app)
     datastore.setup(app)
