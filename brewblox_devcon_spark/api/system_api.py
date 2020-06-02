@@ -6,7 +6,7 @@ import asyncio
 from typing import List
 
 from aiohttp import web
-from brewblox_service import brewblox_logger, events, scheduler, strex
+from brewblox_service import brewblox_logger, mqtt, scheduler, strex
 
 from brewblox_devcon_spark import commander, device, exceptions, state, ymodem
 from brewblox_devcon_spark.api import object_api
@@ -40,23 +40,22 @@ class FirmwareUpdater():
         self.app = app
         self.name = app['config']['name']
         self.simulation = app['config']['simulation']
-        self.state_topic = app['config']['state_topic']
+        self.topic = app['config']['state_topic'] + f'/{self.name}/update'
         self.version = app['ini']['firmware_version']
         self.date = app['ini']['firmware_date']
 
     def _notify(self, msg: str):
         LOGGER.info(msg)
         asyncio.create_task(
-            events.publish(self.app,
-                           exchange='amq.topic',
-                           routing=self.state_topic,
-                           message={
-                               'key': self.name,
-                               'type': 'Spark.update',
-                               'ttl': '10s',
-                               'data': [msg]
-                           },
-                           exchange_declare=False))
+            mqtt.publish(self.app,
+                         self.topic,
+                         {
+                             'key': self.name,
+                             'type': 'Spark.update',
+                             'ttl': '10s',
+                             'data': [msg]
+                         },
+                         err=False))
 
     async def _connect(self, address) -> ymodem.Connection:  # pragma: no cover
         for i in range(CONNECT_ATTEMPTS):
