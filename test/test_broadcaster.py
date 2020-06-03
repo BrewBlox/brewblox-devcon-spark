@@ -102,7 +102,8 @@ async def test_broadcast(app, m_api, m_publish, client, connected):
                  'ttl': '60.0s',
                  'data': object_list,
              },
-             err=False),
+             err=False,
+             retain=True),
         call(app,
              'testcast/history/test_app',
              {
