@@ -157,7 +157,7 @@ description = "Scaffolding for Brewblox backend services"
 name = "brewblox-service"
 optional = false
 python-versions = ">=3.7"
-version = "0.27.0"
+version = "0.27.1"
 
 [package.dependencies]
 aioamqp = ">=0.14.0,<0.15.0"
@@ -488,7 +488,7 @@ description = "pytest: simple powerful testing with Python"
 name = "pytest"
 optional = false
 python-versions = ">=3.5"
-version = "5.4.2"
+version = "5.4.3"
 
 [package.dependencies]
 atomicwrites = ">=1.0"
@@ -627,7 +627,7 @@ description = "Measures the displayed width of unicode strings in a terminal"
 name = "wcwidth"
 optional = false
 python-versions = "*"
-version = "0.2.2"
+version = "0.2.3"
 
 [[package]]
 category = "main"
@@ -663,7 +663,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
-content-hash = "386466bbf88a89963936c219319e5af43c8a63ecf9eb97250ee629b347df0098"
+content-hash = "8028766e0112fc1cd56c3560de8adb5d9c79822e28f8478ccdc6f0719ea7182b"
 python-versions = ">=3.7"
 
 [metadata.files]
@@ -727,8 +727,8 @@ brewblox-dev = [
     {file = "brewblox_dev-1.7.3-py3-none-any.whl", hash = "sha256:509c652a3c918d935416230b8817dc7ebedf6864ca22674c6fd19b57f54ee4d3"},
 ]
 brewblox-service = [
-    {file = "brewblox-service-0.27.0.tar.gz", hash = "sha256:a2ca0f5396a40a9d0ead103eccb4099c1d53f71fefe12efc2558b9309abf3739"},
-    {file = "brewblox_service-0.27.0-py3-none-any.whl", hash = "sha256:e7d51d4e363f3cbd508cdfa68f0d647b00d56cdebbd832b72bfbfbd64e734c4e"},
+    {file = "brewblox-service-0.27.1.tar.gz", hash = "sha256:f7fad8940d68c6ebaa2f9fc815572a10aad41fd4b9be9c83d4a1bf75170fe638"},
+    {file = "brewblox_service-0.27.1-py3-none-any.whl", hash = "sha256:0a74505f75891cb01a48941611fb94b99b7c62643843005bcfb18642d7f09703"},
 ]
 chardet = [
     {file = "chardet-3.0.4-py2.py3-none-any.whl", hash = "sha256:fc323ffcaeaed0e0a02bf4d117757b98aed530d9ed4531e3e15460124c106691"},
@@ -947,8 +947,8 @@ pyserial-asyncio = [
     {file = "pyserial_asyncio-0.4-py3-none-any.whl", hash = "sha256:861d975029498e777a67c6d6d392e20b84a79c01608f3778c978d0106467c8f8"},
 ]
 pytest = [
-    {file = "pytest-5.4.2-py3-none-any.whl", hash = "sha256:95c710d0a72d91c13fae35dce195633c929c3792f54125919847fdcdf7caa0d3"},
-    {file = "pytest-5.4.2.tar.gz", hash = "sha256:eb2b5e935f6a019317e455b6da83dd8650ac9ffd2ee73a7b657a30873d67a698"},
+    {file = "pytest-5.4.3-py3-none-any.whl", hash = "sha256:5c0db86b698e8f170ba4582a492248919255fcd4c79b1ee64ace34301fb589a1"},
+    {file = "pytest-5.4.3.tar.gz", hash = "sha256:7979331bfcba207414f5e1263b5a0f8f521d0f457318836a7355531ed1a4c7d8"},
 ]
 pytest-aiohttp = [
     {file = "pytest-aiohttp-0.3.0.tar.gz", hash = "sha256:c929854339637977375838703b62fef63528598bc0a9d451639eba95f4aaa44f"},
@@ -999,8 +999,8 @@ toml = [
     {file = "toml-0.10.1.tar.gz", hash = "sha256:926b612be1e5ce0634a2ca03470f95169cf16f939018233a670519cb4ac58b0f"},
 ]
 wcwidth = [
-    {file = "wcwidth-0.2.2-py2.py3-none-any.whl", hash = "sha256:b651b6b081476420e4e9ae61239ac4c1b49d0c5ace42b2e81dc2ff49ed50c566"},
-    {file = "wcwidth-0.2.2.tar.gz", hash = "sha256:3de2e41158cb650b91f9654cbf9a3e053cee0719c9df4ddc11e4b568669e9829"},
+    {file = "wcwidth-0.2.3-py2.py3-none-any.whl", hash = "sha256:980fbf4f3c196c0f329cdcd1e84c554d6a211f18e252e525a0cf4223154a41d6"},
+    {file = "wcwidth-0.2.3.tar.gz", hash = "sha256:edbc2b718b4db6cdf393eefe3a420183947d6aa312505ce6754516f458ff8830"},
 ]
 wrapt = [
     {file = "wrapt-1.12.1.tar.gz", hash = "sha256:b62ffa81fb85f4332a4f609cab4ac40709470da05643a082ec1eb88e6d9b97d7"},

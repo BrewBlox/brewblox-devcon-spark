@@ -71,7 +71,8 @@ class Broadcaster(repeater.RepeaterFeature):
             await mqtt.publish(self.app,
                                self.blocks_topic,
                                state_blocks,
-                               err=False)
+                               err=False,
+                               retain=True)
 
             history_message = {
                 'key': self.name,
