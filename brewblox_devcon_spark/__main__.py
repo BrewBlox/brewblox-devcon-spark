@@ -102,7 +102,9 @@ def create_parser(default_name='spark'):
 def parse_ini(app):  # pragma: no cover
     parser = ConfigParser()
     parser.read('binaries/firmware.ini')
-    return dict(parser['FIRMWARE'].items())
+    config = dict(parser['FIRMWARE'].items())
+    LOGGER.info(f'firmware.ini: {config}')
+    return config
 
 
 def main():
@@ -110,14 +112,6 @@ def main():
     logging.captureWarnings(True)
     config = app['config']
     app['ini'] = parse_ini(app)
-
-    # Logs a debug message for every event
-    logging.getLogger('aioamqp.channel').setLevel(logging.CRITICAL)
-    # Logs stack traces when the connection is closed
-    logging.getLogger('aioamqp.protocol').setLevel(logging.CRITICAL)
-
-    LOGGER.info('INI: ' + ', '.join([f"{k}='{v}'" for k, v in app['ini'].items()]))
-    LOGGER.info('CONFIG: ' + ', '.join([f"{k}='{v}'" for k, v in app['config'].items()]))
 
     if config['simulation']:
         config['device_id'] = config['device_id'] or '123456789012345678901234'
