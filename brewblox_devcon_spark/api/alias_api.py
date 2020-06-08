@@ -8,11 +8,11 @@ Users are free to change the associated service ID.
 import re
 
 from aiohttp import web
+from aiohttp_apispec import docs, match_info_schema, request_schema
 from brewblox_service import brewblox_logger
 
 from brewblox_devcon_spark import datastore, exceptions
-from brewblox_devcon_spark.api import utils
-from brewblox_devcon_spark.validation import API_SID_KEY
+from brewblox_devcon_spark.api import schemas
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -55,109 +55,42 @@ class AliasApi():
         del self._store[sid, None]
 
 
+@docs(
+    tags=['Aliases'],
+    summary='Create new block alias',
+)
 @routes.post('/aliases')
+@request_schema(schemas.AliasCreateSchema)
 async def alias_create(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Create new alias
-    tags:
-    - Spark
-    - Aliases
-    operationId: controller.spark.aliases.create
-    produces:
-    - application/json
-    parameters:
-    -
-        in: body
-        name: body
-        description: alias
-        required: true
-        schema:
-            type: object
-            properties:
-                sid:
-                    type: str
-                    example: onewirebus
-                    required: true
-                nid:
-                    type: int
-                    example: 2
-                    required: true
-    """
-    request_args = await request.json()
-    with utils.collecting_input():
-        args = (
-            request_args['sid'],
-            request_args['nid'],
-        )
-
+    data = request['data']
     return web.json_response(
-        await AliasApi(request.app).create(*args)
+        await AliasApi(request.app).create(data['sid'], data['nid'])
     )
 
 
+@docs(
+    tags=['Aliases'],
+    summary='Update existing block alias',
+)
 @routes.put('/aliases/{id}')
+@match_info_schema(schemas.StringIdSchema)
+@request_schema(schemas.StringIdSchema)
 async def alias_update(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Update existing alias
-    tags:
-    - Spark
-    - Aliases
-    operationId: controller.spark.aliases.update
-    produces:
-    - application/json
-    parameters:
-    -
-        name: id
-        in: path
-        required: true
-        schema:
-            type: int
-    -
-        in: body
-        name: body
-        description: alias
-        required: true
-        schema:
-            type: object
-            properties:
-                id:
-                    type: str
-                    example: onewirebus
-                    required: true
-    """
-    with utils.collecting_input():
-        args = (
-            request.match_info[API_SID_KEY],
-            (await request.json())[API_SID_KEY],
-        )
+    existing = request['match_info']['id']
+    desired = request['data']['id']
     return web.json_response(
-        await AliasApi(request.app).update(*args)
+        await AliasApi(request.app).update(existing, desired)
     )
 
 
+@docs(
+    tags=['Aliases'],
+    summary='Delete existing block alias',
+)
 @routes.delete('/aliases/{id}')
+@match_info_schema(schemas.StringIdSchema)
 async def alias_delete(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Delete existing alias
-    tags:
-    - Spark
-    - Aliases
-    operationId: controller.spark.aliases.delete
-    produces:
-    - application/json
-    parameters:
-    -
-        name: id
-        in: path
-        required: true
-        schema:
-            type: int
-    """
-    with utils.collecting_input():
-        id = request.match_info[API_SID_KEY]
+    id = request['match_info']['id']
     return web.json_response(
         await AliasApi(request.app).delete(id)
     )

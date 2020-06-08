@@ -5,19 +5,20 @@ REST API for Spark objects
 import asyncio
 
 from aiohttp import web
+from aiohttp_apispec import (docs, match_info_schema, querystring_schema,
+                             request_schema, response_schema)
 from brewblox_service import brewblox_logger, strex
 
 from brewblox_devcon_spark import (datastore, device, exceptions, state,
-                                   twinkeydict, validation)
-from brewblox_devcon_spark.api import alias_api, utils
-from brewblox_devcon_spark.validation import (API_DATA_KEY, API_INTERFACE_KEY,
-                                              API_NID_KEY, API_SID_KEY,
-                                              API_TYPE_KEY, GROUP_LIST_KEY,
-                                              OBJECT_DATA_KEY,
-                                              OBJECT_ID_LIST_KEY,
-                                              OBJECT_INTERFACE_KEY,
-                                              OBJECT_LIST_KEY, OBJECT_NID_KEY,
-                                              OBJECT_SID_KEY, OBJECT_TYPE_KEY)
+                                   twinkeydict)
+from brewblox_devcon_spark.api import alias_api, schemas
+from brewblox_devcon_spark.const import (API_DATA_KEY, API_INTERFACE_KEY,
+                                         API_NID_KEY, API_SID_KEY,
+                                         API_TYPE_KEY, GROUP_LIST_KEY,
+                                         OBJECT_DATA_KEY, OBJECT_ID_LIST_KEY,
+                                         OBJECT_INTERFACE_KEY, OBJECT_LIST_KEY,
+                                         OBJECT_NID_KEY, OBJECT_SID_KEY,
+                                         OBJECT_TYPE_KEY)
 
 SYNC_WAIT_TIMEOUT_S = 20
 
@@ -136,7 +137,8 @@ class ObjectApi():
     async def all(self) -> list:
         await self.wait_for_sync()
         response = await self._ctrl.list_objects()
-        return [self._as_api_object(obj) for obj in response.get(OBJECT_LIST_KEY, [])]
+        return [self._as_api_object(obj)
+                for obj in response.get(OBJECT_LIST_KEY, [])]
 
     async def read_stored(self, sid: str) -> dict:
         await self.wait_for_sync()
@@ -148,12 +150,14 @@ class ObjectApi():
     async def all_stored(self) -> list:
         await self.wait_for_sync()
         response = await self._ctrl.list_stored_objects()
-        return [self._as_api_object(obj) for obj in response.get(OBJECT_LIST_KEY, [])]
+        return [self._as_api_object(obj)
+                for obj in response.get(OBJECT_LIST_KEY, [])]
 
     async def all_logged(self) -> list:
         await self.wait_for_sync()
         response = await self._ctrl.log_objects()
-        return [self._as_api_object(obj) for obj in response.get(OBJECT_LIST_KEY, [])]
+        return [self._as_api_object(obj)
+                for obj in response.get(OBJECT_LIST_KEY, [])]
 
     async def list_compatible(self, interface: str) -> list:
         await self.wait_for_sync()
@@ -161,12 +165,14 @@ class ObjectApi():
             OBJECT_INTERFACE_KEY: interface,
         })
 
-        return [obj[OBJECT_SID_KEY] for obj in response[OBJECT_ID_LIST_KEY]]
+        return [{API_SID_KEY: obj[OBJECT_SID_KEY]}
+                for obj in response[OBJECT_ID_LIST_KEY]]
 
     async def discover(self) -> list:
         await self.wait_for_sync()
         response = await self._ctrl.discover_objects()
-        return [obj[OBJECT_SID_KEY] for obj in response[OBJECT_LIST_KEY]]
+        return [{API_SID_KEY: obj[OBJECT_SID_KEY]}
+                for obj in response[OBJECT_LIST_KEY]]
 
     async def validate(self,
                        input_type: str,
@@ -225,7 +231,6 @@ class ObjectApi():
                 OBJECT_DATA_KEY: input_data
             })
 
-        validation.ExportedObjects.validate(exported)
         await self.wait_for_sync()
         await self.clear_objects()
 
@@ -277,84 +282,35 @@ class ObjectApi():
         return error_log
 
 
+@docs(
+    tags=['Blocks'],
+    summary='Create new block',
+)
 @routes.post('/objects')
+@request_schema(schemas.BlockSchema)
+@response_schema(schemas.BlockSchema, 200)
 async def object_create(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Create object
-    tags:
-    - Spark
-    - Objects
-    operationId: controller.spark.objects.create
-    produces:
-    - application/json
-    parameters:
-    -
-        in: body
-        name: body
-        description: object
-        required: true
-        schema:
-            type: object
-            properties:
-                id:
-                    type: string
-                    example: temp_sensor_1
-                nid:
-                    type: int
-                    required: false
-                    example: 0
-                groups:
-                    type: array
-                    example: [0, 3, 4]
-                type:
-                    type: string
-                    example: TempSensorOneWire
-                data:
-                    type: object
-                    example:
-                        {
-                            "address": "FF",
-                            "offset[delta_degF]": 20,
-                            "value": 200
-                        }
-    """
-    request_args = await request.json()
-
-    with utils.collecting_input():
-        args = (
-            request_args[API_SID_KEY],
-            request_args.get(API_NID_KEY),
-            request_args[GROUP_LIST_KEY],
-            request_args[API_TYPE_KEY],
-            request_args[API_DATA_KEY],
-        )
+    data = request['data']
 
     return web.json_response(
-        await ObjectApi(request.app).create(*args)
+        await ObjectApi(request.app).create(
+            data[API_SID_KEY],
+            data.get(API_NID_KEY),
+            data[GROUP_LIST_KEY],
+            data[API_TYPE_KEY],
+            data[API_DATA_KEY],
+        )
     )
 
 
+@docs(
+    tags=['Blocks'],
+    summary='Read block',
+)
 @routes.get('/objects/{id}')
+@match_info_schema(schemas.StringIdSchema)
+@response_schema(schemas.BlockSchema, 200)
 async def object_read(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Read object
-    tags:
-    - Spark
-    - Objects
-    operationId: controller.spark.objects.read
-    produces:
-    - application/json
-    parameters:
-    -
-        name: id
-        in: path
-        required: true
-        description: Service ID of object
-        schema:
-            type: string
-    """
     return web.json_response(
         await ObjectApi(request.app).read(
             request.match_info[API_SID_KEY]
@@ -362,83 +318,33 @@ async def object_read(request: web.Request) -> web.Response:
     )
 
 
+@docs(
+    tags=['Blocks'],
+    summary='Write block',
+)
 @routes.put('/objects/{id}')
+@match_info_schema(schemas.StringIdSchema)
+@request_schema(schemas.BlockSchema)
+@response_schema(schemas.BlockSchema, 200)
 async def object_write(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Update object
-    tags:
-    - Spark
-    - Objects
-    operationId: controller.spark.objects.update
-    produces:
-    - application/json
-    parameters:
-    -
-        name: id
-        in: path
-        required: true
-        description: Service ID of object
-        schema:
-            type: string
-    -
-        name: body
-        in: body
-        description: object
-        required: true
-        schema:
-            type: object
-            properties:
-                groups:
-                    type: list
-                    example: [0, 4, 8]
-                type:
-                    type: string
-                    example: TempSensorOneWire
-                data:
-                    type: object
-                    example:
-                        {
-                            "address": "FF",
-                            "offset[delta_degF]": 20,
-                            "value": 200
-                        }
-    """
-    request_args = await request.json()
-
-    with utils.collecting_input():
-        args = (
-            request.match_info[API_SID_KEY],
-            request_args[GROUP_LIST_KEY],
-            request_args[API_TYPE_KEY],
-            request_args[API_DATA_KEY],
-        )
-
+    data = request['data']
     return web.json_response(
-        await ObjectApi(request.app).write(*args)
+        await ObjectApi(request.app).write(
+            request.match_info[API_SID_KEY],
+            data[GROUP_LIST_KEY],
+            data[API_TYPE_KEY],
+            data[API_DATA_KEY],
+        )
     )
 
 
+@docs(
+    tags=['Blocks'],
+    summary='Delete block',
+)
 @routes.delete('/objects/{id}')
+@match_info_schema(schemas.StringIdSchema)
 async def object_delete(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Delete object
-    tags:
-    - Spark
-    - Objects
-    operationId: controller.spark.objects.delete
-    produces:
-    - application/json
-    parameters:
-    -
-        name: id
-        in: path
-        required: true
-        description: Service ID of object
-        schema:
-            type: string
-    """
     return web.json_response(
         await ObjectApi(request.app).delete(
             request.match_info[API_SID_KEY]
@@ -446,77 +352,49 @@ async def object_delete(request: web.Request) -> web.Response:
     )
 
 
+@docs(
+    tags=['Blocks'],
+    summary='Get all blocks',
+)
 @routes.get('/objects')
+@response_schema(schemas.BlockSchema(many=True), 200)
 async def all_objects(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: List all active objects
-    tags:
-    - Spark
-    - Objects
-    operationId: controller.spark.objects.active
-    produces:
-    - application/json
-    """
     return web.json_response(
         await ObjectApi(request.app).all()
     )
 
 
+@docs(
+    tags=['Blocks'],
+    summary='Delete all user blocks',
+)
 @routes.delete('/objects')
 async def clear_objects(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Clear all objects
-    tags:
-    - Spark
-    - Objects
-    operationId: controller.spark.objects.clear
-    produces:
-    - application/json
-    """
     return web.json_response(
         await ObjectApi(request.app).clear_objects()
     )
 
 
+@docs(
+    tags=['Blocks'],
+    summary='Clean unused block string IDs',
+)
 @routes.delete('/unused_names')
 async def cleanup_names(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Clear all unused object names
-    tags:
-    - Spark
-    - Objects
-    operationId: controller.spark.objects.cleanup_names
-    produces:
-    - application/json
-    """
     return web.json_response(
         await ObjectApi(request.app).cleanup_names()
     )
 
 
+@docs(
+    tags=['Blocks'],
+    summary='Get persistent data for a block',
+)
 @routes.get('/stored_objects/{id}')
+@match_info_schema(schemas.StringIdSchema)
+@response_schema(schemas.BlockSchema, 200)
 async def stored_read(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Read object
-    tags:
-    - Spark
-    - Objects
-    operationId: controller.spark.stored.read
-    produces:
-    - application/json
-    parameters:
-    -
-        name: id
-        in: path
-        required: true
-        description: Service ID of object
-        schema:
-            type: string
-    """
+
     return web.json_response(
         await ObjectApi(request.app).read_stored(
             request.match_info[API_SID_KEY]
@@ -524,60 +402,38 @@ async def stored_read(request: web.Request) -> web.Response:
     )
 
 
+@docs(
+    tags=['Blocks'],
+    summary='Get persistent data for all blocks',
+)
 @routes.get('/stored_objects')
+@response_schema(schemas.BlockSchema(many=True), 200)
 async def all_stored(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Lists all stored objects
-    tags:
-    - Spark
-    - Objects
-    operationId: controller.spark.stored.all
-    produces:
-    - application/json
-    """
     return web.json_response(
         await ObjectApi(request.app).all_stored()
     )
 
 
+@docs(
+    tags=['Blocks'],
+    summary='Get logged data for all blocks',
+)
 @routes.get('/logged_objects')
+@response_schema(schemas.BlockSchema(many=True), 200)
 async def all_logged(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Lists all objects, with unlogged data keys stripped
-    tags:
-    - Spark
-    - Objects
-    operationId: controller.spark.logged.all
-    produces:
-    - application/json
-    """
     return web.json_response(
         await ObjectApi(request.app).all_logged()
     )
 
 
+@docs(
+    tags=['Blocks'],
+    summary='Get IDs for all blocks compatible with interface',
+)
 @routes.get('/compatible_objects')
+@querystring_schema(schemas.InterfaceIdSchema)
+@response_schema(schemas.BlockIdSchema(many=True))
 async def all_compatible(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Returns object IDs for all compatible objects
-    tags:
-    - Spark
-    - Objects
-    operationId: controller.spark.compatible.all
-    produces:
-    - application/json
-    parameters:
-    -
-        in: query
-        name: interface
-        schema:
-            type: string
-            example: "ProcessValueInterface"
-            required: true
-    """
     return web.json_response(
         await ObjectApi(request.app).list_compatible(
             request.query.get(API_INTERFACE_KEY)
@@ -585,100 +441,52 @@ async def all_compatible(request: web.Request) -> web.Response:
     )
 
 
+@docs(
+    tags=['Blocks'],
+    summary='Discover newly connected OneWire devices',
+)
 @routes.get('/discover_objects')
+@response_schema(schemas.BlockIdSchema(many=True))
 async def discover(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Discovers newly connected devices
-    tags:
-    - Spark
-    - Objects
-    operationId: controller.spark.discover
-    produces:
-    - application/json
-    """
     return web.json_response(await ObjectApi(request.app).discover())
 
 
+@docs(
+    tags=['Blocks'],
+    summary='Validate block data',
+)
 @routes.post('/validate_object')
+@request_schema(schemas.BlockValidateSchema)
 async def validate(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Checks block data encoding and links
-    tags:
-    - Spark
-    - Objects
-    operationId: controller.spark.validate
-    produces:
-    - application/json
-    parameters:
-    -
-        name: body
-        in: body
-        description: object
-        required: true
-        schema:
-            type: object
-            properties:
-                type:
-                    type: string
-                    example: TempSensorOneWire
-                data:
-                    type: object
-                    example:
-                        {
-                            "address": "FF",
-                            "offset[delta_degF]": 20,
-                            "value": 200
-                        }
-    """
-
-    request_args = await request.json()
-
-    with utils.collecting_input():
-        args = (
-            request_args[API_TYPE_KEY],
-            request_args[API_DATA_KEY],
-        )
-
+    data = request['data']
     return web.json_response(
-        await ObjectApi(request.app).validate(*args)
+        await ObjectApi(request.app).validate(
+            data[API_TYPE_KEY],
+            data[API_DATA_KEY]
+        )
     )
 
 
+@docs(
+    tags=['Blocks'],
+    summary='Export service blocks to portable format',
+)
 @routes.get('/export_objects')
+@response_schema(schemas.SparkExportSchema)
 async def export_objects(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Exports all blocks and datastore entries
-    tags:
-    - Spark
-    - Objects
-    operationId: controller.spark.export
-    produces:
-    - application/json
-    """
     return web.json_response(
         await ObjectApi(request.app).export_objects()
     )
 
 
+@docs(
+    tags=['Blocks'],
+    summary='Import service blocks from portable format',
+)
 @routes.post('/import_objects')
+@request_schema(schemas.SparkExportSchema)
 async def import_objects(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Imports all blocks and datastore entries
-    tags:
-    - Spark
-    - Objects
-    operationId: controller.spark.import
-    produces:
-    - application/json
-    parameters:
-    -
-        in: body
-        name: body
-        description: exported data
-        required: true
-    """
-    return web.json_response(await ObjectApi(request.app).import_objects(await request.json()))
+    data = request['data']
+    return web.json_response(
+        await ObjectApi(request.app).import_objects(data)
+    )

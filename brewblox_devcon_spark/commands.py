@@ -18,11 +18,10 @@ from construct import (Adapter, Byte, Const, Container, Default, Enum,
                        GreedyBytes, Int8ul, Int16ul, Struct)
 
 from brewblox_devcon_spark import exceptions
-from brewblox_devcon_spark.validation import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
-                                              OBJECT_ID_LIST_KEY,
-                                              OBJECT_INTERFACE_KEY,
-                                              OBJECT_LIST_KEY, OBJECT_NID_KEY,
-                                              OBJECT_TYPE_KEY)
+from brewblox_devcon_spark.const import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
+                                         OBJECT_ID_LIST_KEY,
+                                         OBJECT_INTERFACE_KEY, OBJECT_LIST_KEY,
+                                         OBJECT_NID_KEY, OBJECT_TYPE_KEY)
 
 LOGGER = brewblox_logger(__name__)
 
