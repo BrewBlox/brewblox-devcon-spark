@@ -9,10 +9,10 @@ from mock import AsyncMock
 from brewblox_devcon_spark import (commander, commander_sim, datastore, device,
                                    exceptions, state)
 from brewblox_devcon_spark.codec import codec, unit_conversion
-from brewblox_devcon_spark.validation import (GENERATED_ID_PREFIX,
-                                              GROUP_LIST_KEY, OBJECT_DATA_KEY,
-                                              OBJECT_LIST_KEY, OBJECT_NID_KEY,
-                                              OBJECT_SID_KEY, OBJECT_TYPE_KEY)
+from brewblox_devcon_spark.const import (GENERATED_ID_PREFIX, GROUP_LIST_KEY,
+                                         OBJECT_DATA_KEY, OBJECT_LIST_KEY,
+                                         OBJECT_NID_KEY, OBJECT_SID_KEY,
+                                         OBJECT_TYPE_KEY)
 
 TESTED = device.__name__
 

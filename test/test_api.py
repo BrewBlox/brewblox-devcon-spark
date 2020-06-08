@@ -20,7 +20,7 @@ from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_NID_KEY,
                                                   OBJECT_SID_KEY,
                                                   OBJECT_TYPE_KEY)
 from brewblox_devcon_spark.codec import codec, unit_conversion
-from brewblox_devcon_spark.validation import SYSTEM_GROUP
+from brewblox_devcon_spark.const import SYSTEM_GROUP
 
 
 def ret_ids(objects):
@@ -128,9 +128,8 @@ async def test_create(app, client, object_args):
 
 async def test_invalid_input(app, client, object_args):
     del object_args['groups']
-    retv = await response(client.post('/objects', json=object_args), 400)
-    assert 'MissingInput' in retv['error']
-    assert 'groups' in retv['error']
+    retv = await response(client.post('/objects', json=object_args), 422)
+    assert 'groups' in retv
 
 
 async def test_create_performance(app, client, object_args):
@@ -280,10 +279,10 @@ async def test_ping(app, client):
 
 async def test_groups(app, client):
     groups = await response(client.get('/system/groups'))
-    assert groups == [0, SYSTEM_GROUP]  # Initialized value
-    updated = await response(client.put('/system/groups', json=[0, 1, 2]))
-    assert updated == [0, 1, 2]
-    assert updated == (await response(client.get('/system/groups')))
+    assert groups == {'groups': [0, SYSTEM_GROUP]}  # Initialized value
+    updated = await response(client.put('/system/groups', json={'groups': [0, 1, 2]}))
+    assert updated == {'groups': [0, 1, 2]}
+    assert updated == await response(client.get('/system/groups'))
 
 
 async def test_inactive_objects(app, client, object_args):
@@ -317,7 +316,7 @@ async def test_settings_api(app, client, object_args):
     retd = await response(client.get(f'/objects/{object_args[API_SID_KEY]}'))
     assert retd[API_DATA_KEY]['offset[delta_degF]'] == pytest.approx(degF_offset, 0.1)
 
-    await response(client.put('/settings/units', json={}))
+    await response(client.put('/settings/units', json={'Temp': 'degC'}))
     retd = await response(client.get(f'/objects/{object_args[API_SID_KEY]}'))
     assert retd[API_DATA_KEY]['offset[delta_degC]'] == pytest.approx(degC_offset, 0.1)
 
@@ -332,13 +331,13 @@ async def test_settings_api(app, client, object_args):
 
 async def test_list_compatible(app, client, object_args):
     resp = await response(client.get('/compatible_objects', params={'interface': 'BalancerInterface'}))
-    assert all([isinstance(id, str) for id in resp])
+    assert all([isinstance(v['id'], str) for v in resp])
 
 
 async def test_discover_objects(app, client):
     resp = await response(client.get('/discover_objects'))
     # Commander sim always returns the groups object
-    assert resp == ['DisplaySettings']
+    assert resp == [{'id': 'DisplaySettings'}]
 
 
 async def test_validate_object(app, client, object_args):
