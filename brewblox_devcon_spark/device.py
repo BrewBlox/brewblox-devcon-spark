@@ -15,14 +15,13 @@ from brewblox_service import brewblox_logger, features, strex
 from brewblox_devcon_spark import (commander, commands, datastore, exceptions,
                                    twinkeydict)
 from brewblox_devcon_spark.codec import codec
-from brewblox_devcon_spark.validation import (GENERATED_ID_PREFIX,
-                                              OBJECT_DATA_KEY,
-                                              OBJECT_ID_LIST_KEY,
-                                              OBJECT_INTERFACE_KEY,
-                                              OBJECT_LINK_POSTFIX_END,
-                                              OBJECT_LINK_POSTFIX_START,
-                                              OBJECT_LIST_KEY, OBJECT_NID_KEY,
-                                              OBJECT_SID_KEY, OBJECT_TYPE_KEY)
+from brewblox_devcon_spark.const import (GENERATED_ID_PREFIX, OBJECT_DATA_KEY,
+                                         OBJECT_ID_LIST_KEY,
+                                         OBJECT_INTERFACE_KEY,
+                                         OBJECT_LINK_POSTFIX_END,
+                                         OBJECT_LINK_POSTFIX_START,
+                                         OBJECT_LIST_KEY, OBJECT_NID_KEY,
+                                         OBJECT_SID_KEY, OBJECT_TYPE_KEY)
 
 ObjectId_ = Union[str, int]
 FindIdFunc_ = Callable[[twinkeydict.TwinKeyDict, ObjectId_, str], Awaitable[ObjectId_]]
