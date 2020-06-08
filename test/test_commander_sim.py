@@ -11,7 +11,7 @@ from brewblox_devcon_spark.codec import codec, unit_conversion
 from brewblox_devcon_spark.commands import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
                                             OBJECT_LIST_KEY, OBJECT_NID_KEY,
                                             OBJECT_TYPE_KEY)
-from brewblox_devcon_spark.validation import SYSTEM_GROUP
+from brewblox_devcon_spark.const import SYSTEM_GROUP
 
 
 @pytest.fixture
