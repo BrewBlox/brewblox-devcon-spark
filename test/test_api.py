@@ -331,13 +331,13 @@ async def test_settings_api(app, client, object_args):
 
 async def test_list_compatible(app, client, object_args):
     resp = await response(client.get('/compatible_objects', params={'interface': 'BalancerInterface'}))
-    assert all([isinstance(id, str) for id in resp])
+    assert all([isinstance(v['id'], str) for v in resp])
 
 
 async def test_discover_objects(app, client):
     resp = await response(client.get('/discover_objects'))
     # Commander sim always returns the groups object
-    assert resp == ['DisplaySettings']
+    assert resp == [{'id': 'DisplaySettings'}]
 
 
 async def test_validate_object(app, client, object_args):
