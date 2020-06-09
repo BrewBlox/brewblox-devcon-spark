@@ -74,12 +74,12 @@ async def wait_sync(app, client):
 
 @pytest.mark.integration
 async def test_ping(app, client):
-    await response(client.get('/system/ping'))
+    await response(client.post('/system/ping'))
 
 
 @pytest.mark.integration
 async def test_create_read(app, client):
-    await response(client.post('/objects', json={
+    await response(client.post('/blocks/create', json={
         'id': 'sensor-1',
         'groups': [0],
         'type': 'TempSensorMock',
@@ -87,7 +87,7 @@ async def test_create_read(app, client):
             'value[celsius]': 20.89789201,
             'connected': True
         }
-    }))
-    obj = await response(client.get('/objects/sensor-1'))
+    }), 201)
+    obj = await response(client.post('/blocks/read', json={'id': 'sensor-1'}))
     assert obj['id'] == 'sensor-1'
     assert obj['data']
