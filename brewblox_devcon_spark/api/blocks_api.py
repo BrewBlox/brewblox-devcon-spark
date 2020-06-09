@@ -36,7 +36,7 @@ def validate_sid(sid: str):
     if not re.match(SID_PATTERN, sid):
         raise exceptions.InvalidId(SID_RULES)
     if next((keys for keys in const.SYS_OBJECT_KEYS if sid == keys[0]), None):
-        raise exceptions.InvalidId(f'"{sid}" is an ID reserved for a system object')
+        raise exceptions.InvalidId(f'"{sid}" is an ID reserved for system objects')
 
 
 class BlocksApi():
@@ -44,7 +44,7 @@ class BlocksApi():
     def __init__(self, app: web.Application, wait_sync=True):
         self.app = app
         self._wait_sync = wait_sync
-        self._ctrl: device.SparkController = device.get_controller(app)
+        self._dev: device.SparkDevice = device.get_device(app)
         self._store: twinkeydict.TwinKeyDict = datastore.get_block_store(app)
 
     async def wait_for_sync(self):
@@ -66,7 +66,7 @@ class BlocksApi():
             raise exceptions.ExistingId(ex) from ex
 
         try:
-            created = await self._ctrl.create_object(block)
+            created = await self._dev.create_object(block)
 
         finally:
             del self._store[sid, placeholder]
@@ -78,22 +78,22 @@ class BlocksApi():
 
     async def read(self, ids: dict, filter: str = None) -> dict:
         await self.wait_for_sync()
-        return await self._ctrl.read_object(ids)
+        return await self._dev.read_object(ids)
 
     async def read_logged(self, ids: dict) -> dict:
         await self.wait_for_sync()
-        return await self._ctrl.read_logged_object(ids)
+        return await self._dev.read_logged_object(ids)
 
     async def read_stored(self, ids: dict) -> dict:
         await self.wait_for_sync()
-        return await self._ctrl.read_stored_object(ids)
+        return await self._dev.read_stored_object(ids)
 
     async def write(self, block: dict) -> dict:
         """
         Writes new values to existing object on controller
         """
         await self.wait_for_sync()
-        return await self._ctrl.write_object(block)
+        return await self._dev.write_object(block)
 
     async def delete(self, ids: dict) -> dict:
         """
@@ -103,7 +103,7 @@ class BlocksApi():
         sid = ids.get('id')
         nid = ids.get('nid')
 
-        await self._ctrl.delete_object(ids)
+        await self._dev.delete_object(ids)
 
         if sid is None:
             sid = self._store.left_key(nid)
@@ -115,24 +115,24 @@ class BlocksApi():
 
     async def read_all(self) -> list:
         await self.wait_for_sync()
-        response = await self._ctrl.list_objects()
+        response = await self._dev.list_objects()
         return response.get('objects', [])
 
     async def read_all_logged(self) -> list:
         await self.wait_for_sync()
-        response = await self._ctrl.list_logged_objects()
+        response = await self._dev.list_logged_objects()
         return response.get('objects', [])
 
     async def read_all_stored(self) -> list:
         await self.wait_for_sync()
-        response = await self._ctrl.list_stored_objects()
+        response = await self._dev.list_stored_objects()
         return response.get('objects', [])
 
     async def delete_all(self) -> dict:
         await self.wait_for_sync()
-        await self._ctrl.clear_objects()
+        await self._dev.clear_objects()
         self._store.clear()
-        await self._ctrl.write_object({
+        await self._dev.write_object({
             'nid': const.DISPLAY_SETTINGS_NID,
             'type': 'DisplaySettings',
             'groups': [],
@@ -142,18 +142,18 @@ class BlocksApi():
 
     async def compatible(self, interface: str) -> list:
         await self.wait_for_sync()
-        response = await self._ctrl.list_compatible_objects({
+        response = await self._dev.list_compatible_objects({
             'interface': interface,
         })
         return response.get('object_ids', [])
 
     async def discover(self) -> list:
         await self.wait_for_sync()
-        response = await self._ctrl.discover_objects()
+        response = await self._dev.discover_objects()
         return response.get('objects', [])
 
     async def validate(self, partial: dict) -> dict:
-        return await self._ctrl.validate(partial)
+        return await self._dev.validate(partial)
 
     async def rename(self, existing: str, desired: str):
         validate_sid(desired)
@@ -216,7 +216,7 @@ class BlocksApi():
                     await self.write(deepcopy(block))
                 else:
                     # Bypass BlockApi.create(), to avoid meddling with store IDs
-                    await self._ctrl.create_object(deepcopy(block))
+                    await self._dev.create_object(deepcopy(block))
             except asyncio.CancelledError:  # pragma: no cover
                 raise
             except Exception as ex:

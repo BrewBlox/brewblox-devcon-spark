@@ -51,8 +51,8 @@ def cmder(app):
 
 
 @pytest.fixture
-def ctrl(app):
-    return device.get_controller(app)
+def dev(app):
+    return device.get_device(app)
 
 
 @pytest.fixture
@@ -60,7 +60,7 @@ async def store(app, client):
     return datastore.get_block_store(app)
 
 
-async def test_transcoding(app, client, cmder, store, ctrl):
+async def test_transcoding(app, client, cmder, store, dev):
     c = codec.get_codec(app)
     obj_type, obj_data = generate_obj()
     enc_type, enc_data = await c.encode(obj_type, obj_data)
@@ -77,32 +77,32 @@ async def test_transcoding(app, client, cmder, store, ctrl):
     c.encode = AsyncMock(wraps=c.encode)
     c.decode = AsyncMock(wraps=c.decode)
 
-    retval = await ctrl.create_object(object_args)
+    retval = await dev.create_object(object_args)
     assert retval['data']['settings']['address'] == 'ff'.rjust(16, '0')
 
     c.encode.assert_any_await(obj_type, obj_data, opts=None)
     c.decode.assert_any_await(enc_type, enc_data, opts=None)
 
 
-async def test_list_transcoding(app, client, cmder, store, ctrl, mocker):
+async def test_list_transcoding(app, client, cmder, store, dev, mocker):
     obj_type, obj_data = generate_obj()
     ids = {f'obj{i}' for i in range(5)}
 
     for i, id in enumerate(ids):
         store[id, 300+i] = dict()
 
-        await ctrl.create_object({
+        await dev.create_object({
             'id': id,
             'groups': [0],
             'type': obj_type,
             'data': obj_data
         })
 
-    retval = await ctrl.list_stored_objects()
+    retval = await dev.list_stored_objects()
     assert ids.issubset({obj['id'] for obj in retval['objects']})
 
 
-async def test_convert_id(app, client, store, mocker, ctrl):
+async def test_convert_id(app, client, store, mocker, dev):
     store['alias', 123] = dict()
     store['4-2', 24] = dict()
 

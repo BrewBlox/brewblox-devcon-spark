@@ -111,7 +111,7 @@ class SystemApi():
     async def reboot(self):
         async def wrapper():
             try:
-                await device.get_controller(self.app).reboot()
+                await device.get_device(self.app).reboot()
             except exceptions.CommandTimeout:
                 pass
             except Exception as ex:  # pragma: no cover
@@ -122,7 +122,7 @@ class SystemApi():
     async def factory_reset(self):
         async def wrapper():
             try:
-                await device.get_controller(self.app).factory_reset()
+                await device.get_device(self.app).factory_reset()
             except exceptions.CommandTimeout:
                 pass
             except Exception as ex:  # pragma: no cover
@@ -148,7 +148,7 @@ async def check_status(request: web.Request) -> web.Response:
 @routes.post('/system/ping')
 async def ping(request: web.Request) -> web.Response:
     return web.json_response(
-        await device.get_controller(request.app).noop()
+        await device.get_device(request.app).noop()
     )
 
 

@@ -28,5 +28,5 @@ async def do_command(request: web.Request) -> web.Response:
     command = request['data']['command']
     data = request['data']['data']
 
-    func = getattr(device.get_controller(request.app), command)
+    func = getattr(device.get_device(request.app), command)
     return web.json_response(await func(**data))

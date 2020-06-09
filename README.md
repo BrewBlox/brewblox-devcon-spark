@@ -47,9 +47,9 @@ The codec is responsible for converting JSON-serializable dicts to byte arrays, 
 
 For this reason, the object payload in Controlbox consists of two parts: a numerical `object_type` ID, and the `object_data` bytes.
 
-### SparkController ([device.py](./brewblox_devcon_spark/device.py))
+### SparkDevice ([device.py](./brewblox_devcon_spark/device.py))
 
-`SparkController` combines the functionality of `commands`, `commander`, `datastore`, and `codec` to allow interaction with the Spark using Pythonic functions.
+`SparkDevice` combines the functionality of `commands`, `commander`, `datastore`, and `codec` to allow interaction with the Spark using Pythonic functions.
 
 Any command is modified both incoming and outgoing: ID's are converted using the datastore, data is sent to codec, and everything is wrapped in the correct command before it is sent to `SparkCommander`.
 
