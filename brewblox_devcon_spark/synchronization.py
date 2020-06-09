@@ -12,10 +12,9 @@ from aiohttp import web
 from brewblox_service import (brewblox_logger, features, repeater, scheduler,
                               strex)
 
-from brewblox_devcon_spark import datastore, exceptions, state
-from brewblox_devcon_spark.api import object_api
+from brewblox_devcon_spark import const, datastore, exceptions, state
+from brewblox_devcon_spark.api import blocks_api
 from brewblox_devcon_spark.codec import unit_conversion
-from brewblox_devcon_spark.const import SYSTEM_GROUP
 from brewblox_devcon_spark.device import get_controller
 from brewblox_devcon_spark.exceptions import InvalidInput
 
@@ -228,14 +227,15 @@ class Syncher(repeater.RepeaterFeature):
     @subroutine('sync controller time')
     async def _sync_time(self):
         now = datetime.now()
-        api = object_api.ObjectApi(self.app, wait_sync=False)
-        await api.write(
-            sid=datastore.SYSTIME_NID,
-            groups=[SYSTEM_GROUP],
-            input_type='Ticks',
-            input_data={
+        api = blocks_api.BlocksApi(self.app, wait_sync=False)
+        await api.write({
+            'nid': const.SYSTIME_NID,
+            'groups': [const.SYSTEM_GROUP],
+            'type': 'Ticks',
+            'data': {
                 'secondsSinceEpoch': now.timestamp()
-            })
+            }
+        })
 
 
 def setup(app: web.Application):

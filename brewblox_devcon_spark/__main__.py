@@ -11,8 +11,8 @@ from brewblox_service import (brewblox_logger, couchdb, http, mqtt, scheduler,
 from brewblox_devcon_spark import (broadcaster, commander, communication,
                                    datastore, device, simulator, state,
                                    synchronization)
-from brewblox_devcon_spark.api import (alias_api, debug_api, error_response,
-                                       object_api, settings_api, system_api)
+from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
+                                       settings_api, system_api)
 from brewblox_devcon_spark.codec import codec, unit_conversion
 
 LOGGER = brewblox_logger(__name__)
@@ -138,8 +138,7 @@ def main():
 
     error_response.setup(app)
     debug_api.setup(app)
-    alias_api.setup(app)
-    object_api.setup(app)
+    blocks_api.setup(app)
     system_api.setup(app)
     settings_api.setup(app)
 
