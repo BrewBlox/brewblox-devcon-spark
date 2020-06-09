@@ -5,13 +5,11 @@ Specific endpoints for using system objects
 import asyncio
 
 from aiohttp import web
-from aiohttp_apispec import docs, request_schema, response_schema
+from aiohttp_apispec import docs, response_schema
 from brewblox_service import brewblox_logger, mqtt, scheduler, strex
 
 from brewblox_devcon_spark import commander, device, exceptions, state, ymodem
-from brewblox_devcon_spark.api import object_api, schemas
-from brewblox_devcon_spark.const import API_DATA_KEY
-from brewblox_devcon_spark.datastore import GROUPS_NID
+from brewblox_devcon_spark.api import schemas
 
 TRANSFER_TIMEOUT_S = 30
 STATE_TIMEOUT_S = 20
@@ -109,20 +107,6 @@ class SystemApi():
 
     def __init__(self, app: web.Application):
         self.app = app
-        self._obj_api: object_api.ObjectApi = object_api.ObjectApi(app)
-
-    async def read_groups(self):
-        group_obj = await self._obj_api.read(GROUPS_NID)
-        return {'groups': group_obj[API_DATA_KEY]['active']}
-
-    async def write_groups(self, data):
-        group_obj = await self._obj_api.write(
-            sid=GROUPS_NID,
-            groups=[],
-            input_type='Groups',
-            input_data={'active': data['groups']}
-        )
-        return {'groups': group_obj[API_DATA_KEY]['active']}
 
     async def reboot(self):
         async def wrapper():
@@ -149,31 +133,6 @@ class SystemApi():
 
 @docs(
     tags=['System'],
-    summary='Get active system groups',
-)
-@routes.get('/system/groups')
-@response_schema(schemas.GroupsSchema)
-async def groups_read(request: web.Request) -> web.Response:
-    return web.json_response(
-        await SystemApi(request.app).read_groups()
-    )
-
-
-@docs(
-    tags=['System'],
-    summary='Set active system groups',
-)
-@routes.put('/system/groups')
-@request_schema(schemas.GroupsSchema)
-@response_schema(schemas.GroupsSchema)
-async def groups_write(request: web.Request) -> web.Response:
-    return web.json_response(
-        await SystemApi(request.app).write_groups(request['data'])
-    )
-
-
-@docs(
-    tags=['System'],
     summary='Get service status',
 )
 @routes.get('/system/status')
@@ -186,7 +145,7 @@ async def check_status(request: web.Request) -> web.Response:
     tags=['System'],
     summary='Send an empty request to the controller',
 )
-@routes.get('/system/ping')
+@routes.post('/system/ping')
 async def ping(request: web.Request) -> web.Response:
     return web.json_response(
         await device.get_controller(request.app).noop()
@@ -197,7 +156,7 @@ async def ping(request: web.Request) -> web.Response:
     tags=['System'],
     summary='Reboot the controller',
 )
-@routes.get('/system/reboot')
+@routes.post('/system/reboot')
 async def reboot(request: web.Request) -> web.Response:
     return web.json_response(
         await SystemApi(request.app).reboot()
@@ -208,7 +167,7 @@ async def reboot(request: web.Request) -> web.Response:
     tags=['System'],
     summary='Factory reset the controller',
 )
-@routes.get('/system/factory_reset')
+@routes.post('/system/factory_reset')
 async def factory_reset(request: web.Request) -> web.Response:
     return web.json_response(
         await SystemApi(request.app).factory_reset()

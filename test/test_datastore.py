@@ -8,14 +8,14 @@ import pytest
 from brewblox_service import scheduler
 from mock import AsyncMock
 
-from brewblox_devcon_spark import datastore
+from brewblox_devcon_spark import const, datastore
 
 TESTED = datastore.__name__
 
 
 def read_objects():
     return datastore.SYS_OBJECTS[:1] + [
-        {'keys': [f'key{i}', i+datastore.OBJECT_NID_START], 'data': {}}
+        {'keys': [f'key{i}', i+const.USER_NID_START], 'data': {}}
         for i in range(10)
     ]
 

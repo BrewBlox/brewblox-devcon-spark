@@ -16,8 +16,8 @@ from brewblox_service.testing import response
 from brewblox_devcon_spark import (commander, communication, datastore, device,
                                    simulator, state, synchronization)
 from brewblox_devcon_spark.__main__ import parse_ini
-from brewblox_devcon_spark.api import (alias_api, debug_api, error_response,
-                                       object_api, settings_api, system_api)
+from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
+                                       settings_api, system_api)
 from brewblox_devcon_spark.codec import codec, unit_conversion
 
 DEVICE_ID = '123456789012345678901234'
@@ -59,8 +59,7 @@ def app(app):
 
     error_response.setup(app)
     debug_api.setup(app)
-    alias_api.setup(app)
-    object_api.setup(app)
+    blocks_api.setup(app)
     system_api.setup(app)
     settings_api.setup(app)
 
