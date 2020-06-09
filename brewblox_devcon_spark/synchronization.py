@@ -15,7 +15,7 @@ from brewblox_service import (brewblox_logger, features, repeater, scheduler,
 from brewblox_devcon_spark import const, datastore, exceptions, state
 from brewblox_devcon_spark.api import blocks_api
 from brewblox_devcon_spark.codec import unit_conversion
-from brewblox_devcon_spark.device import get_controller
+from brewblox_devcon_spark.device import get_device
 from brewblox_devcon_spark.exceptions import InvalidInput
 
 HANDSHAKE_TIMEOUT_S = 30
@@ -187,7 +187,7 @@ class Syncher(repeater.RepeaterFeature):
 
             # The noop command will trigger a handshake
             # Keep sending until we get a handshake
-            await get_controller(self.app).noop()
+            await get_device(self.app).noop()
             await asyncio.wait([handshake_task, asyncio.sleep(PING_INTERVAL_S)],
                                return_when=asyncio.FIRST_COMPLETED)
 

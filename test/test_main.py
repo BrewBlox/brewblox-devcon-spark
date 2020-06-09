@@ -28,7 +28,7 @@ def test_main(mocker, app):
     assert None not in [
         commander.get_commander(app),
         datastore.get_block_store(app),
-        device.get_controller(app),
+        device.get_device(app),
         mqtt.handler(app),
         broadcaster.get_broadcaster(app)
     ]

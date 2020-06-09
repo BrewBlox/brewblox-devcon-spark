@@ -178,9 +178,9 @@ class SparkResolver():
         return await self._resolve_links(self._find_sid, content)
 
 
-class SparkController(features.ServiceFeature):
+class SparkDevice(features.ServiceFeature):
 
-    def __init__(self, name: str, app: web.Application):
+    def __init__(self, app: web.Application):
         super().__init__(app)
         self._commander: commander.SparkCommander = None
 
@@ -271,8 +271,8 @@ class SparkController(features.ServiceFeature):
 
 
 def setup(app: web.Application):
-    features.add(app, SparkController(name=app['config']['name'], app=app))
+    features.add(app, SparkDevice(app))
 
 
-def get_controller(app: web.Application) -> SparkController:
-    return features.get(app, SparkController)
+def get_device(app: web.Application) -> SparkDevice:
+    return features.get(app, SparkDevice)
