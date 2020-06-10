@@ -32,7 +32,13 @@ class BlockSchema(Schema):
 
 
 class BlockIdSchema(Schema):
-    id = fields.String(required=True)
+    id = fields.String(required=False)
+    nid = fields.Integer(required=False)
+
+
+class BlockRenameSchema(Schema):
+    existing = fields.String(required=True)
+    desired = fields.String(required=True)
 
 
 class BlockValidateSchema(Schema):
@@ -52,6 +58,10 @@ class StoreEntrySchema(Schema):
 class SparkExportSchema(Schema):
     store = fields.Nested(StoreEntrySchema(many=True), required=True)
     blocks = fields.Nested(BlockSchema(many=True), required=True)
+
+
+class SparkExportResultSchema(Schema):
+    messages = fields.List(fields.String(), required=True)
 
 
 class UserUnitsSchema(Schema):
@@ -77,6 +87,7 @@ class DeviceInfoSchema(FirmwareInfoSchema):
 
 
 class StatusSchema(Schema):
+    type = fields.String(required=True)
     address = fields.String(required=True)
     connection = fields.String(required=True)
     compatible = fields.Bool(required=True)
