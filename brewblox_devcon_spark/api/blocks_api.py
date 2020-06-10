@@ -311,6 +311,7 @@ async def _update(request: web.Request) -> web.Response:
 )
 @routes.post('/blocks/delete')
 @request_schema(schemas.BlockIdSchema)
+@response_schema(schemas.BlockIdSchema)
 async def _delete(request: web.Request) -> web.Response:
     return web.json_response(
         await BlocksApi(request.app).delete(request['data'])
