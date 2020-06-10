@@ -12,14 +12,11 @@ from datetime import datetime, timedelta
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, repeater, strex
 
-from brewblox_devcon_spark import commands, communication, exceptions, state
+from brewblox_devcon_spark import (commands, communication, const, exceptions,
+                                   state)
 
 LOGGER = brewblox_logger(__name__)
 
-WELCOME_PREFIX = 'BREWBLOX'
-UPDATER_PREFIX = 'FIRMWARE_UPDATER'
-CBOX_ERR_PREFIX = 'CBOXERROR'
-SETUP_MODE_PREFIX = 'SETUP_MODE'
 
 # Spark protocol is to echo the request in the response
 # To prevent decoding ambiguity, a non-hexadecimal character separates the request and response
@@ -168,19 +165,19 @@ class SparkCommander(repeater.RepeaterFeature):
         await state.set_handshake(self.app, device)
 
     async def _on_event(self, conduit, msg: str):
-        if msg.startswith(WELCOME_PREFIX):
+        if msg.startswith(const.WELCOME_PREFIX):
             await self._on_welcome(msg)
 
-        elif msg.startswith(UPDATER_PREFIX) and not self.updating:
+        elif msg.startswith(const.UPDATER_PREFIX) and not self.updating:
             LOGGER.error('Update protocol was activated by another connection.')
 
-        elif msg.startswith(CBOX_ERR_PREFIX):
+        elif msg.startswith(const.CBOX_ERR_PREFIX):
             try:
                 LOGGER.error('Spark CBOX error: ' + commands.Errorcode(int(msg[-2:], 16)).name)
             except ValueError:
                 LOGGER.error('Unknown Spark CBOX error: ' + msg)
 
-        elif msg.startswith(SETUP_MODE_PREFIX):
+        elif msg.startswith(const.SETUP_MODE_PREFIX):
             LOGGER.error('Controller entered listening mode. Exiting service now.')
             raise web.GracefulExit()
 

@@ -9,10 +9,8 @@ from time import monotonic
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, mqtt, repeater, strex
 
-from brewblox_devcon_spark import exceptions, state
-from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_SID_KEY,
-                                                  ObjectApi)
-from brewblox_devcon_spark.device import GENERATED_ID_PREFIX
+from brewblox_devcon_spark import const, exceptions, state
+from brewblox_devcon_spark.api.blocks_api import BlocksApi
 
 LOGGER = brewblox_logger(__name__)
 
@@ -37,7 +35,7 @@ class Broadcaster(repeater.RepeaterFeature):
         if self.interval <= 0 or config['volatile']:
             raise repeater.RepeaterCancelled()
 
-        self.api = ObjectApi(self.app)
+        self.api = BlocksApi(self.app)
 
     async def run(self):
         try:
@@ -65,7 +63,7 @@ class Broadcaster(repeater.RepeaterFeature):
                 'key': self.name,
                 'type': 'Spark.blocks',
                 'ttl': self.validity,
-                'data': await self.api.all(),
+                'data': await self.api.read_all(),
             }
 
             await mqtt.publish(self.app,
@@ -77,9 +75,9 @@ class Broadcaster(repeater.RepeaterFeature):
             history_message = {
                 'key': self.name,
                 'data': {
-                    obj[API_SID_KEY]: obj[API_DATA_KEY]
-                    for obj in await self.api.all_logged()
-                    if not obj[API_SID_KEY].startswith(GENERATED_ID_PREFIX)
+                    block['id']: block['data']
+                    for block in await self.api.read_all_logged()
+                    if not block['id'].startswith(const.GENERATED_ID_PREFIX)
                 },
             }
 

@@ -75,7 +75,7 @@ def service_store(app):
 
 @pytest.fixture(autouse=True)
 def api_mock(mocker):
-    m = mocker.patch(TESTED + '.object_api.ObjectApi').return_value
+    m = mocker.patch(TESTED + '.blocks_api.BlocksApi').return_value
     m.read = AsyncMock()
     m.write = AsyncMock()
     return m

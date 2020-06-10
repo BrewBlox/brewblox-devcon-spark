@@ -12,11 +12,12 @@ TESTED = commands.__name__
 
 @pytest.fixture
 def object_args():
-    return dict(
-        object_nid=42,
-        groups=[1],
-        object_type=6,
-        object_data=bytes([0x0F]*10))
+    return {
+        'nid': 42,
+        'groups': [1],
+        'type': 6,
+        'data': bytes([0x0F]*10),
+    }
 
 
 def test_command_error():
