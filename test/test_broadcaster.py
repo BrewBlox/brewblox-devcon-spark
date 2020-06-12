@@ -21,6 +21,7 @@ def m_api(mocker):
 
 @pytest.fixture
 def m_publish(mocker):
+    mocker.patch(TESTED + '.mqtt.handler')
     m = mocker.patch(TESTED + '.mqtt.publish', AsyncMock())
     return m
 
@@ -85,7 +86,7 @@ async def test_broadcast(app, m_api, m_publish, client, connected):
 
     m_publish.assert_has_calls([
         call(app,
-             'testcast/state/test_app/service',
+             'testcast/state/test_app',
              {
                  'key': 'test_app',
                  'type': 'Spark.service',
@@ -94,7 +95,7 @@ async def test_broadcast(app, m_api, m_publish, client, connected):
              },
              err=False),
         call(app,
-             'testcast/state/test_app/blocks',
+             'testcast/state/test_app',
              {
                  'key': 'test_app',
                  'type': 'Spark.blocks',
