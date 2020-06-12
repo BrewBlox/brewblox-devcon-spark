@@ -26,9 +26,6 @@ class Broadcaster(repeater.RepeaterFeature):
         self.state_topic = config['state_topic'] + f'/{self.name}'
         self.history_topic = config['history_topic'] + f'/{self.name}'
 
-        self.blocks_topic = f'{self.state_topic}/blocks'
-        self.service_topic = f'{self.state_topic}/service'
-
         self._synched = False
         self._last_ok = monotonic()
 
@@ -36,6 +33,8 @@ class Broadcaster(repeater.RepeaterFeature):
             raise repeater.RepeaterCancelled()
 
         self.api = BlocksApi(self.app)
+
+        mqtt.handler(self.app).client.will_set(self.state_topic, None)
 
     async def run(self):
         try:
@@ -49,7 +48,7 @@ class Broadcaster(repeater.RepeaterFeature):
             }
 
             await mqtt.publish(self.app,
-                               self.service_topic,
+                               self.state_topic,
                                state_service,
                                err=False)
 
@@ -67,7 +66,7 @@ class Broadcaster(repeater.RepeaterFeature):
             }
 
             await mqtt.publish(self.app,
-                               self.blocks_topic,
+                               self.state_topic,
                                state_blocks,
                                err=False,
                                retain=True)
