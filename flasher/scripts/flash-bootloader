@@ -2,10 +2,11 @@
 set -e
 
 function flash() {
+    particle usb safe-mode
     particle flash --serial --yes "$1"
+    sleep 5
+    particle usb reset
 }
-
-particle usb listen
 
 if [[ -n $(lsusb -d 2b04:c006) ]]; then
     echo "Flashing Photon bootloader..."
