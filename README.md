@@ -47,9 +47,9 @@ The codec is responsible for converting JSON-serializable dicts to byte arrays, 
 
 For this reason, the object payload in Controlbox consists of two parts: a numerical `object_type` ID, and the `object_data` bytes.
 
-### SparkController ([device.py](./brewblox_devcon_spark/device.py))
+### SparkDevice ([device.py](./brewblox_devcon_spark/device.py))
 
-`SparkController` combines the functionality of `commands`, `commander`, `datastore`, and `codec` to allow interaction with the Spark using Pythonic functions.
+`SparkDevice` combines the functionality of `commands`, `commander`, `datastore`, and `codec` to allow interaction with the Spark using Pythonic functions.
 
 Any command is modified both incoming and outgoing: ID's are converted using the datastore, data is sent to codec, and everything is wrapped in the correct command before it is sent to `SparkCommander`.
 
@@ -73,24 +73,7 @@ Examples are:
 
 ## REST API
 
-### ObjectApi ([object_api.py](./brewblox_devcon_spark/api/object_api.py))
-
-Offers full CRUD (Create, Read, Update, Delete) functionality for Spark objects.
-
-### SystemApi ([system_api.py](./brewblox_devcon_spark/api/system_api.py))
-
-System objects are distinct from normal objects in that they can't be created or deleted by the user.
-
-### RemoteApi ([remote_api.py](./brewblox_devcon_spark/api/remote_api.py))
-
-Occasionally, it is desirable for multiple Sparks to work in concert. One might be connected to a temperature sensor, while the other controls a heater.
-
-Remote blocks allow synchronization between master and slave blocks.
-
-In the sensor/heater example, the Spark with the heater would be configured to have a dummy sensor object linked to the heater.
-
-Instead of directly reading a sensor, this dummy object is updated by the service whenever it receives an update from the master object (the real sensor).
-
-### AliasApi ([alias_api.py](./brewblox_devcon_spark/api/alias_api.py))
-
-All objects can have user-defined names. The AliasAPI allows users to set or change those names.
+- [blocks_api.py](./brewblox_devcon_spark/api/blocks_api.py)
+- [system_api.py](./brewblox_devcon_spark/api/system_api.py)
+- [settings_api.py](./brewblox_devcon_spark/api/settings_api.py)
+- [debug_api.py](./brewblox_devcon_spark/api/debug_api.py)

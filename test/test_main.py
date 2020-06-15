@@ -3,7 +3,7 @@ Tests brewblox_devcon_spark.__main__.py
 """
 
 import pytest
-from brewblox_service import events
+from brewblox_service import mqtt
 
 from brewblox_devcon_spark import __main__ as main
 from brewblox_devcon_spark import (broadcaster, commander, datastore, device,
@@ -28,8 +28,8 @@ def test_main(mocker, app):
     assert None not in [
         commander.get_commander(app),
         datastore.get_block_store(app),
-        device.get_controller(app),
-        events.get_listener(app),
+        device.get_device(app),
+        mqtt.handler(app),
         broadcaster.get_broadcaster(app)
     ]
 

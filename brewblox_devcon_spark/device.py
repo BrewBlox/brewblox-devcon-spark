@@ -12,17 +12,9 @@ from typing import Awaitable, Callable, List, Optional, Type, Union
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, strex
 
-from brewblox_devcon_spark import (commander, commands, datastore, exceptions,
-                                   twinkeydict)
+from brewblox_devcon_spark import (commander, commands, const, datastore,
+                                   exceptions, twinkeydict)
 from brewblox_devcon_spark.codec import codec
-from brewblox_devcon_spark.validation import (GENERATED_ID_PREFIX,
-                                              OBJECT_DATA_KEY,
-                                              OBJECT_ID_LIST_KEY,
-                                              OBJECT_INTERFACE_KEY,
-                                              OBJECT_LINK_POSTFIX_END,
-                                              OBJECT_LINK_POSTFIX_START,
-                                              OBJECT_LIST_KEY, OBJECT_NID_KEY,
-                                              OBJECT_SID_KEY, OBJECT_TYPE_KEY)
 
 ObjectId_ = Union[str, int]
 FindIdFunc_ = Callable[[twinkeydict.TwinKeyDict, ObjectId_, str], Awaitable[ObjectId_]]
@@ -41,15 +33,15 @@ class SparkResolver():
     def _get_content_objects(content: dict) -> List[dict]:
         objects_to_process = [content]
         with suppress(KeyError):
-            objects_to_process += content[OBJECT_LIST_KEY]
+            objects_to_process += content['objects']
         with suppress(KeyError):
-            objects_to_process += content[OBJECT_ID_LIST_KEY]
+            objects_to_process += content['object_ids']
         return objects_to_process
 
     def _assign_id(self, input_type: str):
         clean_name = re.sub(r',driven', '', input_type)
         for i in itertools.count(start=1):  # pragma: no cover
-            name = f'{GENERATED_ID_PREFIX}{clean_name}-{i}'
+            name = f'{const.GENERATED_ID_PREFIX}{clean_name}-{i}'
             if (name, None) not in self._datastore:
                 return name
 
@@ -64,16 +56,16 @@ class SparkResolver():
             # transcode type + data
             with suppress(KeyError):
                 new_type, new_data = await codec_func(
-                    obj[OBJECT_TYPE_KEY],
-                    obj[OBJECT_DATA_KEY],
+                    obj['type'],
+                    obj['data'],
                     opts=opts,
                 )
-                obj[OBJECT_TYPE_KEY] = new_type
-                obj[OBJECT_DATA_KEY] = new_data
+                obj['type'] = new_type
+                obj['data'] = new_data
             # transcode interface (type only)
             with suppress(KeyError):
-                new_type = await codec_func(obj[OBJECT_INTERFACE_KEY], opts=opts)
-                obj[OBJECT_INTERFACE_KEY] = new_type
+                new_type = await codec_func(obj['interface'], opts=opts)
+                obj['interface'] = new_type
 
         return content
 
@@ -129,13 +121,13 @@ class SparkResolver():
             for k, v in iter:
                 if isinstance(v, (dict, list, tuple)):
                     await traverse(v)
-                elif str(k).endswith(OBJECT_LINK_POSTFIX_END):
-                    link_type = k[k.rfind(OBJECT_LINK_POSTFIX_START)+1:-1]
+                elif str(k).endswith(const.OBJECT_LINK_POSTFIX_END):
+                    link_type = k[k.rfind(const.OBJECT_LINK_POSTFIX_START)+1:-1]
                     data[k] = finder_func(store, v, link_type)
 
         for obj in objects_to_process:
             with suppress(KeyError):
-                await traverse(obj[OBJECT_DATA_KEY])
+                await traverse(obj['data'])
 
         return content
 
@@ -150,15 +142,15 @@ class SparkResolver():
 
         for obj in objects_to_process:
             # Remove the sid
-            sid = obj.pop(OBJECT_SID_KEY, None)
+            sid = obj.pop('id', None)
 
-            if sid is None or OBJECT_NID_KEY in obj:
+            if sid is None or 'nid' in obj:
                 continue
 
-            obj[OBJECT_NID_KEY] = self._find_nid(
+            obj['nid'] = self._find_nid(
                 self._datastore,
                 sid,
-                obj.get(OBJECT_TYPE_KEY) or obj.get(OBJECT_INTERFACE_KEY))
+                obj.get('type') or obj.get('interface'))
 
         return content
 
@@ -167,15 +159,15 @@ class SparkResolver():
 
         for obj in objects_to_process:
             # Keep the nid
-            nid = obj.get(OBJECT_NID_KEY, None)
+            nid = obj.get('nid', None)
 
             if nid is None:
                 continue
 
-            obj[OBJECT_SID_KEY] = self._find_sid(
+            obj['id'] = self._find_sid(
                 self._datastore,
                 nid,
-                obj.get(OBJECT_TYPE_KEY) or obj.get(OBJECT_INTERFACE_KEY))
+                obj.get('type') or obj.get('interface'))
 
         return content
 
@@ -186,9 +178,9 @@ class SparkResolver():
         return await self._resolve_links(self._find_sid, content)
 
 
-class SparkController(features.ServiceFeature):
+class SparkDevice(features.ServiceFeature):
 
-    def __init__(self, name: str, app: web.Application):
+    def __init__(self, app: web.Application):
         super().__init__(app)
         self._commander: commander.SparkCommander = None
 
@@ -261,13 +253,15 @@ class SparkController(features.ServiceFeature):
             raise ex
 
     noop = partialmethod(_execute, commands.NoopCommand, None)
+
     read_object = partialmethod(_execute, commands.ReadObjectCommand, None)
+    read_logged_object = partialmethod(_execute, commands.ReadObjectCommand, {codec.STRIP_UNLOGGED_KEY: True})
+    read_stored_object = partialmethod(_execute, commands.ReadStoredObjectCommand, None)
     write_object = partialmethod(_execute, commands.WriteObjectCommand, None)
     create_object = partialmethod(_execute, commands.CreateObjectCommand, None)
     delete_object = partialmethod(_execute, commands.DeleteObjectCommand, None)
     list_objects = partialmethod(_execute, commands.ListObjectsCommand, None)
-    log_objects = partialmethod(_execute, commands.ListObjectsCommand, {codec.STRIP_UNLOGGED_KEY: True})
-    read_stored_object = partialmethod(_execute, commands.ReadStoredObjectCommand, None)
+    list_logged_objects = partialmethod(_execute, commands.ListObjectsCommand, {codec.STRIP_UNLOGGED_KEY: True})
     list_stored_objects = partialmethod(_execute, commands.ListStoredObjectsCommand, None)
     clear_objects = partialmethod(_execute, commands.ClearObjectsCommand, None)
     factory_reset = partialmethod(_execute, commands.FactoryResetCommand, None)
@@ -277,8 +271,8 @@ class SparkController(features.ServiceFeature):
 
 
 def setup(app: web.Application):
-    features.add(app, SparkController(name=app['config']['name'], app=app))
+    features.add(app, SparkDevice(app))
 
 
-def get_controller(app: web.Application) -> SparkController:
-    return features.get(app, SparkController)
+def get_device(app: web.Application) -> SparkDevice:
+    return features.get(app, SparkDevice)

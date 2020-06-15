@@ -17,12 +17,7 @@ from brewblox_service import brewblox_logger
 from construct import (Adapter, Byte, Const, Container, Default, Enum,
                        GreedyBytes, Int8ul, Int16ul, Struct)
 
-from brewblox_devcon_spark import exceptions
-from brewblox_devcon_spark.validation import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
-                                              OBJECT_ID_LIST_KEY,
-                                              OBJECT_INTERFACE_KEY,
-                                              OBJECT_LIST_KEY, OBJECT_NID_KEY,
-                                              OBJECT_TYPE_KEY)
+from brewblox_devcon_spark import const, exceptions
 
 LOGGER = brewblox_logger(__name__)
 
@@ -418,16 +413,16 @@ class Command(ABC):
 
 
 # Reoccurring data types - can be used as a macro
-_GROUP_LIST = Struct(GROUP_LIST_KEY / GroupListAdapter())
-_OBJECT_ID = Struct(OBJECT_NID_KEY / Int16ul)
-_OBJECT_INTERFACE = Struct(OBJECT_INTERFACE_KEY / Int16ul)
-_OBJECT_TYPE = Struct(OBJECT_TYPE_KEY / Int16ul)
-_OBJECT_DATA = Struct(OBJECT_DATA_KEY / GreedyBytes)
+_GROUP_LIST = Struct(const.GROUPS_KEY / GroupListAdapter())
+_OBJECT_ID = Struct(const.NID_KEY / Int16ul)
+_OBJECT_INTERFACE = Struct(const.INTERFACE_KEY / Int16ul)
+_OBJECT_TYPE = Struct(const.TYPE_KEY / Int16ul)
+_OBJECT_DATA = Struct(const.DATA_KEY / GreedyBytes)
 _OBJECT = _OBJECT_ID + _GROUP_LIST + _OBJECT_TYPE + _OBJECT_DATA
 _DISCOVERY = _OBJECT_ID + _OBJECT_INTERFACE
 
 # Special cases
-_CREATE_ID = Struct(OBJECT_NID_KEY / Default(Int16ul, 0))  # 0 == assigned by controller
+_CREATE_ID = Struct(const.NID_KEY / Default(Int16ul, 0))  # 0 == assigned by controller
 
 
 class NoopCommand(Command):
@@ -469,7 +464,7 @@ class ListObjectsCommand(Command):
     _OPCODE = OpcodeEnum.LIST_OBJECTS
     _REQUEST = None
     _RESPONSE = None
-    _VALUES = (OBJECT_LIST_KEY, _OBJECT)
+    _VALUES = (const.OBJECT_LIST_KEY, _OBJECT)
 
 
 class ReadStoredObjectCommand(Command):
@@ -483,7 +478,7 @@ class ListStoredObjectsCommand(Command):
     _OPCODE = OpcodeEnum.LIST_STORED_OBJECTS
     _REQUEST = None
     _RESPONSE = None
-    _VALUES = (OBJECT_LIST_KEY, _OBJECT)
+    _VALUES = (const.OBJECT_LIST_KEY, _OBJECT)
 
 
 class ClearObjectsCommand(Command):
@@ -511,14 +506,14 @@ class ListCompatibleObjectsCommand(Command):
     _OPCODE = OpcodeEnum.LIST_COMPATIBLE_OBJECTS
     _REQUEST = _OBJECT_INTERFACE
     _RESPONSE = None
-    _VALUES = (OBJECT_ID_LIST_KEY, _OBJECT_ID)
+    _VALUES = (const.ID_LIST_KEY, _OBJECT_ID)
 
 
 class DiscoverObjectsCommand(Command):
     _OPCODE = OpcodeEnum.DISCOVER_OBJECTS
     _REQUEST = None
     _RESPONSE = None
-    _VALUES = (OBJECT_LIST_KEY, _DISCOVERY)
+    _VALUES = (const.OBJECT_LIST_KEY, _DISCOVERY)
 
 
 class FirmwareUpdateCommand(Command):

@@ -12,18 +12,8 @@ from typing import List
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
 
-from brewblox_devcon_spark import commander, commands, exceptions, state
+from brewblox_devcon_spark import commander, commands, const, exceptions, state
 from brewblox_devcon_spark.codec import codec
-from brewblox_devcon_spark.datastore import (DISPLAY_SETTINGS_NID, GROUPS_NID,
-                                             OBJECT_NID_START, ONEWIREBUS_NID,
-                                             SPARK_PINS_NID, SYSINFO_NID,
-                                             SYSTIME_NID, TOUCH_SETTINGS_NID,
-                                             WIFI_SETTINGS_NID)
-from brewblox_devcon_spark.validation import (GROUP_LIST_KEY, OBJECT_DATA_KEY,
-                                              OBJECT_ID_LIST_KEY,
-                                              OBJECT_INTERFACE_KEY,
-                                              OBJECT_LIST_KEY, OBJECT_NID_KEY,
-                                              OBJECT_TYPE_KEY, SYSTEM_GROUP)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -46,7 +36,7 @@ def make_device(app: web.Application):
 
 def modify_ticks(start_time, obj):
     elapsed = datetime.now() - start_time
-    obj_data = obj[OBJECT_DATA_KEY]
+    obj_data = obj['data']
     obj_data['millisSinceBoot'] = elapsed.total_seconds() * 1000
     obj_data['secondsSinceEpoch'] = start_time.timestamp() + elapsed.total_seconds()
 
@@ -56,7 +46,7 @@ class SimulationResponder():
     async def startup(self, app: web.Application):
         self.app = app
         self._start_time = datetime.now()
-        self._id_counter = count(start=OBJECT_NID_START)
+        self._id_counter = count(start=const.USER_NID_START)
         self._codec = features.get(app, key='sim_codec')
 
         self._command_funcs = {
@@ -81,60 +71,60 @@ class SimulationResponder():
         }
 
         self._objects = {
-            GROUPS_NID: {
-                OBJECT_NID_KEY: GROUPS_NID,
-                OBJECT_TYPE_KEY: 'Groups',
-                GROUP_LIST_KEY: [SYSTEM_GROUP],
-                OBJECT_DATA_KEY: {
-                    'active': [0, SYSTEM_GROUP]
+            const.GROUPS_NID: {
+                'nid': const.GROUPS_NID,
+                'type': 'Groups',
+                'groups': [const.SYSTEM_GROUP],
+                'data': {
+                    'active': [0, const.SYSTEM_GROUP]
                 },
             },
-            SYSINFO_NID: {
-                OBJECT_NID_KEY: SYSINFO_NID,
-                OBJECT_TYPE_KEY: 'SysInfo',
-                GROUP_LIST_KEY: [SYSTEM_GROUP],
-                OBJECT_DATA_KEY: {
+            const.SYSINFO_NID: {
+                'nid': const.SYSINFO_NID,
+                'type': 'SysInfo',
+                'groups': [const.SYSTEM_GROUP],
+                'data': {
                     'deviceId': 'FACADE'
                 },
             },
-            SYSTIME_NID: {
-                OBJECT_NID_KEY: SYSTIME_NID,
-                OBJECT_TYPE_KEY: 'Ticks',
-                GROUP_LIST_KEY: [SYSTEM_GROUP],
-                OBJECT_DATA_KEY: {
+            const.SYSTIME_NID: {
+                'nid': const.SYSTIME_NID,
+                'type': 'Ticks',
+                'groups': [const.SYSTEM_GROUP],
+                'data': {
                     'millisSinceBoot': 0,
                     'secondsSinceEpoch': 0,
                 },
             },
-            ONEWIREBUS_NID: {
-                OBJECT_NID_KEY: ONEWIREBUS_NID,
-                OBJECT_TYPE_KEY: 'OneWireBus',
-                GROUP_LIST_KEY: [SYSTEM_GROUP],
-                OBJECT_DATA_KEY: {},
+            const.ONEWIREBUS_NID: {
+                'nid': const.ONEWIREBUS_NID,
+                'type': 'OneWireBus',
+                'groups': [const.SYSTEM_GROUP],
+                'data': {},
             },
-            WIFI_SETTINGS_NID: {
-                OBJECT_NID_KEY: WIFI_SETTINGS_NID,
-                OBJECT_TYPE_KEY: 'WiFiSettings',
-                GROUP_LIST_KEY: [SYSTEM_GROUP],
-                OBJECT_DATA_KEY: {},
+            const.WIFI_SETTINGS_NID: {
+                'nid': const.WIFI_SETTINGS_NID,
+                'type': 'WiFiSettings',
+                'groups': [const.SYSTEM_GROUP],
+                'data': {},
             },
-            TOUCH_SETTINGS_NID: {
-                OBJECT_NID_KEY: TOUCH_SETTINGS_NID,
-                OBJECT_TYPE_KEY: 'TouchSettings',
-                GROUP_LIST_KEY: [SYSTEM_GROUP],
-                OBJECT_DATA_KEY: {},
+            const.TOUCH_SETTINGS_NID: {
+                'nid': const.TOUCH_SETTINGS_NID,
+                'type': 'TouchSettings',
+                'groups': [const.SYSTEM_GROUP],
+                'data': {},
             },
-            DISPLAY_SETTINGS_NID: {
-                OBJECT_NID_KEY: DISPLAY_SETTINGS_NID,
-                OBJECT_TYPE_KEY: 'DisplaySettings',
-                GROUP_LIST_KEY: [SYSTEM_GROUP],
-                OBJECT_DATA_KEY: {},
+            const.DISPLAY_SETTINGS_NID: {
+                'nid': const.DISPLAY_SETTINGS_NID,
+                'type': 'DisplaySettings',
+                'groups': [const.SYSTEM_GROUP],
+                'data': {},
             },
-            SPARK_PINS_NID: {
-                OBJECT_NID_KEY: SPARK_PINS_NID,
-                OBJECT_TYPE_KEY: 'Spark3Pins',
-                GROUP_LIST_KEY: [SYSTEM_GROUP],
-                OBJECT_DATA_KEY: {
+            const.SPARK_PINS_NID: {
+                'nid': const.SPARK_PINS_NID,
+                'type': 'Spark3Pins',
+                'groups': [const.SYSTEM_GROUP],
+                'data': {
                     'pins': [
                         {'top1': {}},
                         {'top2': {}},
@@ -149,13 +139,13 @@ class SimulationResponder():
 
     @property
     def _active_groups(self):
-        return self._objects[1][OBJECT_DATA_KEY]['active']
+        return self._objects[1]['data']['active']
 
     @staticmethod
     def _get_content_objects(content: dict) -> List[dict]:
         objects_to_process = [content]
         with suppress(KeyError):
-            objects_to_process += content[OBJECT_LIST_KEY]
+            objects_to_process += content['objects']
         return objects_to_process
 
     async def respond(self, cmd) -> commands.Command:
@@ -165,16 +155,16 @@ class SimulationResponder():
         for obj in self._get_content_objects(args):
             with suppress(KeyError):
                 dec_type, dec_data = await self._codec.decode(
-                    obj[OBJECT_TYPE_KEY],
-                    obj[OBJECT_DATA_KEY]
+                    obj['type'],
+                    obj['data']
                 )
                 obj.update({
-                    OBJECT_TYPE_KEY: dec_type,
-                    OBJECT_DATA_KEY: dec_data
+                    'type': dec_type,
+                    'data': dec_data
                 })
             with suppress(KeyError):
-                dec_type = await self._codec.decode(obj[OBJECT_INTERFACE_KEY])
-                obj[OBJECT_INTERFACE_KEY] = dec_type
+                dec_type = await self._codec.decode(obj['interface'])
+                obj['interface'] = dec_type
 
         func = self._command_funcs[type(cmd)]
         retv = await func(args)
@@ -183,16 +173,16 @@ class SimulationResponder():
         for obj in self._get_content_objects(retv):
             with suppress(KeyError):
                 enc_type, enc_data = await self._codec.encode(
-                    obj[OBJECT_TYPE_KEY],
-                    obj[OBJECT_DATA_KEY]
+                    obj['type'],
+                    obj['data']
                 )
                 obj.update({
-                    OBJECT_TYPE_KEY: enc_type,
-                    OBJECT_DATA_KEY: enc_data
+                    'type': enc_type,
+                    'data': enc_data
                 })
             with suppress(KeyError):
-                enc_type = await self._codec.encode(obj[OBJECT_INTERFACE_KEY])
-                obj[OBJECT_INTERFACE_KEY] = enc_type
+                enc_type = await self._codec.encode(obj['interface'])
+                obj['interface'] = enc_type
 
         # Encode response, force decoding by creating new command
         encoding_cmd = cmd.from_decoded(cmd.decoded_request, retv)
@@ -200,20 +190,20 @@ class SimulationResponder():
 
     def _get_obj(self, id):
         obj = self._objects[id]
-        mod = self._modifiers.get(obj[OBJECT_TYPE_KEY], lambda o: o)
+        mod = self._modifiers.get(obj['type'], lambda o: o)
         mod(obj)
 
-        if id < OBJECT_NID_START:
+        if id < const.USER_NID_START:
             return obj  # system object
 
-        if set(obj[GROUP_LIST_KEY]) & set(self._active_groups):
+        if set(obj['groups']) & set(self._active_groups):
             return obj
         else:
             return {
-                OBJECT_NID_KEY: obj[OBJECT_NID_KEY],
-                OBJECT_TYPE_KEY: 'InactiveObject',
-                GROUP_LIST_KEY: obj[GROUP_LIST_KEY],
-                OBJECT_DATA_KEY: {'actualType': obj[OBJECT_TYPE_KEY]},
+                'nid': obj['nid'],
+                'type': 'InactiveObject',
+                'groups': obj['groups'],
+                'data': {'actualType': obj['type']},
             }
 
     async def _noop_command(self, request):
@@ -224,73 +214,73 @@ class SimulationResponder():
 
     async def _read_object(self, request):
         try:
-            return self._get_obj(request[OBJECT_NID_KEY])
+            return self._get_obj(request['nid'])
         except KeyError:
             raise exceptions.CommandException(f'{request} not found')
 
     async def _write_object(self, request):
-        key = request[OBJECT_NID_KEY]
+        key = request['nid']
         if key not in self._objects:
             raise exceptions.CommandException(f'{key} not found')
-        elif SYSTEM_GROUP in request[GROUP_LIST_KEY] and key >= OBJECT_NID_START:
-            raise exceptions.CommandException(f'Group {SYSTEM_GROUP} is reserved for system objects')
+        elif const.SYSTEM_GROUP in request['groups'] and key >= const.USER_NID_START:
+            raise exceptions.CommandException(f'Group {const.SYSTEM_GROUP} is reserved for system objects')
 
         self._objects[key] = request
         return self._get_obj(key)
 
     async def _create_object(self, request):
-        key = request.get(OBJECT_NID_KEY)
+        key = request.get('nid')
         obj = request
 
         if not key:
             key = next(self._id_counter)
-            obj[OBJECT_NID_KEY] = key
-        elif key < OBJECT_NID_START:
+            obj['nid'] = key
+        elif key < const.USER_NID_START:
             raise exceptions.CommandException(f'Id {key} is reserved for system objects')
         elif key in self._objects:
             raise exceptions.CommandException(f'Object {key} already exists')
 
-        if SYSTEM_GROUP in obj[GROUP_LIST_KEY]:
-            raise exceptions.CommandException(f'Group {SYSTEM_GROUP} is reserved for system objects')
+        if const.SYSTEM_GROUP in obj['groups']:
+            raise exceptions.CommandException(f'Group {const.SYSTEM_GROUP} is reserved for system objects')
 
         self._objects[key] = obj
         return obj
 
     async def _delete_object(self, request):
-        key = request[OBJECT_NID_KEY]
+        key = request['nid']
         del self._objects[key]
 
     async def _list_objects(self, request):
         return {
-            OBJECT_LIST_KEY: [self._get_obj(id) for id in self._objects.keys()]
+            'objects': [self._get_obj(id) for id in self._objects.keys()]
         }
 
     async def _read_stored_object(self, request):
         try:
-            return self._objects[request[OBJECT_NID_KEY]]
+            return self._objects[request['nid']]
         except KeyError:
             raise exceptions.CommandException(f'{request} not found')
 
     async def _list_stored_objects(self, request):
         return {
-            OBJECT_LIST_KEY: list(self._objects.values())
+            'objects': list(self._objects.values())
         }
 
     async def _list_compatible_objects(self, request):
         return {
-            OBJECT_ID_LIST_KEY: [{OBJECT_NID_KEY: k} for k in self._objects.keys()]
+            'object_ids': [{'nid': k} for k in self._objects.keys()]
         }
 
     async def _discover_objects(self, request):
         return {
-            OBJECT_LIST_KEY: [{
-                OBJECT_NID_KEY: DISPLAY_SETTINGS_NID,
-                OBJECT_INTERFACE_KEY: 'DisplaySettings',
+            'objects': [{
+                'nid': const.DISPLAY_SETTINGS_NID,
+                'interface': 'DisplaySettings',
             }]
         }
 
     async def _clear_objects(self, request):
-        self._objects = {k: v for k, v in self._objects.items() if k < OBJECT_NID_START}
+        self._objects = {k: v for k, v in self._objects.items() if k < const.USER_NID_START}
 
     async def _factory_reset(self, request):
         await self.startup(self.app)

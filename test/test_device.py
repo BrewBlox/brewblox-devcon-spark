@@ -6,13 +6,9 @@ import pytest
 from brewblox_service import features, scheduler
 from mock import AsyncMock
 
-from brewblox_devcon_spark import (commander, commander_sim, datastore, device,
-                                   exceptions, state)
+from brewblox_devcon_spark import (commander, commander_sim, const, datastore,
+                                   device, exceptions, state)
 from brewblox_devcon_spark.codec import codec, unit_conversion
-from brewblox_devcon_spark.validation import (GENERATED_ID_PREFIX,
-                                              GROUP_LIST_KEY, OBJECT_DATA_KEY,
-                                              OBJECT_LIST_KEY, OBJECT_NID_KEY,
-                                              OBJECT_SID_KEY, OBJECT_TYPE_KEY)
 
 TESTED = device.__name__
 
@@ -55,8 +51,8 @@ def cmder(app):
 
 
 @pytest.fixture
-def ctrl(app):
-    return device.get_controller(app)
+def dev(app):
+    return device.get_device(app)
 
 
 @pytest.fixture
@@ -64,16 +60,16 @@ async def store(app, client):
     return datastore.get_block_store(app)
 
 
-async def test_transcoding(app, client, cmder, store, ctrl):
+async def test_transcoding(app, client, cmder, store, dev):
     c = codec.get_codec(app)
     obj_type, obj_data = generate_obj()
     enc_type, enc_data = await c.encode(obj_type, obj_data)
 
     object_args = {
-        OBJECT_SID_KEY: 'alias',
-        GROUP_LIST_KEY: [1],
-        OBJECT_TYPE_KEY: obj_type,
-        OBJECT_DATA_KEY: obj_data
+        'id': 'alias',
+        'groups': [1],
+        'type': obj_type,
+        'data': obj_data
     }
 
     store['alias', 300] = dict()
@@ -81,57 +77,55 @@ async def test_transcoding(app, client, cmder, store, ctrl):
     c.encode = AsyncMock(wraps=c.encode)
     c.decode = AsyncMock(wraps=c.decode)
 
-    retval = await ctrl.create_object(object_args)
-    assert retval[OBJECT_DATA_KEY]['settings']['address'] == 'ff'.rjust(16, '0')
+    retval = await dev.create_object(object_args)
+    assert retval['data']['settings']['address'] == 'ff'.rjust(16, '0')
 
     c.encode.assert_any_await(obj_type, obj_data, opts=None)
     c.decode.assert_any_await(enc_type, enc_data, opts=None)
 
 
-async def test_list_transcoding(app, client, cmder, store, ctrl, mocker):
+async def test_list_transcoding(app, client, cmder, store, dev, mocker):
     obj_type, obj_data = generate_obj()
     ids = {f'obj{i}' for i in range(5)}
 
     for i, id in enumerate(ids):
         store[id, 300+i] = dict()
 
-        await ctrl.create_object({
-            OBJECT_SID_KEY: id,
-            GROUP_LIST_KEY: [0],
-            OBJECT_TYPE_KEY: obj_type,
-            OBJECT_DATA_KEY: obj_data
+        await dev.create_object({
+            'id': id,
+            'groups': [0],
+            'type': obj_type,
+            'data': obj_data
         })
 
-    retval = await ctrl.list_stored_objects()
-    assert ids.issubset({obj[OBJECT_SID_KEY] for obj in retval[OBJECT_LIST_KEY]})
+    retval = await dev.list_stored_objects()
+    assert ids.issubset({obj['id'] for obj in retval['objects']})
 
 
-async def test_convert_id(app, client, store, mocker, ctrl):
+async def test_convert_id(app, client, store, mocker, dev):
     store['alias', 123] = dict()
     store['4-2', 24] = dict()
 
     resolver = device.SparkResolver(app)
-    sidk = OBJECT_SID_KEY
-    nidk = OBJECT_NID_KEY
 
-    assert await resolver.convert_sid_nid({sidk: 'alias'}) == {nidk: 123}
-    assert await resolver.convert_sid_nid({nidk: 840}) == {nidk: 840}
-    assert await resolver.convert_sid_nid({sidk: 840}) == {nidk: 840}
+    assert await resolver.convert_sid_nid({'id': 'alias'}) == {'nid': 123}
+    assert await resolver.convert_sid_nid({'nid': 840}) == {'nid': 840}
+    assert await resolver.convert_sid_nid({'id': 840}) == {'nid': 840}
     # When both present, NID takes precedence
-    assert await resolver.convert_sid_nid({sidk: 'alias', nidk: 444}) == {nidk: 444}
+    assert await resolver.convert_sid_nid({'id': 'alias', 'nid': 444}) == {'nid': 444}
     assert await resolver.convert_sid_nid({}) == {}
 
-    assert await resolver.add_sid({nidk: 123}) == {nidk: 123, sidk: 'alias'}
-    assert await resolver.add_sid({sidk: 'testey'}) == {sidk: 'testey'}
+    assert await resolver.add_sid({'nid': 123}) == {'nid': 123, 'id': 'alias'}
+    assert await resolver.add_sid({'id': 'testey'}) == {'id': 'testey'}
     assert await resolver.add_sid({}) == {}
 
     with pytest.raises(exceptions.DecodeException):
-        await resolver.add_sid({nidk: 'testey'})
+        await resolver.add_sid({'nid': 'testey'})
 
     # Service ID not found: create placeholder
-    generated = await resolver.add_sid({nidk: 456, OBJECT_TYPE_KEY: 'Edgecase,driven'})
-    assert generated[sidk].startswith(GENERATED_ID_PREFIX)
-    assert ',driven' not in generated[sidk]
+    generated = await resolver.add_sid({'nid': 456, 'type': 'Edgecase,driven'})
+    assert generated['id'].startswith(const.GENERATED_ID_PREFIX)
+    assert ',driven' not in generated['id']
 
 
 async def test_resolve_links(app, client, store):
@@ -141,7 +135,7 @@ async def test_resolve_links(app, client, store):
 
     def create_data():
         return {
-            OBJECT_DATA_KEY: {
+            'data': {
                 'testval': 1,
                 'input<ProcessValueInterface>': 'eeney',
                 'output<ProcessValueInterface>': 'miney',
@@ -160,7 +154,7 @@ async def test_resolve_links(app, client, store):
     output = await resolver.convert_links_nid(create_data())
 
     assert output == {
-        OBJECT_DATA_KEY: {
+        'data': {
             'testval': 1,
             'input<ProcessValueInterface>': 9001,
             'output<ProcessValueInterface>': 9002,

@@ -9,31 +9,24 @@ from brewblox_service import scheduler
 from brewblox_service.testing import response
 from mock import ANY, AsyncMock
 
-from brewblox_devcon_spark import (commander_sim, datastore, device,
+from brewblox_devcon_spark import (commander_sim, const, datastore, device,
                                    exceptions, state, synchronization, ymodem)
-from brewblox_devcon_spark.api import (alias_api, debug_api, error_response,
-                                       object_api, settings_api, system_api)
-from brewblox_devcon_spark.api.object_api import (API_DATA_KEY, API_NID_KEY,
-                                                  API_SID_KEY, API_TYPE_KEY,
-                                                  GROUP_LIST_KEY,
-                                                  OBJECT_DATA_KEY,
-                                                  OBJECT_SID_KEY,
-                                                  OBJECT_TYPE_KEY)
+from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
+                                       settings_api, system_api)
 from brewblox_devcon_spark.codec import codec, unit_conversion
-from brewblox_devcon_spark.validation import SYSTEM_GROUP
 
 
 def ret_ids(objects):
-    return {obj[API_SID_KEY] for obj in objects}
+    return {obj['id'] for obj in objects}
 
 
 @pytest.fixture
-def object_args():
+def block_args():
     return {
-        API_SID_KEY: 'testobj',
-        GROUP_LIST_KEY: [0],
-        API_TYPE_KEY: 'TempSensorOneWire',
-        API_DATA_KEY: {
+        'id': 'testobj',
+        'groups': [0],
+        'type': 'TempSensorOneWire',
+        'data': {
             'value': 12345,
             'offset': 20,
             'address': 'FF'
@@ -41,12 +34,12 @@ def object_args():
     }
 
 
-def multi_objects(ids, args):
+def repeated_blocks(ids, args):
     return [{
-        API_SID_KEY: id,
-        GROUP_LIST_KEY: args[GROUP_LIST_KEY],
-        API_TYPE_KEY: args[API_TYPE_KEY],
-        API_DATA_KEY: args[API_DATA_KEY]
+        'id': id,
+        'groups': args['groups'],
+        'type': args['type'],
+        'data': args['data']
     } for id in ids]
 
 
@@ -64,8 +57,7 @@ async def app(app, loop):
 
     error_response.setup(app)
     debug_api.setup(app)
-    alias_api.setup(app)
-    object_api.setup(app)
+    blocks_api.setup(app)
     system_api.setup(app)
     settings_api.setup(app)
 
@@ -82,10 +74,10 @@ async def test_do(app, client):
     command = {
         'command': 'create_object',
         'data': {
-            OBJECT_SID_KEY: 0,
-            OBJECT_TYPE_KEY: 'TempSensorOneWire',
-            GROUP_LIST_KEY: [1, 2, 3],
-            OBJECT_DATA_KEY: {
+            'nid': 0,
+            'type': 'TempSensorOneWire',
+            'groups': [1, 2, 3],
+            'data': {
                 'value': 12345,
                 'offset': 20,
                 'address': 'FF'
@@ -113,112 +105,117 @@ async def test_production_do(production_app, client):
     await response(client.post('/_debug/do', json=error_command), 500)
 
 
-async def test_create(app, client, object_args):
+async def test_create(app, client, block_args):
     # Create object
-    retd = await response(client.post('/objects', json=object_args))
-    assert retd[API_SID_KEY] == object_args[API_SID_KEY]
+    retd = await response(client.post('/blocks/create', json=block_args), 201)
+    assert retd['id'] == block_args['id']
 
     # Conflict error: name already taken
-    await response(client.post('/objects', json=object_args), 409)
+    await response(client.post('/blocks/create', json=block_args), 409)
 
-    object_args[API_SID_KEY] = 'other_obj'
-    retd = await response(client.post('/objects', json=object_args))
-    assert retd[API_SID_KEY] == 'other_obj'
-
-
-async def test_invalid_input(app, client, object_args):
-    del object_args['groups']
-    retv = await response(client.post('/objects', json=object_args), 400)
-    assert 'MissingInput' in retv['error']
-    assert 'groups' in retv['error']
+    block_args['id'] = 'other_obj'
+    retd = await response(client.post('/blocks/create', json=block_args), 201)
+    assert retd['id'] == 'other_obj'
 
 
-async def test_create_performance(app, client, object_args):
+async def test_invalid_input(app, client, block_args):
+    del block_args['groups']
+    retv = await response(client.post('/blocks/create', json=block_args), 422)
+    assert 'groups' in retv
+
+
+async def test_create_performance(app, client, block_args):
     num_items = 50
     ids = [f'id{num}' for num in range(num_items)]
-    objs = multi_objects(ids, object_args)
+    blocks = repeated_blocks(ids, block_args)
 
-    await asyncio.gather(*(response(client.post('/objects', json=obj)) for obj in objs))
+    await asyncio.gather(*(response(client.post('/blocks/create', json=block), 201)
+                           for block in blocks))
 
-    retd = await response(client.get('/objects'))
+    retd = await response(client.post('/blocks/all/read'))
     assert set(ids).issubset(ret_ids(retd))
 
 
-async def test_read(app, client, object_args):
-    await response(client.get('/objects/testobj'), 400)  # Object does not exist
-    await client.post('/objects', json=object_args)
+async def test_read(app, client, block_args):
+    await response(client.post('/blocks/read', json={'id': 'testobj'}), 400)  # Object does not exist
+    await response(client.post('/blocks/create', json=block_args), 201)
 
-    retd = await response(client.get('/objects/testobj'))
-    assert retd[API_SID_KEY] == 'testobj'
-
-
-async def test_read_performance(app, client, object_args):
-    await client.post('/objects', json=object_args)
-    await asyncio.gather(*(response(client.get('/objects/testobj')) for _ in range(100)))
+    retd = await response(client.post('/blocks/read', json={'id': 'testobj'}))
+    assert retd['id'] == 'testobj'
 
 
-async def test_update(app, client, object_args):
-    await client.post('/objects', json=object_args)
-    assert await response(client.put('/objects/testobj', json=object_args))
+async def test_read_performance(app, client, block_args):
+    await response(client.post('/blocks/create', json=block_args), 201)
+    await asyncio.gather(*(response(client.post('/blocks/read', json={'id': 'testobj'})) for _ in range(100)))
 
 
-async def test_delete(app, client, object_args):
-    await client.post('/objects', json=object_args)
+async def test_read_logged(app, client, block_args):
+    await response(client.post('/blocks/create', json=block_args), 201)
 
-    retd = await response(client.delete('/objects/testobj'))
-    assert retd[API_SID_KEY] == 'testobj'
-
-    await response(client.get('/objects/testobj'), 400)
-
-
-async def test_nid_crud(app, client, object_args):
-    created = await response(client.post('/objects', json=object_args))
-    nid = created[API_NID_KEY]
-
-    created[API_DATA_KEY]['value'] = 5
-    await response(client.get(f'/objects/{nid}'))
-    await response(client.put(f'/objects/{nid}', json=created))
-    await response(client.delete(f'/objects/{nid}'))
-
-    await response(client.get('/objects/testobj'), 400)
+    retd = await response(client.post('/blocks/read/logged', json={'id': 'testobj'}))
+    assert retd['id'] == 'testobj'
+    assert 'address' not in retd['data']  # address is not a logged field
 
 
-async def test_stored_objects(app, client, object_args):
-    retd = await response(client.get('/stored_objects'))
+async def test_update(app, client, block_args):
+    await response(client.post('/blocks/create', json=block_args), 201)
+    assert await response(client.post('/blocks/write', json=block_args))
+
+
+async def test_delete(app, client, block_args):
+    await response(client.post('/blocks/create', json=block_args), 201)
+
+    retd = await response(client.post('/blocks/delete', json={'id': 'testobj'}))
+    assert retd['id'] == 'testobj'
+
+    await response(client.post('/blocks/read', json={'id': 'testobj'}), 400)
+
+
+async def test_nid_crud(app, client, block_args):
+    created = await response(client.post('/blocks/create', json=block_args), 201)
+    nid = created['nid']
+
+    created['data']['value'] = 5
+    await response(client.post('/blocks/read', json={'nid': nid}))
+    await response(client.post('/blocks/write', json=created))
+    await response(client.post('/blocks/delete', json={'nid': nid}))
+
+    await response(client.post('/blocks/read', json={'nid': nid}), 500)
+
+
+async def test_stored_blocks(app, client, block_args):
+    retd = await response(client.post('/blocks/all/read/stored'))
     base_num = len(retd)
 
-    await client.post('/objects', json=object_args)
-    retd = await response(client.get('/stored_objects'))
+    await response(client.post('/blocks/create', json=block_args), 201)
+    retd = await response(client.post('/blocks/all/read/stored'))
     assert len(retd) == 1 + base_num
 
-    retd = await response(client.get('/stored_objects/testobj'))
-    assert retd[API_SID_KEY] == 'testobj'
+    retd = await response(client.post('/blocks/read/stored', json={'id': 'testobj'}))
+    assert retd['id'] == 'testobj'
 
-    await response(client.get('/stored_objects/flappy'), 400)
+    await response(client.post('/blocks/read/stored', json={'id': 'flappy'}), 400)
 
 
-async def test_clear(app, client, object_args):
-    n_sys_obj = len(await response(client.get('/objects')))
+async def test_delete_all(app, client, block_args):
+    n_sys_obj = len(await response(client.post('/blocks/all/read')))
 
     for i in range(5):
-        object_args[API_SID_KEY] = f'id{i}'
-        await client.post('/objects', json=object_args)
+        block_args['id'] = f'id{i}'
+        await response(client.post('/blocks/create', json=block_args), 201)
 
-    assert len(await response(client.get('/objects'))) == 5 + n_sys_obj
-    await client.delete('/objects')
-    assert len(await response(client.get('/objects'))) == n_sys_obj
+    assert len(await response(client.post('/blocks/all/read'))) == 5 + n_sys_obj
+    await response(client.post('/blocks/all/delete'))
+    assert len(await response(client.post('/blocks/all/read'))) == n_sys_obj
 
 
-async def test_unused(app, client, object_args):
-    new_alias = dict(
-        sid='unused',
-        nid=456
-    )
-    await client.post('/aliases', json=new_alias)
-    await client.post('/objects', json=object_args)
-    retv = await response(client.delete('/unused_names'))
-    assert 'unused' in retv
-    assert object_args[API_SID_KEY] not in retv
+async def test_cleanup(app, client, block_args):
+    store = datastore.get_block_store(app)
+    await response(client.post('/blocks/create', json=block_args), 201)
+    store['unused', 456] = {}
+    retv = await response(client.post('/blocks/cleanup'))
+    assert {'id': 'unused', 'nid': 456} in retv
+    assert not [v for v in retv if v['id'] == 'testobj']
 
 
 @pytest.mark.parametrize('sid', [
@@ -229,7 +226,7 @@ async def test_unused(app, client, object_args):
     'word'*50,
 ])
 async def test_validate_sid(sid):
-    alias_api.validate_sid(sid)
+    blocks_api.validate_sid(sid)
 
 
 @pytest.mark.parametrize('sid', [
@@ -247,65 +244,30 @@ async def test_validate_sid(sid):
 ])
 async def test_validate_sid_error(sid):
     with pytest.raises(exceptions.InvalidId):
-        alias_api.validate_sid(sid)
+        blocks_api.validate_sid(sid)
 
 
-async def test_alias_create(app, client):
-    new_alias = dict(
-        sid='name',
-        nid=456
-    )
-    await response(client.post('/aliases', json=new_alias))
-    await response(client.post('/aliases', json=new_alias))
+async def test_rename(app, client, block_args):
+    await response(client.post('/blocks/create', json=block_args), 201)
+    existing = block_args['id']
+    desired = 'newname'
 
-
-async def test_alias_update(app, client, object_args):
-    await client.post('/objects', json=object_args)
-
-    await response(client.get('/objects/newname'), 400)
-    await response(client.put('/aliases/testobj', json={'id': 'newname'}))
-    await response(client.get('/objects/newname'))
-
-
-async def test_alias_delete(app, client, object_args):
-    await client.post('/objects', json=object_args)
-
-    await response(client.delete('/aliases/testobj'))
-    await response(client.get('/objects/testobj'), 400)
+    await response(client.post('/blocks/read', json={'id': desired}), 400)
+    await response(client.post('/blocks/rename', json={
+        'existing': existing,
+        'desired': desired
+    }))
+    await response(client.post('/blocks/read', json={'id': desired}))
 
 
 async def test_ping(app, client):
-    await response(client.get('/system/ping'))
+    await response(client.post('/system/ping'))
 
 
-async def test_groups(app, client):
-    groups = await response(client.get('/system/groups'))
-    assert groups == [0, SYSTEM_GROUP]  # Initialized value
-    updated = await response(client.put('/system/groups', json=[0, 1, 2]))
-    assert updated == [0, 1, 2]
-    assert updated == (await response(client.get('/system/groups')))
-
-
-async def test_inactive_objects(app, client, object_args):
-    object_args[GROUP_LIST_KEY] = [1]
-    await client.post('/objects', json=object_args)
-
-    retd = await response(client.get('/objects'))
-    assert retd[-1] == {
-        API_SID_KEY: object_args[API_SID_KEY],
-        API_NID_KEY: ANY,
-        GROUP_LIST_KEY: [1],
-        API_TYPE_KEY: 'InactiveObject',
-        API_DATA_KEY: {
-            'actualType': object_args[API_TYPE_KEY]
-        }
-    }
-
-
-async def test_settings_api(app, client, object_args):
-    degC_offset = object_args[API_DATA_KEY]['offset']
+async def test_settings_api(app, client, block_args):
+    degC_offset = block_args['data']['offset']
     degF_offset = degC_offset * (9/5)  # delta_degC to delta_degF
-    await client.post('/objects', json=object_args)
+    await response(client.post('/blocks/create', json=block_args), 201)
 
     default_units = await response(client.get('/settings/units'))
     assert {'Temp'} == default_units.keys()
@@ -314,12 +276,12 @@ async def test_settings_api(app, client, object_args):
     # We'd expect to get the same value in delta_celsius as in degK
 
     await response(client.put('/settings/units', json={'Temp': 'degF'}))
-    retd = await response(client.get(f'/objects/{object_args[API_SID_KEY]}'))
-    assert retd[API_DATA_KEY]['offset[delta_degF]'] == pytest.approx(degF_offset, 0.1)
+    retd = await response(client.post('/blocks/read', json={'id': block_args['id']}))
+    assert retd['data']['offset[delta_degF]'] == pytest.approx(degF_offset, 0.1)
 
-    await response(client.put('/settings/units', json={}))
-    retd = await response(client.get(f'/objects/{object_args[API_SID_KEY]}'))
-    assert retd[API_DATA_KEY]['offset[delta_degC]'] == pytest.approx(degC_offset, 0.1)
+    await response(client.put('/settings/units', json={'Temp': 'degC'}))
+    retd = await response(client.post('/blocks/read', json={'id': block_args['id']}))
+    assert retd['data']['offset[delta_degC]'] == pytest.approx(degC_offset, 0.1)
 
     retd = await response(client.get('/settings/autoconnecting'))
     assert retd == {'enabled': True}
@@ -330,33 +292,35 @@ async def test_settings_api(app, client, object_args):
     assert retd == {'enabled': False}
 
 
-async def test_list_compatible(app, client, object_args):
-    resp = await response(client.get('/compatible_objects', params={'interface': 'BalancerInterface'}))
-    assert all([isinstance(id, str) for id in resp])
+async def test_compatible(app, client, block_args):
+    resp = await response(client.post('/blocks/compatible', json={'interface': 'BalancerInterface'}))
+    print(resp)
+    assert all([isinstance(v['id'], str) for v in resp])
 
 
-async def test_discover_objects(app, client):
-    resp = await response(client.get('/discover_objects'))
+async def test_discover(app, client):
+    resp = await response(client.post('/blocks/discover'))
     # Commander sim always returns the groups object
-    assert resp == ['DisplaySettings']
+    print(resp)
+    assert resp[0]['id'] == 'DisplaySettings'
 
 
-async def test_validate_object(app, client, object_args):
+async def test_validate(app, client, block_args):
     validate_args = {
-        API_TYPE_KEY: object_args[API_TYPE_KEY],
-        API_DATA_KEY: object_args[API_DATA_KEY],
+        'type': block_args['type'],
+        'data': block_args['data'],
     }
-    await response(client.post('/validate_object', json=validate_args))
+    await response(client.post('/blocks/validate', json=validate_args))
 
     invalid_data_obj = {
-        API_TYPE_KEY: object_args[API_TYPE_KEY],
-        API_DATA_KEY: {**object_args[API_DATA_KEY], 'invalid': True}
+        'type': block_args['type'],
+        'data': {**block_args['data'], 'invalid': True}
     }
-    await response(client.post('/validate_object', json=invalid_data_obj), 400)
+    await response(client.post('/blocks/validate', json=invalid_data_obj), 400)
 
     invalid_link_obj = {
-        API_TYPE_KEY: 'SetpointSensorPair',
-        API_DATA_KEY: {
+        'type': 'SetpointSensorPair',
+        'data': {
             'sensorId<>': 'Santa',
             'setting': 0,
             'value': 0,
@@ -365,28 +329,28 @@ async def test_validate_object(app, client, object_args):
             'filterThreshold': 2
         }
     }
-    await response(client.post('/validate_object', json=invalid_link_obj), 400)
+    await response(client.post('/blocks/validate', json=invalid_link_obj), 400)
 
 
-async def test_export_objects(app, client, object_args):
-    retd = await response(client.get('/export_objects'))
+async def test_backup_save(app, client, block_args):
+    retd = await response(client.post('/blocks/backup/save'))
     base_num = len(retd['blocks'])
 
-    await client.post('/objects', json=object_args)
-    retd = await response(client.get('/export_objects'))
+    await response(client.post('/blocks/create', json=block_args), 201)
+    retd = await response(client.post('/blocks/backup/save'))
     assert len(retd['blocks']) == 1 + base_num
 
 
-async def test_import_objects(app, client, spark_blocks):
+async def test_backup_load(app, client, spark_blocks):
     # reverse the set, to ensure some blocks are written with invalid references
     data = {
-        'store': [{'keys': [block[API_SID_KEY], block[API_NID_KEY]], 'data': dict()} for block in spark_blocks],
+        'store': [{'keys': [block['id'], block['nid']], 'data': dict()} for block in spark_blocks],
         'blocks': spark_blocks[::-1],
     }
-    resp = await response(client.post('/import_objects', json=data))
-    assert resp == []
+    resp = await response(client.post('/blocks/backup/load', json=data))
+    assert resp == {'messages': []}
 
-    resp = await response(client.get('/objects'))
+    resp = await response(client.post('/blocks/all/read'))
     ids = ret_ids(spark_blocks)
     resp_ids = ret_ids(resp)
     assert set(ids).issubset(resp_ids)
@@ -396,55 +360,56 @@ async def test_import_objects(app, client, spark_blocks):
     data['store'].append({'keys': ['TROLOLOL', 9999], 'data': dict()})
 
     # Add renamed type to store data
-    data['store'].append({'keys': ['renamed_wifi', datastore.WIFI_SETTINGS_NID], 'data': dict()})
+    data['store'].append({'keys': ['renamed_wifi', const.WIFI_SETTINGS_NID], 'data': dict()})
 
     # Add a Block that will fail to be created, and should be skipped
     data['blocks'].append({
-        API_SID_KEY: 'derpface',
-        API_NID_KEY: 500,
-        GROUP_LIST_KEY: [0],
-        API_TYPE_KEY: 'INVALID',
-        API_DATA_KEY: {}
+        'id': 'derpface',
+        'nid': 500,
+        'groups': [0],
+        'type': 'INVALID',
+        'data': {}
     })
 
-    retv = await response(client.post('/import_objects', json=data))
-    assert len(retv) == 2
-    assert 'derpface' in retv[0]
-    assert 'TROLOLOL' in retv[1]
+    resp = await response(client.post('/blocks/backup/load', json=data))
+    resp = resp['messages']
+    assert len(resp) == 2
+    assert 'derpface' in resp[0]
+    assert 'TROLOLOL' in resp[1]
 
-    resp = await response(client.get('/objects'))
+    resp = await response(client.post('/blocks/all/read'))
     resp_ids = ret_ids(resp)
     assert 'renamed_wifi' in resp_ids
     assert 'derpface' not in resp_ids
 
 
-async def test_logged_objects(app, client):
+async def test_read_all_logged(app, client):
     args = {
-        API_SID_KEY: 'edgey',
-        GROUP_LIST_KEY: [0],
-        API_TYPE_KEY: 'EdgeCase',
-        API_DATA_KEY: {
+        'id': 'edgey',
+        'groups': [0],
+        'type': 'EdgeCase',
+        'data': {
             'logged': 12345,
             'unLogged': 54321,
         }
     }
 
-    await client.post('/objects', json=args)
-    listed = await response(client.get('/objects'))
-    logged = await response(client.get('/logged_objects'))
+    await response(client.post('/blocks/create', json=args), 201)
+    all = await response(client.post('/blocks/all/read'))
+    logged = await response(client.post('/blocks/all/read/logged'))
 
     # list_objects returns everything
-    obj = listed[-1]
-    assert args[API_SID_KEY] == obj[API_SID_KEY]
-    obj_data = obj[API_DATA_KEY]
+    obj = all[-1]
+    assert args['id'] == obj['id']
+    obj_data = obj['data']
     assert obj_data is not None
     assert 'logged' in obj_data
     assert 'unLogged' in obj_data
 
     # log_objects strips all keys that are not explicitly marked as logged
     obj = logged[-1]
-    assert args[API_SID_KEY] == obj[API_SID_KEY]
-    obj_data = obj[API_DATA_KEY]
+    assert args['id'] == obj['id']
+    obj_data = obj['data']
     assert obj_data is not None
     assert 'logged' in obj_data
     assert 'unLogged' not in obj_data
@@ -453,6 +418,7 @@ async def test_logged_objects(app, client):
 async def test_system_status(app, client):
     resp = await response(client.get('/system/status'))
     assert resp == {
+        'type': 'Spark',
         'address': 'simulation:1234',
         'connection': 'wifi',
         'autoconnecting': True,
@@ -470,6 +436,7 @@ async def test_system_status(app, client):
     await asyncio.sleep(0.01)
     resp = await response(client.get('/system/status'))
     assert resp == {
+        'type': 'Spark',
         'address': 'simulation:1234',
         'connection': 'wifi',
         'autoconnecting': True,
@@ -503,5 +470,5 @@ async def test_system_flash(app, client, mocker):
 
 
 async def test_system_resets(app, client, mocker):
-    await response(client.get('/system/reboot'))
-    await response(client.get('/system/factory_reset'))
+    await response(client.post('/system/reboot'))
+    await response(client.post('/system/factory_reset'))

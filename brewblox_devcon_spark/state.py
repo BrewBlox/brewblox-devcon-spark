@@ -41,6 +41,7 @@ class DeviceInfo(SharedInfo):
 
 @dataclass
 class StateSummary:
+    type: str
     address: str
     connection: str
     compatible: bool
@@ -277,6 +278,7 @@ async def wait_disconnect(app: web.Application, wait: bool = True) -> bool:
 
 def summary(app: web.Application) -> StateSummary:
     return StateSummary(
+        type='Spark',
         **_state(app).summary(),
         **_events(app).summary(),
     )

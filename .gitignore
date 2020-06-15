@@ -53,7 +53,6 @@ coverage.xml
 docs/_build/
 
 # pyenv
-.python-version
 .idea/
 .venv/
 

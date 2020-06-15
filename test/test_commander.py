@@ -9,7 +9,7 @@ import pytest
 from brewblox_service import scheduler
 from mock import AsyncMock, PropertyMock
 
-from brewblox_devcon_spark import commander, commands, exceptions, state
+from brewblox_devcon_spark import commander, commands, const, exceptions, state
 
 TESTED = commander.__name__
 
@@ -163,14 +163,14 @@ async def test_on_setup_mode(app, mocker, conduit_mock, sparky):
 
     mocker.patch(TESTED + '.web.GracefulExit', RuntimeError)
     with pytest.raises(RuntimeError):
-        await sparky._on_event(conduit_mock, 'SETUP_MODE')
+        await sparky._on_event(conduit_mock, const.SETUP_MODE_PREFIX)
 
 
 async def test_on_update(app, mocker, conduit_mock, sparky):
     await state.set_connect(app, 'addr')
     assert state.summary(app).address == 'addr'
 
-    await sparky._on_event(conduit_mock, commander.UPDATER_PREFIX + '-message')
+    await sparky._on_event(conduit_mock, const.UPDATER_PREFIX + '-message')
 
 
 async def test_command(conduit_mock, sparky, reset_msgid):

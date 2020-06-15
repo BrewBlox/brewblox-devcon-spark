@@ -3,15 +3,13 @@ Specific endpoints for using system objects
 """
 
 import asyncio
-from typing import List
 
 from aiohttp import web
-from brewblox_service import brewblox_logger, events, scheduler, strex
+from aiohttp_apispec import docs, response_schema
+from brewblox_service import brewblox_logger, mqtt, scheduler, strex
 
 from brewblox_devcon_spark import commander, device, exceptions, state, ymodem
-from brewblox_devcon_spark.api import object_api
-from brewblox_devcon_spark.datastore import GROUPS_NID
-from brewblox_devcon_spark.validation import API_DATA_KEY
+from brewblox_devcon_spark.api import schemas
 
 TRANSFER_TIMEOUT_S = 30
 STATE_TIMEOUT_S = 20
@@ -40,22 +38,22 @@ class FirmwareUpdater():
         self.app = app
         self.name = app['config']['name']
         self.simulation = app['config']['simulation']
-        self.state_exchange = app['config']['state_exchange']
+        self.topic = app['config']['state_topic'] + f'/{self.name}/update'
         self.version = app['ini']['firmware_version']
         self.date = app['ini']['firmware_date']
 
     def _notify(self, msg: str):
         LOGGER.info(msg)
         asyncio.create_task(
-            events.publish(self.app,
-                           exchange=self.state_exchange,
-                           routing=self.name,
-                           message={
-                               'key': self.name,
-                               'type': 'Spark.update',
-                               'ttl': '10s',
-                               'data': [msg]
-                           }))
+            mqtt.publish(self.app,
+                         self.topic,
+                         {
+                             'key': self.name,
+                             'type': 'Spark.update',
+                             'ttl': '10s',
+                             'data': [msg]
+                         },
+                         err=False))
 
     async def _connect(self, address) -> ymodem.Connection:  # pragma: no cover
         for i in range(CONNECT_ATTEMPTS):
@@ -109,25 +107,11 @@ class SystemApi():
 
     def __init__(self, app: web.Application):
         self.app = app
-        self._obj_api: object_api.ObjectApi = object_api.ObjectApi(app)
-
-    async def read_groups(self) -> List[int]:
-        groups = await self._obj_api.read(GROUPS_NID)
-        return groups[API_DATA_KEY]['active']
-
-    async def write_groups(self, groups: List[int]) -> List[int]:
-        group_obj = await self._obj_api.write(
-            sid=GROUPS_NID,
-            groups=[],
-            input_type='Groups',
-            input_data={'active': groups}
-        )
-        return group_obj[API_DATA_KEY]['active']
 
     async def reboot(self):
         async def wrapper():
             try:
-                await device.get_controller(self.app).reboot()
+                await device.get_device(self.app).reboot()
             except exceptions.CommandTimeout:
                 pass
             except Exception as ex:  # pragma: no cover
@@ -138,7 +122,7 @@ class SystemApi():
     async def factory_reset(self):
         async def wrapper():
             try:
-                await device.get_controller(self.app).factory_reset()
+                await device.get_device(self.app).factory_reset()
             except exceptions.CommandTimeout:
                 pass
             except Exception as ex:  # pragma: no cover
@@ -147,125 +131,55 @@ class SystemApi():
         return {}
 
 
-@routes.get('/system/groups')
-async def groups_read(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Read active groups
-    tags:
-    - Spark
-    - System
-    - Groups
-    operationId: controller.spark.groups.read
-    produces:
-    - application/json
-    """
-    return web.json_response(
-        await SystemApi(request.app).read_groups()
-    )
-
-
-@routes.put('/system/groups')
-async def groups_write(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Write active groups
-    tags:
-    - Spark
-    - System
-    - Groups
-    operationId: controller.spark.groups.write
-    produces:
-    - application/json
-    parameters:
-    -
-        name: groups
-        type: list
-        example: [0, 1, 2, 3]
-    """
-    return web.json_response(
-        await SystemApi(request.app).write_groups(await request.json())
-    )
-
-
+@docs(
+    tags=['System'],
+    summary='Get service status',
+)
 @routes.get('/system/status')
+@response_schema(schemas.StatusSchema)
 async def check_status(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Get service status
-    tags:
-    - Spark
-    - System
-    operationId: controller.spark.system.status
-    produces:
-    - application/json
-    """
     return web.json_response(state.summary_dict(request.app))
 
 
-@routes.get('/system/ping')
+@docs(
+    tags=['System'],
+    summary='Send an empty request to the controller',
+)
+@routes.post('/system/ping')
 async def ping(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Ping controller
-    tags:
-    - Spark
-    - System
-    operationId: controller.spark.system.ping
-    produces:
-    - application/json
-    """
     return web.json_response(
-        await device.get_controller(request.app).noop()
+        await device.get_device(request.app).noop()
     )
 
 
-@routes.get('/system/reboot')
+@docs(
+    tags=['System'],
+    summary='Reboot the controller',
+)
+@routes.post('/system/reboot')
 async def reboot(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Reboot controller
-    tags:
-    - Spark
-    - System
-    operationId: controller.spark.system.reboot
-    produces:
-    - application/json
-    """
     return web.json_response(
         await SystemApi(request.app).reboot()
     )
 
 
-@routes.get('/system/factory_reset')
+@docs(
+    tags=['System'],
+    summary='Factory reset the controller',
+)
+@routes.post('/system/factory_reset')
 async def factory_reset(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Factory reset controller
-    tags:
-    - Spark
-    - System
-    operationId: controller.spark.system.reset
-    produces:
-    - application/json
-    """
     return web.json_response(
         await SystemApi(request.app).factory_reset()
     )
 
 
+@docs(
+    tags=['System'],
+    summary='Flash the controller firmware',
+)
 @routes.post('/system/flash')
 async def flash(request: web.Request) -> web.Response:
-    """
-    ---
-    summary: Flash controller
-    tags:
-    - Spark
-    - System
-    operationId: controller.spark.system.flash
-    produces:
-    - application/json
-    """
     return web.json_response(
         await FirmwareUpdater(request.app).flash()
     )

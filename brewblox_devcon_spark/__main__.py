@@ -5,14 +5,14 @@ Example of how to import and use the brewblox service
 import logging
 from configparser import ConfigParser
 
-from brewblox_service import (brewblox_logger, couchdb, events, http,
-                              scheduler, service)
+from brewblox_service import (brewblox_logger, couchdb, http, mqtt, scheduler,
+                              service)
 
 from brewblox_devcon_spark import (broadcaster, commander, communication,
                                    datastore, device, simulator, state,
                                    synchronization)
-from brewblox_devcon_spark.api import (alias_api, debug_api, error_response,
-                                       object_api, settings_api, system_api)
+from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
+                                       settings_api, system_api)
 from brewblox_devcon_spark.codec import codec, unit_conversion
 
 LOGGER = brewblox_logger(__name__)
@@ -51,12 +51,6 @@ def create_parser(default_name='spark'):
 
     # Service network options
     group = parser.add_argument_group('Service communication')
-    group.add_argument('--history-exchange',
-                       help='Eventbus exchange to which logged controller state should be broadcast. [%(default)s]',
-                       default='brewcast.history')
-    group.add_argument('--state-exchange',
-                       help='Eventbus exchange to which volatile controller state should be broadcast. [%(default)s]',
-                       default='brewcast.state')
     group.add_argument('--command-timeout',
                        help='Timeout period (in seconds) for controller commands. [$(default)s]',
                        type=float,
@@ -108,7 +102,9 @@ def create_parser(default_name='spark'):
 def parse_ini(app):  # pragma: no cover
     parser = ConfigParser()
     parser.read('binaries/firmware.ini')
-    return dict(parser['FIRMWARE'].items())
+    config = dict(parser['FIRMWARE'].items())
+    LOGGER.info(f'firmware.ini: {config}')
+    return config
 
 
 def main():
@@ -116,14 +112,6 @@ def main():
     logging.captureWarnings(True)
     config = app['config']
     app['ini'] = parse_ini(app)
-
-    # Logs a debug message for every event
-    logging.getLogger('aioamqp.channel').setLevel(logging.CRITICAL)
-    # Logs stack traces when the connection is closed
-    logging.getLogger('aioamqp.protocol').setLevel(logging.CRITICAL)
-
-    LOGGER.info('INI: ' + ', '.join([f"{k}='{v}'" for k, v in app['ini'].items()]))
-    LOGGER.info('CONFIG: ' + ', '.join([f"{k}='{v}'" for k, v in app['config'].items()]))
 
     if config['simulation']:
         config['device_id'] = config['device_id'] or '123456789012345678901234'
@@ -139,7 +127,7 @@ def main():
     commander.setup(app)
 
     scheduler.setup(app)
-    events.setup(app)
+    mqtt.setup(app)
 
     couchdb.setup(app)
     datastore.setup(app)
@@ -150,8 +138,7 @@ def main():
 
     error_response.setup(app)
     debug_api.setup(app)
-    alias_api.setup(app)
-    object_api.setup(app)
+    blocks_api.setup(app)
     system_api.setup(app)
     settings_api.setup(app)
 

@@ -10,14 +10,14 @@ from shutil import rmtree
 from unittest.mock import patch
 
 import pytest
-from brewblox_service import events, scheduler
+from brewblox_service import mqtt, scheduler
 from brewblox_service.testing import response
 
 from brewblox_devcon_spark import (commander, communication, datastore, device,
                                    simulator, state, synchronization)
 from brewblox_devcon_spark.__main__ import parse_ini
-from brewblox_devcon_spark.api import (alias_api, debug_api, error_response,
-                                       object_api, settings_api, system_api)
+from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
+                                       settings_api, system_api)
 from brewblox_devcon_spark.codec import codec, unit_conversion
 
 DEVICE_ID = '123456789012345678901234'
@@ -50,7 +50,7 @@ def app(app):
     commander.setup(app)
 
     scheduler.setup(app)
-    events.setup(app)
+    mqtt.setup(app)
 
     datastore.setup(app)
     unit_conversion.setup(app)
@@ -59,8 +59,7 @@ def app(app):
 
     error_response.setup(app)
     debug_api.setup(app)
-    alias_api.setup(app)
-    object_api.setup(app)
+    blocks_api.setup(app)
     system_api.setup(app)
     settings_api.setup(app)
 
@@ -75,12 +74,12 @@ async def wait_sync(app, client):
 
 @pytest.mark.integration
 async def test_ping(app, client):
-    await response(client.get('/system/ping'))
+    await response(client.post('/system/ping'))
 
 
 @pytest.mark.integration
 async def test_create_read(app, client):
-    await response(client.post('/objects', json={
+    await response(client.post('/blocks/create', json={
         'id': 'sensor-1',
         'groups': [0],
         'type': 'TempSensorMock',
@@ -88,7 +87,7 @@ async def test_create_read(app, client):
             'value[celsius]': 20.89789201,
             'connected': True
         }
-    }))
-    obj = await response(client.get('/objects/sensor-1'))
+    }), 201)
+    obj = await response(client.post('/blocks/read', json={'id': 'sensor-1'}))
     assert obj['id'] == 'sensor-1'
     assert obj['data']

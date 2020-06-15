@@ -15,36 +15,18 @@ from aiohttp import web
 from brewblox_service import (brewblox_logger, couchdb, features, repeater,
                               strex)
 
+from brewblox_devcon_spark import const
 from brewblox_devcon_spark.twinkeydict import TwinKeyDict, TwinKeyError
 
 LOGGER = brewblox_logger(__name__)
 
-GROUPS_NID = 1
-SYSINFO_NID = 2
-SYSTIME_NID = 3
-ONEWIREBUS_NID = 4
-WIFI_SETTINGS_NID = 5
-TOUCH_SETTINGS_NID = 6
-DISPLAY_SETTINGS_NID = 7
-SPARK_PINS_NID = 19
-
 
 FLUSH_DELAY_S = 5
 DB_NAME = 'spark-service'
-OBJECT_NID_START = 100
-SYS_OBJECT_KEYS = [
-    ['ActiveGroups', GROUPS_NID],
-    ['SystemInfo', SYSINFO_NID],
-    ['SystemTime', SYSTIME_NID],
-    ['OneWireBus', ONEWIREBUS_NID],
-    ['WiFiSettings', WIFI_SETTINGS_NID],
-    ['TouchSettings', TOUCH_SETTINGS_NID],
-    ['DisplaySettings', DISPLAY_SETTINGS_NID],
-    ['SparkPins', SPARK_PINS_NID],
-]
+
 SYS_OBJECTS = [
     {'keys': keys, 'data': {}}
-    for keys in SYS_OBJECT_KEYS
+    for keys in const.SYS_OBJECT_KEYS
 ]
 
 BLOCK_DOC_FMT = '{id}-blocks-db'
