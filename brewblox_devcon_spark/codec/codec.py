@@ -12,7 +12,7 @@ from aiohttp import web
 from brewblox_service import brewblox_logger, features, strex
 
 from brewblox_devcon_spark import exceptions
-from brewblox_devcon_spark.codec.modifiers import STRIP_UNLOGGED_KEY, Modifier
+from brewblox_devcon_spark.codec.modifiers import Modifier
 from brewblox_devcon_spark.codec.transcoders import (Decoded_, Encoded_,
                                                      ObjType_, Transcoder)
 from brewblox_devcon_spark.codec.unit_conversion import get_converter
@@ -21,7 +21,6 @@ TranscodeFunc_ = Callable[
     [ObjType_, Union[Encoded_, Decoded_]],
     Awaitable[Tuple[ObjType_, Union[Encoded_, Decoded_]]]
 ]
-STRIP_UNLOGGED_KEY = STRIP_UNLOGGED_KEY
 
 LOGGER = brewblox_logger(__name__)
 

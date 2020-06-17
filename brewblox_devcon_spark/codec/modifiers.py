@@ -19,7 +19,6 @@ from google.protobuf.message import Message
 import brewblox_pb2
 from brewblox_devcon_spark.codec.unit_conversion import UnitConverter
 
-STRIP_UNLOGGED_KEY = 'strip_unlogged'
 STRIP_FIELDS_KEY = 'strippedFields'
 
 _path_extension.avoid_lint_errors()
@@ -270,8 +269,8 @@ class Modifier():
                 }
             }
         """
-        strip_unlogged = codec_opts.get(STRIP_UNLOGGED_KEY)
         stripped_fields = obj.pop(STRIP_FIELDS_KEY, [])
+        logged = codec_opts.get('logged', False)
 
         for element in self._find_options(message.DESCRIPTOR, obj):
             options = self._field_options(element.field)
@@ -282,7 +281,7 @@ class Modifier():
                 del element.obj[element.key]
                 continue
 
-            if not options.logged and strip_unlogged:
+            if logged and not options.logged:
                 del element.obj[element.key]
                 continue
 
