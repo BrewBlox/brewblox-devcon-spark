@@ -194,7 +194,7 @@ class ProtobufTranscoder(Transcoder):
         data = obj.SerializeToString()
         return data + b'\x00'  # Include null terminator
 
-    def decode(self, encoded: Encoded_, _) -> Decoded_:
+    def decode(self, encoded: Encoded_, opts: dict) -> Decoded_:
         # Remove null terminator
         encoded = encoded[:-1]
 
@@ -204,7 +204,7 @@ class ProtobufTranscoder(Transcoder):
             message=obj,
             preserving_proto_field_name=True,
             including_default_value_fields=True,
-            use_integers_for_enums=True,
+            use_integers_for_enums=opts.get('logged', False),
         )
         # LOGGER.debug(f'decoded {self.__class__._MESSAGE} to {decoded}')
         return decoded
