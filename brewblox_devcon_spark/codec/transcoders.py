@@ -197,6 +197,7 @@ class ProtobufTranscoder(Transcoder):
     def decode(self, encoded: Encoded_, opts: dict) -> Decoded_:
         # Remove null terminator
         encoded = encoded[:-1]
+        int_enum = opts.get('logged') or opts.get('stored') or False
 
         obj = self.create_message()
         obj.ParseFromString(encoded)
@@ -204,7 +205,7 @@ class ProtobufTranscoder(Transcoder):
             message=obj,
             preserving_proto_field_name=True,
             including_default_value_fields=True,
-            use_integers_for_enums=opts.get('logged', False),
+            use_integers_for_enums=int_enum,
         )
         # LOGGER.debug(f'decoded {self.__class__._MESSAGE} to {decoded}')
         return decoded
