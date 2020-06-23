@@ -172,3 +172,21 @@ async def test_point_presence(app, client, cdc):
 async def test_compatible_types(app, client, cdc):
     tree = cdc.compatible_types()
     assert len(tree['TempSensorInterface']) > 0
+
+
+async def test_enum_decoding(app, client, cdc):
+    enc_id, enc_val = await cdc.encode('DigitalActuator', {
+        'desiredState': 'Active',
+    })
+    dec_id, dec_val = await cdc.decode(enc_id, enc_val)
+    assert dec_val['desiredState'] == 'Active'
+
+    # Both strings and ints are valid input
+    enc_id_alt, enc_val_alt = await cdc.encode('DigitalActuator', {
+        'desiredState': 1,
+    })
+    assert enc_val_alt == enc_val
+
+    # Enums are rendered as int when logged
+    dec_id, dec_val = await cdc.decode(enc_id, enc_val, {'logged': True})
+    assert dec_val['desiredState'] == 1
