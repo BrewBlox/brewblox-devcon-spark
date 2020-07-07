@@ -4,6 +4,7 @@ Regulates actions that should be taken when the service connects to a controller
 
 
 import asyncio
+from contextlib import suppress
 from datetime import datetime, timedelta
 from functools import wraps
 from pprint import pformat
@@ -15,7 +16,7 @@ from brewblox_service import (brewblox_logger, features, repeater, scheduler,
 
 from brewblox_devcon_spark import const, datastore, exceptions, state
 from brewblox_devcon_spark.api import blocks_api
-from brewblox_devcon_spark.codec import unit_conversion
+from brewblox_devcon_spark.codec import codec, unit_conversion
 from brewblox_devcon_spark.device import get_device
 from brewblox_devcon_spark.exceptions import InvalidInput
 
@@ -242,6 +243,22 @@ class Syncher(repeater.RepeaterFeature):
         uptime = timedelta(milliseconds=ms)
         LOGGER.info(f'System uptime: {uptime}')
 
+    async def parse_trace(self, src):
+        cdc = codec.get_codec(self.app)
+        store = datastore.get_block_store(self.app)
+        dest = []
+        for src_v in src:
+            dest_v = {
+                **src_v,
+                'sid': 'Unknown',
+                'typename': 'Invalid',
+            }
+            with suppress(Exception):
+                dest_v['typename'] = await cdc.decode(dest_v['type'])
+                dest_v['sid'] = store.left_key(dest_v['id'])
+            dest.append(dest_v)
+        return dest
+
     @subroutine('collect controller call trace')
     async def _collect_call_trace(self):
         api = blocks_api.BlocksApi(self.app, wait_sync=False)
@@ -253,7 +270,7 @@ class Syncher(repeater.RepeaterFeature):
                 'command': 'READ_AND_RESUME_TRACE'
             }
         })
-        trace = sys_block['data']['trace']
+        trace = await self.parse_trace(sys_block['data']['trace'])
         LOGGER.info(f'System trace: \n{pformat(trace)}')
 
 
