@@ -204,3 +204,22 @@ async def test_migrate(app, client, syncher, mocker):
 
     with store.open() as config:
         assert config['version'] == 'v1'
+
+
+async def test_parse_trace(app, client, syncher):
+    await state.wait_synchronize(app)
+    src = [{'action': 'UPDATE_BLOCK', 'id': 19, 'type': 319},
+           {'action': 'UPDATE_BLOCK', 'id': 101, 'type': 318},
+           {'action': 'UPDATE_BLOCK', 'id': 102, 'type': 301},
+           {'action': 'UPDATE_BLOCK', 'id': 103, 'type': 311},
+           {'action': 'UPDATE_BLOCK', 'id': 104, 'type': 302},
+           {'action': 'SYSTEM_TASKS', 'id': 0, 'type': 0},
+           {'action': 'UPDATE_DISPLAY', 'id': 0, 'type': 0},
+           {'action': 'UPDATE_CONNECTIONS', 'id': 0, 'type': 0},
+           {'action': 'WRITE_BLOCK', 'id': 2, 'type': 256},
+           {'action': 'PERSIST_BLOCK', 'id': 2, 'type': 256}]
+    parsed = await syncher.parse_trace(src)
+    assert parsed[0]['typename'] == 'Spark3Pins'
+    assert parsed[5]['typename'] == 'Invalid'
+    assert parsed[5]['sid'] == 'Unknown'
+    assert parsed[-1]['sid'] == 'SystemInfo'
