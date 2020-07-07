@@ -38,6 +38,11 @@ async def disconnect(app):
 
 
 @pytest.fixture(autouse=True)
+def m_timedelta(mocker):
+    mocker.patch(TESTED + '.timedelta')
+
+
+@pytest.fixture(autouse=True)
 def ping_interval_mock(mocker):
     mocker.patch(TESTED + '.PING_INTERVAL_S', 0.0001)
 
@@ -87,7 +92,7 @@ def syncher(app):
 
 
 async def test_sync_status(app, client, mocker):
-    await state.wait_synchronize(app)
+    await asyncio.wait_for(state.wait_synchronize(app), 10)
     assert states(app) == [False, True, True]
 
     await disconnect(app)
