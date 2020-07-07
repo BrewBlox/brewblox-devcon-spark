@@ -6,6 +6,7 @@ Regulates actions that should be taken when the service connects to a controller
 import asyncio
 from datetime import datetime
 from functools import wraps
+from pprint import pformat
 from time import monotonic
 
 from aiohttp import web
@@ -93,6 +94,7 @@ class Syncher(repeater.RepeaterFeature):
             await self._sync_block_store()
             await self._migrate_config_store()
             await self._sync_time()
+            await self._collect_call_trace()
 
             await state.set_synchronize(self.app)
             LOGGER.info('Service synchronized!')
@@ -236,6 +238,20 @@ class Syncher(repeater.RepeaterFeature):
                 'secondsSinceEpoch': now.timestamp()
             }
         })
+
+    @subroutine('collect controller call trace')
+    async def _collect_call_trace(self):
+        api = blocks_api.BlocksApi(self.app, wait_sync=False)
+        sys_block = await api.write({
+            'nid': const.SYSINFO_NID,
+            'groups': [const.SYSTEM_GROUP],
+            'type': 'SysInfo',
+            'data': {
+                'command': 'READ_AND_RESUME_TRACE'
+            }
+        })
+        trace = sys_block['data']['trace']
+        LOGGER.info(f'System trace: {pformat(trace)}')
 
 
 def setup(app: web.Application):
