@@ -4,7 +4,7 @@ Regulates actions that should be taken when the service connects to a controller
 
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 from pprint import pformat
 from time import monotonic
@@ -230,7 +230,7 @@ class Syncher(repeater.RepeaterFeature):
     async def _sync_time(self):
         now = datetime.now()
         api = blocks_api.BlocksApi(self.app, wait_sync=False)
-        await api.write({
+        ticks_block = await api.write({
             'nid': const.SYSTIME_NID,
             'groups': [const.SYSTEM_GROUP],
             'type': 'Ticks',
@@ -238,6 +238,9 @@ class Syncher(repeater.RepeaterFeature):
                 'secondsSinceEpoch': now.timestamp()
             }
         })
+        ms = ticks_block['data']['millisSinceBoot']
+        uptime = timedelta(milliseconds=ms)
+        LOGGER.info(f'System uptime: {uptime}')
 
     @subroutine('collect controller call trace')
     async def _collect_call_trace(self):
@@ -251,7 +254,7 @@ class Syncher(repeater.RepeaterFeature):
             }
         })
         trace = sys_block['data']['trace']
-        LOGGER.info(f'System trace: {pformat(trace)}')
+        LOGGER.info(f'System trace: \n{pformat(trace)}')
 
 
 def setup(app: web.Application):
