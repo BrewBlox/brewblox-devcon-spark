@@ -120,3 +120,20 @@ def test_iterate(store, items):
 
     assert len(store) == len(items)
     assert [(left, right, value) for ((left, right), value) in store.items()] == items
+
+
+def test_other_key(store):
+    store['cheese', 'wine'] = {}
+    store['caviar', 'vodka'] = {}
+
+    assert store.left_key('wine') == 'cheese'
+    assert store.right_key('caviar') == 'vodka'
+
+    with pytest.raises(KeyError):
+        store.left_key('cheese')
+
+    with pytest.raises(KeyError):
+        store.right_key('vodka')
+
+    assert store.left_key('cheese', 'mac') == 'mac'
+    assert store.right_key('vodka', None) is None
