@@ -272,7 +272,7 @@ class Syncher(repeater.RepeaterFeature):
                 'command': 'READ_AND_RESUME_TRACE'
             }
         })
-        trace = await self.format_trace(sys_block['data']['trace'])
+        trace = '\n'.join(await self.format_trace(sys_block['data']['trace']))
         LOGGER.info(f'System trace: \n{trace}')
 
 
