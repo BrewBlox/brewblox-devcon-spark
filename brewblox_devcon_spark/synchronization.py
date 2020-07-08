@@ -4,10 +4,8 @@ Regulates actions that should be taken when the service connects to a controller
 
 
 import asyncio
-from contextlib import suppress
 from datetime import datetime, timedelta
 from functools import wraps
-from pprint import pformat
 from time import monotonic
 
 from aiohttp import web
@@ -81,6 +79,9 @@ class Syncher(repeater.RepeaterFeature):
             - If not, read controller-specific data, and migrate to service store
         - Synchronize controller time
             - Send current abs time to controller block
+        - Collect and log controller tracing
+            - Write read/resume command to SysInfo
+            - Tracing is included in response
         - Set 'synchronize' event
         - Wait for 'disconnect' event
 
@@ -243,20 +244,21 @@ class Syncher(repeater.RepeaterFeature):
         uptime = timedelta(milliseconds=ms)
         LOGGER.info(f'System uptime: {uptime}')
 
-    async def parse_trace(self, src):
+    async def format_trace(self, src):
         cdc = codec.get_codec(self.app)
         store = datastore.get_block_store(self.app)
         dest = []
         for src_v in src:
-            dest_v = {
-                **src_v,
-                'sid': 'Unknown',
-                'typename': 'Invalid',
-            }
-            with suppress(Exception):
-                dest_v['typename'] = await cdc.decode(dest_v['type'])
-                dest_v['sid'] = store.left_key(dest_v['id'])
-            dest.append(dest_v)
+            action = src_v['action']
+            nid = src_v['id']
+            sid = store.left_key(nid, 'Unknown')
+            typename = await cdc.decode(src_v['type'])
+
+            if nid == 0:
+                dest.append(action)
+            else:
+                dest.append(f'{action.ljust(20)} {typename.ljust(20)} [{sid},{nid}]')
+
         return dest
 
     @subroutine('collect controller call trace')
@@ -270,8 +272,8 @@ class Syncher(repeater.RepeaterFeature):
                 'command': 'READ_AND_RESUME_TRACE'
             }
         })
-        trace = await self.parse_trace(sys_block['data']['trace'])
-        LOGGER.info(f'System trace: \n{pformat(trace)}')
+        trace = await self.format_trace(sys_block['data']['trace'])
+        LOGGER.info(f'System trace: \n{trace}')
 
 
 def setup(app: web.Application):
