@@ -12,6 +12,9 @@ set -ex
 FW_DIR=${1:-"../brewblox-firmware"}
 pushd "$(dirname "$(readlink -f "$0")")" > /dev/null
 
+# This prevents sudo blocking the script halfway through
+sudo echo "Caching sudo permissions"
+
 # We want to use the same git commit used to build the content of ./binaries
 bin_fw_version=$(awk -F "=" '/firmware_version/ {print $2}' binaries/firmware.ini)
 
