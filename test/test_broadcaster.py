@@ -49,7 +49,7 @@ async def test_noop_broadcast(app, m_api, m_publish, client, connected):
     await b.run()
     assert m_api.read_all_logged.call_count == 1
     assert m_api.read_all.call_count == 1
-    assert m_publish.call_count == 2
+    assert m_publish.call_count == 3
 
 
 async def test_disabled(app, m_api, m_publish, client, connected):
@@ -68,7 +68,7 @@ async def test_broadcast_unsync(app, m_api, m_publish, client, connected, mocker
     await b.run()
 
     assert m_wait_sync.call_count == 1
-    assert m_publish.call_count == 1
+    assert m_publish.call_count == 3
 
 
 async def test_broadcast(app, m_api, m_publish, client, connected):
@@ -87,30 +87,34 @@ async def test_broadcast(app, m_api, m_publish, client, connected):
     m_publish.assert_has_calls([
         call(app,
              'testcast/state/test_app',
-             {
+             err=False,
+             retain=True,
+             message={
                  'key': 'test_app',
-                 'type': 'Spark.service',
+                 'type': 'Spark.state',
                  'ttl': '60.0s',
-                 'data': ANY,
-             },
-             err=False),
+                 'data': {
+                     'service': ANY,
+                     'blocks': object_list,
+                 },
+             }),
         call(app,
-             'testcast/state/test_app',
-             {
+             'testcast/history/test_app',
+             err=False,
+             message={
+                 'key': 'test_app',
+                 'data': objects,
+             }),
+        call(app,
+             'testcast/state/test_app/blocks',
+             err=False,
+             retain=True,
+             message={
                  'key': 'test_app',
                  'type': 'Spark.blocks',
                  'ttl': '60.0s',
                  'data': object_list,
-             },
-             err=False,
-             retain=True),
-        call(app,
-             'testcast/history/test_app',
-             {
-                 'key': 'test_app',
-                 'data': objects,
-             },
-             err=False),
+             }),
     ])
 
 
@@ -133,4 +137,4 @@ async def test_error(app, m_api, m_publish, client, connected):
     ]
 
     await b.run()
-    assert m_publish.call_count == 3 + 1
+    assert m_publish.call_count == 3 * 3
