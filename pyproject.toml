@@ -24,7 +24,6 @@ pytest-aiohttp = "^0.3.0"
 flake8 = "^3.7.9"
 autopep8 = "^1.5"
 aresponses = "^2.0.0"
-brewblox-dev = "^1.4.0"
 flake8-quotes = "^2.1.1"
 asyncmock = "^0.4.2"
 
