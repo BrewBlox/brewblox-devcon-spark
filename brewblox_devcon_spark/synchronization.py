@@ -139,8 +139,8 @@ class Syncher(repeater.RepeaterFeature):
         return unit_conversion.get_converter(self.app).user_units
 
     async def set_user_units(self, units):
+        converter = unit_conversion.get_converter(self.app)
         try:
-            converter = unit_conversion.get_converter(self.app)
             converter.user_units = units
             with datastore.get_service_store(self.app).open() as config:
                 config[UNIT_CONFIG_KEY] = converter.user_units
