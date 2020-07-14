@@ -6,8 +6,7 @@ TAG=${1:-"develop"}
 echo "Using brewblox/firmware-bin:${TAG}"
 
 # Push script dir
-SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
-pushd "${SCRIPT_DIR}" > /dev/null
+pushd "$(dirname "$(readlink -f "$0")")" > /dev/null
 
 # Pull image
 docker rm bin-box 2> /dev/null || true
@@ -29,16 +28,12 @@ docker rm bin-box > /dev/null
 
 # Pull submodule
 proto_version=$(awk -F "=" '/proto_version/ {print $2}' binaries/firmware.ini)
-pushd brewblox_devcon_spark/codec/proto > /dev/null
-git fetch
-git checkout "${proto_version}"
-popd > /dev/null
+proto_dir=brewblox_devcon_spark/codec/proto
+git -C ${proto_dir} fetch
+git -C ${proto_dir} checkout "${proto_version}"
 
 # Compile proto files
 pushd brewblox_devcon_spark/codec > /dev/null
 rm -f ./proto-compiled/*_pb2.py
 protoc -I=./proto --python_out=./proto-compiled ./proto/*.proto
-popd > /dev/null
-
-# Pop script dir
 popd > /dev/null
