@@ -201,7 +201,7 @@ def spark_blocks():
                 'setting': 0,
                 'value': 0,
                 'settingEnabled': True,
-                'filter': 'FILT_15s',
+                'filter': 1,  # FILTER_15s
                 'filterThreshold': 2
             }
         },

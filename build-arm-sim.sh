@@ -9,7 +9,7 @@ set -ex
 #   bash build-arm-sim.sh
 #
 
-FW_DIR=${1:-"../brewblox-firmware"}
+FW_DIR="$(readlink -f "${1:-"../brewblox-firmware"}")"
 pushd "$(dirname "$(readlink -f "$0")")" > /dev/null
 
 # This prevents sudo blocking the script halfway through
