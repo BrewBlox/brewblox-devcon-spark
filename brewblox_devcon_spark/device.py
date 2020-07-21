@@ -7,7 +7,7 @@ import itertools
 import re
 from contextlib import suppress
 from functools import partialmethod
-from typing import Awaitable, Callable, List, Optional, Type, Union
+from typing import Awaitable, Callable, List, Type, Union
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, strex
@@ -26,6 +26,7 @@ class SparkResolver():
 
     def __init__(self, app: web.Application):
         self._app = app
+        self._name = app['config']['name']
         self._datastore = datastore.get_block_store(app)
         self._codec = codec.get_codec(app)
 
@@ -48,11 +49,9 @@ class SparkResolver():
     async def _process_data(self,
                             codec_func: codec.TranscodeFunc_,
                             content: dict,
-                            opts: Optional[dict]
+                            opts: dict
                             ) -> dict:
-        objects_to_process = self._get_content_objects(content)
-
-        for obj in objects_to_process:
+        for obj in self._get_content_objects(content):
             # transcode type + data
             with suppress(KeyError):
                 new_type, new_data = await codec_func(
@@ -110,7 +109,6 @@ class SparkResolver():
                              content: dict
                              ) -> dict:
         store = self._datastore
-        objects_to_process = self._get_content_objects(content)
 
         async def traverse(data):
             """Recursively finds and resolves links"""
@@ -119,28 +117,31 @@ class SparkResolver():
                 else data.items()
 
             for k, v in iter:
-                if isinstance(v, (dict, list, tuple)):
+                if isinstance(v, dict):
+                    if v.get('__metaclass', None) == 'Link':
+                        v['id'] = finder_func(store, v['id'], v.get('type'))
+                    else:
+                        await traverse(v)
+                elif isinstance(v, (list, tuple)):
                     await traverse(v)
                 elif str(k).endswith(const.OBJECT_LINK_POSTFIX_END):
                     link_type = k[k.rfind(const.OBJECT_LINK_POSTFIX_START)+1:-1]
                     data[k] = finder_func(store, v, link_type)
 
-        for obj in objects_to_process:
+        for obj in self._get_content_objects(content):
             with suppress(KeyError):
                 await traverse(obj['data'])
 
         return content
 
-    async def encode_data(self, content: dict, opts: Optional[dict]) -> dict:
+    async def encode_data(self, content: dict, opts: dict) -> dict:
         return await self._process_data(self._codec.encode, content, opts)
 
-    async def decode_data(self, content: dict, opts: Optional[dict]) -> dict:
+    async def decode_data(self, content: dict, opts: dict) -> dict:
         return await self._process_data(self._codec.decode, content, opts)
 
-    async def convert_sid_nid(self, content: dict, _=None) -> dict:
-        objects_to_process = self._get_content_objects(content)
-
-        for obj in objects_to_process:
+    async def convert_sid_nid(self, content: dict, opts: dict) -> dict:
+        for obj in self._get_content_objects(content):
             # Remove the sid
             sid = obj.pop('id', None)
 
@@ -154,10 +155,8 @@ class SparkResolver():
 
         return content
 
-    async def add_sid(self, content: dict, _=None) -> dict:
-        objects_to_process = self._get_content_objects(content)
-
-        for obj in objects_to_process:
+    async def add_sid(self, content: dict, opts: dict) -> dict:
+        for obj in self._get_content_objects(content):
             # Keep the nid
             nid = obj.get('nid', None)
 
@@ -171,11 +170,18 @@ class SparkResolver():
 
         return content
 
-    async def convert_links_nid(self, content: dict, _=None) -> dict:
+    async def convert_links_nid(self, content: dict, opts: dict) -> dict:
         return await self._resolve_links(self._find_nid, content)
 
-    async def convert_links_sid(self, content: dict, _=None) -> dict:
+    async def convert_links_sid(self, content: dict, opts: dict) -> dict:
         return await self._resolve_links(self._find_sid, content)
+
+    async def add_service_id(self, content: dict, opts: dict) -> dict:
+        if not opts.get('stored'):
+            for obj in self._get_content_objects(content):
+                obj['serviceId'] = self._name
+
+        return content
 
 
 class SparkDevice(features.ServiceFeature):
@@ -211,7 +217,7 @@ class SparkDevice(features.ServiceFeature):
 
     async def _execute(self,
                        command_type: Type[commands.Command],
-                       command_opts: Optional[dict],
+                       command_opts: dict,
                        content_: dict = None,
                        **kwargs
                        ) -> dict:
@@ -240,6 +246,7 @@ class SparkDevice(features.ServiceFeature):
                 resolver.decode_data,
                 resolver.convert_links_sid,
                 resolver.add_sid,
+                resolver.add_service_id,
             ]:
                 retval = await afunc(retval, command_opts)
 
@@ -252,22 +259,21 @@ class SparkDevice(features.ServiceFeature):
             LOGGER.debug(f'Failed to execute {command_type}: {strex(ex)}')
             raise ex
 
-    noop = partialmethod(_execute, commands.NoopCommand, None)
-
-    read_object = partialmethod(_execute, commands.ReadObjectCommand, None)
-    read_logged_object = partialmethod(_execute, commands.ReadObjectCommand, {'logged': True})
+    noop = partialmethod(_execute, commands.NoopCommand, {})
+    read_object = partialmethod(_execute, commands.ReadObjectCommand, {})
+    read_logged_object = partialmethod(_execute, commands.ReadObjectCommand, {'logged': True, 'postfixed': True})
     read_stored_object = partialmethod(_execute, commands.ReadStoredObjectCommand, {'stored': True})
-    write_object = partialmethod(_execute, commands.WriteObjectCommand, None)
-    create_object = partialmethod(_execute, commands.CreateObjectCommand, None)
-    delete_object = partialmethod(_execute, commands.DeleteObjectCommand, None)
-    list_objects = partialmethod(_execute, commands.ListObjectsCommand, None)
-    list_logged_objects = partialmethod(_execute, commands.ListObjectsCommand, {'logged': True})
+    write_object = partialmethod(_execute, commands.WriteObjectCommand, {})
+    create_object = partialmethod(_execute, commands.CreateObjectCommand, {})
+    delete_object = partialmethod(_execute, commands.DeleteObjectCommand, {})
+    list_objects = partialmethod(_execute, commands.ListObjectsCommand, {})
+    list_logged_objects = partialmethod(_execute, commands.ListObjectsCommand, {'logged': True, 'postfixed': True})
     list_stored_objects = partialmethod(_execute, commands.ListStoredObjectsCommand, {'stored': True})
-    clear_objects = partialmethod(_execute, commands.ClearObjectsCommand, None)
-    factory_reset = partialmethod(_execute, commands.FactoryResetCommand, None)
-    reboot = partialmethod(_execute, commands.RebootCommand, None)
-    list_compatible_objects = partialmethod(_execute, commands.ListCompatibleObjectsCommand, None)
-    discover_objects = partialmethod(_execute, commands.DiscoverObjectsCommand, None)
+    clear_objects = partialmethod(_execute, commands.ClearObjectsCommand, {})
+    factory_reset = partialmethod(_execute, commands.FactoryResetCommand, {})
+    reboot = partialmethod(_execute, commands.RebootCommand, {})
+    list_compatible_objects = partialmethod(_execute, commands.ListCompatibleObjectsCommand, {})
+    discover_objects = partialmethod(_execute, commands.DiscoverObjectsCommand, {})
 
 
 def setup(app: web.Application):

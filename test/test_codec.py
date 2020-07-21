@@ -108,12 +108,12 @@ async def test_encode_constraint(app, client, cdc):
     })
 
 
-async def test_encode_delta_sec(app, client, cdc):
+async def test_encode_delta_sec(app, client, cdc: codec.Codec):
     # Check whether [delta_temperature / time] can be converted
     enc_id, enc_val = await cdc.encode('EdgeCase', {
         'deltaV': 100,
     })
-    dec_id, dec_val = await cdc.decode(enc_id, enc_val)
+    dec_id, dec_val = await cdc.decode(enc_id, enc_val, {'postfixed': True})
     assert dec_val['deltaV[delta_degC / second]'] == pytest.approx(100, 0.1)
 
 
@@ -134,7 +134,7 @@ async def test_stripped_fields(app, client, cdc, sim_cdc):
         'strippedFields': [6],
     })
     dec_id, dec_val = await cdc.decode(enc_id, enc_val)
-    assert dec_val['deltaV[delta_degC / second]'] is None
+    assert dec_val['deltaV'] is None
     assert dec_val['logged'] == 10
     assert 'strippedFields' not in dec_val.keys()
 
@@ -144,6 +144,11 @@ async def test_driven_fields(app, client, cdc):
         'drivenDevice': 10,
     })
     dec_id, dec_val = await cdc.decode(enc_id, enc_val)
+    assert dec_val['drivenDevice']['id'] == 10
+    assert dec_val['drivenDevice']['driven'] is True
+    assert dec_val['drivenDevice']['type'] == 'DS2413'
+
+    dec_id, dec_val = await cdc.decode(enc_id, enc_val, {'postfixed': True})
     assert dec_val['drivenDevice<DS2413,driven>'] == 10
 
 

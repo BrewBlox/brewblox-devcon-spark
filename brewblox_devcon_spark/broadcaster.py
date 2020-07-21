@@ -40,7 +40,7 @@ class Broadcaster(repeater.RepeaterFeature):
                                  'type': 'Spark.state',
                                  'ttl': '30d',
                                  'data': {
-                                     'service': None,
+                                     'status': None,
                                      'blocks': [],
                                  },
                              })
@@ -54,7 +54,7 @@ class Broadcaster(repeater.RepeaterFeature):
             await asyncio.sleep(self.interval)
             self._synched = await state.wait_synchronize(self.app, wait=False)
 
-            service_data = state.summary_dict(self.app)
+            status_data = state.summary_dict(self.app)
             blocks_data = []
             history_data = {}
 
@@ -80,7 +80,7 @@ class Broadcaster(repeater.RepeaterFeature):
                                        'type': 'Spark.state',
                                        'ttl': self.validity,
                                        'data': {
-                                           'service': service_data,
+                                           'status': status_data,
                                            'blocks': blocks_data,
                                        },
                                    })
