@@ -9,7 +9,7 @@ from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
 from dataclasses import dataclass
 from functools import reduce
-from typing import Iterator, List
+from typing import Iterator, List, Optional, Union
 
 from brewblox_service import brewblox_logger
 from google.protobuf import json_format
@@ -114,6 +114,15 @@ class Modifier():
     def _objtype_name(self, objtype_num: int) -> str:
         return brewblox_pb2.BrewBloxTypes.BlockType.Name(objtype_num)
 
+    def _encode_unit(self, value: Union[float, dict], unit_id: str, postfix: Optional[str]) -> float:
+        if isinstance(value, dict):
+            user_value = value['value']
+            user_unit = value.get('unit')
+            return self._converter.to_sys_value(user_value, unit_id, user_unit)
+        else:
+            user_unit = postfix
+            return self._converter.to_sys_value(value, unit_id, user_unit)
+
     def encode_options(self, message: Message, obj: dict, codec_opts: dict) -> dict:
         """
         Modifies `obj` based on Protobuf options and dict key postfixes.
@@ -189,9 +198,18 @@ class Modifier():
                 del element.obj[element.key]
                 continue
 
-            if options.unit and element.postfix:
+            if options.unit:
                 unit = self._unit_name(options.unit)
-                val = [self._converter.to_sys_value(v, unit, element.postfix) for v in val]
+                val = [
+                    self._encode_unit(v, unit, element.postfix or None)
+                    for v in val
+                ]
+
+            if options.objtype:
+                val = [
+                    v['id'] if isinstance(v, dict) else v
+                    for v in val
+                ]
 
             if options.scale:
                 val = [v * options.scale for v in val]
@@ -271,6 +289,7 @@ class Modifier():
         """
         stripped_fields = obj.pop(STRIP_FIELDS_KEY, [])
         logged = codec_opts.get('logged', False)
+        postfixed = codec_opts.get('postfixed', False)
 
         for element in self._find_options(message.DESCRIPTOR, obj):
             options = self._field_options(element.field)
@@ -294,18 +313,44 @@ class Modifier():
                 val = [v / options.scale for v in val]
 
             if options.unit:
-                unit = self._unit_name(options.unit)
-                new_key += f'[{self._converter.to_user_unit(unit)}]'
-                val = [
-                    self._converter.to_user_value(v, unit)
-                    for v in val
-                ]
+                unit_id = self._unit_name(options.unit)
+                user_unit = self._converter.to_user_unit(unit_id)
+                if postfixed:
+                    new_key += f'[{user_unit}]'
+                    val = [
+                        self._converter.to_user_value(v, unit_id)
+                        for v in val
+                    ]
+                else:
+                    metadata = {
+                        '__metaclass': 'Unit',
+                        'unit': user_unit,
+                    }
+                    if options.readonly:
+                        metadata['readonly'] = True
+                    val = [
+                        {
+                            **metadata,
+                            'value': self._converter.to_user_value(v, unit_id),
+                        }
+                        for v in val
+                    ]
 
             if options.objtype:
-                postfix = self._objtype_name(options.objtype)
-                if options.driven:
-                    postfix += ',driven'
-                new_key += f'<{postfix}>'
+                objtype = self._objtype_name(options.objtype)
+                if postfixed:
+                    postfix = f'<{objtype},driven>' if options.driven else f'<{objtype}>'
+                    new_key += postfix
+                else:
+                    val = [
+                        {
+                            '__metaclass': 'Link',
+                            'id': v,
+                            'type': objtype,
+                            'driven': options.driven
+                        }
+                        for v in val
+                    ]
 
             if options.hexed:
                 val = [self.int_to_hex(v) for v in val]

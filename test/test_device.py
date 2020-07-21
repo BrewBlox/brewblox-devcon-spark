@@ -80,8 +80,8 @@ async def test_transcoding(app, client, cmder, store, dev):
     retval = await dev.create_object(object_args)
     assert retval['data']['settings']['address'] == 'ff'.rjust(16, '0')
 
-    c.encode.assert_any_await(obj_type, obj_data, opts=None)
-    c.decode.assert_any_await(enc_type, enc_data, opts=None)
+    c.encode.assert_any_await(obj_type, obj_data, opts={})
+    c.decode.assert_any_await(enc_type, enc_data, opts={})
 
 
 async def test_list_transcoding(app, client, cmder, store, dev, mocker):
@@ -108,22 +108,22 @@ async def test_convert_id(app, client, store, mocker, dev):
 
     resolver = device.SparkResolver(app)
 
-    assert await resolver.convert_sid_nid({'id': 'alias'}) == {'nid': 123}
-    assert await resolver.convert_sid_nid({'nid': 840}) == {'nid': 840}
-    assert await resolver.convert_sid_nid({'id': 840}) == {'nid': 840}
+    assert await resolver.convert_sid_nid({'id': 'alias'}, {}) == {'nid': 123}
+    assert await resolver.convert_sid_nid({'nid': 840}, {}) == {'nid': 840}
+    assert await resolver.convert_sid_nid({'id': 840}, {}) == {'nid': 840}
     # When both present, NID takes precedence
-    assert await resolver.convert_sid_nid({'id': 'alias', 'nid': 444}) == {'nid': 444}
-    assert await resolver.convert_sid_nid({}) == {}
+    assert await resolver.convert_sid_nid({'id': 'alias', 'nid': 444}, {}) == {'nid': 444}
+    assert await resolver.convert_sid_nid({}, {}) == {}
 
-    assert await resolver.add_sid({'nid': 123}) == {'nid': 123, 'id': 'alias'}
-    assert await resolver.add_sid({'id': 'testey'}) == {'id': 'testey'}
-    assert await resolver.add_sid({}) == {}
+    assert await resolver.add_sid({'nid': 123}, {}) == {'nid': 123, 'id': 'alias'}
+    assert await resolver.add_sid({'id': 'testey'}, {}) == {'id': 'testey'}
+    assert await resolver.add_sid({}, {}) == {}
 
     with pytest.raises(exceptions.DecodeException):
-        await resolver.add_sid({'nid': 'testey'})
+        await resolver.add_sid({'nid': 'testey'}, {})
 
     # Service ID not found: create placeholder
-    generated = await resolver.add_sid({'nid': 456, 'type': 'Edgecase,driven'})
+    generated = await resolver.add_sid({'nid': 456, 'type': 'Edgecase,driven'}, {})
     assert generated['id'].startswith(const.GENERATED_ID_PREFIX)
     assert ',driven' not in generated['id']
 
@@ -146,12 +146,16 @@ async def test_resolve_links(app, client, store):
                 },
                 'listed': [
                     {'flappy<SetpointSensorPairInterface>': 'moo'}
-                ]
-            }
+                ],
+                'metavalue': {
+                    '__metaclass': 'Link',
+                    'id': 'eeney',
+                },
+            },
         }
 
     resolver = device.SparkResolver(app)
-    output = await resolver.convert_links_nid(create_data())
+    output = await resolver.convert_links_nid(create_data(), {})
 
     assert output == {
         'data': {
@@ -166,8 +170,12 @@ async def test_resolve_links(app, client, store):
             'listed': [
                 {'flappy<SetpointSensorPairInterface>': 9003},
             ],
+            'metavalue': {
+                '__metaclass': 'Link',
+                'id': 9001,
+            },
         },
     }
 
-    output = await resolver.convert_links_sid(output)
+    output = await resolver.convert_links_sid(output, {})
     assert output == create_data()

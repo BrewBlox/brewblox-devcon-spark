@@ -13,7 +13,7 @@ _path_extension.avoid_lint_errors()
 
 
 @pytest.fixture
-def mod(app):
+def f_mod(app):
     c = unit_conversion.UnitConverter(app)
     c.user_units = {
         'Temp': 'degF',
@@ -24,7 +24,7 @@ def mod(app):
 
 
 @pytest.fixture
-def k_mod(app):
+def c_mod(app):
     c = unit_conversion.UnitConverter(app)
     c.user_units = {
         'Temp': 'degC',
@@ -48,9 +48,9 @@ def generate_decoding_data():
     }
 
 
-def test_encode_options(mod):
+def test_encode_options(f_mod):
     vals = generate_encoding_data()
-    mod.encode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals, {})
+    f_mod.encode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals, {})
 
     # converted to (delta) degC
     # scaled * 256
@@ -58,36 +58,36 @@ def test_encode_options(mod):
     assert vals == generate_decoding_data()
 
 
-def test_decode_options(mod):
+def test_decode_options(f_mod):
     vals = generate_decoding_data()
-    mod.decode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals, {})
-    assert vals['offset[delta_degF]'] == pytest.approx(20, 0.1)
-    assert vals['value[degF]'] == pytest.approx(100, 0.1)
+    f_mod.decode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals, {})
+    assert vals['offset']['value'] == pytest.approx(20, 0.1)
+    assert vals['value']['value'] == pytest.approx(100, 0.1)
 
 
-def test_decode_no_system(k_mod):
+def test_decode_no_system(c_mod):
     vals = generate_decoding_data()
-    k_mod.decode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals, {})
-    assert vals['offset[delta_degC]'] > 0
-    assert vals['value[degC]'] > 0
+    c_mod.decode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals, {})
+    assert vals['offset']['value'] > 0
+    assert vals['value']['value'] > 0
 
 
-def test_pack_bit_flags(mod):
-    assert mod.pack_bit_flags([0, 2, 1]) == 7
+def test_pack_bit_flags(f_mod):
+    assert f_mod.pack_bit_flags([0, 2, 1]) == 7
 
     with pytest.raises(ValueError):
-        mod.pack_bit_flags([8])
+        f_mod.pack_bit_flags([8])
 
 
-def test_unpack_bit_flags(mod):
-    assert mod.unpack_bit_flags(7) == [0, 1, 2]
-    assert mod.unpack_bit_flags(255) == [i for i in range(8)]
+def test_unpack_bit_flags(f_mod):
+    assert f_mod.unpack_bit_flags(7) == [0, 1, 2]
+    assert f_mod.unpack_bit_flags(255) == [i for i in range(8)]
 
 
-def test_null_values(mod):
+def test_null_values(f_mod):
     vals = generate_encoding_data()
     vals['offset[delta_degF]'] = None
     vals['address'] = None
 
-    mod.encode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals, {})
+    f_mod.encode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals, {})
     assert 'address' not in vals
