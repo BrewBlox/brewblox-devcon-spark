@@ -7,7 +7,7 @@ from brewblox_devcon_spark.codec import _path_extension  # isort:skip
 import pytest
 
 import TempSensorOneWire_pb2
-from brewblox_devcon_spark.codec import modifiers, unit_conversion
+from brewblox_devcon_spark.codec import CodecOpts, modifiers, unit_conversion
 
 _path_extension.avoid_lint_errors()
 
@@ -50,7 +50,7 @@ def generate_decoding_data():
 
 def test_encode_options(f_mod):
     vals = generate_encoding_data()
-    f_mod.encode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals, {})
+    f_mod.encode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals, CodecOpts())
 
     # converted to (delta) degC
     # scaled * 256
@@ -60,14 +60,14 @@ def test_encode_options(f_mod):
 
 def test_decode_options(f_mod):
     vals = generate_decoding_data()
-    f_mod.decode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals, {})
+    f_mod.decode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals, CodecOpts())
     assert vals['offset']['value'] == pytest.approx(20, 0.1)
     assert vals['value']['value'] == pytest.approx(100, 0.1)
 
 
 def test_decode_no_system(c_mod):
     vals = generate_decoding_data()
-    c_mod.decode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals, {})
+    c_mod.decode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals, CodecOpts())
     assert vals['offset']['value'] > 0
     assert vals['value']['value'] > 0
 
@@ -89,5 +89,5 @@ def test_null_values(f_mod):
     vals['offset[delta_degF]'] = None
     vals['address'] = None
 
-    f_mod.encode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals, {})
+    f_mod.encode_options(TempSensorOneWire_pb2.TempSensorOneWire(), vals, CodecOpts())
     assert 'address' not in vals
