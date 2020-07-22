@@ -1,7 +1,6 @@
 """
 Tests brewblox codec
 """
-from brewblox_devcon_spark.codec import _path_extension  # isort:skip
 
 import pytest
 from brewblox_service import features, scheduler
@@ -11,8 +10,6 @@ from brewblox_devcon_spark import (codec, commander_sim, datastore, device,
                                    exceptions, state)
 from brewblox_devcon_spark.codec import (Codec, CodecOpts, MetadataOpt,
                                          ProtoEnumOpt)
-
-_path_extension.avoid_lint_errors()
 
 
 @pytest.fixture
