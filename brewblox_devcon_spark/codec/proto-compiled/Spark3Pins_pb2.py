@@ -21,50 +21,50 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=b'\n\x10Spark3Pins.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\xa5\x03\n\nSpark3Pins\x12\x36\n\x04pins\x18\x01 \x03(\x0b\x32\x16.blox.Spark3Pins.IoPinB\x10\x92?\x02\x10\x05\x92?\x02x\x01\x8a\xb5\x18\x02(\x01\x12\x18\n\x10\x65nableIoSupply5V\x18\x02 \x01(\x08\x12\x19\n\x11\x65nableIoSupply12V\x18\x03 \x01(\x08\x12\x12\n\nsoundAlarm\x18\x05 \x01(\x08\x12$\n\x08voltage5\x18\x06 \x01(\rB\x12\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x8a\xb5\x18\x03\x10\x9a\x03\x12%\n\tvoltage12\x18\x07 \x01(\rB\x12\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x8a\xb5\x18\x03\x10\x95\x01\x1a\xb9\x01\n\x05IoPin\x12\x1f\n\x04top1\x18\x01 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1f\n\x04top2\x18\x02 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1f\n\x04top3\x18\x03 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\"\n\x07\x62ottom1\x18\x04 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\"\n\x07\x62ottom2\x18\x05 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x42\x05\n\x03Pin:\r\x8a\xb5\x18\x03\x18\xbf\x02\x8a\xb5\x18\x02H\nb\x06proto3'
+  serialized_pb=b'\n\x10Spark3Pins.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\xbf\x01\n\x0bSpark3IoPin\x12\x1f\n\x04top1\x18\x01 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1f\n\x04top2\x18\x02 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1f\n\x04top3\x18\x03 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\"\n\x07\x62ottom1\x18\x04 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\"\n\x07\x62ottom2\x18\x05 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x42\x05\n\x03Pin\"\xe4\x01\n\nSpark3Pins\x12\x31\n\x04pins\x18\x01 \x03(\x0b\x32\x11.blox.Spark3IoPinB\x10\x92?\x02\x10\x05\x92?\x02x\x01\x8a\xb5\x18\x02(\x01\x12\x18\n\x10\x65nableIoSupply5V\x18\x02 \x01(\x08\x12\x19\n\x11\x65nableIoSupply12V\x18\x03 \x01(\x08\x12\x12\n\nsoundAlarm\x18\x05 \x01(\x08\x12$\n\x08voltage5\x18\x06 \x01(\rB\x12\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x8a\xb5\x18\x03\x10\x9a\x03\x12%\n\tvoltage12\x18\x07 \x01(\rB\x12\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x8a\xb5\x18\x03\x10\x95\x01:\r\x8a\xb5\x18\x03\x18\xbf\x02\x8a\xb5\x18\x02H\nb\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,IoArray__pb2.DESCRIPTOR,])
 
 
 
 
-_SPARK3PINS_IOPIN = _descriptor.Descriptor(
-  name='IoPin',
-  full_name='blox.Spark3Pins.IoPin',
+_SPARK3IOPIN = _descriptor.Descriptor(
+  name='Spark3IoPin',
+  full_name='blox.Spark3IoPin',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='top1', full_name='blox.Spark3Pins.IoPin.top1', index=0,
+      name='top1', full_name='blox.Spark3IoPin.top1', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='top2', full_name='blox.Spark3Pins.IoPin.top2', index=1,
+      name='top2', full_name='blox.Spark3IoPin.top2', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='top3', full_name='blox.Spark3Pins.IoPin.top3', index=2,
+      name='top3', full_name='blox.Spark3IoPin.top3', index=2,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='bottom1', full_name='blox.Spark3Pins.IoPin.bottom1', index=3,
+      name='bottom1', full_name='blox.Spark3IoPin.bottom1', index=3,
       number=4, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='bottom2', full_name='blox.Spark3Pins.IoPin.bottom2', index=4,
+      name='bottom2', full_name='blox.Spark3IoPin.bottom2', index=4,
       number=5, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -82,12 +82,13 @@ _SPARK3PINS_IOPIN = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
     _descriptor.OneofDescriptor(
-      name='Pin', full_name='blox.Spark3Pins.IoPin.Pin',
+      name='Pin', full_name='blox.Spark3IoPin.Pin',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=293,
-  serialized_end=478,
+  serialized_start=72,
+  serialized_end=263,
 )
+
 
 _SPARK3PINS = _descriptor.Descriptor(
   name='Spark3Pins',
@@ -141,7 +142,7 @@ _SPARK3PINS = _descriptor.Descriptor(
   ],
   extensions=[
   ],
-  nested_types=[_SPARK3PINS_IOPIN, ],
+  nested_types=[],
   enum_types=[
   ],
   serialized_options=b'\212\265\030\003\030\277\002\212\265\030\002H\n',
@@ -150,49 +151,48 @@ _SPARK3PINS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=72,
-  serialized_end=493,
+  serialized_start=266,
+  serialized_end=494,
 )
 
-_SPARK3PINS_IOPIN.fields_by_name['top1'].message_type = IoArray__pb2._IOCHANNEL
-_SPARK3PINS_IOPIN.fields_by_name['top2'].message_type = IoArray__pb2._IOCHANNEL
-_SPARK3PINS_IOPIN.fields_by_name['top3'].message_type = IoArray__pb2._IOCHANNEL
-_SPARK3PINS_IOPIN.fields_by_name['bottom1'].message_type = IoArray__pb2._IOCHANNEL
-_SPARK3PINS_IOPIN.fields_by_name['bottom2'].message_type = IoArray__pb2._IOCHANNEL
-_SPARK3PINS_IOPIN.containing_type = _SPARK3PINS
-_SPARK3PINS_IOPIN.oneofs_by_name['Pin'].fields.append(
-  _SPARK3PINS_IOPIN.fields_by_name['top1'])
-_SPARK3PINS_IOPIN.fields_by_name['top1'].containing_oneof = _SPARK3PINS_IOPIN.oneofs_by_name['Pin']
-_SPARK3PINS_IOPIN.oneofs_by_name['Pin'].fields.append(
-  _SPARK3PINS_IOPIN.fields_by_name['top2'])
-_SPARK3PINS_IOPIN.fields_by_name['top2'].containing_oneof = _SPARK3PINS_IOPIN.oneofs_by_name['Pin']
-_SPARK3PINS_IOPIN.oneofs_by_name['Pin'].fields.append(
-  _SPARK3PINS_IOPIN.fields_by_name['top3'])
-_SPARK3PINS_IOPIN.fields_by_name['top3'].containing_oneof = _SPARK3PINS_IOPIN.oneofs_by_name['Pin']
-_SPARK3PINS_IOPIN.oneofs_by_name['Pin'].fields.append(
-  _SPARK3PINS_IOPIN.fields_by_name['bottom1'])
-_SPARK3PINS_IOPIN.fields_by_name['bottom1'].containing_oneof = _SPARK3PINS_IOPIN.oneofs_by_name['Pin']
-_SPARK3PINS_IOPIN.oneofs_by_name['Pin'].fields.append(
-  _SPARK3PINS_IOPIN.fields_by_name['bottom2'])
-_SPARK3PINS_IOPIN.fields_by_name['bottom2'].containing_oneof = _SPARK3PINS_IOPIN.oneofs_by_name['Pin']
-_SPARK3PINS.fields_by_name['pins'].message_type = _SPARK3PINS_IOPIN
+_SPARK3IOPIN.fields_by_name['top1'].message_type = IoArray__pb2._IOCHANNEL
+_SPARK3IOPIN.fields_by_name['top2'].message_type = IoArray__pb2._IOCHANNEL
+_SPARK3IOPIN.fields_by_name['top3'].message_type = IoArray__pb2._IOCHANNEL
+_SPARK3IOPIN.fields_by_name['bottom1'].message_type = IoArray__pb2._IOCHANNEL
+_SPARK3IOPIN.fields_by_name['bottom2'].message_type = IoArray__pb2._IOCHANNEL
+_SPARK3IOPIN.oneofs_by_name['Pin'].fields.append(
+  _SPARK3IOPIN.fields_by_name['top1'])
+_SPARK3IOPIN.fields_by_name['top1'].containing_oneof = _SPARK3IOPIN.oneofs_by_name['Pin']
+_SPARK3IOPIN.oneofs_by_name['Pin'].fields.append(
+  _SPARK3IOPIN.fields_by_name['top2'])
+_SPARK3IOPIN.fields_by_name['top2'].containing_oneof = _SPARK3IOPIN.oneofs_by_name['Pin']
+_SPARK3IOPIN.oneofs_by_name['Pin'].fields.append(
+  _SPARK3IOPIN.fields_by_name['top3'])
+_SPARK3IOPIN.fields_by_name['top3'].containing_oneof = _SPARK3IOPIN.oneofs_by_name['Pin']
+_SPARK3IOPIN.oneofs_by_name['Pin'].fields.append(
+  _SPARK3IOPIN.fields_by_name['bottom1'])
+_SPARK3IOPIN.fields_by_name['bottom1'].containing_oneof = _SPARK3IOPIN.oneofs_by_name['Pin']
+_SPARK3IOPIN.oneofs_by_name['Pin'].fields.append(
+  _SPARK3IOPIN.fields_by_name['bottom2'])
+_SPARK3IOPIN.fields_by_name['bottom2'].containing_oneof = _SPARK3IOPIN.oneofs_by_name['Pin']
+_SPARK3PINS.fields_by_name['pins'].message_type = _SPARK3IOPIN
+DESCRIPTOR.message_types_by_name['Spark3IoPin'] = _SPARK3IOPIN
 DESCRIPTOR.message_types_by_name['Spark3Pins'] = _SPARK3PINS
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-Spark3Pins = _reflection.GeneratedProtocolMessageType('Spark3Pins', (_message.Message,), {
+Spark3IoPin = _reflection.GeneratedProtocolMessageType('Spark3IoPin', (_message.Message,), {
+  'DESCRIPTOR' : _SPARK3IOPIN,
+  '__module__' : 'Spark3Pins_pb2'
+  # @@protoc_insertion_point(class_scope:blox.Spark3IoPin)
+  })
+_sym_db.RegisterMessage(Spark3IoPin)
 
-  'IoPin' : _reflection.GeneratedProtocolMessageType('IoPin', (_message.Message,), {
-    'DESCRIPTOR' : _SPARK3PINS_IOPIN,
-    '__module__' : 'Spark3Pins_pb2'
-    # @@protoc_insertion_point(class_scope:blox.Spark3Pins.IoPin)
-    })
-  ,
+Spark3Pins = _reflection.GeneratedProtocolMessageType('Spark3Pins', (_message.Message,), {
   'DESCRIPTOR' : _SPARK3PINS,
   '__module__' : 'Spark3Pins_pb2'
   # @@protoc_insertion_point(class_scope:blox.Spark3Pins)
   })
 _sym_db.RegisterMessage(Spark3Pins)
-_sym_db.RegisterMessage(Spark3Pins.IoPin)
 
 
 _SPARK3PINS.fields_by_name['pins']._options = None

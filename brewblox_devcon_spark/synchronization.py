@@ -268,7 +268,7 @@ class Syncher(repeater.RepeaterFeature):
             'groups': [const.SYSTEM_GROUP],
             'type': 'SysInfo',
             'data': {
-                'command': 'READ_AND_RESUME_TRACE'
+                'command': 'SYS_CMD_TRACE_READ_RESUME'
             }
         })
         trace = '\n'.join(await self.format_trace(sys_block['data']['trace']))

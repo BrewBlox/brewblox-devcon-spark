@@ -196,10 +196,10 @@ async def test_compatible_types(app, client, cdc: Codec):
 
 async def test_enum_decoding(app, client, cdc: Codec):
     enc_id, enc_val = await cdc.encode('DigitalActuator', {
-        'desiredState': 'Active',
+        'desiredState': 'STATE_ACTIVE',
     })
     dec_id, dec_val = await cdc.decode(enc_id, enc_val)
-    assert dec_val['desiredState'] == 'Active'
+    assert dec_val['desiredState'] == 'STATE_ACTIVE'
 
     # Both strings and ints are valid input
     enc_id_alt, enc_val_alt = await cdc.encode('DigitalActuator', {

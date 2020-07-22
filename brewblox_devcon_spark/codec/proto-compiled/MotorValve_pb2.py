@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=b'\n\x10MotorValve.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x18\x44igitalConstraints.proto\x1a\rIoArray.proto\"\xc5\x03\n\nMotorValve\x12#\n\x08hwDevice\x18\x01 \x01(\rB\x11\x8a\xb5\x18\x02\x18\x0b\x8a\xb5\x18\x02@\x01\x92?\x02\x38\x10\x12\x1b\n\x0cstartChannel\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12/\n\x05state\x18\x03 \x01(\x0e\x32\x12.blox.DigitalStateB\x0c\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x12/\n\rconstrainedBy\x18\x05 \x01(\x0b\x32\x18.blox.DigitalConstraints\x12=\n\nvalveState\x18\x06 \x01(\x0e\x32\x1b.blox.MotorValve.ValveStateB\x0c\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x12\x30\n\x0c\x64\x65siredState\x18\x07 \x01(\x0e\x32\x12.blox.DigitalStateB\x06\x8a\xb5\x18\x02\x30\x01\x12(\n\x0estrippedFields\x18\x63 \x03(\rB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x02\"i\n\nValveState\x12\x0b\n\x07Unknown\x10\x00\x12\x08\n\x04Open\x10\x01\x12\n\n\x06\x43losed\x10\x02\x12\x0b\n\x07Opening\x10\x03\x12\x0b\n\x07\x43losing\x10\x04\x12\x10\n\x0cHalfOpenIdle\x10\x05\x12\x0c\n\x08InitIdle\x10\x06:\r\x8a\xb5\x18\x03\x18\xc1\x02\x8a\xb5\x18\x02H\x06\x62\x06proto3'
+  serialized_pb=b'\n\x10MotorValve.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x18\x44igitalConstraints.proto\x1a\rIoArray.proto\"\xf3\x03\n\nMotorValve\x12#\n\x08hwDevice\x18\x01 \x01(\rB\x11\x8a\xb5\x18\x02\x18\x0b\x8a\xb5\x18\x02@\x01\x92?\x02\x38\x10\x12\x1b\n\x0cstartChannel\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12/\n\x05state\x18\x03 \x01(\x0e\x32\x12.blox.DigitalStateB\x0c\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x12/\n\rconstrainedBy\x18\x05 \x01(\x0b\x32\x18.blox.DigitalConstraints\x12=\n\nvalveState\x18\x06 \x01(\x0e\x32\x1b.blox.MotorValve.ValveStateB\x0c\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x12\x30\n\x0c\x64\x65siredState\x18\x07 \x01(\x0e\x32\x12.blox.DigitalStateB\x06\x8a\xb5\x18\x02\x30\x01\x12(\n\x0estrippedFields\x18\x63 \x03(\rB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x02\"\x96\x01\n\nValveState\x12\x11\n\rVALVE_UNKNOWN\x10\x00\x12\x0e\n\nVALVE_OPEN\x10\x01\x12\x10\n\x0cVALVE_CLOSED\x10\x02\x12\x11\n\rVALVE_OPENING\x10\x03\x12\x11\n\rVALVE_CLOSING\x10\x04\x12\x18\n\x14VALVE_HALF_OPEN_IDLE\x10\x05\x12\x13\n\x0fVALVE_INIT_IDLE\x10\x06:\r\x8a\xb5\x18\x03\x18\xc1\x02\x8a\xb5\x18\x02H\x06\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,DigitalConstraints__pb2.DESCRIPTOR,IoArray__pb2.DESCRIPTOR,])
 
@@ -35,38 +35,38 @@ _MOTORVALVE_VALVESTATE = _descriptor.EnumDescriptor(
   file=DESCRIPTOR,
   values=[
     _descriptor.EnumValueDescriptor(
-      name='Unknown', index=0, number=0,
+      name='VALVE_UNKNOWN', index=0, number=0,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='Open', index=1, number=1,
+      name='VALVE_OPEN', index=1, number=1,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='Closed', index=2, number=2,
+      name='VALVE_CLOSED', index=2, number=2,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='Opening', index=3, number=3,
+      name='VALVE_OPENING', index=3, number=3,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='Closing', index=4, number=4,
+      name='VALVE_CLOSING', index=4, number=4,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='HalfOpenIdle', index=5, number=5,
+      name='VALVE_HALF_OPEN_IDLE', index=5, number=5,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='InitIdle', index=6, number=6,
+      name='VALVE_INIT_IDLE', index=6, number=6,
       serialized_options=None,
       type=None),
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=431,
-  serialized_end=536,
+  serialized_start=432,
+  serialized_end=582,
 )
 _sym_db.RegisterEnumDescriptor(_MOTORVALVE_VALVESTATE)
 
@@ -141,7 +141,7 @@ _MOTORVALVE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=98,
-  serialized_end=551,
+  serialized_end=597,
 )
 
 _MOTORVALVE.fields_by_name['state'].enum_type = IoArray__pb2._DIGITALSTATE
