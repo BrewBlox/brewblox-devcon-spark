@@ -20,15 +20,15 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=b'\n\rSysInfo.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x89\x06\n\x07SysInfo\x12(\n\x08\x64\x65viceId\x18\x01 \x01(\x0c\x42\x16\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x92?\x02x\x01\x8a\xb5\x18\x02\x38\x01\x12\x1c\n\x07version\x18\x02 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12\x30\n\x08platform\x18\x03 \x01(\x0e\x32\x16.blox.SysInfo.PlatformB\x06\x8a\xb5\x18\x02(\x01\x12$\n\x0fprotocolVersion\x18\x07 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12 \n\x0breleaseDate\x18\x08 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12!\n\x0cprotocolDate\x18\t \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12&\n\x07\x63ommand\x18\n \x01(\x0e\x32\x15.blox.SysInfo.Command\x12)\n\x05trace\x18\x0b \x03(\x0b\x32\x13.blox.SysInfo.TraceB\x05\x92?\x02\x10\n\x1a\xab\x02\n\x05Trace\x12*\n\x06\x61\x63tion\x18\x01 \x01(\x0e\x32\x1a.blox.SysInfo.Trace.Action\x12\x11\n\x02id\x18\x02 \x01(\rB\x05\x92?\x02\x38\x10\x12\x13\n\x04type\x18\x03 \x01(\rB\x05\x92?\x02\x38\x10\"\xcd\x01\n\x06\x41\x63tion\x12\x08\n\x04NONE\x10\x00\x12\x0e\n\nREAD_BLOCK\x10\x01\x12\x0f\n\x0bWRITE_BLOCK\x10\x02\x12\x11\n\rPERSIST_BLOCK\x10\x03\x12\x10\n\x0cUPDATE_BLOCK\x10\x04\x12\x10\n\x0c\x43REATE_BLOCK\x10\x05\x12\x10\n\x0c\x44\x45LETE_BLOCK\x10\x06\x12\x12\n\x0eUPDATE_DISPLAY\x10\n\x12\x16\n\x12UPDATE_CONNECTIONS\x10\x0b\x12\x11\n\rUPDATE_BLOCKS\x10\x0c\x12\x10\n\x0cSYSTEM_TASKS\x10\r\"=\n\x08Platform\x12\x14\n\x10unknown_platform\x10\x00\x12\x07\n\x03gcc\x10\x03\x12\n\n\x06photon\x10\x06\x12\x06\n\x02p1\x10\x08\"P\n\x07\x43ommand\x12\x08\n\x04NONE\x10\x00\x12\x0e\n\nREAD_TRACE\x10\x01\x12\x10\n\x0cRESUME_TRACE\x10\x02\x12\x19\n\x15READ_AND_RESUME_TRACE\x10\x03:\x07\x8a\xb5\x18\x03\x18\x80\x02\x62\x06proto3'
+  serialized_pb=b'\n\rSysInfo.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xa3\x02\n\x05Trace\x12\"\n\x06\x61\x63tion\x18\x01 \x01(\x0e\x32\x12.blox.Trace.Action\x12\x11\n\x02id\x18\x02 \x01(\rB\x05\x92?\x02\x38\x10\x12\x13\n\x04type\x18\x03 \x01(\rB\x05\x92?\x02\x38\x10\"\xcd\x01\n\x06\x41\x63tion\x12\x08\n\x04NONE\x10\x00\x12\x0e\n\nREAD_BLOCK\x10\x01\x12\x0f\n\x0bWRITE_BLOCK\x10\x02\x12\x11\n\rPERSIST_BLOCK\x10\x03\x12\x10\n\x0cUPDATE_BLOCK\x10\x04\x12\x10\n\x0c\x43REATE_BLOCK\x10\x05\x12\x10\n\x0c\x44\x45LETE_BLOCK\x10\x06\x12\x12\n\x0eUPDATE_DISPLAY\x10\n\x12\x16\n\x12UPDATE_CONNECTIONS\x10\x0b\x12\x11\n\rUPDATE_BLOCKS\x10\x0c\x12\x10\n\x0cSYSTEM_TASKS\x10\r\"\x98\x04\n\x07SysInfo\x12(\n\x08\x64\x65viceId\x18\x01 \x01(\x0c\x42\x16\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x92?\x02x\x01\x8a\xb5\x18\x02\x38\x01\x12\x1c\n\x07version\x18\x02 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12\x30\n\x08platform\x18\x03 \x01(\x0e\x32\x16.blox.SysInfo.PlatformB\x06\x8a\xb5\x18\x02(\x01\x12$\n\x0fprotocolVersion\x18\x07 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12 \n\x0breleaseDate\x18\x08 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12!\n\x0cprotocolDate\x18\t \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12-\n\x07\x63ommand\x18\n \x01(\x0e\x32\x1c.blox.SysInfo.SysInfoCommand\x12!\n\x05trace\x18\x0b \x03(\x0b\x32\x0b.blox.TraceB\x05\x92?\x02\x10\n\"X\n\x08Platform\x12\x14\n\x10PLATFORM_UNKNOWN\x10\x00\x12\x10\n\x0cPLATFORM_GCC\x10\x03\x12\x13\n\x0fPLATFORM_PHOTON\x10\x06\x12\x0f\n\x0bPLATFORM_P1\x10\x08\"s\n\x0eSysInfoCommand\x12\x10\n\x0cSYS_CMD_NONE\x10\x00\x12\x16\n\x12SYS_CMD_TRACE_READ\x10\x01\x12\x18\n\x14SYS_CMD_TRACE_RESUME\x10\x02\x12\x1d\n\x19SYS_CMD_TRACE_READ_RESUME\x10\x03:\x07\x8a\xb5\x18\x03\x18\x80\x02\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
 
 
-_SYSINFO_TRACE_ACTION = _descriptor.EnumDescriptor(
+_TRACE_ACTION = _descriptor.EnumDescriptor(
   name='Action',
-  full_name='blox.SysInfo.Trace.Action',
+  full_name='blox.Trace.Action',
   filename=None,
   file=DESCRIPTOR,
   values=[
@@ -79,10 +79,10 @@ _SYSINFO_TRACE_ACTION = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=472,
-  serialized_end=677,
+  serialized_start=140,
+  serialized_end=345,
 )
-_sym_db.RegisterEnumDescriptor(_SYSINFO_TRACE_ACTION)
+_sym_db.RegisterEnumDescriptor(_TRACE_ACTION)
 
 _SYSINFO_PLATFORM = _descriptor.EnumDescriptor(
   name='Platform',
@@ -91,83 +91,83 @@ _SYSINFO_PLATFORM = _descriptor.EnumDescriptor(
   file=DESCRIPTOR,
   values=[
     _descriptor.EnumValueDescriptor(
-      name='unknown_platform', index=0, number=0,
+      name='PLATFORM_UNKNOWN', index=0, number=0,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='gcc', index=1, number=3,
+      name='PLATFORM_GCC', index=1, number=3,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='photon', index=2, number=6,
+      name='PLATFORM_PHOTON', index=2, number=6,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='p1', index=3, number=8,
+      name='PLATFORM_P1', index=3, number=8,
       serialized_options=None,
       type=None),
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=679,
-  serialized_end=740,
+  serialized_start=670,
+  serialized_end=758,
 )
 _sym_db.RegisterEnumDescriptor(_SYSINFO_PLATFORM)
 
-_SYSINFO_COMMAND = _descriptor.EnumDescriptor(
-  name='Command',
-  full_name='blox.SysInfo.Command',
+_SYSINFO_SYSINFOCOMMAND = _descriptor.EnumDescriptor(
+  name='SysInfoCommand',
+  full_name='blox.SysInfo.SysInfoCommand',
   filename=None,
   file=DESCRIPTOR,
   values=[
     _descriptor.EnumValueDescriptor(
-      name='NONE', index=0, number=0,
+      name='SYS_CMD_NONE', index=0, number=0,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='READ_TRACE', index=1, number=1,
+      name='SYS_CMD_TRACE_READ', index=1, number=1,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='RESUME_TRACE', index=2, number=2,
+      name='SYS_CMD_TRACE_RESUME', index=2, number=2,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='READ_AND_RESUME_TRACE', index=3, number=3,
+      name='SYS_CMD_TRACE_READ_RESUME', index=3, number=3,
       serialized_options=None,
       type=None),
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=742,
-  serialized_end=822,
+  serialized_start=760,
+  serialized_end=875,
 )
-_sym_db.RegisterEnumDescriptor(_SYSINFO_COMMAND)
+_sym_db.RegisterEnumDescriptor(_SYSINFO_SYSINFOCOMMAND)
 
 
-_SYSINFO_TRACE = _descriptor.Descriptor(
+_TRACE = _descriptor.Descriptor(
   name='Trace',
-  full_name='blox.SysInfo.Trace',
+  full_name='blox.Trace',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='action', full_name='blox.SysInfo.Trace.action', index=0,
+      name='action', full_name='blox.Trace.action', index=0,
       number=1, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='id', full_name='blox.SysInfo.Trace.id', index=1,
+      name='id', full_name='blox.Trace.id', index=1,
       number=2, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\222?\0028\020', file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='type', full_name='blox.SysInfo.Trace.type', index=2,
+      name='type', full_name='blox.Trace.type', index=2,
       number=3, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -178,7 +178,7 @@ _SYSINFO_TRACE = _descriptor.Descriptor(
   ],
   nested_types=[],
   enum_types=[
-    _SYSINFO_TRACE_ACTION,
+    _TRACE_ACTION,
   ],
   serialized_options=None,
   is_extendable=False,
@@ -186,9 +186,10 @@ _SYSINFO_TRACE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=378,
-  serialized_end=677,
+  serialized_start=54,
+  serialized_end=345,
 )
+
 
 _SYSINFO = _descriptor.Descriptor(
   name='SysInfo',
@@ -256,10 +257,10 @@ _SYSINFO = _descriptor.Descriptor(
   ],
   extensions=[
   ],
-  nested_types=[_SYSINFO_TRACE, ],
+  nested_types=[],
   enum_types=[
     _SYSINFO_PLATFORM,
-    _SYSINFO_COMMAND,
+    _SYSINFO_SYSINFOCOMMAND,
   ],
   serialized_options=b'\212\265\030\003\030\200\002',
   is_extendable=False,
@@ -267,39 +268,38 @@ _SYSINFO = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=54,
-  serialized_end=831,
+  serialized_start=348,
+  serialized_end=884,
 )
 
-_SYSINFO_TRACE.fields_by_name['action'].enum_type = _SYSINFO_TRACE_ACTION
-_SYSINFO_TRACE.containing_type = _SYSINFO
-_SYSINFO_TRACE_ACTION.containing_type = _SYSINFO_TRACE
+_TRACE.fields_by_name['action'].enum_type = _TRACE_ACTION
+_TRACE_ACTION.containing_type = _TRACE
 _SYSINFO.fields_by_name['platform'].enum_type = _SYSINFO_PLATFORM
-_SYSINFO.fields_by_name['command'].enum_type = _SYSINFO_COMMAND
-_SYSINFO.fields_by_name['trace'].message_type = _SYSINFO_TRACE
+_SYSINFO.fields_by_name['command'].enum_type = _SYSINFO_SYSINFOCOMMAND
+_SYSINFO.fields_by_name['trace'].message_type = _TRACE
 _SYSINFO_PLATFORM.containing_type = _SYSINFO
-_SYSINFO_COMMAND.containing_type = _SYSINFO
+_SYSINFO_SYSINFOCOMMAND.containing_type = _SYSINFO
+DESCRIPTOR.message_types_by_name['Trace'] = _TRACE
 DESCRIPTOR.message_types_by_name['SysInfo'] = _SYSINFO
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-SysInfo = _reflection.GeneratedProtocolMessageType('SysInfo', (_message.Message,), {
+Trace = _reflection.GeneratedProtocolMessageType('Trace', (_message.Message,), {
+  'DESCRIPTOR' : _TRACE,
+  '__module__' : 'SysInfo_pb2'
+  # @@protoc_insertion_point(class_scope:blox.Trace)
+  })
+_sym_db.RegisterMessage(Trace)
 
-  'Trace' : _reflection.GeneratedProtocolMessageType('Trace', (_message.Message,), {
-    'DESCRIPTOR' : _SYSINFO_TRACE,
-    '__module__' : 'SysInfo_pb2'
-    # @@protoc_insertion_point(class_scope:blox.SysInfo.Trace)
-    })
-  ,
+SysInfo = _reflection.GeneratedProtocolMessageType('SysInfo', (_message.Message,), {
   'DESCRIPTOR' : _SYSINFO,
   '__module__' : 'SysInfo_pb2'
   # @@protoc_insertion_point(class_scope:blox.SysInfo)
   })
 _sym_db.RegisterMessage(SysInfo)
-_sym_db.RegisterMessage(SysInfo.Trace)
 
 
-_SYSINFO_TRACE.fields_by_name['id']._options = None
-_SYSINFO_TRACE.fields_by_name['type']._options = None
+_TRACE.fields_by_name['id']._options = None
+_TRACE.fields_by_name['type']._options = None
 _SYSINFO.fields_by_name['deviceId']._options = None
 _SYSINFO.fields_by_name['version']._options = None
 _SYSINFO.fields_by_name['platform']._options = None

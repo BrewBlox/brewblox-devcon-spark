@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='',
   syntax='proto2',
   serialized_options=None,
-  serialized_pb=b'\n\x0e\x62rewblox.proto\x1a google/protobuf/descriptor.proto\x1a\x0cnanopb.proto\"\x91\x08\n\rBrewBloxTypes\"\xf1\x01\n\x08UnitType\x12\n\n\x06NotSet\x10\x00\x12\x08\n\x04Temp\x10\x01\x12\x0f\n\x0bInverseTemp\x10\x02\x12\n\n\x06Second\x10\x03\x12\n\n\x06Minute\x10\x04\x12\x08\n\x04Hour\x10\x05\x12\r\n\tDeltaTemp\x10\x06\x12\x16\n\x12\x44\x65ltaTempPerSecond\x10\x07\x12\x16\n\x12\x44\x65ltaTempPerMinute\x10\x08\x12\x14\n\x10\x44\x65ltaTempPerHour\x10\t\x12\x17\n\x13\x44\x65ltaTempMultSecond\x10\n\x12\x17\n\x13\x44\x65ltaTempMultMinute\x10\x0b\x12\x15\n\x11\x44\x65ltaTempMultHour\x10\x0c\"\x8b\x06\n\tBlockType\x12\x0b\n\x07Invalid\x10\x00\x12\x19\n\x15ProcessValueInterface\x10\x01\x12\x17\n\x13TempSensorInterface\x10\x02\x12\x1f\n\x1bSetpointSensorPairInterface\x10\x04\x12\x1b\n\x17\x41\x63tuatorAnalogInterface\x10\x05\x12\x1c\n\x18\x41\x63tuatorDigitalInterface\x10\x06\x12\x15\n\x11\x42\x61lancerInterface\x10\x07\x12\x12\n\x0eMutexInterface\x10\x08\x12\x1a\n\x16OneWireDeviceInterface\x10\t\x12\x14\n\x10IoArrayInterface\x10\n\x12\x13\n\x0f\x44S2408Interface\x10\x0b\x12\x08\n\x03\x41ny\x10\xff\x01\x12\x0c\n\x07SysInfo\x10\x80\x02\x12\n\n\x05Ticks\x10\x81\x02\x12\x0f\n\nOneWireBus\x10\x82\x02\x12\x0e\n\tBoardPins\x10\x83\x02\x12\x13\n\x0eTempSensorMock\x10\xad\x02\x12\x16\n\x11TempSensorOneWire\x10\xae\x02\x12\x17\n\x12SetpointSensorPair\x10\xaf\x02\x12\x08\n\x03Pid\x10\xb0\x02\x12\x17\n\x12\x41\x63tuatorAnalogMock\x10\xb1\x02\x12\x10\n\x0b\x41\x63tuatorPin\x10\xb2\x02\x12\x10\n\x0b\x41\x63tuatorPwm\x10\xb3\x02\x12\x13\n\x0e\x41\x63tuatorOffset\x10\xb4\x02\x12\r\n\x08\x42\x61lancer\x10\xb5\x02\x12\n\n\x05Mutex\x10\xb6\x02\x12\x14\n\x0fSetpointProfile\x10\xb7\x02\x12\x11\n\x0cWiFiSettings\x10\xb8\x02\x12\x12\n\rTouchSettings\x10\xb9\x02\x12\x14\n\x0f\x44isplaySettings\x10\xba\x02\x12\x0b\n\x06\x44S2413\x10\xbb\x02\x12\x14\n\x0f\x41\x63tuatorOneWire\x10\xbc\x02\x12\x0b\n\x06\x44S2408\x10\xbd\x02\x12\x14\n\x0f\x44igitalActuator\x10\xbe\x02\x12\x0f\n\nSpark3Pins\x10\xbf\x02\x12\x0f\n\nSpark2Pins\x10\xc0\x02\x12\x0f\n\nMotorValve\x10\xc1\x02\x12\x12\n\rActuatorLogic\x10\xc2\x02\x12\r\n\x08MockPins\x10\xc3\x02\"y\n\x16\x42rewBloxMessageOptions\x12)\n\x07objtype\x18\x03 \x01(\x0e\x32\x18.BrewBloxTypes.BlockType\x12-\n\x04impl\x18\t \x03(\x0e\x32\x18.BrewBloxTypes.BlockTypeB\x05\x92?\x02\x10\x05:\x05\x92?\x02\x30\x01\"\xe0\x01\n\x14\x42rewBloxFieldOptions\x12%\n\x04unit\x18\x01 \x01(\x0e\x32\x17.BrewBloxTypes.UnitType\x12\r\n\x05scale\x18\x02 \x01(\r\x12)\n\x07objtype\x18\x03 \x01(\x0e\x32\x18.BrewBloxTypes.BlockType\x12\r\n\x05hexed\x18\x04 \x01(\x08\x12\x10\n\x08readonly\x18\x05 \x01(\x08\x12\x0e\n\x06logged\x18\x06 \x01(\x08\x12\x0e\n\x06hexstr\x18\x07 \x01(\x08\x12\x0e\n\x06\x64riven\x18\x08 \x01(\x08\x12\x0f\n\x07ignored\x18\t \x01(\x08:\x05\x92?\x02\x30\x01:O\n\x08\x62rewblox\x12\x1d.google.protobuf.FieldOptions\x18\xd1\x86\x03 \x01(\x0b\x32\x15.BrewBloxFieldOptionsB\x05\x92?\x02\x18\x03:W\n\x0c\x62rewblox_msg\x12\x1f.google.protobuf.MessageOptions\x18\xd1\x86\x03 \x01(\x0b\x32\x17.BrewBloxMessageOptionsB\x05\x92?\x02\x18\x03'
+  serialized_pb=b'\n\x0e\x62rewblox.proto\x1a google/protobuf/descriptor.proto\x1a\x0cnanopb.proto\"\xac\x08\n\rBrewBloxTypes\"\x8c\x02\n\x08UnitType\x12\n\n\x06NotSet\x10\x00\x12\x0b\n\x07\x43\x65lsius\x10\x01\x12\x12\n\x0eInverseCelsius\x10\x02\x12\n\n\x06Second\x10\x03\x12\n\n\x06Minute\x10\x04\x12\x08\n\x04Hour\x10\x05\x12\x10\n\x0c\x44\x65ltaCelsius\x10\x06\x12\x19\n\x15\x44\x65ltaCelsiusPerSecond\x10\x07\x12\x19\n\x15\x44\x65ltaCelsiusPerMinute\x10\x08\x12\x17\n\x13\x44\x65ltaCelsiusPerHour\x10\t\x12\x1a\n\x16\x44\x65ltaCelsiusMultSecond\x10\n\x12\x1a\n\x16\x44\x65ltaCelsiusMultMinute\x10\x0b\x12\x18\n\x14\x44\x65ltaCelsiusMultHour\x10\x0c\"\x8b\x06\n\tBlockType\x12\x0b\n\x07Invalid\x10\x00\x12\x19\n\x15ProcessValueInterface\x10\x01\x12\x17\n\x13TempSensorInterface\x10\x02\x12\x1f\n\x1bSetpointSensorPairInterface\x10\x04\x12\x1b\n\x17\x41\x63tuatorAnalogInterface\x10\x05\x12\x1c\n\x18\x41\x63tuatorDigitalInterface\x10\x06\x12\x15\n\x11\x42\x61lancerInterface\x10\x07\x12\x12\n\x0eMutexInterface\x10\x08\x12\x1a\n\x16OneWireDeviceInterface\x10\t\x12\x14\n\x10IoArrayInterface\x10\n\x12\x13\n\x0f\x44S2408Interface\x10\x0b\x12\x08\n\x03\x41ny\x10\xff\x01\x12\x0c\n\x07SysInfo\x10\x80\x02\x12\n\n\x05Ticks\x10\x81\x02\x12\x0f\n\nOneWireBus\x10\x82\x02\x12\x0e\n\tBoardPins\x10\x83\x02\x12\x13\n\x0eTempSensorMock\x10\xad\x02\x12\x16\n\x11TempSensorOneWire\x10\xae\x02\x12\x17\n\x12SetpointSensorPair\x10\xaf\x02\x12\x08\n\x03Pid\x10\xb0\x02\x12\x17\n\x12\x41\x63tuatorAnalogMock\x10\xb1\x02\x12\x10\n\x0b\x41\x63tuatorPin\x10\xb2\x02\x12\x10\n\x0b\x41\x63tuatorPwm\x10\xb3\x02\x12\x13\n\x0e\x41\x63tuatorOffset\x10\xb4\x02\x12\r\n\x08\x42\x61lancer\x10\xb5\x02\x12\n\n\x05Mutex\x10\xb6\x02\x12\x14\n\x0fSetpointProfile\x10\xb7\x02\x12\x11\n\x0cWiFiSettings\x10\xb8\x02\x12\x12\n\rTouchSettings\x10\xb9\x02\x12\x14\n\x0f\x44isplaySettings\x10\xba\x02\x12\x0b\n\x06\x44S2413\x10\xbb\x02\x12\x14\n\x0f\x41\x63tuatorOneWire\x10\xbc\x02\x12\x0b\n\x06\x44S2408\x10\xbd\x02\x12\x14\n\x0f\x44igitalActuator\x10\xbe\x02\x12\x0f\n\nSpark3Pins\x10\xbf\x02\x12\x0f\n\nSpark2Pins\x10\xc0\x02\x12\x0f\n\nMotorValve\x10\xc1\x02\x12\x12\n\rActuatorLogic\x10\xc2\x02\x12\r\n\x08MockPins\x10\xc3\x02\"y\n\x16\x42rewBloxMessageOptions\x12)\n\x07objtype\x18\x03 \x01(\x0e\x32\x18.BrewBloxTypes.BlockType\x12-\n\x04impl\x18\t \x03(\x0e\x32\x18.BrewBloxTypes.BlockTypeB\x05\x92?\x02\x10\x05:\x05\x92?\x02\x30\x01\"\xe0\x01\n\x14\x42rewBloxFieldOptions\x12%\n\x04unit\x18\x01 \x01(\x0e\x32\x17.BrewBloxTypes.UnitType\x12\r\n\x05scale\x18\x02 \x01(\r\x12)\n\x07objtype\x18\x03 \x01(\x0e\x32\x18.BrewBloxTypes.BlockType\x12\r\n\x05hexed\x18\x04 \x01(\x08\x12\x10\n\x08readonly\x18\x05 \x01(\x08\x12\x0e\n\x06logged\x18\x06 \x01(\x08\x12\x0e\n\x06hexstr\x18\x07 \x01(\x08\x12\x0e\n\x06\x64riven\x18\x08 \x01(\x08\x12\x0f\n\x07ignored\x18\t \x01(\x08:\x05\x92?\x02\x30\x01:O\n\x08\x62rewblox\x12\x1d.google.protobuf.FieldOptions\x18\xd1\x86\x03 \x01(\x0b\x32\x15.BrewBloxFieldOptionsB\x05\x92?\x02\x18\x03:W\n\x0c\x62rewblox_msg\x12\x1f.google.protobuf.MessageOptions\x18\xd1\x86\x03 \x01(\x0b\x32\x17.BrewBloxMessageOptionsB\x05\x92?\x02\x18\x03'
   ,
   dependencies=[google_dot_protobuf_dot_descriptor__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -53,11 +53,11 @@ _BREWBLOXTYPES_UNITTYPE = _descriptor.EnumDescriptor(
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='Temp', index=1, number=1,
+      name='Celsius', index=1, number=1,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='InverseTemp', index=2, number=2,
+      name='InverseCelsius', index=2, number=2,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
@@ -73,38 +73,38 @@ _BREWBLOXTYPES_UNITTYPE = _descriptor.EnumDescriptor(
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='DeltaTemp', index=6, number=6,
+      name='DeltaCelsius', index=6, number=6,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='DeltaTempPerSecond', index=7, number=7,
+      name='DeltaCelsiusPerSecond', index=7, number=7,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='DeltaTempPerMinute', index=8, number=8,
+      name='DeltaCelsiusPerMinute', index=8, number=8,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='DeltaTempPerHour', index=9, number=9,
+      name='DeltaCelsiusPerHour', index=9, number=9,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='DeltaTempMultSecond', index=10, number=10,
+      name='DeltaCelsiusMultSecond', index=10, number=10,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='DeltaTempMultMinute', index=11, number=11,
+      name='DeltaCelsiusMultMinute', index=11, number=11,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='DeltaTempMultHour', index=12, number=12,
+      name='DeltaCelsiusMultHour', index=12, number=12,
       serialized_options=None,
       type=None),
   ],
   containing_type=None,
   serialized_options=None,
   serialized_start=85,
-  serialized_end=326,
+  serialized_end=353,
 )
 _sym_db.RegisterEnumDescriptor(_BREWBLOXTYPES_UNITTYPE)
 
@@ -273,8 +273,8 @@ _BREWBLOXTYPES_BLOCKTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=329,
-  serialized_end=1108,
+  serialized_start=356,
+  serialized_end=1135,
 )
 _sym_db.RegisterEnumDescriptor(_BREWBLOXTYPES_BLOCKTYPE)
 
@@ -301,7 +301,7 @@ _BREWBLOXTYPES = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=67,
-  serialized_end=1108,
+  serialized_end=1135,
 )
 
 
@@ -338,8 +338,8 @@ _BREWBLOXMESSAGEOPTIONS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1110,
-  serialized_end=1231,
+  serialized_start=1137,
+  serialized_end=1258,
 )
 
 
@@ -425,8 +425,8 @@ _BREWBLOXFIELDOPTIONS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1234,
-  serialized_end=1458,
+  serialized_start=1261,
+  serialized_end=1485,
 )
 
 _BREWBLOXTYPES_UNITTYPE.containing_type = _BREWBLOXTYPES
