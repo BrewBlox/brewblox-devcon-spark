@@ -148,7 +148,7 @@ async def test_resolve_links(app, client, store):
                     {'flappy<SetpointSensorPairInterface>': 'moo'}
                 ],
                 'metavalue': {
-                    '__metaclass': 'Link',
+                    '__bloxtype': 'Link',
                     'id': 'eeney',
                 },
             },
@@ -171,7 +171,7 @@ async def test_resolve_links(app, client, store):
                 {'flappy<SetpointSensorPairInterface>': 9003},
             ],
             'metavalue': {
-                '__metaclass': 'Link',
+                '__bloxtype': 'Link',
                 'id': 9001,
             },
         },

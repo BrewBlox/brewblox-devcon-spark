@@ -119,7 +119,7 @@ class SparkResolver():
 
             for k, v in iter:
                 if isinstance(v, dict):
-                    if v.get('__metaclass', None) == 'Link':
+                    if v.get('__bloxtype', None) == 'Link':
                         v['id'] = finder_func(store, v['id'], v.get('type'))
                     else:
                         await traverse(v)

@@ -13,7 +13,7 @@ class FilterOpt(Enum):
 
 class MetadataOpt(Enum):
     POSTFIX = auto()
-    METACLASS = auto()
+    TYPED = auto()
 
 
 class ProtoEnumOpt(Enum):
@@ -24,5 +24,5 @@ class ProtoEnumOpt(Enum):
 @dataclass(frozen=True)
 class CodecOpts():
     filter: FilterOpt = FilterOpt.ALL
-    metadata: MetadataOpt = MetadataOpt.METACLASS
+    metadata: MetadataOpt = MetadataOpt.TYPED
     enums: ProtoEnumOpt = ProtoEnumOpt.STR
