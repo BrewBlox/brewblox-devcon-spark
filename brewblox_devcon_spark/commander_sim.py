@@ -12,8 +12,8 @@ from typing import List
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
 
-from brewblox_devcon_spark import commander, commands, const, exceptions, state
-from brewblox_devcon_spark.codec import codec
+from brewblox_devcon_spark import (codec, commander, commands, const,
+                                   exceptions, state)
 
 LOGGER = brewblox_logger(__name__)
 

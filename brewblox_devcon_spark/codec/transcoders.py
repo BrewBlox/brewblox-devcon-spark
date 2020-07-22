@@ -38,7 +38,9 @@ import TempSensorOneWire_pb2
 import Ticks_pb2
 import TouchSettings_pb2
 import WiFiSettings_pb2
-from brewblox_devcon_spark.codec.modifiers import Modifier
+
+from .modifiers import Modifier
+from .opts import CodecOpts, ProtoEnumOpt
 
 ObjType_ = Union[int, str]
 Decoded_ = dict
@@ -66,11 +68,11 @@ class Transcoder(ABC):
         return []
 
     @abstractmethod
-    def encode(self, values: Decoded_, opts: dict) -> Encoded_:
+    def encode(self, values: Decoded_, opts: CodecOpts) -> Encoded_:
         pass  # pragma: no cover
 
     @abstractmethod
-    def decode(self, encoded: Encoded_, opts: dict) -> Decoded_:
+    def decode(self, encoded: Encoded_, opts: CodecOpts) -> Decoded_:
         pass  # pragma: no cover
 
     @classmethod
@@ -194,10 +196,10 @@ class ProtobufTranscoder(Transcoder):
         data = obj.SerializeToString()
         return data + b'\x00'  # Include null terminator
 
-    def decode(self, encoded: Encoded_, opts: dict) -> Decoded_:
+    def decode(self, encoded: Encoded_, opts: CodecOpts) -> Decoded_:
         # Remove null terminator
         encoded = encoded[:-1]
-        int_enum = opts.get('logged') or opts.get('stored') or False
+        int_enum = opts.enums == ProtoEnumOpt.INT
 
         obj = self.create_message()
         obj.ParseFromString(encoded)
@@ -213,11 +215,11 @@ class ProtobufTranscoder(Transcoder):
 
 class OptionsTranscoder(ProtobufTranscoder):
 
-    def encode(self, values: Decoded_, opts: dict) -> Encoded_:
+    def encode(self, values: Decoded_, opts: CodecOpts) -> Encoded_:
         self.mod.encode_options(self.create_message(), values, opts)
         return super().encode(values, opts)
 
-    def decode(self, encoded: Encoded_, opts: dict) -> Decoded_:
+    def decode(self, encoded: Encoded_, opts: CodecOpts) -> Decoded_:
         decoded = super().decode(encoded, opts)
         self.mod.decode_options(self.create_message(), decoded, opts)
         return decoded
