@@ -2,14 +2,10 @@
 Tests brewblox_devcon_spark.codec.modifiers
 """
 
-from brewblox_devcon_spark.codec import _path_extension  # isort:skip
-
 import pytest
 
-import TempSensorOneWire_pb2
 from brewblox_devcon_spark.codec import CodecOpts, modifiers, unit_conversion
-
-_path_extension.avoid_lint_errors()
+from brewblox_devcon_spark.codec.pb2 import TempSensorOneWire_pb2
 
 
 @pytest.fixture

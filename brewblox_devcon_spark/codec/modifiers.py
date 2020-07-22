@@ -2,8 +2,6 @@
 Input/output modification functions for transcoding
 """
 
-from brewblox_devcon_spark.codec import _path_extension  # isort:skip
-
 import re
 from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
@@ -16,14 +14,12 @@ from google.protobuf import json_format
 from google.protobuf.descriptor import DescriptorBase, FieldDescriptor
 from google.protobuf.message import Message
 
-import brewblox_pb2
-
 from .opts import CodecOpts, FilterOpt, MetadataOpt
+from .pb2 import brewblox_pb2
 from .unit_conversion import UnitConverter
 
 STRIP_FIELDS_KEY = 'strippedFields'
 
-_path_extension.avoid_lint_errors()
 LOGGER = brewblox_logger(__name__)
 
 
