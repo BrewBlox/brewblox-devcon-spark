@@ -112,23 +112,23 @@ class Modifier():
     def _objtype_name(self, objtype_num: int) -> str:
         return brewblox_pb2.BrewBloxTypes.BlockType.Name(objtype_num)
 
-    def _encode_unit(self, value: Union[float, dict], unit_id: str, postfix: Optional[str]) -> float:
+    def _encode_unit(self, value: Union[float, dict], unit_type: str, postfix: Optional[str]) -> float:
         if isinstance(value, dict):
             user_value = value['value']
             user_unit = value.get('unit')
-            return self._converter.to_sys_value(user_value, unit_id, user_unit)
+            return self._converter.to_sys_value(user_value, unit_type, user_unit)
         else:
             user_unit = postfix
-            return self._converter.to_sys_value(value, unit_id, user_unit)
+            return self._converter.to_sys_value(value, unit_type, user_unit)
 
     def encode_options(self, message: Message, obj: dict, opts: CodecOpts) -> dict:
         """
         Modifies `obj` based on Protobuf options and dict key postfixes.
 
         Supported Protobuf options:
-        * unit:         Convert metadata unit notation (postfix or metaclass) to Protobuf unit.
+        * unit:         Convert metadata unit notation (postfix or typed object) to Protobuf unit.
         * scale:        Multiply value with scale after unit conversion.
-        * objtype:      Strip link key postfix (<TempSensorInterface> or <>), or extract id from metaclass.
+        * objtype:      Strip link key postfix (<TempSensorInterface> or <>), or extract id from typed object.
         * hexed:        Convert hexadecimal string to int64.
         * readonly:     Strip value from protobuf input.
         * ignored:      Strip value from protobuf input.
@@ -136,7 +136,7 @@ class Modifier():
 
         The output is a dict where values use controller units.
 
-        Postfix notations and metaclass objects can be mixed in the same data.
+        Postfix notations and typed objects can be mixed in the same data.
 
         Example:
             >>> values = {
@@ -146,7 +146,7 @@ class Modifier():
                     'sensor<TempSensorInterface>': 10,
                     'output': 9000,
                     'desiredSetting': {
-                        '__metaclass': 'Unit',
+                        '__bloxtype': 'Unit',
                         'value': 15,
                         'unit': 'degC',
                     },
@@ -206,9 +206,9 @@ class Modifier():
                 continue
 
             if options.unit:
-                unit = self._unit_name(options.unit)
+                unit_name = self._unit_name(options.unit)
                 val = [
-                    self._encode_unit(v, unit, element.postfix or None)
+                    self._encode_unit(v, unit_name, element.postfix or None)
                     for v in val
                 ]
 
@@ -246,9 +246,9 @@ class Modifier():
 
         Supported protobuf options:
         * scale:        Divides value by scale before unit conversion.
-        * unit:         Adds unit to output, using either a [] postfix, or a Unit metaclass.
-        * objtype:      Adds object type to output, using either a <> postfix, or a Link metaclass.
-        * driven        Adds the "driven" flag to postfix or metaclass.
+        * unit:         Adds unit to output, using either a [] postfix, or a typed object.
+        * objtype:      Adds object type to output, using either a <> postfix, or a typed object.
+        * driven        Adds the "driven" flag to postfix or typed object.
         * hexed:        Converts base64 decoder output to int.
         * hexstr:       Converts base64 decoder output to hexadecimal string.
         * readonly:     Ignored: decoding means reading from controller.
@@ -261,7 +261,7 @@ class Modifier():
         Supported codec options:
         * filter:       If opts.filter == LOGGED, all values without options.logged are stripped from output.
         * metadata:     Format used to serialize object metadata.
-                        Determines whether units/links are postfixed or rendered as metaclass object.
+                        Determines whether units/links are postfixed or rendered as typed object.
 
         Example:
             >>> values = {
@@ -308,6 +308,7 @@ class Modifier():
             options = self._field_options(element.field)
             val = element.obj[element.key]
             new_key = element.key
+            stripped = element.field.number in stripped_fields and not element.nested
 
             if options.ignored:
                 del element.obj[element.key]
@@ -326,24 +327,24 @@ class Modifier():
                 val = [v / options.scale for v in val]
 
             if options.unit:
-                unit_id = self._unit_name(options.unit)
-                user_unit = self._converter.to_user_unit(unit_id)
+                unit_name = self._unit_name(options.unit)
+                user_unit = self._converter.to_user_unit(unit_name)
 
                 # Always convert value
                 val = [
-                    self._converter.to_user_value(v, unit_id)
+                    self._converter.to_user_value(v, unit_name)
                     for v in val
                 ]
 
-                if opts.metadata == MetadataOpt.METACLASS:
+                if opts.metadata == MetadataOpt.TYPED:
                     shared = {
-                        '__metaclass': 'Unit',
+                        '__bloxtype': 'Unit',
                         'unit': user_unit,
                     }
                     if options.readonly:
                         shared['readonly'] = True
 
-                    val = [{**shared, 'value': v, } for v in val]
+                    val = [{**shared, 'value': v if not stripped else None} for v in val]
 
                 if opts.metadata == MetadataOpt.POSTFIX:
                     new_key += f'[{user_unit}]'
@@ -351,15 +352,15 @@ class Modifier():
             if options.objtype:
                 objtype = self._objtype_name(options.objtype)
 
-                if opts.metadata == MetadataOpt.METACLASS:
+                if opts.metadata == MetadataOpt.TYPED:
                     shared = {
-                        '__metaclass': 'Link',
+                        '__bloxtype': 'Link',
                         'type': objtype,
                     }
                     if options.driven:
                         shared['driven'] = True
 
-                    val = [{**shared, 'id': v} for v in val]
+                    val = [{**shared, 'id': v if not stripped else None} for v in val]
 
                 if opts.metadata == MetadataOpt.POSTFIX:
                     postfix = f'<{objtype},driven>' if options.driven else f'<{objtype}>'
@@ -377,9 +378,11 @@ class Modifier():
             if element.key != new_key:
                 del element.obj[element.key]
 
-            if element.field.number in stripped_fields and not element.nested:
-                # Only strip after element possibly got a new key
-                val = None
+            if stripped:
+                if (options.unit or options.objtype) and opts.metadata == MetadataOpt.TYPED:
+                    pass  # Already handled
+                else:
+                    val = None
 
             element.obj[new_key] = val
 

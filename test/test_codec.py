@@ -136,9 +136,14 @@ async def test_stripped_fields(app, client, cdc: Codec, sim_cdc: Codec):
         'strippedFields': [6],
     })
     dec_id, dec_val = await cdc.decode(enc_id, enc_val)
-    assert dec_val['deltaV'] is None
+    assert dec_val['deltaV']['value'] is None
+    assert dec_val['deltaV']['unit'] == 'delta_degC / second'
     assert dec_val['logged'] == 10
     assert 'strippedFields' not in dec_val.keys()
+
+    dec_id, dec_val = await cdc.decode(enc_id, enc_val,
+                                       CodecOpts(metadata=MetadataOpt.POSTFIX))
+    assert dec_val['deltaV[delta_degC / second]'] is None
 
 
 async def test_driven_fields(app, client, cdc: Codec):
