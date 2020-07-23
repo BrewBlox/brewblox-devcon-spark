@@ -76,7 +76,7 @@ class BlocksApi():
 
         return created
 
-    async def read(self, ids: dict, filter: str = None) -> dict:
+    async def read(self, ids: dict) -> dict:
         await self.wait_for_sync()
         return await self._dev.read_object(ids)
 

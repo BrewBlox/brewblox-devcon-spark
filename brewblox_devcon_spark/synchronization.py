@@ -12,9 +12,8 @@ from aiohttp import web
 from brewblox_service import (brewblox_logger, features, repeater, scheduler,
                               strex)
 
-from brewblox_devcon_spark import const, datastore, exceptions, state
+from brewblox_devcon_spark import codec, const, datastore, exceptions, state
 from brewblox_devcon_spark.api import blocks_api
-from brewblox_devcon_spark.codec import codec, unit_conversion
 from brewblox_devcon_spark.device import get_device
 from brewblox_devcon_spark.exceptions import InvalidInput
 
@@ -136,10 +135,10 @@ class Syncher(repeater.RepeaterFeature):
         return state.summary(self.app).device.device_id
 
     def get_user_units(self):
-        return unit_conversion.get_converter(self.app).user_units
+        return codec.get_converter(self.app).user_units
 
     async def set_user_units(self, units):
-        converter = unit_conversion.get_converter(self.app)
+        converter = codec.get_converter(self.app)
         try:
             converter.user_units = units
             with datastore.get_service_store(self.app).open() as config:
@@ -159,7 +158,7 @@ class Syncher(repeater.RepeaterFeature):
         return enabled
 
     async def _apply_service_config(self, config):
-        converter = unit_conversion.get_converter(self.app)
+        converter = codec.get_converter(self.app)
         enabled = config.get(AUTOCONNECTING_KEY, True)
         await state.set_autoconnecting(self.app, enabled)
         config[AUTOCONNECTING_KEY] = enabled
@@ -269,7 +268,7 @@ class Syncher(repeater.RepeaterFeature):
             'groups': [const.SYSTEM_GROUP],
             'type': 'SysInfo',
             'data': {
-                'command': 'READ_AND_RESUME_TRACE'
+                'command': 'SYS_CMD_TRACE_READ_RESUME'
             }
         })
         trace = '\n'.join(await self.format_trace(sys_block['data']['trace']))

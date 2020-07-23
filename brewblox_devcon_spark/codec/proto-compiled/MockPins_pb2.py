@@ -21,71 +21,71 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=b'\n\x0eMockPins.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\xf0\x02\n\x08MockPins\x12\x34\n\x04pins\x18\x01 \x03(\x0b\x32\x14.blox.MockPins.IoPinB\x10\x92?\x02\x10\x08\x92?\x02x\x01\x8a\xb5\x18\x02(\x01\x1a\x9e\x02\n\x05IoPin\x12 \n\x05mock1\x18\x01 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12 \n\x05mock2\x18\x02 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12 \n\x05mock3\x18\x03 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12 \n\x05mock4\x18\x04 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12 \n\x05mock5\x18\x05 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12 \n\x05mock6\x18\x06 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12 \n\x05mock7\x18\x07 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12 \n\x05mock8\x18\x08 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x42\x05\n\x03Pin:\r\x8a\xb5\x18\x03\x18\xc3\x02\x8a\xb5\x18\x02H\nb\x06proto3'
+  serialized_pb=b'\n\x0eMockPins.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\xa6\x02\n\rMockPinsIoPin\x12 \n\x05mock1\x18\x01 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12 \n\x05mock2\x18\x02 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12 \n\x05mock3\x18\x03 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12 \n\x05mock4\x18\x04 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12 \n\x05mock5\x18\x05 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12 \n\x05mock6\x18\x06 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12 \n\x05mock7\x18\x07 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12 \n\x05mock8\x18\x08 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x42\x05\n\x03Pin\"N\n\x08MockPins\x12\x33\n\x04pins\x18\x01 \x03(\x0b\x32\x13.blox.MockPinsIoPinB\x10\x92?\x02\x10\x08\x92?\x02x\x01\x8a\xb5\x18\x02(\x01:\r\x8a\xb5\x18\x03\x18\xc3\x02\x8a\xb5\x18\x02H\nb\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,IoArray__pb2.DESCRIPTOR,])
 
 
 
 
-_MOCKPINS_IOPIN = _descriptor.Descriptor(
-  name='IoPin',
-  full_name='blox.MockPins.IoPin',
+_MOCKPINSIOPIN = _descriptor.Descriptor(
+  name='MockPinsIoPin',
+  full_name='blox.MockPinsIoPin',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='mock1', full_name='blox.MockPins.IoPin.mock1', index=0,
+      name='mock1', full_name='blox.MockPinsIoPin.mock1', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='mock2', full_name='blox.MockPins.IoPin.mock2', index=1,
+      name='mock2', full_name='blox.MockPinsIoPin.mock2', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='mock3', full_name='blox.MockPins.IoPin.mock3', index=2,
+      name='mock3', full_name='blox.MockPinsIoPin.mock3', index=2,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='mock4', full_name='blox.MockPins.IoPin.mock4', index=3,
+      name='mock4', full_name='blox.MockPinsIoPin.mock4', index=3,
       number=4, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='mock5', full_name='blox.MockPins.IoPin.mock5', index=4,
+      name='mock5', full_name='blox.MockPinsIoPin.mock5', index=4,
       number=5, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='mock6', full_name='blox.MockPins.IoPin.mock6', index=5,
+      name='mock6', full_name='blox.MockPinsIoPin.mock6', index=5,
       number=6, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='mock7', full_name='blox.MockPins.IoPin.mock7', index=6,
+      name='mock7', full_name='blox.MockPinsIoPin.mock7', index=6,
       number=7, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='mock8', full_name='blox.MockPins.IoPin.mock8', index=7,
+      name='mock8', full_name='blox.MockPinsIoPin.mock8', index=7,
       number=8, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -103,12 +103,13 @@ _MOCKPINS_IOPIN = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
     _descriptor.OneofDescriptor(
-      name='Pin', full_name='blox.MockPins.IoPin.Pin',
+      name='Pin', full_name='blox.MockPinsIoPin.Pin',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=137,
-  serialized_end=423,
+  serialized_start=70,
+  serialized_end=364,
 )
+
 
 _MOCKPINS = _descriptor.Descriptor(
   name='MockPins',
@@ -127,7 +128,7 @@ _MOCKPINS = _descriptor.Descriptor(
   ],
   extensions=[
   ],
-  nested_types=[_MOCKPINS_IOPIN, ],
+  nested_types=[],
   enum_types=[
   ],
   serialized_options=b'\212\265\030\003\030\303\002\212\265\030\002H\n',
@@ -136,61 +137,60 @@ _MOCKPINS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=70,
-  serialized_end=438,
+  serialized_start=366,
+  serialized_end=444,
 )
 
-_MOCKPINS_IOPIN.fields_by_name['mock1'].message_type = IoArray__pb2._IOCHANNEL
-_MOCKPINS_IOPIN.fields_by_name['mock2'].message_type = IoArray__pb2._IOCHANNEL
-_MOCKPINS_IOPIN.fields_by_name['mock3'].message_type = IoArray__pb2._IOCHANNEL
-_MOCKPINS_IOPIN.fields_by_name['mock4'].message_type = IoArray__pb2._IOCHANNEL
-_MOCKPINS_IOPIN.fields_by_name['mock5'].message_type = IoArray__pb2._IOCHANNEL
-_MOCKPINS_IOPIN.fields_by_name['mock6'].message_type = IoArray__pb2._IOCHANNEL
-_MOCKPINS_IOPIN.fields_by_name['mock7'].message_type = IoArray__pb2._IOCHANNEL
-_MOCKPINS_IOPIN.fields_by_name['mock8'].message_type = IoArray__pb2._IOCHANNEL
-_MOCKPINS_IOPIN.containing_type = _MOCKPINS
-_MOCKPINS_IOPIN.oneofs_by_name['Pin'].fields.append(
-  _MOCKPINS_IOPIN.fields_by_name['mock1'])
-_MOCKPINS_IOPIN.fields_by_name['mock1'].containing_oneof = _MOCKPINS_IOPIN.oneofs_by_name['Pin']
-_MOCKPINS_IOPIN.oneofs_by_name['Pin'].fields.append(
-  _MOCKPINS_IOPIN.fields_by_name['mock2'])
-_MOCKPINS_IOPIN.fields_by_name['mock2'].containing_oneof = _MOCKPINS_IOPIN.oneofs_by_name['Pin']
-_MOCKPINS_IOPIN.oneofs_by_name['Pin'].fields.append(
-  _MOCKPINS_IOPIN.fields_by_name['mock3'])
-_MOCKPINS_IOPIN.fields_by_name['mock3'].containing_oneof = _MOCKPINS_IOPIN.oneofs_by_name['Pin']
-_MOCKPINS_IOPIN.oneofs_by_name['Pin'].fields.append(
-  _MOCKPINS_IOPIN.fields_by_name['mock4'])
-_MOCKPINS_IOPIN.fields_by_name['mock4'].containing_oneof = _MOCKPINS_IOPIN.oneofs_by_name['Pin']
-_MOCKPINS_IOPIN.oneofs_by_name['Pin'].fields.append(
-  _MOCKPINS_IOPIN.fields_by_name['mock5'])
-_MOCKPINS_IOPIN.fields_by_name['mock5'].containing_oneof = _MOCKPINS_IOPIN.oneofs_by_name['Pin']
-_MOCKPINS_IOPIN.oneofs_by_name['Pin'].fields.append(
-  _MOCKPINS_IOPIN.fields_by_name['mock6'])
-_MOCKPINS_IOPIN.fields_by_name['mock6'].containing_oneof = _MOCKPINS_IOPIN.oneofs_by_name['Pin']
-_MOCKPINS_IOPIN.oneofs_by_name['Pin'].fields.append(
-  _MOCKPINS_IOPIN.fields_by_name['mock7'])
-_MOCKPINS_IOPIN.fields_by_name['mock7'].containing_oneof = _MOCKPINS_IOPIN.oneofs_by_name['Pin']
-_MOCKPINS_IOPIN.oneofs_by_name['Pin'].fields.append(
-  _MOCKPINS_IOPIN.fields_by_name['mock8'])
-_MOCKPINS_IOPIN.fields_by_name['mock8'].containing_oneof = _MOCKPINS_IOPIN.oneofs_by_name['Pin']
-_MOCKPINS.fields_by_name['pins'].message_type = _MOCKPINS_IOPIN
+_MOCKPINSIOPIN.fields_by_name['mock1'].message_type = IoArray__pb2._IOCHANNEL
+_MOCKPINSIOPIN.fields_by_name['mock2'].message_type = IoArray__pb2._IOCHANNEL
+_MOCKPINSIOPIN.fields_by_name['mock3'].message_type = IoArray__pb2._IOCHANNEL
+_MOCKPINSIOPIN.fields_by_name['mock4'].message_type = IoArray__pb2._IOCHANNEL
+_MOCKPINSIOPIN.fields_by_name['mock5'].message_type = IoArray__pb2._IOCHANNEL
+_MOCKPINSIOPIN.fields_by_name['mock6'].message_type = IoArray__pb2._IOCHANNEL
+_MOCKPINSIOPIN.fields_by_name['mock7'].message_type = IoArray__pb2._IOCHANNEL
+_MOCKPINSIOPIN.fields_by_name['mock8'].message_type = IoArray__pb2._IOCHANNEL
+_MOCKPINSIOPIN.oneofs_by_name['Pin'].fields.append(
+  _MOCKPINSIOPIN.fields_by_name['mock1'])
+_MOCKPINSIOPIN.fields_by_name['mock1'].containing_oneof = _MOCKPINSIOPIN.oneofs_by_name['Pin']
+_MOCKPINSIOPIN.oneofs_by_name['Pin'].fields.append(
+  _MOCKPINSIOPIN.fields_by_name['mock2'])
+_MOCKPINSIOPIN.fields_by_name['mock2'].containing_oneof = _MOCKPINSIOPIN.oneofs_by_name['Pin']
+_MOCKPINSIOPIN.oneofs_by_name['Pin'].fields.append(
+  _MOCKPINSIOPIN.fields_by_name['mock3'])
+_MOCKPINSIOPIN.fields_by_name['mock3'].containing_oneof = _MOCKPINSIOPIN.oneofs_by_name['Pin']
+_MOCKPINSIOPIN.oneofs_by_name['Pin'].fields.append(
+  _MOCKPINSIOPIN.fields_by_name['mock4'])
+_MOCKPINSIOPIN.fields_by_name['mock4'].containing_oneof = _MOCKPINSIOPIN.oneofs_by_name['Pin']
+_MOCKPINSIOPIN.oneofs_by_name['Pin'].fields.append(
+  _MOCKPINSIOPIN.fields_by_name['mock5'])
+_MOCKPINSIOPIN.fields_by_name['mock5'].containing_oneof = _MOCKPINSIOPIN.oneofs_by_name['Pin']
+_MOCKPINSIOPIN.oneofs_by_name['Pin'].fields.append(
+  _MOCKPINSIOPIN.fields_by_name['mock6'])
+_MOCKPINSIOPIN.fields_by_name['mock6'].containing_oneof = _MOCKPINSIOPIN.oneofs_by_name['Pin']
+_MOCKPINSIOPIN.oneofs_by_name['Pin'].fields.append(
+  _MOCKPINSIOPIN.fields_by_name['mock7'])
+_MOCKPINSIOPIN.fields_by_name['mock7'].containing_oneof = _MOCKPINSIOPIN.oneofs_by_name['Pin']
+_MOCKPINSIOPIN.oneofs_by_name['Pin'].fields.append(
+  _MOCKPINSIOPIN.fields_by_name['mock8'])
+_MOCKPINSIOPIN.fields_by_name['mock8'].containing_oneof = _MOCKPINSIOPIN.oneofs_by_name['Pin']
+_MOCKPINS.fields_by_name['pins'].message_type = _MOCKPINSIOPIN
+DESCRIPTOR.message_types_by_name['MockPinsIoPin'] = _MOCKPINSIOPIN
 DESCRIPTOR.message_types_by_name['MockPins'] = _MOCKPINS
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-MockPins = _reflection.GeneratedProtocolMessageType('MockPins', (_message.Message,), {
+MockPinsIoPin = _reflection.GeneratedProtocolMessageType('MockPinsIoPin', (_message.Message,), {
+  'DESCRIPTOR' : _MOCKPINSIOPIN,
+  '__module__' : 'MockPins_pb2'
+  # @@protoc_insertion_point(class_scope:blox.MockPinsIoPin)
+  })
+_sym_db.RegisterMessage(MockPinsIoPin)
 
-  'IoPin' : _reflection.GeneratedProtocolMessageType('IoPin', (_message.Message,), {
-    'DESCRIPTOR' : _MOCKPINS_IOPIN,
-    '__module__' : 'MockPins_pb2'
-    # @@protoc_insertion_point(class_scope:blox.MockPins.IoPin)
-    })
-  ,
+MockPins = _reflection.GeneratedProtocolMessageType('MockPins', (_message.Message,), {
   'DESCRIPTOR' : _MOCKPINS,
   '__module__' : 'MockPins_pb2'
   # @@protoc_insertion_point(class_scope:blox.MockPins)
   })
 _sym_db.RegisterMessage(MockPins)
-_sym_db.RegisterMessage(MockPins.IoPin)
 
 
 _MOCKPINS.fields_by_name['pins']._options = None

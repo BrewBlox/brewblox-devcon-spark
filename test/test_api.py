@@ -277,11 +277,12 @@ async def test_settings_api(app, client, block_args):
 
     await response(client.put('/settings/units', json={'Temp': 'degF'}))
     retd = await response(client.post('/blocks/read', json={'id': block_args['id']}))
-    assert retd['data']['offset[delta_degF]'] == pytest.approx(degF_offset, 0.1)
+    assert retd['data']['offset']['value'] == pytest.approx(degF_offset, 0.1)
+    assert retd['data']['offset']['unit'] == 'delta_degF'
 
     await response(client.put('/settings/units', json={'Temp': 'degC'}))
     retd = await response(client.post('/blocks/read', json={'id': block_args['id']}))
-    assert retd['data']['offset[delta_degC]'] == pytest.approx(degC_offset, 0.1)
+    assert retd['data']['offset']['value'] == pytest.approx(degC_offset, 0.1)
 
     retd = await response(client.get('/settings/autoconnecting'))
     assert retd == {'enabled': True}

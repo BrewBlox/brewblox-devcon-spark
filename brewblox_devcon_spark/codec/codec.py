@@ -12,10 +12,11 @@ from aiohttp import web
 from brewblox_service import brewblox_logger, features, strex
 
 from brewblox_devcon_spark import exceptions
-from brewblox_devcon_spark.codec.modifiers import Modifier
-from brewblox_devcon_spark.codec.transcoders import (Decoded_, Encoded_,
-                                                     ObjType_, Transcoder)
-from brewblox_devcon_spark.codec.unit_conversion import get_converter
+
+from .modifiers import Modifier
+from .opts import CodecOpts
+from .transcoders import Decoded_, Encoded_, ObjType_, Transcoder
+from .unit_conversion import get_converter
 
 TranscodeFunc_ = Callable[
     [ObjType_, Union[Encoded_, Decoded_]],
@@ -51,9 +52,9 @@ class Codec(features.ServiceFeature):
 
     async def encode(self,
                      obj_type: ObjType_,
-                     values: Decoded_ = ...,
-                     opts: Optional[dict] = None
-                     ) -> Tuple[ObjType_, Encoded_]:
+                     values: Optional[Decoded_] = ...,
+                     opts: Optional[CodecOpts] = None
+                     ) -> Union[ObjType_, Tuple[ObjType_, Encoded_]]:
         """
         Encode given data to a serializable type.
 
@@ -65,21 +66,28 @@ class Codec(features.ServiceFeature):
                 The unique identifier of the codec type.
                 This determines how `values` are encoded.
 
-            values (Decoded_):
+            values (Optional(Decoded_)):
                 Decoded representation of the message.
+                If not set, only encoded object type will be returned.
 
-            opts (Optional[dict]):
+            opts (Optional[CodecOpts]):
                 Additional options that are passed to the transcoder.
 
         Returns:
+            ObjType_:
+                If `values` is not set, only encoded object type is returned.
+
             Tuple[ObjType_, Encoded_]:
                 Serializable values of both object type and values.
         """
         if not isinstance(values, (dict, type(...))):
             raise TypeError(f'Unable to encode [{type(values).__name__}] values')
 
+        if opts is not None and not isinstance(opts, CodecOpts):
+            raise TypeError(f'Invalid codec opts: {opts}')
+
         try:
-            opts = opts or {}
+            opts = opts or CodecOpts()
             trc = Transcoder.get(obj_type, self._mod)
             return trc.type_int() if values is ... \
                 else (trc.type_int(), trc.encode(deepcopy(values), opts))
@@ -90,9 +98,9 @@ class Codec(features.ServiceFeature):
 
     async def decode(self,
                      obj_type: ObjType_,
-                     encoded: Encoded_ = ...,
-                     opts: Optional[dict] = None
-                     ) -> Tuple[ObjType_, Decoded_]:
+                     values: Optional[Encoded_] = ...,
+                     opts: Optional[CodecOpts] = None
+                     ) -> Union[ObjType_, Tuple[ObjType_, Decoded_]]:
         """
         Decodes given data to a Python-compatible type.
 
@@ -104,27 +112,34 @@ class Codec(features.ServiceFeature):
                 The unique identifier of the codec type.
                 This determines how `values` are decoded.
 
-            values (Encoded_):
+            values (Optional[Encoded_]):
                 Encoded representation of the message.
+                If not set, only decoded object type will be returned.
 
-            opts (Optional[dict]):
+            opts (Optional[CodecOpts]):
                 Additional options that are passed to the transcoder.
 
         Returns:
+            ObjType_:
+                If `values` is not set, only decoded object type is returned.
+
             Tuple[ObjType_, Decoded_]:
-                Python-compatible values of both object type and values
+                Python-compatible values of both object type and values.
         """
-        if not isinstance(encoded, (bytes, list, type(...))):
-            raise TypeError(f'Unable to decode [{type(encoded).__name__}] values')
+        if not isinstance(values, (bytes, list, type(...))):
+            raise TypeError(f'Unable to decode [{type(values).__name__}] values')
+
+        if opts is not None and not isinstance(opts, CodecOpts):
+            raise TypeError(f'Invalid codec opts: {opts}')
 
         type_name = obj_type
-        no_content = encoded == ...
+        no_content = values == ...
 
         try:
-            opts = opts or {}
+            opts = opts or CodecOpts()
             trc = Transcoder.get(obj_type, self._mod)
             type_name = trc.type_str()
-            return type_name if no_content else (type_name, trc.decode(encoded, opts))
+            return type_name if no_content else (type_name, trc.decode(values, opts))
 
         except asyncio.CancelledError:  # pragma: no cover
             raise
