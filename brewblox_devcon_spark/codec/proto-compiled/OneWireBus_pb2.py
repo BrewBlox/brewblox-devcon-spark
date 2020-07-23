@@ -20,29 +20,29 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=b'\n\x10OneWireBus.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x96\x01\n\nOneWireBus\x12)\n\x07\x63ommand\x18\x01 \x01(\x0b\x32\x18.blox.OneWireBus.Command\x12\x1d\n\x07\x61\x64\x64ress\x18\x02 \x03(\x06\x42\x0c\x8a\xb5\x18\x02 \x01\x8a\xb5\x18\x02(\x01\x1a\x35\n\x07\x43ommand\x12\x15\n\x06opcode\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08\x12\x13\n\x04\x64\x61ta\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08:\x07\x8a\xb5\x18\x03\x18\x82\x02\x62\x06proto3'
+  serialized_pb=b'\n\x10OneWireBus.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"?\n\x11OneWireBusCommand\x12\x15\n\x06opcode\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08\x12\x13\n\x04\x64\x61ta\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\"^\n\nOneWireBus\x12(\n\x07\x63ommand\x18\x01 \x01(\x0b\x32\x17.blox.OneWireBusCommand\x12\x1d\n\x07\x61\x64\x64ress\x18\x02 \x03(\x06\x42\x0c\x8a\xb5\x18\x02 \x01\x8a\xb5\x18\x02(\x01:\x07\x8a\xb5\x18\x03\x18\x82\x02\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
 
 
 
-_ONEWIREBUS_COMMAND = _descriptor.Descriptor(
-  name='Command',
-  full_name='blox.OneWireBus.Command',
+_ONEWIREBUSCOMMAND = _descriptor.Descriptor(
+  name='OneWireBusCommand',
+  full_name='blox.OneWireBusCommand',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='opcode', full_name='blox.OneWireBus.Command.opcode', index=0,
+      name='opcode', full_name='blox.OneWireBusCommand.opcode', index=0,
       number=1, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\222?\0028\010', file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='data', full_name='blox.OneWireBus.Command.data', index=1,
+      name='data', full_name='blox.OneWireBusCommand.data', index=1,
       number=2, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -60,9 +60,10 @@ _ONEWIREBUS_COMMAND = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=145,
-  serialized_end=198,
+  serialized_start=56,
+  serialized_end=119,
 )
+
 
 _ONEWIREBUS = _descriptor.Descriptor(
   name='OneWireBus',
@@ -88,7 +89,7 @@ _ONEWIREBUS = _descriptor.Descriptor(
   ],
   extensions=[
   ],
-  nested_types=[_ONEWIREBUS_COMMAND, ],
+  nested_types=[],
   enum_types=[
   ],
   serialized_options=b'\212\265\030\003\030\202\002',
@@ -97,33 +98,32 @@ _ONEWIREBUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=57,
-  serialized_end=207,
+  serialized_start=121,
+  serialized_end=215,
 )
 
-_ONEWIREBUS_COMMAND.containing_type = _ONEWIREBUS
-_ONEWIREBUS.fields_by_name['command'].message_type = _ONEWIREBUS_COMMAND
+_ONEWIREBUS.fields_by_name['command'].message_type = _ONEWIREBUSCOMMAND
+DESCRIPTOR.message_types_by_name['OneWireBusCommand'] = _ONEWIREBUSCOMMAND
 DESCRIPTOR.message_types_by_name['OneWireBus'] = _ONEWIREBUS
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-OneWireBus = _reflection.GeneratedProtocolMessageType('OneWireBus', (_message.Message,), {
+OneWireBusCommand = _reflection.GeneratedProtocolMessageType('OneWireBusCommand', (_message.Message,), {
+  'DESCRIPTOR' : _ONEWIREBUSCOMMAND,
+  '__module__' : 'OneWireBus_pb2'
+  # @@protoc_insertion_point(class_scope:blox.OneWireBusCommand)
+  })
+_sym_db.RegisterMessage(OneWireBusCommand)
 
-  'Command' : _reflection.GeneratedProtocolMessageType('Command', (_message.Message,), {
-    'DESCRIPTOR' : _ONEWIREBUS_COMMAND,
-    '__module__' : 'OneWireBus_pb2'
-    # @@protoc_insertion_point(class_scope:blox.OneWireBus.Command)
-    })
-  ,
+OneWireBus = _reflection.GeneratedProtocolMessageType('OneWireBus', (_message.Message,), {
   'DESCRIPTOR' : _ONEWIREBUS,
   '__module__' : 'OneWireBus_pb2'
   # @@protoc_insertion_point(class_scope:blox.OneWireBus)
   })
 _sym_db.RegisterMessage(OneWireBus)
-_sym_db.RegisterMessage(OneWireBus.Command)
 
 
-_ONEWIREBUS_COMMAND.fields_by_name['opcode']._options = None
-_ONEWIREBUS_COMMAND.fields_by_name['data']._options = None
+_ONEWIREBUSCOMMAND.fields_by_name['opcode']._options = None
+_ONEWIREBUSCOMMAND.fields_by_name['data']._options = None
 _ONEWIREBUS.fields_by_name['address']._options = None
 _ONEWIREBUS._options = None
 # @@protoc_insertion_point(module_scope)

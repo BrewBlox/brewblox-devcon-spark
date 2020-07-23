@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=b'\n\x13TouchSettings.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xe6\x01\n\rTouchSettings\x12\x32\n\ncalibrated\x18\x01 \x01(\x0e\x32\x1e.blox.TouchSettings.Calibrated\x12\x16\n\x07xOffset\x18\x02 \x01(\x05\x42\x05\x92?\x02\x38\x10\x12\x16\n\x07yOffset\x18\x03 \x01(\x05\x42\x05\x92?\x02\x38\x10\x12\x1f\n\x10xBitsPerPixelX16\x18\x04 \x01(\rB\x05\x92?\x02\x38\x10\x12\x1f\n\x10yBitsPerPixelX16\x18\x05 \x01(\rB\x05\x92?\x02\x38\x10\"&\n\nCalibrated\x12\x06\n\x02NO\x10\x00\x12\x07\n\x03YES\x10\x01\x12\x07\n\x03NEW\x10\x02:\x07\x8a\xb5\x18\x03\x18\xb9\x02\x62\x06proto3'
+  serialized_pb=b'\n\x13TouchSettings.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x87\x02\n\rTouchSettings\x12\x32\n\ncalibrated\x18\x01 \x01(\x0e\x32\x1e.blox.TouchSettings.Calibrated\x12\x16\n\x07xOffset\x18\x02 \x01(\x05\x42\x05\x92?\x02\x38\x10\x12\x16\n\x07yOffset\x18\x03 \x01(\x05\x42\x05\x92?\x02\x38\x10\x12\x1f\n\x10xBitsPerPixelX16\x18\x04 \x01(\rB\x05\x92?\x02\x38\x10\x12\x1f\n\x10yBitsPerPixelX16\x18\x05 \x01(\rB\x05\x92?\x02\x38\x10\"G\n\nCalibrated\x12\x11\n\rCALIBRATED_NO\x10\x00\x12\x12\n\x0e\x43\x41LIBRATED_YES\x10\x01\x12\x12\n\x0e\x43\x41LIBRATED_NEW\x10\x02:\x07\x8a\xb5\x18\x03\x18\xb9\x02\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -33,22 +33,22 @@ _TOUCHSETTINGS_CALIBRATED = _descriptor.EnumDescriptor(
   file=DESCRIPTOR,
   values=[
     _descriptor.EnumValueDescriptor(
-      name='NO', index=0, number=0,
+      name='CALIBRATED_NO', index=0, number=0,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='YES', index=1, number=1,
+      name='CALIBRATED_YES', index=1, number=1,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='NEW', index=2, number=2,
+      name='CALIBRATED_NEW', index=2, number=2,
       serialized_options=None,
       type=None),
   ],
   containing_type=None,
   serialized_options=None,
   serialized_start=243,
-  serialized_end=281,
+  serialized_end=314,
 )
 _sym_db.RegisterEnumDescriptor(_TOUCHSETTINGS_CALIBRATED)
 
@@ -109,7 +109,7 @@ _TOUCHSETTINGS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=60,
-  serialized_end=290,
+  serialized_end=323,
 )
 
 _TOUCHSETTINGS.fields_by_name['calibrated'].enum_type = _TOUCHSETTINGS_CALIBRATED

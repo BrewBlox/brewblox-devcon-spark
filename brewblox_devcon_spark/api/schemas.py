@@ -24,6 +24,7 @@ class ManualCommandSchema(Schema):
 
 
 class BlockSchema(Schema):
+    serviceId = fields.String(required=False)
     id = fields.String(required=True)
     nid = fields.Integer(required=False)
     groups = fields.List(fields.Integer(), required=True)

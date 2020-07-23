@@ -2,7 +2,6 @@
 Object-specific transcoders
 """
 
-from brewblox_devcon_spark.codec import _path_extension  # isort:skip
 
 from abc import ABC, abstractclassmethod, abstractmethod
 from collections import defaultdict
@@ -12,39 +11,14 @@ from brewblox_service import brewblox_logger
 from google.protobuf import json_format
 from google.protobuf.message import Message
 
-import ActuatorAnalogMock_pb2
-import ActuatorLogic_pb2
-import ActuatorOffset_pb2
-import ActuatorPwm_pb2
-import Balancer_pb2
-import brewblox_pb2
-import DigitalActuator_pb2
-import DisplaySettings_pb2
-import DS2408_pb2
-import DS2413_pb2
-import EdgeCase_pb2
-import MockPins_pb2
-import MotorValve_pb2
-import Mutex_pb2
-import OneWireBus_pb2
-import Pid_pb2
-import SetpointProfile_pb2
-import SetpointSensorPair_pb2
-import Spark2Pins_pb2
-import Spark3Pins_pb2
-import SysInfo_pb2
-import TempSensorMock_pb2
-import TempSensorOneWire_pb2
-import Ticks_pb2
-import TouchSettings_pb2
-import WiFiSettings_pb2
-from brewblox_devcon_spark.codec.modifiers import Modifier
+from . import pb2
+from .modifiers import Modifier
+from .opts import CodecOpts, ProtoEnumOpt
 
 ObjType_ = Union[int, str]
 Decoded_ = dict
 Encoded_ = bytes
 
-_path_extension.avoid_lint_errors()
 LOGGER = brewblox_logger(__name__)
 
 
@@ -66,11 +40,11 @@ class Transcoder(ABC):
         return []
 
     @abstractmethod
-    def encode(self, values: Decoded_, opts: dict) -> Encoded_:
+    def encode(self, values: Decoded_, opts: CodecOpts) -> Encoded_:
         pass  # pragma: no cover
 
     @abstractmethod
-    def decode(self, encoded: Encoded_, opts: dict) -> Decoded_:
+    def decode(self, encoded: Encoded_, opts: CodecOpts) -> Decoded_:
         pass  # pragma: no cover
 
     @classmethod
@@ -98,7 +72,7 @@ class BlockInterfaceTranscoder(Transcoder):
 
     @classmethod
     def type_str(cls) -> str:
-        return brewblox_pb2.BrewBloxTypes.BlockType.Name(cls._ENUM_VAL)
+        return pb2.brewblox_pb2.BrewBloxTypes.BlockType.Name(cls._ENUM_VAL)
 
     def encode(self, values: Decoded_, _) -> Encoded_:
         return b'\x00'
@@ -108,7 +82,7 @@ class BlockInterfaceTranscoder(Transcoder):
 
 
 def interface_factory(value: int) -> BlockInterfaceTranscoder:
-    name = f'{brewblox_pb2.BrewBloxTypes.BlockType.Name(value)}TranscoderStub'
+    name = f'{pb2.brewblox_pb2.BrewBloxTypes.BlockType.Name(value)}TranscoderStub'
     return type(name, (BlockInterfaceTranscoder, ), {'_ENUM_VAL': value})
 
 
@@ -175,7 +149,7 @@ class ProtobufTranscoder(Transcoder):
 
     @classmethod
     def type_int(cls) -> int:
-        return cls._MESSAGE.DESCRIPTOR.GetOptions().Extensions[brewblox_pb2.brewblox_msg].objtype
+        return cls._MESSAGE.DESCRIPTOR.GetOptions().Extensions[pb2.brewblox_pb2.brewblox_msg].objtype
 
     @classmethod
     def type_str(cls) -> str:
@@ -183,7 +157,7 @@ class ProtobufTranscoder(Transcoder):
 
     @classmethod
     def type_impl(cls) -> List[int]:
-        return cls._MESSAGE.DESCRIPTOR.GetOptions().Extensions[brewblox_pb2.brewblox_msg].impl
+        return cls._MESSAGE.DESCRIPTOR.GetOptions().Extensions[pb2.brewblox_pb2.brewblox_msg].impl
 
     def create_message(self) -> Message:
         return self.__class__._MESSAGE()
@@ -194,10 +168,10 @@ class ProtobufTranscoder(Transcoder):
         data = obj.SerializeToString()
         return data + b'\x00'  # Include null terminator
 
-    def decode(self, encoded: Encoded_, opts: dict) -> Decoded_:
+    def decode(self, encoded: Encoded_, opts: CodecOpts) -> Decoded_:
         # Remove null terminator
         encoded = encoded[:-1]
-        int_enum = opts.get('logged') or opts.get('stored') or False
+        int_enum = opts.enums == ProtoEnumOpt.INT
 
         obj = self.create_message()
         obj.ParseFromString(encoded)
@@ -213,18 +187,18 @@ class ProtobufTranscoder(Transcoder):
 
 class OptionsTranscoder(ProtobufTranscoder):
 
-    def encode(self, values: Decoded_, opts: dict) -> Encoded_:
+    def encode(self, values: Decoded_, opts: CodecOpts) -> Encoded_:
         self.mod.encode_options(self.create_message(), values, opts)
         return super().encode(values, opts)
 
-    def decode(self, encoded: Encoded_, opts: dict) -> Decoded_:
+    def decode(self, encoded: Encoded_, opts: CodecOpts) -> Decoded_:
         decoded = super().decode(encoded, opts)
         self.mod.decode_options(self.create_message(), decoded, opts)
         return decoded
 
 
 class EdgeCaseTranscoder(OptionsTranscoder):
-    _MESSAGE = EdgeCase_pb2.EdgeCase
+    _MESSAGE = pb2.EdgeCase_pb2.EdgeCase
 
     @classmethod
     def type_int(cls) -> int:
@@ -254,35 +228,41 @@ _TRANSCODERS = [
 
     # Interface objects
     # Actual implementations will override this later
-    *[interface_factory(v) for v in brewblox_pb2.BrewBloxTypes.BlockType.values()],
+    *[
+        interface_factory(v)
+        for v in pb2.brewblox_pb2.BrewBloxTypes.BlockType.values()
+    ],
 
     # Protobuf objects
-    *[options_type_factory(msg) for msg in [
-        ActuatorAnalogMock_pb2.ActuatorAnalogMock,
-        ActuatorLogic_pb2.ActuatorLogic,
-        ActuatorOffset_pb2.ActuatorOffset,
-        ActuatorPwm_pb2.ActuatorPwm,
-        Balancer_pb2.Balancer,
-        DigitalActuator_pb2.DigitalActuator,
-        DisplaySettings_pb2.DisplaySettings,
-        DS2408_pb2.DS2408,
-        DS2413_pb2.DS2413,
-        MockPins_pb2.MockPins,
-        MotorValve_pb2.MotorValve,
-        Mutex_pb2.Mutex,
-        OneWireBus_pb2.OneWireBus,
-        Pid_pb2.Pid,
-        SetpointProfile_pb2.SetpointProfile,
-        SetpointSensorPair_pb2.SetpointSensorPair,
-        Spark2Pins_pb2.Spark2Pins,
-        Spark3Pins_pb2.Spark3Pins,
-        SysInfo_pb2.SysInfo,
-        TempSensorMock_pb2.TempSensorMock,
-        TempSensorOneWire_pb2.TempSensorOneWire,
-        Ticks_pb2.Ticks,
-        TouchSettings_pb2.TouchSettings,
-        WiFiSettings_pb2.WiFiSettings,
-    ]],
+    *[
+        options_type_factory(msg)
+        for msg in [
+            pb2.ActuatorAnalogMock_pb2.ActuatorAnalogMock,
+            pb2.ActuatorLogic_pb2.ActuatorLogic,
+            pb2.ActuatorOffset_pb2.ActuatorOffset,
+            pb2.ActuatorPwm_pb2.ActuatorPwm,
+            pb2.Balancer_pb2.Balancer,
+            pb2.DigitalActuator_pb2.DigitalActuator,
+            pb2.DisplaySettings_pb2.DisplaySettings,
+            pb2.DS2408_pb2.DS2408,
+            pb2.DS2413_pb2.DS2413,
+            pb2.MockPins_pb2.MockPins,
+            pb2.MotorValve_pb2.MotorValve,
+            pb2.Mutex_pb2.Mutex,
+            pb2.OneWireBus_pb2.OneWireBus,
+            pb2.Pid_pb2.Pid,
+            pb2.SetpointProfile_pb2.SetpointProfile,
+            pb2.SetpointSensorPair_pb2.SetpointSensorPair,
+            pb2.Spark2Pins_pb2.Spark2Pins,
+            pb2.Spark3Pins_pb2.Spark3Pins,
+            pb2.SysInfo_pb2.SysInfo,
+            pb2.TempSensorMock_pb2.TempSensorMock,
+            pb2.TempSensorOneWire_pb2.TempSensorOneWire,
+            pb2.Ticks_pb2.Ticks,
+            pb2.TouchSettings_pb2.TouchSettings,
+            pb2.WiFiSettings_pb2.WiFiSettings,
+        ]
+    ],
 
     # Debugging object
     EdgeCaseTranscoder,

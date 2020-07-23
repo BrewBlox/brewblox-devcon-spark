@@ -11,12 +11,12 @@ from brewblox_devcon_spark.exceptions import InvalidInput
 @pytest.fixture
 def unit_ids():
     return [
-        ('Temp', 'degC'),
-        ('DeltaTemp', 'delta_degC'),
-        ('DeltaTempPerSecond', 'delta_degC / second'),
+        ('Celsius', 'degC'),
+        ('DeltaCelsius', 'delta_degC'),
+        ('DeltaCelsiusPerSecond', 'delta_degC / second'),
         ('Second', 'second'),
-        ('InverseTemp', '1 / degC'),
-        ('DeltaTempMultSecond', 'delta_degC * second'),
+        ('InverseCelsius', '1 / degC'),
+        ('DeltaCelsiusMultSecond', 'delta_degC * second'),
     ]
 
 
@@ -32,12 +32,12 @@ def test_convert_default(app, unit_ids):
 def test_update_config(app, unit_ids):
     cv = unit_conversion.UnitConverter(app)
     cv.user_units = {'Temp': 'degF'}
-    assert cv.to_user_value(10, 'Temp') == pytest.approx((10 * 9 / 5) + 32)
+    assert cv.to_user_value(10, 'Celsius') == pytest.approx((10 * 9 / 5) + 32)
     assert cv.user_units['Temp'] == 'degF'
-    assert cv.to_sys_value(10, 'DeltaTemp') == pytest.approx(10 * 5 / 9)
+    assert cv.to_sys_value(10, 'DeltaCelsius') == pytest.approx(10 * 5 / 9)
 
     with pytest.raises(InvalidInput):
         cv.user_units = {'Temp': 'cm'}
 
-    assert cv.to_sys_unit('Temp') == 'degC'
-    assert cv.to_user_unit('Temp') == 'degF'
+    assert cv.to_sys_unit('Celsius') == 'degC'
+    assert cv.to_user_unit('Celsius') == 'degF'

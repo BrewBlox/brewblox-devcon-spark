@@ -21,29 +21,29 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=b'\n\x0c\x44S2413.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\xd1\x01\n\x06\x44S2413\x12\x17\n\x07\x61\x64\x64ress\x18\x01 \x01(\x06\x42\x06\x8a\xb5\x18\x02 \x01\x12\x19\n\tconnected\x18\x06 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12\x32\n\x04pins\x18\x07 \x03(\x0b\x32\x12.blox.DS2413.IoPinB\x10\x92?\x02\x10\x02\x92?\x02x\x01\x8a\xb5\x18\x02(\x01\x1aJ\n\x05IoPin\x12\x1c\n\x01\x41\x18\x01 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1c\n\x01\x42\x18\x02 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x42\x05\n\x03Pin:\x13\x8a\xb5\x18\x03\x18\xbb\x02\x8a\xb5\x18\x02H\n\x8a\xb5\x18\x02H\tb\x06proto3'
+  serialized_pb=b'\n\x0c\x44S2413.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"P\n\x0b\x44S2413IoPin\x12\x1c\n\x01\x41\x18\x01 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x12\x1c\n\x01\x42\x18\x02 \x01(\x0b\x32\x0f.blox.IoChannelH\x00\x42\x05\n\x03Pin\"\x84\x01\n\x06\x44S2413\x12\x17\n\x07\x61\x64\x64ress\x18\x01 \x01(\x06\x42\x06\x8a\xb5\x18\x02 \x01\x12\x19\n\tconnected\x18\x06 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12\x31\n\x04pins\x18\x07 \x03(\x0b\x32\x11.blox.DS2413IoPinB\x10\x92?\x02\x10\x02\x92?\x02x\x01\x8a\xb5\x18\x02(\x01:\x13\x8a\xb5\x18\x03\x18\xbb\x02\x8a\xb5\x18\x02H\n\x8a\xb5\x18\x02H\tb\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,IoArray__pb2.DESCRIPTOR,])
 
 
 
 
-_DS2413_IOPIN = _descriptor.Descriptor(
-  name='IoPin',
-  full_name='blox.DS2413.IoPin',
+_DS2413IOPIN = _descriptor.Descriptor(
+  name='DS2413IoPin',
+  full_name='blox.DS2413IoPin',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='A', full_name='blox.DS2413.IoPin.A', index=0,
+      name='A', full_name='blox.DS2413IoPin.A', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='B', full_name='blox.DS2413.IoPin.B', index=1,
+      name='B', full_name='blox.DS2413IoPin.B', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -61,12 +61,13 @@ _DS2413_IOPIN = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
     _descriptor.OneofDescriptor(
-      name='Pin', full_name='blox.DS2413.IoPin.Pin',
+      name='Pin', full_name='blox.DS2413IoPin.Pin',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=182,
-  serialized_end=256,
+  serialized_start=67,
+  serialized_end=147,
 )
+
 
 _DS2413 = _descriptor.Descriptor(
   name='DS2413',
@@ -99,7 +100,7 @@ _DS2413 = _descriptor.Descriptor(
   ],
   extensions=[
   ],
-  nested_types=[_DS2413_IOPIN, ],
+  nested_types=[],
   enum_types=[
   ],
   serialized_options=b'\212\265\030\003\030\273\002\212\265\030\002H\n\212\265\030\002H\t',
@@ -108,37 +109,36 @@ _DS2413 = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=68,
-  serialized_end=277,
+  serialized_start=150,
+  serialized_end=282,
 )
 
-_DS2413_IOPIN.fields_by_name['A'].message_type = IoArray__pb2._IOCHANNEL
-_DS2413_IOPIN.fields_by_name['B'].message_type = IoArray__pb2._IOCHANNEL
-_DS2413_IOPIN.containing_type = _DS2413
-_DS2413_IOPIN.oneofs_by_name['Pin'].fields.append(
-  _DS2413_IOPIN.fields_by_name['A'])
-_DS2413_IOPIN.fields_by_name['A'].containing_oneof = _DS2413_IOPIN.oneofs_by_name['Pin']
-_DS2413_IOPIN.oneofs_by_name['Pin'].fields.append(
-  _DS2413_IOPIN.fields_by_name['B'])
-_DS2413_IOPIN.fields_by_name['B'].containing_oneof = _DS2413_IOPIN.oneofs_by_name['Pin']
-_DS2413.fields_by_name['pins'].message_type = _DS2413_IOPIN
+_DS2413IOPIN.fields_by_name['A'].message_type = IoArray__pb2._IOCHANNEL
+_DS2413IOPIN.fields_by_name['B'].message_type = IoArray__pb2._IOCHANNEL
+_DS2413IOPIN.oneofs_by_name['Pin'].fields.append(
+  _DS2413IOPIN.fields_by_name['A'])
+_DS2413IOPIN.fields_by_name['A'].containing_oneof = _DS2413IOPIN.oneofs_by_name['Pin']
+_DS2413IOPIN.oneofs_by_name['Pin'].fields.append(
+  _DS2413IOPIN.fields_by_name['B'])
+_DS2413IOPIN.fields_by_name['B'].containing_oneof = _DS2413IOPIN.oneofs_by_name['Pin']
+_DS2413.fields_by_name['pins'].message_type = _DS2413IOPIN
+DESCRIPTOR.message_types_by_name['DS2413IoPin'] = _DS2413IOPIN
 DESCRIPTOR.message_types_by_name['DS2413'] = _DS2413
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-DS2413 = _reflection.GeneratedProtocolMessageType('DS2413', (_message.Message,), {
+DS2413IoPin = _reflection.GeneratedProtocolMessageType('DS2413IoPin', (_message.Message,), {
+  'DESCRIPTOR' : _DS2413IOPIN,
+  '__module__' : 'DS2413_pb2'
+  # @@protoc_insertion_point(class_scope:blox.DS2413IoPin)
+  })
+_sym_db.RegisterMessage(DS2413IoPin)
 
-  'IoPin' : _reflection.GeneratedProtocolMessageType('IoPin', (_message.Message,), {
-    'DESCRIPTOR' : _DS2413_IOPIN,
-    '__module__' : 'DS2413_pb2'
-    # @@protoc_insertion_point(class_scope:blox.DS2413.IoPin)
-    })
-  ,
+DS2413 = _reflection.GeneratedProtocolMessageType('DS2413', (_message.Message,), {
   'DESCRIPTOR' : _DS2413,
   '__module__' : 'DS2413_pb2'
   # @@protoc_insertion_point(class_scope:blox.DS2413)
   })
 _sym_db.RegisterMessage(DS2413)
-_sym_db.RegisterMessage(DS2413.IoPin)
 
 
 _DS2413.fields_by_name['address']._options = None
