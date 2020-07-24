@@ -146,7 +146,7 @@ class Modifier():
                     'sensor<TempSensorInterface>': 10,
                     'output': 9000,
                     'desiredSetting': {
-                        '__bloxtype': 'Unit',
+                        '__bloxtype': 'Quantity',
                         'value': 15,
                         'unit': 'degC',
                     },
@@ -338,7 +338,7 @@ class Modifier():
 
                 if opts.metadata == MetadataOpt.TYPED:
                     shared = {
-                        '__bloxtype': 'Unit',
+                        '__bloxtype': 'Quantity',
                         'unit': user_unit,
                     }
                     if options.readonly:
