@@ -302,7 +302,6 @@ class Modifier():
             }
         """
         stripped_fields = obj.pop(STRIP_FIELDS_KEY, [])
-        LOGGER.info(opts)
 
         for element in self._find_options(message.DESCRIPTOR, obj):
             options = self._field_options(element.field)
