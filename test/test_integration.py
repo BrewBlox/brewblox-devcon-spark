@@ -25,7 +25,7 @@ DEVICE_ID = '123456789012345678901234'
 
 @pytest.fixture(scope='module', autouse=True)
 def firmware_sim():
-    with patch(communication.__name__ + '.RETRY_INTERVAL_S', 0.1):
+    with patch(communication.__name__ + '.BASE_RETRY_INTERVAL_S', 0.1):
         sim = simulator.FirmwareSimulator()
         sim.start(DEVICE_ID)
         yield
