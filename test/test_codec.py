@@ -7,14 +7,14 @@ from brewblox_service import features, scheduler
 from mock import ANY
 
 from brewblox_devcon_spark import (codec, commander_sim, datastore, device,
-                                   exceptions, state)
+                                   exceptions, service_status)
 from brewblox_devcon_spark.codec import (Codec, CodecOpts, MetadataOpt,
                                          ProtoEnumOpt)
 
 
 @pytest.fixture
 def app(app):
-    state.setup(app)
+    service_status.setup(app)
     scheduler.setup(app)
     datastore.setup(app)
     commander_sim.setup(app)

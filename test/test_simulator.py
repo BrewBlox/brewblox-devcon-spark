@@ -6,13 +6,13 @@ from shutil import rmtree
 
 import pytest
 
-from brewblox_devcon_spark import simulator, state
+from brewblox_devcon_spark import service_status, simulator
 
 
 @pytest.fixture
 async def app(app, loop):
     app['config']['simulation'] = True
-    state.setup(app)
+    service_status.setup(app)
     simulator.setup(app)
     return app
 
@@ -25,6 +25,6 @@ async def managed_dir():
 
 async def test_sim(app, client, managed_dir):
     assert simulator.get_simulator(app).sim.proc.poll() is None
-    assert state.summary(app).connection is None
-    await state.set_connect(app, 'localhost:8332')
-    assert state.summary(app).connection == 'simulation'
+    assert service_status.desc(app).connection_kind is None
+    service_status.set_connected(app, 'localhost:8332')
+    assert service_status.desc(app).connection_kind == 'simulation'

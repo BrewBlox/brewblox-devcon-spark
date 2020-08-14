@@ -10,7 +10,8 @@ from typing import Awaitable, Callable, List, Set
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, mqtt, repeater
 
-from brewblox_devcon_spark import cbox_parser, connection, exceptions, state
+from brewblox_devcon_spark import (cbox_parser, connection, exceptions,
+                                   service_status)
 
 MessageCallback_ = Callable[['SparkConduit', str], Awaitable]
 
@@ -121,11 +122,11 @@ class SparkConduit(repeater.RepeaterFeature):
                 await asyncio.sleep(settings.get_retry_interval())
                 LOGGER.info('Retrying connection...')
 
-            await state.wait_autoconnecting(self.app)
+            await service_status.wait_autoconnecting(self.app)
             self._address, self._reader, self._writer = await connection.connect(self.app)
             self._parser = cbox_parser.ControlboxParser()
 
-            await state.set_connect(self.app, self._address)
+            service_status.set_connected(self.app, self._address)
             self._retry_count = 0
             await settings.reset_retry_interval()
             LOGGER.info(f'Connected {self}')
@@ -169,7 +170,7 @@ class SparkConduit(repeater.RepeaterFeature):
             except Exception:
                 pass
             finally:
-                await state.set_disconnect(self.app)
+                service_status.set_disconnected(self.app)
                 self._reader = None
                 self._writer = None
                 self._parser = None

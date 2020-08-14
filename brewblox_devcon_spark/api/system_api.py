@@ -8,7 +8,8 @@ from aiohttp import web
 from aiohttp_apispec import docs, response_schema
 from brewblox_service import brewblox_logger, mqtt, scheduler, strex
 
-from brewblox_devcon_spark import commander, device, exceptions, state, ymodem
+from brewblox_devcon_spark import (commander, device, exceptions,
+                                   service_status, ymodem)
 from brewblox_devcon_spark.api import schemas
 
 TRANSFER_TIMEOUT_S = 30
@@ -67,12 +68,12 @@ class FirmwareUpdater():
     async def flash(self) -> dict:  # pragma: no cover
         sender = ymodem.FileSender(self._notify)
         cmder = commander.get_commander(self.app)
-        address = state.summary(self.app).address
+        address = service_status.desc(self.app).device_address
 
         self._notify(f'Started updating {self.name}@{address} to version {self.version} ({self.date})')
 
         try:
-            if not state.summary(self.app).connect:
+            if not service_status.desc(self.app).is_connected:
                 self._notify('Controller is not connected. Aborting update.')
                 raise exceptions.NotConnected()
 
@@ -83,7 +84,8 @@ class FirmwareUpdater():
             await cmder.start_update(FLUSH_PERIOD_S)
 
             self._notify('Waiting for normal connection to close')
-            await asyncio.wait_for(state.wait_disconnect(self.app), STATE_TIMEOUT_S)
+            await asyncio.wait_for(
+                service_status.wait_disconnected(self.app), STATE_TIMEOUT_S)
 
             self._notify(f'Connecting to {address}')
             conn = await self._connect(address)
@@ -138,7 +140,7 @@ class SystemApi():
 @routes.get('/system/status')
 @response_schema(schemas.StatusSchema)
 async def check_status(request: web.Request) -> web.Response:
-    return web.json_response(state.summary_dict(request.app))
+    return web.json_response(service_status.desc_dict(request.app))
 
 
 @docs(

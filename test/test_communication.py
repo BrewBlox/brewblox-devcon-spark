@@ -8,7 +8,7 @@ import pytest
 from brewblox_service import scheduler
 from mock import AsyncMock, Mock
 
-from brewblox_devcon_spark import communication, exceptions, state
+from brewblox_devcon_spark import communication, exceptions, service_status
 
 TESTED = communication.__name__
 
@@ -49,7 +49,7 @@ def m_connect(mocker, m_reader, m_writer):
 
 @pytest.fixture
 def app(app, m_connect):
-    state.setup(app)
+    service_status.setup(app)
     scheduler.setup(app)
     return app
 
@@ -61,11 +61,11 @@ def init_app(app):
 
 
 async def test_write(app, init_app, client, m_writer):
-    await state.set_autoconnecting(app, True)
+    service_status.set_autoconnecting(app, True)
     await asyncio.sleep(0.01)
     conduit = communication.get_conduit(app)
     assert conduit.connected
-    assert state.summary(app).connect
+    assert service_status.desc(app).is_connected
 
     await conduit.write('testey')
     m_writer.write.assert_called_once_with(b'testey\n')
@@ -79,7 +79,7 @@ async def test_write(app, init_app, client, m_writer):
 
 
 async def test_callback(app, init_app, client, m_reader, m_writer):
-    await state.set_autoconnecting(app, True)
+    service_status.set_autoconnecting(app, True)
     await asyncio.sleep(0.01)
     conduit = communication.get_conduit(app)
     m_event_cb = AsyncMock()
@@ -105,11 +105,11 @@ async def test_callback(app, init_app, client, m_reader, m_writer):
     m_data_cb2.assert_awaited_with(conduit, 'puppies')
     assert conduit.active
     assert not conduit.connected
-    assert not state.summary(app).connect
+    assert not service_status.desc(app).is_connected
 
 
 async def test_error_callback(app, init_app, client, m_reader, m_writer):
-    await state.set_autoconnecting(app, True)
+    service_status.set_autoconnecting(app, True)
     conduit = communication.get_conduit(app)
     m_event_cb = AsyncMock(side_effect=RuntimeError)
     m_data_cb = AsyncMock()
@@ -130,7 +130,7 @@ async def test_retry_exhausted(app, client, m_writer, mocker):
     mocker.patch(TESTED + '.CONNECT_RETRY_COUNT', 2)
     mocker.patch(TESTED + '.connection.connect', AsyncMock(side_effect=ConnectionRefusedError))
 
-    await state.set_autoconnecting(app, True)
+    service_status.set_autoconnecting(app, True)
     conduit = communication.SparkConduit(app)
 
     await conduit.prepare()

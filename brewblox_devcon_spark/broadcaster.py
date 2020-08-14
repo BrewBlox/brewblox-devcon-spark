@@ -1,5 +1,5 @@
 """
-Intermittently broadcasts controller state to the eventbus
+Intermittently broadcasts status and blocks to the eventbus
 """
 
 
@@ -9,7 +9,7 @@ from time import monotonic
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, mqtt, repeater, strex
 
-from brewblox_devcon_spark import const, exceptions, state
+from brewblox_devcon_spark import const, exceptions, service_status
 from brewblox_devcon_spark.api.blocks_api import BlocksApi
 
 LOGGER = brewblox_logger(__name__)
@@ -33,28 +33,40 @@ class Broadcaster(repeater.RepeaterFeature):
         self._synched = False
         self._last_ok = monotonic()
 
+        self._will_message = {
+            'key': self.name,
+            'type': 'Spark.state',
+            'ttl': '7d',
+            'data': {
+                'status': None,
+                'blocks': [],
+            },
+        }
+
+        # A will is published if the client connection is broken
         mqtt.set_client_will(app,
                              self.state_topic,
-                             {
-                                 'key': self.name,
-                                 'type': 'Spark.state',
-                                 'ttl': '30d',
-                                 'data': {
-                                     'status': None,
-                                     'blocks': [],
-                                 },
-                             })
+                             self._will_message)
 
     async def prepare(self):
         if self.volatile:
             raise repeater.RepeaterCancelled()
 
+    async def before_shutdown(self, app: web.Application):
+        await self.end()
+        # This is an orderly shutdown - MQTT will won't be published
+        await mqtt.publish(self.app,
+                           self.state_topic,
+                           err=False,
+                           retain=True,
+                           message=self._will_message)
+
     async def run(self):
         try:
             await asyncio.sleep(self.interval)
-            self._synched = await state.wait_synchronize(self.app, wait=False)
+            self._synched = await service_status.wait_synchronized(self.app, wait=False)
 
-            status_data = state.summary_dict(self.app)
+            status_data = service_status.desc_dict(self.app)
             blocks_data = []
             history_data = {}
 

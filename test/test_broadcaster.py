@@ -6,7 +6,7 @@ import pytest
 from brewblox_service import repeater, scheduler
 from mock import ANY, AsyncMock, call
 
-from brewblox_devcon_spark import broadcaster, exceptions, state
+from brewblox_devcon_spark import broadcaster, exceptions, service_status
 
 TESTED = broadcaster.__name__
 
@@ -32,14 +32,14 @@ def app(app, m_api, m_publish):
     app['config']['history_topic'] = 'testcast/history'
     app['config']['state_topic'] = 'testcast/state'
     app['config']['volatile'] = False
-    state.setup(app)
+    service_status.setup(app)
     scheduler.setup(app)
     return app
 
 
 @pytest.fixture
 async def connected(app, client):
-    await state.set_synchronize(app)
+    service_status.set_synchronized(app)
 
 
 async def test_noop_broadcast(app, m_api, m_publish, client, connected):
@@ -60,7 +60,7 @@ async def test_disabled(app, m_api, m_publish, client, connected):
 
 
 async def test_broadcast_unsync(app, m_api, m_publish, client, connected, mocker):
-    m_wait_sync = mocker.patch(TESTED + '.state.wait_synchronize', AsyncMock())
+    m_wait_sync = mocker.patch(TESTED + '.service_status.wait_synchronized', AsyncMock())
     m_wait_sync.return_value = False
 
     b = broadcaster.Broadcaster(app)
@@ -116,6 +116,9 @@ async def test_broadcast(app, m_api, m_publish, client, connected):
                  'data': object_list,
              }),
     ])
+
+    await b.before_shutdown(app)
+    assert m_publish.call_count == 4
 
 
 async def test_error(app, m_api, m_publish, client, connected):
