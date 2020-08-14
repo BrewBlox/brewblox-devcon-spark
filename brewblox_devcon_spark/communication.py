@@ -17,7 +17,7 @@ MessageCallback_ = Callable[['SparkConduit', str], Awaitable]
 LOGGER = brewblox_logger(__name__)
 
 BASE_RETRY_INTERVAL_S = 2
-MAX_RETRY_INTERVAL_S = 120
+MAX_RETRY_INTERVAL_S = 30
 CONNECT_RETRY_COUNT = 20
 
 
