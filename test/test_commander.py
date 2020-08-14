@@ -9,7 +9,8 @@ import pytest
 from brewblox_service import scheduler
 from mock import AsyncMock, PropertyMock
 
-from brewblox_devcon_spark import commander, commands, const, exceptions, state
+from brewblox_devcon_spark import (commander, commands, const, exceptions,
+                                   service_status)
 
 TESTED = commander.__name__
 
@@ -32,7 +33,7 @@ def conduit_mock(mocker):
 @pytest.fixture
 def app(app, conduit_mock, mocker):
     app['config']['command_timeout'] = 1
-    state.setup(app)
+    service_status.setup(app)
     scheduler.setup(app)
     commander.setup(app)
     return app
@@ -109,41 +110,41 @@ async def test_on_event(mocker, conduit_mock, sparky):
 
 
 async def test_on_welcome(app, mocker, conduit_mock, sparky, welcome):
-    await state.set_connect(app, 'addr')
-    assert state.summary(app).address == 'addr'
+    status = service_status.get_status(app)
+    service_status.set_connected(app, 'addr')
+    assert service_status.desc(app).device_address == 'addr'
 
     ok_msg = ','.join(welcome)
     nok_welcome = welcome.copy()
     nok_welcome[2] = 'NOPE'
     nok_msg = ','.join(nok_welcome)
-    assert not state.summary(app).info
     await sparky._on_event(conduit_mock, ok_msg)
-    assert state.summary(app).compatible
+    assert service_status.desc(app).handshake_info.is_compatible_firmware
 
-    app['config']['device_id'] = '1234567f0case'
+    status.service_info.device_id = '1234567f0case'
     await sparky._on_event(conduit_mock, ok_msg)
-    assert state.summary(app).valid
+    assert service_status.desc(app).handshake_info.is_valid_device_id
 
-    app['config']['device_id'] = '01345'
+    status.service_info.device_id = '01345'
     with pytest.warns(UserWarning, match='Handshake error'):
         await sparky._on_event(conduit_mock, ok_msg)
-    assert not state.summary(app).valid
+    assert not service_status.desc(app).handshake_info.is_valid_device_id
 
-    app['config']['device_id'] = None
+    status.service_info.device_id = None
     app['config']['skip_version_check'] = True
     await sparky._on_event(conduit_mock, nok_msg)
-    assert state.summary(app).compatible
+    assert service_status.desc(app).handshake_info.is_compatible_firmware
 
     app['config']['skip_version_check'] = False
     with pytest.warns(UserWarning, match='Handshake error'):
         await sparky._on_event(conduit_mock, nok_msg)
-    assert not state.summary(app).compatible
-    assert not state.summary(app).synchronize
+    assert not service_status.desc(app).handshake_info.is_compatible_firmware
+    assert not service_status.desc(app).is_synchronized
 
 
 async def test_on_cbox_err(app, mocker, conduit_mock, sparky, cbox_err):
-    await state.set_connect(app, 'addr')
-    assert state.summary(app).address == 'addr'
+    service_status.set_connected(app, 'addr')
+    assert service_status.desc(app).device_address == 'addr'
 
     msg = ':'.join(cbox_err)
     await sparky._on_event(conduit_mock, msg)
@@ -158,8 +159,8 @@ async def test_on_cbox_err(app, mocker, conduit_mock, sparky, cbox_err):
 
 
 async def test_on_setup_mode(app, mocker, conduit_mock, sparky):
-    await state.set_connect(app, 'addr')
-    assert state.summary(app).address == 'addr'
+    service_status.set_connected(app, 'addr')
+    assert service_status.desc(app).device_address == 'addr'
 
     mocker.patch(TESTED + '.web.GracefulExit', RuntimeError)
     with pytest.raises(RuntimeError):
@@ -167,8 +168,8 @@ async def test_on_setup_mode(app, mocker, conduit_mock, sparky):
 
 
 async def test_on_update(app, mocker, conduit_mock, sparky):
-    await state.set_connect(app, 'addr')
-    assert state.summary(app).address == 'addr'
+    service_status.set_connected(app, 'addr')
+    assert service_status.desc(app).device_address == 'addr'
 
     await sparky._on_event(conduit_mock, const.UPDATER_PREFIX + '-message')
 
