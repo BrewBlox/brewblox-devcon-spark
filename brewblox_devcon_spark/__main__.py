@@ -9,8 +9,8 @@ from brewblox_service import (brewblox_logger, couchdb, http, mqtt, scheduler,
                               service)
 
 from brewblox_devcon_spark import (broadcaster, commander, communication,
-                                   datastore, device, simulator, state,
-                                   synchronization)
+                                   datastore, device, service_status,
+                                   simulator, synchronization)
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
                                        settings_api, system_api)
 from brewblox_devcon_spark.codec import codec, unit_conversion
@@ -120,7 +120,7 @@ def main():
         config['device_serial'] = None
         simulator.setup(app)
 
-    state.setup(app)
+    service_status.setup(app)
     http.setup(app)
 
     communication.setup(app)
