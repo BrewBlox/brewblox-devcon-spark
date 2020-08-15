@@ -432,7 +432,10 @@ async def test_system_status(app, client):
         'device_address': 'simulation:1234',
         'connection_kind': 'wifi',
 
-        'service_info': fw_info,
+        'service_info': {
+            **fw_info,
+            'name': 'test_app',
+        },
         'device_info': {
             **fw_info,
             'system_version': ANY,
