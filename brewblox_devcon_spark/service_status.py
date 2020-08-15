@@ -29,7 +29,7 @@ class SharedInfo:
 
 @dataclass
 class ServiceInfo(SharedInfo):
-    pass
+    name: str
 
 
 @dataclass
@@ -72,11 +72,12 @@ class ServiceStatus(features.ServiceFeature):
         self.connection_kind: str = None
 
         self.service_info = ServiceInfo(
-            ini['firmware_version'],
-            ini['proto_version'],
-            ini['firmware_date'],
-            ini['proto_date'],
-            config['device_id'] or '',
+            firmware_version=ini['firmware_version'],
+            proto_version=ini['proto_version'],
+            firmware_date=ini['firmware_date'],
+            proto_date=ini['proto_date'],
+            device_id=config['device_id'] or '',
+            name=config['name'],
         )
         self.device_info: DeviceInfo = None
         self.handshake_info: HandshakeInfo = None

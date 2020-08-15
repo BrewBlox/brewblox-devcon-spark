@@ -82,7 +82,7 @@ class FirmwareInfoSchema(Schema):
 
 
 class ServiceInfoSchema(FirmwareInfoSchema):
-    pass
+    name = fields.String(required=True)
 
 
 class DeviceInfoSchema(FirmwareInfoSchema):
