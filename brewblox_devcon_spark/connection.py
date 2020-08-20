@@ -4,14 +4,15 @@ Creating a new connection to the Spark controller
 
 import asyncio
 from collections import namedtuple
+from contextlib import suppress
 from typing import Any, Iterable, Iterator, Tuple
 
-from aiohttp import ClientResponseError, web
-from brewblox_service import brewblox_logger, http, strex
+from aiohttp import web
+from brewblox_service import brewblox_logger
 from serial.tools import list_ports
 from serial_asyncio import open_serial_connection
 
-from brewblox_devcon_spark import exceptions
+from brewblox_devcon_spark import exceptions, mdns
 
 PortType_ = Any
 ConnectionResult_ = Tuple[Any, asyncio.StreamReader, asyncio.StreamWriter]
@@ -24,6 +25,7 @@ DEFAULT_BAUD_RATE = 115200
 DISCOVER_INTERVAL_S = 10
 DISCOVERY_RETRY_COUNT = 5
 DNS_DISCOVER_TIMEOUT_S = 20
+BREWBLOX_DNS_TYPE = '_brewblox._tcp.local.'
 
 KNOWN_DEVICES = {
     DeviceMatch(
@@ -99,24 +101,12 @@ async def discover_serial(app: web.Application) -> ConnectionResult_:
 async def discover_tcp(app: web.Application) -> ConnectionResult_:
     config = app['config']
     id = config['device_id']
-    mdns_host = config['mdns_host']
-    mdns_port = config['mdns_port']
-    try:
-        retv = await asyncio.wait_for(
-            http.session(app).post(f'http://{mdns_host}:{mdns_port}/mdns/discover',
-                                   json={'id': id}),
-            DNS_DISCOVER_TIMEOUT_S
-        )
-        resp = await retv.json()
-        host, port = resp['host'], resp['port']
-        return await connect_tcp(host, port)
-
-    except TimeoutError:  # pragma: no cover
-        return None
-
-    except ClientResponseError as ex:
-        LOGGER.info(f'Error connecting mDNS discovery service: {strex(ex)}')
-        return None
+    with suppress(TimeoutError):
+        resp = await mdns.discover_one(id,
+                                       BREWBLOX_DNS_TYPE,
+                                       DNS_DISCOVER_TIMEOUT_S)
+        return await connect_tcp(resp[0], resp[1])
+    return None
 
 
 def all_ports() -> Iterable[PortType_]:
