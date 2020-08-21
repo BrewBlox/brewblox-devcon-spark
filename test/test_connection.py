@@ -85,22 +85,6 @@ async def m_mdns(app, loop, mocker):
     m_discover.return_value = ('enterprise', 5678, None)
     return m_discover
 
-    # config = app['config']
-    # mdns_host = config['mdns_host']
-    # mdns_port = config['mdns_port']
-
-    # aresponses.add(
-    #     f'{mdns_host}:{mdns_port}', '/mdns/discover', 'POST',
-    #     web.json_response({'host': 'enterprise', 'port': 5678}),
-    #     repeat=100
-    # )
-    # aresponses.add(
-    #     f'mdns_error_host:{mdns_port}', '/mdns/discover', 'POST',
-    #     web.json_response({}, status=500),
-    #     repeat=100
-    # )
-    # return aresponses
-
 
 @pytest.fixture
 def app(app):
