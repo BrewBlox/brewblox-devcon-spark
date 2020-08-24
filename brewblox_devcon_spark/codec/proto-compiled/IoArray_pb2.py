@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=b'\n\rIoArray.proto\x12\x04\x62lox\"S\n\tIoChannel\x12#\n\x06\x63onfig\x18\x01 \x01(\x0e\x32\x13.blox.ChannelConfig\x12!\n\x05state\x18\x02 \x01(\x0e\x32\x12.blox.DigitalState*G\n\x0c\x44igitalState\x12\x12\n\x0eSTATE_INACTIVE\x10\x00\x12\x10\n\x0cSTATE_ACTIVE\x10\x01\x12\x11\n\rSTATE_UNKNOWN\x10\x02*}\n\rChannelConfig\x12\x12\n\x0e\x43HANNEL_UNUSED\x10\x00\x12\x16\n\x12\x43HANNEL_ACTIVE_LOW\x10\x01\x12\x17\n\x13\x43HANNEL_ACTIVE_HIGH\x10\x02\x12\x11\n\rCHANNEL_INPUT\x10\n\x12\x14\n\x0f\x43HANNEL_UNKNOWN\x10\xff\x01\x62\x06proto3'
+  serialized_pb=b'\n\rIoArray.proto\x12\x04\x62lox\"S\n\tIoChannel\x12#\n\x06\x63onfig\x18\x01 \x01(\x0e\x32\x13.blox.ChannelConfig\x12!\n\x05state\x18\x02 \x01(\x0e\x32\x12.blox.DigitalState*r\n\x0c\x44igitalState\x12\x12\n\x0eSTATE_INACTIVE\x10\x00\x12\x10\n\x0cSTATE_ACTIVE\x10\x01\x12\x11\n\rSTATE_UNKNOWN\x10\x02\x12\x0c\n\x08Inactive\x10\x00\x12\n\n\x06\x41\x63tive\x10\x01\x12\x0b\n\x07Unknown\x10\x02\x1a\x02\x10\x01*}\n\rChannelConfig\x12\x12\n\x0e\x43HANNEL_UNUSED\x10\x00\x12\x16\n\x12\x43HANNEL_ACTIVE_LOW\x10\x01\x12\x17\n\x13\x43HANNEL_ACTIVE_HIGH\x10\x02\x12\x11\n\rCHANNEL_INPUT\x10\n\x12\x14\n\x0f\x43HANNEL_UNKNOWN\x10\xff\x01\x62\x06proto3'
 )
 
 _DIGITALSTATE = _descriptor.EnumDescriptor(
@@ -40,11 +40,23 @@ _DIGITALSTATE = _descriptor.EnumDescriptor(
       name='STATE_UNKNOWN', index=2, number=2,
       serialized_options=None,
       type=None),
+    _descriptor.EnumValueDescriptor(
+      name='Inactive', index=3, number=0,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='Active', index=4, number=1,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='Unknown', index=5, number=2,
+      serialized_options=None,
+      type=None),
   ],
   containing_type=None,
-  serialized_options=None,
+  serialized_options=b'\020\001',
   serialized_start=108,
-  serialized_end=179,
+  serialized_end=222,
 )
 _sym_db.RegisterEnumDescriptor(_DIGITALSTATE)
 
@@ -78,8 +90,8 @@ _CHANNELCONFIG = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=181,
-  serialized_end=306,
+  serialized_start=224,
+  serialized_end=349,
 )
 _sym_db.RegisterEnumDescriptor(_CHANNELCONFIG)
 
@@ -87,6 +99,9 @@ ChannelConfig = enum_type_wrapper.EnumTypeWrapper(_CHANNELCONFIG)
 STATE_INACTIVE = 0
 STATE_ACTIVE = 1
 STATE_UNKNOWN = 2
+Inactive = 0
+Active = 1
+Unknown = 2
 CHANNEL_UNUSED = 0
 CHANNEL_ACTIVE_LOW = 1
 CHANNEL_ACTIVE_HIGH = 2
@@ -147,4 +162,5 @@ IoChannel = _reflection.GeneratedProtocolMessageType('IoChannel', (_message.Mess
 _sym_db.RegisterMessage(IoChannel)
 
 
+_DIGITALSTATE._options = None
 # @@protoc_insertion_point(module_scope)
