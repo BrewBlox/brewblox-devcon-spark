@@ -2,6 +2,7 @@
 Example of how to import and use the brewblox service
 """
 
+import argparse
 import logging
 from configparser import ConfigParser
 
@@ -9,8 +10,8 @@ from brewblox_service import (brewblox_logger, couchdb, http, mqtt, scheduler,
                               service)
 
 from brewblox_devcon_spark import (broadcaster, commander, communication,
-                                   datastore, device, simulator, state,
-                                   synchronization)
+                                   datastore, device, service_status,
+                                   simulator, synchronization)
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
                                        settings_api, system_api)
 from brewblox_devcon_spark.codec import codec, unit_conversion
@@ -79,16 +80,13 @@ def create_parser(default_name='spark'):
                        'Set to a value <= 0 to prevent timeouts. [%(default)s]',
                        type=float,
                        default=30)
-    group.add_argument('--mdns-host',
-                       help='Address of the Brewblox mdns discovery service. [%(default)s]',
-                       default='172.17.0.1')
-    group.add_argument('--mdns-port',
-                       help='Port of the Brewblox mdns discovery service. [%(default)s]',
-                       type=int,
-                       default=5000)
     group.add_argument('--volatile',
                        action='store_true',
                        help='Disable all outgoing network calls. [%(default)s]')
+
+    # Deprecated and silently ignored
+    group.add_argument('--mdns-host', help=argparse.SUPPRESS)
+    group.add_argument('--mdns-port', help=argparse.SUPPRESS)
 
     # Updater options
     group = parser.add_argument_group('Firmware')
@@ -120,7 +118,7 @@ def main():
         config['device_serial'] = None
         simulator.setup(app)
 
-    state.setup(app)
+    service_status.setup(app)
     http.setup(app)
 
     communication.setup(app)

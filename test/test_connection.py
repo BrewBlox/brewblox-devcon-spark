@@ -6,8 +6,6 @@ import asyncio
 from collections import namedtuple
 
 import pytest
-from aiohttp import web
-from aresponses import ResponsesMockServer
 from brewblox_service import http
 from mock import AsyncMock, Mock
 
@@ -82,22 +80,10 @@ def m_grep_ports(mocker):
 
 
 @pytest.fixture
-async def discovery_resp(app, aresponses: ResponsesMockServer, loop, mocker):
-    config = app['config']
-    mdns_host = config['mdns_host']
-    mdns_port = config['mdns_port']
-
-    aresponses.add(
-        f'{mdns_host}:{mdns_port}', '/mdns/discover', 'POST',
-        web.json_response({'host': 'enterprise', 'port': 5678}),
-        repeat=100
-    )
-    aresponses.add(
-        f'mdns_error_host:{mdns_port}', '/mdns/discover', 'POST',
-        web.json_response({}, status=500),
-        repeat=100
-    )
-    return aresponses
+async def m_mdns(app, loop, mocker):
+    m_discover = mocker.patch(TESTED + '.mdns.discover_one', AsyncMock())
+    m_discover.return_value = ('enterprise', 5678, None)
+    return m_discover
 
 
 @pytest.fixture
@@ -142,7 +128,7 @@ async def test_discover_serial(app, client, m_reader, m_writer, m_connect_serial
         await connection.connect(app)
 
 
-async def test_discover_tcp(app, client, discovery_resp, m_reader, m_writer, m_connect_tcp):
+async def test_discover_tcp(app, client, m_mdns, m_reader, m_writer, m_connect_tcp):
     app['config']['device_serial'] = None
     app['config']['device_host'] = None
     app['config']['device_port'] = 1234
@@ -152,6 +138,6 @@ async def test_discover_tcp(app, client, discovery_resp, m_reader, m_writer, m_c
     assert (await connection.connect(app)) == ('enterprise:5678', m_reader, m_writer)
 
     # unreachable mDNS service
-    app['config']['mdns_host'] = 'mdns_error_host'
+    m_mdns.side_effect = TimeoutError
     with pytest.raises(DummyExit):
         await connection.connect(app)

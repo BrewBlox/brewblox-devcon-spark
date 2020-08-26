@@ -59,8 +59,6 @@ def app_config() -> dict:
         'read_timeout': 10,
         'history_topic': 'brewcast/history',
         'state_topic': 'brewcast/state',
-        'mdns_host': '172.17.0.1',
-        'mdns_port': 5000,
         'volatile': True,
     }
 
@@ -83,8 +81,6 @@ def sys_args(app_config) -> list:
         '--read-timeout', app_config['read_timeout'],
         '--history-topic', app_config['history_topic'],
         '--state-topic', app_config['state_topic'],
-        '--mdns-host', app_config['mdns_host'],
-        '--mdns-port', app_config['mdns_port'],
         '--volatile',
     ]]
 
@@ -201,7 +197,7 @@ def spark_blocks():
                 'setting': 0,
                 'value': 0,
                 'settingEnabled': True,
-                'filter': 'FILT_15s',
+                'filter': 1,  # FILTER_15s
                 'filterThreshold': 2
             }
         },

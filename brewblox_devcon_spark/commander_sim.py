@@ -12,8 +12,8 @@ from typing import List
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
 
-from brewblox_devcon_spark import commander, commands, const, exceptions, state
-from brewblox_devcon_spark.codec import codec
+from brewblox_devcon_spark import (codec, commander, commands, const,
+                                   exceptions, service_status)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -22,15 +22,15 @@ def make_device(app: web.Application):
     config = app['config']
     ini = app['ini']
 
-    return state.DeviceInfo(
-        ini['firmware_version'],
-        ini['proto_version'],
-        ini['firmware_date'],
-        ini['proto_date'],
-        config['device_id'],
-        'sys_version',
-        'Simulator',
-        'Simulator reset',
+    return service_status.DeviceInfo(
+        firmware_version=ini['firmware_version'],
+        proto_version=ini['proto_version'],
+        firmware_date=ini['firmware_date'],
+        proto_date=ini['proto_date'],
+        device_id=config['device_id'],
+        system_version='sys_version',
+        platform='Simulator',
+        reset_reason='Simulator reset',
     )
 
 
@@ -209,8 +209,8 @@ class SimulationResponder():
     async def _noop_command(self, request):
         # Shortcut for actual behavior
         # Noop triggers a welcome message
-        # Welcome message is checked, and triggers set_handshake()
-        await state.set_handshake(self.app, make_device(self.app))
+        # Welcome message is checked, and triggers set_acknowledged()
+        service_status.set_acknowledged(self.app, make_device(self.app))
 
     async def _read_object(self, request):
         try:
@@ -302,8 +302,8 @@ class SimulationCommander(commander.SparkCommander):
 
     async def startup(self, app: web.Application):
         await self._responder.startup(app)
-        await state.set_connect(app, 'simulation:1234')
-        await state.set_handshake(app, make_device(app))
+        service_status.set_connected(app, 'simulation:1234')
+        service_status.set_acknowledged(app, make_device(app))
 
     async def shutdown(self, _):
         pass
@@ -316,7 +316,7 @@ class SimulationCommander(commander.SparkCommander):
 
     async def start_update(self, flush_period):
         await super().start_update(0)
-        await state.set_disconnect(self.app)
+        service_status.set_disconnected(self.app)
 
 
 def setup(app: web.Application):

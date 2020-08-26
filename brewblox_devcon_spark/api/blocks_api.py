@@ -10,8 +10,8 @@ from aiohttp import web
 from aiohttp_apispec import docs, request_schema, response_schema
 from brewblox_service import brewblox_logger, strex
 
-from brewblox_devcon_spark import (const, datastore, device, exceptions, state,
-                                   twinkeydict)
+from brewblox_devcon_spark import (const, datastore, device, exceptions,
+                                   service_status, twinkeydict)
 from brewblox_devcon_spark.api import schemas
 
 SYNC_WAIT_TIMEOUT_S = 20
@@ -48,7 +48,8 @@ class BlocksApi():
         self._store: twinkeydict.TwinKeyDict = datastore.get_block_store(app)
 
     async def wait_for_sync(self):
-        await asyncio.wait_for(state.wait_synchronize(self.app, self._wait_sync), SYNC_WAIT_TIMEOUT_S)
+        await asyncio.wait_for(
+            service_status.wait_synchronized(self.app, self._wait_sync), SYNC_WAIT_TIMEOUT_S)
 
     async def create(self, block: dict) -> dict:
         """
@@ -76,7 +77,7 @@ class BlocksApi():
 
         return created
 
-    async def read(self, ids: dict, filter: str = None) -> dict:
+    async def read(self, ids: dict) -> dict:
         await self.wait_for_sync()
         return await self._dev.read_object(ids)
 

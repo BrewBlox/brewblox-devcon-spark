@@ -24,6 +24,7 @@ class ManualCommandSchema(Schema):
 
 
 class BlockSchema(Schema):
+    serviceId = fields.String(required=False)
     id = fields.String(required=True)
     nid = fields.Integer(required=False)
     groups = fields.List(fields.Integer(), required=True)
@@ -80,24 +81,31 @@ class FirmwareInfoSchema(Schema):
     device_id = fields.String(required=True)
 
 
+class ServiceInfoSchema(FirmwareInfoSchema):
+    name = fields.String(required=True)
+
+
 class DeviceInfoSchema(FirmwareInfoSchema):
     system_version = fields.String(required=True)
     platform = fields.String(required=True)
     reset_reason = fields.String(required=True)
 
 
-class StatusSchema(Schema):
-    type = fields.String(required=True)
-    address = fields.String(required=True)
-    connection = fields.String(required=True)
-    compatible = fields.Bool(required=True)
-    latest = fields.Bool(required=True)
-    valid = fields.Bool(required=True)
-    service = fields.Nested(FirmwareInfoSchema(), required=False)
-    device = fields.Nested(DeviceInfoSchema(), required=False)
-    info = fields.String(many=True)
+class HandshakeInfoSchema(Schema):
+    is_compatible_firmware = fields.Bool(required=True)
+    is_latest_firmware = fields.Bool(required=True)
+    is_valid_device_id = fields.Bool(required=True)
 
-    autoconnecting = fields.Bool(required=True)
-    connect = fields.Bool(required=True)
-    handshake = fields.Bool(required=True)
-    synchronize = fields.Bool(required=True)
+
+class StatusSchema(Schema):
+    device_address = fields.String(required=False)
+    connection_kind = fields.String(required=False)
+
+    service_info = fields.Nested(ServiceInfoSchema(), required=False)
+    device_info = fields.Nested(DeviceInfoSchema(), required=False)
+    handshake_info = fields.Nested(HandshakeInfoSchema(), required=False)
+
+    is_autoconnecting = fields.Bool(required=True)
+    is_connected = fields.Bool(required=True)
+    is_acknowledged = fields.Bool(required=True)
+    is_synchronized = fields.Bool(required=True)

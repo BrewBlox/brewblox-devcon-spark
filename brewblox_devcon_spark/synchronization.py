@@ -4,7 +4,7 @@ Regulates actions that should be taken when the service connects to a controller
 
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 from time import monotonic
 
@@ -12,9 +12,9 @@ from aiohttp import web
 from brewblox_service import (brewblox_logger, features, repeater, scheduler,
                               strex)
 
-from brewblox_devcon_spark import const, datastore, exceptions, state
+from brewblox_devcon_spark import (codec, const, datastore, exceptions,
+                                   service_status)
 from brewblox_devcon_spark.api import blocks_api
-from brewblox_devcon_spark.codec import unit_conversion
 from brewblox_devcon_spark.device import get_device
 from brewblox_devcon_spark.exceptions import InvalidInput
 
@@ -67,9 +67,9 @@ class Syncher(repeater.RepeaterFeature):
             - Get the 'autoconnecting' value from the service store.
             - Set the autoconnecting event in state.py
         - Connect to controller
-            - Wait for 'connect' event to be set by communication.py
+            - Wait for 'connected' event to be set by communication.py
         - Synchronize handshake
-            - Keep sending a Noop command until 'handshake' event is set
+            - Keep sending a Noop command until 'acknowledged' event is set
             - Check firmware info in handshake for compatibility
             - Abort synchronization if firmware/ID is not compatible
         - Synchronize block store
@@ -79,8 +79,11 @@ class Syncher(repeater.RepeaterFeature):
             - If not, read controller-specific data, and migrate to service store
         - Synchronize controller time
             - Send current abs time to controller block
-        - Set 'synchronize' event
-        - Wait for 'disconnect' event
+        - Collect and log controller tracing
+            - Write read/resume command to SysInfo
+            - Tracing is included in response
+        - Set 'synchronized' event
+        - Wait for 'disconnected' event
 
         Implements RepeaterFeature.run
         """
@@ -88,13 +91,14 @@ class Syncher(repeater.RepeaterFeature):
             self._sync_done.clear()
             await self._sync_service_store()
 
-            await state.wait_connect(self.app)
+            await service_status.wait_connected(self.app)
             await self._sync_handshake()
             await self._sync_block_store()
             await self._migrate_config_store()
             await self._sync_time()
+            await self._collect_call_trace()
 
-            await state.set_synchronize(self.app)
+            service_status.set_synchronized(self.app)
             LOGGER.info('Service synchronized!')
 
         except asyncio.CancelledError:
@@ -117,7 +121,7 @@ class Syncher(repeater.RepeaterFeature):
         finally:
             self._sync_done.set()
 
-        await state.wait_disconnect(self.app)
+        await service_status.wait_disconnected(self.app)
 
     @property
     def sync_done(self) -> asyncio.Event:
@@ -129,14 +133,14 @@ class Syncher(repeater.RepeaterFeature):
         if self.app['config']['simulation']:
             return 'simulator__' + self.app['config']['name']
 
-        return state.summary(self.app).device.device_id
+        return service_status.desc(self.app).device_info.device_id
 
     def get_user_units(self):
-        return unit_conversion.get_converter(self.app).user_units
+        return codec.get_converter(self.app).user_units
 
     async def set_user_units(self, units):
+        converter = codec.get_converter(self.app)
         try:
-            converter = unit_conversion.get_converter(self.app)
             converter.user_units = units
             with datastore.get_service_store(self.app).open() as config:
                 config[UNIT_CONFIG_KEY] = converter.user_units
@@ -145,19 +149,19 @@ class Syncher(repeater.RepeaterFeature):
         return converter.user_units
 
     def get_autoconnecting(self):
-        return state.summary(self.app).autoconnecting
+        return service_status.desc(self.app).is_autoconnecting
 
     async def set_autoconnecting(self, enabled):
         enabled = bool(enabled)
-        await state.set_autoconnecting(self.app, enabled)
+        service_status.set_autoconnecting(self.app, enabled)
         with datastore.get_service_store(self.app).open() as config:
             config[AUTOCONNECTING_KEY] = enabled
         return enabled
 
     async def _apply_service_config(self, config):
-        converter = unit_conversion.get_converter(self.app)
+        converter = codec.get_converter(self.app)
         enabled = config.get(AUTOCONNECTING_KEY, True)
-        await state.set_autoconnecting(self.app, enabled)
+        service_status.set_autoconnecting(self.app, enabled)
         config[AUTOCONNECTING_KEY] = enabled
 
         units = config.get(UNIT_CONFIG_KEY, {})
@@ -178,7 +182,7 @@ class Syncher(repeater.RepeaterFeature):
     async def _sync_handshake(self):
         start = monotonic()
         handshake_task = await scheduler.create(self.app,
-                                                state.wait_handshake(self.app))
+                                                service_status.wait_acknowledged(self.app))
 
         while not handshake_task.done():
             if start + HANDSHAKE_TIMEOUT_S < monotonic():
@@ -191,12 +195,12 @@ class Syncher(repeater.RepeaterFeature):
             await asyncio.wait([handshake_task, asyncio.sleep(PING_INTERVAL_S)],
                                return_when=asyncio.FIRST_COMPLETED)
 
-        summary = state.summary(self.app)
+        handshake = service_status.desc(self.app).handshake_info
 
-        if not summary.compatible:
+        if not handshake.is_compatible_firmware:
             raise exceptions.IncompatibleFirmware()
 
-        if not summary.valid:
+        if not handshake.is_valid_device_id:
             raise exceptions.InvalidDeviceId()
 
     @subroutine('sync block store')
@@ -228,7 +232,7 @@ class Syncher(repeater.RepeaterFeature):
     async def _sync_time(self):
         now = datetime.now()
         api = blocks_api.BlocksApi(self.app, wait_sync=False)
-        await api.write({
+        ticks_block = await api.write({
             'nid': const.SYSTIME_NID,
             'groups': [const.SYSTEM_GROUP],
             'type': 'Ticks',
@@ -236,6 +240,40 @@ class Syncher(repeater.RepeaterFeature):
                 'secondsSinceEpoch': now.timestamp()
             }
         })
+        ms = ticks_block['data']['millisSinceBoot']
+        uptime = timedelta(milliseconds=ms)
+        LOGGER.info(f'System uptime: {uptime}')
+
+    async def format_trace(self, src):
+        cdc = codec.get_codec(self.app)
+        store = datastore.get_block_store(self.app)
+        dest = []
+        for src_v in src:
+            action = src_v['action']
+            nid = src_v['id']
+            sid = store.left_key(nid, 'Unknown')
+            typename = await cdc.decode(src_v['type'])
+
+            if nid == 0:
+                dest.append(action)
+            else:
+                dest.append(f'{action.ljust(20)} {typename.ljust(20)} [{sid},{nid}]')
+
+        return dest
+
+    @subroutine('collect controller call trace')
+    async def _collect_call_trace(self):
+        api = blocks_api.BlocksApi(self.app, wait_sync=False)
+        sys_block = await api.write({
+            'nid': const.SYSINFO_NID,
+            'groups': [const.SYSTEM_GROUP],
+            'type': 'SysInfo',
+            'data': {
+                'command': 'SYS_CMD_TRACE_READ_RESUME'
+            }
+        })
+        trace = '\n'.join(await self.format_trace(sys_block['data']['trace']))
+        LOGGER.info(f'System trace: \n{trace}')
 
 
 def setup(app: web.Application):

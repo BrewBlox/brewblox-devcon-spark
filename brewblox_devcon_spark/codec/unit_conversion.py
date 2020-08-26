@@ -2,7 +2,8 @@
 User-configurable unit conversion
 """
 
-from typing import Dict, Tuple
+from dataclasses import dataclass
+from typing import Dict
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
@@ -20,28 +21,35 @@ _UREG = UnitRegistry()
 SYSTEM_TEMP = 'degC'
 
 FORMATS = {
-    'Temp': '{temp}',
-    'InverseTemp': '1 / {temp}',
+    'Celsius': '{temp}',
+    'InverseCelsius': '1 / {temp}',
     'Second': 'second',
     'Minute': 'minute',
     'Hour': 'hour',
-    'DeltaTemp': 'delta_{temp}',
-    'DeltaTempPerSecond': 'delta_{temp} / second',
-    'DeltaTempPerMinute': 'delta_{temp} / minute',
-    'DeltaTempPerHour': 'delta_{temp} / hour',
-    'DeltaTempMultSecond': 'delta_{temp} * second',
-    'DeltaTempMultMinute': 'delta_{temp} * minute',
-    'DeltaTempMultHour': 'delta_{temp} * hour',
+    'DeltaCelsius': 'delta_{temp}',
+    'DeltaCelsiusPerSecond': 'delta_{temp} / second',
+    'DeltaCelsiusPerMinute': 'delta_{temp} / minute',
+    'DeltaCelsiusPerHour': 'delta_{temp} / hour',
+    'DeltaCelsiusMultSecond': 'delta_{temp} * second',
+    'DeltaCelsiusMultMinute': 'delta_{temp} * minute',
+    'DeltaCelsiusMultHour': 'delta_{temp} * hour',
 }
 
 
-def derived_table(user_temp) -> Dict[str, Tuple[str, str]]:
+@dataclass(frozen=True)
+class UnitMapping:
+    key: str
+    system_value: str
+    user_value: str
+
+
+def derived_table(user_temp) -> Dict[str, UnitMapping]:
     # Python 3.6+ guarantees values being insertion-ordered
     sys_vals = [s.format(temp=SYSTEM_TEMP) for s in FORMATS.values()]
     user_vals = [s.format(temp=user_temp) for s in FORMATS.values()]
 
     return {
-        k: [sys_val, user_val]
+        k: UnitMapping(k, sys_val, user_val)
         for (k, sys_val, user_val)
         in zip(FORMATS.keys(), sys_vals, user_vals)
     }
@@ -51,8 +59,7 @@ class UnitConverter(features.ServiceFeature):
 
     def __init__(self, app: web.Application):
         super().__init__(app)
-        # UnitType: [system_unit, user_unit]
-        # Init with system temp
+        # Init with system temp. All mappings will have system_value == user_value
         self._table = derived_table(SYSTEM_TEMP)
 
     async def startup(self, app: web.Application):
@@ -63,34 +70,36 @@ class UnitConverter(features.ServiceFeature):
 
     @property
     def user_units(self) -> Dict[str, str]:
-        return {'Temp': self._table['Temp'][1]}
+        return {
+            'Temp': self._table['Celsius'].user_value,
+        }
 
     @user_units.setter
     def user_units(self, newV: Dict[str, str]):
         temp = newV.get('Temp', SYSTEM_TEMP)
         cfg = derived_table(temp)
 
-        for id, units in cfg.items():
+        for id, mapping in cfg.items():
             try:
-                _UREG.Quantity(1, units[0]).to(units[1])
+                _UREG.Quantity(1, mapping.user_value).to(mapping.system_value)
             except Exception as ex:
-                raise InvalidInput(f'Invalid new unit config "{id}:{units}", {ex}')
+                raise InvalidInput(f'Invalid new unit config {mapping}, {ex}')
 
         self._table = cfg
 
     def to_sys_value(self, amount: float, id: str, custom=None) -> float:
-        conversion = self._table[id]
-        return _UREG.Quantity(amount, custom or conversion[1]).to(conversion[0]).magnitude
+        mapping = self._table[id]
+        return _UREG.Quantity(amount, custom or mapping.user_value).to(mapping.system_value).magnitude
 
     def to_user_value(self, amount: float, id: str) -> float:
-        conversion = self._table[id]
-        return _UREG.Quantity(amount, conversion[0]).to(conversion[1]).magnitude
+        mapping = self._table[id]
+        return _UREG.Quantity(amount, mapping.system_value).to(mapping.user_value).magnitude
 
     def to_sys_unit(self, id):
-        return self._table[id][0]
+        return self._table[id].system_value
 
     def to_user_unit(self, id):
-        return self._table[id][1]
+        return self._table[id].user_value
 
 
 def setup(app: web.Application):

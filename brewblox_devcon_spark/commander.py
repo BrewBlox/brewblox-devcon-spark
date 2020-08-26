@@ -13,7 +13,7 @@ from aiohttp import web
 from brewblox_service import brewblox_logger, features, repeater, strex
 
 from brewblox_devcon_spark import (commands, communication, const, exceptions,
-                                   state)
+                                   service_status)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -152,7 +152,7 @@ class SparkCommander(repeater.RepeaterFeature):
         welcome = HandshakeMessage(*msg.split(','))
         LOGGER.info(welcome)
 
-        device = state.DeviceInfo(
+        device = service_status.DeviceInfo(
             welcome.firmware_version,
             welcome.proto_version,
             welcome.firmware_date,
@@ -162,7 +162,7 @@ class SparkCommander(repeater.RepeaterFeature):
             welcome.platform,
             welcome.reset_reason,
         )
-        await state.set_handshake(self.app, device)
+        service_status.set_acknowledged(self.app, device)
 
     async def _on_event(self, conduit, msg: str):
         if msg.startswith(const.WELCOME_PREFIX):

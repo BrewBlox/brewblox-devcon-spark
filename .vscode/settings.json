@@ -11,5 +11,8 @@
     "python.testing.unittestEnabled": false,
     "python.testing.nosetestsEnabled": false,
     "python.testing.pytestEnabled": true,
-    "python.languageServer": "Microsoft"
+    "python.languageServer": "Pylance",
+    "python.analysis.extraPaths": [
+        "brewblox_devcon_spark/codec/proto-compiled"
+    ]
 }

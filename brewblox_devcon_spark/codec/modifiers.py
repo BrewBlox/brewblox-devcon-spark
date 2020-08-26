@@ -2,26 +2,24 @@
 Input/output modification functions for transcoding
 """
 
-from brewblox_devcon_spark.codec import _path_extension  # isort:skip
-
 import re
 from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
 from dataclasses import dataclass
 from functools import reduce
-from typing import Iterator, List
+from typing import Iterator, List, Optional, Union
 
 from brewblox_service import brewblox_logger
 from google.protobuf import json_format
 from google.protobuf.descriptor import DescriptorBase, FieldDescriptor
 from google.protobuf.message import Message
 
-import brewblox_pb2
-from brewblox_devcon_spark.codec.unit_conversion import UnitConverter
+from .opts import CodecOpts, FilterOpt, MetadataOpt
+from .pb2 import brewblox_pb2
+from .unit_conversion import UnitConverter
 
 STRIP_FIELDS_KEY = 'strippedFields'
 
-_path_extension.avoid_lint_errors()
 LOGGER = brewblox_logger(__name__)
 
 
@@ -114,44 +112,61 @@ class Modifier():
     def _objtype_name(self, objtype_num: int) -> str:
         return brewblox_pb2.BrewBloxTypes.BlockType.Name(objtype_num)
 
-    def encode_options(self, message: Message, obj: dict, codec_opts: dict) -> dict:
+    def _encode_unit(self, value: Union[float, dict], unit_type: str, postfix: Optional[str]) -> float:
+        if isinstance(value, dict):
+            user_value = value['value']
+            user_unit = value.get('unit')
+            return self._converter.to_sys_value(user_value, unit_type, user_unit)
+        else:
+            user_unit = postfix
+            return self._converter.to_sys_value(value, unit_type, user_unit)
+
+    def encode_options(self, message: Message, obj: dict, opts: CodecOpts) -> dict:
         """
         Modifies `obj` based on Protobuf options and dict key postfixes.
 
         Supported Protobuf options:
-        * unit:         convert post-fixed unit notation ([UNIT]) to Protobuf unit
-        * scale:        multiply value with scale after unit conversion
-        * objtype:      strip link key postfix (<TempSensorInterface> or <>)
-        * hexed:        convert hexadecimal string to int64
-        * readonly:     strip value from protobuf input
-        * ignored:      strip value from protobuf input
-        * hexstr:       convert hexadecimal string to base64 string
+        * unit:         Convert metadata unit notation (postfix or typed object) to Protobuf unit.
+        * scale:        Multiply value with scale after unit conversion.
+        * objtype:      Strip link key postfix (<TempSensorInterface> or <>), or extract id from typed object.
+        * hexed:        Convert hexadecimal string to int64.
+        * readonly:     Strip value from protobuf input.
+        * ignored:      Strip value from protobuf input.
+        * hexstr:       Convert hexadecimal string to base64 string.
 
         The output is a dict where values use controller units.
+
+        Postfix notations and typed objects can be mixed in the same data.
 
         Example:
             >>> values = {
                 'settings': {
                     'address': 'aabbccdd',
                     'offset[delta_degF]': 20,
-                    'sensor<TempSensorLink>': 10,
+                    'sensor<TempSensorInterface>': 10,
                     'output': 9000,
-                }
+                    'desiredSetting': {
+                        '__bloxtype': 'Quantity',
+                        'value': 15,
+                        'unit': 'degC',
+                    },
+                },
             }
 
             >>> encode_options(
-                TempSensorOneWire_pb2.TempSensorOneWire(),
-                values
-            )
+                    TempSensorOneWire_pb2.TempSensorOneWire(),
+                    values,
+                    CodecOpts())
 
             # ExampleMessage.proto:
             #
             # message ExampleMessage {
             #   message Settings {
             #     fixed64 address = 1 [(brewblox).hexed = true];
-            #     sint32 offset = 2 [(brewblox).unit = "delta_degC", (brewblox).scale = 256];
-            #     uint16 sensor = 3 [(brewblox).objtype = TempSensorLink];
+            #     sint32 offset = 2 [(brewblox).unit = DeltaTemp, (brewblox).scale = 256];
+            #     uint16 sensor = 3 [(brewblox).objtype = TempSensorInterface];
             #     sint32 output = 4 [(brewblox).readonly = true];
+            #     sint32 desiredSetting = 5 [(brewblox).unit = Temp];
             #   }
             # ...
 
@@ -160,8 +175,9 @@ class Modifier():
                 'settings': {
                     'address': 2864434397,  # Converted from Hex to int64
                     'offset': 2844,         # Converted to delta_degC, scaled * 256, and rounded to int
-                    'sensor': 10            # Object type postfix stripped
+                    'sensor': 10,           # Object type postfix stripped
                                             # 'output' is readonly -> stripped from dict
+                    'desiredSetting': 15,   # No conversion required - value already used degC
                 }
             }
         """
@@ -189,9 +205,18 @@ class Modifier():
                 del element.obj[element.key]
                 continue
 
-            if options.unit and element.postfix:
-                unit = self._unit_name(options.unit)
-                val = [self._converter.to_sys_value(v, unit, element.postfix) for v in val]
+            if options.unit:
+                unit_name = self._unit_name(options.unit)
+                val = [
+                    self._encode_unit(v, unit_name, element.postfix or None)
+                    for v in val
+                ]
+
+            if options.objtype:
+                val = [
+                    v['id'] if isinstance(v, dict) else v
+                    for v in val
+                ]
 
             if options.scale:
                 val = [v * options.scale for v in val]
@@ -215,21 +240,28 @@ class Modifier():
 
         return obj
 
-    def decode_options(self, message: Message, obj: dict, codec_opts: dict) -> dict:
+    def decode_options(self, message: Message, obj: dict, opts: CodecOpts) -> dict:
         """
-        Modifies `obj` based on brewblox protobuf options.
-        Supported options:
-        * scale:        divides value by scale before unit conversion
-        * unit:         postfixes dict key with the unit defined in the Protobuf spec
-        * objtype:      postfixes dict key with object type in triangle brackets (<TempSensorInterface>)
-        * driven        driven links add ',driven' to object type (<TempSensorInterface,driven>)
-        * hexed:        converts base64 decoder output to int
-        * hexstr:       converts base64 decoder output to hexadecimal string
-        * readonly:     ignored: decoding means reading from controller
-        * ignored:      strip value from output
+        Post-processes protobuf data based on protobuf / codec options.
+
+        Supported protobuf options:
+        * scale:        Divides value by scale before unit conversion.
+        * unit:         Adds unit to output, using either a [] postfix, or a typed object.
+        * objtype:      Adds object type to output, using either a <> postfix, or a typed object.
+        * driven        Adds the "driven" flag to postfix or typed object.
+        * hexed:        Converts base64 decoder output to int.
+        * hexstr:       Converts base64 decoder output to hexadecimal string.
+        * readonly:     Ignored: decoding means reading from controller.
+        * ignored:      Strip value from output.
+        * logged:       Tag for filtering output data.
 
         Supported special field names:
-        * strippedFields:  lists all fields that should be set to None in the current message
+        * strippedFields:  lists all fields that should be set to None in the current message.
+
+        Supported codec options:
+        * filter:       If opts.filter == LOGGED, all values without options.logged are stripped from output.
+        * metadata:     Format used to serialize object metadata.
+                        Determines whether units/links are postfixed or rendered as typed object.
 
         Example:
             >>> values = {
@@ -242,9 +274,9 @@ class Modifier():
             }
 
             >>> decode_options(
-                ExampleMessage_pb2.ExampleMessage(),
-                values
-            )
+                    ExampleMessage_pb2.ExampleMessage(),
+                    values,
+                    CodecOpts(metadata=MetadataOpt.POSTFIX))
 
             # ExampleMessage.proto:
             #
@@ -270,18 +302,18 @@ class Modifier():
             }
         """
         stripped_fields = obj.pop(STRIP_FIELDS_KEY, [])
-        logged = codec_opts.get('logged', False)
 
         for element in self._find_options(message.DESCRIPTOR, obj):
             options = self._field_options(element.field)
             val = element.obj[element.key]
             new_key = element.key
+            stripped = element.field.number in stripped_fields and not element.nested
 
             if options.ignored:
                 del element.obj[element.key]
                 continue
 
-            if logged and not options.logged:
+            if opts.filter == FilterOpt.LOGGED and not options.logged:
                 del element.obj[element.key]
                 continue
 
@@ -294,18 +326,44 @@ class Modifier():
                 val = [v / options.scale for v in val]
 
             if options.unit:
-                unit = self._unit_name(options.unit)
-                new_key += f'[{self._converter.to_user_unit(unit)}]'
+                unit_name = self._unit_name(options.unit)
+                user_unit = self._converter.to_user_unit(unit_name)
+
+                # Always convert value
                 val = [
-                    self._converter.to_user_value(v, unit)
+                    self._converter.to_user_value(v, unit_name)
                     for v in val
                 ]
 
+                if opts.metadata == MetadataOpt.TYPED:
+                    shared = {
+                        '__bloxtype': 'Quantity',
+                        'unit': user_unit,
+                    }
+                    if options.readonly:
+                        shared['readonly'] = True
+
+                    val = [{**shared, 'value': v if not stripped else None} for v in val]
+
+                if opts.metadata == MetadataOpt.POSTFIX:
+                    new_key += f'[{user_unit}]'
+
             if options.objtype:
-                postfix = self._objtype_name(options.objtype)
-                if options.driven:
-                    postfix += ',driven'
-                new_key += f'<{postfix}>'
+                objtype = self._objtype_name(options.objtype)
+
+                if opts.metadata == MetadataOpt.TYPED:
+                    shared = {
+                        '__bloxtype': 'Link',
+                        'type': objtype,
+                    }
+                    if options.driven:
+                        shared['driven'] = True
+
+                    val = [{**shared, 'id': v if not stripped else None} for v in val]
+
+                if opts.metadata == MetadataOpt.POSTFIX:
+                    postfix = f'<{objtype},driven>' if options.driven else f'<{objtype}>'
+                    new_key += postfix
 
             if options.hexed:
                 val = [self.int_to_hex(v) for v in val]
@@ -319,9 +377,11 @@ class Modifier():
             if element.key != new_key:
                 del element.obj[element.key]
 
-            if element.field.number in stripped_fields and not element.nested:
-                # Only strip after element possibly got a new key
-                val = None
+            if stripped:
+                if (options.unit or options.objtype) and opts.metadata == MetadataOpt.TYPED:
+                    pass  # Already handled
+                else:
+                    val = None
 
             element.obj[new_key] = val
 

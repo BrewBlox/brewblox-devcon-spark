@@ -5,18 +5,17 @@ Tests brewblox_devcon_spark.commander_sim
 import pytest
 from brewblox_service import scheduler
 
-from brewblox_devcon_spark import (commander, commander_sim, commands, const,
-                                   datastore, exceptions, state)
-from brewblox_devcon_spark.codec import codec, unit_conversion
+from brewblox_devcon_spark import (codec, commander, commander_sim, commands,
+                                   const, datastore, exceptions,
+                                   service_status)
 
 
 @pytest.fixture
 def app(app):
     scheduler.setup(app)
-    state.setup(app)
+    service_status.setup(app)
     commander_sim.setup(app)
     datastore.setup(app)
-    unit_conversion.setup(app)
     codec.setup(app)
     return app
 

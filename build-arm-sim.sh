@@ -9,12 +9,16 @@ set -ex
 #   bash build-arm-sim.sh
 #
 
-FW_DIR=${1:-"../brewblox-firmware"}
+FW_DIR="$(readlink -f "${1:-"../brewblox-firmware"}")"
 pushd "$(dirname "$(readlink -f "$0")")" > /dev/null
+
+# This prevents sudo blocking the script halfway through
+sudo echo "Caching sudo permissions"
 
 # We want to use the same git commit used to build the content of ./binaries
 bin_fw_version=$(awk -F "=" '/firmware_version/ {print $2}' binaries/firmware.ini)
 
+git -C "$FW_DIR" fetch --all
 git -C "$FW_DIR" checkout "$bin_fw_version"
 git -C "$FW_DIR" submodule update
 
@@ -22,7 +26,7 @@ date # Helps estimating ETA
 bash "$FW_DIR"/docker/build-bin-arm.sh
 cp "$FW_DIR"/build/target/brewblox-gcc/brewblox ./binaries/brewblox-arm
 
-git -c "$FW_DIR" checkout -
+git -C "$FW_DIR" checkout -
 git -C "$FW_DIR" submodule update
 
 echo "Done!"

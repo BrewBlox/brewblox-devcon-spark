@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=b'\n\x15\x44isplaySettings.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xdf\x03\n\x0f\x44isplaySettings\x12\x34\n\x07widgets\x18\x01 \x03(\x0b\x32\x1c.blox.DisplaySettings.WidgetB\x05\x92?\x02\x10\x06\x12\x13\n\x04name\x18\x02 \x01(\tB\x05\x92?\x02\x08(\x12\x37\n\x08tempUnit\x18\x03 \x01(\x0e\x32%.blox.DisplaySettings.TemperatureUnit\x12\x19\n\nbrightness\x18\x04 \x01(\rB\x05\x92?\x02\x38\x08\x1a\xf3\x01\n\x06Widget\x12\x12\n\x03pos\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08\x12\x1f\n\x05\x63olor\x18\x02 \x01(\x0c\x42\x10\x92?\x02\x08\x03\x92?\x02x\x01\x8a\xb5\x18\x02\x38\x01\x12\x13\n\x04name\x18\x03 \x01(\tB\x05\x92?\x02\x08\x10\x12!\n\ntempSensor\x18\n \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x02\x92?\x02\x38\x10H\x00\x12*\n\x12setpointSensorPair\x18\x0b \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xaf\x02\x92?\x02\x38\x10H\x00\x12%\n\x0e\x61\x63tuatorAnalog\x18\x0c \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x05\x92?\x02\x38\x10H\x00\x12\x1b\n\x03pid\x18\x0e \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xb0\x02\x92?\x02\x38\x10H\x00\x42\x0c\n\nWidgetType\".\n\x0fTemperatureUnit\x12\x0b\n\x07\x43\x45LSIUS\x10\x00\x12\x0e\n\nFAHRENHEIT\x10\x01:\x07\x8a\xb5\x18\x03\x18\xba\x02\x62\x06proto3'
+  serialized_pb=b'\n\x15\x44isplaySettings.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xf2\x01\n\x06Widget\x12\x12\n\x03pos\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08\x12\x1f\n\x05\x63olor\x18\x02 \x01(\x0c\x42\x10\x92?\x02\x08\x03\x92?\x02x\x01\x8a\xb5\x18\x02\x38\x01\x12\x13\n\x04name\x18\x03 \x01(\tB\x05\x92?\x02\x08\x10\x12!\n\ntempSensor\x18\n \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x02\x92?\x02\x38\x10H\x00\x12)\n\x12setpointSensorPair\x18\x0b \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x04\x92?\x02\x38\x10H\x00\x12%\n\x0e\x61\x63tuatorAnalog\x18\x0c \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x05\x92?\x02\x38\x10H\x00\x12\x1b\n\x03pid\x18\x0e \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xb0\x02\x92?\x02\x38\x10H\x00\x42\x0c\n\nWidgetType\"\xe3\x01\n\x0f\x44isplaySettings\x12$\n\x07widgets\x18\x01 \x03(\x0b\x32\x0c.blox.WidgetB\x05\x92?\x02\x10\x06\x12\x13\n\x04name\x18\x02 \x01(\tB\x05\x92?\x02\x08(\x12\x37\n\x08tempUnit\x18\x03 \x01(\x0e\x32%.blox.DisplaySettings.TemperatureUnit\x12\x19\n\nbrightness\x18\x04 \x01(\rB\x05\x92?\x02\x38\x08\"8\n\x0fTemperatureUnit\x12\x10\n\x0cTEMP_CELSIUS\x10\x00\x12\x13\n\x0fTEMP_FAHRENHEIT\x10\x01:\x07\x8a\xb5\x18\x03\x18\xba\x02\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -33,73 +33,73 @@ _DISPLAYSETTINGS_TEMPERATUREUNIT = _descriptor.EnumDescriptor(
   file=DESCRIPTOR,
   values=[
     _descriptor.EnumValueDescriptor(
-      name='CELSIUS', index=0, number=0,
+      name='TEMP_CELSIUS', index=0, number=0,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='FAHRENHEIT', index=1, number=1,
+      name='TEMP_FAHRENHEIT', index=1, number=1,
       serialized_options=None,
       type=None),
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=486,
-  serialized_end=532,
+  serialized_start=469,
+  serialized_end=525,
 )
 _sym_db.RegisterEnumDescriptor(_DISPLAYSETTINGS_TEMPERATUREUNIT)
 
 
-_DISPLAYSETTINGS_WIDGET = _descriptor.Descriptor(
+_WIDGET = _descriptor.Descriptor(
   name='Widget',
-  full_name='blox.DisplaySettings.Widget',
+  full_name='blox.Widget',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='pos', full_name='blox.DisplaySettings.Widget.pos', index=0,
+      name='pos', full_name='blox.Widget.pos', index=0,
       number=1, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\222?\0028\010', file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='color', full_name='blox.DisplaySettings.Widget.color', index=1,
+      name='color', full_name='blox.Widget.color', index=1,
       number=2, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=b"",
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\222?\002\010\003\222?\002x\001\212\265\030\0028\001', file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='name', full_name='blox.DisplaySettings.Widget.name', index=2,
+      name='name', full_name='blox.Widget.name', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\222?\002\010\020', file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='tempSensor', full_name='blox.DisplaySettings.Widget.tempSensor', index=3,
+      name='tempSensor', full_name='blox.Widget.tempSensor', index=3,
       number=10, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002\030\002\222?\0028\020', file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='setpointSensorPair', full_name='blox.DisplaySettings.Widget.setpointSensorPair', index=4,
+      name='setpointSensorPair', full_name='blox.Widget.setpointSensorPair', index=4,
       number=11, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=b'\212\265\030\003\030\257\002\222?\0028\020', file=DESCRIPTOR),
+      serialized_options=b'\212\265\030\002\030\004\222?\0028\020', file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='actuatorAnalog', full_name='blox.DisplaySettings.Widget.actuatorAnalog', index=5,
+      name='actuatorAnalog', full_name='blox.Widget.actuatorAnalog', index=5,
       number=12, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002\030\005\222?\0028\020', file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='pid', full_name='blox.DisplaySettings.Widget.pid', index=6,
+      name='pid', full_name='blox.Widget.pid', index=6,
       number=14, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -117,12 +117,13 @@ _DISPLAYSETTINGS_WIDGET = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
     _descriptor.OneofDescriptor(
-      name='WidgetType', full_name='blox.DisplaySettings.Widget.WidgetType',
+      name='WidgetType', full_name='blox.Widget.WidgetType',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=241,
-  serialized_end=484,
+  serialized_start=62,
+  serialized_end=304,
 )
+
 
 _DISPLAYSETTINGS = _descriptor.Descriptor(
   name='DisplaySettings',
@@ -162,7 +163,7 @@ _DISPLAYSETTINGS = _descriptor.Descriptor(
   ],
   extensions=[
   ],
-  nested_types=[_DISPLAYSETTINGS_WIDGET, ],
+  nested_types=[],
   enum_types=[
     _DISPLAYSETTINGS_TEMPERATUREUNIT,
   ],
@@ -172,52 +173,51 @@ _DISPLAYSETTINGS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=62,
-  serialized_end=541,
+  serialized_start=307,
+  serialized_end=534,
 )
 
-_DISPLAYSETTINGS_WIDGET.containing_type = _DISPLAYSETTINGS
-_DISPLAYSETTINGS_WIDGET.oneofs_by_name['WidgetType'].fields.append(
-  _DISPLAYSETTINGS_WIDGET.fields_by_name['tempSensor'])
-_DISPLAYSETTINGS_WIDGET.fields_by_name['tempSensor'].containing_oneof = _DISPLAYSETTINGS_WIDGET.oneofs_by_name['WidgetType']
-_DISPLAYSETTINGS_WIDGET.oneofs_by_name['WidgetType'].fields.append(
-  _DISPLAYSETTINGS_WIDGET.fields_by_name['setpointSensorPair'])
-_DISPLAYSETTINGS_WIDGET.fields_by_name['setpointSensorPair'].containing_oneof = _DISPLAYSETTINGS_WIDGET.oneofs_by_name['WidgetType']
-_DISPLAYSETTINGS_WIDGET.oneofs_by_name['WidgetType'].fields.append(
-  _DISPLAYSETTINGS_WIDGET.fields_by_name['actuatorAnalog'])
-_DISPLAYSETTINGS_WIDGET.fields_by_name['actuatorAnalog'].containing_oneof = _DISPLAYSETTINGS_WIDGET.oneofs_by_name['WidgetType']
-_DISPLAYSETTINGS_WIDGET.oneofs_by_name['WidgetType'].fields.append(
-  _DISPLAYSETTINGS_WIDGET.fields_by_name['pid'])
-_DISPLAYSETTINGS_WIDGET.fields_by_name['pid'].containing_oneof = _DISPLAYSETTINGS_WIDGET.oneofs_by_name['WidgetType']
-_DISPLAYSETTINGS.fields_by_name['widgets'].message_type = _DISPLAYSETTINGS_WIDGET
+_WIDGET.oneofs_by_name['WidgetType'].fields.append(
+  _WIDGET.fields_by_name['tempSensor'])
+_WIDGET.fields_by_name['tempSensor'].containing_oneof = _WIDGET.oneofs_by_name['WidgetType']
+_WIDGET.oneofs_by_name['WidgetType'].fields.append(
+  _WIDGET.fields_by_name['setpointSensorPair'])
+_WIDGET.fields_by_name['setpointSensorPair'].containing_oneof = _WIDGET.oneofs_by_name['WidgetType']
+_WIDGET.oneofs_by_name['WidgetType'].fields.append(
+  _WIDGET.fields_by_name['actuatorAnalog'])
+_WIDGET.fields_by_name['actuatorAnalog'].containing_oneof = _WIDGET.oneofs_by_name['WidgetType']
+_WIDGET.oneofs_by_name['WidgetType'].fields.append(
+  _WIDGET.fields_by_name['pid'])
+_WIDGET.fields_by_name['pid'].containing_oneof = _WIDGET.oneofs_by_name['WidgetType']
+_DISPLAYSETTINGS.fields_by_name['widgets'].message_type = _WIDGET
 _DISPLAYSETTINGS.fields_by_name['tempUnit'].enum_type = _DISPLAYSETTINGS_TEMPERATUREUNIT
 _DISPLAYSETTINGS_TEMPERATUREUNIT.containing_type = _DISPLAYSETTINGS
+DESCRIPTOR.message_types_by_name['Widget'] = _WIDGET
 DESCRIPTOR.message_types_by_name['DisplaySettings'] = _DISPLAYSETTINGS
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-DisplaySettings = _reflection.GeneratedProtocolMessageType('DisplaySettings', (_message.Message,), {
+Widget = _reflection.GeneratedProtocolMessageType('Widget', (_message.Message,), {
+  'DESCRIPTOR' : _WIDGET,
+  '__module__' : 'DisplaySettings_pb2'
+  # @@protoc_insertion_point(class_scope:blox.Widget)
+  })
+_sym_db.RegisterMessage(Widget)
 
-  'Widget' : _reflection.GeneratedProtocolMessageType('Widget', (_message.Message,), {
-    'DESCRIPTOR' : _DISPLAYSETTINGS_WIDGET,
-    '__module__' : 'DisplaySettings_pb2'
-    # @@protoc_insertion_point(class_scope:blox.DisplaySettings.Widget)
-    })
-  ,
+DisplaySettings = _reflection.GeneratedProtocolMessageType('DisplaySettings', (_message.Message,), {
   'DESCRIPTOR' : _DISPLAYSETTINGS,
   '__module__' : 'DisplaySettings_pb2'
   # @@protoc_insertion_point(class_scope:blox.DisplaySettings)
   })
 _sym_db.RegisterMessage(DisplaySettings)
-_sym_db.RegisterMessage(DisplaySettings.Widget)
 
 
-_DISPLAYSETTINGS_WIDGET.fields_by_name['pos']._options = None
-_DISPLAYSETTINGS_WIDGET.fields_by_name['color']._options = None
-_DISPLAYSETTINGS_WIDGET.fields_by_name['name']._options = None
-_DISPLAYSETTINGS_WIDGET.fields_by_name['tempSensor']._options = None
-_DISPLAYSETTINGS_WIDGET.fields_by_name['setpointSensorPair']._options = None
-_DISPLAYSETTINGS_WIDGET.fields_by_name['actuatorAnalog']._options = None
-_DISPLAYSETTINGS_WIDGET.fields_by_name['pid']._options = None
+_WIDGET.fields_by_name['pos']._options = None
+_WIDGET.fields_by_name['color']._options = None
+_WIDGET.fields_by_name['name']._options = None
+_WIDGET.fields_by_name['tempSensor']._options = None
+_WIDGET.fields_by_name['setpointSensorPair']._options = None
+_WIDGET.fields_by_name['actuatorAnalog']._options = None
+_WIDGET.fields_by_name['pid']._options = None
 _DISPLAYSETTINGS.fields_by_name['widgets']._options = None
 _DISPLAYSETTINGS.fields_by_name['name']._options = None
 _DISPLAYSETTINGS.fields_by_name['brightness']._options = None

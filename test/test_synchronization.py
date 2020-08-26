@@ -8,33 +8,43 @@ import pytest
 from brewblox_service import brewblox_logger, repeater, scheduler
 from mock import AsyncMock
 
-from brewblox_devcon_spark import (commander_sim, datastore, device, state,
-                                   synchronization)
+from brewblox_devcon_spark import (commander_sim, datastore, device,
+                                   service_status, synchronization)
 from brewblox_devcon_spark.codec import codec, unit_conversion
+from brewblox_devcon_spark.service_status import StatusDescription
 
 TESTED = synchronization.__name__
 LOGGER = brewblox_logger(__name__)
 
 
 def states(app):
-    events = state._events(app)
+    status = service_status.get_status(app)
     return [
-        events.disconnect_ev.is_set(),
-        events.connect_ev.is_set(),
-        events.synchronize_ev.is_set(),
+        status.disconnected_ev.is_set(),
+        status.connected_ev.is_set(),
+        status.synchronized_ev.is_set(),
     ]
 
 
 async def connect(app):
-    await state.set_connect(app, 'synchronization test')
+    service_status.set_connected(app, 'synchronization test')
     await synchronization.get_syncher(app).sync_done.wait()
     await asyncio.sleep(0.01)
 
 
 async def disconnect(app):
-    await state.set_disconnect(app)
-    await state.wait_disconnect(app)
+    service_status.set_disconnected(app)
+    await service_status.wait_disconnected(app)
     await asyncio.sleep(0.01)
+
+
+async def wait_sync(app):
+    await asyncio.wait_for(service_status.wait_synchronized(app), 10)
+
+
+@pytest.fixture(autouse=True)
+def m_timedelta(mocker):
+    mocker.patch(TESTED + '.timedelta')
 
 
 @pytest.fixture(autouse=True)
@@ -52,7 +62,7 @@ def system_exit_mock(mocker):
 @pytest.fixture
 async def app(app, loop):
     app['config']['volatile'] = True
-    state.setup(app)
+    service_status.setup(app)
     scheduler.setup(app)
     datastore.setup(app)
     commander_sim.setup(app)
@@ -87,7 +97,7 @@ def syncher(app):
 
 
 async def test_sync_status(app, client, mocker):
-    await state.wait_synchronize(app)
+    await wait_sync(app)
     assert states(app) == [False, True, True]
 
     await disconnect(app)
@@ -103,7 +113,7 @@ async def test_sync_cancel(app, client, syncher):
 
 
 async def test_sync_errors(app, client, mocker, system_exit_mock):
-    await state.wait_synchronize(app)
+    await wait_sync(app)
     mocker.patch(TESTED + '.datastore.check_remote', AsyncMock(side_effect=RuntimeError))
 
     await disconnect(app)
@@ -115,7 +125,7 @@ async def test_sync_errors(app, client, mocker, system_exit_mock):
 
 
 async def test_write_error(app, client, mocker, api_mock, system_exit_mock):
-    await state.wait_synchronize(app)
+    await wait_sync(app)
     api_mock.write = AsyncMock(side_effect=RuntimeError)
     await disconnect(app)
     await connect(app)
@@ -128,10 +138,10 @@ async def test_write_error(app, client, mocker, api_mock, system_exit_mock):
 async def test_timeout(app, client, syncher, mocker, system_exit_mock):
     async def m_wait_handshake(app):
         return False
-    await state.wait_synchronize(app)
+    await wait_sync(app)
     await disconnect(app)
     mocker.patch(TESTED + '.HANDSHAKE_TIMEOUT_S', 0.0001)
-    mocker.patch(TESTED + '.state.wait_handshake', side_effect=m_wait_handshake)
+    mocker.patch(TESTED + '.service_status.wait_acknowledged', side_effect=m_wait_handshake)
 
     await connect(app)
     assert system_exit_mock.call_count == 1
@@ -139,7 +149,7 @@ async def test_timeout(app, client, syncher, mocker, system_exit_mock):
 
 
 async def test_device_name(app, client, syncher):
-    await state.wait_synchronize(app)
+    await wait_sync(app)
     assert syncher.device_name == app['config']['device_id']
 
     app['config']['simulation'] = True
@@ -147,7 +157,7 @@ async def test_device_name(app, client, syncher):
 
 
 async def test_user_units(app, client, syncher):
-    await state.wait_synchronize(app)
+    await wait_sync(app)
     assert syncher.get_user_units() == {'Temp': 'degC'}
     assert await syncher.set_user_units({'Temp': 'degF'}) == {'Temp': 'degF'}
     assert syncher.get_user_units() == {'Temp': 'degF'}
@@ -156,26 +166,26 @@ async def test_user_units(app, client, syncher):
 
 
 async def test_autoconnecting(app, client, syncher):
-    await state.wait_synchronize(app)
+    await wait_sync(app)
     assert syncher.get_autoconnecting() is True
     assert await syncher.set_autoconnecting(False) is False
     assert syncher.get_autoconnecting() is False
-    assert await state.wait_autoconnecting(app, False) is False
+    assert await service_status.wait_autoconnecting(app, False) is False
 
 
 async def test_errors(app, client, syncher, mocker, system_exit_mock):
-    m_summary = mocker.patch(TESTED + '.state.summary').return_value
-    await state.wait_synchronize(app)
+    m_desc: StatusDescription = mocker.patch(TESTED + '.service_status.desc').return_value
+    await wait_sync(app)
 
-    m_summary.compatible = False
-    m_summary.valid = True
+    m_desc.handshake_info.is_compatible_firmware = False
+    m_desc.handshake_info.is_valid_device_id = True
     await disconnect(app)
     await connect(app)
     assert syncher.active
     assert states(app) == [False, True, False]
 
-    m_summary.compatible = True
-    m_summary.valid = False
+    m_desc.handshake_info.is_compatible_firmware = True
+    m_desc.handshake_info.is_valid_device_id = False
     await disconnect(app)
     await connect(app)
     assert syncher.active
@@ -183,7 +193,7 @@ async def test_errors(app, client, syncher, mocker, system_exit_mock):
 
 
 async def test_migrate(app, client, syncher, mocker):
-    await state.wait_synchronize(app)
+    await wait_sync(app)
     store = datastore.get_service_store(app)
 
     with store.open() as config:
@@ -199,3 +209,21 @@ async def test_migrate(app, client, syncher, mocker):
 
     with store.open() as config:
         assert config['version'] == 'v1'
+
+
+async def test_format_trace(app, client, syncher):
+    await wait_sync(app)
+    src = [{'action': 'UPDATE_BLOCK', 'id': 19, 'type': 319},
+           {'action': 'UPDATE_BLOCK', 'id': 101, 'type': 318},
+           {'action': 'UPDATE_BLOCK', 'id': 102, 'type': 301},
+           {'action': 'UPDATE_BLOCK', 'id': 103, 'type': 311},
+           {'action': 'UPDATE_BLOCK', 'id': 104, 'type': 302},
+           {'action': 'SYSTEM_TASKS', 'id': 0, 'type': 0},
+           {'action': 'UPDATE_DISPLAY', 'id': 0, 'type': 0},
+           {'action': 'UPDATE_CONNECTIONS', 'id': 0, 'type': 0},
+           {'action': 'WRITE_BLOCK', 'id': 2, 'type': 256},
+           {'action': 'PERSIST_BLOCK', 'id': 2, 'type': 256}]
+    parsed = await syncher.format_trace(src)
+    assert parsed[0] == 'UPDATE_BLOCK         Spark3Pins           [SparkPins,19]'
+    assert parsed[-1] == 'PERSIST_BLOCK        SysInfo              [SystemInfo,2]'
+    assert parsed[5] == 'SYSTEM_TASKS'

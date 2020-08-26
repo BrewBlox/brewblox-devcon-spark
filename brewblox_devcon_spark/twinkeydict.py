@@ -6,11 +6,10 @@ When looking up objects with both left and right key, asserts that keys point to
 
 from collections.abc import MutableMapping
 from contextlib import suppress
+from dataclasses import dataclass
 from typing import Any, Dict, Hashable, Iterator, Tuple
 
 from brewblox_service import brewblox_logger
-
-from dataclasses import dataclass
 
 Keys_ = Tuple[Hashable, Hashable]
 
@@ -137,11 +136,23 @@ class TwinKeyDict(MutableMapping):
         del self._left_view[obj.left_key]
         del self._right_view[obj.right_key]
 
-    def left_key(self, right_key: Hashable) -> Hashable:
-        return self._right_view[right_key].left_key
+    def left_key(self, right_key: Hashable, default=...) -> Hashable:
+        try:
+            return self._right_view[right_key].left_key
+        except KeyError:
+            if default is not ...:
+                return default
+            else:
+                raise
 
-    def right_key(self, left_key: Hashable) -> Hashable:
-        return self._left_view[left_key].right_key
+    def right_key(self, left_key: Hashable, default=...) -> Hashable:
+        try:
+            return self._left_view[left_key].right_key
+        except KeyError:
+            if default is not ...:
+                return default
+            else:
+                raise
 
     def rename(self, old_keys: Keys_, new_keys: Keys_):
         if new_keys in self:

@@ -10,7 +10,8 @@ from brewblox_service.testing import response
 from mock import ANY, AsyncMock
 
 from brewblox_devcon_spark import (commander_sim, const, datastore, device,
-                                   exceptions, state, synchronization, ymodem)
+                                   exceptions, service_status, synchronization,
+                                   ymodem)
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
                                        settings_api, system_api)
 from brewblox_devcon_spark.codec import codec, unit_conversion
@@ -46,7 +47,7 @@ def repeated_blocks(ids, args):
 @pytest.fixture
 async def app(app, loop):
     """App + controller routes"""
-    state.setup(app)
+    service_status.setup(app)
     scheduler.setup(app)
     commander_sim.setup(app)
     datastore.setup(app)
@@ -277,11 +278,12 @@ async def test_settings_api(app, client, block_args):
 
     await response(client.put('/settings/units', json={'Temp': 'degF'}))
     retd = await response(client.post('/blocks/read', json={'id': block_args['id']}))
-    assert retd['data']['offset[delta_degF]'] == pytest.approx(degF_offset, 0.1)
+    assert retd['data']['offset']['value'] == pytest.approx(degF_offset, 0.1)
+    assert retd['data']['offset']['unit'] == 'delta_degF'
 
     await response(client.put('/settings/units', json={'Temp': 'degC'}))
     retd = await response(client.post('/blocks/read', json={'id': block_args['id']}))
-    assert retd['data']['offset[delta_degC]'] == pytest.approx(degC_offset, 0.1)
+    assert retd['data']['offset']['value'] == pytest.approx(degC_offset, 0.1)
 
     retd = await response(client.get('/settings/autoconnecting'))
     assert retd == {'enabled': True}
@@ -417,39 +419,46 @@ async def test_read_all_logged(app, client):
 
 async def test_system_status(app, client):
     resp = await response(client.get('/system/status'))
-    assert resp == {
-        'type': 'Spark',
-        'address': 'simulation:1234',
-        'connection': 'wifi',
-        'autoconnecting': True,
-        'connect': True,
-        'handshake': True,
-        'synchronize': True,
-        'compatible': True,
-        'latest': True,
-        'valid': True,
-        'device': ANY,
-        'service': ANY,
-        'info': ANY,
+
+    fw_info = {
+        'firmware_version': ANY,
+        'proto_version': ANY,
+        'firmware_date': ANY,
+        'proto_date': ANY,
+        'device_id': ANY,
     }
-    await state.set_disconnect(app)
+
+    assert resp == {
+        'device_address': 'simulation:1234',
+        'connection_kind': 'wifi',
+
+        'service_info': {
+            **fw_info,
+            'name': 'test_app',
+        },
+        'device_info': {
+            **fw_info,
+            'system_version': ANY,
+            'platform': ANY,
+            'reset_reason': ANY,
+        },
+        'handshake_info': {
+            'is_compatible_firmware': True,
+            'is_latest_firmware': True,
+            'is_valid_device_id': True,
+        },
+        'is_autoconnecting': True,
+        'is_connected': True,
+        'is_acknowledged': True,
+        'is_synchronized': True,
+    }
+
+    service_status.set_disconnected(app)
     await asyncio.sleep(0.01)
     resp = await response(client.get('/system/status'))
-    assert resp == {
-        'type': 'Spark',
-        'address': 'simulation:1234',
-        'connection': 'wifi',
-        'autoconnecting': True,
-        'connect': False,
-        'handshake': False,
-        'synchronize': False,
-        'compatible': True,
-        'latest': True,
-        'valid': True,
-        'device': ANY,
-        'service': ANY,
-        'info': [],
-    }
+    assert resp['is_synchronized'] is False
+    assert resp['is_connected'] is False
+    assert resp['device_info'] is None
 
 
 async def test_system_flash(app, client, mocker):

@@ -14,7 +14,7 @@ from brewblox_service import mqtt, scheduler
 from brewblox_service.testing import response
 
 from brewblox_devcon_spark import (commander, communication, datastore, device,
-                                   simulator, state, synchronization)
+                                   service_status, simulator, synchronization)
 from brewblox_devcon_spark.__main__ import parse_ini
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
                                        settings_api, system_api)
@@ -25,7 +25,7 @@ DEVICE_ID = '123456789012345678901234'
 
 @pytest.fixture(scope='module', autouse=True)
 def firmware_sim():
-    with patch(communication.__name__ + '.RETRY_INTERVAL_S', 0.1):
+    with patch(communication.__name__ + '.BASE_RETRY_INTERVAL_S', 0.1):
         sim = simulator.FirmwareSimulator()
         sim.start(DEVICE_ID)
         yield
@@ -44,7 +44,7 @@ def app(app):
     config['simulation'] = True
     config['volatile'] = True
 
-    state.setup(app)
+    service_status.setup(app)
 
     communication.setup(app)
     commander.setup(app)
@@ -69,7 +69,7 @@ def app(app):
 
 @pytest.fixture(autouse=True)
 async def wait_sync(app, client):
-    await asyncio.wait_for(state.wait_synchronize(app), 5)
+    await asyncio.wait_for(service_status.wait_synchronized(app), 5)
 
 
 @pytest.mark.integration

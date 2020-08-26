@@ -6,9 +6,10 @@ import pytest
 from brewblox_service import features, scheduler
 from mock import AsyncMock
 
-from brewblox_devcon_spark import (commander, commander_sim, const, datastore,
-                                   device, exceptions, state)
-from brewblox_devcon_spark.codec import codec, unit_conversion
+from brewblox_devcon_spark import (codec, commander, commander_sim, const,
+                                   datastore, device, exceptions,
+                                   service_status)
+from brewblox_devcon_spark.codec.opts import CodecOpts
 
 TESTED = device.__name__
 
@@ -35,11 +36,10 @@ def generate_obj():
 @pytest.fixture
 def app(app):
     """App + controller routes"""
-    state.setup(app)
+    service_status.setup(app)
     datastore.setup(app)
     commander_sim.setup(app)
     scheduler.setup(app)
-    unit_conversion.setup(app)
     codec.setup(app)
     device.setup(app)
     return app
@@ -80,8 +80,8 @@ async def test_transcoding(app, client, cmder, store, dev):
     retval = await dev.create_object(object_args)
     assert retval['data']['settings']['address'] == 'ff'.rjust(16, '0')
 
-    c.encode.assert_any_await(obj_type, obj_data, opts=None)
-    c.decode.assert_any_await(enc_type, enc_data, opts=None)
+    c.encode.assert_any_await(obj_type, obj_data, opts=CodecOpts())
+    c.decode.assert_any_await(enc_type, enc_data, opts=CodecOpts())
 
 
 async def test_list_transcoding(app, client, cmder, store, dev, mocker):
@@ -107,23 +107,24 @@ async def test_convert_id(app, client, store, mocker, dev):
     store['4-2', 24] = dict()
 
     resolver = device.SparkResolver(app)
+    opts = CodecOpts()
 
-    assert await resolver.convert_sid_nid({'id': 'alias'}) == {'nid': 123}
-    assert await resolver.convert_sid_nid({'nid': 840}) == {'nid': 840}
-    assert await resolver.convert_sid_nid({'id': 840}) == {'nid': 840}
+    assert await resolver.convert_sid_nid({'id': 'alias'}, opts) == {'nid': 123}
+    assert await resolver.convert_sid_nid({'nid': 840}, opts) == {'nid': 840}
+    assert await resolver.convert_sid_nid({'id': 840}, opts) == {'nid': 840}
     # When both present, NID takes precedence
-    assert await resolver.convert_sid_nid({'id': 'alias', 'nid': 444}) == {'nid': 444}
-    assert await resolver.convert_sid_nid({}) == {}
+    assert await resolver.convert_sid_nid({'id': 'alias', 'nid': 444}, opts) == {'nid': 444}
+    assert await resolver.convert_sid_nid({}, opts) == {}
 
-    assert await resolver.add_sid({'nid': 123}) == {'nid': 123, 'id': 'alias'}
-    assert await resolver.add_sid({'id': 'testey'}) == {'id': 'testey'}
-    assert await resolver.add_sid({}) == {}
+    assert await resolver.add_sid({'nid': 123}, opts) == {'nid': 123, 'id': 'alias'}
+    assert await resolver.add_sid({'id': 'testey'}, opts) == {'id': 'testey'}
+    assert await resolver.add_sid({}, opts) == {}
 
     with pytest.raises(exceptions.DecodeException):
-        await resolver.add_sid({'nid': 'testey'})
+        await resolver.add_sid({'nid': 'testey'}, opts)
 
     # Service ID not found: create placeholder
-    generated = await resolver.add_sid({'nid': 456, 'type': 'Edgecase,driven'})
+    generated = await resolver.add_sid({'nid': 456, 'type': 'Edgecase,driven'}, opts)
     assert generated['id'].startswith(const.GENERATED_ID_PREFIX)
     assert ',driven' not in generated['id']
 
@@ -146,12 +147,16 @@ async def test_resolve_links(app, client, store):
                 },
                 'listed': [
                     {'flappy<SetpointSensorPairInterface>': 'moo'}
-                ]
-            }
+                ],
+                'metavalue': {
+                    '__bloxtype': 'Link',
+                    'id': 'eeney',
+                },
+            },
         }
 
     resolver = device.SparkResolver(app)
-    output = await resolver.convert_links_nid(create_data())
+    output = await resolver.convert_links_nid(create_data(), CodecOpts())
 
     assert output == {
         'data': {
@@ -166,8 +171,12 @@ async def test_resolve_links(app, client, store):
             'listed': [
                 {'flappy<SetpointSensorPairInterface>': 9003},
             ],
+            'metavalue': {
+                '__bloxtype': 'Link',
+                'id': 9001,
+            },
         },
     }
 
-    output = await resolver.convert_links_sid(output)
+    output = await resolver.convert_links_sid(output, CodecOpts())
     assert output == create_data()
