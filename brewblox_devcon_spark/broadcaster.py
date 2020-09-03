@@ -28,7 +28,6 @@ class Broadcaster(repeater.RepeaterFeature):
         self.validity = str(config['broadcast_valid']) + 's'
         self.state_topic = config['state_topic'] + f'/{self.name}'
         self.history_topic = config['history_topic'] + f'/{self.name}'
-        self.blocks_topic = f'{self.state_topic}/blocks'
 
         self._synched = False
         self._last_ok = monotonic()
@@ -104,18 +103,6 @@ class Broadcaster(repeater.RepeaterFeature):
                                    message={
                                        'key': self.name,
                                        'data': history_data,
-                                   })
-
-                # backwards compatibility mode for external subscribers
-                await mqtt.publish(self.app,
-                                   self.blocks_topic,
-                                   err=False,
-                                   retain=True,
-                                   message={
-                                       'key': self.name,
-                                       'type': 'Spark.blocks',
-                                       'ttl': self.validity,
-                                       'data': blocks_data,
                                    })
 
         except exceptions.ConnectionPaused:
