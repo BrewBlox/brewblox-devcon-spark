@@ -74,9 +74,6 @@ class Syncher(repeater.RepeaterFeature):
             - Abort synchronization if firmware/ID is not compatible
         - Synchronize block store
             - Read controller-specific data in datastore.
-        - Migrate config store
-            - Check if service-specific data was already initialized
-            - If not, read controller-specific data, and migrate to service store
         - Synchronize controller time
             - Send current abs time to controller block
         - Collect and log controller tracing
@@ -94,7 +91,6 @@ class Syncher(repeater.RepeaterFeature):
             await service_status.wait_connected(self.app)
             await self._sync_handshake()
             await self._sync_block_store()
-            await self._migrate_config_store()
             await self._sync_time()
             await self._collect_call_trace()
 
@@ -142,7 +138,7 @@ class Syncher(repeater.RepeaterFeature):
         converter = codec.get_converter(self.app)
         try:
             converter.user_units = units
-            with datastore.get_service_store(self.app).open() as config:
+            with datastore.get_config_store(self.app).open() as config:
                 config[UNIT_CONFIG_KEY] = converter.user_units
         except InvalidInput as ex:
             LOGGER.warn(f'Discarding user units due to error: {strex(ex)}')
@@ -154,7 +150,7 @@ class Syncher(repeater.RepeaterFeature):
     async def set_autoconnecting(self, enabled):
         enabled = bool(enabled)
         service_status.set_autoconnecting(self.app, enabled)
-        with datastore.get_service_store(self.app).open() as config:
+        with datastore.get_config_store(self.app).open() as config:
             config[AUTOCONNECTING_KEY] = enabled
         return enabled
 
@@ -170,7 +166,7 @@ class Syncher(repeater.RepeaterFeature):
 
     @subroutine('sync service store')
     async def _sync_service_store(self):
-        service_store = datastore.get_service_store(self.app)
+        service_store = datastore.get_config_store(self.app)
 
         await datastore.check_remote(self.app)
         await service_store.read()
@@ -208,25 +204,6 @@ class Syncher(repeater.RepeaterFeature):
         block_store = datastore.get_block_store(self.app)
         await datastore.check_remote(self.app)
         await block_store.read(self.device_name)
-
-    @subroutine('migrate config store')
-    async def _migrate_config_store(self):
-        service_store = datastore.get_service_store(self.app)
-        with service_store.open() as config:
-            if config.get('version') != 'v1':
-                # We don't need to re-check datastore availability
-                config_store = datastore.CouchDBConfigStore(self.app)
-                await config_store.startup(self.app)
-                await config_store.read(self.device_name)
-                with config_store.open() as old_config:
-                    LOGGER.info('Migrating to service config...')
-                    config.update(**{
-                        **old_config,
-                        **config,
-                        'version': 'v1'
-                    })
-                await self._apply_service_config(config)
-                await config_store.shutdown(self.app)
 
     @subroutine('sync controller time')
     async def _sync_time(self):

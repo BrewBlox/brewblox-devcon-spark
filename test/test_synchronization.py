@@ -80,7 +80,7 @@ async def block_store(app, loop):
 
 @pytest.fixture
 def service_store(app):
-    return datastore.get_service_store(app)
+    return datastore.get_config_store(app)
 
 
 @pytest.fixture(autouse=True)
@@ -190,25 +190,6 @@ async def test_errors(app, client, syncher, mocker, system_exit_mock):
     await connect(app)
     assert syncher.active
     assert states(app) == [False, True, False]
-
-
-async def test_migrate(app, client, syncher, mocker):
-    await wait_sync(app)
-    store = datastore.get_service_store(app)
-
-    with store.open() as config:
-        # Migration happened
-        assert config['version'] == 'v1'
-
-    # Should not be called - service store is read already
-    mocker.patch(TESTED + '.datastore.CouchDBConfigStore',
-                 side_effect=repeater.RepeaterCancelled)
-
-    await syncher._migrate_config_store()
-    assert syncher.active
-
-    with store.open() as config:
-        assert config['version'] == 'v1'
 
 
 async def test_format_trace(app, client, syncher):
