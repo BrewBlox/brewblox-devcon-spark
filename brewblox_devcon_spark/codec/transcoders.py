@@ -256,6 +256,7 @@ _TRANSCODERS = [
             pb2.Spark2Pins_pb2.Spark2Pins,
             pb2.Spark3Pins_pb2.Spark3Pins,
             pb2.SysInfo_pb2.SysInfo,
+            pb2.TempSensorCombi_pb2.TempSensorCombi,
             pb2.TempSensorMock_pb2.TempSensorMock,
             pb2.TempSensorOneWire_pb2.TempSensorOneWire,
             pb2.Ticks_pb2.Ticks,
