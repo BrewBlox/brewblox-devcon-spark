@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=b'\n\x15TempSensorCombi.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xc8\x01\n\x0fTempSensorCombi\x12-\n\x05value\x18\x01 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02(\x01\x92?\x02\x38 \x12*\n\x0b\x63ombinefunc\x18\x02 \x01(\x0e\x32\x15.blox.SensorCombiFunc\x12!\n\x07sensors\x18\x03 \x03(\rB\x10\x8a\xb5\x18\x02\x18\x02\x92?\x02\x38\x10\x92?\x02\x10\x08\x12(\n\x0estrippedFields\x18\x63 \x03(\rB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x01:\r\x8a\xb5\x18\x03\x18\xc4\x02\x8a\xb5\x18\x02H\x02*b\n\x0fSensorCombiFunc\x12\x19\n\x15SENSOR_COMBI_FUNC_AVG\x10\x00\x12\x19\n\x15SENSOR_COMBI_FUNC_MIN\x10\x01\x12\x19\n\x15SENSOR_COMBI_FUNC_MAX\x10\x02\x62\x06proto3'
+  serialized_pb=b'\n\x15TempSensorCombi.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xc8\x01\n\x0fTempSensorCombi\x12-\n\x05value\x18\x01 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02(\x01\x92?\x02\x38 \x12*\n\x0b\x63ombineFunc\x18\x02 \x01(\x0e\x32\x15.blox.SensorCombiFunc\x12!\n\x07sensors\x18\x03 \x03(\rB\x10\x8a\xb5\x18\x02\x18\x02\x92?\x02\x38\x10\x92?\x02\x10\x08\x12(\n\x0estrippedFields\x18\x63 \x03(\rB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x01:\r\x8a\xb5\x18\x03\x18\xc4\x02\x8a\xb5\x18\x02H\x02*b\n\x0fSensorCombiFunc\x12\x19\n\x15SENSOR_COMBI_FUNC_AVG\x10\x00\x12\x19\n\x15SENSOR_COMBI_FUNC_MIN\x10\x01\x12\x19\n\x15SENSOR_COMBI_FUNC_MAX\x10\x02\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -73,7 +73,7 @@ _TEMPSENSORCOMBI = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\0020\001\212\265\030\002\010\001\212\265\030\003\020\200 \212\265\030\002(\001\222?\0028 ', file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='combinefunc', full_name='blox.TempSensorCombi.combinefunc', index=1,
+      name='combineFunc', full_name='blox.TempSensorCombi.combineFunc', index=1,
       number=2, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -109,7 +109,7 @@ _TEMPSENSORCOMBI = _descriptor.Descriptor(
   serialized_end=262,
 )
 
-_TEMPSENSORCOMBI.fields_by_name['combinefunc'].enum_type = _SENSORCOMBIFUNC
+_TEMPSENSORCOMBI.fields_by_name['combineFunc'].enum_type = _SENSORCOMBIFUNC
 DESCRIPTOR.message_types_by_name['TempSensorCombi'] = _TEMPSENSORCOMBI
 DESCRIPTOR.enum_types_by_name['SensorCombiFunc'] = _SENSORCOMBIFUNC
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
