@@ -24,7 +24,7 @@ git -C "$FW_DIR" submodule update
 
 date # Helps estimating ETA
 bash "$FW_DIR"/docker/build-bin-arm.sh
-cp "$FW_DIR"/build/target/brewblox-gcc/brewblox ./binaries/brewblox-arm
+cp "$FW_DIR"/build/target/brewblox-gcc/brewblox-gcc ./binaries/brewblox-arm
 
 git -C "$FW_DIR" checkout -
 git -C "$FW_DIR" submodule update
