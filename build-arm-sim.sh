@@ -10,7 +10,7 @@ set -ex
 #
 
 FW_DIR="$(readlink -f "${1:-"../brewblox-firmware"}")"
-pushd "$(dirname "$(readlink -f "$0")")" > /dev/null
+pushd "$(dirname "$0")" > /dev/null
 
 # This prevents sudo blocking the script halfway through
 sudo echo "Caching sudo permissions"

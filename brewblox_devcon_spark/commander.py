@@ -62,6 +62,10 @@ class HandshakeMessage:
     reset_data: str = field(init=False)
 
     def __post_init__(self):
+        # We only compare the first 8 characters of git hashes
+        self.firmware_version = self.firmware_version[:8]
+        self.proto_version = self.proto_version[:8]
+
         self.reset_reason = commands.ResetReason(self.reset_reason_hex.upper()).name
         try:
             self.reset_data = commands.ResetData(self.reset_data_hex.upper()).name
