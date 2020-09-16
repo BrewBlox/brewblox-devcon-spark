@@ -26,6 +26,10 @@ class SharedInfo:
     def __post_init__(self):
         self.device_id = self.device_id.lower()
 
+        # We only compare the first 8 characters of git hashes
+        self.firmware_version = self.firmware_version[:8]
+        self.proto_version = self.proto_version[:8]
+
 
 @dataclass
 class ServiceInfo(SharedInfo):
@@ -71,13 +75,9 @@ class ServiceStatus(features.ServiceFeature):
         self.device_address: str = None
         self.connection_kind: str = None
 
-        # We only compare the first 8 characters of git hashes
-        firmware_version = ini['firmware_version'][:8]
-        proto_version = ini['proto_version'][:8]
-
         self.service_info = ServiceInfo(
-            firmware_version=firmware_version,
-            proto_version=proto_version,
+            firmware_version=ini['firmware_version'],
+            proto_version=ini['proto_version'],
             firmware_date=ini['firmware_date'],
             proto_date=ini['proto_date'],
             device_id=config['device_id'] or '',
