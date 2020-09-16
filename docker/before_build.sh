@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Automatically executed by CI
 set -e
-pushd "$(dirname "$(readlink -f "$0")")/.." > /dev/null
+pushd "$(dirname "$0")/.." > /dev/null
 
 rm -rf dist docker/dist docker/binaries
 
