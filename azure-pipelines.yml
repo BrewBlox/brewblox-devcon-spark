@@ -41,7 +41,7 @@ steps:
   displayName: Export build variables
 
 - bash: |
-    pip install poetry
+    pip install poetry wheel
     poetry install
   displayName: Install dependencies
 
