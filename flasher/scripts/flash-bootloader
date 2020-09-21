@@ -2,7 +2,6 @@
 set -e
 
 function flash() {
-    particle usb safe-mode
     particle flash --serial --yes "$1"
     sleep 5
     particle usb reset
