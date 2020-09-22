@@ -245,8 +245,13 @@ class ServiceConfigStore(FlushedStore):
                     'id': self.key,
                     'namespace': NAMESPACE,
                 })
-                data = (await resp.json())['value'].get('data', {})
-                LOGGER.info(f'{self} read config: {data}')
+                # `value` is None if no document is found.
+                resp_value = (await resp.json())['value']
+                if resp_value is None:
+                    warnings.warn(f'{self} found no config. Defaults will be used.')
+                else:
+                    data = resp_value.get('data', {})
+                    LOGGER.info(f'{self} read config: {data}')
 
         except asyncio.CancelledError:  # pragma: no cover
             raise
