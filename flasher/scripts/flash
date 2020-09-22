@@ -8,8 +8,7 @@ function flash() {
 function notify() {
     echo "Your firmware has been updated."
     echo "If a new bootloader is required, your Spark will automatically download it over WiFi."
-    echo "If your Spark LED keeps blinking blue, run:"
-    echo -e "\n\t brewblox-ctl particle -c flash-bootloader"
+    echo "ONLY If your Spark LED keeps blinking blue, run: 'brewblox-ctl particle -c flash-bootloader'"
 }
 
 node ./serial-trigger.js
