@@ -227,6 +227,23 @@ async def test_config_read_error(app, client, config_store, aresponses):
     aresponses.assert_plan_strictly_followed()
 
 
+async def test_config_read_empty(app, client, config_store, aresponses):
+    assert config_store.active
+    assert not config_store.volatile
+
+    aresponses.add(path_pattern='/history/datastore/get',
+                   method_pattern='POST',
+                   response={'value': None})
+    with pytest.warns(UserWarning, match='found no config'):
+        await config_store.read()
+        await asyncio.sleep(0.05)
+
+    with config_store.open() as cfg:
+        assert cfg == {}
+
+    aresponses.assert_plan_strictly_followed()
+
+
 async def test_config_write(app, client, config_store, aresponses):
 
     add_config_read_resp(aresponses, 1)
