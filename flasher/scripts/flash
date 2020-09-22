@@ -3,6 +3,9 @@ set -e
 
 function flash() {
     particle flash --usb --yes "$1"
+}
+
+function notify() {
     echo "Your firmware has been updated."
     echo "If a new bootloader is required, your Spark will automatically download it over WiFi."
     echo "If your Spark LED keeps blinking blue, run:"
@@ -20,6 +23,7 @@ if [[ -n $(lsusb -d 2b04:d006) ]]; then
     flash system-part2-photon.bin
     echo "Flashing Firmware file..."
     flash brewblox-photon.bin
+    notify
     sleep 5
     exit
 fi
@@ -32,6 +36,7 @@ if [[ -n $(lsusb -d 2b04:d008) ]]; then
     flash system-part2-p1.bin
     echo -n "Flashing Firmware file..."
     flash brewblox-p1.bin
+    notify
     sleep 5
     exit
 fi
