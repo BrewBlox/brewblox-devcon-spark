@@ -196,9 +196,9 @@ async def test_block_write_error(app, client, block_store, aresponses):
         block_store['inserted2', 9002] = 'val'
         await asyncio.sleep(0.05)
 
-    aresponses.assert_all_requests_matched()
-    aresponses.assert_called_in_order()
-    assert len(aresponses.history) > 3
+        aresponses.assert_all_requests_matched()
+        aresponses.assert_called_in_order()
+        assert len(aresponses.history) > 3
 
 
 async def test_config_read(app, client, config_store, aresponses):
