@@ -17,6 +17,10 @@ from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
 from brewblox_devcon_spark.codec import codec, unit_conversion
 
 
+class DummmyError(BaseException):
+    pass
+
+
 def ret_ids(objects):
     return {obj['id'] for obj in objects}
 
@@ -465,7 +469,8 @@ async def test_system_flash(app, client, mocker):
     sys_api = system_api.__name__
 
     mocker.patch(sys_api + '.CONNECT_INTERVAL_S', 0.001)
-    m_shutdown = mocker.patch(sys_api + '.shutdown_soon', AsyncMock())
+    mocker.patch(sys_api + '.shutdown_soon', AsyncMock())
+    mocker.patch(sys_api + '.mqtt.publish', AsyncMock())
 
     m_conn = mocker.patch(sys_api + '.ymodem.connect', AsyncMock())
     m_conn.return_value = AsyncMock(ymodem.Connection)
@@ -475,9 +480,15 @@ async def test_system_flash(app, client, mocker):
 
     await response(client.post('/system/flash'))
     m_sender.return_value.transfer.assert_awaited()
-    m_shutdown.assert_awaited()
+    system_api.shutdown_soon.assert_awaited()
 
 
 async def test_system_resets(app, client, mocker):
-    await response(client.post('/system/reboot'))
+    sys_api = system_api.__name__
+    mocker.patch(sys_api + '.shutdown_soon', AsyncMock())
+
+    await response(client.post('/system/reboot/service'))
+    system_api.shutdown_soon.assert_awaited()
+
+    await response(client.post('/system/reboot/controller'))
     await response(client.post('/system/factory_reset'))
