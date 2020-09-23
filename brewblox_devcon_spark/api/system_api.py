@@ -18,7 +18,8 @@ CONNECT_INTERVAL_S = 3
 CONNECT_ATTEMPTS = 5
 
 FLUSH_PERIOD_S = 3
-REBOOT_WINDOW_S = 5
+SHUTDOWN_DELAY_S = 1
+UPDATE_SHUTDOWN_DELAY_S = 5
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -28,9 +29,11 @@ def setup(app: web.Application):
     app.router.add_routes(routes)
 
 
-async def shutdown_soon():  # pragma: no cover
-    await asyncio.sleep(REBOOT_WINDOW_S)
-    raise web.GracefulExit()
+async def shutdown_soon(app: web.Application, wait: float):  # pragma: no cover
+    async def delayed_shutdown():
+        await asyncio.sleep(wait)
+        raise web.GracefulExit()
+    await scheduler.create(app, delayed_shutdown())
 
 
 class FirmwareUpdater():
@@ -99,7 +102,7 @@ class FirmwareUpdater():
 
         finally:
             self._notify('Scheduling service reboot')
-            await scheduler.create(self.app, shutdown_soon())
+            await shutdown_soon(self.app, UPDATE_SHUTDOWN_DELAY_S)
 
         self._notify('Firmware updated!')
         return {'address': address, 'version': self.version}
@@ -158,11 +161,21 @@ async def ping(request: web.Request) -> web.Response:
     tags=['System'],
     summary='Reboot the controller',
 )
-@routes.post('/system/reboot')
-async def reboot(request: web.Request) -> web.Response:
+@routes.post('/system/reboot/controller')
+async def reboot_controller(request: web.Request) -> web.Response:
     return web.json_response(
         await SystemApi(request.app).reboot()
     )
+
+
+@docs(
+    tags=['System'],
+    summary='Reboot the service',
+)
+@routes.post('/system/reboot/service')
+async def reboot_service(request: web.Request) -> web.Response:
+    await shutdown_soon(request.app, SHUTDOWN_DELAY_S)
+    return web.json_response({})
 
 
 @docs(
