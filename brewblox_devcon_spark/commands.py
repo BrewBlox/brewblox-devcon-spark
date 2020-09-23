@@ -52,6 +52,8 @@ class ResetData(enum.Enum):
     CBOX_RESET = '02'
     CBOX_FACTORY_RESET = '03'
     FIRMWARE_UPDATE_FAILED = '04'
+    LISTENING_MODE_EXIT = '05'
+    FIRMWARE_UPDATE_SUCCESS = '06'
 
 
 class Opcode(enum.IntEnum):
