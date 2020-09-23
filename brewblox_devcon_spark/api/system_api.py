@@ -40,7 +40,7 @@ class FirmwareUpdater():
         self.name = app['config']['name']
         self.simulation = app['config']['simulation']
         self.topic = app['config']['state_topic'] + f'/{self.name}/update'
-        self.version = app['ini']['firmware_version']
+        self.version = app['ini']['firmware_version'][:8]
         self.date = app['ini']['firmware_date']
 
     def _notify(self, msg: str):

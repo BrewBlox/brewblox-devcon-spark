@@ -10,7 +10,7 @@ set -ex
 #
 
 FW_DIR="$(readlink -f "${1:-"../brewblox-firmware"}")"
-pushd "$(dirname "$(readlink -f "$0")")" > /dev/null
+pushd "$(dirname "$0")" > /dev/null
 
 # This prevents sudo blocking the script halfway through
 sudo echo "Caching sudo permissions"
@@ -24,7 +24,7 @@ git -C "$FW_DIR" submodule update
 
 date # Helps estimating ETA
 bash "$FW_DIR"/docker/build-bin-arm.sh
-cp "$FW_DIR"/build/target/brewblox-gcc/brewblox ./binaries/brewblox-arm
+cp "$FW_DIR"/build/target/brewblox-gcc/brewblox-gcc ./binaries/brewblox-arm
 
 git -C "$FW_DIR" checkout -
 git -C "$FW_DIR" submodule update

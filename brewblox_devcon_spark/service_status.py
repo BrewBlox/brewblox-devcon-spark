@@ -26,6 +26,10 @@ class SharedInfo:
     def __post_init__(self):
         self.device_id = self.device_id.lower()
 
+        # We only compare the first 8 characters of git hashes
+        self.firmware_version = self.firmware_version[:8]
+        self.proto_version = self.proto_version[:8]
+
 
 @dataclass
 class ServiceInfo(SharedInfo):

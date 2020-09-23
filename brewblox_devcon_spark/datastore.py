@@ -12,26 +12,27 @@ from functools import wraps
 from typing import List
 
 from aiohttp import web
-from brewblox_service import (brewblox_logger, couchdb, features, repeater,
-                              strex)
+from brewblox_service import brewblox_logger, features, http, repeater, strex
 
 from brewblox_devcon_spark import const
 from brewblox_devcon_spark.twinkeydict import TwinKeyDict, TwinKeyError
 
 LOGGER = brewblox_logger(__name__)
 
-
+STORE_URL = 'http://history:5000/history/datastore'
+RETRY_INTERVAL_S = 1
 FLUSH_DELAY_S = 5
-DB_NAME = 'spark-service'
+READY_TIMEOUT_S = 60
+SHUTDOWN_WRITE_TIMEOUT_S = 2
 
 SYS_OBJECTS = [
     {'keys': keys, 'data': {}}
     for keys in const.SYS_OBJECT_KEYS
 ]
 
-BLOCK_DOC_FMT = '{id}-blocks-db'
-CONFIG_DOC_FMT = '{id}-config-db'
-SERVICE_DOC_FMT = '{name}-service-db'
+NAMESPACE = 'spark-service'
+BLOCK_STORE_KEY = '{id}-blocks-db'
+SERVICE_STORE_KEY = '{name}-service-db'
 
 
 def non_volatile(func):
@@ -46,7 +47,19 @@ def non_volatile(func):
 async def check_remote(app: web.Application):
     if app['config']['volatile']:
         return
-    await couchdb.check_remote(app)
+    num_attempts = 0
+    while True:
+        try:
+            await http.session(app).get(f'{STORE_URL}/ping')
+            return
+        except asyncio.CancelledError:  # pragma: no cover
+            raise
+        except Exception as ex:
+            LOGGER.error(strex(ex))
+            num_attempts += 1
+            if num_attempts % 10 == 0:
+                LOGGER.info(f'Waiting for datastore... ({strex(ex)})')
+            await asyncio.sleep(RETRY_INTERVAL_S)
 
 
 class FlushedStore(repeater.RepeaterFeature):
@@ -54,34 +67,11 @@ class FlushedStore(repeater.RepeaterFeature):
     def __init__(self, app: web.Application):
         super().__init__(app)
         self._volatile = app['config']['volatile']
-
         self._changed_event: asyncio.Event = None
-
-        self._document: str = None
-        self._rev: str = None
-
-    def __str__(self):
-        return f'<{type(self).__name__} for {DB_NAME}/{self._document}>'
 
     @property
     def volatile(self):
         return self._volatile
-
-    @property
-    def document(self):
-        return self._document
-
-    @document.setter
-    def document(self, val):
-        self._document = val
-
-    @property
-    def rev(self):
-        return self._rev
-
-    @rev.setter
-    def rev(self, val):
-        self._rev = val
 
     def set_changed(self):
         if self._changed_event:
@@ -107,8 +97,9 @@ class FlushedStore(repeater.RepeaterFeature):
 
         except asyncio.CancelledError:
             LOGGER.debug(f'Writing data while closing {self}')
-            if self._changed_event.is_set():
-                await self.write()
+            with suppress(Exception):
+                if self._changed_event.is_set():
+                    await asyncio.wait_for(self.write(), timeout=SHUTDOWN_WRITE_TIMEOUT_S)
             raise
 
         except Exception as ex:
@@ -122,17 +113,23 @@ class FlushedStore(repeater.RepeaterFeature):
         """
 
 
-class CouchDBBlockStore(FlushedStore, TwinKeyDict):
+class ServiceBlockStore(FlushedStore, TwinKeyDict):
     """
-    TwinKeyDict subclass to periodically flush contained objects to CouchDB.
+    TwinKeyDict subclass to periodically flush contained objects to Redis.
     """
 
-    def __init__(self, app: web.Application, defaults: List[dict] = None):
+    def __init__(self, app: web.Application, defaults: List[dict]):
         FlushedStore.__init__(self, app)
         TwinKeyDict.__init__(self)
-        self._defaults = defaults or []
+
+        self.key: str = None
+        self._defaults = defaults
         self._ready_event: asyncio.Event = None
+
         self.clear()  # inserts defaults
+
+    def __str__(self):
+        return f'<{type(self).__name__} for {NAMESPACE}:{self.key}>'
 
     async def startup(self, app: web.Application):
         await FlushedStore.startup(self, app)
@@ -143,17 +140,20 @@ class CouchDBBlockStore(FlushedStore, TwinKeyDict):
         self._ready_event = None
 
     async def read(self, device_id: str):
-        document = BLOCK_DOC_FMT.format(id=device_id)
+        key = BLOCK_STORE_KEY.format(id=device_id)
         data = []
 
         try:
-            self.rev = None
-            self.document = None
+            self.key = None
             self._ready_event.clear()
             if not self.volatile:
-                self.rev, data = await couchdb.read(self.app, DB_NAME, document, [])
-                self.document = document
-                LOGGER.info(f'{self} Read {len(data)} blocks. Rev = {self.rev}')
+                resp = await http.session(self.app).post(f'{STORE_URL}/get', json={
+                    'id': key,
+                    'namespace': NAMESPACE,
+                })
+                self.key = key
+                data = (await resp.json())['value'].get('data', [])
+                LOGGER.info(f'{self} Read {len(data)} blocks')
 
         except asyncio.CancelledError:  # pragma: no cover
             raise
@@ -175,15 +175,21 @@ class CouchDBBlockStore(FlushedStore, TwinKeyDict):
 
     @non_volatile
     async def write(self):
-        await self._ready_event.wait()
-        if self.rev is None or self.document is None:
-            raise RuntimeError('Document or revision unknown - did read() fail?')
+        await asyncio.wait_for(self._ready_event.wait(), READY_TIMEOUT_S)
+        if self.key is None:
+            raise RuntimeError('Document key not set - did read() fail?')
         data = [
             {'keys': keys, 'data': content}
             for keys, content in self.items()
         ]
-        self.rev = await couchdb.write(self.app, DB_NAME, self.document, self.rev, data)
-        LOGGER.info(f'{self} Saved {len(data)} block(s). Rev = {self.rev}')
+        await http.session(self.app).post(f'{STORE_URL}/set', json={
+            'value': {
+                'id': self.key,
+                'namespace': NAMESPACE,
+                'data': data,
+            },
+        })
+        LOGGER.info(f'{self} Saved {len(data)} block(s)')
 
     def __setitem__(self, keys, item):
         TwinKeyDict.__setitem__(self, keys, item)
@@ -199,15 +205,19 @@ class CouchDBBlockStore(FlushedStore, TwinKeyDict):
             self.__setitem__(obj['keys'], obj['data'])
 
 
-class CouchDBConfig(FlushedStore):
+class ServiceConfigStore(FlushedStore):
     """
     Database-backed configuration
     """
 
     def __init__(self, app: web.Application):
-        FlushedStore.__init__(self, app)
+        super().__init__(app)
         self._config: dict = {}
         self._ready_event: asyncio.Event = None
+        self.key: str = SERVICE_STORE_KEY.format(name=self.app['config']['name'])
+
+    def __str__(self):
+        return f'<{type(self).__name__} for {NAMESPACE}:{self.key}>'
 
     async def startup(self, app: web.Application):
         await FlushedStore.startup(self, app)
@@ -225,17 +235,23 @@ class CouchDBConfig(FlushedStore):
         if before != after:
             self.set_changed()
 
-    async def read(self, document: str):
+    async def read(self):
         data = {}
 
         try:
-            self.rev = None
-            self.document = None
             self._ready_event.clear()
             if not self.volatile:
-                self.rev, data = await couchdb.read(self.app, DB_NAME, document, {})
-                self.document = document
-                LOGGER.info(f'{self} Read {len(data)} setting(s). Rev = {self.rev}')
+                resp = await http.session(self.app).post(f'{STORE_URL}/get', json={
+                    'id': self.key,
+                    'namespace': NAMESPACE,
+                })
+                # `value` is None if no document is found.
+                resp_value = (await resp.json())['value']
+                if resp_value is None:
+                    warnings.warn(f'{self} found no config. Defaults will be used.')
+                else:
+                    data = resp_value.get('data', {})
+                    LOGGER.info(f'{self} read config: {data}')
 
         except asyncio.CancelledError:  # pragma: no cover
             raise
@@ -249,35 +265,25 @@ class CouchDBConfig(FlushedStore):
 
     @non_volatile
     async def write(self):
-        await self._ready_event.wait()
-        if self.rev is None or self.document is None:
-            raise RuntimeError('Document or revision unknown - did read() fail?')
-        self.rev = await couchdb.write(self.app, DB_NAME, self.document, self.rev, self._config)
-        LOGGER.info(f'{self} Saved {len(self._config)} settings. Rev = {self.rev}')
-
-
-class CouchDBServiceStore(CouchDBConfig):
-
-    async def read(self):
-        name = self.app['config']['name']
-        return await super().read(SERVICE_DOC_FMT.format(name=name))
-
-
-# Deprecated
-class CouchDBConfigStore(CouchDBConfig):
-
-    async def read(self, device_id: str):
-        return await super().read(CONFIG_DOC_FMT.format(id=device_id))
+        await asyncio.wait_for(self._ready_event.wait(), READY_TIMEOUT_S)
+        await http.session(self.app).post(f'{STORE_URL}/set', json={
+            'value': {
+                'id': self.key,
+                'namespace': NAMESPACE,
+                'data': self._config,
+            },
+        })
+        LOGGER.info(f'{self} saved config: {self._config}')
 
 
 def setup(app: web.Application):
-    features.add(app, CouchDBBlockStore(app, defaults=SYS_OBJECTS))
-    features.add(app, CouchDBServiceStore(app))
+    features.add(app, ServiceBlockStore(app, defaults=SYS_OBJECTS))
+    features.add(app, ServiceConfigStore(app))
 
 
-def get_block_store(app: web.Application) -> CouchDBBlockStore:
-    return features.get(app, CouchDBBlockStore)
+def get_block_store(app: web.Application) -> ServiceBlockStore:
+    return features.get(app, ServiceBlockStore)
 
 
-def get_service_store(app: web.Application) -> CouchDBServiceStore:
-    return features.get(app, CouchDBServiceStore)
+def get_config_store(app: web.Application) -> ServiceConfigStore:
+    return features.get(app, ServiceConfigStore)

@@ -6,7 +6,7 @@ TAG=${1:-"develop"}
 echo "Using brewblox/firmware-bin:${TAG}"
 
 # Push script dir
-pushd "$(dirname "$(readlink -f "$0")")" > /dev/null
+pushd "$(dirname "$0")" > /dev/null
 
 # Pull image
 docker rm bin-box 2> /dev/null || true

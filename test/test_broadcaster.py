@@ -49,7 +49,7 @@ async def test_noop_broadcast(app, m_api, m_publish, client, connected):
     await b.run()
     assert m_api.read_all_logged.call_count == 1
     assert m_api.read_all.call_count == 1
-    assert m_publish.call_count == 3
+    assert m_publish.call_count == 2
 
 
 async def test_disabled(app, m_api, m_publish, client, connected):
@@ -68,7 +68,7 @@ async def test_broadcast_unsync(app, m_api, m_publish, client, connected, mocker
     await b.run()
 
     assert m_wait_sync.call_count == 1
-    assert m_publish.call_count == 3
+    assert m_publish.call_count == 1
 
 
 async def test_broadcast(app, m_api, m_publish, client, connected):
@@ -86,6 +86,13 @@ async def test_broadcast(app, m_api, m_publish, client, connected):
 
     m_publish.assert_has_calls([
         call(app,
+             'testcast/history/test_app',
+             err=False,
+             message={
+                 'key': 'test_app',
+                 'data': objects,
+             }),
+        call(app,
              'testcast/state/test_app',
              err=False,
              retain=True,
@@ -98,27 +105,10 @@ async def test_broadcast(app, m_api, m_publish, client, connected):
                      'blocks': object_list,
                  },
              }),
-        call(app,
-             'testcast/history/test_app',
-             err=False,
-             message={
-                 'key': 'test_app',
-                 'data': objects,
-             }),
-        call(app,
-             'testcast/state/test_app/blocks',
-             err=False,
-             retain=True,
-             message={
-                 'key': 'test_app',
-                 'type': 'Spark.blocks',
-                 'ttl': '60.0s',
-                 'data': object_list,
-             }),
     ])
 
     await b.before_shutdown(app)
-    assert m_publish.call_count == 4
+    assert m_publish.call_count == 3
 
 
 async def test_error(app, m_api, m_publish, client, connected):
@@ -139,5 +129,7 @@ async def test_error(app, m_api, m_publish, client, connected):
         {'id': 'testface', 'data': {'val': 2}}
     ]
 
+    # 2 * only state event
+    # 1 * history + state
     await b.run()
-    assert m_publish.call_count == 3 * 3
+    assert m_publish.call_count == 4
