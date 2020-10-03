@@ -143,7 +143,7 @@ toml = "*"
 
 [[package]]
 name = "brewblox-service"
-version = "0.30.1"
+version = "0.31.0"
 description = "Scaffolding for Brewblox backend services"
 category = "main"
 optional = false
@@ -607,7 +607,7 @@ testing = ["pytest (>=3.5,<3.7.3 || >3.7.3)", "pytest-checkdocs (>=1.2.3)", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7"
-content-hash = "7fc84a18e22a5b430fa719e55e882612d17d2032f41e1cc0766eefb8ab944815"
+content-hash = "b7190c2e9f1a47635484893fba4250fa29600b6dde6ddf7c70dcefb8d843c69b"
 
 [metadata.files]
 aiofiles = [
@@ -665,8 +665,8 @@ autopep8 = [
     {file = "autopep8-1.5.4.tar.gz", hash = "sha256:d21d3901cb0da6ebd1e83fc9b0dfbde8b46afc2ede4fe32fbda0c7c6118ca094"},
 ]
 brewblox-service = [
-    {file = "brewblox-service-0.30.1.tar.gz", hash = "sha256:ecc7c3d334dd14fc97c22730e8e5e85c24a70145f04de772d81265687388793c"},
-    {file = "brewblox_service-0.30.1-py3-none-any.whl", hash = "sha256:9d46c51efc948e31272991eee2eb61eb390363082b06afec0eb135ebc4f316ed"},
+    {file = "brewblox-service-0.31.0.tar.gz", hash = "sha256:3d649326948c6ba698127ba92e80621b9e7f1a63f4a0cd01ece9d6f22336034d"},
+    {file = "brewblox_service-0.31.0-py3-none-any.whl", hash = "sha256:98035251c106a59d6195458251825498633c3307c5cbcec396686e16f431c8ba"},
 ]
 chardet = [
     {file = "chardet-3.0.4-py2.py3-none-any.whl", hash = "sha256:fc323ffcaeaed0e0a02bf4d117757b98aed530d9ed4531e3e15460124c106691"},

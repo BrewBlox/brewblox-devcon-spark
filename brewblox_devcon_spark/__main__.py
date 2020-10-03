@@ -6,8 +6,7 @@ import argparse
 import logging
 from configparser import ConfigParser
 
-from brewblox_service import (brewblox_logger, couchdb, http, mqtt, scheduler,
-                              service)
+from brewblox_service import brewblox_logger, http, mqtt, scheduler, service
 
 from brewblox_devcon_spark import (broadcaster, commander, communication,
                                    datastore, device, service_status,
@@ -127,7 +126,6 @@ def main():
     scheduler.setup(app)
     mqtt.setup(app)
 
-    couchdb.setup(app)
     datastore.setup(app)
     unit_conversion.setup(app)
     codec.setup(app)
