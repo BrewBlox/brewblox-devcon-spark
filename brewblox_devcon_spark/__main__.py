@@ -8,9 +8,9 @@ from configparser import ConfigParser
 
 from brewblox_service import brewblox_logger, http, mqtt, scheduler, service
 
-from brewblox_devcon_spark import (broadcaster, commander, communication,
-                                   datastore, device, service_status,
-                                   simulator, synchronization)
+from brewblox_devcon_spark import (block_store, broadcaster, commander,
+                                   config_store, connection, service_status,
+                                   simulator, spark, synchronizer)
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
                                        settings_api, system_api)
 from brewblox_devcon_spark.codec import codec, unit_conversion
@@ -73,7 +73,7 @@ def create_parser(default_name='spark'):
                        type=float,
                        default=60)
     group.add_argument('--read-timeout',
-                       help='Timeout period (in seconds) for communication. '
+                       help='Timeout period (in seconds) for connection. '
                        'The timeout is triggered if no data is received for this duration'
                        'If the timeout triggers, the service attempts to reconnect. '
                        'Set to a value <= 0 to prevent timeouts. [%(default)s]',
@@ -120,16 +120,17 @@ def main():
     service_status.setup(app)
     http.setup(app)
 
-    communication.setup(app)
+    connection.setup(app)
     commander.setup(app)
 
     scheduler.setup(app)
     mqtt.setup(app)
 
-    datastore.setup(app)
+    config_store.setup(app)
+    block_store.setup(app)
     unit_conversion.setup(app)
     codec.setup(app)
-    device.setup(app)
+    spark.setup(app)
     broadcaster.setup(app)
 
     error_response.setup(app)
@@ -138,7 +139,7 @@ def main():
     system_api.setup(app)
     settings_api.setup(app)
 
-    synchronization.setup(app)
+    synchronizer.setup(app)
 
     service.furnish(app)
     service.run(app)

@@ -10,8 +10,8 @@ from aiohttp import web
 from aiohttp_apispec import docs, request_schema, response_schema
 from brewblox_service import brewblox_logger, strex
 
-from brewblox_devcon_spark import (const, datastore, device, exceptions,
-                                   service_status, twinkeydict)
+from brewblox_devcon_spark import (block_store, const, exceptions,
+                                   service_status, spark, twinkeydict)
 from brewblox_devcon_spark.api import schemas
 
 SYNC_WAIT_TIMEOUT_S = 20
@@ -44,8 +44,8 @@ class BlocksApi():
     def __init__(self, app: web.Application, wait_sync=True):
         self.app = app
         self._wait_sync = wait_sync
-        self._dev: device.SparkDevice = device.get_device(app)
-        self._store: twinkeydict.TwinKeyDict = datastore.get_block_store(app)
+        self._spark = spark.fget(app)
+        self._store = block_store.fget(app)
 
     async def wait_for_sync(self):
         await asyncio.wait_for(
@@ -67,7 +67,7 @@ class BlocksApi():
             raise exceptions.ExistingId(ex) from ex
 
         try:
-            created = await self._dev.create_object(block)
+            created = await self._spark.create_object(block)
 
         finally:
             del self._store[sid, placeholder]
@@ -79,22 +79,22 @@ class BlocksApi():
 
     async def read(self, ids: dict) -> dict:
         await self.wait_for_sync()
-        return await self._dev.read_object(ids)
+        return await self._spark.read_object(ids)
 
     async def read_logged(self, ids: dict) -> dict:
         await self.wait_for_sync()
-        return await self._dev.read_logged_object(ids)
+        return await self._spark.read_logged_object(ids)
 
     async def read_stored(self, ids: dict) -> dict:
         await self.wait_for_sync()
-        return await self._dev.read_stored_object(ids)
+        return await self._spark.read_stored_object(ids)
 
     async def write(self, block: dict) -> dict:
         """
         Writes new values to existing object on controller
         """
         await self.wait_for_sync()
-        return await self._dev.write_object(block)
+        return await self._spark.write_object(block)
 
     async def delete(self, ids: dict) -> dict:
         """
@@ -104,7 +104,7 @@ class BlocksApi():
         sid = ids.get('id')
         nid = ids.get('nid')
 
-        await self._dev.delete_object(ids)
+        await self._spark.delete_object(ids)
 
         if sid is None:
             sid = self._store.left_key(nid)
@@ -116,24 +116,24 @@ class BlocksApi():
 
     async def read_all(self) -> list:
         await self.wait_for_sync()
-        response = await self._dev.list_objects()
+        response = await self._spark.list_objects()
         return response.get('objects', [])
 
     async def read_all_logged(self) -> list:
         await self.wait_for_sync()
-        response = await self._dev.list_logged_objects()
+        response = await self._spark.list_logged_objects()
         return response.get('objects', [])
 
     async def read_all_stored(self) -> list:
         await self.wait_for_sync()
-        response = await self._dev.list_stored_objects()
+        response = await self._spark.list_stored_objects()
         return response.get('objects', [])
 
     async def delete_all(self) -> dict:
         await self.wait_for_sync()
-        await self._dev.clear_objects()
+        await self._spark.clear_objects()
         self._store.clear()
-        await self._dev.write_object({
+        await self._spark.write_object({
             'nid': const.DISPLAY_SETTINGS_NID,
             'type': 'DisplaySettings',
             'groups': [],
@@ -143,18 +143,18 @@ class BlocksApi():
 
     async def compatible(self, interface: str) -> list:
         await self.wait_for_sync()
-        response = await self._dev.list_compatible_objects({
+        response = await self._spark.list_compatible_objects({
             'interface': interface,
         })
         return response.get('object_ids', [])
 
     async def discover(self) -> list:
         await self.wait_for_sync()
-        response = await self._dev.discover_objects()
+        response = await self._spark.discover_objects()
         return response.get('objects', [])
 
     async def validate(self, partial: dict) -> dict:
-        return await self._dev.validate(partial)
+        return await self._spark.validate(partial)
 
     async def rename(self, existing: str, desired: str):
         validate_sid(desired)
@@ -217,7 +217,7 @@ class BlocksApi():
                     await self.write(deepcopy(block))
                 else:
                     # Bypass BlockApi.create(), to avoid meddling with store IDs
-                    await self._dev.create_object(deepcopy(block))
+                    await self._spark.create_object(deepcopy(block))
             except asyncio.CancelledError:  # pragma: no cover
                 raise
             except Exception as ex:

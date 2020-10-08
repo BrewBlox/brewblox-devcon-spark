@@ -3,17 +3,14 @@ Tests brewblox_devcon_spark.connection
 """
 
 import asyncio
-from collections import namedtuple
 
 import pytest
-from brewblox_service import http
+from brewblox_service import scheduler
 from mock import AsyncMock, Mock
 
-from brewblox_devcon_spark import connection
+from brewblox_devcon_spark import connection, exceptions, service_status
 
 TESTED = connection.__name__
-
-DummyPortInfo = namedtuple('DummyPortInfo', ['device', 'description', 'hwid', 'serial_number'])
 
 
 class DummyExit(Exception):
@@ -21,14 +18,13 @@ class DummyExit(Exception):
 
 
 @pytest.fixture(autouse=True)
-def m_sleep(mocker):
-    mocker.patch(TESTED + '.DISCOVER_INTERVAL_S', 0.001)
-    mocker.patch(TESTED + '.DNS_DISCOVER_TIMEOUT_S', 1)
+def m_exit(mocker):
+    mocker.patch(TESTED + '.web.GracefulExit', DummyExit)
 
 
 @pytest.fixture(autouse=True)
-def m_exit(mocker):
-    mocker.patch(TESTED + '.web.GracefulExit', DummyExit)
+def m_interval(mocker):
+    mocker.patch(TESTED + '.BASE_RETRY_INTERVAL_S', 0.001)
 
 
 @pytest.fixture
@@ -37,107 +33,160 @@ def m_reader(loop):
 
 
 @pytest.fixture
-def m_writer():
+def m_writer(loop):
     m = Mock()
-    m.write = AsyncMock()
-    m.transport = Mock()
+    m.drain = AsyncMock()
+    m.is_closing.return_value = False
     return m
 
 
 @pytest.fixture
-def m_connect_serial(mocker, m_reader, m_writer):
-    m = mocker.patch(TESTED + '.open_serial_connection', AsyncMock())
-    m.return_value = (m_reader, m_writer)
+def m_connect(mocker, m_reader, m_writer):
+    m = mocker.patch(TESTED + '.connection.connect', AsyncMock())
+    m.return_value = ('addr', m_reader, m_writer)
     return m
 
 
 @pytest.fixture
-def m_connect_tcp(mocker, m_reader, m_writer):
-    m = mocker.patch(TESTED + '.asyncio.open_connection', AsyncMock())
-    m.return_value = (m_reader, m_writer)
-    return m
-
-
-@pytest.fixture(autouse=True)
-def m_comports(mocker):
-    m = mocker.patch(TESTED + '.list_ports.comports')
-    m.return_value = [
-        DummyPortInfo('/dev/dummy', 'Dummy', 'USB VID:PID=1a02:b123', '1234AB'),
-        DummyPortInfo('/dev/ttyX', 'Electron', 'USB VID:PID=2d04:c00a', '4321BA'),
-        DummyPortInfo('/dev/ttyY', 'Electron', 'USB VID:PID=2d04:c00a', '4321BA'),
-    ]
-    return m
-
-
-@pytest.fixture(autouse=True)
-def m_grep_ports(mocker):
-    m = mocker.patch(TESTED + '.list_ports.grep')
-    m.return_value = [
-        DummyPortInfo('/dev/ttyX', 'Electron', 'USB VID:PID=2d04:c00a', '1234AB'),
-        DummyPortInfo('/dev/ttyY', 'Electron', 'USB VID:PID=2d04:c00a', '4321BA'),
-    ]
-    return m
-
-
-@pytest.fixture
-async def m_mdns(app, loop, mocker):
-    m_discover = mocker.patch(TESTED + '.mdns.discover_one', AsyncMock())
-    m_discover.return_value = ('enterprise', 5678, None)
-    return m_discover
-
-
-@pytest.fixture
-def app(app):
-    http.setup(app)
+def app(app, m_connect):
+    service_status.setup(app)
+    scheduler.setup(app)
     return app
 
 
-async def test_connect_tcp(app, client, m_reader, m_writer, m_connect_tcp):
-    app['config']['device_serial'] = None
-    app['config']['device_host'] = 'testey'
-    app['config']['device_port'] = 1234
-    assert (await connection.connect(app)) == ('testey:1234', m_reader, m_writer)
-    m_connect_tcp.assert_awaited_once_with('testey', 1234)
+@pytest.fixture
+def init_app(app):
+    connection.setup(app)
+    return app
 
 
-async def test_connect_serial(app, client, m_reader, m_writer, m_connect_serial):
-    app['config']['device_serial'] = '/dev/testey'
-    app['config']['device_host'] = 'testey'
-    app['config']['device_port'] = 1234
-    assert (await connection.connect(app)) == ('/dev/testey', m_reader, m_writer)
-    m_connect_serial.assert_awaited_once_with(url='/dev/testey', baudrate=connection.DEFAULT_BAUD_RATE)
+async def test_write(app, init_app, client, m_writer):
+    service_status.set_autoconnecting(app, True)
+    await asyncio.sleep(0.01)
+    comms = connection.get(app)
+    assert comms.connected
+    assert service_status.desc(app).is_connected
+
+    await comms.write('testey')
+    m_writer.write.assert_called_once_with(b'testey\n')
+    m_writer.drain.assert_awaited_once()
+
+    m_writer.is_closing.return_value = True
+    assert not comms.connected
+
+    with pytest.raises(exceptions.NotConnected):
+        await comms.write('stuff')
 
 
-async def test_discover_serial(app, client, m_reader, m_writer, m_connect_serial):
-    app['config']['device_serial'] = None
-    app['config']['device_host'] = None
-    app['config']['device_port'] = 1234
-    app['config']['device_id'] = None
-    app['config']['discovery'] = 'usb'
+async def test_callback(app, init_app, client, m_reader, m_writer):
+    service_status.set_autoconnecting(app, True)
+    await asyncio.sleep(0.01)
+    comms = connection.get(app)
+    m_event_cb = AsyncMock()
+    m_data_cb = AsyncMock()
+    m_data_cb2 = AsyncMock()
 
-    # First valid vid:pid
-    assert (await connection.connect(app)) == ('/dev/ttyX', m_reader, m_writer)
+    comms.event_callbacks.add(m_event_cb)
+    comms.data_callbacks.add(m_data_cb)
+    comms.data_callbacks.add(m_data_cb2)
 
-    # Filtered by device ID
-    app['config']['device_id'] = '4321BA'
-    assert (await connection.connect(app)) == ('/dev/ttyY', m_reader, m_writer)
+    m_reader.feed_data('<!connected:sensor>bunnies<fluffy>\n'.encode())
+    await asyncio.sleep(0.01)
+    m_event_cb.assert_awaited_with(comms, 'connected:sensor')
+    m_data_cb.assert_awaited_with(comms, 'bunnies')
+    m_data_cb2.assert_awaited_with(comms, 'bunnies')
 
-    # Not found
-    app['config']['device_id'] = 'pancakes'
+    # Close it down
+    m_reader.feed_data('puppies\n'.encode())
+    m_writer.is_closing.return_value = True
+
+    await asyncio.sleep(0.01)
+    m_data_cb.assert_awaited_with(comms, 'puppies')
+    m_data_cb2.assert_awaited_with(comms, 'puppies')
+    assert comms.active
+    assert not comms.connected
+    assert not service_status.desc(app).is_connected
+
+
+async def test_error_callback(app, init_app, client, m_reader, m_writer):
+    service_status.set_autoconnecting(app, True)
+    comms = connection.get(app)
+    m_event_cb = AsyncMock(side_effect=RuntimeError)
+    m_data_cb = AsyncMock()
+
+    comms.data_callbacks.add(m_data_cb)
+    comms.event_callbacks.add(m_event_cb)
+
+    m_reader.feed_data('<!connected:sensor>bunnies<fluffy>\n'.encode())
+    await asyncio.sleep(0.01)
+    m_event_cb.assert_awaited_with(comms, 'connected:sensor')
+    m_data_cb.assert_awaited_with(comms, 'bunnies')
+    assert comms.connected
+
+
+async def test_retry_exhausted(app, client, m_writer, mocker):
+    settings = connection.PublishedConnectSettings(app)
+    mocker.patch(TESTED + '.get_settings', return_value=settings)
+    mocker.patch(TESTED + '.CONNECT_RETRY_COUNT', 2)
+    mocker.patch(TESTED + '.connection.connect', AsyncMock(side_effect=ConnectionRefusedError))
+
+    service_status.set_autoconnecting(app, True)
+    comms = connection.SparkConnection(app)
+
+    await comms.prepare()
+    # count == 0
+    with pytest.raises(ConnectionError):
+        await comms.run()
+
+    # count == 1
+    with pytest.raises(ConnectionError):
+        await comms.run()
+
+    # count == 2
+    with pytest.raises(ConnectionError):
+        await comms.run()
+
+    # count == 3 (and > CONNECT_RETRY_COUNT)
     with pytest.raises(DummyExit):
-        await connection.connect(app)
+        await comms.run()
 
 
-async def test_discover_tcp(app, client, m_mdns, m_reader, m_writer, m_connect_tcp):
-    app['config']['device_serial'] = None
-    app['config']['device_host'] = None
-    app['config']['device_port'] = 1234
-    app['config']['device_id'] = None
-    app['config']['discovery'] = 'wifi'
+async def test_published_settings(app, client, m_writer, mocker):
+    mocker.patch(TESTED + '.BASE_RETRY_INTERVAL_S', 2)
+    m_pub = mocker.patch(TESTED + '.mqtt.publish', AsyncMock())
+    m_listen = mocker.patch(TESTED + '.mqtt.listen', AsyncMock())
+    m_sub = mocker.patch(TESTED + '.mqtt.subscribe', AsyncMock())
+    m_unlisten = mocker.patch(TESTED + '.mqtt.unlisten', AsyncMock())
+    m_unsub = mocker.patch(TESTED + '.mqtt.unsubscribe', AsyncMock())
 
-    assert (await connection.connect(app)) == ('enterprise:5678', m_reader, m_writer)
+    app['config']['volatile'] = False
+    topic = '__spark/internal/connect/test_app'
+    settings = connection.PublishedConnectSettings(app)
+    assert not settings._volatile
 
-    # unreachable mDNS service
-    m_mdns.side_effect = TimeoutError
-    with pytest.raises(DummyExit):
-        await connection.connect(app)
+    assert settings.get_retry_interval() == 2
+    assert m_listen.call_count == 0
+    assert m_sub.call_count == 0
+    assert m_pub.call_count == 0
+
+    await settings.startup(app)
+    m_listen.assert_awaited_once_with(app, topic, settings._on_event_message)
+    m_sub.assert_awaited_once_with(app, topic)
+
+    await settings.shutdown(app)
+    m_unlisten.assert_awaited_once()
+    m_unsub.assert_awaited_once()
+
+    await settings.increase_retry_interval()
+    m_pub.assert_awaited_once_with(app,
+                                   topic,
+                                   retain=True,
+                                   err=False,
+                                   message={'retry_interval': 3})
+
+    await settings._on_event_message(topic, {'retry_interval': 10})
+    assert settings.get_retry_interval() == 10
+
+    # fallback to default if value not set
+    await settings._on_event_message(topic, {})
+    assert settings.get_retry_interval() == 2

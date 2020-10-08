@@ -25,7 +25,7 @@ def app(app):
 
 @pytest.fixture
 def cdc(app) -> Codec:
-    return codec.get_codec(app)
+    return codec.fget(app)
 
 
 @pytest.fixture
