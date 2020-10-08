@@ -22,7 +22,7 @@ def app(app):
 
 @pytest.fixture
 def sim(app):
-    return commander.get_commander(app)
+    return commander.fget(app)
 
 
 @pytest.fixture
@@ -133,7 +133,7 @@ async def test_updating(app, client, sim):
 
 
 async def test_inactive(app, client, object_args, sim):
-    cdc = codec.get_codec(app)
+    cdc = codec.fget(app)
     create_cmd = commands.CreateObjectCommand
     read_cmd = commands.ReadObjectCommand
     write_cmd = commands.WriteObjectCommand

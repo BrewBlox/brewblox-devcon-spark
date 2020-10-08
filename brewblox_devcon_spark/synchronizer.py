@@ -12,10 +12,10 @@ from aiohttp import web
 from brewblox_service import (brewblox_logger, features, repeater, scheduler,
                               strex)
 
-from brewblox_devcon_spark import (codec, const, datastore, exceptions,
-                                   service_status)
+from brewblox_devcon_spark import (block_store, codec, config_store, const,
+                                   datastore, exceptions, service_status,
+                                   spark)
 from brewblox_devcon_spark.api import blocks_api
-from brewblox_devcon_spark.device import get_device
 from brewblox_devcon_spark.exceptions import InvalidInput
 
 HANDSHAKE_TIMEOUT_S = 30
@@ -28,7 +28,7 @@ LOGGER = brewblox_logger(__name__)
 
 def subroutine(desc: str):
     """
-    This decorator provides error logging for synchronization routines.
+    This decorator provides error logging for synchronizer routines.
     asyncio.CancelledError is passed through as is.
     Other errors are logged and re-raised.
     """
@@ -46,7 +46,7 @@ def subroutine(desc: str):
     return wrapper
 
 
-class Syncher(repeater.RepeaterFeature):
+class Synchronizer(repeater.RepeaterFeature):
 
     async def before_shutdown(self, app: web.Application):
         await self.end()
@@ -57,7 +57,7 @@ class Syncher(repeater.RepeaterFeature):
 
     async def run(self):
         """
-        This feature continuously manages synchronization between
+        This feature continuously manages synchronizer between
         the spark service, the spark controller, and the datastore.
 
         The state machine loops through the following states:
@@ -67,11 +67,11 @@ class Syncher(repeater.RepeaterFeature):
             - Get the 'autoconnecting' value from the service store.
             - Set the autoconnecting event in state.py
         - Connect to controller
-            - Wait for 'connected' event to be set by communication.py
+            - Wait for 'connected' event to be set by connection.py
         - Synchronize handshake
             - Keep sending a Noop command until 'acknowledged' event is set
             - Check firmware info in handshake for compatibility
-            - Abort synchronization if firmware/ID is not compatible
+            - Abort synchronizer if firmware/ID is not compatible
         - Synchronize block store
             - Read controller-specific data in datastore.
         - Synchronize controller time
@@ -138,7 +138,7 @@ class Syncher(repeater.RepeaterFeature):
         converter = codec.get_converter(self.app)
         try:
             converter.user_units = units
-            with datastore.get_config_store(self.app).open() as config:
+            with config_store.fget(self.app).open() as config:
                 config[UNIT_CONFIG_KEY] = converter.user_units
         except InvalidInput as ex:
             LOGGER.warn(f'Discarding user units due to error: {strex(ex)}')
@@ -150,7 +150,7 @@ class Syncher(repeater.RepeaterFeature):
     async def set_autoconnecting(self, enabled):
         enabled = bool(enabled)
         service_status.set_autoconnecting(self.app, enabled)
-        with datastore.get_config_store(self.app).open() as config:
+        with config_store.fget(self.app).open() as config:
             config[AUTOCONNECTING_KEY] = enabled
         return enabled
 
@@ -166,12 +166,12 @@ class Syncher(repeater.RepeaterFeature):
 
     @subroutine('sync service store')
     async def _sync_service_store(self):
-        service_store = datastore.get_config_store(self.app)
+        store = config_store.fget(self.app)
 
         await datastore.check_remote(self.app)
-        await service_store.read()
+        await store.read()
 
-        with service_store.open() as config:
+        with store.open() as config:
             await self._apply_service_config(config)
 
     @subroutine('sync handshake')
@@ -180,6 +180,7 @@ class Syncher(repeater.RepeaterFeature):
         handshake_task = await scheduler.create(self.app,
                                                 service_status.wait_acknowledged(self.app))
 
+        # TODO: handshake task + trigger task + timeout, wait till first done
         while not handshake_task.done():
             if start + HANDSHAKE_TIMEOUT_S < monotonic():
                 await scheduler.cancel(self.app, handshake_task)
@@ -187,7 +188,7 @@ class Syncher(repeater.RepeaterFeature):
 
             # The noop command will trigger a handshake
             # Keep sending until we get a handshake
-            await get_device(self.app).noop()
+            await spark.fget(self.app).noop()
             await asyncio.wait([handshake_task, asyncio.sleep(PING_INTERVAL_S)],
                                return_when=asyncio.FIRST_COMPLETED)
 
@@ -201,9 +202,9 @@ class Syncher(repeater.RepeaterFeature):
 
     @subroutine('sync block store')
     async def _sync_block_store(self):
-        block_store = datastore.get_block_store(self.app)
+        store = block_store.fget(self.app)
         await datastore.check_remote(self.app)
-        await block_store.read(self.device_name)
+        await store.read(self.device_name)
 
     @subroutine('sync controller time')
     async def _sync_time(self):
@@ -222,8 +223,8 @@ class Syncher(repeater.RepeaterFeature):
         LOGGER.info(f'System uptime: {uptime}')
 
     async def format_trace(self, src):
-        cdc = codec.get_codec(self.app)
-        store = datastore.get_block_store(self.app)
+        cdc = codec.fget(self.app)
+        store = block_store.fget(self.app)
         dest = []
         for src_v in src:
             action = src_v['action']
@@ -254,8 +255,8 @@ class Syncher(repeater.RepeaterFeature):
 
 
 def setup(app: web.Application):
-    features.add(app, Syncher(app))
+    features.add(app, Synchronizer(app))
 
 
-def get_syncher(app: web.Application) -> Syncher:
-    return features.get(app, Syncher)
+def fget(app: web.Application) -> Synchronizer:
+    return features.get(app, Synchronizer)

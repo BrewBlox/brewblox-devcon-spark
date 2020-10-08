@@ -58,5 +58,5 @@ def setup(app: web.Application):
     features.add(app, SimulatorFeature(app))
 
 
-def get_simulator(app: web.Application) -> SimulatorFeature:
+def fget(app: web.Application) -> SimulatorFeature:
     return features.get(app, SimulatorFeature)

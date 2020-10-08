@@ -206,54 +206,54 @@ def setup(app: web.Application):
     features.add(app, ServiceStatus(app))
 
 
-def get_status(app: web.Application) -> ServiceStatus:
+def fget(app: web.Application) -> ServiceStatus:
     return features.get(app, ServiceStatus)
 
 
 # Convenience functions
 
 def set_autoconnecting(app: web.Application, enabled: bool):
-    get_status(app).set_autoconnecting(enabled)
+    fget(app).set_autoconnecting(enabled)
 
 
 def set_connected(app: web.Application, address: str):
-    get_status(app).set_connected(address)
+    fget(app).set_connected(address)
 
 
 def set_acknowledged(app: web.Application, device: DeviceInfo):
-    get_status(app).set_acknowledged(device)
+    fget(app).set_acknowledged(device)
 
 
 def set_synchronized(app: web.Application):
-    get_status(app).set_synchronized()
+    fget(app).set_synchronized()
 
 
 def set_disconnected(app: web.Application):
-    get_status(app).set_disconnected()
+    fget(app).set_disconnected()
 
 
 async def wait_autoconnecting(app: web.Application, wait: bool = True) -> Awaitable[bool]:
-    return await get_status(app).wait_autoconnecting(wait)
+    return await fget(app).wait_autoconnecting(wait)
 
 
 async def wait_connected(app: web.Application, wait: bool = True) -> Awaitable[bool]:
-    return await get_status(app).wait_connected(wait)
+    return await fget(app).wait_connected(wait)
 
 
 async def wait_acknowledged(app: web.Application, wait: bool = True) -> Awaitable[bool]:
-    return await get_status(app).wait_acknowledged(wait)
+    return await fget(app).wait_acknowledged(wait)
 
 
 async def wait_synchronized(app: web.Application, wait: bool = True) -> Awaitable[bool]:
-    return await get_status(app).wait_synchronized(wait)
+    return await fget(app).wait_synchronized(wait)
 
 
 async def wait_disconnected(app: web.Application, wait: bool = True) -> Awaitable[bool]:
-    return await get_status(app).wait_disconnected(wait)
+    return await fget(app).wait_disconnected(wait)
 
 
 def desc(app: web.Application) -> StatusDescription:
-    return get_status(app).desc()
+    return fget(app).desc()
 
 
 def desc_dict(app: web.Application) -> dict:

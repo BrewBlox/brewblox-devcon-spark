@@ -10,7 +10,7 @@ from brewblox_service.testing import response
 from mock import ANY, AsyncMock
 
 from brewblox_devcon_spark import (commander_sim, const, datastore, device,
-                                   exceptions, service_status, synchronization,
+                                   exceptions, service_status, synchronizer,
                                    ymodem)
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
                                        settings_api, system_api)
@@ -57,7 +57,7 @@ async def app(app, loop):
     datastore.setup(app)
     unit_conversion.setup(app)
     codec.setup(app)
-    synchronization.setup(app)
+    synchronizer.setup(app)
     device.setup(app)
 
     error_response.setup(app)
@@ -215,7 +215,7 @@ async def test_delete_all(app, client, block_args):
 
 
 async def test_cleanup(app, client, block_args):
-    store = datastore.get_block_store(app)
+    store = block_store.fget(app)
     await response(client.post('/blocks/create', json=block_args), 201)
     store['unused', 456] = {}
     retv = await response(client.post('/blocks/cleanup'))

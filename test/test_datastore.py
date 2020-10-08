@@ -82,12 +82,12 @@ def app(app, mocker):
 
 @pytest.fixture
 def block_store(app):
-    return datastore.get_block_store(app)
+    return block_store.fget(app)
 
 
 @pytest.fixture
 def config_store(app):
-    return datastore.get_config_store(app)
+    return config_store.fget(app)
 
 
 async def test_check_remote(app, client, aresponses: ResponsesMockServer):

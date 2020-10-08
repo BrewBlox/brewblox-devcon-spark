@@ -1,17 +1,16 @@
 """
-Tests brewblox_devcon_spark.device
+Tests brewblox_devcon_spark.spark
 """
 
 import pytest
-from brewblox_service import features, scheduler
+from brewblox_service import scheduler
 from mock import AsyncMock
 
-from brewblox_devcon_spark import (codec, commander, commander_sim, const,
-                                   datastore, device, exceptions,
-                                   service_status)
+from brewblox_devcon_spark import (block_store, codec, commander_sim, const,
+                                   exceptions, service_status, spark)
 from brewblox_devcon_spark.codec.opts import CodecOpts
 
-TESTED = device.__name__
+TESTED = spark.__name__
 
 
 def generate_obj():
@@ -37,31 +36,22 @@ def generate_obj():
 def app(app):
     """App + controller routes"""
     service_status.setup(app)
-    datastore.setup(app)
+    block_store.setup(app)
     commander_sim.setup(app)
     scheduler.setup(app)
     codec.setup(app)
-    device.setup(app)
+    spark.setup(app)
     return app
 
 
 @pytest.fixture
-def cmder(app):
-    return features.get(app, commander.SparkCommander)
-
-
-@pytest.fixture
-def dev(app):
-    return device.get_device(app)
-
-
-@pytest.fixture
 async def store(app, client):
-    return datastore.get_block_store(app)
+    return block_store.fget(app)
 
 
-async def test_transcoding(app, client, cmder, store, dev):
-    c = codec.get_codec(app)
+async def test_transcoding(app, client, store):
+    s = spark.fget(app)
+    c = codec.fget(app)
     obj_type, obj_data = generate_obj()
     enc_type, enc_data = await c.encode(obj_type, obj_data)
 
@@ -77,36 +67,37 @@ async def test_transcoding(app, client, cmder, store, dev):
     c.encode = AsyncMock(wraps=c.encode)
     c.decode = AsyncMock(wraps=c.decode)
 
-    retval = await dev.create_object(object_args)
+    retval = await s.create_object(object_args)
     assert retval['data']['settings']['address'] == 'ff'.rjust(16, '0')
 
     c.encode.assert_any_await(obj_type, obj_data, opts=CodecOpts())
     c.decode.assert_any_await(enc_type, enc_data, opts=CodecOpts())
 
 
-async def test_list_transcoding(app, client, cmder, store, dev, mocker):
+async def test_list_transcoding(app, client, store, mocker):
+    s = spark.fget(app)
     obj_type, obj_data = generate_obj()
     ids = {f'obj{i}' for i in range(5)}
 
     for i, id in enumerate(ids):
         store[id, 300+i] = dict()
 
-        await dev.create_object({
+        await s.create_object({
             'id': id,
             'groups': [0],
             'type': obj_type,
             'data': obj_data
         })
 
-    retval = await dev.list_stored_objects()
+    retval = await s.list_stored_objects()
     assert ids.issubset({obj['id'] for obj in retval['objects']})
 
 
-async def test_convert_id(app, client, store, mocker, dev):
+async def test_convert_id(app, client, store, mocker):
     store['alias', 123] = dict()
     store['4-2', 24] = dict()
 
-    resolver = device.SparkResolver(app)
+    resolver = spark.SparkResolver(app)
     opts = CodecOpts()
 
     assert await resolver.convert_sid_nid({'id': 'alias'}, opts) == {'nid': 123}
@@ -155,7 +146,7 @@ async def test_resolve_links(app, client, store):
             },
         }
 
-    resolver = device.SparkResolver(app)
+    resolver = spark.SparkResolver(app)
     output = await resolver.convert_links_nid(create_data(), CodecOpts())
 
     assert output == {
