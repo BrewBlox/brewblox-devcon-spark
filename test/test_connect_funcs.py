@@ -16,19 +16,10 @@ TESTED = connect_funcs.__name__
 DummyPortInfo = namedtuple('DummyPortInfo', ['device', 'description', 'hwid', 'serial_number'])
 
 
-class DummyExit(Exception):
-    pass
-
-
 @pytest.fixture(autouse=True)
 def m_sleep(mocker):
     mocker.patch(TESTED + '.DISCOVER_INTERVAL_S', 0.001)
     mocker.patch(TESTED + '.DNS_DISCOVER_TIMEOUT_S', 1)
-
-
-@pytest.fixture(autouse=True)
-def m_exit(mocker):
-    mocker.patch(TESTED + '.web.GracefulExit', DummyExit)
 
 
 @pytest.fixture
@@ -124,7 +115,7 @@ async def test_discover_serial(app, client, m_reader, m_writer, m_connect_serial
 
     # Not found
     app['config']['device_id'] = 'pancakes'
-    with pytest.raises(DummyExit):
+    with pytest.raises(connect_funcs.DiscoveryAbortedError):
         await connect_funcs.connect(app)
 
 
@@ -138,6 +129,6 @@ async def test_discover_tcp(app, client, m_mdns, m_reader, m_writer, m_connect_t
     assert (await connect_funcs.connect(app)) == ('enterprise:5678', m_reader, m_writer)
 
     # unreachable mDNS service
-    m_mdns.side_effect = TimeoutError
-    with pytest.raises(DummyExit):
+    m_mdns.side_effect = asyncio.TimeoutError
+    with pytest.raises(connect_funcs.DiscoveryAbortedError):
         await connect_funcs.connect(app)

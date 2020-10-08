@@ -8,8 +8,8 @@ import pytest
 from brewblox_service import brewblox_logger, repeater, scheduler
 from mock import AsyncMock
 
-from brewblox_devcon_spark import (commander_sim, datastore, device,
-                                   service_status, synchronizer)
+from brewblox_devcon_spark import (block_store, commander_sim, config_store,
+                                   service_status, spark, synchronizer)
 from brewblox_devcon_spark.codec import codec, unit_conversion
 from brewblox_devcon_spark.service_status import StatusDescription
 
@@ -18,7 +18,7 @@ LOGGER = brewblox_logger(__name__)
 
 
 def states(app):
-    status = service_status.get_status(app)
+    status = service_status.fget(app)
     return [
         status.disconnected_ev.is_set(),
         status.connected_ev.is_set(),
@@ -64,11 +64,12 @@ async def app(app, loop):
     app['config']['volatile'] = True
     service_status.setup(app)
     scheduler.setup(app)
-    datastore.setup(app)
+    config_store.setup(app)
+    block_store.setup(app)
     commander_sim.setup(app)
     unit_conversion.setup(app)
     codec.setup(app)
-    device.setup(app)
+    spark.setup(app)
     synchronizer.setup(app)
     return app
 

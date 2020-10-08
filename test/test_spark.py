@@ -171,3 +171,8 @@ async def test_resolve_links(app, client, store):
 
     output = await resolver.convert_links_sid(output, CodecOpts())
     assert output == create_data()
+
+
+async def test_check_connection(app, client, mocker):
+    pass
+    # TODO

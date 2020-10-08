@@ -13,7 +13,8 @@ from aiohttp import web
 from brewblox_service import brewblox_logger, features, strex
 
 from brewblox_devcon_spark import (block_store, codec, commander, commands,
-                                   const, exceptions, twinkeydict)
+                                   const, exceptions, service_status,
+                                   twinkeydict)
 from brewblox_devcon_spark.codec import (CodecOpts, FilterOpt, MetadataOpt,
                                          ProtoEnumOpt)
 
@@ -212,6 +213,22 @@ class SparkController(features.ServiceFeature):
 
         return content
 
+    async def check_connection(self):
+        """
+        Sends a Noop command to controller to evaluate the connection.
+        If this command also fails, prompt the commander to reconnect.
+
+        Only do this when the service is synchronized,
+        to avoid weird interactions during synchronization.
+        """
+        if await service_status.wait_synchronized(self.app, wait=False):
+            cmder = commander.fget(self.app)
+            try:
+                cmd = commands.NoopCommand.from_args()
+                await cmder.execute(cmd)
+            except Exception:
+                await cmder.start_reconnect()
+
     async def _execute(self,
                        command_type: Type[commands.Command],
                        command_opts: CodecOpts,
@@ -253,16 +270,10 @@ class SparkController(features.ServiceFeature):
         except asyncio.CancelledError:  # pragma: no cover
             raise
 
-        except asyncio.TimeoutError as ex:
+        except exceptions.CommandTimeout as ex:
             LOGGER.error(f'Timeout while executing {command_type}. Checking connection...')
-
-            try:
-                cmd = commands.NoopCommand.from_args()
-                await cmder.execute(cmd)
-            except Exception:
-                await cmder.start_reconnect()
-
-            # Always raise the original error
+            # Wrap in a task to not delay the original response
+            asyncio.create_task(self.check_connection())
             raise ex
 
         except Exception as ex:

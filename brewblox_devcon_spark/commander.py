@@ -27,10 +27,10 @@ class SparkCommander(features.ServiceFeature):
         self._updating = False
         self._timeout = app['config']['command_timeout']
         self._requests: Dict[str, asyncio.Future] = {}
-        self._comms: connection.SparkConnection = None
+        self._conn: connection.SparkConnection = None
 
     def __str__(self):
-        return f'<{type(self).__name__} for {self._comms} at {hex(id(self))}>'
+        return f'<{type(self).__name__} for {self._conn} at {hex(id(self))}>'
 
     @property
     def updating(self) -> bool:
@@ -38,16 +38,16 @@ class SparkCommander(features.ServiceFeature):
 
     async def startup(self, app: web.Application):
         self._requests.clear()
-        self._comms = connection.fget(app)
-        self._comms.data_callbacks.add(self._on_message)
+        self._conn = connection.fget(app)
+        self._conn.data_callbacks.add(self.data_callback)
 
     async def shutdown(self, app: web.Application):
-        if self._comms:
-            await self._comms.shutdown(app)
-            self._comms.data_callbacks.discard(self._on_message)
-            self._comms = None
+        if self._conn:
+            await self._conn.shutdown(app)
+            self._conn.data_callbacks.discard(self.data_callback)
+            self._conn = None
 
-    def _on_message(self, msg: str):
+    def data_callback(self, msg: str):
         try:
             raw_request, raw_response = msg.upper().replace(' ', '').split(RESPONSE_SEPARATOR)
 
@@ -59,18 +59,25 @@ class SparkCommander(features.ServiceFeature):
             fut.set_result(raw_response)
 
         except Exception as ex:
-            LOGGER.error(f'Response error parsing message `{msg}` : {strex(ex)}')
+            LOGGER.error(f'Error parsing message `{msg}` : {strex(ex)}')
+
+    def add_request(self, request: str) -> asyncio.Future:
+        fut = asyncio.get_running_loop().create_future()
+        self._requests[request] = fut
+        return fut
+
+    def remove_request(self, request: str):
+        del self._requests[request]
 
     async def execute(self, command: commands.Command) -> dict:
         if self.updating and not isinstance(command, commands.FirmwareUpdateCommand):
             raise exceptions.UpdateInProgress('Update is in progress')
 
         encoded_request = command.encoded_request.upper()
-        resp_future = asyncio.get_running_loop().create_future()
-        self._requests[encoded_request] = resp_future
+        resp_future = self.add_request(encoded_request)
 
         try:
-            await self._comms.write(encoded_request)
+            await self._conn.write(encoded_request)
             message = await asyncio.wait_for(resp_future, timeout=self._timeout)
 
             # Create a new command of the same type to contain response
@@ -89,7 +96,7 @@ class SparkCommander(features.ServiceFeature):
             raise exceptions.CommandTimeout(f'{type(command).__name__}')
 
         finally:
-            del self._requests[encoded_request]
+            self.remove_request(encoded_request)
 
         return decoded
 
@@ -101,8 +108,8 @@ class SparkCommander(features.ServiceFeature):
         await self.shutdown(self.app)
 
     async def start_reconnect(self):
-        if self._comms:
-            await self._comms.start_reconnect()
+        if self._conn:
+            await self._conn.start_reconnect()
 
 
 def setup(app: web.Application):
