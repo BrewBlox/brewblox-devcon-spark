@@ -9,9 +9,9 @@ from brewblox_service import scheduler
 from brewblox_service.testing import response
 from mock import ANY, AsyncMock
 
-from brewblox_devcon_spark import (commander_sim, const, datastore, device,
-                                   exceptions, service_status, synchronizer,
-                                   ymodem)
+from brewblox_devcon_spark import (block_store, commander_sim, config_store,
+                                   const, exceptions, service_status, spark,
+                                   synchronizer, ymodem)
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
                                        settings_api, system_api)
 from brewblox_devcon_spark.codec import codec, unit_conversion
@@ -54,11 +54,12 @@ async def app(app, loop):
     service_status.setup(app)
     scheduler.setup(app)
     commander_sim.setup(app)
-    datastore.setup(app)
+    block_store.setup(app)
+    config_store.setup(app)
     unit_conversion.setup(app)
     codec.setup(app)
     synchronizer.setup(app)
-    device.setup(app)
+    spark.setup(app)
 
     error_response.setup(app)
     debug_api.setup(app)

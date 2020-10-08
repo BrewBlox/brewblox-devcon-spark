@@ -3,7 +3,6 @@ Implements async serial connection.
 """
 
 import asyncio
-from asyncio import CancelledError
 from typing import Callable, Set
 
 from aiohttp import web
@@ -67,7 +66,7 @@ class SparkConnection(repeater.RepeaterFeature):
     def increase_retry_interval(self):
         self.retry_interval = min(MAX_RETRY_INTERVAL_S, round(1.5 * self.retry_interval))
 
-    def _on_event_message(self, msg: str):
+    def _on_event(self, msg: str):
         if msg.startswith(const.WELCOME_PREFIX):
             welcome = commands.HandshakeMessage(*msg.split(','))
             LOGGER.info(welcome)
@@ -97,7 +96,7 @@ class SparkConnection(repeater.RepeaterFeature):
         else:
             LOGGER.info(f'Spark event: `{msg}`')
 
-    def _on_data_message(self, msg: str):
+    def _on_data(self, msg: str):
         for cb in self._data_callbacks:
             cb(msg)
 
@@ -138,13 +137,13 @@ class SparkConnection(repeater.RepeaterFeature):
 
                 # Drain parsed messages
                 for msg in self._parser.event_messages():
-                    self._on_event_message(msg)
+                    self._on_event(msg)
                 for msg in self._parser.data_messages():
-                    self._on_data_message(msg)
+                    self._on_data(msg)
 
             raise ConnectionError('Connection closed')
 
-        except CancelledError:
+        except asyncio.CancelledError:
             raise
 
         except connect_funcs.DiscoveryAbortedError as ex:
@@ -152,6 +151,8 @@ class SparkConnection(repeater.RepeaterFeature):
             self.increase_retry_interval()
             if ex.reboot_required:
                 raise web.GracefulExit()
+            else:
+                raise ex
 
         except ConnectionAbortedError:
             LOGGER.error('Connection aborted. Exiting now.')

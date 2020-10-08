@@ -70,7 +70,7 @@ class FirmwareUpdater():
 
     async def flash(self) -> dict:  # pragma: no cover
         sender = ymodem.FileSender(self._notify)
-        cmder = commander.fget_commander(self.app)
+        cmder = commander.fget(self.app)
         address = service_status.desc(self.app).device_address
 
         self._notify(f'Started updating {self.name}@{address} to version {self.version} ({self.date})')
