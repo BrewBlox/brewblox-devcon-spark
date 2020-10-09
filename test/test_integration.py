@@ -15,7 +15,7 @@ from brewblox_service.testing import response
 
 from brewblox_devcon_spark import (commander, connection, datastore,
                                    service_status, simulator, spark,
-                                   synchronizer)
+                                   synchronization)
 from brewblox_devcon_spark.__main__ import parse_ini
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
                                        settings_api, system_api)
@@ -64,7 +64,7 @@ def app(app):
     system_api.setup(app)
     settings_api.setup(app)
 
-    synchronizer.setup(app)
+    synchronization.setup(app)
     return app
 
 

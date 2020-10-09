@@ -62,10 +62,10 @@ To reduce the impact of this bottleneck, and to persist historic data, `Broadcas
 Here, the data will likely be picked up by the [History Service](https://github.com/BrewBlox/brewblox-history).
 
 
-### Synchronizer ([synchronizer.py](./brewblox_devcon_spark/synchronizer.py))
+### SparkSynchronization ([synchronization.py](./brewblox_devcon_spark/synchronization.py))
 
 Some actions are required when connecting to a (new) Spark controller.
-The Synchronizer feature waits for a connection to be made, and then performs these one-time tasks.
+The SparkSynchronization feature waits for a connection to be made, and then performs these one-time tasks.
 
 Examples are:
 * Setting Spark system clock

@@ -4,7 +4,7 @@ Tests brewblox_devcon_spark.spark
 
 import pytest
 from brewblox_service import scheduler
-from mock import AsyncMock
+from mock import AsyncMock, Mock
 
 from brewblox_devcon_spark import (block_store, codec, commander_sim, const,
                                    exceptions, service_status, spark)
@@ -174,5 +174,28 @@ async def test_resolve_links(app, client, store):
 
 
 async def test_check_connection(app, client, mocker):
-    pass
-    # TODO
+    s = spark.fget(app)
+    await s.check_connection()
+
+    m_wait_sync = mocker.patch(TESTED + '.service_status.wait_synchronized', AsyncMock())
+    m_wait_sync.return_value = False
+    m_cmder = Mock()
+    m_cmder.execute = AsyncMock()
+    m_cmder.start_reconnect = AsyncMock()
+    mocker.patch(TESTED + '.commander.fget').return_value = m_cmder
+
+    await s.check_connection()
+    assert m_cmder.execute.await_count == 0
+    assert m_cmder.start_reconnect.await_count == 0
+
+    m_wait_sync.return_value = True
+
+    await s.check_connection()
+    assert m_cmder.execute.await_count == 1
+    assert m_cmder.start_reconnect.await_count == 0
+
+    m_cmder.execute.side_effect = exceptions.CommandException()
+
+    await s.check_connection()
+    assert m_cmder.execute.await_count == 2
+    assert m_cmder.start_reconnect.await_count == 1
