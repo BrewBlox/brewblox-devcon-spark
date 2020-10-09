@@ -10,9 +10,9 @@ from functools import wraps
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, repeater, strex
 
-from brewblox_devcon_spark import (block_store, codec, config_store, const,
-                                   datastore, exceptions, service_status,
-                                   spark)
+from brewblox_devcon_spark import (block_store, codec, commander, config_store,
+                                   const, datastore, exceptions,
+                                   service_status, spark)
 from brewblox_devcon_spark.api import blocks_api
 from brewblox_devcon_spark.exceptions import InvalidInput
 
@@ -51,7 +51,7 @@ class SparkSynchronization(repeater.RepeaterFeature):
 
     async def prepare(self):
         """Implements RepeaterFeature.prepare"""
-        self._sync_done = asyncio.Event()
+        pass
 
     async def run(self):
         """
@@ -83,7 +83,6 @@ class SparkSynchronization(repeater.RepeaterFeature):
         Implements RepeaterFeature.run
         """
         try:
-            self._sync_done.clear()
             await self._sync_service_store()
 
             await service_status.wait_connected(self.app)
@@ -98,10 +97,6 @@ class SparkSynchronization(repeater.RepeaterFeature):
         except asyncio.CancelledError:
             raise
 
-        except asyncio.TimeoutError:
-            LOGGER.error('Synchronization timeout. Exiting now...')
-            raise web.GracefulExit(1)
-
         except exceptions.IncompatibleFirmware:
             LOGGER.error('Incompatible firmware version detected')
 
@@ -110,16 +105,10 @@ class SparkSynchronization(repeater.RepeaterFeature):
 
         except Exception as ex:
             LOGGER.error(f'Failed to sync: {strex(ex)}')
-            raise web.GracefulExit(1)
-
-        finally:
-            self._sync_done.set()
+            await commander.fget(self.app).start_reconnect()
+            raise ex
 
         await service_status.wait_disconnected(self.app)
-
-    @property
-    def sync_done(self) -> asyncio.Event:
-        return self._sync_done
 
     @property
     def device_name(self) -> str:

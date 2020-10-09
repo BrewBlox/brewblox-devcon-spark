@@ -13,9 +13,9 @@ import pytest
 from brewblox_service import mqtt, scheduler
 from brewblox_service.testing import response
 
-from brewblox_devcon_spark import (commander, connection, datastore,
-                                   service_status, simulator, spark,
-                                   synchronization)
+from brewblox_devcon_spark import (block_store, commander, config_store,
+                                   connection, service_status, simulator,
+                                   spark, synchronization)
 from brewblox_devcon_spark.__main__ import parse_ini
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
                                        settings_api, system_api)
@@ -53,7 +53,8 @@ def app(app):
     scheduler.setup(app)
     mqtt.setup(app)
 
-    datastore.setup(app)
+    config_store.setup(app)
+    block_store.setup(app)
     unit_conversion.setup(app)
     codec.setup(app)
     spark.setup(app)
