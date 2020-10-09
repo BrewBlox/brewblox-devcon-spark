@@ -7,7 +7,7 @@ from aiohttp import web
 from aiohttp_apispec import docs, request_schema
 from brewblox_service import brewblox_logger
 
-from brewblox_devcon_spark import device
+from brewblox_devcon_spark import spark
 from brewblox_devcon_spark.api import schemas
 
 LOGGER = brewblox_logger(__name__)
@@ -28,5 +28,5 @@ async def do_command(request: web.Request) -> web.Response:
     command = request['data']['command']
     data = request['data']['data']
 
-    func = getattr(device.get_device(request.app), command)
+    func = getattr(spark.fget(request.app), command)
     return web.json_response(await func(**data))

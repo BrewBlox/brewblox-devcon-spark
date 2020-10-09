@@ -302,6 +302,7 @@ class SimulationCommander(commander.SparkCommander):
 
     async def startup(self, app: web.Application):
         await self._responder.startup(app)
+        # Normally handled by communication
         service_status.set_connected(app, 'simulation:1234')
         service_status.set_acknowledged(app, make_device(app))
 
@@ -320,7 +321,7 @@ class SimulationCommander(commander.SparkCommander):
 
 
 def setup(app: web.Application):
-    # Register as a SparkCommander, so features.get(app, SparkCommander) still works
+    # Register as a SparkCommander, so commander.fget(app) still works
     features.add(app, SimulationCommander(app), key=commander.SparkCommander)
     # Before returning, the simulator encodes + decodes values
     # We want to avoid stripping readonly values here

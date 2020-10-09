@@ -24,7 +24,7 @@ def setup(app: web.Application):
 @routes.get('/settings/units')
 @response_schema(schemas.UserUnitsSchema)
 async def units_get(request: web.Request) -> web.Response:
-    syncher = synchronization.get_syncher(request.app)
+    syncher = synchronization.fget(request.app)
     return web.json_response(syncher.get_user_units())
 
 
@@ -36,7 +36,7 @@ async def units_get(request: web.Request) -> web.Response:
 @request_schema(schemas.UserUnitsSchema)
 @response_schema(schemas.UserUnitsSchema)
 async def units_put(request: web.Request) -> web.Response:
-    syncher = synchronization.get_syncher(request.app)
+    syncher = synchronization.fget(request.app)
     updated = await syncher.set_user_units(request['data'])
     return web.json_response(updated)
 
@@ -48,7 +48,7 @@ async def units_put(request: web.Request) -> web.Response:
 @routes.get('/settings/autoconnecting')
 @response_schema(schemas.AutoconnectingSchema)
 async def autoconnecting_get(request: web.Request) -> web.Response:
-    syncher = synchronization.get_syncher(request.app)
+    syncher = synchronization.fget(request.app)
     enabled = syncher.get_autoconnecting()
     return web.json_response({'enabled': enabled})
 
@@ -61,6 +61,6 @@ async def autoconnecting_get(request: web.Request) -> web.Response:
 @request_schema(schemas.AutoconnectingSchema)
 @response_schema(schemas.AutoconnectingSchema)
 async def autoconnect_put(request: web.Request) -> web.Response:
-    syncher = synchronization.get_syncher(request.app)
+    syncher = synchronization.fget(request.app)
     enabled = await syncher.set_autoconnecting(request['data']['enabled'])
     return web.json_response({'enabled': enabled})

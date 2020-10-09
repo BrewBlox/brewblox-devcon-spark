@@ -154,5 +154,5 @@ def setup(app: web.Application):
     features.add(app, Codec(app))
 
 
-def get_codec(app: web.Application) -> Codec:
+def fget(app: web.Application) -> Codec:
     return features.get(app, Codec)

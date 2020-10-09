@@ -8,7 +8,7 @@ from socket import inet_aton
 import pytest
 from aiozeroconf import ServiceInfo, ServiceStateChange
 
-from brewblox_devcon_spark import connection, mdns
+from brewblox_devcon_spark import connect_funcs, mdns
 
 TESTED = mdns.__name__
 
@@ -30,7 +30,7 @@ class ServiceBrowserMock():
 def conf_mock(mocker):
 
     async def get_service_info(service_type, name):
-        dns_type = connection.BREWBLOX_DNS_TYPE
+        dns_type = connect_funcs.BREWBLOX_DNS_TYPE
         if name == 'id0':
             return ServiceInfo(
                 service_type,
@@ -69,7 +69,7 @@ def browser_mock(mocker):
 
 
 async def test_discover_one(app, client, loop, browser_mock, conf_mock):
-    dns_type = connection.BREWBLOX_DNS_TYPE
+    dns_type = connect_funcs.BREWBLOX_DNS_TYPE
     assert await mdns.discover_one(None, dns_type) == ('1.2.3.4', 1234, 'id1')
     assert await mdns.discover_one('id2', dns_type) == ('4.3.2.1', 4321, 'id2')
 
@@ -81,7 +81,7 @@ async def test_discover_one(app, client, loop, browser_mock, conf_mock):
 
 
 async def test_discover_all(app, client, loop, browser_mock, conf_mock):
-    dns_type = connection.BREWBLOX_DNS_TYPE
+    dns_type = connect_funcs.BREWBLOX_DNS_TYPE
     retv = []
     async for res in mdns.discover_all(None, dns_type, 0.01):
         retv.append(res)
