@@ -6,11 +6,9 @@ Regulates actions that should be taken when the service connects to a controller
 import asyncio
 from datetime import datetime, timedelta
 from functools import wraps
-from time import monotonic
 
 from aiohttp import web
-from brewblox_service import (brewblox_logger, features, repeater, scheduler,
-                              strex)
+from brewblox_service import brewblox_logger, features, repeater, strex
 
 from brewblox_devcon_spark import (block_store, codec, config_store, const,
                                    datastore, exceptions, service_status,
@@ -18,7 +16,7 @@ from brewblox_devcon_spark import (block_store, codec, config_store, const,
 from brewblox_devcon_spark.api import blocks_api
 from brewblox_devcon_spark.exceptions import InvalidInput
 
-HANDSHAKE_TIMEOUT_S = 30
+HANDSHAKE_TIMEOUT_S = 120
 PING_INTERVAL_S = 1
 UNIT_CONFIG_KEY = 'user_units'
 AUTOCONNECTING_KEY = 'autoconnecting'
@@ -176,21 +174,41 @@ class SparkSynchronization(repeater.RepeaterFeature):
 
     @subroutine('sync handshake')
     async def _sync_handshake(self):
-        start = monotonic()
-        handshake_task = await scheduler.create(self.app,
-                                                service_status.wait_acknowledged(self.app))
+        """
+        Wait for the controller to acknowledge the connection with a handshake,
+        while sending prompts by using the Noop command.
 
-        # TODO: handshake task + trigger task + timeout, wait till first done
-        while not handshake_task.done():
-            if start + HANDSHAKE_TIMEOUT_S < monotonic():
-                await scheduler.cancel(self.app, handshake_task)
-                raise asyncio.TimeoutError()
+        If no handshake is received after `HANDSHAKE_TIMEOUT_S`,
+        an asyncio.TimeoutError is raised.
 
-            # The noop command will trigger a handshake
-            # Keep sending until we get a handshake
-            await spark.fget(self.app).noop()
-            await asyncio.wait([handshake_task, asyncio.sleep(PING_INTERVAL_S)],
-                               return_when=asyncio.FIRST_COMPLETED)
+        The handshake is checked, and appropriate errors are raised
+        if the device ID or firmware version are incompatible.
+        """
+
+        async def prompt_handshake():
+            while True:
+                try:
+                    await asyncio.sleep(PING_INTERVAL_S)
+                    await spark.fget(self.app).noop()
+                except asyncio.CancelledError:
+                    raise
+                except Exception:
+                    pass
+
+        ack_wait_task = asyncio.create_task(service_status.wait_acknowledged(self.app))
+        prompt_task = asyncio.create_task(prompt_handshake())
+
+        await asyncio.wait([ack_wait_task, prompt_task],
+                           return_when=asyncio.FIRST_COMPLETED,
+                           timeout=HANDSHAKE_TIMEOUT_S)
+
+        # asyncio.wait() does not cancel tasks
+        # cancel() can be safely called if the task is already done
+        ack_wait_task.cancel()
+        prompt_task.cancel()
+
+        if not await service_status.wait_acknowledged(self.app, wait=False):
+            raise asyncio.TimeoutError()
 
         handshake = service_status.desc(self.app).handshake_info
 

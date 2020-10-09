@@ -127,12 +127,16 @@ async def test_write_error(app, client, mocker, api_mock, system_exit_mock):
 
 
 async def test_timeout(app, client, syncher, mocker, system_exit_mock):
-    async def m_wait_handshake(app):
+    async def m_wait_ack(app, wait=True):
+        if wait:
+            await asyncio.sleep(1)
         return False
     await wait_sync(app)
     await disconnect(app)
-    mocker.patch(TESTED + '.HANDSHAKE_TIMEOUT_S', 0.0001)
-    mocker.patch(TESTED + '.service_status.wait_acknowledged', side_effect=m_wait_handshake)
+    mocker.patch(TESTED + '.HANDSHAKE_TIMEOUT_S', 0.1)
+    mocker.patch(TESTED + '.PING_INTERVAL_S', 0.0001)
+    mocker.patch(TESTED + '.service_status.wait_acknowledged', side_effect=m_wait_ack)
+    mocker.patch(TESTED + '.spark.fget').return_value.noop = AsyncMock(side_effect=RuntimeError)
 
     await connect(app)
     assert system_exit_mock.call_count == 1
