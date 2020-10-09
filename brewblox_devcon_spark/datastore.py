@@ -65,6 +65,10 @@ class FlushedStore(repeater.RepeaterFeature):
     async def before_shutdown(self, app: web.Application):
         await super().before_shutdown(app)
         await self.end()
+        with suppress(Exception):
+            if self._changed_event.is_set():
+                LOGGER.info(f'Writing data while closing {self}')
+                await asyncio.wait_for(self.write(), timeout=SHUTDOWN_WRITE_TIMEOUT_S)
         self._changed_event = None
 
     async def prepare(self):
@@ -81,10 +85,6 @@ class FlushedStore(repeater.RepeaterFeature):
             self._changed_event.clear()
 
         except asyncio.CancelledError:
-            LOGGER.debug(f'Writing data while closing {self}')
-            with suppress(Exception):
-                if self._changed_event.is_set():
-                    await asyncio.wait_for(self.write(), timeout=SHUTDOWN_WRITE_TIMEOUT_S)
             raise
 
         except Exception as ex:

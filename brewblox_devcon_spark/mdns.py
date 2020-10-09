@@ -4,13 +4,14 @@ mDNS discovery of Spark devices
 
 import asyncio
 from contextlib import suppress
-from socket import AF_INET, inet_ntoa
+from socket import AF_INET, inet_aton, inet_ntoa
 
 from aiozeroconf import ServiceBrowser, ServiceStateChange, Zeroconf
 from async_timeout import timeout
 from brewblox_service import brewblox_logger
 
 DEFAULT_TIMEOUT_S = 5
+SIM_ADDR = inet_aton('0.0.0.0')
 
 LOGGER = brewblox_logger(__name__)
 
@@ -33,9 +34,9 @@ async def _discover(id: str, dns_type: str, single: bool):
 
         while True:
             info = await queue.get()
+            if info.address in [None, SIM_ADDR]:
+                continue  # discard unknown addresses and simulators
             addr = inet_ntoa(info.address)
-            if addr == '0.0.0.0':
-                continue  # discard simulators
             if match is None or info.server.lower() == match:
                 serial = info.server[:-len('.local.')]
                 LOGGER.info(f'Discovered {serial} @ {addr}:{info.port}')
