@@ -1,5 +1,5 @@
 """
-Tests brewblox_devcon_spark.synchronizer
+Tests brewblox_devcon_spark.synchronization
 """
 
 import asyncio
@@ -9,11 +9,11 @@ from brewblox_service import brewblox_logger, repeater, scheduler
 from mock import AsyncMock
 
 from brewblox_devcon_spark import (block_store, commander_sim, config_store,
-                                   service_status, spark, synchronizer)
+                                   service_status, spark, synchronization)
 from brewblox_devcon_spark.codec import codec, unit_conversion
 from brewblox_devcon_spark.service_status import StatusDescription
 
-TESTED = synchronizer.__name__
+TESTED = synchronization.__name__
 LOGGER = brewblox_logger(__name__)
 
 
@@ -27,8 +27,8 @@ def states(app):
 
 
 async def connect(app):
-    service_status.set_connected(app, 'synchronizer test')
-    await synchronizer.fget(app).sync_done.wait()
+    service_status.set_connected(app, 'synchronization test')
+    await synchronization.fget(app).sync_done.wait()
     await asyncio.sleep(0.01)
 
 
@@ -70,7 +70,7 @@ async def app(app, loop):
     unit_conversion.setup(app)
     codec.setup(app)
     spark.setup(app)
-    synchronizer.setup(app)
+    synchronization.setup(app)
     return app
 
 
@@ -84,7 +84,7 @@ def api_mock(mocker):
 
 @pytest.fixture
 def syncher(app):
-    return synchronizer.fget(app)
+    return synchronization.fget(app)
 
 
 async def test_sync_status(app, client, mocker):
@@ -112,7 +112,7 @@ async def test_sync_errors(app, client, mocker, system_exit_mock):
 
     assert states(app) == [False, True, False]
     assert system_exit_mock.call_count == 1
-    assert not synchronizer.fget(app).active
+    assert not synchronization.fget(app).active
 
 
 async def test_write_error(app, client, mocker, api_mock, system_exit_mock):
@@ -123,7 +123,7 @@ async def test_write_error(app, client, mocker, api_mock, system_exit_mock):
 
     assert states(app) == [False, True, False]
     assert system_exit_mock.call_count == 1
-    assert not synchronizer.fget(app).active
+    assert not synchronization.fget(app).active
 
 
 async def test_timeout(app, client, syncher, mocker, system_exit_mock):

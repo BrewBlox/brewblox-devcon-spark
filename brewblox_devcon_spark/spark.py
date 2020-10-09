@@ -219,7 +219,7 @@ class SparkController(features.ServiceFeature):
         If this command also fails, prompt the commander to reconnect.
 
         Only do this when the service is synchronized,
-        to avoid weird interactions during synchronization.
+        to avoid weird interactions when prompting for a handshake.
         """
         if await service_status.wait_synchronized(self.app, wait=False):
             cmder = commander.fget(self.app)

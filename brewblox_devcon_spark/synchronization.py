@@ -28,7 +28,7 @@ LOGGER = brewblox_logger(__name__)
 
 def subroutine(desc: str):
     """
-    This decorator provides error logging for synchronizer routines.
+    This decorator provides error logging for synchronization routines.
     asyncio.CancelledError is passed through as is.
     Other errors are logged and re-raised.
     """
@@ -46,7 +46,7 @@ def subroutine(desc: str):
     return wrapper
 
 
-class Synchronizer(repeater.RepeaterFeature):
+class SparkSynchronization(repeater.RepeaterFeature):
 
     async def before_shutdown(self, app: web.Application):
         await self.end()
@@ -57,7 +57,7 @@ class Synchronizer(repeater.RepeaterFeature):
 
     async def run(self):
         """
-        This feature continuously manages synchronizer between
+        This feature continuously manages synchronization between
         the spark service, the spark controller, and the datastore.
 
         The state machine loops through the following states:
@@ -71,7 +71,7 @@ class Synchronizer(repeater.RepeaterFeature):
         - Synchronize handshake
             - Keep sending a Noop command until 'acknowledged' event is set
             - Check firmware info in handshake for compatibility
-            - Abort synchronizer if firmware/ID is not compatible
+            - Abort synchronization if firmware/ID is not compatible
         - Synchronize block store
             - Read controller-specific data in datastore.
         - Synchronize controller time
@@ -255,8 +255,8 @@ class Synchronizer(repeater.RepeaterFeature):
 
 
 def setup(app: web.Application):
-    features.add(app, Synchronizer(app))
+    features.add(app, SparkSynchronization(app))
 
 
-def fget(app: web.Application) -> Synchronizer:
-    return features.get(app, Synchronizer)
+def fget(app: web.Application) -> SparkSynchronization:
+    return features.get(app, SparkSynchronization)

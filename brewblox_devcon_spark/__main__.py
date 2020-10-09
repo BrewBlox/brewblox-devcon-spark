@@ -10,7 +10,7 @@ from brewblox_service import brewblox_logger, http, mqtt, scheduler, service
 
 from brewblox_devcon_spark import (block_store, broadcaster, commander,
                                    config_store, connection, service_status,
-                                   simulator, spark, synchronizer)
+                                   simulator, spark, synchronization)
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
                                        settings_api, system_api)
 from brewblox_devcon_spark.codec import codec, unit_conversion
@@ -139,7 +139,7 @@ def main():
     system_api.setup(app)
     settings_api.setup(app)
 
-    synchronizer.setup(app)
+    synchronization.setup(app)
 
     service.furnish(app)
     service.run(app)

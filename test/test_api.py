@@ -11,7 +11,7 @@ from mock import ANY, AsyncMock
 
 from brewblox_devcon_spark import (block_store, commander_sim, config_store,
                                    const, exceptions, service_status, spark,
-                                   synchronizer, ymodem)
+                                   synchronization, ymodem)
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
                                        settings_api, system_api)
 from brewblox_devcon_spark.codec import codec, unit_conversion
@@ -58,7 +58,7 @@ async def app(app, loop):
     config_store.setup(app)
     unit_conversion.setup(app)
     codec.setup(app)
-    synchronizer.setup(app)
+    synchronization.setup(app)
     spark.setup(app)
 
     error_response.setup(app)
