@@ -10,6 +10,7 @@ Each child class of Command defines how the syntax for itself looks like.
 import enum
 from abc import ABC
 from binascii import hexlify, unhexlify
+from dataclasses import dataclass, field
 from functools import reduce
 from typing import List
 
@@ -116,6 +117,29 @@ class Errorcode(enum.IntEnum):
 
 OpcodeEnum = Enum(Int8ul, **dict(Opcode.__members__.items()))
 ErrorcodeEnum = Enum(Int8ul, **dict(Errorcode.__members__.items()))
+
+
+@dataclass
+class HandshakeMessage:
+    name: str
+    firmware_version: str
+    proto_version: str
+    firmware_date: str
+    proto_date: str
+    system_version: str
+    platform: str
+    reset_reason_hex: str
+    reset_data_hex: str
+    device_id: str = field(default='')
+    reset_reason: str = field(init=False)
+    reset_data: str = field(init=False)
+
+    def __post_init__(self):
+        self.reset_reason = ResetReason(self.reset_reason_hex.upper()).name
+        try:
+            self.reset_data = ResetData(self.reset_data_hex.upper()).name
+        except Exception:
+            self.reset_data = self.reset_data_hex.upper()
 
 
 class GroupListAdapter(Adapter):

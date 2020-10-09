@@ -6,8 +6,8 @@ import pytest
 from brewblox_service import mqtt
 
 from brewblox_devcon_spark import __main__ as main
-from brewblox_devcon_spark import (broadcaster, commander, datastore, device,
-                                   simulator)
+from brewblox_devcon_spark import (block_store, broadcaster, commander,
+                                   config_store, simulator, spark)
 
 TESTED = main.__name__
 
@@ -26,11 +26,12 @@ def test_main(mocker, app):
     main.main()
 
     assert None not in [
-        commander.get_commander(app),
-        datastore.get_block_store(app),
-        device.get_device(app),
+        commander.fget(app),
+        config_store.fget(app),
+        block_store.fget(app),
+        spark.fget(app),
         mqtt.handler(app),
-        broadcaster.get_broadcaster(app)
+        broadcaster.fget(app)
     ]
 
 
@@ -43,7 +44,7 @@ def test_simulation(simulation, mocker, app):
     main.main()
 
     if simulation:
-        assert simulator.get_simulator(app) is not None
+        assert simulator.fget(app) is not None
     else:
         with pytest.raises(KeyError):
-            simulator.get_simulator(app)
+            simulator.fget(app)
