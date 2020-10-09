@@ -222,16 +222,13 @@ async def test_retry_exhausted(app, client, m_writer, mocker):
     with pytest.raises(ConnectionError):
         await conn.run()
 
-    # count == 2
-    with pytest.raises(ConnectionError):
-        await conn.run()
-
-    # count == 3 (and > CONNECT_RETRY_COUNT)
+    # count == 2 (and >= CONNECT_RETRY_COUNT)
     with pytest.raises(DummyExit):
         await conn.run()
 
 
-async def test_discovery_abort(app, client, m_connect):
+async def test_discovery_abort(app, client, m_connect, mocker):
+    mocker.patch(TESTED + '.CONNECT_RETRY_COUNT', 1)
     service_status.set_autoconnecting(app, True)
     conn = connection.SparkConnection(app)
     await conn.prepare()
@@ -241,5 +238,8 @@ async def test_discovery_abort(app, client, m_connect):
         await conn.run()
 
     m_connect.side_effect = connect_funcs.DiscoveryAbortedError(True)
+    with pytest.raises(connect_funcs.DiscoveryAbortedError):
+        await conn.run()
+
     with pytest.raises(DummyExit):
         await conn.run()

@@ -189,7 +189,7 @@ class SparkController(features.ServiceFeature):
         super().__init__(app)
 
     async def startup(self, app: web.Application):
-        pass
+        self._conn_check_lock = asyncio.Lock()
 
     async def shutdown(self, _):
         pass
@@ -221,13 +221,15 @@ class SparkController(features.ServiceFeature):
         Only do this when the service is synchronized,
         to avoid weird interactions when prompting for a handshake.
         """
-        if await service_status.wait_synchronized(self.app, wait=False):
-            cmder = commander.fget(self.app)
-            try:
-                cmd = commands.NoopCommand.from_args()
-                await cmder.execute(cmd)
-            except Exception:
-                await cmder.start_reconnect()
+        async with self._conn_check_lock:
+            if await service_status.wait_synchronized(self.app, wait=False):
+                LOGGER.info('Checking connection...')
+                cmder = commander.fget(self.app)
+                try:
+                    cmd = commands.NoopCommand.from_args()
+                    await cmder.execute(cmd)
+                except Exception:
+                    await cmder.start_reconnect()
 
     async def _execute(self,
                        command_type: Type[commands.Command],
@@ -271,7 +273,6 @@ class SparkController(features.ServiceFeature):
             raise
 
         except exceptions.CommandTimeout as ex:
-            LOGGER.error(f'Timeout while executing {command_type}. Checking connection...')
             # Wrap in a task to not delay the original response
             asyncio.create_task(self.check_connection())
             raise ex

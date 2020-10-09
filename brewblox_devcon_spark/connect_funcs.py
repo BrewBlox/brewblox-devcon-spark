@@ -73,7 +73,7 @@ async def connect_tcp(host: str, port: int) -> ConnectionResult_:
 
 async def connect_discovered(app: web.Application) -> ConnectionResult_:
     discovery_type = app['config']['discovery']
-    LOGGER.info(f'Starting device discovery, type={discovery_type}')
+    LOGGER.info(f'Discovering devices... ({discovery_type})')
 
     for _ in range(DISCOVERY_RETRY_COUNT):
         if discovery_type in ['all', 'usb']:

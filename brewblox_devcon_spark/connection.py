@@ -107,12 +107,12 @@ class SparkConnection(repeater.RepeaterFeature):
     async def run(self):
         """Implements RepeaterFeature.run"""
         try:
-            if self._retry_count > CONNECT_RETRY_COUNT:
+            if self._retry_count >= CONNECT_RETRY_COUNT:
                 raise ConnectionAbortedError()
-
+            if self._retry_count == 1:
+                LOGGER.info('Retrying connection...')
             if self._retry_count > 0:
                 await asyncio.sleep(self.retry_interval)
-                LOGGER.info('Retrying connection...')
 
             await service_status.wait_autoconnecting(self.app)
             self._address, self._reader, self._writer = await connect_funcs.connect(self.app)
@@ -146,18 +146,16 @@ class SparkConnection(repeater.RepeaterFeature):
         except asyncio.CancelledError:
             raise
 
-        except connect_funcs.DiscoveryAbortedError as ex:
-            LOGGER.error('Device discovery failed.')
-            self.increase_retry_interval()
-            if ex.reboot_required:
-                raise web.GracefulExit()
-            else:
-                raise ex
-
         except ConnectionAbortedError:
             LOGGER.error('Connection aborted. Exiting now.')
             self.increase_retry_interval()
             raise web.GracefulExit()
+
+        except connect_funcs.DiscoveryAbortedError as ex:
+            LOGGER.error('Device discovery failed.')
+            if ex.reboot_required:
+                self._retry_count += 1
+            raise ex
 
         except Exception:
             self._retry_count += 1
