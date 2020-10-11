@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=b'\n\rSysInfo.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xa3\x02\n\x05Trace\x12\"\n\x06\x61\x63tion\x18\x01 \x01(\x0e\x32\x12.blox.Trace.Action\x12\x11\n\x02id\x18\x02 \x01(\rB\x05\x92?\x02\x38\x10\x12\x13\n\x04type\x18\x03 \x01(\rB\x05\x92?\x02\x38\x10\"\xcd\x01\n\x06\x41\x63tion\x12\x08\n\x04NONE\x10\x00\x12\x0e\n\nREAD_BLOCK\x10\x01\x12\x0f\n\x0bWRITE_BLOCK\x10\x02\x12\x11\n\rPERSIST_BLOCK\x10\x03\x12\x10\n\x0cUPDATE_BLOCK\x10\x04\x12\x10\n\x0c\x43REATE_BLOCK\x10\x05\x12\x10\n\x0c\x44\x45LETE_BLOCK\x10\x06\x12\x12\n\x0eUPDATE_DISPLAY\x10\n\x12\x16\n\x12UPDATE_CONNECTIONS\x10\x0b\x12\x11\n\rUPDATE_BLOCKS\x10\x0c\x12\x10\n\x0cSYSTEM_TASKS\x10\r\"\x9e\x04\n\x07SysInfo\x12(\n\x08\x64\x65viceId\x18\x01 \x01(\x0c\x42\x16\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x92?\x02x\x01\x8a\xb5\x18\x02\x38\x01\x12\x1c\n\x07version\x18\x02 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12\x30\n\x08platform\x18\x03 \x01(\x0e\x32\x16.blox.SysInfo.PlatformB\x06\x8a\xb5\x18\x02(\x01\x12$\n\x0fprotocolVersion\x18\x07 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12 \n\x0breleaseDate\x18\x08 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12!\n\x0cprotocolDate\x18\t \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12-\n\x07\x63ommand\x18\n \x01(\x0e\x32\x1c.blox.SysInfo.SysInfoCommand\x12\'\n\x05trace\x18\x0b \x03(\x0b\x32\x0b.blox.TraceB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x10\n\"X\n\x08Platform\x12\x14\n\x10PLATFORM_UNKNOWN\x10\x00\x12\x10\n\x0cPLATFORM_GCC\x10\x03\x12\x13\n\x0fPLATFORM_PHOTON\x10\x06\x12\x0f\n\x0bPLATFORM_P1\x10\x08\"s\n\x0eSysInfoCommand\x12\x10\n\x0cSYS_CMD_NONE\x10\x00\x12\x16\n\x12SYS_CMD_TRACE_READ\x10\x01\x12\x18\n\x14SYS_CMD_TRACE_RESUME\x10\x02\x12\x1d\n\x19SYS_CMD_TRACE_READ_RESUME\x10\x03:\x07\x8a\xb5\x18\x03\x18\x80\x02\x62\x06proto3'
+  serialized_pb=b'\n\rSysInfo.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xea\x05\n\x05Trace\x12\"\n\x06\x61\x63tion\x18\x01 \x01(\x0e\x32\x12.blox.Trace.Action\x12\x11\n\x02id\x18\x02 \x01(\rB\x05\x92?\x02\x38\x10\x12\x13\n\x04type\x18\x03 \x01(\rB\x05\x92?\x02\x38\x10\"\x94\x05\n\x06\x41\x63tion\x12\x08\n\x04NONE\x10\x00\x12\x0f\n\x0bREAD_OBJECT\x10\x01\x12\x10\n\x0cWRITE_OBJECT\x10\x02\x12\x11\n\rCREATE_OBJECT\x10\x03\x12\x11\n\rDELETE_OBJECT\x10\x04\x12\x17\n\x13LIST_ACTIVE_OBJECTS\x10\x05\x12\x16\n\x12READ_STORED_OBJECT\x10\x06\x12\x17\n\x13LIST_STORED_OBJECTS\x10\x07\x12\x11\n\rCLEAR_OBJECTS\x10\x08\x12\n\n\x06REBOOT\x10\t\x12\x11\n\rFACTORY_RESET\x10\n\x12\x1b\n\x17LIST_COMPATIBLE_OBJECTS\x10\x0b\x12\x18\n\x14\x44ISCOVER_NEW_OBJECTS\x10\x0c\x12\x14\n\x10\x43ONSTRUCT_OBJECT\x10\x14\x12\x13\n\x0f\x44\x45STRUCT_OBJECT\x10\x15\x12\x16\n\x12STREAM_FROM_OBJECT\x10\x16\x12\x14\n\x10STREAM_TO_OBJECT\x10\x17\x12\x11\n\rUPDATE_OBJECT\x10\x18\x12\x12\n\x0ePERSIST_OBJECT\x10\x19\x12\x16\n\x12LOAD_STORED_OBJECT\x10\x1a\x12\x12\n\x0eUPDATE_OBJECTS\x10\x1b\x12\x16\n\x12UPDATE_CONNECTIONS\x10\x1c\x12\x12\n\x0eUPDATE_DISPLAY\x10\x65\x12\x10\n\x0cSYSTEM_TASKS\x10\x66\x12\x17\n\x13MANAGE_CONNECTIVITY\x10g\x12\x0e\n\nMDNS_START\x10h\x12\x10\n\x0cMDNS_PROCESS\x10i\x12\x0e\n\nHTTP_START\x10j\x12\r\n\tHTTP_STOP\x10k\x12\x11\n\rHTTP_RESPONSE\x10l\x12\x10\n\x0cWIFI_CONNECT\x10m\x12\x1b\n\x17\x46IRMWARE_UPDATE_STARTED\x10n\"\x9e\x04\n\x07SysInfo\x12(\n\x08\x64\x65viceId\x18\x01 \x01(\x0c\x42\x16\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x92?\x02x\x01\x8a\xb5\x18\x02\x38\x01\x12\x1c\n\x07version\x18\x02 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12\x30\n\x08platform\x18\x03 \x01(\x0e\x32\x16.blox.SysInfo.PlatformB\x06\x8a\xb5\x18\x02(\x01\x12$\n\x0fprotocolVersion\x18\x07 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12 \n\x0breleaseDate\x18\x08 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12!\n\x0cprotocolDate\x18\t \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12-\n\x07\x63ommand\x18\n \x01(\x0e\x32\x1c.blox.SysInfo.SysInfoCommand\x12\'\n\x05trace\x18\x0b \x03(\x0b\x32\x0b.blox.TraceB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x10\n\"X\n\x08Platform\x12\x14\n\x10PLATFORM_UNKNOWN\x10\x00\x12\x10\n\x0cPLATFORM_GCC\x10\x03\x12\x13\n\x0fPLATFORM_PHOTON\x10\x06\x12\x0f\n\x0bPLATFORM_P1\x10\x08\"s\n\x0eSysInfoCommand\x12\x10\n\x0cSYS_CMD_NONE\x10\x00\x12\x16\n\x12SYS_CMD_TRACE_READ\x10\x01\x12\x18\n\x14SYS_CMD_TRACE_RESUME\x10\x02\x12\x1d\n\x19SYS_CMD_TRACE_READ_RESUME\x10\x03:\x07\x8a\xb5\x18\x03\x18\x80\x02\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -37,50 +37,134 @@ _TRACE_ACTION = _descriptor.EnumDescriptor(
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='READ_BLOCK', index=1, number=1,
+      name='READ_OBJECT', index=1, number=1,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='WRITE_BLOCK', index=2, number=2,
+      name='WRITE_OBJECT', index=2, number=2,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='PERSIST_BLOCK', index=3, number=3,
+      name='CREATE_OBJECT', index=3, number=3,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='UPDATE_BLOCK', index=4, number=4,
+      name='DELETE_OBJECT', index=4, number=4,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='CREATE_BLOCK', index=5, number=5,
+      name='LIST_ACTIVE_OBJECTS', index=5, number=5,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='DELETE_BLOCK', index=6, number=6,
+      name='READ_STORED_OBJECT', index=6, number=6,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='UPDATE_DISPLAY', index=7, number=10,
+      name='LIST_STORED_OBJECTS', index=7, number=7,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='UPDATE_CONNECTIONS', index=8, number=11,
+      name='CLEAR_OBJECTS', index=8, number=8,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='UPDATE_BLOCKS', index=9, number=12,
+      name='REBOOT', index=9, number=9,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='SYSTEM_TASKS', index=10, number=13,
+      name='FACTORY_RESET', index=10, number=10,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='LIST_COMPATIBLE_OBJECTS', index=11, number=11,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='DISCOVER_NEW_OBJECTS', index=12, number=12,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='CONSTRUCT_OBJECT', index=13, number=20,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='DESTRUCT_OBJECT', index=14, number=21,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='STREAM_FROM_OBJECT', index=15, number=22,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='STREAM_TO_OBJECT', index=16, number=23,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='UPDATE_OBJECT', index=17, number=24,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='PERSIST_OBJECT', index=18, number=25,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='LOAD_STORED_OBJECT', index=19, number=26,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='UPDATE_OBJECTS', index=20, number=27,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='UPDATE_CONNECTIONS', index=21, number=28,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='UPDATE_DISPLAY', index=22, number=101,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='SYSTEM_TASKS', index=23, number=102,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='MANAGE_CONNECTIVITY', index=24, number=103,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='MDNS_START', index=25, number=104,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='MDNS_PROCESS', index=26, number=105,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='HTTP_START', index=27, number=106,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='HTTP_STOP', index=28, number=107,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='HTTP_RESPONSE', index=29, number=108,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='WIFI_CONNECT', index=30, number=109,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='FIRMWARE_UPDATE_STARTED', index=31, number=110,
       serialized_options=None,
       type=None),
   ],
   containing_type=None,
   serialized_options=None,
   serialized_start=140,
-  serialized_end=345,
+  serialized_end=800,
 )
 _sym_db.RegisterEnumDescriptor(_TRACE_ACTION)
 
@@ -109,8 +193,8 @@ _SYSINFO_PLATFORM = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=676,
-  serialized_end=764,
+  serialized_start=1131,
+  serialized_end=1219,
 )
 _sym_db.RegisterEnumDescriptor(_SYSINFO_PLATFORM)
 
@@ -139,8 +223,8 @@ _SYSINFO_SYSINFOCOMMAND = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=766,
-  serialized_end=881,
+  serialized_start=1221,
+  serialized_end=1336,
 )
 _sym_db.RegisterEnumDescriptor(_SYSINFO_SYSINFOCOMMAND)
 
@@ -187,7 +271,7 @@ _TRACE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=54,
-  serialized_end=345,
+  serialized_end=800,
 )
 
 
@@ -268,8 +352,8 @@ _SYSINFO = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=348,
-  serialized_end=890,
+  serialized_start=803,
+  serialized_end=1345,
 )
 
 _TRACE.fields_by_name['action'].enum_type = _TRACE_ACTION
