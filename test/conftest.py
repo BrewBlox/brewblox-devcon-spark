@@ -54,11 +54,7 @@ def app_config() -> dict:
         'simulation': False,
         'command_timeout': 10,
         'broadcast_interval': 5,
-        'broadcast_timeout': 60,
-        'broadcast_valid': 60,
-        'read_timeout': 10,
-        'history_topic': 'brewcast/history',
-        'state_topic': 'brewcast/state',
+        'broadcast_ttl': 60,
         'volatile': True,
     }
 
@@ -76,11 +72,7 @@ def sys_args(app_config) -> list:
         '--discovery', app_config['discovery'],
         '--command-timeout', app_config['command_timeout'],
         '--broadcast-interval', app_config['broadcast_interval'],
-        '--broadcast-timeout', app_config['broadcast_timeout'],
-        '--broadcast-valid', app_config['broadcast_valid'],
-        '--read-timeout', app_config['read_timeout'],
-        '--history-topic', app_config['history_topic'],
-        '--state-topic', app_config['state_topic'],
+        '--broadcast-ttl', app_config['broadcast_ttl'],
         '--volatile',
     ]]
 

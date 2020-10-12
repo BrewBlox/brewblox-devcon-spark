@@ -23,7 +23,7 @@ class Broadcaster(repeater.RepeaterFeature):
         self.name = config['name']
         self.interval = config['broadcast_interval']
         self.volatile = self.interval <= 0 or config['volatile']
-        self.validity = str(config['broadcast_valid']) + 's'
+        self.ttl = str(config['broadcast_ttl']) + 's'
         self.state_topic = config['state_topic'] + f'/{self.name}'
         self.history_topic = config['history_topic'] + f'/{self.name}'
 
@@ -91,7 +91,7 @@ class Broadcaster(repeater.RepeaterFeature):
                                    message={
                                        'key': self.name,
                                        'type': 'Spark.state',
-                                       'ttl': self.validity,
+                                       'ttl': self.ttl,
                                        'data': {
                                            'status': status_data,
                                            'blocks': blocks_data,
