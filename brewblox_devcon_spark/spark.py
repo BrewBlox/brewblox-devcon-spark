@@ -244,6 +244,9 @@ class SparkController(features.ServiceFeature):
         cmder = commander.fget(self.app)
         resolver = SparkResolver(self.app)
 
+        if await service_status.wait_updating(self.app, wait=False):
+            raise exceptions.UpdateInProgress('Update is in progress')
+
         try:
             # pre-processing
             for afunc in [
