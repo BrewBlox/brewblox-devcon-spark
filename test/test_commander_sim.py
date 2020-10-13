@@ -127,12 +127,6 @@ async def test_non_responsive(app, client, sim):
             await sim.execute(cmd.from_args())
 
 
-async def test_updating(app, client, sim):
-    await sim.start_update(0)
-    with pytest.raises(exceptions.UpdateInProgress):
-        await sim.execute(commands.ListObjectsCommand.from_args())
-
-
 async def test_inactive(app, client, object_args, sim):
     cdc = codec.fget(app)
     create_cmd = commands.CreateObjectCommand

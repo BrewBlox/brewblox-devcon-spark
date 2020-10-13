@@ -24,17 +24,12 @@ class SparkCommander(features.ServiceFeature):
     def __init__(self, app: web.Application):
         super().__init__(app)
 
-        self._updating = False
         self._timeout = app['config']['command_timeout']
         self._requests: Dict[str, asyncio.Future] = {}
         self._conn: connection.SparkConnection = None
 
     def __str__(self):
         return f'<{type(self).__name__} for {self._conn} at {hex(id(self))}>'
-
-    @property
-    def updating(self) -> bool:
-        return self._updating
 
     async def startup(self, app: web.Application):
         self._requests.clear()
@@ -70,9 +65,6 @@ class SparkCommander(features.ServiceFeature):
         del self._requests[request]
 
     async def execute(self, command: commands.Command) -> dict:
-        if self.updating and not isinstance(command, commands.FirmwareUpdateCommand):
-            raise exceptions.UpdateInProgress('Update is in progress')
-
         encoded_request = command.encoded_request.upper()
         resp_future = self.add_request(encoded_request)
 
@@ -99,13 +91,6 @@ class SparkCommander(features.ServiceFeature):
             self.remove_request(encoded_request)
 
         return decoded
-
-    async def start_update(self, flush_period: float):
-        self._updating = True
-        await asyncio.sleep(max(flush_period, 0.01))
-        await self.execute(commands.FirmwareUpdateCommand.from_args())
-        LOGGER.info('Shutting down normal communication')
-        await self.shutdown(self.app)
 
     async def start_reconnect(self):
         if self._conn:

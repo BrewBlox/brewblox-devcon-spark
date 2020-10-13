@@ -306,18 +306,11 @@ class SimulationCommander(commander.SparkCommander):
         service_status.set_connected(app, 'simulation:1234')
         service_status.set_acknowledged(app, make_device(app))
 
-    async def shutdown(self, _):
-        pass
+    async def shutdown(self, app: web.Application):
+        service_status.set_disconnected(app)
 
     async def execute(self, command: commands.Command) -> dict:
-        if self.updating and not isinstance(command, commands.FirmwareUpdateCommand):
-            raise exceptions.UpdateInProgress('Update is in progress')
-
         return (await self._responder.respond(command)).decoded_response
-
-    async def start_update(self, flush_period):
-        await super().start_update(0)
-        service_status.set_disconnected(self.app)
 
 
 def setup(app: web.Application):

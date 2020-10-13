@@ -456,6 +456,7 @@ async def test_system_status(app, client):
         'is_connected': True,
         'is_acknowledged': True,
         'is_synchronized': True,
+        'is_updating': False,
     }
 
     service_status.set_disconnected(app)
@@ -470,6 +471,7 @@ async def test_system_flash(app, client, mocker):
     sys_api = system_api.__name__
 
     mocker.patch(sys_api + '.CONNECT_INTERVAL_S', 0.001)
+    mocker.patch(sys_api + '.FLUSH_PERIOD_S', 0.001)
     mocker.patch(sys_api + '.shutdown_soon', AsyncMock())
     mocker.patch(sys_api + '.mqtt.publish', AsyncMock())
 
