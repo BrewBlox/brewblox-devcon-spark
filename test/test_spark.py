@@ -199,3 +199,10 @@ async def test_check_connection(app, client, mocker):
     await s.check_connection()
     assert m_cmder.execute.await_count == 2
     assert m_cmder.start_reconnect.await_count == 1
+
+
+async def test_start_update(app, client):
+    service_status.fget(app).set_updating()
+
+    with pytest.raises(exceptions.UpdateInProgress):
+        await spark.fget(app).list_objects()

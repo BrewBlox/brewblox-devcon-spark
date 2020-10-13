@@ -128,9 +128,9 @@ class SparkConnection(repeater.RepeaterFeature):
                 # connected status must be checked explicitly later
                 recv = await self._reader.read(100)
 
-                # Is connection closed?
+                # read() returns empty if EOF received
                 if not recv:  # pragma: no cover
-                    continue
+                    raise ConnectionError('EOF received')
 
                 # Send to parser
                 self._parser.push(recv.decode())

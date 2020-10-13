@@ -124,15 +124,6 @@ async def test_timeout_command(sparky, mocker):
         await sparky.execute(commands.ListStoredObjectsCommand.from_args())
 
 
-async def test_start_update(mocker, m_conn, sparky, app, reset_msgid):
-    sparky.__preloaded.append('01 00 64 AF |00 00 00')
-    await sparky.start_update(0.001)
-    m_conn.shutdown.assert_awaited()
-
-    with pytest.raises(exceptions.UpdateInProgress):
-        await sparky.execute(commands.ListStoredObjectsCommand.from_args())
-
-
 async def test_start_reconnect(app, sparky, m_conn):
     await sparky.start_reconnect()
     m_conn.start_reconnect.assert_awaited_once()
