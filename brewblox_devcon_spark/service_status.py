@@ -63,6 +63,7 @@ class StatusDescription:
     is_connected: bool
     is_acknowledged: bool
     is_synchronized: bool
+    is_updating: bool
 
 
 class ServiceStatus(features.ServiceFeature):
@@ -91,6 +92,7 @@ class ServiceStatus(features.ServiceFeature):
         self.acknowledged_ev: asyncio.Event = None
         self.synchronized_ev: asyncio.Event = None
         self.disconnected_ev: asyncio.Event = None
+        self.updating_ev: asyncio.Event = None
 
     async def startup(self, _):
         self.autoconnecting_ev = asyncio.Event()
@@ -98,6 +100,7 @@ class ServiceStatus(features.ServiceFeature):
         self.acknowledged_ev = asyncio.Event()
         self.synchronized_ev = asyncio.Event()
         self.disconnected_ev = asyncio.Event()
+        self.updating_ev = asyncio.Event()
 
     async def shutdown(self, _):
         self.autoconnecting_ev.clear()
@@ -105,6 +108,7 @@ class ServiceStatus(features.ServiceFeature):
         self.acknowledged_ev.clear()
         self.synchronized_ev.clear()
         self.disconnected_ev.clear()
+        self.updating_ev.clear()
 
     def desc(self) -> StatusDescription:
         return StatusDescription(
@@ -117,6 +121,7 @@ class ServiceStatus(features.ServiceFeature):
             is_connected=self.connected_ev.is_set(),
             is_acknowledged=self.acknowledged_ev.is_set(),
             is_synchronized=self.synchronized_ev.is_set(),
+            is_updating=self.updating_ev.is_set(),
         )
 
     def _set_address(self, address: str):
@@ -189,6 +194,9 @@ class ServiceStatus(features.ServiceFeature):
         self.synchronized_ev.clear()
         self.disconnected_ev.set()
 
+    def set_updating(self):
+        self.updating_ev.set()
+
     async def _wait_ev(self, ev_name: str, wait: bool = True) -> bool:
         ev: asyncio.Event = getattr(self, ev_name)
         if not wait:
@@ -200,6 +208,7 @@ class ServiceStatus(features.ServiceFeature):
     wait_acknowledged = partialmethod(_wait_ev, 'acknowledged_ev')
     wait_synchronized = partialmethod(_wait_ev, 'synchronized_ev')
     wait_disconnected = partialmethod(_wait_ev, 'disconnected_ev')
+    wait_updating = partialmethod(_wait_ev, 'updating_ev')
 
 
 def setup(app: web.Application):
@@ -232,6 +241,10 @@ def set_disconnected(app: web.Application):
     fget(app).set_disconnected()
 
 
+def set_updating(app: web.Application):
+    fget(app).set_updating()
+
+
 async def wait_autoconnecting(app: web.Application, wait: bool = True) -> Awaitable[bool]:
     return await fget(app).wait_autoconnecting(wait)
 
@@ -250,6 +263,10 @@ async def wait_synchronized(app: web.Application, wait: bool = True) -> Awaitabl
 
 async def wait_disconnected(app: web.Application, wait: bool = True) -> Awaitable[bool]:
     return await fget(app).wait_disconnected(wait)
+
+
+async def wait_updating(app: web.Application, wait: bool = True) -> Awaitable[bool]:
+    return await fget(app).wait_updating(wait)
 
 
 def desc(app: web.Application) -> StatusDescription:

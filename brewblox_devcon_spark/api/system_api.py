@@ -8,8 +8,8 @@ from aiohttp import web
 from aiohttp_apispec import docs, response_schema
 from brewblox_service import brewblox_logger, mqtt, scheduler, strex
 
-from brewblox_devcon_spark import (commander, exceptions, service_status,
-                                   spark, ymodem)
+from brewblox_devcon_spark import (commander, commands, exceptions,
+                                   service_status, spark, ymodem)
 from brewblox_devcon_spark.api import schemas
 
 TRANSFER_TIMEOUT_S = 30
@@ -84,7 +84,12 @@ class FirmwareUpdater():
                 raise NotImplementedError('Firmware updates not available for simulation controllers')
 
             self._notify('Sending update command to controller')
-            await cmder.start_update(FLUSH_PERIOD_S)
+            service_status.set_updating(self.app)
+            await asyncio.sleep(FLUSH_PERIOD_S)  # Wait for in-progress commands to finish
+            await cmder.execute(commands.FirmwareUpdateCommand.from_args())
+
+            self._notify('Shutting down normal communication')
+            await cmder.shutdown(self.app)
 
             self._notify('Waiting for normal connection to close')
             await asyncio.wait_for(
