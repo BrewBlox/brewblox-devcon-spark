@@ -10,7 +10,7 @@ This includes USB/TCP communication with the controller, but also encoding, deco
 
 ## Features
 
-### SparkConduit ([communication.py](./brewblox_devcon_spark/communication.py))
+### SparkConnection ([connection.py](./brewblox_devcon_spark/connection.py))
 
 Direct communication with the Spark is handled here, for both USB and TCP connections. Data is not decoded or interpreted, but passed on to the `SparkCommander`.
 
@@ -31,7 +31,7 @@ Serial communication is asynchronous: requests and responses are not linked at t
 For when using an actual Spark is inconvenient, there is a simulation version. It serves as a drop-in replacement for the real commander: it handles commands, and returns sensible values.
 Commands are encoded/decoded, to closely match the real situation.
 
-### Datastore ([datastore.py](./brewblox_devcon_spark/datastore.py))
+### Datastore ([block_store.py](./brewblox_devcon_spark/block_store.py) / [config_store.py](./brewblox_devcon_spark/config_store.py))
 
 The service must keep track of object metadata not directly persisted by the controller. This includes user-defined object names and descriptions.
 
@@ -47,9 +47,9 @@ The codec is responsible for converting JSON-serializable dicts to byte arrays, 
 
 For this reason, the object payload in Controlbox consists of two parts: a numerical `object_type` ID, and the `object_data` bytes.
 
-### SparkDevice ([device.py](./brewblox_devcon_spark/device.py))
+### SparkController ([spark.py](./brewblox_devcon_spark/spark.py))
 
-`SparkDevice` combines the functionality of `commands`, `commander`, `datastore`, and `codec` to allow interaction with the Spark using Pythonic functions.
+`SparkController` combines the functionality of `commands`, `commander`, `block_store`, and `codec` to allow interaction with the Spark using Pythonic functions.
 
 Any command is modified both incoming and outgoing: ID's are converted using the datastore, data is sent to codec, and everything is wrapped in the correct command before it is sent to `SparkCommander`.
 
@@ -62,10 +62,10 @@ To reduce the impact of this bottleneck, and to persist historic data, `Broadcas
 Here, the data will likely be picked up by the [History Service](https://github.com/BrewBlox/brewblox-history).
 
 
-### Synchronization ([synchronization.py](./brewblox_devcon_spark/synchronization.py))
+### SparkSynchronization ([synchronization.py](./brewblox_devcon_spark/synchronization.py))
 
 Some actions are required when connecting to a (new) Spark controller.
-The Synchronizer feature waits for a connection to be made, and then performs these one-time tasks.
+The SparkSynchronization feature waits for a connection to be made, and then performs these one-time tasks.
 
 Examples are:
 * Setting Spark system clock

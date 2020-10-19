@@ -24,7 +24,7 @@ async def managed_dir():
 
 
 async def test_sim(app, client, managed_dir):
-    assert simulator.get_simulator(app).sim.proc.poll() is None
+    assert simulator.fget(app).sim.proc.poll() is None
     assert service_status.desc(app).connection_kind is None
     service_status.set_connected(app, 'localhost:8332')
     assert service_status.desc(app).connection_kind == 'simulation'

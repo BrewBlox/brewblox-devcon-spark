@@ -9,9 +9,9 @@ from brewblox_service import scheduler
 from brewblox_service.testing import response
 from mock import ANY, AsyncMock
 
-from brewblox_devcon_spark import (commander_sim, const, datastore, device,
-                                   exceptions, service_status, synchronization,
-                                   ymodem)
+from brewblox_devcon_spark import (block_store, commander_sim, config_store,
+                                   const, exceptions, service_status, spark,
+                                   synchronization, ymodem)
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
                                        settings_api, system_api)
 from brewblox_devcon_spark.codec import codec, unit_conversion
@@ -54,11 +54,12 @@ async def app(app, loop):
     service_status.setup(app)
     scheduler.setup(app)
     commander_sim.setup(app)
-    datastore.setup(app)
+    block_store.setup(app)
+    config_store.setup(app)
     unit_conversion.setup(app)
     codec.setup(app)
     synchronization.setup(app)
-    device.setup(app)
+    spark.setup(app)
 
     error_response.setup(app)
     debug_api.setup(app)
@@ -215,7 +216,7 @@ async def test_delete_all(app, client, block_args):
 
 
 async def test_cleanup(app, client, block_args):
-    store = datastore.get_block_store(app)
+    store = block_store.fget(app)
     await response(client.post('/blocks/create', json=block_args), 201)
     store['unused', 456] = {}
     retv = await response(client.post('/blocks/cleanup'))
@@ -455,6 +456,7 @@ async def test_system_status(app, client):
         'is_connected': True,
         'is_acknowledged': True,
         'is_synchronized': True,
+        'is_updating': False,
     }
 
     service_status.set_disconnected(app)
@@ -469,6 +471,7 @@ async def test_system_flash(app, client, mocker):
     sys_api = system_api.__name__
 
     mocker.patch(sys_api + '.CONNECT_INTERVAL_S', 0.001)
+    mocker.patch(sys_api + '.FLUSH_PERIOD_S', 0.001)
     mocker.patch(sys_api + '.shutdown_soon', AsyncMock())
     mocker.patch(sys_api + '.mqtt.publish', AsyncMock())
 

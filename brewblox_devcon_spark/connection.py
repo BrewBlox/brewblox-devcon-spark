@@ -1,137 +1,198 @@
 """
-Creating a new connection to the Spark controller
+Implements async serial connection.
 """
 
 import asyncio
-from collections import namedtuple
-from contextlib import suppress
-from typing import Any, Iterable, Iterator, Tuple
+from typing import Callable, Set
 
 from aiohttp import web
-from brewblox_service import brewblox_logger
-from serial.tools import list_ports
-from serial_asyncio import open_serial_connection
+from brewblox_service import brewblox_logger, features, repeater
 
-from brewblox_devcon_spark import exceptions, mdns
+from brewblox_devcon_spark import (cbox_parser, commands, config_store,
+                                   connect_funcs, const, exceptions,
+                                   service_status)
 
-PortType_ = Any
-ConnectionResult_ = Tuple[Any, asyncio.StreamReader, asyncio.StreamWriter]
-
-DeviceMatch = namedtuple('DeviceMatch', ['id', 'desc', 'hwid'])
+MessageCallback_ = Callable[[str], None]
 
 LOGGER = brewblox_logger(__name__)
 
-DEFAULT_BAUD_RATE = 115200
-DISCOVER_INTERVAL_S = 10
-DISCOVERY_RETRY_COUNT = 5
-DNS_DISCOVER_TIMEOUT_S = 20
-BREWBLOX_DNS_TYPE = '_brewblox._tcp.local.'
-
-KNOWN_DEVICES = {
-    DeviceMatch(
-        id='Particle Photon',
-        desc=r'.*Photon.*',
-        hwid=r'USB VID\:PID=2B04\:C006.*'),
-    DeviceMatch(
-        id='Particle P1',
-        desc=r'.*P1.*',
-        hwid=r'USB VID\:PID=2B04\:C008.*'),
-}
+BASE_RETRY_INTERVAL_S = 2
+MAX_RETRY_INTERVAL_S = 30
+CONNECT_RETRY_COUNT = 20
 
 
-async def connect(app: web.Application) -> ConnectionResult_:
-    config = app['config']
+class SparkConnection(repeater.RepeaterFeature):
 
-    device_serial = config['device_serial']
-    device_host = config['device_host']
-    device_port = config['device_port']
+    def __init__(self, app: web.Application):
+        super().__init__(app)
 
-    if device_serial:
-        return await connect_serial(device_serial)
-    elif device_host:
-        return await connect_tcp(device_host, device_port)
-    else:
-        return await connect_discovered(app)
+        self._retry_count: int = 0
+        self._retry_interval: float = 0
+
+        self._address: str = None
+        self._reader: asyncio.StreamReader = None
+        self._writer: asyncio.StreamWriter = None
+        self._parser: cbox_parser.ControlboxParser = None
+
+        self._data_callbacks = set()
+
+    def __str__(self):
+        return f'<{type(self).__name__} for {self._address}>'
+
+    @property
+    def connected(self) -> bool:
+        return bool(self._writer and not self._writer.is_closing())
+
+    @property
+    def data_callbacks(self) -> Set[MessageCallback_]:
+        return self._data_callbacks
+
+    @property
+    def retry_interval(self) -> float:
+        if not self._retry_interval:
+            with config_store.fget(self.app).open() as config:
+                self._retry_interval = config.get('retry_interval', BASE_RETRY_INTERVAL_S)
+        return self._retry_interval
+
+    @retry_interval.setter
+    def retry_interval(self, value: float):
+        with config_store.fget(self.app).open() as config:
+            config['retry_interval'] = value
+        self._retry_interval = value
+
+    def reset_retry_interval(self):
+        self.retry_interval = BASE_RETRY_INTERVAL_S
+
+    def increase_retry_interval(self):
+        self.retry_interval = min(MAX_RETRY_INTERVAL_S, round(1.5 * self.retry_interval))
+
+    def _on_event(self, msg: str):
+        if msg.startswith(const.WELCOME_PREFIX):
+            welcome = commands.HandshakeMessage(*msg.split(','))
+            LOGGER.info(welcome)
+
+            device = service_status.DeviceInfo(
+                welcome.firmware_version,
+                welcome.proto_version,
+                welcome.firmware_date,
+                welcome.proto_date,
+                welcome.device_id,
+                welcome.system_version,
+                welcome.platform,
+                welcome.reset_reason,
+            )
+            service_status.set_acknowledged(self.app, device)
+
+        elif msg.startswith(const.CBOX_ERR_PREFIX):
+            try:
+                LOGGER.error('Spark CBOX error: ' + commands.Errorcode(int(msg[-2:], 16)).name)
+            except ValueError:
+                LOGGER.error('Unknown Spark CBOX error: ' + msg)
+
+        elif msg.startswith(const.SETUP_MODE_PREFIX):
+            LOGGER.error('Controller entered listening mode. Exiting service now.')
+            raise web.GracefulExit()
+
+        else:
+            LOGGER.info(f'Spark event: `{msg}`')
+
+    def _on_data(self, msg: str):
+        for cb in self._data_callbacks:
+            cb(msg)
+
+    async def prepare(self):
+        """Implements RepeaterFeature.prepare"""
+        pass
+
+    async def run(self):
+        """Implements RepeaterFeature.run"""
+        try:
+            if self._retry_count >= CONNECT_RETRY_COUNT:
+                raise ConnectionAbortedError()
+            if self._retry_count == 1:
+                LOGGER.info('Retrying connection...')
+            if self._retry_count > 0:
+                await asyncio.sleep(self.retry_interval)
+
+            await service_status.wait_autoconnecting(self.app)
+            self._address, self._reader, self._writer = await connect_funcs.connect(self.app)
+            self._parser = cbox_parser.ControlboxParser()
+
+            service_status.set_connected(self.app, self._address)
+            self._retry_count = 0
+            self.reset_retry_interval()
+            LOGGER.info(f'Connected {self}')
+
+            while self.connected:
+                # read() does not raise an exception when connection is closed
+                # connected status must be checked explicitly later
+                recv = await self._reader.read(100)
+
+                # read() returns empty if EOF received
+                if not recv:  # pragma: no cover
+                    raise ConnectionError('EOF received')
+
+                # Send to parser
+                self._parser.push(recv.decode())
+
+                # Drain parsed messages
+                for msg in self._parser.event_messages():
+                    self._on_event(msg)
+                for msg in self._parser.data_messages():
+                    self._on_data(msg)
+
+            raise ConnectionError('Connection closed')
+
+        except asyncio.CancelledError:
+            raise
+
+        except ConnectionAbortedError:
+            LOGGER.error('Connection aborted. Exiting now.')
+            self.increase_retry_interval()
+            raise web.GracefulExit()
+
+        except connect_funcs.DiscoveryAbortedError as ex:
+            LOGGER.error('Device discovery failed.')
+            if ex.reboot_required:
+                self._retry_count += 1
+            raise ex
+
+        except Exception:
+            self._retry_count += 1
+            raise
+
+        finally:
+            try:
+                self._writer.close()
+                LOGGER.info(f'Closed {self}')
+            except Exception:
+                pass
+            finally:
+                service_status.set_disconnected(self.app)
+                self._reader = None
+                self._writer = None
+                self._parser = None
+
+    async def write(self, data: str):
+        return await self.write_encoded(data.encode())
+
+    async def write_encoded(self, data: bytes):
+        if not self.connected:
+            raise exceptions.NotConnected(f'{self} not connected')
+
+        LOGGER.debug(f'{self} writing: {data}')
+        self._writer.write(data + b'\n')
+        await self._writer.drain()
+
+    async def start_reconnect(self):
+        # The run() function will handle cleanup, and then reconnect
+        if self.connected:
+            self._writer.close()
 
 
-async def connect_serial(address: str) -> ConnectionResult_:
-    reader, writer = await open_serial_connection(url=address, baudrate=DEFAULT_BAUD_RATE)
-    writer.transport.serial.rts = False
-    writer.transport.set_write_buffer_limits(high=255)  # receiver RX buffer is 256, so limit send buffer to 255
-    return address, reader, writer
+def setup(app: web.Application):
+    features.add(app, SparkConnection(app))
 
 
-async def connect_tcp(host: str, port: int) -> ConnectionResult_:
-    reader, writer = await asyncio.open_connection(host, port)
-    return f'{host}:{port}', reader, writer
-
-
-async def connect_discovered(app: web.Application) -> ConnectionResult_:
-    discovery_type = app['config']['discovery']
-    LOGGER.info(f'Starting device discovery, type={discovery_type}')
-
-    for i in range(DISCOVERY_RETRY_COUNT):
-        if discovery_type in ['all', 'usb']:
-            result = await discover_serial(app)
-            if result:
-                LOGGER.info(f'discovered usb {result[0]}')
-                return result
-
-        if discovery_type in ['all', 'wifi']:
-            result = await discover_tcp(app)
-            if result:
-                LOGGER.info(f'discovered wifi {result[0]}')
-                return result
-
-        await asyncio.sleep(DISCOVER_INTERVAL_S)
-
-    LOGGER.error('Device discovery failed. Exiting now.')
-    raise web.GracefulExit()
-
-
-async def discover_serial(app: web.Application) -> ConnectionResult_:
-    id = app['config']['device_id']
-    try:
-        address = detect_device(id)
-        return await connect_serial(address)
-    except exceptions.ConnectionImpossible:
-        return None
-
-
-async def discover_tcp(app: web.Application) -> ConnectionResult_:
-    config = app['config']
-    id = config['device_id']
-    with suppress(TimeoutError):
-        resp = await mdns.discover_one(id,
-                                       BREWBLOX_DNS_TYPE,
-                                       DNS_DISCOVER_TIMEOUT_S)
-        return await connect_tcp(resp[0], resp[1])
-    return None
-
-
-def all_ports() -> Iterable[PortType_]:
-    return tuple(list_ports.comports())
-
-
-def recognized_ports(
-    allowed: Iterable[DeviceMatch] = KNOWN_DEVICES,
-    serial_number: str = None
-) -> Iterator[PortType_]:
-
-    # Construct a regex OR'ing all allowed hardware ID matches
-    # Example result: (?:HWID_REGEX_ONE|HWID_REGEX_TWO)
-    matcher = f'(?:{"|".join([dev.hwid for dev in allowed])})'
-
-    for port in list_ports.grep(matcher):
-        if serial_number is None or serial_number.lower() == port.serial_number.lower():
-            yield port
-
-
-def detect_device(device_id: str = None) -> str:
-    try:
-        port = next(recognized_ports(serial_number=device_id))
-        LOGGER.info(f'Automatically detected {[v for v in port]}')
-        return port.device
-    except StopIteration:
-        raise exceptions.ConnectionImpossible(
-            f'Could not find recognized device. Known={[{v for v in p} for p in all_ports()]}')
+def fget(app: web.Application) -> SparkConnection:
+    return features.get(app, SparkConnection)

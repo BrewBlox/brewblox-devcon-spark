@@ -12,8 +12,9 @@ from typing import Awaitable, Callable, List, Type, Union
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, strex
 
-from brewblox_devcon_spark import (codec, commander, commands, const,
-                                   datastore, exceptions, twinkeydict)
+from brewblox_devcon_spark import (block_store, codec, commander, commands,
+                                   const, exceptions, service_status,
+                                   twinkeydict)
 from brewblox_devcon_spark.codec import (CodecOpts, FilterOpt, MetadataOpt,
                                          ProtoEnumOpt)
 
@@ -28,8 +29,8 @@ class SparkResolver():
     def __init__(self, app: web.Application):
         self._app = app
         self._name = app['config']['name']
-        self._datastore = datastore.get_block_store(app)
-        self._codec = codec.get_codec(app)
+        self._store = block_store.fget(app)
+        self._codec = codec.fget(app)
 
     @staticmethod
     def _get_content_objects(content: dict) -> List[dict]:
@@ -44,7 +45,7 @@ class SparkResolver():
         clean_name = re.sub(r',driven', '', input_type)
         for i in itertools.count(start=1):  # pragma: no cover
             name = f'{const.GENERATED_ID_PREFIX}{clean_name}-{i}'
-            if (name, None) not in self._datastore:
+            if (name, None) not in self._store:
                 return name
 
     async def _process_data(self,
@@ -109,8 +110,6 @@ class SparkResolver():
                              finder_func: FindIdFunc_,
                              content: dict
                              ) -> dict:
-        store = self._datastore
-
         async def traverse(data):
             """Recursively finds and resolves links"""
             iter = enumerate(data) \
@@ -120,14 +119,14 @@ class SparkResolver():
             for k, v in iter:
                 if isinstance(v, dict):
                     if v.get('__bloxtype', None) == 'Link':
-                        v['id'] = finder_func(store, v['id'], v.get('type'))
+                        v['id'] = finder_func(self._store, v['id'], v.get('type'))
                     else:
                         await traverse(v)
                 elif isinstance(v, (list, tuple)):
                     await traverse(v)
                 elif str(k).endswith(const.OBJECT_LINK_POSTFIX_END):
                     link_type = k[k.rfind(const.OBJECT_LINK_POSTFIX_START)+1:-1]
-                    data[k] = finder_func(store, v, link_type)
+                    data[k] = finder_func(self._store, v, link_type)
 
         for obj in self._get_content_objects(content):
             with suppress(KeyError):
@@ -150,7 +149,7 @@ class SparkResolver():
                 continue
 
             obj['nid'] = self._find_nid(
-                self._datastore,
+                self._store,
                 sid,
                 obj.get('type') or obj.get('interface'))
 
@@ -165,7 +164,7 @@ class SparkResolver():
                 continue
 
             obj['id'] = self._find_sid(
-                self._datastore,
+                self._store,
                 nid,
                 obj.get('type') or obj.get('interface'))
 
@@ -184,14 +183,13 @@ class SparkResolver():
         return content
 
 
-class SparkDevice(features.ServiceFeature):
+class SparkController(features.ServiceFeature):
 
     def __init__(self, app: web.Application):
         super().__init__(app)
-        self._commander: commander.SparkCommander = None
 
     async def startup(self, app: web.Application):
-        self._commander = commander.get_commander(app)
+        self._conn_check_lock = asyncio.Lock()
 
     async def shutdown(self, _):
         pass
@@ -215,6 +213,24 @@ class SparkDevice(features.ServiceFeature):
 
         return content
 
+    async def check_connection(self):
+        """
+        Sends a Noop command to controller to evaluate the connection.
+        If this command also fails, prompt the commander to reconnect.
+
+        Only do this when the service is synchronized,
+        to avoid weird interactions when prompting for a handshake.
+        """
+        async with self._conn_check_lock:
+            if await service_status.wait_synchronized(self.app, wait=False):
+                LOGGER.info('Checking connection...')
+                cmder = commander.fget(self.app)
+                try:
+                    cmd = commands.NoopCommand.from_args()
+                    await cmder.execute(cmd)
+                except Exception:
+                    await cmder.start_reconnect()
+
     async def _execute(self,
                        command_type: Type[commands.Command],
                        command_opts: CodecOpts,
@@ -225,9 +241,13 @@ class SparkDevice(features.ServiceFeature):
         content = content_ or dict()
         content.update(kwargs)
 
-        try:
-            resolver = SparkResolver(self.app)
+        cmder = commander.fget(self.app)
+        resolver = SparkResolver(self.app)
 
+        if await service_status.wait_updating(self.app, wait=False):
+            raise exceptions.UpdateInProgress('Update is in progress')
+
+        try:
             # pre-processing
             for afunc in [
                 resolver.convert_sid_nid,
@@ -237,7 +257,7 @@ class SparkDevice(features.ServiceFeature):
                 content = await afunc(content, command_opts)
 
             # execute
-            retval = await self._commander.execute(
+            retval = await cmder.execute(
                 command_type.from_decoded(content)
             )
 
@@ -254,6 +274,11 @@ class SparkDevice(features.ServiceFeature):
 
         except asyncio.CancelledError:  # pragma: no cover
             raise
+
+        except exceptions.CommandTimeout as ex:
+            # Wrap in a task to not delay the original response
+            asyncio.create_task(self.check_connection())
+            raise ex
 
         except Exception as ex:
             LOGGER.debug(f'Failed to execute {command_type}: {strex(ex)}')
@@ -283,8 +308,8 @@ class SparkDevice(features.ServiceFeature):
 
 
 def setup(app: web.Application):
-    features.add(app, SparkDevice(app))
+    features.add(app, SparkController(app))
 
 
-def get_device(app: web.Application) -> SparkDevice:
-    return features.get(app, SparkDevice)
+def fget(app: web.Application) -> SparkController:
+    return features.get(app, SparkController)

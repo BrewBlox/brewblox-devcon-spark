@@ -2,16 +2,14 @@
 Example of how to import and use the brewblox service
 """
 
-import argparse
 import logging
 from configparser import ConfigParser
 
-from brewblox_service import (brewblox_logger, couchdb, http, mqtt, scheduler,
-                              service)
+from brewblox_service import brewblox_logger, http, mqtt, scheduler, service
 
-from brewblox_devcon_spark import (broadcaster, commander, communication,
-                                   datastore, device, service_status,
-                                   simulator, synchronization)
+from brewblox_devcon_spark import (block_store, broadcaster, commander,
+                                   config_store, connection, service_status,
+                                   simulator, spark, synchronization)
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
                                        settings_api, system_api)
 from brewblox_devcon_spark.codec import codec, unit_conversion
@@ -61,32 +59,14 @@ def create_parser(default_name='spark'):
                        'Set to a value <= 0 to disable broadcasting. [%(default)s]',
                        type=float,
                        default=5)
-    group.add_argument('--broadcast-timeout',
-                       help='Timeout period (in seconds) for the broadcaster. '
-                       'This is measured from the last successful broadcast. '
-                       'If the timeout triggers, the service restarts. '
-                       'Set to a value <= 0 to prevent timeouts. [%(default)s]',
-                       type=float,
-                       default=60)
-    group.add_argument('--broadcast-valid',
-                       help='Period after which broadcast data should be discarded. '
+    group.add_argument('--broadcast-ttl',
+                       help='Time-to-live value in seconds for published state events. '
                        'This does not apply to history data. [%(default)s]',
                        type=float,
                        default=60)
-    group.add_argument('--read-timeout',
-                       help='Timeout period (in seconds) for communication. '
-                       'The timeout is triggered if no data is received for this duration'
-                       'If the timeout triggers, the service attempts to reconnect. '
-                       'Set to a value <= 0 to prevent timeouts. [%(default)s]',
-                       type=float,
-                       default=30)
     group.add_argument('--volatile',
                        action='store_true',
                        help='Disable all outgoing network calls. [%(default)s]')
-
-    # Deprecated and silently ignored
-    group.add_argument('--mdns-host', help=argparse.SUPPRESS)
-    group.add_argument('--mdns-port', help=argparse.SUPPRESS)
 
     # Updater options
     group = parser.add_argument_group('Firmware')
@@ -121,17 +101,17 @@ def main():
     service_status.setup(app)
     http.setup(app)
 
-    communication.setup(app)
+    connection.setup(app)
     commander.setup(app)
 
     scheduler.setup(app)
     mqtt.setup(app)
 
-    couchdb.setup(app)
-    datastore.setup(app)
+    config_store.setup(app)
+    block_store.setup(app)
     unit_conversion.setup(app)
     codec.setup(app)
-    device.setup(app)
+    spark.setup(app)
     broadcaster.setup(app)
 
     error_response.setup(app)

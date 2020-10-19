@@ -3,17 +3,15 @@ Tests brewblox_devcon_spark.connection
 """
 
 import asyncio
-from collections import namedtuple
 
 import pytest
-from brewblox_service import http
+from brewblox_service import scheduler
 from mock import AsyncMock, Mock
 
-from brewblox_devcon_spark import connection
+from brewblox_devcon_spark import (config_store, connect_funcs, connection,
+                                   exceptions, service_status)
 
 TESTED = connection.__name__
-
-DummyPortInfo = namedtuple('DummyPortInfo', ['device', 'description', 'hwid', 'serial_number'])
 
 
 class DummyExit(Exception):
@@ -21,14 +19,13 @@ class DummyExit(Exception):
 
 
 @pytest.fixture(autouse=True)
-def m_sleep(mocker):
-    mocker.patch(TESTED + '.DISCOVER_INTERVAL_S', 0.001)
-    mocker.patch(TESTED + '.DNS_DISCOVER_TIMEOUT_S', 1)
+def m_exit(mocker):
+    mocker.patch(TESTED + '.web.GracefulExit', DummyExit)
 
 
 @pytest.fixture(autouse=True)
-def m_exit(mocker):
-    mocker.patch(TESTED + '.web.GracefulExit', DummyExit)
+def m_interval(mocker):
+    mocker.patch(TESTED + '.BASE_RETRY_INTERVAL_S', 0.001)
 
 
 @pytest.fixture
@@ -37,107 +34,212 @@ def m_reader(loop):
 
 
 @pytest.fixture
-def m_writer():
+def m_writer(loop):
     m = Mock()
-    m.write = AsyncMock()
-    m.transport = Mock()
+    m.drain = AsyncMock()
+    m.is_closing.return_value = False
     return m
 
 
 @pytest.fixture
-def m_connect_serial(mocker, m_reader, m_writer):
-    m = mocker.patch(TESTED + '.open_serial_connection', AsyncMock())
-    m.return_value = (m_reader, m_writer)
+def m_connect(mocker, m_reader, m_writer):
+    m = mocker.patch(TESTED + '.connect_funcs.connect', AsyncMock())
+    m.return_value = ('addr', m_reader, m_writer)
     return m
 
 
 @pytest.fixture
-def m_connect_tcp(mocker, m_reader, m_writer):
-    m = mocker.patch(TESTED + '.asyncio.open_connection', AsyncMock())
-    m.return_value = (m_reader, m_writer)
-    return m
-
-
-@pytest.fixture(autouse=True)
-def m_comports(mocker):
-    m = mocker.patch(TESTED + '.list_ports.comports')
-    m.return_value = [
-        DummyPortInfo('/dev/dummy', 'Dummy', 'USB VID:PID=1a02:b123', '1234AB'),
-        DummyPortInfo('/dev/ttyX', 'Electron', 'USB VID:PID=2d04:c00a', '4321BA'),
-        DummyPortInfo('/dev/ttyY', 'Electron', 'USB VID:PID=2d04:c00a', '4321BA'),
+def welcome():
+    return [
+        'BREWBLOX',
+        'ed70d66f0',
+        '3f2243a',
+        '2019-06-18',
+        '2019-06-18',
+        '1.2.1-rc.2',
+        'p1',
+        '78',
+        '0A',
+        '1234567F0CASE'
     ]
-    return m
 
 
-@pytest.fixture(autouse=True)
-def m_grep_ports(mocker):
-    m = mocker.patch(TESTED + '.list_ports.grep')
-    m.return_value = [
-        DummyPortInfo('/dev/ttyX', 'Electron', 'USB VID:PID=2d04:c00a', '1234AB'),
-        DummyPortInfo('/dev/ttyY', 'Electron', 'USB VID:PID=2d04:c00a', '4321BA'),
+@pytest.fixture
+async def cbox_err():
+    return [
+        'CBOXERROR',
+        '0C',
     ]
-    return m
 
 
 @pytest.fixture
-async def m_mdns(app, loop, mocker):
-    m_discover = mocker.patch(TESTED + '.mdns.discover_one', AsyncMock())
-    m_discover.return_value = ('enterprise', 5678, None)
-    return m_discover
-
-
-@pytest.fixture
-def app(app):
-    http.setup(app)
+def app(app, m_connect):
+    service_status.setup(app)
+    scheduler.setup(app)
+    config_store.setup(app)
     return app
 
 
-async def test_connect_tcp(app, client, m_reader, m_writer, m_connect_tcp):
-    app['config']['device_serial'] = None
-    app['config']['device_host'] = 'testey'
-    app['config']['device_port'] = 1234
-    assert (await connection.connect(app)) == ('testey:1234', m_reader, m_writer)
-    m_connect_tcp.assert_awaited_once_with('testey', 1234)
+@pytest.fixture
+def init_app(app):
+    connection.setup(app)
+    return app
 
 
-async def test_connect_serial(app, client, m_reader, m_writer, m_connect_serial):
-    app['config']['device_serial'] = '/dev/testey'
-    app['config']['device_host'] = 'testey'
-    app['config']['device_port'] = 1234
-    assert (await connection.connect(app)) == ('/dev/testey', m_reader, m_writer)
-    m_connect_serial.assert_awaited_once_with(url='/dev/testey', baudrate=connection.DEFAULT_BAUD_RATE)
+async def test_write(app, init_app, client, m_writer):
+    service_status.set_autoconnecting(app, True)
+    await asyncio.sleep(0.01)
+    conn = connection.fget(app)
+    assert conn.connected
+    assert service_status.desc(app).is_connected
+
+    await conn.write('testey')
+    m_writer.write.assert_called_once_with(b'testey\n')
+    m_writer.drain.assert_awaited_once()
+
+    await conn.start_reconnect()
+    m_writer.close.assert_called_once()
+
+    m_writer.is_closing.return_value = True
+    assert not conn.connected
+
+    await conn.start_reconnect()
+    m_writer.close.assert_called_once()
+
+    with pytest.raises(exceptions.NotConnected):
+        await conn.write('stuff')
 
 
-async def test_discover_serial(app, client, m_reader, m_writer, m_connect_serial):
-    app['config']['device_serial'] = None
-    app['config']['device_host'] = None
-    app['config']['device_port'] = 1234
-    app['config']['device_id'] = None
-    app['config']['discovery'] = 'usb'
+async def test_callback(app, init_app, client, m_reader, m_writer):
+    service_status.set_autoconnecting(app, True)
+    await asyncio.sleep(0.01)
+    conn = connection.fget(app)
+    m_data_cb = Mock()
+    m_data_cb2 = Mock()
 
-    # First valid vid:pid
-    assert (await connection.connect(app)) == ('/dev/ttyX', m_reader, m_writer)
+    conn.data_callbacks.add(m_data_cb)
+    conn.data_callbacks.add(m_data_cb2)
 
-    # Filtered by device ID
-    app['config']['device_id'] = '4321BA'
-    assert (await connection.connect(app)) == ('/dev/ttyY', m_reader, m_writer)
+    m_reader.feed_data('<!connected:sensor>bunnies<fluffy>\n'.encode())
+    await asyncio.sleep(0.01)
+    m_data_cb.assert_called_with('bunnies')
+    m_data_cb2.assert_called_with('bunnies')
 
-    # Not found
-    app['config']['device_id'] = 'pancakes'
+    # Close it down
+    m_reader.feed_data('puppies\n'.encode())
+    m_writer.is_closing.return_value = True
+
+    await asyncio.sleep(0.01)
+    m_data_cb.assert_called_with('puppies')
+    m_data_cb2.assert_called_with('puppies')
+    assert conn.active
+    assert not conn.connected
+    assert not service_status.desc(app).is_connected
+
+
+async def test_error_callback(app, init_app, client, m_reader, m_writer):
+    service_status.set_autoconnecting(app, True)
+    conn = connection.fget(app)
+    m_data_cb = Mock(side_effect=RuntimeError)
+    conn.data_callbacks.add(m_data_cb)
+
+    m_reader.feed_data('<!connected:sensor>bunnies<fluffy>\n'.encode())
+    await asyncio.sleep(0.01)
+    m_data_cb.assert_called_with('bunnies')
+    assert conn.connected
+
+
+async def test_on_welcome(app, init_app, client, mocker, welcome):
+    conn = connection.fget(app)
+    status = service_status.fget(app)
+    status.set_autoconnecting(True)
+
+    ok_msg = ','.join(welcome)
+    nok_welcome = welcome.copy()
+    nok_welcome[2] = 'NOPE'
+    nok_msg = ','.join(nok_welcome)
+    conn._on_event(ok_msg)
+    assert status.desc().handshake_info.is_compatible_firmware
+
+    status.service_info.device_id = '1234567f0case'
+    conn._on_event(ok_msg)
+    assert status.desc().handshake_info.is_valid_device_id
+
+    status.service_info.device_id = '01345'
+    with pytest.warns(UserWarning, match='Handshake error'):
+        conn._on_event(ok_msg)
+    assert not status.desc().handshake_info.is_valid_device_id
+
+    status.service_info.device_id = None
+    app['config']['skip_version_check'] = True
+    conn._on_event(nok_msg)
+    assert status.desc().handshake_info.is_compatible_firmware
+
+    app['config']['skip_version_check'] = False
+    with pytest.warns(UserWarning, match='Handshake error'):
+        conn._on_event(nok_msg)
+    assert not status.desc().handshake_info.is_compatible_firmware
+    assert not status.desc().is_synchronized
+
+
+async def test_on_cbox_err(app, init_app, client, cbox_err):
+    conn = connection.fget(app)
+    status = service_status.fget(app)
+    status.set_connected('addr')
+    assert status.desc().device_address == 'addr'
+
+    msg = ':'.join(cbox_err)
+    conn._on_event(msg)
+
+    # shouldn't fail on non-existent error message
+    msg = ':'.join([cbox_err[0], 'ffff'])
+    conn._on_event(msg)
+
+    # shouldn't fail on invalid error
+    msg = ':'.join([cbox_err[0], 'not hex'])
+    conn._on_event(msg)
+
+
+async def test_on_setup_mode(app, init_app, client, m_exit):
+    conn = connection.fget(app)
     with pytest.raises(DummyExit):
-        await connection.connect(app)
+        conn._on_event('SETUP_MODE')
 
 
-async def test_discover_tcp(app, client, m_mdns, m_reader, m_writer, m_connect_tcp):
-    app['config']['device_serial'] = None
-    app['config']['device_host'] = None
-    app['config']['device_port'] = 1234
-    app['config']['device_id'] = None
-    app['config']['discovery'] = 'wifi'
+async def test_retry_exhausted(app, client, m_writer, mocker):
+    mocker.patch(TESTED + '.CONNECT_RETRY_COUNT', 2)
+    mocker.patch(TESTED + '.connect_funcs.connect', AsyncMock(side_effect=ConnectionRefusedError))
 
-    assert (await connection.connect(app)) == ('enterprise:5678', m_reader, m_writer)
+    service_status.set_autoconnecting(app, True)
+    conn = connection.SparkConnection(app)
 
-    # unreachable mDNS service
-    m_mdns.side_effect = TimeoutError
+    await conn.prepare()
+    # count == 0
+    with pytest.raises(ConnectionError):
+        await conn.run()
+
+    # count == 1
+    with pytest.raises(ConnectionError):
+        await conn.run()
+
+    # count == 2 (and >= CONNECT_RETRY_COUNT)
     with pytest.raises(DummyExit):
-        await connection.connect(app)
+        await conn.run()
+
+
+async def test_discovery_abort(app, client, m_connect, mocker):
+    mocker.patch(TESTED + '.CONNECT_RETRY_COUNT', 1)
+    service_status.set_autoconnecting(app, True)
+    conn = connection.SparkConnection(app)
+    await conn.prepare()
+
+    m_connect.side_effect = connect_funcs.DiscoveryAbortedError(False)
+    with pytest.raises(connect_funcs.DiscoveryAbortedError):
+        await conn.run()
+
+    m_connect.side_effect = connect_funcs.DiscoveryAbortedError(True)
+    with pytest.raises(connect_funcs.DiscoveryAbortedError):
+        await conn.run()
+
+    with pytest.raises(DummyExit):
+        await conn.run()

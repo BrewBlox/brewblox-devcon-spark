@@ -6,7 +6,7 @@ import pytest
 from brewblox_service import features, scheduler
 from mock import ANY
 
-from brewblox_devcon_spark import (codec, commander_sim, datastore, device,
+from brewblox_devcon_spark import (codec, commander_sim, config_store,
                                    exceptions, service_status)
 from brewblox_devcon_spark.codec import (Codec, CodecOpts, MetadataOpt,
                                          ProtoEnumOpt)
@@ -16,16 +16,15 @@ from brewblox_devcon_spark.codec import (Codec, CodecOpts, MetadataOpt,
 def app(app):
     service_status.setup(app)
     scheduler.setup(app)
-    datastore.setup(app)
+    config_store.setup(app)
     commander_sim.setup(app)
     codec.setup(app)
-    device.setup(app)
     return app
 
 
 @pytest.fixture
 def cdc(app) -> Codec:
-    return codec.get_codec(app)
+    return codec.fget(app)
 
 
 @pytest.fixture

@@ -8,8 +8,8 @@ from aiohttp import web
 from aiohttp_apispec import docs, response_schema
 from brewblox_service import brewblox_logger, mqtt, scheduler, strex
 
-from brewblox_devcon_spark import (commander, device, exceptions,
-                                   service_status, ymodem)
+from brewblox_devcon_spark import (commander, commands, exceptions,
+                                   service_status, spark, ymodem)
 from brewblox_devcon_spark.api import schemas
 
 TRANSFER_TIMEOUT_S = 30
@@ -70,7 +70,7 @@ class FirmwareUpdater():
 
     async def flash(self) -> dict:  # pragma: no cover
         sender = ymodem.FileSender(self._notify)
-        cmder = commander.get_commander(self.app)
+        cmder = commander.fget(self.app)
         address = service_status.desc(self.app).device_address
 
         self._notify(f'Started updating {self.name}@{address} to version {self.version} ({self.date})')
@@ -84,7 +84,12 @@ class FirmwareUpdater():
                 raise NotImplementedError('Firmware updates not available for simulation controllers')
 
             self._notify('Sending update command to controller')
-            await cmder.start_update(FLUSH_PERIOD_S)
+            service_status.set_updating(self.app)
+            await asyncio.sleep(FLUSH_PERIOD_S)  # Wait for in-progress commands to finish
+            await cmder.execute(commands.FirmwareUpdateCommand.from_args())
+
+            self._notify('Shutting down normal communication')
+            await cmder.shutdown(self.app)
 
             self._notify('Waiting for normal connection to close')
             await asyncio.wait_for(
@@ -116,7 +121,7 @@ class SystemApi():
     async def reboot(self):
         async def wrapper():
             try:
-                await device.get_device(self.app).reboot()
+                await spark.fget(self.app).reboot()
             except exceptions.CommandTimeout:
                 pass
             except Exception as ex:  # pragma: no cover
@@ -127,7 +132,7 @@ class SystemApi():
     async def factory_reset(self):
         async def wrapper():
             try:
-                await device.get_device(self.app).factory_reset()
+                await spark.fget(self.app).factory_reset()
             except exceptions.CommandTimeout:
                 pass
             except Exception as ex:  # pragma: no cover
@@ -153,7 +158,7 @@ async def check_status(request: web.Request) -> web.Response:
 @routes.post('/system/ping')
 async def ping(request: web.Request) -> web.Response:
     return web.json_response(
-        await device.get_device(request.app).noop()
+        await spark.fget(request.app).noop()
     )
 
 

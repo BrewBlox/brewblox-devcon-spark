@@ -8,7 +8,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.7"
-brewblox-service = "^0.30.0"
+brewblox-service = "^0.32.1"
 pyserial-asyncio = "^0.4"
 construct = "^2.10.56"
 protobuf = "^3.11.3"

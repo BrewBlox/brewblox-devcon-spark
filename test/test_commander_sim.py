@@ -5,9 +5,9 @@ Tests brewblox_devcon_spark.commander_sim
 import pytest
 from brewblox_service import scheduler
 
-from brewblox_devcon_spark import (codec, commander, commander_sim, commands,
-                                   const, datastore, exceptions,
-                                   service_status)
+from brewblox_devcon_spark import (block_store, codec, commander,
+                                   commander_sim, commands, config_store,
+                                   const, exceptions, service_status)
 
 
 @pytest.fixture
@@ -15,14 +15,15 @@ def app(app):
     scheduler.setup(app)
     service_status.setup(app)
     commander_sim.setup(app)
-    datastore.setup(app)
+    block_store.setup(app)
+    config_store.setup(app)
     codec.setup(app)
     return app
 
 
 @pytest.fixture
 def sim(app):
-    return commander.get_commander(app)
+    return commander.fget(app)
 
 
 @pytest.fixture
@@ -126,14 +127,8 @@ async def test_non_responsive(app, client, sim):
             await sim.execute(cmd.from_args())
 
 
-async def test_updating(app, client, sim):
-    await sim.start_update(0)
-    with pytest.raises(exceptions.UpdateInProgress):
-        await sim.execute(commands.ListObjectsCommand.from_args())
-
-
 async def test_inactive(app, client, object_args, sim):
-    cdc = codec.get_codec(app)
+    cdc = codec.fget(app)
     create_cmd = commands.CreateObjectCommand
     read_cmd = commands.ReadObjectCommand
     write_cmd = commands.WriteObjectCommand

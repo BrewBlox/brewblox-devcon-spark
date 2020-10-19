@@ -4,7 +4,6 @@ Intermittently broadcasts status and blocks to the eventbus
 
 
 import asyncio
-from time import monotonic
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, mqtt, repeater, strex
@@ -24,13 +23,9 @@ class Broadcaster(repeater.RepeaterFeature):
         self.name = config['name']
         self.interval = config['broadcast_interval']
         self.volatile = self.interval <= 0 or config['volatile']
-        self.timeout = config['broadcast_timeout']
-        self.validity = str(config['broadcast_valid']) + 's'
+        self.ttl = str(config['broadcast_ttl']) + 's'
         self.state_topic = config['state_topic'] + f'/{self.name}'
         self.history_topic = config['history_topic'] + f'/{self.name}'
-
-        self._synched = False
-        self._last_ok = monotonic()
 
         self._will_message = {
             'key': self.name,
@@ -63,13 +58,13 @@ class Broadcaster(repeater.RepeaterFeature):
     async def run(self):
         try:
             await asyncio.sleep(self.interval)
-            self._synched = await service_status.wait_synchronized(self.app, wait=False)
+            synched = await service_status.wait_synchronized(self.app, wait=False)
 
             status_data = service_status.desc_dict(self.app)
             blocks_data = []
 
             try:
-                if self._synched:
+                if synched:
                     api = BlocksApi(self.app)
                     blocks_data = await api.read_all()
 
@@ -87,8 +82,6 @@ class Broadcaster(repeater.RepeaterFeature):
                                            'data': history_data,
                                        })
 
-                self._last_ok = monotonic()
-
             finally:
                 # State event is always published
                 await mqtt.publish(self.app,
@@ -98,7 +91,7 @@ class Broadcaster(repeater.RepeaterFeature):
                                    message={
                                        'key': self.name,
                                        'type': 'Spark.state',
-                                       'ttl': self.validity,
+                                       'ttl': self.ttl,
                                        'data': {
                                            'status': status_data,
                                            'blocks': blocks_data,
@@ -110,11 +103,6 @@ class Broadcaster(repeater.RepeaterFeature):
 
         except Exception as ex:
             LOGGER.debug(f'{self} exception: {strex(ex)}')
-            if self._synched \
-                    and self.timeout > 0 \
-                    and self._last_ok + self.timeout < monotonic():  # pragma: no cover
-                LOGGER.error('Broadcast retry attemps exhaused. Exiting now.')
-                raise web.GracefulExit()
             raise
 
 
@@ -122,5 +110,5 @@ def setup(app: web.Application):
     features.add(app, Broadcaster(app))
 
 
-def get_broadcaster(app: web.Application) -> Broadcaster:
+def fget(app: web.Application) -> Broadcaster:
     return features.get(app, Broadcaster)
