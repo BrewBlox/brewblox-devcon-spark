@@ -33,6 +33,7 @@ class BlockSchema(Schema):
 
 
 class BlockIdSchema(Schema):
+    serviceId = fields.String(required=False)
     id = fields.String(required=False)
     nid = fields.Integer(required=False)
 
