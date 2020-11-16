@@ -5,10 +5,11 @@ REST API for Spark blocks
 import asyncio
 import re
 from copy import deepcopy
+from typing import List
 
 from aiohttp import web
 from aiohttp_apispec import docs, request_schema, response_schema
-from brewblox_service import brewblox_logger, strex
+from brewblox_service import brewblox_logger, mqtt, strex
 
 from brewblox_devcon_spark import (block_store, const, exceptions,
                                    service_status, spark, twinkeydict)
@@ -95,6 +96,22 @@ class BlocksApi():
         """
         await self.wait_for_sync()
         return await self._spark.write_object(block)
+
+    async def publish(self, changed: List[dict] = None, deleted: List[str] = None):
+        name = self.app['config']['name']
+        topic = self.app['config']['state_topic'] + f'/{name}/patch'
+        await mqtt.publish(self.app,
+                           topic,
+                           err=False,
+                           message={
+                               'key': name,
+                               'type': 'Spark.patch',
+                               'ttl': '1d',
+                               'data': {
+                                   'changed': changed or [],
+                                   'deleted': deleted or [],
+                               }
+                           })
 
     async def delete(self, ids: dict) -> dict:
         """
@@ -248,10 +265,10 @@ class BlocksApi():
 @request_schema(schemas.BlockSchema)
 @response_schema(schemas.BlockSchema, 201)
 async def _create(request: web.Request) -> web.Response:
-    return web.json_response(
-        await BlocksApi(request.app).create(request['data']),
-        status=201,
-    )
+    api = BlocksApi(request.app)
+    created = await api.create(request['data'])
+    await api.publish(changed=[created])
+    return web.json_response(created, status=201)
 
 
 @docs(
@@ -301,9 +318,10 @@ async def _read_stored(request: web.Request) -> web.Response:
 @request_schema(schemas.BlockSchema)
 @response_schema(schemas.BlockSchema)
 async def _update(request: web.Request) -> web.Response:
-    return web.json_response(
-        await BlocksApi(request.app).write(request['data'])
-    )
+    api = BlocksApi(request.app)
+    updated = await api.write(request['data'])
+    await api.publish(changed=[updated])
+    return web.json_response(updated)
 
 
 @docs(
@@ -314,9 +332,10 @@ async def _update(request: web.Request) -> web.Response:
 @request_schema(schemas.BlockIdSchema)
 @response_schema(schemas.BlockIdSchema)
 async def _delete(request: web.Request) -> web.Response:
-    return web.json_response(
-        await BlocksApi(request.app).delete(request['data'])
-    )
+    api = BlocksApi(request.app)
+    deleted = await BlocksApi(request.app).delete(request['data'])
+    await api.publish(deleted=[deleted['id']])
+    return web.json_response(deleted)
 
 
 @docs(
