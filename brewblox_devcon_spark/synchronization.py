@@ -13,7 +13,6 @@ from brewblox_service import brewblox_logger, features, repeater, strex
 from brewblox_devcon_spark import (block_store, codec, commander, config_store,
                                    const, datastore, exceptions,
                                    service_status, spark)
-from brewblox_devcon_spark.api import blocks_api
 from brewblox_devcon_spark.exceptions import InvalidInput
 
 HANDSHAKE_TIMEOUT_S = 120
@@ -216,8 +215,7 @@ class SparkSynchronization(repeater.RepeaterFeature):
     @subroutine('sync controller time')
     async def _sync_time(self):
         now = datetime.now()
-        api = blocks_api.BlocksApi(self.app, wait_sync=False)
-        ticks_block = await api.write({
+        ticks_block = await spark.fget(self.app).write_object({
             'nid': const.SYSTIME_NID,
             'groups': [const.SYSTEM_GROUP],
             'type': 'Ticks',
@@ -248,8 +246,7 @@ class SparkSynchronization(repeater.RepeaterFeature):
 
     @subroutine('collect controller call trace')
     async def _collect_call_trace(self):
-        api = blocks_api.BlocksApi(self.app, wait_sync=False)
-        sys_block = await api.write({
+        sys_block = await spark.fget(self.app).write_object({
             'nid': const.SYSINFO_NID,
             'groups': [const.SYSTEM_GROUP],
             'type': 'SysInfo',

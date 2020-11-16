@@ -62,12 +62,14 @@ async def app(app, loop):
     return app
 
 
-@pytest.fixture(autouse=True)
-def api_mock(mocker):
-    m = mocker.patch(TESTED + '.blocks_api.BlocksApi').return_value
-    m.read = AsyncMock()
-    m.write = AsyncMock()
-    return m
+# @pytest.fixture()
+# def m_api(app, mocker):
+#     api = spark.fget(app)
+#     m = mocker.patch(TESTED + '.spark.fget',
+#                      wraps=synchronization.spark.fget)
+#     # m.noop = AsyncMock()
+#     # m.write_object = AsyncMock()
+#     return m.return_value
 
 
 @pytest.fixture
@@ -99,8 +101,8 @@ async def test_sync_errors(app, client, syncher, mocker):
     assert states(app) == [False, True, False]
 
 
-async def test_write_error(app, client, syncher, mocker, api_mock):
-    api_mock.write = AsyncMock(side_effect=RuntimeError)
+async def test_write_error(app, client, syncher, mocker):
+    mocker.patch.object(spark.fget(app), 'write_object', AsyncMock(side_effect=RuntimeError))
     await disconnect(app)
     with pytest.raises(RuntimeError):
         await connect(app, syncher)
@@ -118,7 +120,7 @@ async def test_timeout(app, client, syncher, mocker):
     mocker.patch(TESTED + '.HANDSHAKE_TIMEOUT_S', 0.1)
     mocker.patch(TESTED + '.PING_INTERVAL_S', 0.0001)
     mocker.patch(TESTED + '.service_status.wait_acknowledged', side_effect=m_wait_ack)
-    mocker.patch(TESTED + '.spark.fget').return_value.noop = AsyncMock(side_effect=RuntimeError)
+    mocker.patch.object(spark.fget(app), 'noop', AsyncMock(side_effect=RuntimeError))
 
     service_status.set_connected(app, 'timeout test')
     with pytest.raises(asyncio.TimeoutError):

@@ -39,6 +39,12 @@ def block_args():
     }
 
 
+@pytest.fixture(autouse=True)
+def m_publish(mocker):
+    m = mocker.patch(blocks_api.__name__ + '.mqtt.publish', AsyncMock())
+    return m
+
+
 def repeated_blocks(ids, args):
     return [{
         'id': id,
@@ -163,9 +169,10 @@ async def test_read_logged(app, client, block_args):
     assert 'address' not in retd['data']  # address is not a logged field
 
 
-async def test_update(app, client, block_args):
+async def test_update(app, client, block_args, m_publish):
     await response(client.post('/blocks/create', json=block_args), 201)
     assert await response(client.post('/blocks/write', json=block_args))
+    assert m_publish.call_count == 2
 
 
 async def test_delete(app, client, block_args):
