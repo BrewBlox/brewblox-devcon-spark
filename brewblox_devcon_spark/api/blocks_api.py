@@ -41,15 +41,15 @@ def validate_sid(sid: str):
 
 class BlocksApi():
 
-    def __init__(self, app: web.Application, wait_sync=True):
+    def __init__(self, app: web.Application):
         self.app = app
-        self._wait_sync = wait_sync
         self._spark = spark.fget(app)
         self._store = block_store.fget(app)
 
     async def wait_for_sync(self):
         await asyncio.wait_for(
-            service_status.wait_synchronized(self.app, self._wait_sync), SYNC_WAIT_TIMEOUT_S)
+            service_status.wait_synchronized(self.app),
+            SYNC_WAIT_TIMEOUT_S)
 
     async def create(self, block: dict) -> dict:
         """
