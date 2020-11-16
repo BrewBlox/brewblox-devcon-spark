@@ -169,7 +169,7 @@ async def test_read_logged(app, client, block_args):
     assert 'address' not in retd['data']  # address is not a logged field
 
 
-async def test_update(app, client, block_args, m_publish):
+async def test_write(app, client, block_args, m_publish):
     await response(client.post('/blocks/create', json=block_args), 201)
     assert await response(client.post('/blocks/write', json=block_args))
     assert m_publish.call_count == 2

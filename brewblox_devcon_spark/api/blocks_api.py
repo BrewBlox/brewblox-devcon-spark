@@ -329,7 +329,7 @@ async def _update(request: web.Request) -> web.Response:
     summary='Delete block',
 )
 @routes.post('/blocks/delete')
-@request_schema(schemas.BlockIdSchema)
+@request_schema(schemas.BlockIdSchema(unknown='exclude'))
 @response_schema(schemas.BlockIdSchema)
 async def _delete(request: web.Request) -> web.Response:
     api = BlocksApi(request.app)
