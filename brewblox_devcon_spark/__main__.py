@@ -11,7 +11,8 @@ from brewblox_devcon_spark import (block_store, broadcaster, commander,
                                    config_store, connection, service_status,
                                    simulator, spark, synchronization)
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
-                                       mqtt_api, settings_api, system_api)
+                                       mqtt_api, settings_api, sim_api,
+                                       system_api)
 from brewblox_devcon_spark.codec import codec, unit_conversion
 
 LOGGER = brewblox_logger(__name__)
@@ -120,6 +121,9 @@ def main():
     system_api.setup(app)
     settings_api.setup(app)
     mqtt_api.setup(app)
+
+    if config['simulation']:
+        sim_api.setup(app)
 
     synchronization.setup(app)
 
