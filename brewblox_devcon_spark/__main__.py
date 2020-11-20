@@ -54,7 +54,7 @@ def create_parser(default_name='spark'):
     group.add_argument('--command-timeout',
                        help='Timeout period (in seconds) for controller commands. [$(default)s]',
                        type=float,
-                       default=10)
+                       default=20)
     group.add_argument('--broadcast-interval',
                        help='Interval (in seconds) between broadcasts of controller state. '
                        'Set to a value <= 0 to disable broadcasting. [%(default)s]',
