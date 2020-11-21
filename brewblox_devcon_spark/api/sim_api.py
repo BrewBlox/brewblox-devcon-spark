@@ -11,7 +11,7 @@ from brewblox_service import brewblox_logger, features
 
 from brewblox_devcon_spark import service_status
 
-SPARK_WS_ADDR = 'http://localhost:7376'
+SPARK_WS_ADDR = 'ws://localhost:7376/'
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -52,7 +52,11 @@ async def stream_display(request: web.Request) -> web.Response:
         await service_status.wait_synchronized(request.app)
 
         async with ClientSession() as session:
-            async with session.ws_connect(SPARK_WS_ADDR) as spark_ws:
+            # `Connection: keep-alive` is required by server
+            async with session.ws_connect(
+                SPARK_WS_ADDR,
+                headers={'Connection': 'keep-alive, Upgrade'},
+            ) as spark_ws:
                 request.app['websockets'].add(spark_ws)
                 async for msg in spark_ws:
                     if msg.type == WSMsgType.BINARY:
