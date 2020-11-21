@@ -4,6 +4,7 @@ Example of how to import and use the brewblox service
 
 import logging
 from configparser import ConfigParser
+from os import getenv
 
 from brewblox_service import brewblox_logger, http, mqtt, scheduler, service
 
@@ -91,6 +92,11 @@ def main():
     logging.captureWarnings(True)
     config = app['config']
     app['ini'] = parse_ini(app)
+
+    if getenv('ENABLE_DEBUGGER', False):  # pragma: no cover
+        import debugpy
+        debugpy.listen(('0.0.0.0', 5678))
+        LOGGER.info('Debugger is enabled and listening on 5678')
 
     if config['simulation']:
         config['device_id'] = config['device_id'] or '123456789012345678901234'
