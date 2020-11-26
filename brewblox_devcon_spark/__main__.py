@@ -8,9 +8,10 @@ from os import getenv
 
 from brewblox_service import brewblox_logger, http, mqtt, scheduler, service
 
-from brewblox_devcon_spark import (block_store, broadcaster, commander,
-                                   config_store, connection, service_status,
-                                   simulator, spark, synchronization)
+from brewblox_devcon_spark import (block_cache, block_store, broadcaster,
+                                   commander, config_store, connection,
+                                   service_status, simulator, spark,
+                                   synchronization)
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
                                        mqtt_api, settings_api, sim_api,
                                        system_api)
@@ -116,6 +117,7 @@ def main():
 
     config_store.setup(app)
     block_store.setup(app)
+    block_cache.setup(app)
     unit_conversion.setup(app)
     codec.setup(app)
     spark.setup(app)
