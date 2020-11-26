@@ -39,6 +39,7 @@ class MqttApi(features.ServiceFeature):
         self.listeners = {
             '/create': self._create,
             '/write': self._write,
+            '/patch': self._patch,
             '/delete': self._delete,
         }
 
@@ -54,18 +55,19 @@ class MqttApi(features.ServiceFeature):
 
     @validated(schemas.BlockSchema)
     async def _create(self, block: dict):
-        result = await self.api.create(block)
-        await self.api.publish(changed=[result])
+        await self.api.create(block)
 
     @validated(schemas.BlockSchema)
     async def _write(self, block: dict):
-        result = await self.api.write(block)
-        await self.api.publish(changed=[result])
+        await self.api.write(block)
+
+    @validated(schemas.BlockPatchSchema)
+    async def _patch(self, patch: dict):
+        await self.api.patch(patch)
 
     @validated(schemas.BlockIdSchema)
     async def _delete(self, args: dict):
-        result = await self.api.delete(args)
-        await self.api.publish(deleted=[result['id']])
+        await self.api.delete(args)
 
 
 def setup(app: web.Application):

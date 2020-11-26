@@ -6,7 +6,8 @@ import pytest
 from brewblox_service import repeater, scheduler
 from mock import ANY, AsyncMock, call
 
-from brewblox_devcon_spark import broadcaster, exceptions, service_status
+from brewblox_devcon_spark import (block_cache, broadcaster, exceptions,
+                                   service_status)
 
 TESTED = broadcaster.__name__
 
@@ -34,6 +35,7 @@ def app(app, m_api, m_publish):
     app['config']['volatile'] = False
     service_status.setup(app)
     scheduler.setup(app)
+    block_cache.setup(app)
     return app
 
 
@@ -73,8 +75,8 @@ async def test_broadcast_unsync(app, m_api, m_publish, client, connected, mocker
 
 async def test_broadcast(app, m_api, m_publish, client, connected):
     object_list = [
-        {'id': 'testey', 'data': {'var': 1}},
-        {'id': 'testface', 'data': {'val': 2}}
+        {'id': 'testey', 'nid': 1, 'data': {'var': 1}},
+        {'id': 'testface', 'nid': 2, 'data': {'val': 2}}
     ]
     objects = {'testey': {'var': 1}, 'testface': {'val': 2}}
     m_api.read_all_logged.return_value = object_list
@@ -125,8 +127,8 @@ async def test_error(app, m_api, m_publish, client, connected):
     # Error over, resume normal work
     m_api.read_all.side_effect = None
     m_api.read_all.return_value = [
-        {'id': 'testey', 'data': {'var': 1}},
-        {'id': 'testface', 'data': {'val': 2}}
+        {'id': 'testey', 'nid': 1, 'data': {'var': 1}},
+        {'id': 'testface', 'nid': 2, 'data': {'val': 2}}
     ]
 
     # 2 * only state event
