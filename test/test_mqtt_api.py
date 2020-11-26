@@ -6,9 +6,9 @@ import pytest
 from brewblox_service import scheduler
 from mock import AsyncMock
 
-from brewblox_devcon_spark import (block_store, commander_sim, config_store,
-                                   exceptions, service_status, spark,
-                                   synchronization)
+from brewblox_devcon_spark import (block_cache, block_store, commander_sim,
+                                   config_store, exceptions, service_status,
+                                   spark, synchronization)
 from brewblox_devcon_spark.api import blocks_api, mqtt_api
 from brewblox_devcon_spark.codec import codec, unit_conversion
 
@@ -36,6 +36,7 @@ async def app(app, loop):
     scheduler.setup(app)
     commander_sim.setup(app)
     block_store.setup(app)
+    block_cache.setup(app)
     config_store.setup(app)
     unit_conversion.setup(app)
     codec.setup(app)
@@ -76,6 +77,14 @@ async def test_write(app, client):
     api = mqtt_api.fget(app)
     await api._create('topic', block_args(app))
     await api._write('topic', block_args(app))
+
+    assert await read(app, {'id': block_args(app)['id']})
+
+
+async def test_patch(app, client):
+    api = mqtt_api.fget(app)
+    await api._create('topic', block_args(app))
+    await api._patch('topic', block_args(app))
 
     assert await read(app, {'id': block_args(app)['id']})
 
