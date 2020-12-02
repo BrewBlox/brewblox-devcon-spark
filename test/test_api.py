@@ -9,9 +9,10 @@ from brewblox_service import scheduler
 from brewblox_service.testing import response
 from mock import ANY, AsyncMock
 
-from brewblox_devcon_spark import (block_store, commander_sim, config_store,
-                                   const, exceptions, service_status, spark,
-                                   synchronization, ymodem)
+from brewblox_devcon_spark import (block_cache, block_store, commander_sim,
+                                   config_store, const, exceptions,
+                                   service_status, spark, synchronization,
+                                   ymodem)
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
                                        settings_api, system_api)
 from brewblox_devcon_spark.codec import codec, unit_conversion
@@ -39,6 +40,12 @@ def block_args():
     }
 
 
+@pytest.fixture(autouse=True)
+def m_publish(mocker):
+    m = mocker.patch(blocks_api.__name__ + '.mqtt.publish', AsyncMock())
+    return m
+
+
 def repeated_blocks(ids, args):
     return [{
         'id': id,
@@ -55,6 +62,7 @@ async def app(app, loop):
     scheduler.setup(app)
     commander_sim.setup(app)
     block_store.setup(app)
+    block_cache.setup(app)
     config_store.setup(app)
     unit_conversion.setup(app)
     codec.setup(app)
@@ -74,6 +82,25 @@ async def app(app, loop):
 async def production_app(app, loop):
     app['config']['debug'] = False
     return app
+
+
+async def test_merge():
+    assert blocks_api.merge(
+        {},
+        {'a': True}
+    ) == {'a': True}
+    assert blocks_api.merge(
+        {'a': False},
+        {'a': True}
+    ) == {'a': True}
+    assert blocks_api.merge(
+        {'a': True},
+        {'b': True}
+    ) == {'a': True, 'b': True}
+    assert blocks_api.merge(
+        {'nested': {'a': False, 'b': True}, 'second': {}},
+        {'nested': {'a': True}, 'second': 'empty'}
+    ) == {'nested': {'a': True, 'b': True}, 'second': 'empty'}
 
 
 async def test_do(app, client):
@@ -163,9 +190,16 @@ async def test_read_logged(app, client, block_args):
     assert 'address' not in retd['data']  # address is not a logged field
 
 
-async def test_update(app, client, block_args):
+async def test_write(app, client, block_args, m_publish):
     await response(client.post('/blocks/create', json=block_args), 201)
     assert await response(client.post('/blocks/write', json=block_args))
+    assert m_publish.call_count == 2
+
+
+async def test_patch(app, client, block_args, m_publish):
+    await response(client.post('/blocks/create', json=block_args), 201)
+    assert await response(client.post('/blocks/patch', json=block_args))
+    assert m_publish.call_count == 2
 
 
 async def test_delete(app, client, block_args):

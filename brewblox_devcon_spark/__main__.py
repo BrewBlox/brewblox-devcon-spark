@@ -4,14 +4,17 @@ Example of how to import and use the brewblox service
 
 import logging
 from configparser import ConfigParser
+from os import getenv
 
 from brewblox_service import brewblox_logger, http, mqtt, scheduler, service
 
-from brewblox_devcon_spark import (block_store, broadcaster, commander,
-                                   config_store, connection, service_status,
-                                   simulator, spark, synchronization)
+from brewblox_devcon_spark import (block_cache, block_store, broadcaster,
+                                   commander, config_store, connection,
+                                   service_status, simulator, spark,
+                                   synchronization)
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
-                                       settings_api, system_api)
+                                       mqtt_api, settings_api, sim_api,
+                                       system_api)
 from brewblox_devcon_spark.codec import codec, unit_conversion
 
 LOGGER = brewblox_logger(__name__)
@@ -53,7 +56,7 @@ def create_parser(default_name='spark'):
     group.add_argument('--command-timeout',
                        help='Timeout period (in seconds) for controller commands. [$(default)s]',
                        type=float,
-                       default=10)
+                       default=20)
     group.add_argument('--broadcast-interval',
                        help='Interval (in seconds) between broadcasts of controller state. '
                        'Set to a value <= 0 to disable broadcasting. [%(default)s]',
@@ -91,6 +94,11 @@ def main():
     config = app['config']
     app['ini'] = parse_ini(app)
 
+    if getenv('ENABLE_DEBUGGER', False):  # pragma: no cover
+        import debugpy
+        debugpy.listen(('0.0.0.0', 5678))
+        LOGGER.info('Debugger is enabled and listening on 5678')
+
     if config['simulation']:
         config['device_id'] = config['device_id'] or '123456789012345678901234'
         config['device_host'] = 'localhost'
@@ -109,6 +117,7 @@ def main():
 
     config_store.setup(app)
     block_store.setup(app)
+    block_cache.setup(app)
     unit_conversion.setup(app)
     codec.setup(app)
     spark.setup(app)
@@ -119,6 +128,10 @@ def main():
     blocks_api.setup(app)
     system_api.setup(app)
     settings_api.setup(app)
+    mqtt_api.setup(app)
+
+    if config['simulation']:
+        sim_api.setup(app)
 
     synchronization.setup(app)
 

@@ -5,12 +5,13 @@ REST API for Spark blocks
 import asyncio
 import re
 from copy import deepcopy
+from typing import List
 
 from aiohttp import web
 from aiohttp_apispec import docs, request_schema, response_schema
-from brewblox_service import brewblox_logger, strex
+from brewblox_service import brewblox_logger, mqtt, strex
 
-from brewblox_devcon_spark import (block_store, const, exceptions,
+from brewblox_devcon_spark import (block_cache, block_store, const, exceptions,
                                    service_status, spark, twinkeydict)
 from brewblox_devcon_spark.api import schemas
 
@@ -39,17 +40,31 @@ def validate_sid(sid: str):
         raise exceptions.InvalidId(f'"{sid}" is an ID reserved for system objects')
 
 
+def merge(a: dict, b: dict):
+    """Merges dict b into dict a"""
+    for key in b:
+        if key in a:
+            if isinstance(a[key], dict) and isinstance(b[key], dict):
+                merge(a[key], b[key])
+            else:
+                a[key] = b[key]
+        else:
+            a[key] = b[key]
+    return a
+
+
 class BlocksApi():
 
-    def __init__(self, app: web.Application, wait_sync=True):
+    def __init__(self, app: web.Application):
         self.app = app
-        self._wait_sync = wait_sync
         self._spark = spark.fget(app)
         self._store = block_store.fget(app)
+        self._publish_changed = True
 
     async def wait_for_sync(self):
         await asyncio.wait_for(
-            service_status.wait_synchronized(self.app, self._wait_sync), SYNC_WAIT_TIMEOUT_S)
+            service_status.wait_synchronized(self.app),
+            SYNC_WAIT_TIMEOUT_S)
 
     async def create(self, block: dict) -> dict:
         """
@@ -75,11 +90,15 @@ class BlocksApi():
         self._store.rename((created['id'], None), (sid, None))
         created['id'] = sid
 
+        block_cache.set(self.app, created)
+        await self.publish(changed=[created])
         return created
 
     async def read(self, ids: dict) -> dict:
         await self.wait_for_sync()
-        return await self._spark.read_object(ids)
+        block = await self._spark.read_object(ids)
+        block_cache.set(self.app, block)
+        return block
 
     async def read_logged(self, ids: dict) -> dict:
         await self.wait_for_sync()
@@ -90,11 +109,35 @@ class BlocksApi():
         return await self._spark.read_stored_object(ids)
 
     async def write(self, block: dict) -> dict:
-        """
-        Writes new values to existing object on controller
-        """
         await self.wait_for_sync()
-        return await self._spark.write_object(block)
+        block = await self._spark.write_object(block)
+        block_cache.set(self.app, block)
+        await self.publish(changed=[block])
+        return block
+
+    async def patch(self, partial: dict) -> dict:
+        await self.wait_for_sync()
+        block = block_cache.get(self.app, partial) or await self.read(partial)
+        block = deepcopy(block)
+        merge(block['data'], partial['data'])
+        return await self.write(block)
+
+    async def publish(self, changed: List[dict] = None, deleted: List[str] = None):
+        if self._publish_changed:
+            name = self.app['config']['name']
+            topic = self.app['config']['state_topic'] + f'/{name}/patch'
+            await mqtt.publish(self.app,
+                               topic,
+                               err=False,
+                               message={
+                                   'key': name,
+                                   'type': 'Spark.patch',
+                                   'ttl': '1d',
+                                   'data': {
+                                       'changed': changed or [],
+                                       'deleted': deleted or [],
+                                   }
+                               })
 
     async def delete(self, ids: dict) -> dict:
         """
@@ -112,12 +155,16 @@ class BlocksApi():
             nid = self._store.right_key(sid)
 
         del self._store[sid, nid]
-        return {'id': sid, 'nid': nid}
+        ids = {'id': sid, 'nid': nid}
+        block_cache.delete(self.app, ids)
+        return ids
 
     async def read_all(self) -> list:
         await self.wait_for_sync()
         response = await self._spark.list_objects()
-        return response.get('objects', [])
+        blocks = response.get('objects', [])
+        block_cache.set_all(self.app, blocks)
+        return blocks
 
     async def read_all_logged(self) -> list:
         await self.wait_for_sync()
@@ -139,6 +186,7 @@ class BlocksApi():
             'groups': [],
             'data': {},
         })
+        block_cache.delete_all(self.app)
         return {}
 
     async def compatible(self, interface: str) -> list:
@@ -159,6 +207,7 @@ class BlocksApi():
     async def rename(self, existing: str, desired: str):
         validate_sid(desired)
         self._store.rename((existing, None), (desired, None))
+        block_cache.rename(self.app, existing, desired)
         return {
             'id': desired,
             'nid': self._store.right_key(desired),
@@ -195,6 +244,7 @@ class BlocksApi():
         await self.wait_for_sync()
         await self.delete_all()
 
+        self._publish_changed = False
         error_log = []
 
         # First populate the datastore, to avoid unknown links
@@ -225,6 +275,7 @@ class BlocksApi():
                 error_log.append(message)
                 LOGGER.error(message)
 
+        self._publish_changed = True
         used_nids = [b.get('nid') for b in await self.read_all()]
         unused = [
             (sid, nid) for (sid, nid) in self._store
@@ -250,7 +301,7 @@ class BlocksApi():
 async def _create(request: web.Request) -> web.Response:
     return web.json_response(
         await BlocksApi(request.app).create(request['data']),
-        status=201,
+        status=201
     )
 
 
@@ -300,9 +351,22 @@ async def _read_stored(request: web.Request) -> web.Response:
 @routes.post('/blocks/write')
 @request_schema(schemas.BlockSchema)
 @response_schema(schemas.BlockSchema)
-async def _update(request: web.Request) -> web.Response:
+async def _write(request: web.Request) -> web.Response:
     return web.json_response(
         await BlocksApi(request.app).write(request['data'])
+    )
+
+
+@docs(
+    tags=['Blocks'],
+    summary='Patch existing block',
+)
+@routes.post('/blocks/patch')
+@request_schema(schemas.BlockPatchSchema)
+@response_schema(schemas.BlockSchema)
+async def _patch(request: web.Request) -> web.Response:
+    return web.json_response(
+        await BlocksApi(request.app).patch(request['data'])
     )
 
 
@@ -311,7 +375,7 @@ async def _update(request: web.Request) -> web.Response:
     summary='Delete block',
 )
 @routes.post('/blocks/delete')
-@request_schema(schemas.BlockIdSchema)
+@request_schema(schemas.BlockIdSchema(unknown='exclude'))
 @response_schema(schemas.BlockIdSchema)
 async def _delete(request: web.Request) -> web.Response:
     return web.json_response(

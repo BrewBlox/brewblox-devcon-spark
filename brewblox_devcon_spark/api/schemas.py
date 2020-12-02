@@ -2,7 +2,7 @@
 Schemas used in API endpoints
 """
 
-from marshmallow import Schema, fields
+from marshmallow import INCLUDE, Schema, fields
 
 
 class AliasCreateSchema(Schema):
@@ -33,8 +33,17 @@ class BlockSchema(Schema):
 
 
 class BlockIdSchema(Schema):
+    class Meta:
+        unknown = INCLUDE
+    serviceId = fields.String(required=False)
     id = fields.String(required=False)
     nid = fields.Integer(required=False)
+
+
+class BlockPatchSchema(BlockIdSchema):
+    class Meta:
+        unknown = INCLUDE
+    data = fields.Dict(required=True)
 
 
 class BlockRenameSchema(Schema):
