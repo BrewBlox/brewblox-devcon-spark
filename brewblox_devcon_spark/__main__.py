@@ -62,11 +62,6 @@ def create_parser(default_name='spark'):
                        'Set to a value <= 0 to disable broadcasting. [%(default)s]',
                        type=float,
                        default=5)
-    group.add_argument('--broadcast-ttl',
-                       help='Time-to-live value in seconds for published state events. '
-                       'This does not apply to history data. [%(default)s]',
-                       type=float,
-                       default=60)
     group.add_argument('--volatile',
                        action='store_true',
                        help='Disable all outgoing network calls. [%(default)s]')
