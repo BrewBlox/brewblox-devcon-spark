@@ -101,7 +101,6 @@ async def test_broadcast(app, m_api, m_publish, client, connected):
              message={
                  'key': 'test_app',
                  'type': 'Spark.state',
-                 'ttl': '60.0s',
                  'data': {
                      'status': ANY,
                      'blocks': object_list,
