@@ -54,8 +54,9 @@ class FirmwareUpdater():
                          {
                              'key': self.name,
                              'type': 'Spark.update',
-                             'ttl': '10s',
-                             'data': [msg]
+                             'data': {
+                                 'log': [msg],
+                             },
                          },
                          err=False))
 

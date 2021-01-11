@@ -54,7 +54,6 @@ def app_config() -> dict:
         'simulation': False,
         'command_timeout': 10,
         'broadcast_interval': 5,
-        'broadcast_ttl': 60,
         'volatile': True,
     }
 
@@ -72,7 +71,6 @@ def sys_args(app_config) -> list:
         '--discovery', app_config['discovery'],
         '--command-timeout', app_config['command_timeout'],
         '--broadcast-interval', app_config['broadcast_interval'],
-        '--broadcast-ttl', app_config['broadcast_ttl'],
         '--volatile',
     ]]
 
