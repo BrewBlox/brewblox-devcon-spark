@@ -89,7 +89,7 @@ steps:
     --tag $(FLASHER_REPO):$(TAG)
     --tag $(FLASHER_REPO):rpi-$(TAG)
     --push
-    --platform linux/amd64,linux/arm/v7
+    --platform linux/amd64,linux/arm/v7,linux/arm64/v8
     flasher
   displayName: (Flasher) Build Docker image
   condition: and(succeeded(), variables.BRANCH)
