@@ -8,7 +8,7 @@ from pathlib import Path
 from platform import machine
 
 from aiohttp import web
-from brewblox_service import brewblox_logger, features
+from brewblox_service import brewblox_logger, features, strex
 
 LOGGER = brewblox_logger(__name__)
 
@@ -19,21 +19,34 @@ class FirmwareSimulator():
         self.proc: subprocess.Popen = None
 
     @property
-    def arm(self) -> bool:
-        return machine().startswith('arm')
+    def binary(self) -> str:
+        arch = machine()
+        if arch == 'armv7l':
+            return 'brewblox-arm'
+        if arch == 'x86_64':
+            return 'brewblox-amd'
+        if arch == 'aarch64':
+            return None  # Not yet supported
+        return None
 
     def start(self, device_id):
         self.stop()
 
-        arch = 'arm' if self.arm else 'amd'
+        if not self.binary:
+            LOGGER.error(f'No simulator available for architecture {machine()}')
+            return
+
         workdir = Path('simulator/').resolve()
         workdir.mkdir(mode=0o777, exist_ok=True)
         workdir.joinpath('device_key.der').touch(mode=0o777, exist_ok=True)
         workdir.joinpath('server_key.der').touch(mode=0o777, exist_ok=True)
         workdir.joinpath('eeprom.bin').touch(mode=0o777, exist_ok=True)
 
-        self.proc = subprocess.Popen([f'../binaries/brewblox-{arch}', '--device_id', device_id], cwd=workdir)
-        LOGGER.info(f'Firmware simulator start ok: {self.proc.poll() is None}')
+        try:
+            self.proc = subprocess.Popen([f'../binaries/{self.binary}', '--device_id', device_id], cwd=workdir)
+            LOGGER.info(f'Firmware simulator start ok: {self.proc.poll() is None}')
+        except OSError as ex:
+            LOGGER.error(strex(ex))
 
     def stop(self):
         if self.proc:
