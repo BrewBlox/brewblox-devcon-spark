@@ -67,7 +67,7 @@ async def stream_display(request: web.Request) -> web.Response:
         request.app['websockets'].discard(ws)
         listen_task and listen_task.cancel()
 
-    return ws
+    return ws  # pragma: no cover
 
 
 def setup(app: web.Application):
