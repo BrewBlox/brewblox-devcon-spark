@@ -45,7 +45,7 @@ class FirmwareSimulator():
         try:
             self.proc = subprocess.Popen([f'../binaries/{self.binary}', '--device_id', device_id], cwd=workdir)
             LOGGER.info(f'Firmware simulator start ok: {self.proc.poll() is None}')
-        except OSError as ex:
+        except OSError as ex:  # pragma: no cover
             LOGGER.error(strex(ex))
 
     def stop(self):

@@ -55,6 +55,7 @@ class ResetData(enum.Enum):
     FIRMWARE_UPDATE_FAILED = '04'
     LISTENING_MODE_EXIT = '05'
     FIRMWARE_UPDATE_SUCCESS = '06'
+    OUT_OF_MEMORY = '07'
 
 
 class Opcode(enum.IntEnum):
