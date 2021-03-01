@@ -16,18 +16,22 @@ then
 fi
 docker create --name bin-box brewblox/firmware-bin:"${TAG}"
 
-# Get files
-rm -rf ./binaries 2> /dev/null || true
-docker cp bin-box:/binaries ./
+# Clear and recreate dir
+rm -rf ./firmware-bin
+mkdir -p ./firmware-bin
 
-# Make simulator executable
-chmod a+x ./binaries/brewblox-amd
+# Copy files
+docker cp bin-box:/binaries ./firmware-bin/
+docker cp bin-box:/scripts ./firmware-bin/
+
+# Make simulators executable
+chmod a+x ./firmware-bin/binaries/*.sim
 
 # Remove image
 docker rm bin-box > /dev/null
 
 # Pull submodule
-proto_version=$(awk -F "=" '/proto_version/ {print $2}' binaries/firmware.ini)
+proto_version=$(awk -F "=" '/proto_version/ {print $2}' ./firmware-bin/binaries/firmware.ini)
 proto_dir=brewblox_devcon_spark/codec/proto
 git -C ${proto_dir} fetch
 git -C ${proto_dir} checkout "${proto_version}"

@@ -1,0 +1,22 @@
+#! /usr/bin/env bash
+set -e
+
+function flash() {
+    particle flash --serial --yes "$1"
+    sleep 5
+    particle usb reset
+}
+
+if [[ -n $(lsusb -d 2b04:c006) ]]; then
+    echo "Flashing Photon bootloader..."
+    flash bootloader-photon.bin
+    exit
+fi
+
+if [[ -n $(lsusb -d 2b04:c008) ]]; then
+    echo "Flashing P1 bootloader..."
+    flash bootloader-p1.bin
+    exit
+fi
+
+echo "No compatible USB devices found"
