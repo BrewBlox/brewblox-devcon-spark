@@ -1,4 +1,5 @@
 dist/
 config/
 binaries/
+firmware-bin/
 requirements.txt

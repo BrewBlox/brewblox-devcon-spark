@@ -149,7 +149,7 @@ class FileSender():
 
     async def transfer(self, conn: Connection):
         handshake = await self._trigger(conn)
-        filename = f'binaries/brewblox-{handshake.platform}.bin'
+        filename = f'firmware-bin/binaries/brewblox-{handshake.platform}.bin'
 
         self._notify(f'Controller is in transfer mode, sending file {filename}')
         async with aiofiles.open(filename, 'rb') as file:
