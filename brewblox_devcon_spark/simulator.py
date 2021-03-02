@@ -26,7 +26,7 @@ class FirmwareSimulator():
         if arch == 'x86_64':
             return 'brewblox-amd64.sim'
         if arch == 'aarch64':
-            return None  # Not yet supported
+            return 'brewblox-arm64.sim'
         return None
 
     def start(self, device_id):

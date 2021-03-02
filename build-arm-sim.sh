@@ -22,12 +22,17 @@ git -C "$FW_DIR" fetch --all
 git -C "$FW_DIR" checkout "$bin_fw_version"
 git -C "$FW_DIR" submodule update
 
-date # Start
+date # Start 32
 bash "$FW_DIR"/docker/build-arm32.sh
 cp "$FW_DIR"/build/target/brewblox-gcc/brewblox-gcc ./firmware-bin/binaries/brewblox-arm32.sim
+
+date # Start 64
+bash "$FW_DIR"/docker/build-arm64.sh
+cp "$FW_DIR"/build/target/brewblox-gcc/brewblox-gcc ./firmware-bin/binaries/brewblox-arm64.sim
 
 git -C "$FW_DIR" checkout -
 git -C "$FW_DIR" submodule update
 
 date # End
+alert "ARM build done!"
 echo "Done!"
