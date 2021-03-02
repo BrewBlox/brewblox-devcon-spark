@@ -22,11 +22,11 @@ class FirmwareSimulator():
     def binary(self) -> str:
         arch = machine()
         if arch == 'armv7l':
-            return 'brewblox-arm'
+            return 'brewblox-arm32.sim'
         if arch == 'x86_64':
-            return 'brewblox-amd'
+            return 'brewblox-amd64.sim'
         if arch == 'aarch64':
-            return None  # Not yet supported
+            return 'brewblox-arm64.sim'
         return None
 
     def start(self, device_id):
@@ -43,7 +43,9 @@ class FirmwareSimulator():
         workdir.joinpath('eeprom.bin').touch(mode=0o777, exist_ok=True)
 
         try:
-            self.proc = subprocess.Popen([f'../binaries/{self.binary}', '--device_id', device_id], cwd=workdir)
+            self.proc = subprocess.Popen(
+                [f'../firmware-bin/binaries/{self.binary}', '--device_id', device_id],
+                cwd=workdir)
             LOGGER.info(f'Firmware simulator start ok: {self.proc.poll() is None}')
         except OSError as ex:  # pragma: no cover
             LOGGER.error(strex(ex))

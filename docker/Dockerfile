@@ -20,7 +20,7 @@ ENV SERVICE_INFO=${service_info}
 ENV BOOST_V=1.67.0
 
 COPY --from=base /wheeley /wheeley
-COPY ./binaries /app/binaries
+COPY ./firmware-bin /app/firmware-bin
 
 RUN set -ex \
     && pip3 install --no-index --find-links=/wheeley brewblox-devcon-spark \

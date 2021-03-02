@@ -77,7 +77,7 @@ def create_parser(default_name='spark'):
 
 def parse_ini(app):  # pragma: no cover
     parser = ConfigParser()
-    parser.read('binaries/firmware.ini')
+    parser.read('firmware-bin/binaries/firmware.ini')
     config = dict(parser['FIRMWARE'].items())
     LOGGER.info(f'firmware.ini: {config}')
     return config
