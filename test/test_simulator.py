@@ -25,6 +25,12 @@ async def managed_dir():
     rmtree('simulator/', ignore_errors=True)
 
 
+@pytest.fixture(autouse=True)
+def m_Popen(mocker):
+    m = mocker.patch(TESTED + '.subprocess.Popen')
+    return m
+
+
 @pytest.fixture
 def arm32_arch(mocker):
     m = mocker.patch(TESTED + '.machine')
@@ -47,22 +53,22 @@ def dummy_arch(mocker):
 
 
 async def test_sim(app, client, managed_dir):
-    assert simulator.fget(app).sim.proc.poll() is None
+    assert simulator.fget(app).sim.binary == 'brewblox-amd64.sim'
     assert service_status.desc(app).connection_kind is None
     service_status.set_connected(app, 'localhost:8332')
     assert service_status.desc(app).connection_kind == 'simulation'
 
 
 async def test_arm64(arm64_arch, app, client, managed_dir):
-    # No simulator is available
-    assert simulator.fget(app).sim.proc is None
+    # Assuming AMD64 is used for development
+    # Simulator will crash immediately with exec format error
+    assert simulator.fget(app).sim.binary == 'brewblox-arm64.sim'
 
 
 async def test_arm32(arm32_arch, app, client, managed_dir):
     # Assuming AMD64 is used for development
     # Simulator will crash immediately with exec format error
-    # assert simulator.fget(app).sim.proc is None
-    pass
+    assert simulator.fget(app).sim.binary == 'brewblox-arm32.sim'
 
 
 async def test_dummy(dummy_arch, app, client, managed_dir):
