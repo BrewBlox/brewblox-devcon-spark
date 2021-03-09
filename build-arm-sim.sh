@@ -34,5 +34,4 @@ git -C "$FW_DIR" checkout -
 git -C "$FW_DIR" submodule update
 
 date # End
-alert "ARM build done!"
 echo "Done!"
