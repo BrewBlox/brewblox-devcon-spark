@@ -46,7 +46,7 @@ steps:
   displayName: Install dependencies
 
 - bash: |
-    poetry run pytest --integration
+    poetry run pytest
   displayName: Run Pytest
 
 - bash: |
