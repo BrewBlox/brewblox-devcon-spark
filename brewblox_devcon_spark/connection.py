@@ -3,6 +3,8 @@ Implements async serial connection.
 """
 
 import asyncio
+from contextlib import suppress
+from subprocess import Popen
 from typing import Callable, Set
 
 from aiohttp import web
@@ -29,6 +31,7 @@ class SparkConnection(repeater.RepeaterFeature):
         self._retry_count: int = 0
         self._retry_interval: float = 0
 
+        self._proc: Popen = None
         self._address: str = None
         self._reader: asyncio.StreamReader = None
         self._writer: asyncio.StreamWriter = None
@@ -115,7 +118,11 @@ class SparkConnection(repeater.RepeaterFeature):
                 await asyncio.sleep(self.retry_interval)
 
             await service_status.wait_autoconnecting(self.app)
-            self._address, self._reader, self._writer = await connect_funcs.connect(self.app)
+            result = await connect_funcs.connect(self.app)
+            self._proc = result.process
+            self._address = result.address
+            self._reader = result.reader
+            self._writer = result.writer
             self._parser = cbox_parser.ControlboxParser()
 
             service_status.set_connected(self.app, self._address)
@@ -162,16 +169,19 @@ class SparkConnection(repeater.RepeaterFeature):
             raise
 
         finally:
-            try:
+            with suppress(Exception):
                 self._writer.close()
-                LOGGER.info(f'Closed {self}')
-            except Exception:
-                pass
-            finally:
-                service_status.set_disconnected(self.app)
-                self._reader = None
-                self._writer = None
-                self._parser = None
+                LOGGER.info(f'{self} closed stream writer')
+
+            with suppress(Exception):
+                self._proc.terminate()
+                LOGGER.info(f'{self} terminated subprocess')
+
+            service_status.set_disconnected(self.app)
+            self._proc = None
+            self._reader = None
+            self._writer = None
+            self._parser = None
 
     async def write(self, data: str):
         return await self.write_encoded(data.encode())
