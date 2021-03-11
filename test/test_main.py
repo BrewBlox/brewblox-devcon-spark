@@ -7,7 +7,7 @@ from brewblox_service import mqtt
 
 from brewblox_devcon_spark import __main__ as main
 from brewblox_devcon_spark import (block_store, broadcaster, commander,
-                                   config_store, simulator, spark)
+                                   config_store, spark)
 
 TESTED = main.__name__
 
@@ -42,9 +42,3 @@ def test_simulation(simulation, mocker, app):
     mocker.patch(TESTED + '.service.create_app').return_value = app
 
     main.main()
-
-    if simulation:
-        assert simulator.fget(app) is not None
-    else:
-        with pytest.raises(KeyError):
-            simulator.fget(app)
