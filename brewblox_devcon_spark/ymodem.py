@@ -6,14 +6,13 @@ import asyncio
 import math
 import os
 import re
+import subprocess
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, Awaitable, ByteString, List
+from typing import Any, Awaitable, ByteString, List, Optional
 
 import aiofiles
-import serial
-from brewblox_service import brewblox_logger
-from serial_asyncio import SerialTransport
+from brewblox_service import brewblox_logger, strex
 
 YMODEM_TRIGGER_BAUD_RATE = 28800
 YMODEM_TRANSFER_BAUD_RATE = 115200
@@ -30,6 +29,7 @@ class SendState:
 @dataclass
 class Connection:
     address: Any
+    process: Optional[subprocess.Popen]
     transport: asyncio.Transport
     protocol: asyncio.Protocol
 
@@ -84,28 +84,35 @@ def is_tcp(address) -> str:
     return ':' in address
 
 
-async def connect_tcp(address) -> Connection:
-    LOGGER.info(f'Connecting over TCP to {address}...')
+async def connect_tcp(address, proc: subprocess.Popen = None) -> Connection:
+    LOGGER.info(f'Connecting to {address}...')
     host, port = address.split(':')
-    transport, protocol = await asyncio.get_event_loop().create_connection(FileSenderProtocol, host, port)
-    conn = Connection(f'{host}:{port}', transport, protocol)
+    loop = asyncio.get_event_loop()
+    transport, protocol = await loop.create_connection(FileSenderProtocol, host, port)
+    conn = Connection(f'{host}:{port}', proc, transport, protocol)
     await conn.protocol.connected
     return conn
 
 
 async def connect_serial(address) -> Connection:
-    LOGGER.info(f'Connecting over Serial to {address}')
-    protocol = FileSenderProtocol()
+    LOGGER.info(f'Creating bridge for {address}')
 
-    ser = serial.serial_for_url(address, baudrate=YMODEM_TRANSFER_BAUD_RATE)
+    proc = subprocess.Popen([
+        '/usr/bin/socat',
+        'tcp-listen:8332,reuseaddr,fork',
+        f'file:{address},raw,echo=0,b{YMODEM_TRANSFER_BAUD_RATE}'
+    ])
 
-    transport = SerialTransport(asyncio.get_event_loop(), protocol, ser)
-    transport.serial.rts = False
-    transport.set_write_buffer_limits(high=255)  # receiver RX buffer is 256, so limit send buffer to 255
+    last_err = None
+    for _ in range(5):
+        try:
+            await asyncio.sleep(1)
+            return await connect_tcp('localhost:8332', proc)
+        except OSError as ex:
+            last_err = strex(ex)
+            LOGGER.debug(f'Subprocess connection error: {last_err}')
 
-    conn = Connection(address, transport, protocol)
-    await conn.protocol.connected
-    return conn
+    raise ConnectionError(last_err)
 
 
 async def connect(address) -> Connection:
