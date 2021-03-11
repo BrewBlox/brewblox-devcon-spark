@@ -10,8 +10,7 @@ from brewblox_service import brewblox_logger, http, mqtt, scheduler, service
 
 from brewblox_devcon_spark import (block_cache, block_store, broadcaster,
                                    commander, config_store, connection,
-                                   service_status, simulator, spark,
-                                   synchronization)
+                                   service_status, spark, synchronization)
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
                                        mqtt_api, settings_api, sim_api,
                                        system_api)
@@ -96,10 +95,6 @@ def main():
 
     if config['simulation']:
         config['device_id'] = config['device_id'] or '123456789012345678901234'
-        config['device_host'] = 'localhost'
-        config['device_port'] = 8332
-        config['device_serial'] = None
-        simulator.setup(app)
 
     service_status.setup(app)
     http.setup(app)
@@ -124,9 +119,7 @@ def main():
     system_api.setup(app)
     settings_api.setup(app)
     mqtt_api.setup(app)
-
-    if config['simulation']:
-        sim_api.setup(app)
+    sim_api.setup(app)
 
     synchronization.setup(app)
 

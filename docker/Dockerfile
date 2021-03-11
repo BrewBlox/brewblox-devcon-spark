@@ -7,7 +7,8 @@ ENV PIP_EXTRA_INDEX_URL=https://www.piwheels.org/simple
 ENV PIP_FIND_LINKS=/wheeley
 
 RUN set -ex \
-    && pip3 install wheel \
+    && mkdir /wheeley \
+    && pip3 install --upgrade pip wheel \
     && pip3 wheel --wheel-dir=/wheeley -r /app/requirements.txt \
     && pip3 wheel --wheel-dir=/wheeley /app/dist/*
 
@@ -28,6 +29,7 @@ RUN set -ex \
     && pip3 freeze \
     && apt-get update -q \
     && apt-get install -yq \
+    socat \
     libboost-system${BOOST_V} \
     libboost-program-options${BOOST_V} \
     libboost-random${BOOST_V} \
