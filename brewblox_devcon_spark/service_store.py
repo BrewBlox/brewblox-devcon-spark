@@ -11,8 +11,8 @@ from aiohttp import web
 from brewblox_service import brewblox_logger, features, http, strex
 
 from brewblox_devcon_spark import const
-from brewblox_devcon_spark.datastore import (NAMESPACE, STORE_URL,
-                                             FlushedStore, non_volatile)
+from brewblox_devcon_spark.datastore import (STORE_URL, FlushedStore,
+                                             non_volatile)
 
 SERVICE_STORE_KEY = '{name}-service-db'
 READY_TIMEOUT_S = 60
@@ -37,7 +37,7 @@ class ServiceConfigStore(FlushedStore):
         self.key: str = SERVICE_STORE_KEY.format(name=self.app['config']['name'])
 
     def __str__(self):
-        return f'<{type(self).__name__} for {NAMESPACE}:{self.key}>'
+        return f'<{type(self).__name__}>'
 
     async def startup(self, app: web.Application):
         await FlushedStore.startup(self, app)
@@ -63,15 +63,15 @@ class ServiceConfigStore(FlushedStore):
             if not self.volatile:
                 resp = await http.session(self.app).post(f'{STORE_URL}/get', json={
                     'id': self.key,
-                    'namespace': NAMESPACE,
+                    'namespace': const.SPARK_NAMESPACE,
                 })
                 # `value` is None if no document is found.
                 resp_value = (await resp.json())['value']
-                if resp_value is None:
-                    warnings.warn(f'{self} found no config. Defaults will be used.')
-                else:
+                if resp_value:
+                    LOGGER.info(f'{self} read {resp_value}')
                     data = resp_value.get('data', {})
-                    LOGGER.info(f'{self} read config: {data}')
+                else:
+                    warnings.warn(f'{self} found no config. Defaults will be used.')
 
         except asyncio.CancelledError:  # pragma: no cover
             raise
@@ -89,7 +89,7 @@ class ServiceConfigStore(FlushedStore):
         await http.session(self.app).post(f'{STORE_URL}/set', json={
             'value': {
                 'id': self.key,
-                'namespace': NAMESPACE,
+                'namespace': const.SPARK_NAMESPACE,
                 'data': self._config,
             },
         })

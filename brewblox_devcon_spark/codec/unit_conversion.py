@@ -69,14 +69,11 @@ class UnitConverter(features.ServiceFeature):
         pass
 
     @property
-    def user_units(self) -> Dict[str, str]:
-        return {
-            'Temp': self._table['Celsius'].user_value,
-        }
+    def temperature(self) -> str:
+        return self._table['Celsius'].user_value
 
-    @user_units.setter
-    def user_units(self, newV: Dict[str, str]):
-        temp = newV.get('Temp', SYSTEM_TEMP)
+    @temperature.setter
+    def temperature(self, temp: str = SYSTEM_TEMP):
         cfg = derived_table(temp)
 
         for id, mapping in cfg.items():

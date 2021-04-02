@@ -46,7 +46,7 @@ Serial communication is asynchronous: requests and responses are not linked at t
 For when using an actual Spark is inconvenient, there is a simulation version. It serves as a drop-in replacement for the real commander: it handles commands, and returns sensible values.
 Commands are encoded/decoded, to closely match the real situation.
 
-### Datastore ([block_store.py](./brewblox_devcon_spark/block_store.py) / [config_store.py](./brewblox_devcon_spark/config_store.py))
+### Datastore ([block_store.py](./brewblox_devcon_spark/block_store.py) / [service_store.py](./brewblox_devcon_spark/service_store.py)) / [global_store.py](./brewblox_devcon_spark/global_store.py))
 
 The service must keep track of object metadata not directly persisted by the controller. This includes user-defined object names and descriptions.
 

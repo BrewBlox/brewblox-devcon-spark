@@ -8,8 +8,9 @@ import pytest
 from brewblox_service import brewblox_logger, scheduler
 from mock import AsyncMock
 
-from brewblox_devcon_spark import (block_store, commander_sim, config_store,
-                                   service_status, spark, synchronization)
+from brewblox_devcon_spark import (block_store, commander_sim, global_store,
+                                   service_status, service_store, spark,
+                                   synchronization)
 from brewblox_devcon_spark.codec import codec, unit_conversion
 from brewblox_devcon_spark.service_status import StatusDescription
 
@@ -53,23 +54,14 @@ async def app(app, loop):
     app['config']['volatile'] = True
     service_status.setup(app)
     scheduler.setup(app)
-    config_store.setup(app)
+    global_store.setup(app)
+    service_store.setup(app)
     block_store.setup(app)
     commander_sim.setup(app)
     unit_conversion.setup(app)
     codec.setup(app)
     spark.setup(app)
     return app
-
-
-# @pytest.fixture()
-# def m_api(app, mocker):
-#     api = spark.fget(app)
-#     m = mocker.patch(TESTED + '.spark.fget',
-#                      wraps=synchronization.spark.fget)
-#     # m.noop = AsyncMock()
-#     # m.write_object = AsyncMock()
-#     return m.return_value
 
 
 @pytest.fixture
@@ -135,21 +127,23 @@ async def test_device_name(app, client, syncher):
     assert syncher.device_name.startswith('simulator__')
 
 
-async def test_user_units(app, client, syncher):
-    await syncher.run()
-    assert syncher.get_user_units() == {'Temp': 'degC'}
-    assert await syncher.set_user_units({'Temp': 'degF'}) == {'Temp': 'degF'}
-    assert syncher.get_user_units() == {'Temp': 'degF'}
-
-    assert await syncher.set_user_units({'Temp': 'lava'}) == {'Temp': 'degF'}
-
-
 async def test_autoconnecting(app, client, syncher):
     await syncher.run()
     assert syncher.get_autoconnecting() is True
     assert await syncher.set_autoconnecting(False) is False
     assert syncher.get_autoconnecting() is False
     assert await service_status.wait_autoconnecting(app, False) is False
+
+
+async def test_on_units_changed(app, client, syncher):
+    # Update during runtime
+    await syncher.run()
+    global_store.fget(app).units['temperature'] = 'degF'
+    await syncher.on_units_changed()
+
+    # Should safely handle disconnected state
+    await disconnect(app)
+    await syncher.on_units_changed()
 
 
 async def test_errors(app, client, syncher, mocker):

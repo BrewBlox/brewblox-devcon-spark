@@ -11,8 +11,8 @@ from aiohttp import web
 from brewblox_service import brewblox_logger, features, http, strex
 
 from brewblox_devcon_spark import const
-from brewblox_devcon_spark.datastore import (NAMESPACE, STORE_URL,
-                                             FlushedStore, non_volatile)
+from brewblox_devcon_spark.datastore import (STORE_URL, FlushedStore,
+                                             non_volatile)
 from brewblox_devcon_spark.twinkeydict import TwinKeyDict, TwinKeyError
 
 BLOCK_STORE_KEY = '{id}-blocks-db'
@@ -42,7 +42,7 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict):
         self.clear()  # inserts defaults
 
     def __str__(self):
-        return f'<{type(self).__name__} for {NAMESPACE}:{self.key}>'
+        return f'<{type(self).__name__}>'
 
     async def startup(self, app: web.Application):
         await FlushedStore.startup(self, app)
@@ -62,7 +62,7 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict):
             if not self.volatile:
                 resp = await http.session(self.app).post(f'{STORE_URL}/get', json={
                     'id': key,
-                    'namespace': NAMESPACE,
+                    'namespace': const.SPARK_NAMESPACE,
                 })
                 self.key = key
                 data = (await resp.json())['value'].get('data', [])
@@ -98,7 +98,7 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict):
         await http.session(self.app).post(f'{STORE_URL}/set', json={
             'value': {
                 'id': self.key,
-                'namespace': NAMESPACE,
+                'namespace': const.SPARK_NAMESPACE,
                 'data': data,
             },
         })
