@@ -13,7 +13,6 @@ from brewblox_service import brewblox_logger, http, repeater, strex
 
 LOGGER = brewblox_logger(__name__)
 
-NAMESPACE = 'spark-service'
 STORE_URL = 'http://history:5000/history/datastore'
 RETRY_INTERVAL_S = 1
 FLUSH_DELAY_S = 5

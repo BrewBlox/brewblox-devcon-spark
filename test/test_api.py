@@ -10,9 +10,9 @@ from brewblox_service.testing import response
 from mock import ANY, AsyncMock
 
 from brewblox_devcon_spark import (block_cache, block_store, commander_sim,
-                                   config_store, const, exceptions,
-                                   service_status, spark, synchronization,
-                                   ymodem)
+                                   const, exceptions, global_store,
+                                   service_status, service_store, spark,
+                                   synchronization, ymodem)
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
                                        settings_api, system_api)
 from brewblox_devcon_spark.codec import codec, unit_conversion
@@ -63,7 +63,8 @@ async def app(app, loop):
     commander_sim.setup(app)
     block_store.setup(app)
     block_cache.setup(app)
-    config_store.setup(app)
+    global_store.setup(app)
+    service_store.setup(app)
     unit_conversion.setup(app)
     codec.setup(app)
     synchronization.setup(app)
@@ -305,24 +306,7 @@ async def test_ping(app, client):
 
 
 async def test_settings_api(app, client, block_args):
-    degC_offset = block_args['data']['offset']
-    degF_offset = degC_offset * (9/5)  # delta_degC to delta_degF
     await response(client.post('/blocks/create', json=block_args), 201)
-
-    default_units = await response(client.get('/settings/units'))
-    assert {'Temp'} == default_units.keys()
-
-    # offset is a delta_degC value
-    # We'd expect to get the same value in delta_celsius as in degK
-
-    await response(client.put('/settings/units', json={'Temp': 'degF'}))
-    retd = await response(client.post('/blocks/read', json={'id': block_args['id']}))
-    assert retd['data']['offset']['value'] == pytest.approx(degF_offset, 0.1)
-    assert retd['data']['offset']['unit'] == 'delta_degF'
-
-    await response(client.put('/settings/units', json={'Temp': 'degC'}))
-    retd = await response(client.post('/blocks/read', json={'id': block_args['id']}))
-    assert retd['data']['offset']['value'] == pytest.approx(degC_offset, 0.1)
 
     retd = await response(client.get('/settings/autoconnecting'))
     assert retd == {'enabled': True}
