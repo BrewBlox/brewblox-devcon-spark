@@ -8,7 +8,7 @@ import pytest
 from brewblox_service import scheduler
 from mock import AsyncMock, Mock
 
-from brewblox_devcon_spark import (config_store, connect_funcs, connection,
+from brewblox_devcon_spark import (service_store, connect_funcs, connection,
                                    exceptions, service_status)
 
 TESTED = connection.__name__
@@ -83,7 +83,7 @@ async def cbox_err():
 def app(app, m_connect):
     service_status.setup(app)
     scheduler.setup(app)
-    config_store.setup(app)
+    service_store.setup(app)
     return app
 
 

@@ -19,30 +19,6 @@ def setup(app: web.Application):
 
 @docs(
     tags=['Settings'],
-    summary='Get user units',
-)
-@routes.get('/settings/units')
-@response_schema(schemas.UserUnitsSchema)
-async def units_get(request: web.Request) -> web.Response:
-    syncher = synchronization.fget(request.app)
-    return web.json_response(syncher.get_user_units())
-
-
-@docs(
-    tags=['Settings'],
-    summary='Set user units',
-)
-@routes.put('/settings/units')
-@request_schema(schemas.UserUnitsSchema)
-@response_schema(schemas.UserUnitsSchema)
-async def units_put(request: web.Request) -> web.Response:
-    syncher = synchronization.fget(request.app)
-    updated = await syncher.set_user_units(request['data'])
-    return web.json_response(updated)
-
-
-@docs(
-    tags=['Settings'],
     summary='Get autoconnecting flag',
 )
 @routes.get('/settings/autoconnecting')

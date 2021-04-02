@@ -41,13 +41,13 @@ def test_convert_sys(app):
 
 def test_update_config(app, unit_ids):
     cv = unit_conversion.UnitConverter(app)
-    cv.user_units = {'Temp': 'degF'}
+    cv.temperature = 'degF'
     assert cv.to_user_value(10, 'Celsius') == pytest.approx((10 * 9 / 5) + 32)
-    assert cv.user_units['Temp'] == 'degF'
+    assert cv.temperature == 'degF'
     assert cv.to_sys_value(10, 'DeltaCelsius') == pytest.approx(10 * 5 / 9)
 
     with pytest.raises(InvalidInput):
-        cv.user_units = {'Temp': 'cm'}
+        cv.temperature = 'cm'
 
     assert cv.to_sys_unit('Celsius') == 'degC'
     assert cv.to_user_unit('Celsius') == 'degF'
