@@ -6,7 +6,7 @@ import pytest
 from brewblox_service import scheduler
 
 from brewblox_devcon_spark import (block_store, codec, commander,
-                                   commander_sim, commands, config_store,
+                                   commander_sim, commands, service_store,
                                    const, exceptions, service_status)
 
 
@@ -16,7 +16,7 @@ def app(app):
     service_status.setup(app)
     commander_sim.setup(app)
     block_store.setup(app)
-    config_store.setup(app)
+    service_store.setup(app)
     codec.setup(app)
     return app
 

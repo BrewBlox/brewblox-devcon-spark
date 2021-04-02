@@ -10,9 +10,8 @@ from typing import Callable, Set
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, repeater
 
-from brewblox_devcon_spark import (cbox_parser, commands, config_store,
-                                   connect_funcs, const, exceptions,
-                                   service_status)
+from brewblox_devcon_spark import (cbox_parser, commands, connect_funcs, const,
+                                   exceptions, service_status, service_store)
 
 MessageCallback_ = Callable[[str], None]
 
@@ -53,13 +52,13 @@ class SparkConnection(repeater.RepeaterFeature):
     @property
     def retry_interval(self) -> float:
         if not self._retry_interval:
-            with config_store.fget(self.app).open() as config:
+            with service_store.fget(self.app).open() as config:
                 self._retry_interval = config.get('retry_interval', BASE_RETRY_INTERVAL_S)
         return self._retry_interval
 
     @retry_interval.setter
     def retry_interval(self, value: float):
-        with config_store.fget(self.app).open() as config:
+        with service_store.fget(self.app).open() as config:
             config['retry_interval'] = value
         self._retry_interval = value
 
@@ -128,7 +127,7 @@ class SparkConnection(repeater.RepeaterFeature):
             service_status.set_connected(self.app, self._address)
             self._retry_count = 0
             self.reset_retry_interval()
-            LOGGER.info(f'Connected {self}')
+            LOGGER.info(f'{self} connected')
 
             while self.connected:
                 # read() does not raise an exception when connection is closed

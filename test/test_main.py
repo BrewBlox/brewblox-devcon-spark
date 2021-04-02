@@ -7,7 +7,7 @@ from brewblox_service import mqtt
 
 from brewblox_devcon_spark import __main__ as main
 from brewblox_devcon_spark import (block_store, broadcaster, commander,
-                                   config_store, spark)
+                                   service_store, spark)
 
 TESTED = main.__name__
 
@@ -27,7 +27,7 @@ def test_main(mocker, app):
 
     assert None not in [
         commander.fget(app),
-        config_store.fget(app),
+        service_store.fget(app),
         block_store.fget(app),
         spark.fget(app),
         mqtt.handler(app),

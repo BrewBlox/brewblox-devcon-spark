@@ -11,10 +11,7 @@ from brewblox_devcon_spark.codec.pb2 import TempSensorOneWire_pb2
 @pytest.fixture
 def f_mod(app):
     c = unit_conversion.UnitConverter(app)
-    c.user_units = {
-        'Temp': 'degF',
-        'DeltaTemp': 'delta_degF'
-    }
+    c.temperature = 'degF'
     m = modifiers.Modifier(c, strip_readonly=False)
     return m
 
@@ -22,9 +19,7 @@ def f_mod(app):
 @pytest.fixture
 def c_mod(app):
     c = unit_conversion.UnitConverter(app)
-    c.user_units = {
-        'Temp': 'degC',
-    }
+    c.temperature = 'degC'
     return modifiers.Modifier(c)
 
 
