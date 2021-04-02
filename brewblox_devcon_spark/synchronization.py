@@ -13,16 +13,12 @@ from brewblox_service import brewblox_logger, features, repeater, strex
 
 from brewblox_devcon_spark import (block_store, codec, commander, const,
                                    datastore, exceptions, global_store,
-                                   service_status, service_store, spark,
-                                   twinkeydict)
+                                   service_status, service_store, spark)
 
 HANDSHAKE_TIMEOUT_S = 120
 PING_INTERVAL_S = 1
 UNIT_CONFIG_KEY = 'user_units'
 AUTOCONNECTING_KEY = 'autoconnecting'
-TEMP_LOOKUP = twinkeydict.TwinKeyDict()
-TEMP_LOOKUP['degC', 'TEMP_CELSIUS'] = {}
-TEMP_LOOKUP['degF', 'TEMP_FAHRENHEIT'] = {}
 
 LOGGER = brewblox_logger(__name__)
 
