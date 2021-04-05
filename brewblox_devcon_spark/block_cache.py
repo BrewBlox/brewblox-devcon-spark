@@ -26,6 +26,11 @@ def cache_func(func):
 
 
 @cache_func
+def keys(cache: TwinKeyDict) -> List[dict]:
+    return cache.keys()
+
+
+@cache_func
 def get(cache: TwinKeyDict, ids: dict) -> Optional[dict]:
     return cache.get((ids.get('id'), ids.get('nid')))
 
