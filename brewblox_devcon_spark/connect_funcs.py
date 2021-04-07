@@ -3,39 +3,55 @@ Creating a new connection to the Spark controller
 """
 
 import asyncio
-from collections import namedtuple
-from typing import Any, Iterable, Iterator, Tuple
+import platform
+import subprocess
+from contextlib import suppress
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Optional
 
 from aiohttp import web
-from brewblox_service import brewblox_logger
+from brewblox_service import brewblox_logger, strex
 from serial.tools import list_ports
-from serial_asyncio import open_serial_connection
 
 from brewblox_devcon_spark import exceptions, mdns
 
-PortType_ = Any
-ConnectionResult_ = Tuple[Any, asyncio.StreamReader, asyncio.StreamWriter]
-
-DeviceMatch = namedtuple('DeviceMatch', ['id', 'desc', 'hwid'])
-
 LOGGER = brewblox_logger(__name__)
 
-DEFAULT_BAUD_RATE = 115200
-DISCOVER_INTERVAL_S = 10
+USB_BAUD_RATE = 115200
+SUBPROCESS_HOST = 'localhost'
+SUBPROCESS_PORT = 8332
+SUBPROCESS_CONNECT_INTERVAL_S = 1
+SUBPROCESS_CONNECT_RETRY_COUNT = 10
+DISCOVERY_INTERVAL_S = 10
 DISCOVERY_RETRY_COUNT = 5
-DNS_DISCOVER_TIMEOUT_S = 20
+DISCOVERY_DNS_TIMEOUT_S = 20
 BREWBLOX_DNS_TYPE = '_brewblox._tcp.local.'
 
-KNOWN_DEVICES = {
-    DeviceMatch(
-        id='Particle Photon',
-        desc=r'.*Photon.*',
-        hwid=r'USB VID\:PID=2B04\:C006.*'),
-    DeviceMatch(
-        id='Particle P1',
-        desc=r'.*P1.*',
-        hwid=r'USB VID\:PID=2B04\:C008.*'),
+SIM_BINARIES = {
+    'x86_64': 'brewblox-amd64.sim',
+    'armv7l': 'brewblox-arm32.sim',
+    'aarch64': 'brewblox-arm64.sim'
 }
+
+SPARK_HWIDS = [
+    r'USB VID\:PID=2B04\:C006.*',  # Photon
+    r'USB VID\:PID=2B04\:C008.*',  # P1
+]
+
+# Construct a regex OR'ing all allowed hardware ID matches
+# Example result: (?:HWID_REGEX_ONE|HWID_REGEX_TWO)
+SPARK_DEVICE_REGEX = f'(?:{"|".join([dev for dev in SPARK_HWIDS])})'
+
+
+@dataclass(frozen=True)
+class ConnectionResult:
+    host: str
+    port: int
+    address: str
+    process: Optional[subprocess.Popen]
+    reader: asyncio.StreamReader
+    writer: asyncio.StreamWriter
 
 
 class DiscoveryAbortedError(Exception):
@@ -44,13 +60,16 @@ class DiscoveryAbortedError(Exception):
         self.reboot_required = reboot_required
 
 
-async def connect(app: web.Application) -> ConnectionResult_:
+async def connect(app: web.Application) -> ConnectionResult:
     config = app['config']
 
+    simulation = config['simulation']
     device_serial = config['device_serial']
     device_host = config['device_host']
     device_port = config['device_port']
 
+    if simulation:
+        return await connect_simulation(app)
     if device_serial:
         return await connect_serial(device_serial)
     elif device_host:
@@ -59,36 +78,98 @@ async def connect(app: web.Application) -> ConnectionResult_:
         return await connect_discovered(app)
 
 
-async def connect_serial(address: str) -> ConnectionResult_:
-    reader, writer = await open_serial_connection(url=address, baudrate=DEFAULT_BAUD_RATE)
-    writer.transport.serial.rts = False
-    writer.transport.set_write_buffer_limits(high=255)  # receiver RX buffer is 256, so limit send buffer to 255
-    return address, reader, writer
+async def connect_subprocess(proc: subprocess.Popen, address: str) -> ConnectionResult:
+    host = SUBPROCESS_HOST
+    port = SUBPROCESS_PORT
+    message = None
+
+    # We just started a subprocess
+    # Give it some time to get started and respond to the port
+    for _ in range(SUBPROCESS_CONNECT_RETRY_COUNT):
+        await asyncio.sleep(SUBPROCESS_CONNECT_INTERVAL_S)
+
+        if proc.poll() is not None:
+            raise ChildProcessError(f'Subprocess exited with return code {proc.returncode}')
+
+        try:
+            reader, writer = await asyncio.open_connection(host, port)
+            return ConnectionResult(
+                host=host,
+                port=port,
+                address=address,
+                process=proc,
+                reader=reader,
+                writer=writer
+            )
+        except OSError as ex:
+            message = strex(ex)
+            LOGGER.debug(f'Subprocess connection error: {message}')
+
+    # Kill off leftovers
+    with suppress(Exception):
+        proc.terminate()
+
+    raise ConnectionError(message)
 
 
-async def connect_tcp(host: str, port: int) -> ConnectionResult_:
+async def connect_simulation(app: web.Application) -> ConnectionResult:
+    arch = platform.machine()
+    binary = SIM_BINARIES.get(arch)
+    device_id = app['config']['device_id']
+
+    if not binary:
+        raise exceptions.ConnectionImpossible(
+            f'No simulator available for architecture {arch}')
+
+    workdir = Path('simulator/').resolve()
+    workdir.mkdir(mode=0o777, exist_ok=True)
+    workdir.joinpath('device_key.der').touch(mode=0o777, exist_ok=True)
+    workdir.joinpath('server_key.der').touch(mode=0o777, exist_ok=True)
+    workdir.joinpath('eeprom.bin').touch(mode=0o777, exist_ok=True)
+
+    proc = subprocess.Popen(
+        [f'../firmware-bin/binaries/{binary}', '--device_id', device_id],
+        cwd=workdir)
+    return await connect_subprocess(proc, binary)
+
+
+async def connect_serial(address: str) -> ConnectionResult:
+    proc = subprocess.Popen([
+        '/usr/bin/socat',
+        f'tcp-listen:{SUBPROCESS_PORT},reuseaddr,fork',
+        f'file:{address},raw,echo=0,b{USB_BAUD_RATE}'
+    ])
+    return await connect_subprocess(proc, address)
+
+
+async def connect_tcp(host: str, port: int) -> ConnectionResult:
     reader, writer = await asyncio.open_connection(host, port)
-    return f'{host}:{port}', reader, writer
+    return ConnectionResult(
+        host=host,
+        port=port,
+        address=f'{host}:{port}',
+        process=None,
+        reader=reader,
+        writer=writer
+    )
 
 
-async def connect_discovered(app: web.Application) -> ConnectionResult_:
+async def connect_discovered(app: web.Application) -> ConnectionResult:
     discovery_type = app['config']['discovery']
     LOGGER.info(f'Discovering devices... ({discovery_type})')
 
     for _ in range(DISCOVERY_RETRY_COUNT):
         if discovery_type in ['all', 'usb']:
-            result = await discover_serial(app)
+            result = await connect_discovered_serial(app)
             if result:
-                LOGGER.info(f'discovered usb {result[0]}')
                 return result
 
         if discovery_type in ['all', 'wifi']:
-            result = await discover_tcp(app)
+            result = await connect_discovered_tcp(app)
             if result:
-                LOGGER.info(f'discovered wifi {result[0]}')
                 return result
 
-        await asyncio.sleep(DISCOVER_INTERVAL_S)
+        await asyncio.sleep(DISCOVERY_INTERVAL_S)
 
     # Newly connected USB devices are only detected after a container restart.
     # This restriction does not apply to Wifi.
@@ -97,49 +178,23 @@ async def connect_discovered(app: web.Application) -> ConnectionResult_:
     raise DiscoveryAbortedError(reboot_required)
 
 
-async def discover_serial(app: web.Application) -> ConnectionResult_:
-    id = app['config']['device_id']
-    try:
-        address = detect_device(id)
-        return await connect_serial(address)
-    except exceptions.ConnectionImpossible:
-        return None
+async def connect_discovered_serial(app: web.Application) -> Optional[ConnectionResult]:
+    device_id = app['config']['device_id']
+    for port in list_ports.grep(SPARK_DEVICE_REGEX):
+        if device_id is None or device_id.lower() == port.serial_number.lower():
+            LOGGER.info(f'Discovered {[v for v in port]}')
+            return await connect_serial(port.device)
+        else:
+            LOGGER.info(f'Discarding {[v for v in port]}')
+    return None
 
 
-async def discover_tcp(app: web.Application) -> ConnectionResult_:
+async def connect_discovered_tcp(app: web.Application) -> Optional[ConnectionResult]:
     try:
-        id = app['config']['device_id']
-        resp = await mdns.discover_one(id,
+        device_id = app['config']['device_id']
+        resp = await mdns.discover_one(device_id,
                                        BREWBLOX_DNS_TYPE,
-                                       DNS_DISCOVER_TIMEOUT_S)
+                                       DISCOVERY_DNS_TIMEOUT_S)
         return await connect_tcp(resp[0], resp[1])
     except asyncio.TimeoutError:
         return None
-
-
-def all_ports() -> Iterable[PortType_]:
-    return tuple(list_ports.comports())
-
-
-def recognized_ports(
-    allowed: Iterable[DeviceMatch] = KNOWN_DEVICES,
-    serial_number: str = None
-) -> Iterator[PortType_]:
-
-    # Construct a regex OR'ing all allowed hardware ID matches
-    # Example result: (?:HWID_REGEX_ONE|HWID_REGEX_TWO)
-    matcher = f'(?:{"|".join([dev.hwid for dev in allowed])})'
-
-    for port in list_ports.grep(matcher):
-        if serial_number is None or serial_number.lower() == port.serial_number.lower():
-            yield port
-
-
-def detect_device(device_id: str = None) -> str:
-    try:
-        port = next(recognized_ports(serial_number=device_id))
-        LOGGER.info(f'Automatically detected {[v for v in port]}')
-        return port.device
-    except StopIteration:
-        raise exceptions.ConnectionImpossible(
-            f'Could not find recognized device. Known={[{v for v in p} for p in all_ports()]}')

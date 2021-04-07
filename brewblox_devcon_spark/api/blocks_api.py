@@ -157,6 +157,7 @@ class BlocksApi():
         del self._store[sid, nid]
         ids = {'id': sid, 'nid': nid}
         block_cache.delete(self.app, ids)
+        await self.publish(deleted=[sid])
         return ids
 
     async def read_all(self) -> list:
@@ -186,7 +187,10 @@ class BlocksApi():
             'groups': [],
             'data': {},
         })
+        ids = [sid for (sid, nid) in block_cache.keys(self.app)
+               if nid >= const.USER_NID_START]
         block_cache.delete_all(self.app)
+        await self.publish(deleted=ids)
         return {}
 
     async def compatible(self, interface: str) -> list:

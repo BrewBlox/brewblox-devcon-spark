@@ -7,43 +7,32 @@ These tests are marked with pytest.mark.integration, and require the --integrati
 
 import asyncio
 from shutil import rmtree
-from unittest.mock import patch
 
 import pytest
 from brewblox_service import mqtt, scheduler
 from brewblox_service.testing import response
 
 from brewblox_devcon_spark import (block_cache, block_store, commander,
-                                   config_store, connection, service_status,
-                                   simulator, spark, synchronization)
+                                   connection, global_store, service_status,
+                                   service_store, spark, synchronization)
 from brewblox_devcon_spark.__main__ import parse_ini
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
                                        settings_api, system_api)
 from brewblox_devcon_spark.codec import codec, unit_conversion
 
-DEVICE_ID = '123456789012345678901234'
-
 
 @pytest.fixture(scope='module', autouse=True)
-def firmware_sim():
-    with patch(connection.__name__ + '.BASE_RETRY_INTERVAL_S', 0.1):
-        sim = simulator.FirmwareSimulator()
-        sim.start(DEVICE_ID)
-        yield
-        sim.stop()
-        rmtree('simulator/', ignore_errors=True)
+def simulator_file_cleanup():
+    yield
+    rmtree('simulator/', ignore_errors=True)
 
 
 @pytest.fixture
 def app(app):
     app['ini'] = parse_ini(app)
-    config = app['config']
-    config['device_id'] = DEVICE_ID
-    config['device_host'] = 'localhost'
-    config['device_port'] = 8332
-    config['device_serial'] = None
-    config['simulation'] = True
-    config['volatile'] = True
+    app['config']['simulation'] = True
+    app['config']['volatile'] = True
+    app['config']['device_id'] = '123456789012345678901234'
 
     service_status.setup(app)
 
@@ -53,7 +42,8 @@ def app(app):
     scheduler.setup(app)
     mqtt.setup(app)
 
-    config_store.setup(app)
+    global_store.setup(app)
+    service_store.setup(app)
     block_store.setup(app)
     block_cache.setup(app)
     unit_conversion.setup(app)

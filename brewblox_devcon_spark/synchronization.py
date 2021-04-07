@@ -4,16 +4,16 @@ Regulates actions that should be taken when the service connects to a controller
 
 
 import asyncio
+from contextlib import suppress
 from datetime import datetime, timedelta
 from functools import wraps
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, repeater, strex
 
-from brewblox_devcon_spark import (block_store, codec, commander, config_store,
-                                   const, datastore, exceptions,
-                                   service_status, spark)
-from brewblox_devcon_spark.exceptions import InvalidInput
+from brewblox_devcon_spark import (block_store, codec, commander, const,
+                                   datastore, exceptions, global_store,
+                                   service_status, service_store, spark)
 
 HANDSHAKE_TIMEOUT_S = 120
 PING_INTERVAL_S = 1
@@ -50,7 +50,7 @@ class SparkSynchronization(repeater.RepeaterFeature):
 
     async def prepare(self):
         """Implements RepeaterFeature.prepare"""
-        pass
+        global_store.fget(self.app).listeners.add(self.on_units_changed)
 
     async def run(self):
         """
@@ -60,8 +60,10 @@ class SparkSynchronization(repeater.RepeaterFeature):
         The state machine loops through the following states:
         - Startup
         - Synchronize with datastore
-            - Read service-specific data in datastore.
-            - Get the 'autoconnecting' value from the service store.
+            - Read global data in datastore
+            - Set temperature unit in codec/unit_conversion.py
+            - Read service-specific data in datastore
+            - Get the 'autoconnecting' value from the service store
             - Set the autoconnecting event in state.py
         - Connect to controller
             - Wait for 'connected' event to be set by connection.py
@@ -70,9 +72,11 @@ class SparkSynchronization(repeater.RepeaterFeature):
             - Check firmware info in handshake for compatibility
             - Abort synchronization if firmware/ID is not compatible
         - Synchronize block store
-            - Read controller-specific data in datastore.
+            - Read controller-specific data in datastore
         - Synchronize controller time
             - Send current abs time to controller block
+        - Synchronize controller display unit
+            - Send correct unit to controller if mismatched
         - Collect and log controller tracing
             - Write read/resume command to SysInfo
             - Tracing is included in response
@@ -82,12 +86,13 @@ class SparkSynchronization(repeater.RepeaterFeature):
         Implements RepeaterFeature.run
         """
         try:
-            await self._sync_service_store()
+            await self._sync_datastore()
 
             await service_status.wait_connected(self.app)
             await self._sync_handshake()
             await self._sync_block_store()
             await self._sync_time()
+            await self._sync_display()
             await self._collect_call_trace()
 
             service_status.set_synchronized(self.app)
@@ -117,48 +122,34 @@ class SparkSynchronization(repeater.RepeaterFeature):
 
         return service_status.desc(self.app).device_info.device_id
 
-    def get_user_units(self):
-        return codec.get_converter(self.app).user_units
-
-    async def set_user_units(self, units):
-        converter = codec.get_converter(self.app)
-        try:
-            converter.user_units = units
-            with config_store.fget(self.app).open() as config:
-                config[UNIT_CONFIG_KEY] = converter.user_units
-        except InvalidInput as ex:
-            LOGGER.warn(f'Discarding user units due to error: {strex(ex)}')
-        return converter.user_units
-
     def get_autoconnecting(self):
         return service_status.desc(self.app).is_autoconnecting
 
     async def set_autoconnecting(self, enabled):
         enabled = bool(enabled)
         service_status.set_autoconnecting(self.app, enabled)
-        with config_store.fget(self.app).open() as config:
+        with service_store.fget(self.app).open() as config:
             config[AUTOCONNECTING_KEY] = enabled
         return enabled
 
-    async def _apply_service_config(self, config):
-        converter = codec.get_converter(self.app)
-        enabled = config.get(AUTOCONNECTING_KEY, True)
-        service_status.set_autoconnecting(self.app, enabled)
-        config[AUTOCONNECTING_KEY] = enabled
-
-        units = config.get(UNIT_CONFIG_KEY, {})
-        converter.user_units = units
-        config[UNIT_CONFIG_KEY] = converter.user_units
-
-    @subroutine('sync service store')
-    async def _sync_service_store(self):
-        store = config_store.fget(self.app)
+    @subroutine('sync datastore')
+    async def _sync_datastore(self):
+        _service_store = service_store.fget(self.app)
+        _global_store = global_store.fget(self.app)
 
         await datastore.check_remote(self.app)
-        await store.read()
+        await _service_store.read()
+        await _global_store.read()
 
-        with store.open() as config:
-            await self._apply_service_config(config)
+        await self.set_converter_units()
+
+        with _service_store.open() as config:
+            autoconnect = bool(config.setdefault(AUTOCONNECTING_KEY, True))
+            service_status.set_autoconnecting(self.app, autoconnect)
+
+            # Units were moved to global config (2021/04/02)
+            with suppress(KeyError):
+                del config[UNIT_CONFIG_KEY]
 
     @subroutine('sync handshake')
     async def _sync_handshake(self):
@@ -226,6 +217,41 @@ class SparkSynchronization(repeater.RepeaterFeature):
         ms = ticks_block['data']['millisSinceBoot']
         uptime = timedelta(milliseconds=ms)
         LOGGER.info(f'System uptime: {uptime}')
+
+    @subroutine('sync display settings')
+    async def _sync_display(self):
+        await self.set_display_units()
+
+    async def on_units_changed(self):
+        """Callback invoked by global_store"""
+        await self.set_converter_units()
+        await self.set_display_units()
+
+    async def set_converter_units(self):
+        store = global_store.fget(self.app)
+        converter = codec.get_converter(self.app)
+        converter.temperature = store.units['temperature']
+        LOGGER.info(f'Service temperature set to {converter.temperature}')
+
+    async def set_display_units(self):
+        if not service_status.desc(self.app).is_acknowledged:
+            return
+
+        store = global_store.fget(self.app)
+        controller = spark.fget(self.app)
+
+        display_block = await controller.read_object({
+            'nid': const.DISPLAY_SETTINGS_NID
+        })
+
+        user_value = store.units['temperature']
+        expected = 'TEMP_FAHRENHEIT' if user_value == 'degF' else 'TEMP_CELSIUS'
+        block_value = display_block['data']['tempUnit']
+
+        if expected != block_value:
+            display_block['data']['tempUnit'] = expected
+            await controller.write_object(display_block)
+            LOGGER.info(f'Spark display temperature set to {user_value}')
 
     async def format_trace(self, src):
         cdc = codec.fget(self.app)

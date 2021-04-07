@@ -74,10 +74,6 @@ class SparkExportResultSchema(Schema):
     messages = fields.List(fields.String(), required=True)
 
 
-class UserUnitsSchema(Schema):
-    Temp = fields.String(required=True)
-
-
 class AutoconnectingSchema(Schema):
     enabled = fields.Bool(required=True)
 

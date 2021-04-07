@@ -3,14 +3,15 @@ Implements async serial connection.
 """
 
 import asyncio
+from contextlib import suppress
+from subprocess import Popen
 from typing import Callable, Set
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, repeater
 
-from brewblox_devcon_spark import (cbox_parser, commands, config_store,
-                                   connect_funcs, const, exceptions,
-                                   service_status)
+from brewblox_devcon_spark import (cbox_parser, commands, connect_funcs, const,
+                                   exceptions, service_status, service_store)
 
 MessageCallback_ = Callable[[str], None]
 
@@ -29,6 +30,7 @@ class SparkConnection(repeater.RepeaterFeature):
         self._retry_count: int = 0
         self._retry_interval: float = 0
 
+        self._proc: Popen = None
         self._address: str = None
         self._reader: asyncio.StreamReader = None
         self._writer: asyncio.StreamWriter = None
@@ -50,13 +52,13 @@ class SparkConnection(repeater.RepeaterFeature):
     @property
     def retry_interval(self) -> float:
         if not self._retry_interval:
-            with config_store.fget(self.app).open() as config:
+            with service_store.fget(self.app).open() as config:
                 self._retry_interval = config.get('retry_interval', BASE_RETRY_INTERVAL_S)
         return self._retry_interval
 
     @retry_interval.setter
     def retry_interval(self, value: float):
-        with config_store.fget(self.app).open() as config:
+        with service_store.fget(self.app).open() as config:
             config['retry_interval'] = value
         self._retry_interval = value
 
@@ -115,13 +117,17 @@ class SparkConnection(repeater.RepeaterFeature):
                 await asyncio.sleep(self.retry_interval)
 
             await service_status.wait_autoconnecting(self.app)
-            self._address, self._reader, self._writer = await connect_funcs.connect(self.app)
+            result = await connect_funcs.connect(self.app)
+            self._proc = result.process
+            self._address = result.address
+            self._reader = result.reader
+            self._writer = result.writer
             self._parser = cbox_parser.ControlboxParser()
 
             service_status.set_connected(self.app, self._address)
             self._retry_count = 0
             self.reset_retry_interval()
-            LOGGER.info(f'Connected {self}')
+            LOGGER.info(f'{self} connected')
 
             while self.connected:
                 # read() does not raise an exception when connection is closed
@@ -162,16 +168,19 @@ class SparkConnection(repeater.RepeaterFeature):
             raise
 
         finally:
-            try:
+            with suppress(Exception):
                 self._writer.close()
-                LOGGER.info(f'Closed {self}')
-            except Exception:
-                pass
-            finally:
-                service_status.set_disconnected(self.app)
-                self._reader = None
-                self._writer = None
-                self._parser = None
+                LOGGER.info(f'{self} closed stream writer')
+
+            with suppress(Exception):
+                self._proc.terminate()
+                LOGGER.info(f'{self} terminated subprocess')
+
+            service_status.set_disconnected(self.app)
+            self._proc = None
+            self._reader = None
+            self._writer = None
+            self._parser = None
 
     async def write(self, data: str):
         return await self.write_encoded(data.encode())

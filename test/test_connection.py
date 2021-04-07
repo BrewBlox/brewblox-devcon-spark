@@ -8,7 +8,7 @@ import pytest
 from brewblox_service import scheduler
 from mock import AsyncMock, Mock
 
-from brewblox_devcon_spark import (config_store, connect_funcs, connection,
+from brewblox_devcon_spark import (service_store, connect_funcs, connection,
                                    exceptions, service_status)
 
 TESTED = connection.__name__
@@ -44,7 +44,14 @@ def m_writer(loop):
 @pytest.fixture
 def m_connect(mocker, m_reader, m_writer):
     m = mocker.patch(TESTED + '.connect_funcs.connect', AsyncMock())
-    m.return_value = ('addr', m_reader, m_writer)
+    m.return_value = connect_funcs.ConnectionResult(
+        host='localhost',
+        port='8332',
+        address='/dev/ttyACM0',
+        process=Mock(),
+        reader=m_reader,
+        writer=m_writer,
+    )
     return m
 
 
@@ -76,7 +83,7 @@ async def cbox_err():
 def app(app, m_connect):
     service_status.setup(app)
     scheduler.setup(app)
-    config_store.setup(app)
+    service_store.setup(app)
     return app
 
 
@@ -92,6 +99,7 @@ async def test_write(app, init_app, client, m_writer):
     conn = connection.fget(app)
     assert conn.connected
     assert service_status.desc(app).is_connected
+    assert service_status.desc(app).connection_kind == 'usb'
 
     await conn.write('testey')
     m_writer.write.assert_called_once_with(b'testey\n')
@@ -108,6 +116,13 @@ async def test_write(app, init_app, client, m_writer):
 
     with pytest.raises(exceptions.NotConnected):
         await conn.write('stuff')
+
+
+async def test_sim_status(app, init_app, client, m_connect):
+    app['config']['simulation'] = True
+    service_status.set_autoconnecting(app, True)
+    await asyncio.sleep(0.01)
+    assert service_status.desc(app).connection_kind == 'simulation'
 
 
 async def test_callback(app, init_app, client, m_reader, m_writer):

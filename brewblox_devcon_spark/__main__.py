@@ -9,8 +9,8 @@ from os import getenv
 from brewblox_service import brewblox_logger, http, mqtt, scheduler, service
 
 from brewblox_devcon_spark import (block_cache, block_store, broadcaster,
-                                   commander, config_store, connection,
-                                   service_status, simulator, spark,
+                                   commander, connection, global_store,
+                                   service_status, service_store, spark,
                                    synchronization)
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
                                        mqtt_api, settings_api, sim_api,
@@ -65,6 +65,9 @@ def create_parser(default_name='spark'):
     group.add_argument('--volatile',
                        action='store_true',
                        help='Disable all outgoing network calls. [%(default)s]')
+    group.add_argument('--datastore-topic',
+                       help='Synchronization topic for datastore updates',
+                       default='brewcast/datastore')
 
     # Updater options
     group = parser.add_argument_group('Firmware')
@@ -96,10 +99,6 @@ def main():
 
     if config['simulation']:
         config['device_id'] = config['device_id'] or '123456789012345678901234'
-        config['device_host'] = 'localhost'
-        config['device_port'] = 8332
-        config['device_serial'] = None
-        simulator.setup(app)
 
     service_status.setup(app)
     http.setup(app)
@@ -110,7 +109,8 @@ def main():
     scheduler.setup(app)
     mqtt.setup(app)
 
-    config_store.setup(app)
+    global_store.setup(app)
+    service_store.setup(app)
     block_store.setup(app)
     block_cache.setup(app)
     unit_conversion.setup(app)
@@ -124,9 +124,7 @@ def main():
     system_api.setup(app)
     settings_api.setup(app)
     mqtt_api.setup(app)
-
-    if config['simulation']:
-        sim_api.setup(app)
+    sim_api.setup(app)
 
     synchronization.setup(app)
 

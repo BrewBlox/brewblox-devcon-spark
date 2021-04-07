@@ -1,5 +1,5 @@
 """
-Tests brewblox_devcon_spark.config_store
+Tests brewblox_devcon_spark.service_store
 """
 
 
@@ -10,9 +10,9 @@ from aiohttp import web
 from aresponses import ResponsesMockServer
 from brewblox_service import http, scheduler
 
-from brewblox_devcon_spark import config_store, datastore
+from brewblox_devcon_spark import const, datastore, service_store
 
-TESTED = config_store.__name__
+TESTED = service_store.__name__
 DATASTORE = datastore.__name__
 
 
@@ -21,7 +21,7 @@ def add_config_read_resp(aresponses, count, status=200):
         return web.json_response({
             'value': {
                 'id': 'XXXX',
-                'namespace': datastore.NAMESPACE,
+                'namespace': const.SPARK_NAMESPACE,
                 'data': {'k1': 'v1', 'k2': 'v2'},
             }},
             status=status)
@@ -47,13 +47,13 @@ def app(app, mocker):
     app['config']['volatile'] = False
     http.setup(app)
     scheduler.setup(app)
-    config_store.setup(app)
+    service_store.setup(app)
     return app
 
 
 @pytest.fixture
 def store(app):
-    return config_store.fget(app)
+    return service_store.fget(app)
 
 
 async def test_config_read(app, client, store, aresponses):
