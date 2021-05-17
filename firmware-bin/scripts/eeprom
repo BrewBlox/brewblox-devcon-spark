@@ -10,8 +10,12 @@ function dump() {
     particle usb reset
 }
 
-node ./serial-trigger.js
-sleep 5
+# Check for Photon / P1 not currently in DFU mode
+if [[ -n $(lsusb -d 2b04:c006) ]] || [[ -n $(lsusb -d 2b04:c008) ]]; then
+    echo "Triggering DFU mode..."
+    node ./serial-trigger.js
+    sleep 5
+fi
 
 if [[ -n $(lsusb -d 2b04:d006) ]]; then
     echo "Dumping Photon eeprom..."
