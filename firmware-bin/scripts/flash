@@ -11,8 +11,12 @@ function notify() {
     echo "ONLY If your Spark LED keeps blinking blue, run: 'brewblox-ctl particle -c flash-bootloader'"
 }
 
-node ./serial-trigger.js
-sleep 5
+# Check for Photon / P1 not currently in DFU mode
+if [[ -n $(lsusb -d 2b04:c006) ]] || [[ -n $(lsusb -d 2b04:c008) ]]; then
+    echo "Triggering DFU mode..."
+    node ./serial-trigger.js
+    sleep 5
+fi
 
 if [[ -n $(lsusb -d 2b04:d006) ]]; then
     echo "Flashing Photon..."
@@ -39,5 +43,28 @@ if [[ -n $(lsusb -d 2b04:d008) ]]; then
     sleep 5
     exit
 fi
+
+# Questions:
+# - What is VID:PID for Spark 4? (currently 10c4:ea60 == ESP32 wifi dev board)
+# - Where should binary be flashed? (currently 0x10000)
+# - Should we always flash bootloader? (can be done in same command)
+# - What is name for binary? (currently brewblox-esp32.bin)
+#
+# if [[ -n $(lsusb -d 10c4:ea60) ]]; then
+#     echo "Flashing ESP32..."
+#     python -m esptool \
+#         --baud 460800 \
+#         --before default_reset \
+#         --after hard_reset \
+#         --chip esp32 \
+#         write_flash \
+#         --flash_mode dio \
+#         --flash_size detect \
+#         --flash_freq 40m \
+#         0x10000 ./brewblox-esp32.bin
+#     echo "Your firmware has been updated."
+#     sleep 5
+#     exit
+# fi
 
 echo "No compatible USB devices found"
