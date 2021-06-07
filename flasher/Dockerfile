@@ -2,8 +2,12 @@ FROM brewblox/firmware-particle:latest
 
 WORKDIR /app
 
-COPY ./firmware-bin/binaries/* ./
-COPY ./firmware-bin/scripts/* ./
+COPY [ \
+    "./firmware-bin/binaries/*.bin", \
+    "./firmware-bin/binaries/*.ini", \
+    "./firmware-bin/scripts/*", \
+    "./" \
+]
 
 RUN bash inspect
 
