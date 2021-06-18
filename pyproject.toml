@@ -16,6 +16,7 @@ aiofiles = "^0.6.0"
 aiozeroconf = "^0.1.8"
 debugpy = "^1.2.1"
 Pint = "^0.16.1"
+esptool = "^3.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.2"
