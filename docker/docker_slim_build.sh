@@ -12,6 +12,7 @@ pip3 freeze
 apt-get update
 apt-get install -y --no-install-recommends \
     socat \
+    usbutils \
     libboost-system${BOOST_V} \
     libboost-program-options${BOOST_V} \
     libboost-random${BOOST_V} \
