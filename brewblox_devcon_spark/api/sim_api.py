@@ -58,10 +58,12 @@ async def stream_display(request: web.Request) -> web.Response:
                 headers={'Connection': 'keep-alive, Upgrade'},
             ) as spark_ws:
                 request.app['websockets'].add(spark_ws)
-                async for msg in spark_ws:
-                    if msg.type == WSMsgType.BINARY:
-                        await ws.send_bytes(msg.data)
-                request.app['websockets'].discard(spark_ws)
+                try:
+                    async for msg in spark_ws:
+                        if msg.type == WSMsgType.BINARY:
+                            await ws.send_bytes(msg.data)
+                finally:
+                    request.app['websockets'].discard(spark_ws)
 
     finally:
         request.app['websockets'].discard(ws)
