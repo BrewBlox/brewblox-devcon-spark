@@ -102,10 +102,6 @@ class SparkConnection(repeater.RepeaterFeature):
         for cb in self._data_callbacks:
             cb(msg)
 
-    async def prepare(self):
-        """Implements RepeaterFeature.prepare"""
-        pass
-
     async def run(self):
         """Implements RepeaterFeature.run"""
         try:

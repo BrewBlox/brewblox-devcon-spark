@@ -191,9 +191,6 @@ class SparkController(features.ServiceFeature):
     async def startup(self, app: web.Application):
         self._conn_check_lock = asyncio.Lock()
 
-    async def shutdown(self, _):
-        pass
-
     async def validate(self, content_: dict = None, **kwargs) -> dict:
         content = content_ or dict()
         content.update(kwargs)

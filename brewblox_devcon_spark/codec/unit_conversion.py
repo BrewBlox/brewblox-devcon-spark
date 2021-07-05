@@ -62,12 +62,6 @@ class UnitConverter(features.ServiceFeature):
         # Init with system temp. All mappings will have system_value == user_value
         self._table = derived_table(SYSTEM_TEMP)
 
-    async def startup(self, app: web.Application):
-        pass
-
-    async def shutdown(self, app: web.Application):
-        pass
-
     @property
     def temperature(self) -> str:
         return self._table['Celsius'].user_value
