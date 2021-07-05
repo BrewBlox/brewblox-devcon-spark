@@ -36,9 +36,6 @@ class Codec(features.ServiceFeature):
         converter = get_converter(app)
         self._mod = Modifier(converter, self._strip_readonly)
 
-    async def shutdown(self, app: web.Application):
-        pass
-
     def compatible_types(self) -> Awaitable[dict]:
         """
         Compiles lists of implementers of type interfaces.

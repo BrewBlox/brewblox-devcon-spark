@@ -23,16 +23,10 @@ class SocketCloser(features.ServiceFeature):
         super().__init__(app)
         app['websockets'] = WeakSet()
 
-    async def startup(self, app: web.Application):
-        pass
-
     async def before_shutdown(self, app: web.Application):
         for ws in set(app['websockets']):
             await ws.close(code=WSCloseCode.GOING_AWAY,
                            message='Server shutdown')
-
-    async def shutdown(self, app: web.Application):
-        pass
 
 
 @routes.get('/sim/display')
