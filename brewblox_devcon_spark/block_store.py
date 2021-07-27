@@ -10,7 +10,7 @@ from typing import List
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, http, strex
 
-from brewblox_devcon_spark import const
+from brewblox_devcon_spark import const, types
 from brewblox_devcon_spark.datastore import (STORE_URL, FlushedStore,
                                              non_volatile)
 from brewblox_devcon_spark.twinkeydict import TwinKeyDict, TwinKeyError
@@ -26,12 +26,13 @@ SYS_OBJECTS = [
 LOGGER = brewblox_logger(__name__)
 
 
-class ServiceBlockStore(FlushedStore, TwinKeyDict):
+class ServiceBlockStore(FlushedStore, TwinKeyDict[str, int, dict]):
     """
     TwinKeyDict subclass to periodically flush contained objects to Redis.
     """
 
-    def __init__(self, app: web.Application, defaults: List[dict]):
+    def __init__(self, app: web.Application, defaults: List[types.StoreEntry]):
+        self: TwinKeyDict[str, int, dict]
         FlushedStore.__init__(self, app)
         TwinKeyDict.__init__(self)
 
@@ -91,7 +92,7 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict):
         await asyncio.wait_for(self._ready_event.wait(), READY_TIMEOUT_S)
         if self.key is None:
             raise RuntimeError('Document key not set - did read() fail?')
-        data = [
+        data: List[types.StoreEntry] = [
             {'keys': keys, 'data': content}
             for keys, content in self.items()
         ]

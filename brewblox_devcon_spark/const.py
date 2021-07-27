@@ -3,6 +3,8 @@ Defines formal schemas for various API objects.
 This improves error messages when handling JSON blobs as input data.
 """
 
+from typing import List, Tuple
+
 SID_KEY = 'id'
 NID_KEY = 'nid'
 INTERFACE_KEY = 'interface'
@@ -36,7 +38,7 @@ TOUCH_SETTINGS_NID = 6
 DISPLAY_SETTINGS_NID = 7
 SPARK_PINS_NID = 19
 
-SYS_OBJECT_KEYS = [
+SYS_OBJECT_KEYS: List[Tuple[str, int]] = [
     ['ActiveGroups', GROUPS_NID],
     ['SystemInfo', SYSINFO_NID],
     ['SystemTime', SYSTIME_NID],
