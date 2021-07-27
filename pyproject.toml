@@ -6,6 +6,13 @@ authors = ["BrewPi <development@brewpi.com>"]
 license = "GPL-3.0"
 readme = "README.md"
 
+[tool.pyright]
+include = ["brewblox_devcon_spark"]
+exclude = ["**/node_modules", "**/__pycache__"]
+
+useLibraryCodeForTypes = true
+reportMissingImports = "information"
+
 [tool.poetry.dependencies]
 python = ">=3.7,<4"
 brewblox-service = "^0.33.0"

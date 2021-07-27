@@ -8,11 +8,11 @@ from copy import deepcopy
 from typing import List
 
 from aiohttp import web
-from aiohttp_apispec import docs, request_schema, response_schema
+from aiohttp_apispec import docs, json_schema, response_schema
 from brewblox_service import brewblox_logger, mqtt, strex
 
 from brewblox_devcon_spark import (block_cache, block_store, const, exceptions,
-                                   service_status, spark, twinkeydict)
+                                   service_status, spark, twinkeydict, types)
 from brewblox_devcon_spark.api import schemas
 
 SYNC_WAIT_TIMEOUT_S = 20
@@ -66,7 +66,7 @@ class BlocksApi():
             service_status.wait_synchronized(self.app),
             SYNC_WAIT_TIMEOUT_S)
 
-    async def create(self, block: dict) -> dict:
+    async def create(self, block: types.Block) -> types.Block:
         """
         Creates a new object in the datastore and controller.
         """
@@ -94,35 +94,35 @@ class BlocksApi():
         await self.publish(changed=[created])
         return created
 
-    async def read(self, ids: dict) -> dict:
+    async def read(self, ids: types.BlockIds) -> types.Block:
         await self.wait_for_sync()
         block = await self._spark.read_object(ids)
         block_cache.set(self.app, block)
         return block
 
-    async def read_logged(self, ids: dict) -> dict:
+    async def read_logged(self, ids: types.BlockIds) -> types.Block:
         await self.wait_for_sync()
         return await self._spark.read_logged_object(ids)
 
-    async def read_stored(self, ids: dict) -> dict:
+    async def read_stored(self, ids: types.BlockIds) -> types.Block:
         await self.wait_for_sync()
         return await self._spark.read_stored_object(ids)
 
-    async def write(self, block: dict) -> dict:
+    async def write(self, block: types.Block) -> types.Block:
         await self.wait_for_sync()
         block = await self._spark.write_object(block)
         block_cache.set(self.app, block)
         await self.publish(changed=[block])
         return block
 
-    async def patch(self, partial: dict) -> dict:
+    async def patch(self, partial: dict) -> types.Block:
         await self.wait_for_sync()
         block = block_cache.get(self.app, partial) or await self.read(partial)
         block = deepcopy(block)
         merge(block['data'], partial['data'])
         return await self.write(block)
 
-    async def publish(self, changed: List[dict] = None, deleted: List[str] = None):
+    async def publish(self, changed: List[types.Block] = None, deleted: List[str] = None):
         if self._publish_changed:
             name = self.app['config']['name']
             topic = self.app['config']['state_topic'] + f'/{name}/patch'
@@ -139,7 +139,7 @@ class BlocksApi():
                                    }
                                })
 
-    async def delete(self, ids: dict) -> dict:
+    async def delete(self, ids: types.BlockIds) -> types.BlockIds:
         """
         Deletes object from controller and data store
         """
@@ -160,19 +160,19 @@ class BlocksApi():
         await self.publish(deleted=[sid])
         return ids
 
-    async def read_all(self) -> list:
+    async def read_all(self) -> List[types.Block]:
         await self.wait_for_sync()
         response = await self._spark.list_objects()
         blocks = response.get('objects', [])
         block_cache.set_all(self.app, blocks)
         return blocks
 
-    async def read_all_logged(self) -> list:
+    async def read_all_logged(self) -> List[types.Block]:
         await self.wait_for_sync()
         response = await self._spark.list_logged_objects()
         return response.get('objects', [])
 
-    async def read_all_stored(self) -> list:
+    async def read_all_stored(self) -> List[types.Block]:
         await self.wait_for_sync()
         response = await self._spark.list_stored_objects()
         return response.get('objects', [])
@@ -193,22 +193,22 @@ class BlocksApi():
         await self.publish(deleted=ids)
         return {}
 
-    async def compatible(self, interface: str) -> list:
+    async def compatible(self, interface: str) -> List[str]:
         await self.wait_for_sync()
         response = await self._spark.list_compatible_objects({
             'interface': interface,
         })
         return response.get('object_ids', [])
 
-    async def discover(self) -> list:
+    async def discover(self) -> List[str]:
         await self.wait_for_sync()
         response = await self._spark.discover_objects()
         return response.get('objects', [])
 
-    async def validate(self, partial: dict) -> dict:
+    async def validate(self, partial: dict) -> types.Block:
         return await self._spark.validate(partial)
 
-    async def rename(self, existing: str, desired: str):
+    async def rename(self, existing: str, desired: str) -> types.BlockIds:
         validate_sid(desired)
         self._store.rename((existing, None), (desired, None))
         block_cache.rename(self.app, existing, desired)
@@ -217,7 +217,7 @@ class BlocksApi():
             'nid': self._store.right_key(desired),
         }
 
-    async def cleanup(self) -> list:
+    async def cleanup(self) -> List[types.BlockIds]:
         await self.wait_for_sync()
         actual = [block['id']
                   for block in await self.read_all()]
@@ -229,7 +229,7 @@ class BlocksApi():
         return [{'id': sid, 'nid': nid}
                 for (sid, nid) in unused]
 
-    async def backup_save(self) -> dict:
+    async def backup_save(self) -> types.Backup:
         await self.wait_for_sync()
         store_data = [
             {'keys': keys, 'data': content}
@@ -244,7 +244,7 @@ class BlocksApi():
             'store': store_data,
         }
 
-    async def backup_load(self, exported: dict) -> list:
+    async def backup_load(self, exported: types.Backup) -> types.BackupLoadResult:
         await self.wait_for_sync()
         await self.delete_all()
 
@@ -300,11 +300,11 @@ class BlocksApi():
     summary='Create new block',
 )
 @routes.post('/blocks/create')
-@request_schema(schemas.BlockSchema)
+@json_schema(schemas.BlockSchema)
 @response_schema(schemas.BlockSchema, 201)
 async def _create(request: web.Request) -> web.Response:
     return web.json_response(
-        await BlocksApi(request.app).create(request['data']),
+        await BlocksApi(request.app).create(request['json']),
         status=201
     )
 
@@ -314,11 +314,11 @@ async def _create(request: web.Request) -> web.Response:
     summary='Read block',
 )
 @routes.post('/blocks/read')
-@request_schema(schemas.BlockIdSchema)
+@json_schema(schemas.BlockIdSchema)
 @response_schema(schemas.BlockSchema)
 async def _read(request: web.Request) -> web.Response:
     return web.json_response(
-        await BlocksApi(request.app).read(request['data'])
+        await BlocksApi(request.app).read(request['json'])
     )
 
 
@@ -327,11 +327,11 @@ async def _read(request: web.Request) -> web.Response:
     summary='Read block. Data only includes logged fields.',
 )
 @routes.post('/blocks/read/logged')
-@request_schema(schemas.BlockIdSchema)
+@json_schema(schemas.BlockIdSchema)
 @response_schema(schemas.BlockSchema)
 async def _read_logged(request: web.Request) -> web.Response:
     return web.json_response(
-        await BlocksApi(request.app).read_logged(request['data'])
+        await BlocksApi(request.app).read_logged(request['json'])
     )
 
 
@@ -340,11 +340,11 @@ async def _read_logged(request: web.Request) -> web.Response:
     summary='Read block',
 )
 @routes.post('/blocks/read/stored')
-@request_schema(schemas.BlockIdSchema)
+@json_schema(schemas.BlockIdSchema)
 @response_schema(schemas.BlockSchema)
 async def _read_stored(request: web.Request) -> web.Response:
     return web.json_response(
-        await BlocksApi(request.app).read_stored(request['data'])
+        await BlocksApi(request.app).read_stored(request['json'])
     )
 
 
@@ -353,11 +353,11 @@ async def _read_stored(request: web.Request) -> web.Response:
     summary='Update existing block',
 )
 @routes.post('/blocks/write')
-@request_schema(schemas.BlockSchema)
+@json_schema(schemas.BlockSchema)
 @response_schema(schemas.BlockSchema)
 async def _write(request: web.Request) -> web.Response:
     return web.json_response(
-        await BlocksApi(request.app).write(request['data'])
+        await BlocksApi(request.app).write(request['json'])
     )
 
 
@@ -366,11 +366,11 @@ async def _write(request: web.Request) -> web.Response:
     summary='Patch existing block',
 )
 @routes.post('/blocks/patch')
-@request_schema(schemas.BlockPatchSchema)
+@json_schema(schemas.BlockPatchSchema)
 @response_schema(schemas.BlockSchema)
 async def _patch(request: web.Request) -> web.Response:
     return web.json_response(
-        await BlocksApi(request.app).patch(request['data'])
+        await BlocksApi(request.app).patch(request['json'])
     )
 
 
@@ -379,11 +379,11 @@ async def _patch(request: web.Request) -> web.Response:
     summary='Delete block',
 )
 @routes.post('/blocks/delete')
-@request_schema(schemas.BlockIdSchema(unknown='exclude'))
+@json_schema(schemas.BlockIdSchema(unknown='exclude'))
 @response_schema(schemas.BlockIdSchema)
 async def _delete(request: web.Request) -> web.Response:
     return web.json_response(
-        await BlocksApi(request.app).delete(request['data'])
+        await BlocksApi(request.app).delete(request['json'])
     )
 
 
@@ -451,11 +451,11 @@ async def _cleanup(request: web.Request) -> web.Response:
     summary='Rename existing block',
 )
 @routes.post('/blocks/rename')
-@request_schema(schemas.BlockRenameSchema)
+@json_schema(schemas.BlockRenameSchema)
 @response_schema(schemas.BlockIdSchema)
 async def _rename(request: web.Request) -> web.Response:
     return web.json_response(
-        await BlocksApi(request.app).rename(**request['data'])
+        await BlocksApi(request.app).rename(**request['json'])
     )
 
 
@@ -464,11 +464,11 @@ async def _rename(request: web.Request) -> web.Response:
     summary='Get IDs for all blocks compatible with interface',
 )
 @routes.post('/blocks/compatible')
-@request_schema(schemas.InterfaceIdSchema)
+@json_schema(schemas.InterfaceIdSchema)
 @response_schema(schemas.BlockIdSchema(many=True))
 async def _compatible(request: web.Request) -> web.Response:
     return web.json_response(
-        await BlocksApi(request.app).compatible(**request['data'])
+        await BlocksApi(request.app).compatible(**request['json'])
     )
 
 
@@ -489,10 +489,10 @@ async def _discover(request: web.Request) -> web.Response:
     summary='Validate block data',
 )
 @routes.post('/blocks/validate')
-@request_schema(schemas.BlockValidateSchema)
+@json_schema(schemas.BlockValidateSchema)
 async def _validate(request: web.Request) -> web.Response:
     return web.json_response(
-        await BlocksApi(request.app).validate(request['data'])
+        await BlocksApi(request.app).validate(request['json'])
     )
 
 
@@ -513,8 +513,9 @@ async def _backup_save(request: web.Request) -> web.Response:
     summary='Import service blocks from portable format',
 )
 @routes.post('/blocks/backup/load')
-@request_schema(schemas.SparkExportSchema)
+@json_schema(schemas.SparkExportSchema)
+@response_schema(schemas.SparkExportResultSchema)
 async def _backup_load(request: web.Request) -> web.Response:
     return web.json_response(
-        await BlocksApi(request.app).backup_load(request['data'])
+        await BlocksApi(request.app).backup_load(request['json'])
     )
