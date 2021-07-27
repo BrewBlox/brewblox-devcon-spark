@@ -7,13 +7,24 @@ When looking up objects with both left and right key, asserts that keys point to
 from collections.abc import MutableMapping
 from contextlib import suppress
 from dataclasses import dataclass
-from typing import Any, Dict, Hashable, Iterator, Tuple
+from typing import (TYPE_CHECKING, Any, Dict, Generic, Hashable, Iterator,
+                    Optional, Tuple, TypeVar)
 
 from brewblox_service import brewblox_logger
 
-Keys_ = Tuple[Hashable, Hashable]
-
 LOGGER = brewblox_logger(__name__)
+
+LT = TypeVar('LT', bound=Hashable)
+RT = TypeVar('RT', bound=Hashable)
+VT = TypeVar('VT', bound=Any)
+
+Keys_ = Tuple[LT, RT]
+SparseKeys_ = Tuple[Optional[LT], Optional[RT]]
+
+if TYPE_CHECKING:  # pragma: no cover
+    DictBase = MutableMapping[SparseKeys_, VT]
+else:
+    DictBase = MutableMapping
 
 
 class TwinKeyError(Exception):
@@ -21,13 +32,13 @@ class TwinKeyError(Exception):
 
 
 @dataclass(frozen=True)
-class TwinKeyObject():
-    left_key: Hashable
-    right_key: Hashable
-    content: Any
+class TwinKeyObject(Generic[LT, RT, VT]):
+    left_key: LT
+    right_key: RT
+    content: VT
 
 
-class TwinKeyDict(MutableMapping):
+class TwinKeyDict(DictBase, Generic[LT, RT, VT]):
     """
     Key/Key/Value mapping, supporting lookups with incomplete data.
 
@@ -81,9 +92,9 @@ class TwinKeyDict(MutableMapping):
         (1, 2) 4
     """
 
-    def __init__(self):
-        self._left_view: Dict[Hashable, TwinKeyObject] = dict()
-        self._right_view: Dict[Hashable, TwinKeyObject] = dict()
+    def __init__(self) -> None:
+        self._left_view: Dict[LT, TwinKeyObject[LT, RT, VT]] = dict()
+        self._right_view: Dict[RT, TwinKeyObject[LT, RT, VT]] = dict()
 
     def __bool__(self) -> bool:
         return bool(self._left_view)
@@ -97,7 +108,7 @@ class TwinKeyDict(MutableMapping):
     def __iter__(self) -> Iterator[Keys_]:
         return ((o.left_key, o.right_key) for o in self._left_view.values())
 
-    def _getobj(self, keys: Keys_) -> TwinKeyObject:
+    def _getobj(self, keys: SparseKeys_) -> TwinKeyObject[LT, RT, VT]:
         left_key, right_key = keys
 
         if (left_key, right_key) == (None, None):
@@ -116,7 +127,7 @@ class TwinKeyDict(MutableMapping):
             raise TwinKeyError(f'Keys [{left_key}, {right_key}] point to different objects')
         return left_obj
 
-    def __getitem__(self, keys: Keys_) -> Any:
+    def __getitem__(self, keys: SparseKeys_) -> VT:
         return self._getobj(keys).content
 
     def __setitem__(self, keys: Keys_, item):
@@ -131,12 +142,12 @@ class TwinKeyDict(MutableMapping):
         obj = TwinKeyObject(left_key, right_key, item)
         self._left_view[left_key] = self._right_view[right_key] = obj
 
-    def __delitem__(self, keys: Keys_):
+    def __delitem__(self, keys: SparseKeys_):
         obj = self._getobj(keys)
         del self._left_view[obj.left_key]
         del self._right_view[obj.right_key]
 
-    def left_key(self, right_key: Hashable, default=...) -> Hashable:
+    def left_key(self, right_key: RT, default=...) -> LT:
         try:
             return self._right_view[right_key].left_key
         except KeyError:
@@ -145,7 +156,7 @@ class TwinKeyDict(MutableMapping):
             else:
                 raise
 
-    def right_key(self, left_key: Hashable, default=...) -> Hashable:
+    def right_key(self, left_key: LT, default=...) -> RT:
         try:
             return self._left_view[left_key].right_key
         except KeyError:
@@ -154,7 +165,7 @@ class TwinKeyDict(MutableMapping):
             else:
                 raise
 
-    def rename(self, old_keys: Keys_, new_keys: Keys_):
+    def rename(self, old_keys: SparseKeys_, new_keys: SparseKeys_):
         if new_keys in self:
             raise TwinKeyError(f'Already contains {new_keys}')
 

@@ -3,14 +3,17 @@ Stores last known version of block data
 """
 
 from functools import wraps
-from typing import List, Optional
+from typing import AbstractSet, List, Optional, Tuple
 
 from aiohttp import web
 from brewblox_service import brewblox_logger
 
+from brewblox_devcon_spark import types
 from brewblox_devcon_spark.twinkeydict import TwinKeyDict
 
 LOGGER = brewblox_logger(__name__)
+
+CacheT_ = TwinKeyDict[str, int, types.Block]
 
 
 def setup(app: web.Application):
@@ -26,41 +29,41 @@ def cache_func(func):
 
 
 @cache_func
-def keys(cache: TwinKeyDict) -> List[dict]:
+def keys(cache: CacheT_) -> AbstractSet[Tuple[str, int]]:
     return cache.keys()
 
 
 @cache_func
-def get(cache: TwinKeyDict, ids: dict) -> Optional[dict]:
+def get(cache: CacheT_, ids: types.BlockIds) -> Optional[types.Block]:
     return cache.get((ids.get('id'), ids.get('nid')))
 
 
 @cache_func
-def set(cache: TwinKeyDict, block: dict) -> None:
+def set(cache: CacheT_, block: types.Block):
     cache[block['id'], block['nid']] = block
 
 
 @cache_func
-def delete(cache: TwinKeyDict, ids: dict):
+def delete(cache: CacheT_, ids: types.BlockIds):
     (id, nid) = (ids.get('id'), ids.get('nid'))
     if (id, nid) in cache:  # pragma: no cover
         del cache[id, nid]
 
 
 @cache_func
-def delete_all(cache: TwinKeyDict):
+def delete_all(cache: CacheT_):
     cache.clear()
 
 
 @cache_func
-def set_all(cache: TwinKeyDict, blocks: List[dict]):
+def set_all(cache: CacheT_, blocks: List[types.Block]):
     cache.clear()
     for block in blocks:
         cache[block['id'], block['nid']] = block
 
 
 @cache_func
-def rename(cache: TwinKeyDict, existing: str, desired: str):
+def rename(cache: CacheT_, existing: str, desired: str):
     block = cache.get((existing, None))
     if block:  # pragma: no cover
         del cache[existing, None]
