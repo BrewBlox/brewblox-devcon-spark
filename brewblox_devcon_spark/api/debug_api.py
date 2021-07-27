@@ -4,7 +4,7 @@ Debug functionality for the Spark REST API
 
 
 from aiohttp import web
-from aiohttp_apispec import docs, request_schema
+from aiohttp_apispec import docs, json_schema
 from brewblox_service import brewblox_logger
 
 from brewblox_devcon_spark import spark
@@ -23,10 +23,10 @@ def setup(app: web.Application):
     summary='Manually send a Spark controller command',
 )
 @routes.post('/_debug/do')
-@request_schema(schemas.ManualCommandSchema)
+@json_schema(schemas.ManualCommandSchema)
 async def do_command(request: web.Request) -> web.Response:
-    command = request['data']['command']
-    data = request['data']['data']
+    command = request['json']['command']
+    data = request['json']['data']
 
     func = getattr(spark.fget(request.app), command)
     return web.json_response(await func(**data))
