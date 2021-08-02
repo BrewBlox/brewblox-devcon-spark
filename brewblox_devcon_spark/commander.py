@@ -38,7 +38,7 @@ class SparkCommander(features.ServiceFeature):
 
     async def shutdown(self, app: web.Application):
         if self._conn:
-            await self._conn.shutdown(app)
+            await self._conn.end()
             self._conn.data_callbacks.discard(self.data_callback)
             self._conn = None
 
