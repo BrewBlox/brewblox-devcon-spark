@@ -23,16 +23,10 @@ class SocketCloser(features.ServiceFeature):
         super().__init__(app)
         app['websockets'] = WeakSet()
 
-    async def startup(self, app: web.Application):
-        pass
-
     async def before_shutdown(self, app: web.Application):
         for ws in set(app['websockets']):
             await ws.close(code=WSCloseCode.GOING_AWAY,
                            message='Server shutdown')
-
-    async def shutdown(self, app: web.Application):
-        pass
 
 
 @routes.get('/sim/display')
@@ -58,10 +52,12 @@ async def stream_display(request: web.Request) -> web.Response:
                 headers={'Connection': 'keep-alive, Upgrade'},
             ) as spark_ws:
                 request.app['websockets'].add(spark_ws)
-                async for msg in spark_ws:
-                    if msg.type == WSMsgType.BINARY:
-                        await ws.send_bytes(msg.data)
-                request.app['websockets'].discard(spark_ws)
+                try:
+                    async for msg in spark_ws:
+                        if msg.type == WSMsgType.BINARY:
+                            await ws.send_bytes(msg.data)
+                finally:
+                    request.app['websockets'].discard(spark_ws)
 
     finally:
         request.app['websockets'].discard(ws)

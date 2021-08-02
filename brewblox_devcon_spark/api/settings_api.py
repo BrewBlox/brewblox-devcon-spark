@@ -3,7 +3,7 @@ REST API for persistent settings
 """
 
 from aiohttp import web
-from aiohttp_apispec import docs, request_schema, response_schema
+from aiohttp_apispec import docs, json_schema, response_schema
 from brewblox_service import brewblox_logger
 
 from brewblox_devcon_spark import synchronization
@@ -34,9 +34,9 @@ async def autoconnecting_get(request: web.Request) -> web.Response:
     summary='Set autoconnecting flag',
 )
 @routes.put('/settings/autoconnecting')
-@request_schema(schemas.AutoconnectingSchema)
+@json_schema(schemas.AutoconnectingSchema)
 @response_schema(schemas.AutoconnectingSchema)
 async def autoconnect_put(request: web.Request) -> web.Response:
     syncher = synchronization.fget(request.app)
-    enabled = await syncher.set_autoconnecting(request['data']['enabled'])
+    enabled = await syncher.set_autoconnecting(request['json']['enabled'])
     return web.json_response({'enabled': enabled})
