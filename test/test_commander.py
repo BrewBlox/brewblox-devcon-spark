@@ -25,7 +25,7 @@ def m_conn(mocker):
     m = mocker.patch(TESTED + '.connection.fget')
     m.return_value.bind = AsyncMock()
     m.return_value.write = AsyncMock()
-    m.return_value.shutdown = AsyncMock()
+    m.return_value.end = AsyncMock()
     m.return_value.start_update = AsyncMock()
     m.return_value.start_reconnect = AsyncMock()
     return m.return_value
