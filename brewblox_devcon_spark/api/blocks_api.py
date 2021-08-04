@@ -5,7 +5,7 @@ REST API for Spark blocks
 import asyncio
 import re
 from copy import deepcopy
-from typing import List
+from typing import List, Tuple
 
 from aiohttp import web
 from aiohttp_apispec import docs, json_schema, response_schema
@@ -176,6 +176,14 @@ class BlocksApi():
         await self.wait_for_sync()
         response = await self._spark.list_stored_objects()
         return response.get('objects', [])
+
+    async def read_all_broadcast(self) -> Tuple[List[types.Block], List[types.Block]]:
+        await self.wait_for_sync()
+        blocks_response, logged_response = await self._spark.list_broadcast_objects()
+        blocks = blocks_response.get('objects', [])
+        logged_blocks = logged_response.get('objects', [])
+        block_cache.set_all(self.app, blocks)
+        return (blocks, logged_blocks)
 
     async def delete_all(self) -> dict:
         await self.wait_for_sync()
