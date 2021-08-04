@@ -14,7 +14,7 @@ from google.protobuf import json_format
 from google.protobuf.descriptor import DescriptorBase, FieldDescriptor
 from google.protobuf.message import Message
 
-from .opts import CodecOpts, FilterOpt, MetadataOpt
+from .opts import DecodeOpts, FilterOpt, MetadataOpt
 from .pb2 import brewblox_pb2
 from .unit_conversion import UnitConverter
 
@@ -121,7 +121,7 @@ class Modifier():
             user_unit = postfix
             return self._converter.to_sys_value(value, unit_type, user_unit)
 
-    def encode_options(self, message: Message, obj: dict, opts: CodecOpts) -> dict:
+    def encode_options(self, message: Message, obj: dict) -> dict:
         """
         Modifies `obj` based on Protobuf options and dict key postfixes.
 
@@ -155,8 +155,7 @@ class Modifier():
 
             >>> encode_options(
                     TempSensorOneWire_pb2.TempSensorOneWire(),
-                    values,
-                    CodecOpts())
+                    values)
 
             # ExampleMessage.proto:
             #
@@ -240,7 +239,7 @@ class Modifier():
 
         return obj
 
-    def decode_options(self, message: Message, obj: dict, opts: CodecOpts) -> dict:
+    def decode_options(self, message: Message, obj: dict, opts: DecodeOpts) -> dict:
         """
         Post-processes protobuf data based on protobuf / codec options.
 
@@ -276,7 +275,7 @@ class Modifier():
             >>> decode_options(
                     ExampleMessage_pb2.ExampleMessage(),
                     values,
-                    CodecOpts(metadata=MetadataOpt.POSTFIX))
+                    DecodeOpts(metadata=MetadataOpt.POSTFIX))
 
             # ExampleMessage.proto:
             #
