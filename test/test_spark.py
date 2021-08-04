@@ -8,7 +8,7 @@ from mock import AsyncMock, Mock
 
 from brewblox_devcon_spark import (block_store, codec, commander_sim, const,
                                    exceptions, service_status, spark)
-from brewblox_devcon_spark.codec.opts import CodecOpts
+from brewblox_devcon_spark.codec.opts import DecodeOpts
 
 TESTED = spark.__name__
 
@@ -70,8 +70,8 @@ async def test_transcoding(app, client, store):
     retval = await s.create_object(object_args)
     assert retval['data']['settings']['address'] == 'ff'.rjust(16, '0')
 
-    c.encode.assert_any_await(obj_type, obj_data, opts=CodecOpts())
-    c.decode.assert_any_await(enc_type, enc_data, opts=CodecOpts())
+    c.encode.assert_any_await(obj_type, obj_data)
+    c.decode.assert_any_await(enc_type, enc_data, opts=DecodeOpts())
 
 
 async def test_list_transcoding(app, client, store, mocker):
@@ -98,24 +98,23 @@ async def test_convert_id(app, client, store, mocker):
     store['4-2', 24] = dict()
 
     resolver = spark.SparkResolver(app)
-    opts = CodecOpts()
 
-    assert await resolver.convert_sid_nid({'id': 'alias'}, opts) == {'nid': 123}
-    assert await resolver.convert_sid_nid({'nid': 840}, opts) == {'nid': 840}
-    assert await resolver.convert_sid_nid({'id': 840}, opts) == {'nid': 840}
+    assert await resolver.convert_sid_nid({'id': 'alias'}) == {'nid': 123}
+    assert await resolver.convert_sid_nid({'nid': 840}) == {'nid': 840}
+    assert await resolver.convert_sid_nid({'id': 840}) == {'nid': 840}
     # When both present, NID takes precedence
-    assert await resolver.convert_sid_nid({'id': 'alias', 'nid': 444}, opts) == {'nid': 444}
-    assert await resolver.convert_sid_nid({}, opts) == {}
+    assert await resolver.convert_sid_nid({'id': 'alias', 'nid': 444}) == {'nid': 444}
+    assert await resolver.convert_sid_nid({}) == {}
 
-    assert await resolver.add_sid({'nid': 123}, opts) == {'nid': 123, 'id': 'alias'}
-    assert await resolver.add_sid({'id': 'testey'}, opts) == {'id': 'testey'}
-    assert await resolver.add_sid({}, opts) == {}
+    assert await resolver.add_sid({'nid': 123}) == {'nid': 123, 'id': 'alias'}
+    assert await resolver.add_sid({'id': 'testey'}) == {'id': 'testey'}
+    assert await resolver.add_sid({}) == {}
 
     with pytest.raises(exceptions.DecodeException):
-        await resolver.add_sid({'nid': 'testey'}, opts)
+        await resolver.add_sid({'nid': 'testey'})
 
     # Service ID not found: create placeholder
-    generated = await resolver.add_sid({'nid': 456, 'type': 'Edgecase,driven'}, opts)
+    generated = await resolver.add_sid({'nid': 456, 'type': 'Edgecase,driven'})
     assert generated['id'].startswith(const.GENERATED_ID_PREFIX)
     assert ',driven' not in generated['id']
 
@@ -147,7 +146,7 @@ async def test_resolve_links(app, client, store):
         }
 
     resolver = spark.SparkResolver(app)
-    output = await resolver.convert_links_nid(create_data(), CodecOpts())
+    output = await resolver.convert_links_nid(create_data())
 
     assert output == {
         'data': {
@@ -169,7 +168,7 @@ async def test_resolve_links(app, client, store):
         },
     }
 
-    output = await resolver.convert_links_sid(output, CodecOpts())
+    output = await resolver.convert_links_sid(output)
     assert output == create_data()
 
 

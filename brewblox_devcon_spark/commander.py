@@ -53,6 +53,9 @@ class SparkCommander(features.ServiceFeature):
                 raise ValueError('Unexpected message')
             fut.set_result(raw_response)
 
+        except asyncio.CancelledError:  # pragma: no cover
+            raise
+
         except Exception as ex:
             LOGGER.error(f'Error parsing message `{msg}` : {strex(ex)}')
 
