@@ -59,19 +59,20 @@ class Broadcaster(repeater.RepeaterFeature):
             synched = await service_status.wait_synchronized(self.app, wait=False)
 
             status_data = service_status.desc_dict(self.app)
-            blocks_data = []
+            blocks = []
 
             try:
                 if synched:
                     api = BlocksApi(self.app)
-                    blocks_data = await api.read_all()
+                    blocks, logged_blocks = await api.read_all_broadcast()
 
-                    # History event is published if block data is available
+                    # Convert list to key/value format suitable for history
                     history_data = {
                         block['id']: block['data']
-                        for block in await api.read_all_logged()
+                        for block in logged_blocks
                         if not block['id'].startswith(const.GENERATED_ID_PREFIX)
                     }
+
                     await mqtt.publish(self.app,
                                        self.history_topic,
                                        err=False,
@@ -91,7 +92,7 @@ class Broadcaster(repeater.RepeaterFeature):
                                        'type': 'Spark.state',
                                        'data': {
                                            'status': status_data,
-                                           'blocks': blocks_data,
+                                           'blocks': blocks,
                                        },
                                    })
 
