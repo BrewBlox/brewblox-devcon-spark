@@ -8,7 +8,7 @@ from mock import ANY
 
 from brewblox_devcon_spark import (codec, commander_sim, service_store,
                                    exceptions, service_status)
-from brewblox_devcon_spark.codec import (Codec, CodecOpts, MetadataOpt,
+from brewblox_devcon_spark.codec import (Codec, DecodeOpts, MetadataOpt,
                                          ProtoEnumOpt)
 
 
@@ -114,7 +114,7 @@ async def test_encode_delta_sec(app, client, cdc: Codec):
     enc_id, enc_val = await cdc.encode('EdgeCase', {
         'deltaV': 100,
     })
-    dec_id, dec_val = await cdc.decode(enc_id, enc_val, CodecOpts(metadata=MetadataOpt.POSTFIX))
+    dec_id, dec_val = await cdc.decode(enc_id, enc_val, DecodeOpts(metadata=MetadataOpt.POSTFIX))
     assert dec_val['deltaV[delta_degC / second]'] == pytest.approx(100, 0.1)
 
 
@@ -141,7 +141,7 @@ async def test_stripped_fields(app, client, cdc: Codec, sim_cdc: Codec):
     assert 'strippedFields' not in dec_val.keys()
 
     dec_id, dec_val = await cdc.decode(enc_id, enc_val,
-                                       CodecOpts(metadata=MetadataOpt.POSTFIX))
+                                       DecodeOpts(metadata=MetadataOpt.POSTFIX))
     assert dec_val['deltaV[delta_degC / second]'] is None
 
 
@@ -166,7 +166,7 @@ async def test_postfixed_decoding(app, client, cdc: Codec):
         }
     })
 
-    dec_id, dec_val = await cdc.decode(enc_id, enc_val, CodecOpts(metadata=MetadataOpt.POSTFIX))
+    dec_id, dec_val = await cdc.decode(enc_id, enc_val, DecodeOpts(metadata=MetadataOpt.POSTFIX))
     assert dec_val['drivenDevice<DS2413,driven>'] == 10
     assert dec_val['state']['value[degC]'] == pytest.approx(10, 0.01)
 
@@ -211,5 +211,5 @@ async def test_enum_decoding(app, client, cdc: Codec):
     })
     assert enc_val_alt == enc_val
 
-    dec_id, dec_val = await cdc.decode(enc_id, enc_val, CodecOpts(enums=ProtoEnumOpt.INT))
+    dec_id, dec_val = await cdc.decode(enc_id, enc_val, DecodeOpts(enums=ProtoEnumOpt.INT))
     assert dec_val['desiredState'] == 1

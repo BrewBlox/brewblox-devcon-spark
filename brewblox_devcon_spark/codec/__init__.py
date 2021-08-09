@@ -6,7 +6,7 @@ from aiohttp import web
 
 from . import codec, unit_conversion
 from .codec import Codec, TranscodeFunc_, fget
-from .opts import CodecOpts, FilterOpt, MetadataOpt, ProtoEnumOpt
+from .opts import DecodeOpts, FilterOpt, MetadataOpt, ProtoEnumOpt
 from .unit_conversion import get_converter
 
 __all__ = [
@@ -14,7 +14,7 @@ __all__ = [
     'fget',
     'get_converter',
     'setup',
-    'CodecOpts',
+    'DecodeOpts',
     'ProtoEnumOpt',
     'FilterOpt',
     'MetadataOpt',

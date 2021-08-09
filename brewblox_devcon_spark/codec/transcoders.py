@@ -13,7 +13,7 @@ from google.protobuf.message import Message
 
 from . import pb2
 from .modifiers import Modifier
-from .opts import CodecOpts, ProtoEnumOpt
+from .opts import DecodeOpts, ProtoEnumOpt
 
 ObjType_ = Union[int, str]
 Decoded_ = dict
@@ -40,11 +40,11 @@ class Transcoder(ABC):
         return []
 
     @abstractmethod
-    def encode(self, values: Decoded_, opts: CodecOpts) -> Encoded_:
+    def encode(self, values: Decoded_) -> Encoded_:
         pass  # pragma: no cover
 
     @abstractmethod
-    def decode(self, encoded: Encoded_, opts: CodecOpts) -> Decoded_:
+    def decode(self, encoded: Encoded_, opts: DecodeOpts) -> Decoded_:
         pass  # pragma: no cover
 
     @classmethod
@@ -74,10 +74,10 @@ class BlockInterfaceTranscoder(Transcoder):
     def type_str(cls) -> str:
         return pb2.brewblox_pb2.BrewBloxTypes.BlockType.Name(cls._ENUM_VAL)
 
-    def encode(self, values: Decoded_, _) -> Encoded_:
+    def encode(self, values: Decoded_) -> Encoded_:
         return b'\x00'
 
-    def decode(self, values: Encoded_, _) -> Decoded_:
+    def decode(self, values: Encoded_, _: DecodeOpts) -> Decoded_:
         return dict()
 
 
@@ -96,12 +96,12 @@ class InactiveObjectTranscoder(Transcoder):
     def type_str(cls) -> str:
         return 'InactiveObject'
 
-    def encode(self, values: Decoded_, _) -> Encoded_:
+    def encode(self, values: Decoded_) -> Encoded_:
         type_id = values['actualType']
         encoded = Transcoder.get(type_id, self.mod).type_int().to_bytes(2, 'little')
         return encoded
 
-    def decode(self, encoded: Encoded_, _) -> Decoded_:
+    def decode(self, encoded: Encoded_, _: DecodeOpts) -> Decoded_:
         type_id = int.from_bytes(encoded, 'little')
         return {'actualType': Transcoder.get(type_id, self.mod).type_str()}
 
@@ -116,12 +116,12 @@ class DeprecatedObjectTranscoder(Transcoder):
     def type_str(cls) -> str:
         return 'DeprecatedObject'
 
-    def encode(self, values: Decoded_, _) -> Encoded_:
+    def encode(self, values: Decoded_) -> Encoded_:
         actual_id = values['actualId']
         encoded = actual_id.to_bytes(2, 'little')
         return encoded
 
-    def decode(self, encoded: Encoded_, _) -> Decoded_:
+    def decode(self, encoded: Encoded_, _: DecodeOpts) -> Decoded_:
         actual_id = int.from_bytes(encoded, 'little')
         return {'actualId': actual_id}
 
@@ -136,11 +136,11 @@ class GroupsTranscoder(Transcoder):
     def type_str(cls) -> str:
         return 'Groups'
 
-    def encode(self, values: Decoded_, _) -> Encoded_:
+    def encode(self, values: Decoded_) -> Encoded_:
         active = self.mod.pack_bit_flags(values.get('active', []))
         return active.to_bytes(1, 'little')
 
-    def decode(self, encoded: Encoded_, _) -> Decoded_:
+    def decode(self, encoded: Encoded_, _: DecodeOpts) -> Decoded_:
         active = self.mod.unpack_bit_flags(int.from_bytes(encoded, 'little'))
         return {'active': active}
 
@@ -162,13 +162,13 @@ class ProtobufTranscoder(Transcoder):
     def create_message(self) -> Message:
         return self.__class__._MESSAGE()
 
-    def encode(self, values: Decoded_, _) -> Encoded_:
+    def encode(self, values: Decoded_) -> Encoded_:
         # LOGGER.debug(f'encoding {values} to {self.__class__._MESSAGE}')
         obj = json_format.ParseDict(values, self.create_message())
         data = obj.SerializeToString()
         return data + b'\x00'  # Include null terminator
 
-    def decode(self, encoded: Encoded_, opts: CodecOpts) -> Decoded_:
+    def decode(self, encoded: Encoded_, opts: DecodeOpts) -> Decoded_:
         # Remove null terminator
         encoded = encoded[:-1]
         int_enum = opts.enums == ProtoEnumOpt.INT
@@ -187,11 +187,11 @@ class ProtobufTranscoder(Transcoder):
 
 class OptionsTranscoder(ProtobufTranscoder):
 
-    def encode(self, values: Decoded_, opts: CodecOpts) -> Encoded_:
-        self.mod.encode_options(self.create_message(), values, opts)
-        return super().encode(values, opts)
+    def encode(self, values: Decoded_) -> Encoded_:
+        self.mod.encode_options(self.create_message(), values)
+        return super().encode(values)
 
-    def decode(self, encoded: Encoded_, opts: CodecOpts) -> Decoded_:
+    def decode(self, encoded: Encoded_, opts: DecodeOpts) -> Decoded_:
         decoded = super().decode(encoded, opts)
         self.mod.decode_options(self.create_message(), decoded, opts)
         return decoded

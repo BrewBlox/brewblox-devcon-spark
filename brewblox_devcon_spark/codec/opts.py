@@ -22,7 +22,7 @@ class ProtoEnumOpt(Enum):
 
 
 @dataclass(frozen=True)
-class CodecOpts():
+class DecodeOpts():
     filter: FilterOpt = FilterOpt.ALL
     metadata: MetadataOpt = MetadataOpt.TYPED
     enums: ProtoEnumOpt = ProtoEnumOpt.STR

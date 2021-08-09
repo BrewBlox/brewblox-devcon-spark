@@ -14,7 +14,7 @@ from brewblox_service import brewblox_logger, features, strex
 from brewblox_devcon_spark import exceptions
 
 from .modifiers import Modifier
-from .opts import CodecOpts
+from .opts import DecodeOpts
 from .transcoders import Decoded_, Encoded_, ObjType_, Transcoder
 from .unit_conversion import get_converter
 
@@ -50,7 +50,6 @@ class Codec(features.ServiceFeature):
     async def encode(self,
                      obj_type: ObjType_,
                      values: Optional[Decoded_] = ...,
-                     opts: Optional[CodecOpts] = None
                      ) -> Union[ObjType_, Tuple[ObjType_, Encoded_]]:
         """
         Encode given data to a serializable type.
@@ -67,9 +66,6 @@ class Codec(features.ServiceFeature):
                 Decoded representation of the message.
                 If not set, only encoded object type will be returned.
 
-            opts (Optional[CodecOpts]):
-                Additional options that are passed to the transcoder.
-
         Returns:
             ObjType_:
                 If `values` is not set, only encoded object type is returned.
@@ -80,14 +76,10 @@ class Codec(features.ServiceFeature):
         if not isinstance(values, (dict, type(...))):
             raise TypeError(f'Unable to encode [{type(values).__name__}] values')
 
-        if opts is not None and not isinstance(opts, CodecOpts):
-            raise TypeError(f'Invalid codec opts: {opts}')
-
         try:
-            opts = opts or CodecOpts()
             trc = Transcoder.get(obj_type, self._mod)
             return trc.type_int() if values is ... \
-                else (trc.type_int(), trc.encode(deepcopy(values), opts))
+                else (trc.type_int(), trc.encode(deepcopy(values)))
         except Exception as ex:
             msg = strex(ex)
             LOGGER.debug(msg, exc_info=True)
@@ -96,7 +88,7 @@ class Codec(features.ServiceFeature):
     async def decode(self,
                      obj_type: ObjType_,
                      values: Optional[Encoded_] = ...,
-                     opts: Optional[CodecOpts] = None
+                     opts: Optional[DecodeOpts] = None
                      ) -> Union[ObjType_, Tuple[ObjType_, Decoded_]]:
         """
         Decodes given data to a Python-compatible type.
@@ -113,7 +105,7 @@ class Codec(features.ServiceFeature):
                 Encoded representation of the message.
                 If not set, only decoded object type will be returned.
 
-            opts (Optional[CodecOpts]):
+            opts (Optional[DecodeOpts]):
                 Additional options that are passed to the transcoder.
 
         Returns:
@@ -126,14 +118,14 @@ class Codec(features.ServiceFeature):
         if not isinstance(values, (bytes, list, type(...))):
             raise TypeError(f'Unable to decode [{type(values).__name__}] values')
 
-        if opts is not None and not isinstance(opts, CodecOpts):
+        if opts is not None and not isinstance(opts, DecodeOpts):
             raise TypeError(f'Invalid codec opts: {opts}')
 
         type_name = obj_type
         no_content = values == ...
 
         try:
-            opts = opts or CodecOpts()
+            opts = opts or DecodeOpts()
             trc = Transcoder.get(obj_type, self._mod)
             type_name = trc.type_str()
             return type_name if no_content else (type_name, trc.decode(values, opts))
