@@ -9,7 +9,7 @@ COPY [ \
     "./" \
 ]
 
-# RUN bash inspect
+RUN bash inspect
 
 # Example calls:
 
