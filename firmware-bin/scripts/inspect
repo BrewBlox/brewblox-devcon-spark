@@ -1,7 +1,8 @@
 #! /usr/bin/env bash
-set -e
+set -ex
 
-for bin in ./*.bin; do
+function do_inspect() {
+    bin="$1"
     res="$(particle binary inspect ./"${bin}")"
     echo "$res"
     grep -q "CRC is ok" <<< "$res"
@@ -12,4 +13,7 @@ for bin in ./*.bin; do
     else
         grep -q "Compiled for p1" <<< "$res"
     fi
-done
+}
+
+do_inspect brewblox-p1.bin
+do_inspect brewblox-photon.bin

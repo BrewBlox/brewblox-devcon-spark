@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x17TempSensorOneWire.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xbe\x01\n\x11TempSensorOneWire\x12-\n\x05value\x18\x01 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\"\n\x06offset\x18\x03 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x06\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x17\n\x07\x61\x64\x64ress\x18\x04 \x01(\x06\x42\x06\x8a\xb5\x18\x02 \x01\x12(\n\x0estrippedFields\x18\x63 \x03(\rB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x01:\x13\x8a\xb5\x18\x03\x18\xae\x02\x8a\xb5\x18\x02H\x02\x8a\xb5\x18\x02H\tb\x06proto3'
+  serialized_pb=b'\n\x17TempSensorOneWire.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xe8\x01\n\x11TempSensorOneWire\x12-\n\x05value\x18\x01 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\"\n\x06offset\x18\x03 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x06\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x17\n\x07\x61\x64\x64ress\x18\x04 \x01(\x06\x42\x06\x8a\xb5\x18\x02 \x01\x12(\n\x0coneWireBusId\x18\x05 \x01(\rB\x12\x8a\xb5\x18\x03\x18\x82\x02\x92?\x02\x38\x10\x8a\xb5\x18\x02(\x01\x12(\n\x0estrippedFields\x18\x63 \x03(\rB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x01:\x13\x8a\xb5\x18\x03\x18\xae\x02\x8a\xb5\x18\x02H\x02\x8a\xb5\x18\x02H\tb\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -58,7 +58,14 @@ _TEMPSENSORONEWIRE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002 \001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='strippedFields', full_name='blox.TempSensorOneWire.strippedFields', index=3,
+      name='oneWireBusId', full_name='blox.TempSensorOneWire.oneWireBusId', index=3,
+      number=5, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\003\030\202\002\222?\0028\020\212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='strippedFields', full_name='blox.TempSensorOneWire.strippedFields', index=4,
       number=99, type=13, cpp_type=3, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -77,7 +84,7 @@ _TEMPSENSORONEWIRE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=64,
-  serialized_end=254,
+  serialized_end=296,
 )
 
 DESCRIPTOR.message_types_by_name['TempSensorOneWire'] = _TEMPSENSORONEWIRE
@@ -94,6 +101,7 @@ _sym_db.RegisterMessage(TempSensorOneWire)
 _TEMPSENSORONEWIRE.fields_by_name['value']._options = None
 _TEMPSENSORONEWIRE.fields_by_name['offset']._options = None
 _TEMPSENSORONEWIRE.fields_by_name['address']._options = None
+_TEMPSENSORONEWIRE.fields_by_name['oneWireBusId']._options = None
 _TEMPSENSORONEWIRE.fields_by_name['strippedFields']._options = None
 _TEMPSENSORONEWIRE._options = None
 # @@protoc_insertion_point(module_scope)
