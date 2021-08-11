@@ -250,6 +250,7 @@ _TRANSCODERS = [
             pb2.MotorValve_pb2.MotorValve,
             pb2.Mutex_pb2.Mutex,
             pb2.OneWireBus_pb2.OneWireBus,
+            pb2.OneWireGpioModule_pb2.OneWireGpioModule,
             pb2.Pid_pb2.Pid,
             pb2.SetpointProfile_pb2.SetpointProfile,
             pb2.SetpointSensorPair_pb2.SetpointSensorPair,

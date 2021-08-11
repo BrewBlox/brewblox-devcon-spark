@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\rIoArray.proto\x12\x04\x62lox\"S\n\tIoChannel\x12#\n\x06\x63onfig\x18\x01 \x01(\x0e\x32\x13.blox.ChannelConfig\x12!\n\x05state\x18\x02 \x01(\x0e\x32\x12.blox.DigitalState*r\n\x0c\x44igitalState\x12\x12\n\x0eSTATE_INACTIVE\x10\x00\x12\x10\n\x0cSTATE_ACTIVE\x10\x01\x12\x11\n\rSTATE_UNKNOWN\x10\x02\x12\x0c\n\x08Inactive\x10\x00\x12\n\n\x06\x41\x63tive\x10\x01\x12\x0b\n\x07Unknown\x10\x02\x1a\x02\x10\x01*}\n\rChannelConfig\x12\x12\n\x0e\x43HANNEL_UNUSED\x10\x00\x12\x16\n\x12\x43HANNEL_ACTIVE_LOW\x10\x01\x12\x17\n\x13\x43HANNEL_ACTIVE_HIGH\x10\x02\x12\x11\n\rCHANNEL_INPUT\x10\n\x12\x14\n\x0f\x43HANNEL_UNKNOWN\x10\xff\x01\x62\x06proto3'
+  serialized_pb=b'\n\rIoArray.proto\x12\x04\x62lox\"S\n\tIoChannel\x12#\n\x06\x63onfig\x18\x01 \x01(\x0e\x32\x13.blox.ChannelConfig\x12!\n\x05state\x18\x02 \x01(\x0e\x32\x12.blox.DigitalState*r\n\x0c\x44igitalState\x12\x12\n\x0eSTATE_INACTIVE\x10\x00\x12\x10\n\x0cSTATE_ACTIVE\x10\x01\x12\x11\n\rSTATE_UNKNOWN\x10\x02\x12\x0c\n\x08Inactive\x10\x00\x12\n\n\x06\x41\x63tive\x10\x01\x12\x0b\n\x07Unknown\x10\x02\x1a\x02\x10\x01*\xd2\x02\n\rChannelConfig\x12\x12\n\x0e\x43HANNEL_UNUSED\x10\x00\x12\x17\n\x13\x43HANNEL_DRIVING_OFF\x10\x01\x12\x16\n\x12\x43HANNEL_DRIVING_ON\x10\x02\x12\x1b\n\x17\x43HANNEL_DRIVING_REVERSE\x10\x03\x12\"\n\x1e\x43HANNEL_DRIVING_BRAKE_LOW_SIDE\x10\x04\x12#\n\x1f\x43HANNEL_DRIVING_BRAKE_HIGH_SIDE\x10\x05\x12\x17\n\x13\x43HANNEL_DRIVING_PWM\x10\x06\x12\x1f\n\x1b\x43HANNEL_DRIVING_PWM_REVERSE\x10\x07\x12\x11\n\rCHANNEL_INPUT\x10\n\x12\x14\n\x0f\x43HANNEL_UNKNOWN\x10\xff\x01\x12\x16\n\x12\x43HANNEL_ACTIVE_LOW\x10\x01\x12\x17\n\x13\x43HANNEL_ACTIVE_HIGH\x10\x02\x1a\x02\x10\x01\x62\x06proto3'
 )
 
 _DIGITALSTATE = _descriptor.EnumDescriptor(
@@ -82,30 +82,65 @@ _CHANNELCONFIG = _descriptor.EnumDescriptor(
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='CHANNEL_ACTIVE_LOW', index=1, number=1,
+      name='CHANNEL_DRIVING_OFF', index=1, number=1,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='CHANNEL_ACTIVE_HIGH', index=2, number=2,
+      name='CHANNEL_DRIVING_ON', index=2, number=2,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='CHANNEL_INPUT', index=3, number=10,
+      name='CHANNEL_DRIVING_REVERSE', index=3, number=3,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='CHANNEL_UNKNOWN', index=4, number=255,
+      name='CHANNEL_DRIVING_BRAKE_LOW_SIDE', index=4, number=4,
+      serialized_options=None,
+      type=None,
+      create_key=_descriptor._internal_create_key),
+    _descriptor.EnumValueDescriptor(
+      name='CHANNEL_DRIVING_BRAKE_HIGH_SIDE', index=5, number=5,
+      serialized_options=None,
+      type=None,
+      create_key=_descriptor._internal_create_key),
+    _descriptor.EnumValueDescriptor(
+      name='CHANNEL_DRIVING_PWM', index=6, number=6,
+      serialized_options=None,
+      type=None,
+      create_key=_descriptor._internal_create_key),
+    _descriptor.EnumValueDescriptor(
+      name='CHANNEL_DRIVING_PWM_REVERSE', index=7, number=7,
+      serialized_options=None,
+      type=None,
+      create_key=_descriptor._internal_create_key),
+    _descriptor.EnumValueDescriptor(
+      name='CHANNEL_INPUT', index=8, number=10,
+      serialized_options=None,
+      type=None,
+      create_key=_descriptor._internal_create_key),
+    _descriptor.EnumValueDescriptor(
+      name='CHANNEL_UNKNOWN', index=9, number=255,
+      serialized_options=None,
+      type=None,
+      create_key=_descriptor._internal_create_key),
+    _descriptor.EnumValueDescriptor(
+      name='CHANNEL_ACTIVE_LOW', index=10, number=1,
+      serialized_options=None,
+      type=None,
+      create_key=_descriptor._internal_create_key),
+    _descriptor.EnumValueDescriptor(
+      name='CHANNEL_ACTIVE_HIGH', index=11, number=2,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
   ],
   containing_type=None,
-  serialized_options=None,
-  serialized_start=224,
-  serialized_end=349,
+  serialized_options=b'\020\001',
+  serialized_start=225,
+  serialized_end=563,
 )
 _sym_db.RegisterEnumDescriptor(_CHANNELCONFIG)
 
@@ -117,10 +152,17 @@ Inactive = 0
 Active = 1
 Unknown = 2
 CHANNEL_UNUSED = 0
-CHANNEL_ACTIVE_LOW = 1
-CHANNEL_ACTIVE_HIGH = 2
+CHANNEL_DRIVING_OFF = 1
+CHANNEL_DRIVING_ON = 2
+CHANNEL_DRIVING_REVERSE = 3
+CHANNEL_DRIVING_BRAKE_LOW_SIDE = 4
+CHANNEL_DRIVING_BRAKE_HIGH_SIDE = 5
+CHANNEL_DRIVING_PWM = 6
+CHANNEL_DRIVING_PWM_REVERSE = 7
 CHANNEL_INPUT = 10
 CHANNEL_UNKNOWN = 255
+CHANNEL_ACTIVE_LOW = 1
+CHANNEL_ACTIVE_HIGH = 2
 
 
 
@@ -178,4 +220,5 @@ _sym_db.RegisterMessage(IoChannel)
 
 
 _DIGITALSTATE._options = None
+_CHANNELCONFIG._options = None
 # @@protoc_insertion_point(module_scope)
