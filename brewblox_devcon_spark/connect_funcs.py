@@ -37,7 +37,7 @@ SIM_BINARIES = {
 SPARK_HWIDS = [
     r'USB VID\:PID=2B04\:C006.*',  # Photon
     r'USB VID\:PID=2B04\:C008.*',  # P1
-    r'USB VID\:PID=10C4\:EA60.8',  # ESP32
+    # r'USB VID\:PID=10C4\:EA60.8',  # ESP32
 ]
 
 # Construct a regex OR'ing all allowed hardware ID matches
