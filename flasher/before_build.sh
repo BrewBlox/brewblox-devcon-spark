@@ -3,5 +3,5 @@
 set -e
 pushd "$(dirname "$0")/.." > /dev/null
 
-rm -rf flasher/firmware-bin
-cp -rf firmware-bin/ flasher/
+rm -rf flasher/firmware
+cp -rf firmware/ flasher/
