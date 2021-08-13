@@ -14,7 +14,7 @@ ARG service_info=UNKNOWN
 ENV SERVICE_INFO=${service_info}
 
 COPY --from=base /wheeley /wheeley
-COPY ./firmware-bin /app/firmware-bin
+COPY ./firmware /app/firmware
 COPY ./docker_slim_build.sh /app/docker_slim_build.sh
 
 RUN /bin/bash /app/docker_slim_build.sh

@@ -1,8 +1,0 @@
-#! /usr/bin/env bash
-set -e
-
-particle usb listen
-echo ""
-echo "IMPORTANT: answer 'no' when asked to scan for Wifi networks"
-echo ""
-particle serial wifi
