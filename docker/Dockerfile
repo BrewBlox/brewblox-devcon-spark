@@ -1,4 +1,4 @@
-FROM python:3.7 as base
+FROM python:3.7-buster as base
 
 COPY ./dist /app/dist
 COPY ./requirements.txt /app/requirements.txt
@@ -6,7 +6,7 @@ COPY ./docker_base_build.sh /app/docker_base_build.sh
 
 RUN /bin/bash /app/docker_base_build.sh
 
-FROM python:3.7-slim
+FROM python:3.7-slim-buster
 EXPOSE 5000
 WORKDIR /app
 
