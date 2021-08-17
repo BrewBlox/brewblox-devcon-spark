@@ -1,37 +1,40 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
 # Args
-TAG=${1:-"develop"}
-echo "Using brewblox/firmware-bin:${TAG}"
+VERSION=${1:-""}
 
 # Push script dir
 pushd "$(dirname "$0")" > /dev/null
 
-# Pull image
-docker rm bin-box 2> /dev/null || true
-if [ "${TAG}" != "local" ]
+# Check for required tools
+if ! command -v gh &> /dev/null
 then
-    docker pull brewblox/firmware-bin:"${TAG}"
+    echo "ERROR: Github CLI could not be found. To install: https://cli.github.com/manual/installation"
+    exit 1
 fi
-docker create --name bin-box brewblox/firmware-bin:"${TAG}"
 
-# Clear and recreate dir
-rm -rf ./firmware-bin
-mkdir -p ./firmware-bin
+# Version must match 'vMAJOR.MINOR.PATCH', with an optional postfix
+if [[ ! "${VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(\-.+)?$ ]]
+then
+    echo "ERROR: Missing or invalid version argument."
+    echo "ERROR: Version '${VERSION}' must be formatted as 'vMAJOR.MINOR.PATCH'"
+    exit 1
+fi
 
-# Copy files
-docker cp bin-box:/binaries ./firmware-bin/
-docker cp bin-box:/scripts ./firmware-bin/
+echo "Using firmware release ${VERSION}"
 
-# Make simulators executable
-chmod a+x ./firmware-bin/binaries/*.sim
+# Cleanup
+rm -rf ./firmware
 
-# Remove image
-docker rm bin-box > /dev/null
+# Download files
+gh release download "${VERSION}" -R BrewBlox/brewblox-firmware -D ./firmware
+
+# # Make simulators executable
+chmod a+x ./firmware/*.sim
 
 # Pull submodule
-proto_version=$(awk -F "=" '/proto_version/ {print $2}' ./firmware-bin/binaries/firmware.ini)
+proto_version=$(awk -F "=" '/proto_version/ {print $2}' ./firmware/firmware.ini)
 proto_dir=brewblox_devcon_spark/codec/proto
 git -C ${proto_dir} fetch
 git -C ${proto_dir} checkout "${proto_version}"

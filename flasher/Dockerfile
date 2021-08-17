@@ -2,14 +2,9 @@ FROM brewblox/firmware-particle:latest
 
 WORKDIR /app
 
-COPY [ \
-    "./firmware-bin/binaries/*.bin", \
-    "./firmware-bin/binaries/*.ini", \
-    "./firmware-bin/scripts/*", \
-    "./" \
-]
+COPY ./firmware/* ./
 
-RUN bash inspect
+RUN rm ./*.sim && bash inspect
 
 # Example calls:
 

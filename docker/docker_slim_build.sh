@@ -22,15 +22,16 @@ apt-get install -y --no-install-recommends \
 rm -rf /wheeley
 rm -rf /var/lib/apt/lists/*
 
+# Remove simulators that don't match the current architecture
 case "${ARCH}" in
     "amd64")
-        rm /app/firmware-bin/binaries/brewblox-{arm32,arm64}.sim
+        rm /app/firmware/brewblox-{arm32,arm64}.sim
         ;;
     "armhf")
-        rm /app/firmware-bin/binaries/brewblox-{amd64,arm64}.sim
+        rm /app/firmware/brewblox-{amd64,arm64}.sim
         ;;
     "arm64")
-        rm /app/firmware-bin/binaries/brewblox-{amd64,arm32}.sim
+        rm /app/firmware/brewblox-{amd64,arm32}.sim
         ;;
     *)
         echo "Unknown architecture: ${ARCH}"
