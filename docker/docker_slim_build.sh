@@ -22,9 +22,6 @@ apt-get install -y --no-install-recommends \
 rm -rf /wheeley
 rm -rf /var/lib/apt/lists/*
 
-# Always remove ESP binaries
-rm /app/firmware/*-esp32.bin
-
 # Remove simulators that don't match the current architecture
 case "${ARCH}" in
     "amd64")
