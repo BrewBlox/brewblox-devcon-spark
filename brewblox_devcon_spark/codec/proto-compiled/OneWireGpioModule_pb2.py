@@ -14,7 +14,6 @@ _sym_db = _symbol_database.Default()
 
 import brewblox_pb2 as brewblox__pb2
 import nanopb_pb2 as nanopb__pb2
-import IoArray_pb2 as IoArray__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
@@ -23,9 +22,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x17OneWireGpioModule.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\xfb\x01\n\x11GpioModuleChannel\x12\x11\n\x02id\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08\x12(\n\ndeviceType\x18\x02 \x01(\x0e\x32\x14.blox.GpioDeviceType\x12\x1d\n\x08pinsMask\x18\x03 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12\x14\n\x05width\x18\x04 \x01(\rB\x05\x92?\x02\x38\x08\x12+\n\x06\x63onfig\x18\x05 \x01(\x0e\x32\x13.blox.ChannelConfigB\x06\x8a\xb5\x18\x02(\x01\x12)\n\x05state\x18\x06 \x01(\x0e\x32\x12.blox.DigitalStateB\x06\x8a\xb5\x18\x02(\x01\x12\x1c\n\x07pwmDuty\x18\x07 \x01(\x05\x42\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\"\xf7\x04\n\x11OneWireGpioModule\x12\x30\n\x08\x63hannels\x18\x01 \x03(\x0b\x32\x17.blox.GpioModuleChannelB\x05\x92?\x02\x10\x08\x12\x1d\n\x0emodulePosition\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12!\n\x0cmoduleStatus\x18\x03 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12(\n\rpullUpDesired\x18\x04 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12\'\n\x0cpullUpStatus\x18\x05 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12+\n\x10pullUpWhenActive\x18\x06 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12-\n\x12pullUpWhenInactive\x18\x07 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12*\n\x0fpullDownDesired\x18\x08 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12)\n\x0epullDownStatus\x18\t \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12-\n\x12pullDownWhenActive\x18\n \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12/\n\x14pullDownWhenInactive\x18\x0b \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12&\n\x0boverCurrent\x18\x0c \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12#\n\x08openLoad\x18\r \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12&\n\x11moduleStatusClear\x18\x10 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01:\x13\x8a\xb5\x18\x03\x18\xc5\x02\x8a\xb5\x18\x02H\n\x8a\xb5\x18\x02H\x0c*\xba\x04\n\x0eGpioDeviceType\x12\x11\n\rGPIO_DEV_NONE\x10\x00\x12\x13\n\x0fGPIO_DEV_SSR_2P\x10\x01\x12\x13\n\x0fGPIO_DEV_SSR_1P\x10\x02\x12#\n\x1fGPIO_DEV_COIL_UNIDIRECTIONAL_2P\x10\x03\x12\"\n\x1eGPIO_DEV_COIL_BIDIRECTIONAL_2P\x10\x04\x12\x1e\n\x1aGPIO_DEV_COIL_HIGH_SIDE_1P\x10\x05\x12\x1d\n\x19GPIO_DEV_COIL_LOW_SIDE_1P\x10\x06\x12$\n GPIO_DEV_MOTOR_UNIDIRECTIONAL_2P\x10\x07\x12#\n\x1fGPIO_DEV_MOTOR_BIDIRECTIONAL_2P\x10\x08\x12\x1f\n\x1bGPIO_DEV_MOTOR_HIGH_SIDE_1P\x10\t\x12\x1e\n\x1aGPIO_DEV_MOTOR_LOW_SIDE_1P\x10\n\x12\x1b\n\x17GPIO_DEV_LOAD_DETECT_2P\x10\x0b\x12%\n!GPIO_DEV_LOAD_DETECT_PULL_DOWN_1P\x10\x0c\x12#\n\x1fGPIO_DEV_LOAD_DETECT_PULL_UP_1P\x10\r\x12!\n\x1dGPIO_DEV_POWER_LOAD_DETECT_1P\x10\x0e\x12\x1f\n\x1bGPIO_DEV_GND_LOAD_DETECT_1P\x10\x0f\x12\x15\n\x11GPIO_DEV_POWER_1P\x10\x10\x12\x13\n\x0fGPIO_DEV_GND_1P\x10\x11*\x8a\x02\n\x0eGpioErrorFlags\x12\x11\n\rGPIO_ERR_NONE\x10\x00\x12\x1b\n\x17GPIO_ERR_POWER_ON_RESET\x10\x01\x12\x18\n\x14GPIO_ERR_OVERVOLTAGE\x10\x02\x12\x19\n\x15GPIO_ERR_UNDERVOLTAGE\x10\x04\x12\x18\n\x14GPIO_ERR_OVERCURRENT\x10\x08\x12\x16\n\x12GPIO_ERR_OPEN_LOAD\x10\x10\x12$\n GPIO_ERR_OVERTEMPERATURE_WARNING\x10 \x12\"\n\x1eGPIO_ERR_OVERTEMPERATURE_ERROR\x10@\x12\x17\n\x12GPIO_ERR_SPI_ERROR\x10\x80\x01\x62\x06proto3'
+  serialized_pb=b'\n\x17OneWireGpioModule.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x85\x01\n\x11GpioModuleChannel\x12\x11\n\x02id\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08\x12(\n\ndeviceType\x18\x02 \x01(\x0e\x32\x14.blox.GpioDeviceType\x12\x1d\n\x08pinsMask\x18\x03 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12\x14\n\x05width\x18\x04 \x01(\rB\x05\x92?\x02\x38\x08\"\xf7\x04\n\x11OneWireGpioModule\x12\x30\n\x08\x63hannels\x18\x01 \x03(\x0b\x32\x17.blox.GpioModuleChannelB\x05\x92?\x02\x10\x08\x12\x1d\n\x0emodulePosition\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12!\n\x0cmoduleStatus\x18\x03 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12(\n\rpullUpDesired\x18\x04 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12\'\n\x0cpullUpStatus\x18\x05 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12+\n\x10pullUpWhenActive\x18\x06 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12-\n\x12pullUpWhenInactive\x18\x07 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12*\n\x0fpullDownDesired\x18\x08 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12)\n\x0epullDownStatus\x18\t \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12-\n\x12pullDownWhenActive\x18\n \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12/\n\x14pullDownWhenInactive\x18\x0b \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12&\n\x0boverCurrent\x18\x0c \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12#\n\x08openLoad\x18\r \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12&\n\x11moduleStatusClear\x18  \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01:\x13\x8a\xb5\x18\x03\x18\xc5\x02\x8a\xb5\x18\x02H\n\x8a\xb5\x18\x02H\x0c*\x95\x05\n\x0eGpioDeviceType\x12\x11\n\rGPIO_DEV_NONE\x10\x00\x12\x13\n\x0fGPIO_DEV_SSR_2P\x10\x01\x12\x13\n\x0fGPIO_DEV_SSR_1P\x10\x02\x12 \n\x1cGPIO_DEV_MECHANICAL_RELAY_2P\x10\x03\x12*\n&GPIO_DEV_MECHANICAL_RELAY_1P_HIGH_SIDE\x10\x04\x12)\n%GPIO_DEV_MECHANICAL_RELAY_1P_LOW_SIDE\x10\x05\x12\x14\n\x10GPIO_DEV_COIL_2P\x10\x06\x12\"\n\x1eGPIO_DEV_COIL_2P_BIDIRECTIONAL\x10\x07\x12\x1e\n\x1aGPIO_DEV_COIL_1P_HIGH_SIDE\x10\x08\x12\x1d\n\x19GPIO_DEV_COIL_1P_LOW_SIDE\x10\t\x12\x15\n\x11GPIO_DEV_MOTOR_2P\x10\n\x12#\n\x1fGPIO_DEV_MOTOR_2P_BIDIRECTIONAL\x10\x0b\x12\x1f\n\x1bGPIO_DEV_MOTOR_1P_HIGH_SIDE\x10\x0c\x12\x1e\n\x1aGPIO_DEV_MOTOR_1P_LOW_SIDE\x10\r\x12\x1b\n\x17GPIO_DEV_LOAD_DETECT_2P\x10\x0e\x12%\n!GPIO_DEV_LOAD_DETECT_1P_PULL_DOWN\x10\x0f\x12#\n\x1fGPIO_DEV_LOAD_DETECT_1P_PULL_UP\x10\x10\x12\x15\n\x11GPIO_DEV_POWER_1P\x10\x11\x12!\n\x1dGPIO_DEV_POWER_1P_LOAD_DETECT\x10\x12\x12\x13\n\x0fGPIO_DEV_GND_1P\x10\x13\x12\x1f\n\x1bGPIO_DEV_GND_1P_LOAD_DETECT\x10\x14*\x8a\x02\n\x0eGpioErrorFlags\x12\x11\n\rGPIO_ERR_NONE\x10\x00\x12\x1b\n\x17GPIO_ERR_POWER_ON_RESET\x10\x01\x12\x18\n\x14GPIO_ERR_OVERVOLTAGE\x10\x02\x12\x19\n\x15GPIO_ERR_UNDERVOLTAGE\x10\x04\x12\x18\n\x14GPIO_ERR_OVERCURRENT\x10\x08\x12\x16\n\x12GPIO_ERR_OPEN_LOAD\x10\x10\x12$\n GPIO_ERR_OVERTEMPERATURE_WARNING\x10 \x12\"\n\x1eGPIO_ERR_OVERTEMPERATURE_ERROR\x10@\x12\x17\n\x12GPIO_ERR_SPI_ERROR\x10\x80\x01\x62\x06proto3'
   ,
-  dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,IoArray__pb2.DESCRIPTOR,])
+  dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
 _GPIODEVICETYPE = _descriptor.EnumDescriptor(
   name='GpioDeviceType',
@@ -50,85 +49,100 @@ _GPIODEVICETYPE = _descriptor.EnumDescriptor(
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='GPIO_DEV_COIL_UNIDIRECTIONAL_2P', index=3, number=3,
+      name='GPIO_DEV_MECHANICAL_RELAY_2P', index=3, number=3,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='GPIO_DEV_COIL_BIDIRECTIONAL_2P', index=4, number=4,
+      name='GPIO_DEV_MECHANICAL_RELAY_1P_HIGH_SIDE', index=4, number=4,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='GPIO_DEV_COIL_HIGH_SIDE_1P', index=5, number=5,
+      name='GPIO_DEV_MECHANICAL_RELAY_1P_LOW_SIDE', index=5, number=5,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='GPIO_DEV_COIL_LOW_SIDE_1P', index=6, number=6,
+      name='GPIO_DEV_COIL_2P', index=6, number=6,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='GPIO_DEV_MOTOR_UNIDIRECTIONAL_2P', index=7, number=7,
+      name='GPIO_DEV_COIL_2P_BIDIRECTIONAL', index=7, number=7,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='GPIO_DEV_MOTOR_BIDIRECTIONAL_2P', index=8, number=8,
+      name='GPIO_DEV_COIL_1P_HIGH_SIDE', index=8, number=8,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='GPIO_DEV_MOTOR_HIGH_SIDE_1P', index=9, number=9,
+      name='GPIO_DEV_COIL_1P_LOW_SIDE', index=9, number=9,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='GPIO_DEV_MOTOR_LOW_SIDE_1P', index=10, number=10,
+      name='GPIO_DEV_MOTOR_2P', index=10, number=10,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='GPIO_DEV_LOAD_DETECT_2P', index=11, number=11,
+      name='GPIO_DEV_MOTOR_2P_BIDIRECTIONAL', index=11, number=11,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='GPIO_DEV_LOAD_DETECT_PULL_DOWN_1P', index=12, number=12,
+      name='GPIO_DEV_MOTOR_1P_HIGH_SIDE', index=12, number=12,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='GPIO_DEV_LOAD_DETECT_PULL_UP_1P', index=13, number=13,
+      name='GPIO_DEV_MOTOR_1P_LOW_SIDE', index=13, number=13,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='GPIO_DEV_POWER_LOAD_DETECT_1P', index=14, number=14,
+      name='GPIO_DEV_LOAD_DETECT_2P', index=14, number=14,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='GPIO_DEV_GND_LOAD_DETECT_1P', index=15, number=15,
+      name='GPIO_DEV_LOAD_DETECT_1P_PULL_DOWN', index=15, number=15,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='GPIO_DEV_POWER_1P', index=16, number=16,
+      name='GPIO_DEV_LOAD_DETECT_1P_PULL_UP', index=16, number=16,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='GPIO_DEV_GND_1P', index=17, number=17,
+      name='GPIO_DEV_POWER_1P', index=17, number=17,
+      serialized_options=None,
+      type=None,
+      create_key=_descriptor._internal_create_key),
+    _descriptor.EnumValueDescriptor(
+      name='GPIO_DEV_POWER_1P_LOAD_DETECT', index=18, number=18,
+      serialized_options=None,
+      type=None,
+      create_key=_descriptor._internal_create_key),
+    _descriptor.EnumValueDescriptor(
+      name='GPIO_DEV_GND_1P', index=19, number=19,
+      serialized_options=None,
+      type=None,
+      create_key=_descriptor._internal_create_key),
+    _descriptor.EnumValueDescriptor(
+      name='GPIO_DEV_GND_1P_LOAD_DETECT', index=20, number=20,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=967,
-  serialized_end=1537,
+  serialized_start=834,
+  serialized_end=1495,
 )
 _sym_db.RegisterEnumDescriptor(_GPIODEVICETYPE)
 
@@ -188,8 +202,8 @@ _GPIOERRORFLAGS = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1540,
-  serialized_end=1806,
+  serialized_start=1498,
+  serialized_end=1764,
 )
 _sym_db.RegisterEnumDescriptor(_GPIOERRORFLAGS)
 
@@ -197,21 +211,24 @@ GpioErrorFlags = enum_type_wrapper.EnumTypeWrapper(_GPIOERRORFLAGS)
 GPIO_DEV_NONE = 0
 GPIO_DEV_SSR_2P = 1
 GPIO_DEV_SSR_1P = 2
-GPIO_DEV_COIL_UNIDIRECTIONAL_2P = 3
-GPIO_DEV_COIL_BIDIRECTIONAL_2P = 4
-GPIO_DEV_COIL_HIGH_SIDE_1P = 5
-GPIO_DEV_COIL_LOW_SIDE_1P = 6
-GPIO_DEV_MOTOR_UNIDIRECTIONAL_2P = 7
-GPIO_DEV_MOTOR_BIDIRECTIONAL_2P = 8
-GPIO_DEV_MOTOR_HIGH_SIDE_1P = 9
-GPIO_DEV_MOTOR_LOW_SIDE_1P = 10
-GPIO_DEV_LOAD_DETECT_2P = 11
-GPIO_DEV_LOAD_DETECT_PULL_DOWN_1P = 12
-GPIO_DEV_LOAD_DETECT_PULL_UP_1P = 13
-GPIO_DEV_POWER_LOAD_DETECT_1P = 14
-GPIO_DEV_GND_LOAD_DETECT_1P = 15
-GPIO_DEV_POWER_1P = 16
-GPIO_DEV_GND_1P = 17
+GPIO_DEV_MECHANICAL_RELAY_2P = 3
+GPIO_DEV_MECHANICAL_RELAY_1P_HIGH_SIDE = 4
+GPIO_DEV_MECHANICAL_RELAY_1P_LOW_SIDE = 5
+GPIO_DEV_COIL_2P = 6
+GPIO_DEV_COIL_2P_BIDIRECTIONAL = 7
+GPIO_DEV_COIL_1P_HIGH_SIDE = 8
+GPIO_DEV_COIL_1P_LOW_SIDE = 9
+GPIO_DEV_MOTOR_2P = 10
+GPIO_DEV_MOTOR_2P_BIDIRECTIONAL = 11
+GPIO_DEV_MOTOR_1P_HIGH_SIDE = 12
+GPIO_DEV_MOTOR_1P_LOW_SIDE = 13
+GPIO_DEV_LOAD_DETECT_2P = 14
+GPIO_DEV_LOAD_DETECT_1P_PULL_DOWN = 15
+GPIO_DEV_LOAD_DETECT_1P_PULL_UP = 16
+GPIO_DEV_POWER_1P = 17
+GPIO_DEV_POWER_1P_LOAD_DETECT = 18
+GPIO_DEV_GND_1P = 19
+GPIO_DEV_GND_1P_LOAD_DETECT = 20
 GPIO_ERR_NONE = 0
 GPIO_ERR_POWER_ON_RESET = 1
 GPIO_ERR_OVERVOLTAGE = 2
@@ -260,27 +277,6 @@ _GPIOMODULECHANNEL = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\222?\0028\010', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='config', full_name='blox.GpioModuleChannel.config', index=4,
-      number=5, type=14, cpp_type=8, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=b'\212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='state', full_name='blox.GpioModuleChannel.state', index=5,
-      number=6, type=14, cpp_type=8, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=b'\212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='pwmDuty', full_name='blox.GpioModuleChannel.pwmDuty', index=6,
-      number=7, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=b'\212\265\030\002(\001\222?\0028\020', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -293,8 +289,8 @@ _GPIOMODULECHANNEL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=79,
-  serialized_end=330,
+  serialized_start=64,
+  serialized_end=197,
 )
 
 
@@ -399,7 +395,7 @@ _ONEWIREGPIOMODULE = _descriptor.Descriptor(
       serialized_options=b'\212\265\030\002(\001\222?\0028\010\212\265\030\002P\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
       name='moduleStatusClear', full_name='blox.OneWireGpioModule.moduleStatusClear', index=13,
-      number=16, type=13, cpp_type=3, label=1,
+      number=32, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -416,13 +412,11 @@ _ONEWIREGPIOMODULE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=333,
-  serialized_end=964,
+  serialized_start=200,
+  serialized_end=831,
 )
 
 _GPIOMODULECHANNEL.fields_by_name['deviceType'].enum_type = _GPIODEVICETYPE
-_GPIOMODULECHANNEL.fields_by_name['config'].enum_type = IoArray__pb2._CHANNELCONFIG
-_GPIOMODULECHANNEL.fields_by_name['state'].enum_type = IoArray__pb2._DIGITALSTATE
 _ONEWIREGPIOMODULE.fields_by_name['channels'].message_type = _GPIOMODULECHANNEL
 DESCRIPTOR.message_types_by_name['GpioModuleChannel'] = _GPIOMODULECHANNEL
 DESCRIPTOR.message_types_by_name['OneWireGpioModule'] = _ONEWIREGPIOMODULE
@@ -448,9 +442,6 @@ _sym_db.RegisterMessage(OneWireGpioModule)
 _GPIOMODULECHANNEL.fields_by_name['id']._options = None
 _GPIOMODULECHANNEL.fields_by_name['pinsMask']._options = None
 _GPIOMODULECHANNEL.fields_by_name['width']._options = None
-_GPIOMODULECHANNEL.fields_by_name['config']._options = None
-_GPIOMODULECHANNEL.fields_by_name['state']._options = None
-_GPIOMODULECHANNEL.fields_by_name['pwmDuty']._options = None
 _ONEWIREGPIOMODULE.fields_by_name['channels']._options = None
 _ONEWIREGPIOMODULE.fields_by_name['modulePosition']._options = None
 _ONEWIREGPIOMODULE.fields_by_name['moduleStatus']._options = None
