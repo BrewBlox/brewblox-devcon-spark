@@ -21,7 +21,7 @@ FLUSH_PERIOD_S = 3
 SHUTDOWN_DELAY_S = 1
 UPDATE_SHUTDOWN_DELAY_S = 5
 
-ESP_URL_FMT = 'https://github.com/BrewBlox/brewblox-firmware/releases/download/{}/brewblox-esp32.bin'
+ESP_URL_FMT = 'https://brewblox.blob.core.windows.net/firmware/brewblox-esp32-{}.bin'
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -88,25 +88,26 @@ class FirmwareUpdater():
             if self.simulation:
                 raise NotImplementedError('Firmware updates not available for simulation controllers')
 
-            self._notify('Sending update command to controller')
+            self._notify('Preparing update')
             service_status.set_updating(self.app)
             await asyncio.sleep(FLUSH_PERIOD_S)  # Wait for in-progress commands to finish
-            await cmder.execute(commands.FirmwareUpdateCommand.from_args())
 
-            self._notify('Shutting down normal communication')
-            await cmder.shutdown(self.app)
+            if platform != 'esp32':  # pragma: no cover
+                self._notify('Sending update command to controller')
+                await cmder.execute(commands.FirmwareUpdateCommand.from_args())
 
             self._notify('Waiting for normal connection to close')
+            await cmder.shutdown(self.app)
             await asyncio.wait_for(
                 service_status.wait_disconnected(self.app), STATE_TIMEOUT_S)
 
             if platform == 'esp32':  # pragma: no cover
-                # ESP does not support USB connections
+                # ESP connections will always be a TCP address
                 host, _ = address.split(':')
                 self._notify(f'Sending update prompt to {host}')
                 self._notify('The Spark will now download and apply the new firmware')
                 fw_url = ESP_URL_FMT.format(self.app['ini']['firmware_release'])
-                await http.session(self.app).post(f'{host}:80/firmware_update', data=fw_url)
+                await http.session(self.app).post(f'http://{host}:80/firmware_update', data=fw_url)
 
             else:
                 self._notify(f'Connecting to {address}')
