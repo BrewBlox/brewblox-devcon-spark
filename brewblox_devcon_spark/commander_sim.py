@@ -125,12 +125,12 @@ class SimulationResponder():
                 'type': 'Spark3Pins',
                 'groups': [const.SYSTEM_GROUP],
                 'data': {
-                    'pins': [
-                        {'top1': {}},
-                        {'top2': {}},
-                        {'top3': {}},
-                        {'bottom1': {}},
-                        {'bottom2': {}},
+                    'channels': [
+                        {'id': 1},
+                        {'id': 2},
+                        {'id': 3},
+                        {'id': 4},
+                        {'id': 5},
                     ]
                 },
             }
