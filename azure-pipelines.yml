@@ -47,6 +47,10 @@ steps:
     poetry install
   displayName: Install dependencies
 
+- bash: |
+    bash dev/download-firmware.sh
+  displayName: Download firmware
+
 - bash: >-
     sudo apt update -y &&
     sudo apt install -y
