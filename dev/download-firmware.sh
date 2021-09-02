@@ -13,5 +13,5 @@ mkdir -p ./firmware
 rm -rf ./firmware/*
 
 curl -sSf \
-    "https://brewblox.blob.core.windows.net/firmware/${firmware_date}-${firmware_version}-brewblox-all.tar.gz" \
+    "https://brewblox.blob.core.windows.net/firmware/${firmware_date}-${firmware_version}-all.tar.gz" \
     | tar -C ./firmware -xzv
