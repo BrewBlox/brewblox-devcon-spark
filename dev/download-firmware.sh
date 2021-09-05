@@ -14,7 +14,7 @@ rm -rf ./firmware/*
 
 # Download all firmware files
 curl -sSf \
-    "https://brewblox.blob.core.windows.net/firmware/${firmware_date}-${firmware_version}-all.tar.gz" \
+    "https://brewblox.blob.core.windows.net/firmware/${firmware_date}-${firmware_version}/brewblox-release.tar.gz" \
     | tar -C ./firmware -xzv
 
 # Make simulators executable
