@@ -21,7 +21,7 @@ FLUSH_PERIOD_S = 3
 SHUTDOWN_DELAY_S = 1
 UPDATE_SHUTDOWN_DELAY_S = 5
 
-ESP_URL_FMT = 'https://brewblox.blob.core.windows.net/firmware/{}-{}-esp32.bin'
+ESP_URL_FMT = 'https://brewblox.blob.core.windows.net/firmware/{firmware_date}-{firmware_version}/brewblox-esp32.bin'
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -106,7 +106,7 @@ class FirmwareUpdater():
                 host, _ = address.split(':')
                 self._notify(f'Sending update prompt to {host}')
                 self._notify('The Spark will now download and apply the new firmware')
-                fw_url = ESP_URL_FMT.format(self.date, self.version)
+                fw_url = ESP_URL_FMT.format(**self.app['ini'])
                 await http.session(self.app).post(f'http://{host}:80/firmware_update', data=fw_url)
 
             else:
