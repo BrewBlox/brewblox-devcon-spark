@@ -135,15 +135,15 @@ async def test_autoconnecting(app, client, syncher):
     assert await service_status.wait_autoconnecting(app, False) is False
 
 
-async def test_on_units_changed(app, client, syncher):
+async def test_on_global_store_change(app, client, syncher):
     # Update during runtime
     await syncher.run()
     global_store.fget(app).units['temperature'] = 'degF'
-    await syncher.on_units_changed()
+    await syncher.on_global_store_change()
 
     # Should safely handle disconnected state
     await disconnect(app)
-    await syncher.on_units_changed()
+    await syncher.on_global_store_change()
 
 
 async def test_errors(app, client, syncher, mocker):

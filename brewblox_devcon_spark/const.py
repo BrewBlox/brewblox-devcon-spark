@@ -28,6 +28,7 @@ SETUP_MODE_PREFIX = 'SETUP_MODE'
 SPARK_NAMESPACE = 'spark-service'
 GLOBAL_NAMESPACE = 'brewblox-global'
 GLOBAL_UNITS_ID = 'units'
+GLOBAL_TIME_ZONE_ID = 'timeZone'
 
 GROUPS_NID = 1
 SYSINFO_NID = 2

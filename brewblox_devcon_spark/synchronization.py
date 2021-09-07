@@ -50,7 +50,7 @@ class SparkSynchronization(repeater.RepeaterFeature):
 
     async def prepare(self):
         """Implements RepeaterFeature.prepare"""
-        global_store.fget(self.app).listeners.add(self.on_units_changed)
+        global_store.fget(self.app).listeners.add(self.on_global_store_change)
 
     async def run(self):
         """
@@ -77,6 +77,7 @@ class SparkSynchronization(repeater.RepeaterFeature):
             - Send current abs time to controller block
         - Synchronize controller display unit
             - Send correct unit to controller if mismatched
+            - Send timezone to controller if mismatched
         - Collect and log controller tracing
             - Write read/resume command to SysInfo
             - Tracing is included in response
@@ -220,38 +221,51 @@ class SparkSynchronization(repeater.RepeaterFeature):
 
     @subroutine('sync display settings')
     async def _sync_display(self):
-        await self.set_display_units()
+        await self.set_display_settings()
 
-    async def on_units_changed(self):
+    async def on_global_store_change(self):
         """Callback invoked by global_store"""
         await self.set_converter_units()
-        await self.set_display_units()
+        await self.set_display_settings()
 
     async def set_converter_units(self):
         store = global_store.fget(self.app)
         converter = codec.get_converter(self.app)
         converter.temperature = store.units['temperature']
-        LOGGER.info(f'Service temperature set to {converter.temperature}')
+        LOGGER.info(f'Service temperature unit set to {converter.temperature}')
 
-    async def set_display_units(self):
+    async def set_display_settings(self):
         if not service_status.desc(self.app).is_acknowledged:
             return
 
         store = global_store.fget(self.app)
         controller = spark.fget(self.app)
+        write_required = False
 
         display_block = await controller.read_object({
             'nid': const.DISPLAY_SETTINGS_NID
         })
 
-        user_value = store.units['temperature']
-        expected = 'TEMP_FAHRENHEIT' if user_value == 'degF' else 'TEMP_CELSIUS'
-        block_value = display_block['data']['tempUnit']
+        user_unit = store.units['temperature']
+        expected_unit = 'TEMP_FAHRENHEIT' if user_unit == 'degF' else 'TEMP_CELSIUS'
+        block_unit = display_block['data']['tempUnit']
 
-        if expected != block_value:
-            display_block['data']['tempUnit'] = expected
+        if expected_unit != block_unit:
+            write_required = True
+            display_block['data']['tempUnit'] = expected_unit
+            LOGGER.info(f'Spark display temperature unit set to {user_unit}')
+
+        user_tz_name = store.time_zone['name']
+        user_tz = store.time_zone['posixValue']
+        block_tz = display_block['data']['timeZone']
+
+        if user_tz != block_tz:
+            write_required = True
+            display_block['data']['timeZone'] = user_tz
+            LOGGER.info(f'Spark display time zone set to {user_tz} ({user_tz_name})')
+
+        if write_required:
             await controller.write_object(display_block)
-            LOGGER.info(f'Spark display temperature set to {user_value}')
 
     async def format_trace(self, src):
         cdc = codec.fget(self.app)
