@@ -19,6 +19,13 @@ def default_units():
     }
 
 
+def default_time_zone():
+    return {
+        'name': 'Etc/UTC',
+        'posixValue': 'UTC0',
+    }
+
+
 class GlobalConfigStore(features.ServiceFeature):
     def __init__(self, app: web.Application):
         super().__init__(app)
@@ -27,6 +34,7 @@ class GlobalConfigStore(features.ServiceFeature):
         self._global_topic = f'{self._datastore_topic}/{const.GLOBAL_NAMESPACE}'
 
         self.units = default_units()
+        self.time_zone = default_time_zone()
         self.listeners = set()
 
     async def startup(self, app: web.Application):
@@ -54,6 +62,13 @@ class GlobalConfigStore(features.ServiceFeature):
                 units = {'temperature': value['temperature']}
                 changed = changed or units != self.units
                 self.units = units
+            if value['id'] == const.GLOBAL_TIME_ZONE_ID:
+                tz = {
+                    'name': value['name'],
+                    'posixValue': value['posixValue']
+                }
+                changed = changed or tz != self.time_zone
+                self.time_zone = tz
 
         return changed
 
@@ -64,7 +79,7 @@ class GlobalConfigStore(features.ServiceFeature):
         try:
             resp = await http.session(self.app).post(f'{STORE_URL}/mget', json={
                 'namespace': const.GLOBAL_NAMESPACE,
-                'ids': [const.GLOBAL_UNITS_ID],
+                'ids': [const.GLOBAL_UNITS_ID, const.GLOBAL_TIME_ZONE_ID],
             })
             self.update((await resp.json())['values'])
 

@@ -98,11 +98,23 @@ async def test_on_event(app, client, store: GlobalConfigStore):
     assert store.units['temperature'] == 'degC'
     cb.assert_not_awaited()
 
-    # Changed
+    # Units changed
+    cb.reset_mock()
     await store._on_event('topic', {'changed': [{
         'id': const.GLOBAL_UNITS_ID,
         'namespace': const.GLOBAL_NAMESPACE,
         'temperature': 'degF',
     }]})
     assert store.units['temperature'] == 'degF'
+    cb.assert_awaited_with()
+
+    # Timezone changed
+    cb.reset_mock()
+    await store._on_event('topic', {'changed': [{
+        'id': const.GLOBAL_TIME_ZONE_ID,
+        'namespace': const.GLOBAL_NAMESPACE,
+        'name': 'Europe/Amsterdam',
+        'posixValue': 'CET-1CEST,M3.5.0,M10.5.0/3',
+    }]})
+    assert store.time_zone['name'] == 'Europe/Amsterdam'
     cb.assert_awaited_with()
