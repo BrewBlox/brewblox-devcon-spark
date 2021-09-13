@@ -6,7 +6,7 @@ import asyncio
 
 from aiohttp import web
 from aiohttp_apispec import docs, response_schema
-from brewblox_service import brewblox_logger, mqtt, scheduler, strex
+from brewblox_service import brewblox_logger, http, mqtt, scheduler, strex
 
 from brewblox_devcon_spark import (commander, commands, exceptions,
                                    service_status, spark, ymodem)
@@ -20,6 +20,8 @@ CONNECT_ATTEMPTS = 5
 FLUSH_PERIOD_S = 3
 SHUTDOWN_DELAY_S = 1
 UPDATE_SHUTDOWN_DELAY_S = 5
+
+ESP_URL_FMT = 'https://brewblox.blob.core.windows.net/firmware/{firmware_date}-{firmware_version}/brewblox-esp32.bin'
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -72,35 +74,47 @@ class FirmwareUpdater():
     async def flash(self) -> dict:  # pragma: no cover
         sender = ymodem.FileSender(self._notify)
         cmder = commander.fget(self.app)
-        address = service_status.desc(self.app).device_address
+        status_desc = service_status.desc(self.app)
+        address = status_desc.device_address
+        platform = status_desc.device_info.platform
 
         self._notify(f'Started updating {self.name}@{address} to version {self.version} ({self.date})')
 
         try:
-            if not service_status.desc(self.app).is_connected:
+            if not status_desc.is_connected:
                 self._notify('Controller is not connected. Aborting update.')
                 raise exceptions.NotConnected()
 
             if self.simulation:
                 raise NotImplementedError('Firmware updates not available for simulation controllers')
 
-            self._notify('Sending update command to controller')
+            self._notify('Preparing update')
             service_status.set_updating(self.app)
             await asyncio.sleep(FLUSH_PERIOD_S)  # Wait for in-progress commands to finish
-            await cmder.execute(commands.FirmwareUpdateCommand.from_args())
 
-            self._notify('Shutting down normal communication')
-            await cmder.shutdown(self.app)
+            if platform != 'esp32':  # pragma: no cover
+                self._notify('Sending update command to controller')
+                await cmder.execute(commands.FirmwareUpdateCommand.from_args())
 
             self._notify('Waiting for normal connection to close')
+            await cmder.shutdown(self.app)
             await asyncio.wait_for(
                 service_status.wait_disconnected(self.app), STATE_TIMEOUT_S)
 
-            self._notify(f'Connecting to {address}')
-            conn = await self._connect(address)
+            if platform == 'esp32':  # pragma: no cover
+                # ESP connections will always be a TCP address
+                host, _ = address.split(':')
+                self._notify(f'Sending update prompt to {host}')
+                self._notify('The Spark will now download and apply the new firmware')
+                fw_url = ESP_URL_FMT.format(**self.app['ini'])
+                await http.session(self.app).post(f'http://{host}:80/firmware_update', data=fw_url)
 
-            with conn.autoclose():
-                await asyncio.wait_for(sender.transfer(conn), TRANSFER_TIMEOUT_S)
+            else:
+                self._notify(f'Connecting to {address}')
+                conn = await self._connect(address)
+
+                with conn.autoclose():
+                    await asyncio.wait_for(sender.transfer(conn), TRANSFER_TIMEOUT_S)
 
         except Exception as ex:
             self._notify(f'Failed to update firmware: {strex(ex)}')
@@ -110,7 +124,6 @@ class FirmwareUpdater():
             self._notify('Scheduling service reboot')
             await shutdown_soon(self.app, UPDATE_SHUTDOWN_DELAY_S)
 
-        self._notify('Firmware updated!')
         return {'address': address, 'version': self.version}
 
 

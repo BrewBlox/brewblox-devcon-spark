@@ -37,6 +37,7 @@ SIM_BINARIES = {
 SPARK_HWIDS = [
     r'USB VID\:PID=2B04\:C006.*',  # Photon
     r'USB VID\:PID=2B04\:C008.*',  # P1
+    # r'USB VID\:PID=10C4\:EA60.8',  # ESP32
 ]
 
 # Construct a regex OR'ing all allowed hardware ID matches
@@ -128,7 +129,7 @@ async def connect_simulation(app: web.Application) -> ConnectionResult:
     workdir.joinpath('eeprom.bin').touch(mode=0o777, exist_ok=True)
 
     proc = subprocess.Popen(
-        [f'../firmware-bin/binaries/{binary}', '--device_id', device_id],
+        [f'../firmware/{binary}', '--device_id', device_id],
         cwd=workdir)
     return await connect_subprocess(proc, binary)
 

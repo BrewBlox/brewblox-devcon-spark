@@ -47,6 +47,10 @@ steps:
     poetry install
   displayName: Install dependencies
 
+- bash: |
+    bash dev/download-firmware.sh
+  displayName: Download firmware
+
 - bash: >-
     sudo apt update -y &&
     sudo apt install -y
@@ -62,7 +66,9 @@ steps:
   displayName: Run Pytest
 
 - bash: |
-    curl -fsSL https://raw.githubusercontent.com/BrewBlox/deployed-images/develop/prepare_buildx.sh | bash
+    docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    docker buildx create --use
+    docker buildx inspect --bootstrap
   displayName: Prepare buildx
   condition: and(succeeded(), variables.BRANCH)
 
