@@ -165,7 +165,7 @@ async def connect_discovered(app: web.Application) -> ConnectionResult:
             if result:
                 return result
 
-        if discovery_type in ['all', 'wifi']:
+        if discovery_type in ['all', 'wifi', 'lan']:
             result = await connect_discovered_tcp(app)
             if result:
                 return result
