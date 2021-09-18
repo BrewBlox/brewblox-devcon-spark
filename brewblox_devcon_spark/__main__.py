@@ -48,7 +48,7 @@ def create_parser(default_name='spark'):
                        help='Enabled types of device discovery. '
                        '--device-serial and --device-host disable discovery. '
                        '--device-id specifies which discovered device is valid. ',
-                       choices=['all', 'usb', 'wifi'],
+                       choices=['all', 'usb', 'wifi', 'lan'],
                        default='all')
 
     # Service network options
