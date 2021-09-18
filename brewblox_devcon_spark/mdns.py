@@ -5,19 +5,22 @@ mDNS discovery of Spark devices
 import asyncio
 from contextlib import suppress
 from socket import AF_INET, inet_aton, inet_ntoa
+from typing import Optional
 
 from aiozeroconf import ServiceBrowser, ServiceStateChange, Zeroconf
+from aiozeroconf.aiozeroconf import ServiceInfo
 from async_timeout import timeout
 from brewblox_service import brewblox_logger
 
 DEFAULT_TIMEOUT_S = 5
 SIM_ADDR = inet_aton('0.0.0.0')
+ID_KEY = 'ID'.encode()
 
 LOGGER = brewblox_logger(__name__)
 
 
-async def _discover(id: str, dns_type: str, single: bool):
-    queue = asyncio.Queue()
+async def _discover(desired_id: Optional[str], dns_type: str, single: bool):
+    queue: asyncio.Queue[ServiceInfo] = asyncio.Queue()
     conf = Zeroconf(asyncio.get_event_loop(), address_family=[AF_INET])
 
     async def add_service(service_type, name):
@@ -30,17 +33,22 @@ async def _discover(id: str, dns_type: str, single: bool):
 
     try:
         ServiceBrowser(conf, dns_type, handlers=[sync_change_handler])
-        match = f'{id}.local.'.lower() if id else None
 
         while True:
             info = await queue.get()
             if info.address in [None, SIM_ADDR]:
                 continue  # discard unknown addresses and simulators
+
             addr = inet_ntoa(info.address)
-            if match is None or info.server.lower() == match:
-                serial = info.server[:-len('.local.')]
-                LOGGER.info(f'Discovered {serial} @ {addr}:{info.port}')
-                yield addr, info.port, serial
+            id = info.properties.get(ID_KEY, bytes()).decode().lower()
+
+            if not id:
+                LOGGER.error(f'Invalid device: {info.name} @ {addr}:{info.port} has no ID TXT property')
+                continue
+
+            if desired_id is None or desired_id.lower() == id:
+                LOGGER.info(f'Discovered {id} @ {addr}:{info.port}')
+                yield addr, info.port, id
                 if single:
                     return
             else:
@@ -49,16 +57,16 @@ async def _discover(id: str, dns_type: str, single: bool):
         await conf.close()
 
 
-async def discover_all(id: str, dns_type: str, timeout_v: float):
+async def discover_all(desired_id: Optional[str], dns_type: str, timeout_v: float):
     with suppress(asyncio.TimeoutError):
         async with timeout(timeout_v):
-            async for res in _discover(id, dns_type, False):
+            async for res in _discover(desired_id, dns_type, False):
                 yield res
 
 
-async def discover_one(id: str, dns_type: str, timeout_v: float = None):
+async def discover_one(desired_id: Optional[str], dns_type: str, timeout_v: float = None):
     async with timeout(timeout_v):
         retv = None
-        async for res in _discover(id, dns_type, True):
+        async for res in _discover(desired_id, dns_type, True):
             retv = res
         return retv
