@@ -227,13 +227,13 @@ async def test_discover_serial(app, client, m_reader, m_writer, m_popen, m_conne
 
 async def test_discover_tcp(app, client, m_mdns, m_reader, m_writer, m_connect):
     # --device-serial and --device-host are not set
-    # --discovery=wifi -> USB discovery is skipped
+    # --discovery=lan -> USB discovery is skipped
     app['config']['simulation'] = False
     app['config']['device_serial'] = None
     app['config']['device_host'] = None
     app['config']['device_port'] = 1234
     app['config']['device_id'] = None
-    app['config']['discovery'] = 'wifi'
+    app['config']['discovery'] = 'lan'
 
     # host/port values are defined in the m_dns fixture
     expected = ConnectionResult(
