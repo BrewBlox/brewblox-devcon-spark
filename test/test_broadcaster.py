@@ -17,6 +17,13 @@ from brewblox_devcon_spark.codec import codec, unit_conversion
 TESTED = broadcaster.__name__
 
 
+@pytest.fixture(autouse=True)
+def m_relations(mocker):
+    mocker.patch(TESTED + '.calculate_relations')
+    mocker.patch(TESTED + '.calculate_drive_chains')
+    mocker.patch(TESTED + '.calculate_limitations')
+
+
 @pytest.fixture
 def m_api(mocker):
     m = mocker.patch(TESTED + '.BlocksApi', autospec=True)
@@ -125,6 +132,9 @@ async def test_broadcast(app, m_api, m_publish, client, connected):
                  'data': {
                      'status': ANY,
                      'blocks': object_list,
+                     'relations': ANY,
+                     'drive_chains': ANY,
+                     'limitations': ANY,
                  },
              }),
     ])
