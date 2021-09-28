@@ -21,7 +21,6 @@ TESTED = broadcaster.__name__
 def m_relations(mocker):
     mocker.patch(TESTED + '.calculate_relations')
     mocker.patch(TESTED + '.calculate_drive_chains')
-    mocker.patch(TESTED + '.calculate_limitations')
 
 
 @pytest.fixture
@@ -134,7 +133,6 @@ async def test_broadcast(app, m_api, m_publish, client, connected):
                      'blocks': object_list,
                      'relations': ANY,
                      'drive_chains': ANY,
-                     'limitations': ANY,
                  },
              }),
     ])

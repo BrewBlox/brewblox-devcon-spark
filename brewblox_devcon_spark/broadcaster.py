@@ -11,7 +11,6 @@ from brewblox_service import brewblox_logger, features, mqtt, repeater, strex
 from brewblox_devcon_spark import const, exceptions, service_status
 from brewblox_devcon_spark.api.blocks_api import BlocksApi
 from brewblox_devcon_spark.block_analysis import (calculate_drive_chains,
-                                                  calculate_limitations,
                                                   calculate_relations)
 
 LOGGER = brewblox_logger(__name__)
@@ -98,7 +97,6 @@ class Broadcaster(repeater.RepeaterFeature):
                                            'blocks': blocks,
                                            'relations': calculate_relations(blocks),
                                            'drive_chains': calculate_drive_chains(blocks),
-                                           'limitations': calculate_limitations(blocks),
                                        },
                                    })
 
