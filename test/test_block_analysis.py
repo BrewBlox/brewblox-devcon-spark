@@ -336,24 +336,3 @@ def test_calculate_circular_drive_chains():
         ['block-2', 'block-1', 'block-3', 'block-2'],
         ['block-3', 'block-2', 'block-1', 'block-3'],
     ]
-
-
-def test_calculate_limitations():
-    blocks = make_blocks()
-    result = block_analysis.calculate_limitations(blocks)
-    assert result == [
-        {
-            'target': 'Cool PWM',
-            'constraint': 'balanced',
-            'remaining': None,
-        },
-        {
-            'target': 'Cool Actuator',
-            'constraint': 'delayedOn',
-            'remaining': {
-                '__bloxtype': 'Quantity',
-                'value': 10,
-                'unit': 'min'
-            },
-        },
-    ]
