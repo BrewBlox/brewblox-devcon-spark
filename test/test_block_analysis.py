@@ -294,14 +294,20 @@ def test_calculate_relations():
 def test_calculate_drive_chains():
     blocks = make_blocks()
     result = block_analysis.calculate_drive_chains(blocks)
-    result = sorted(result, key=lambda v: v[0] + ' ' + v[1])
+    result = sorted(result, key=lambda v: v['target'] + ' ' + v['source'])
     assert result == [
-        ['Cool Actuator', 'Cool PWM', 'Cool PID'],
-        ['Cool PWM', 'Cool PID'],
-        ['Heat Actuator', 'Heat PWM', 'Heat PID'],
-        ['Heat PWM', 'Heat PID'],
-        ['Spark Pins', 'Cool Actuator', 'Cool PWM', 'Cool PID'],
-        ['Spark Pins', 'Heat Actuator', 'Heat PWM', 'Heat PID'],
+        {'target': 'Cool Actuator', 'source': 'Cool PID', 'intermediate': ['Cool PWM']},
+        {'target': 'Cool PWM', 'source': 'Cool PID', 'intermediate': []},
+        {'target': 'Heat Actuator', 'source': 'Heat PID', 'intermediate': ['Heat PWM']},
+        {'target': 'Heat PWM', 'source': 'Heat PID', 'intermediate': []},
+        {'target': 'Spark Pins', 'source': 'Cool PID', 'intermediate': ['Cool Actuator', 'Cool PWM']},
+        {'target': 'Spark Pins', 'source': 'Heat PID', 'intermediate': ['Heat Actuator', 'Heat PWM']},
+        # ['Cool Actuator', 'Cool PWM', 'Cool PID'],
+        # ['Cool PWM', 'Cool PID'],
+        # ['Heat Actuator', 'Heat PWM', 'Heat PID'],
+        # ['Heat PWM', 'Heat PID'],
+        # ['Spark Pins', 'Cool Actuator', 'Cool PWM', 'Cool PID'],
+        # ['Spark Pins', 'Heat Actuator', 'Heat PWM', 'Heat PID'],
     ]
 
 
@@ -330,9 +336,9 @@ def test_calculate_circular_drive_chains():
         },
     ]
     result = block_analysis.calculate_drive_chains(blocks)
-    result = sorted(result, key=lambda v: v[0])
+    result = sorted(result, key=lambda v: v['target'])
     assert result == [
-        ['block-1', 'block-3', 'block-2', 'block-1'],
-        ['block-2', 'block-1', 'block-3', 'block-2'],
-        ['block-3', 'block-2', 'block-1', 'block-3'],
+        {'target': 'block-1', 'source': 'block-1', 'intermediate': ['block-3', 'block-2']},
+        {'target': 'block-2', 'source': 'block-2', 'intermediate': ['block-1', 'block-3']},
+        {'target': 'block-3', 'source': 'block-3', 'intermediate': ['block-2', 'block-1']},
     ]

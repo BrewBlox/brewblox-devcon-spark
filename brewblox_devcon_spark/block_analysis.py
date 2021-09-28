@@ -109,7 +109,7 @@ def _find_nested_relations(
         return []
 
 
-def calculate_relations(blocks: List[dict]) -> List[BlockRelation]:
+def calculate_relations(blocks: List[dict]) -> List[dict]:
     """
     Identifies all relation edges between blocks.
     One-sided relations (undefined links) are ignored.
@@ -118,7 +118,7 @@ def calculate_relations(blocks: List[dict]) -> List[BlockRelation]:
         blocks (List[dict]): Set of blocks that will be evaluated
 
     Returns:
-        List[BlockRelation]: Valid relations between blocks in `blocks`.
+        List[dict]: Valid relations between blocks in `blocks`.
     """
     output = []
     for block in blocks:
@@ -181,18 +181,18 @@ def calculate_drive_chains(blocks: List[dict]) -> List[List[str]]:
         - Spark Pins
 
     ...the following drive chains will be generated
-        - [Spark Pins, Heat Actuator, Heat PWM, Heat PID]
-        - [Heat Actuator, Heat PWM, Heat PID]
-        - [Heat PWM, Heat PID]
-        - [Spark Pins, Cool Actuator, Cool PWM, Cool PID]
-        - [Cool Actuator, Cool PWM, Cool PID]
-        - [Cool PWM, Cool PID]
+        - target=Spark Pins, source=Heat PID, intermediate=[Heat Actuator, Heat PWM]
+        - target=Heat Actuator, source=Heat PID, intermediate=[Heat PWM]
+        - target=Heat PWM, source=Heat PID, intermediate=[]
+        - target=Spark Pins, source=Cool PID, intermediate=[Cool Actuator, Cool PWM]
+        - target=Cool Actuator, source=Cool PID, intermediate=[Cool PWM]
+        - target=Cool PWM, source=Cool PID, intermediate=[]
 
     Args:
         blocks (List[dict]): Input block array. Expected to be complete.
 
     Returns:
-        List[List[str]]: All detected drive chains.
+        List[dict]: All detected drive chains.
     """
     # First map all driven blocks to their drivers
     drivers: Dict[str, List[str]] = {}  # key: driven, value: drivers
@@ -203,7 +203,14 @@ def calculate_drive_chains(blocks: List[dict]) -> List[List[str]]:
                 drivers.setdefault(field['id'], []).append(block['id'])
 
     # Generate and collect all drive chains
-    return list(chain.from_iterable(
+    output: List[dict] = []
+    for drive_chain in chain.from_iterable(
         _generate_chains(drivers, [], driven_id)
         for driven_id in drivers.keys()
-    ))
+    ):
+        output.append({
+            'target': drive_chain[0],
+            'source': drive_chain[-1],
+            'intermediate': drive_chain[1:-1]
+        })
+    return output
