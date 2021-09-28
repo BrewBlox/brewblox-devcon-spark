@@ -158,14 +158,6 @@ def _generate_chains(
         # Increase recursion level until initial driver is found
         for driver_id in super_drivers:
             yield from _generate_chains(drivers, [*chain, block_id], driver_id)
-        # return [
-        #     *_generate_chains(drivers, [*chain, block_id], driver_id)
-        #     for driver_id in super_drivers
-        # ]
-        # output = []
-        # for driver_id in super_drivers:
-        #     output += _generate_chains(drivers, [*chain, block_id], driver_id)
-        # return output
     else:
         # We've reached the initial driver
         yield [*chain, block_id]
