@@ -3,11 +3,11 @@ Tests brewblox_devcon_spark.commander
 """
 
 import asyncio
+from unittest.mock import AsyncMock
 
 import pytest
 from brewblox_service import scheduler
 from brewblox_service.testing import matching
-from mock import AsyncMock
 
 from brewblox_devcon_spark import (commander, commands, exceptions,
                                    service_status)

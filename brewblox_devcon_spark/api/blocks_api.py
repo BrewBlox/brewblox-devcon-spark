@@ -5,7 +5,6 @@ REST API for Spark blocks
 import asyncio
 import re
 from copy import deepcopy
-from typing import List, Tuple
 
 from aiohttp import web
 from aiohttp_apispec import docs, json_schema, response_schema
@@ -122,7 +121,7 @@ class BlocksApi():
         merge(block['data'], partial['data'])
         return await self.write(block)
 
-    async def publish(self, changed: List[types.Block] = None, deleted: List[str] = None):
+    async def publish(self, changed: list[types.Block] = None, deleted: list[str] = None):
         if self._publish_changed:
             name = self.app['config']['name']
             topic = self.app['config']['state_topic'] + f'/{name}/patch'
@@ -160,24 +159,24 @@ class BlocksApi():
         await self.publish(deleted=[sid])
         return ids
 
-    async def read_all(self) -> List[types.Block]:
+    async def read_all(self) -> list[types.Block]:
         await self.wait_for_sync()
         response = await self._spark.list_objects()
         blocks = response.get('objects', [])
         block_cache.set_all(self.app, blocks)
         return blocks
 
-    async def read_all_logged(self) -> List[types.Block]:
+    async def read_all_logged(self) -> list[types.Block]:
         await self.wait_for_sync()
         response = await self._spark.list_logged_objects()
         return response.get('objects', [])
 
-    async def read_all_stored(self) -> List[types.Block]:
+    async def read_all_stored(self) -> list[types.Block]:
         await self.wait_for_sync()
         response = await self._spark.list_stored_objects()
         return response.get('objects', [])
 
-    async def read_all_broadcast(self) -> Tuple[List[types.Block], List[types.Block]]:
+    async def read_all_broadcast(self) -> tuple[list[types.Block], list[types.Block]]:
         await self.wait_for_sync()
         blocks_response, logged_response = await self._spark.list_broadcast_objects()
         blocks = blocks_response.get('objects', [])
@@ -201,14 +200,14 @@ class BlocksApi():
         await self.publish(deleted=ids)
         return {}
 
-    async def compatible(self, interface: str) -> List[str]:
+    async def compatible(self, interface: str) -> list[str]:
         await self.wait_for_sync()
         response = await self._spark.list_compatible_objects({
             'interface': interface,
         })
         return response.get('object_ids', [])
 
-    async def discover(self) -> List[str]:
+    async def discover(self) -> list[str]:
         await self.wait_for_sync()
         response = await self._spark.discover_objects()
         return response.get('objects', [])
@@ -225,7 +224,7 @@ class BlocksApi():
             'nid': self._store.right_key(desired),
         }
 
-    async def cleanup(self) -> List[types.BlockIds]:
+    async def cleanup(self) -> list[types.BlockIds]:
         await self.wait_for_sync()
         actual = [block['id']
                   for block in await self.read_all()]
@@ -280,8 +279,6 @@ class BlocksApi():
                 else:
                     # Bypass BlockApi.create(), to avoid meddling with store IDs
                     await self._spark.create_object(deepcopy(block))
-            except asyncio.CancelledError:  # pragma: no cover
-                raise
             except Exception as ex:
                 message = f'failed to import block. Error={strex(ex)}, block={block}'
                 error_log.append(message)

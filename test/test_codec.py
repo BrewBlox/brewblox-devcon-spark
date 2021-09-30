@@ -4,7 +4,7 @@ Tests brewblox codec
 
 import pytest
 from brewblox_service import features, scheduler
-from mock import ANY
+from unittest.mock import ANY
 
 from brewblox_devcon_spark import (codec, commander_sim, service_store,
                                    exceptions, service_status)

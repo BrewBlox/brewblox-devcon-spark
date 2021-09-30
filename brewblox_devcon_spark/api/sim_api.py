@@ -56,7 +56,7 @@ async def stream_display(request: web.Request) -> web.Response:
                     async for msg in spark_ws:
                         if msg.type == WSMsgType.BINARY:
                             await ws.send_bytes(msg.data)
-                finally:
+                finally:  # pragma: no cover
                     request.app['websockets'].discard(spark_ws)
 
     finally:

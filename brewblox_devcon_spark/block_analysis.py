@@ -2,9 +2,10 @@
 Calculate block metadata
 """
 
-from dataclasses import asdict, dataclass
 from itertools import chain
-from typing import Any, Dict, Generator, List
+from typing import Any, Generator, TypedDict
+
+from brewblox_devcon_spark.types import Block
 
 # Relations to these blocks should be ignored,
 # as they have no impact on control logic
@@ -32,11 +33,16 @@ INVERTED_RELATION_FIELDS = [
 ]
 
 
-@dataclass(frozen=True)
-class BlockRelation:
+class BlockRelation(TypedDict):
     source: str
     target: str
-    relation: List[str]
+    relation: list[str]
+
+
+class BlockDriveChain(TypedDict):
+    source: str
+    target: str
+    intermediate: list[str]
 
 
 def is_blox_field(obj):
@@ -55,9 +61,9 @@ def is_defined_link(obj):
 
 def _find_nested_relations(
     parent_id: str,
-    relation: List[str],
+    relation: list[str],
     field: Any,
-) -> List[BlockRelation]:
+) -> list[BlockRelation]:
     """
     Recursively traverses `field` to find all valid and defined links.
 
@@ -66,11 +72,11 @@ def _find_nested_relations(
 
     Args:
         parent_id (str): Owning block ID. Is relation source if not inverted
-        relation (List[str]): Path to the link that defines the relation.
+        relation (list[str]): Path to the link that defines the relation.
         field (Any): (sub-)field in evaluated block's data
 
     Returns:
-        List[BlockRelation]: relations detected in `field` and its children.
+        list[BlockRelation]: relations detected in `field` and its children.
     """
     if relation and relation[0] in IGNORED_RELATION_FIELDS:
         return []
@@ -80,7 +86,11 @@ def _find_nested_relations(
         if relation and relation[0] in INVERTED_RELATION_FIELDS:
             source, target = target, source
 
-        return [BlockRelation(source, target, relation)]
+        return [
+            BlockRelation(source=source,
+                          target=target,
+                          relation=relation)
+        ]
 
     elif is_blox_field(field):
         # Ignored:
@@ -109,16 +119,16 @@ def _find_nested_relations(
         return []
 
 
-def calculate_relations(blocks: List[dict]) -> List[dict]:
+def calculate_relations(blocks: list[dict]) -> list[dict]:
     """
     Identifies all relation edges between blocks.
     One-sided relations (undefined links) are ignored.
 
     Args:
-        blocks (List[dict]): Set of blocks that will be evaluated
+        blocks (list[dict]): Set of blocks that will be evaluated
 
     Returns:
-        List[dict]: Valid relations between blocks in `blocks`.
+        list[dict]: Valid relations between blocks in `blocks`.
     """
     output = []
     for block in blocks:
@@ -126,25 +136,25 @@ def calculate_relations(blocks: List[dict]) -> List[dict]:
             continue
         output += _find_nested_relations(block['id'], [], block['data'])
 
-    return [asdict(edge) for edge in output]
+    return output
 
 
 def _generate_chains(
-    drivers: Dict[str, List[str]],
-    chain: List[str],
+    drivers: dict[str, list[str]],
+    chain: list[str],
     block_id: str,
-) -> Generator[List[str], None, None]:
+) -> Generator[list[str], None, None]:
     """
     Recursively constructs driver chains for all driven blocks
     The chain ends when `block_id` is not driven, or a circular reference is detected
 
     Args:
-        drivers (Dict[str, List[str]]): key: driven ID, value: driver IDs.
-        chain (List[str]): [description] Drive chain leading to `block_id`.
+        drivers (dict[str, list[str]]): key: driven ID, value: driver IDs.
+        chain (list[str]): [description] Drive chain leading to `block_id`.
         block_id (str): [description] Evaluated ID. Not necessarily driven.
 
-    Returns:
-        List[List[str]]: List of chains terminating at `block_id`.
+    Yields:
+        list[list[str]]: list of chains terminating at `block_id`.
             A chain is generated for every initial driver.
     """
     # check if driving block is itself driven
@@ -163,7 +173,7 @@ def _generate_chains(
         yield [*chain, block_id]
 
 
-def calculate_drive_chains(blocks: List[dict]) -> List[List[str]]:
+def calculate_drive_chains(blocks: list[Block]) -> list[BlockDriveChain]:
     """
     Finds driving links in `blocks`, and constructs end-to-end drive chains.
 
@@ -189,13 +199,13 @@ def calculate_drive_chains(blocks: List[dict]) -> List[List[str]]:
         - target=Cool PWM, source=Cool PID, intermediate=[]
 
     Args:
-        blocks (List[dict]): Input block array. Expected to be complete.
+        blocks (list[Block]): Input block array. Expected to be complete.
 
     Returns:
-        List[dict]: All detected drive chains.
+        list[BlockDriveChain]: All detected drive chains.
     """
     # First map all driven blocks to their drivers
-    drivers: Dict[str, List[str]] = {}  # key: driven, value: drivers
+    drivers: dict[str, list[str]] = {}  # key: driven, value: drivers
     for block in blocks:
         for field in block['data'].values():
             if is_defined_link(field) and field.get('driven') is True:
@@ -203,14 +213,14 @@ def calculate_drive_chains(blocks: List[dict]) -> List[List[str]]:
                 drivers.setdefault(field['id'], []).append(block['id'])
 
     # Generate and collect all drive chains
-    output: List[dict] = []
+    output: list[BlockDriveChain] = []
     for drive_chain in chain.from_iterable(
         _generate_chains(drivers, [], driven_id)
         for driven_id in drivers.keys()
     ):
-        output.append({
-            'target': drive_chain[0],
-            'source': drive_chain[-1],
-            'intermediate': drive_chain[1:-1]
-        })
+        output.append(BlockDriveChain(
+            target=drive_chain[0],
+            source=drive_chain[-1],
+            intermediate=drive_chain[1:-1]
+        ))
     return output

@@ -8,7 +8,7 @@ import re
 from contextlib import suppress
 from copy import deepcopy
 from functools import partialmethod
-from typing import Awaitable, Callable, List, Type, Union
+from typing import Awaitable, Callable, Type, Union
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, strex
@@ -34,7 +34,7 @@ class SparkResolver():
         self._codec = codec.fget(app)
 
     @staticmethod
-    def _get_content_objects(content: dict) -> List[dict]:
+    def _get_content_objects(content: dict) -> list[dict]:
         objects_to_process = [content]
         with suppress(KeyError):
             objects_to_process += content['objects']
@@ -228,13 +228,13 @@ class SparkController(features.ServiceFeature):
 
     async def _execute(self,
                        command_type: Type[commands.Command],
-                       decode_opts: List[DecodeOpts],
+                       decode_opts: list[DecodeOpts],
                        content_: dict = None,
+                       /,
                        **kwargs
-                       ) -> Union[dict, List[dict]]:
+                       ) -> Union[dict, list[dict]]:
         # Allow a combination of a dict containing arguments, and loose kwargs
-        content = content_ or dict()
-        content.update(kwargs)
+        content = (content_ or dict()) | kwargs
 
         cmder = commander.fget(self.app)
         resolver = SparkResolver(self.app)
@@ -254,7 +254,7 @@ class SparkController(features.ServiceFeature):
             )
 
             # post-processing
-            output: List[dict] = []
+            output: list[dict] = []
 
             for opts in decode_opts:
                 retval = deepcopy(command_retval)
@@ -270,9 +270,6 @@ class SparkController(features.ServiceFeature):
                 return output[0]
             else:
                 return output
-
-        except asyncio.CancelledError:  # pragma: no cover
-            raise
 
         except exceptions.CommandTimeout as ex:
             # Wrap in a task to not delay the original response

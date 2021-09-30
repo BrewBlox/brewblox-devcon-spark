@@ -3,13 +3,13 @@ Tests brewblox_devcon_spark.api.sim_api
 """
 
 import asyncio
+from unittest.mock import AsyncMock
 
 import pytest
 from aiohttp import web
 from aiohttp.client_ws import ClientWebSocketResponse
 from aiohttp.http_websocket import WSMessage
 from brewblox_service import scheduler
-from mock import AsyncMock
 
 from brewblox_devcon_spark.api import sim_api
 
