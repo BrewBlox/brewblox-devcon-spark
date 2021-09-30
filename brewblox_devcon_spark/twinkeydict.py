@@ -7,8 +7,8 @@ When looking up objects with both left and right key, asserts that keys point to
 from collections.abc import MutableMapping
 from contextlib import suppress
 from dataclasses import dataclass
-from typing import (TYPE_CHECKING, Any, Dict, Generic, Hashable, Iterator,
-                    Optional, Tuple, TypeVar)
+from typing import (TYPE_CHECKING, Any, Generic, Hashable, Iterator, Optional,
+                    TypeVar)
 
 from brewblox_service import brewblox_logger
 
@@ -18,8 +18,8 @@ LT = TypeVar('LT', bound=Hashable)
 RT = TypeVar('RT', bound=Hashable)
 VT = TypeVar('VT', bound=Any)
 
-Keys_ = Tuple[LT, RT]
-SparseKeys_ = Tuple[Optional[LT], Optional[RT]]
+Keys_ = tuple[LT, RT]
+SparseKeys_ = tuple[Optional[LT], Optional[RT]]
 
 if TYPE_CHECKING:  # pragma: no cover
     DictBase = MutableMapping[SparseKeys_, VT]
@@ -93,8 +93,8 @@ class TwinKeyDict(DictBase, Generic[LT, RT, VT]):
     """
 
     def __init__(self) -> None:
-        self._left_view: Dict[LT, TwinKeyObject[LT, RT, VT]] = dict()
-        self._right_view: Dict[RT, TwinKeyObject[LT, RT, VT]] = dict()
+        self._left_view: dict[LT, TwinKeyObject[LT, RT, VT]] = dict()
+        self._right_view: dict[RT, TwinKeyObject[LT, RT, VT]] = dict()
 
     def __bool__(self) -> bool:
         return bool(self._left_view)

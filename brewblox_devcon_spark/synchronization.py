@@ -34,8 +34,6 @@ def subroutine(desc: str):
         async def wrapped(*args, **kwargs):
             try:
                 return await func(*args, **kwargs)
-            except asyncio.CancelledError:  # pragma: no cover
-                raise
             except Exception as ex:
                 LOGGER.error(f'Sync subroutine failed: {desc} - {strex(ex)}')
                 raise ex
@@ -98,9 +96,6 @@ class SparkSynchronization(repeater.RepeaterFeature):
 
             service_status.set_synchronized(self.app)
             LOGGER.info('Service synchronized!')
-
-        except asyncio.CancelledError:
-            raise
 
         except exceptions.IncompatibleFirmware:
             LOGGER.error('Incompatible firmware version detected')
@@ -169,9 +164,8 @@ class SparkSynchronization(repeater.RepeaterFeature):
             while True:
                 try:
                     await asyncio.sleep(PING_INTERVAL_S)
+                    LOGGER.info('prompting handshake...')
                     await spark.fget(self.app).noop()
-                except asyncio.CancelledError:
-                    raise
                 except Exception:
                     pass
 

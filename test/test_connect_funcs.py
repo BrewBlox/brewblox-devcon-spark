@@ -7,7 +7,7 @@ from collections import namedtuple
 
 import pytest
 from brewblox_service import http
-from mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, Mock
 
 from brewblox_devcon_spark import connect_funcs, exceptions
 from brewblox_devcon_spark.connect_funcs import ConnectionResult

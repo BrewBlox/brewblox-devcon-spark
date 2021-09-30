@@ -5,7 +5,6 @@ Stores sid/nid relations for blocks
 import asyncio
 import warnings
 from contextlib import suppress
-from typing import List
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, http, strex
@@ -31,7 +30,7 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict[str, int, dict]):
     TwinKeyDict subclass to periodically flush contained objects to Redis.
     """
 
-    def __init__(self, app: web.Application, defaults: List[types.StoreEntry]):
+    def __init__(self, app: web.Application, defaults: list[types.StoreEntry]):
         self: TwinKeyDict[str, int, dict]
         FlushedStore.__init__(self, app)
         TwinKeyDict.__init__(self)
@@ -92,7 +91,7 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict[str, int, dict]):
         await asyncio.wait_for(self._ready_event.wait(), READY_TIMEOUT_S)
         if self.key is None:
             raise RuntimeError('Document key not set - did read() fail?')
-        data: List[types.StoreEntry] = [
+        data: list[types.StoreEntry] = [
             {'keys': keys, 'data': content}
             for keys, content in self.items()
         ]

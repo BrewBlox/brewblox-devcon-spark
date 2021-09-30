@@ -1,6 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple
-
-from typing_extensions import TypedDict
+from typing import Any, Optional, TypedDict
 
 
 class BlockIds(TypedDict):
@@ -12,20 +10,20 @@ class Block(TypedDict):
     id: str
     nid: Optional[int]
     serviceId: str
-    groups: List[int]
+    groups: list[int]
     type: str
-    data: Dict[str, Any]
+    data: dict[str, Any]
 
 
 class StoreEntry(TypedDict):
-    keys: Tuple[str, int]
+    keys: tuple[str, int]
     data: dict
 
 
 class Backup(TypedDict):
-    blocks: List[Block]
-    store: List[StoreEntry]
+    blocks: list[Block]
+    store: list[StoreEntry]
 
 
 class BackupLoadResult(TypedDict):
-    messages: List[str]
+    messages: list[str]

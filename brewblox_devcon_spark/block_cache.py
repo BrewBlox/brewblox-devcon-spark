@@ -3,7 +3,7 @@ Stores last known version of block data
 """
 
 from functools import wraps
-from typing import AbstractSet, List, Optional, Tuple
+from typing import KeysView, Optional
 
 from aiohttp import web
 from brewblox_service import brewblox_logger
@@ -29,7 +29,7 @@ def cache_func(func):
 
 
 @cache_func
-def keys(cache: CacheT_) -> AbstractSet[Tuple[str, int]]:
+def keys(cache: CacheT_) -> KeysView[tuple[str, int]]:
     return cache.keys()
 
 
@@ -56,7 +56,7 @@ def delete_all(cache: CacheT_):
 
 
 @cache_func
-def set_all(cache: CacheT_, blocks: List[types.Block]):
+def set_all(cache: CacheT_, blocks: list[types.Block]):
     cache.clear()
     for block in blocks:
         cache[block['id'], block['nid']] = block

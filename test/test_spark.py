@@ -4,7 +4,7 @@ Tests brewblox_devcon_spark.spark
 
 import pytest
 from brewblox_service import scheduler
-from mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, Mock
 
 from brewblox_devcon_spark import (block_store, codec, commander_sim, const,
                                    exceptions, service_status, spark)

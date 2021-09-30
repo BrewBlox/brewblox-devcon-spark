@@ -12,7 +12,6 @@ from abc import ABC
 from binascii import hexlify, unhexlify
 from dataclasses import dataclass, field
 from functools import reduce
-from typing import List
 
 from brewblox_service import brewblox_logger
 from construct import (Adapter, Byte, Const, Container, Default, Enum,
@@ -147,12 +146,12 @@ class GroupListAdapter(Adapter):
     def __init__(self):
         super().__init__(Byte)
 
-    def _encode(self, obj: List[int], context, path) -> int:
+    def _encode(self, obj: list[int], context, path) -> int:
         if next((i for i in obj if i >= 8), None):
             raise ValueError(f'Invalid group(s) in {obj}. Values must be 0-7.')
         return reduce(lambda result, idx: result | 1 << idx, obj, 0)
 
-    def _decode(self, obj: int, context, path) -> List[int]:
+    def _decode(self, obj: int, context, path) -> list[int]:
         return [i for i in range(8) if 1 << i & obj]
 
 

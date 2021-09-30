@@ -1,4 +1,6 @@
-FROM python:3.7-buster as base
+# Firmware depends on Boost 1.67
+# Bullseye repositories only provide 1.74
+FROM python:3.9-buster as base
 
 COPY ./dist /app/dist
 COPY ./requirements.txt /app/requirements.txt
@@ -6,7 +8,7 @@ COPY ./docker_base_build.sh /app/docker_base_build.sh
 
 RUN /bin/bash /app/docker_base_build.sh
 
-FROM python:3.7-slim-buster
+FROM python:3.9-slim-buster
 EXPOSE 5000
 WORKDIR /app
 

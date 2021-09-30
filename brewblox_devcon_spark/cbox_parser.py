@@ -4,7 +4,7 @@ Parses stream data into controlbox events and data
 
 import re
 from queue import Queue
-from typing import Generator, List
+from typing import Generator
 
 from brewblox_service import brewblox_logger
 
@@ -23,7 +23,7 @@ class ControlboxParser():
         self._buffer: str = ''
         self._events = Queue()
         self._data = Queue()
-        self._messages: List[str] = []
+        self._messages: list[str] = []
 
     def event_messages(self) -> Generator[str, None, None]:
         while self._events.qsize() > 0:

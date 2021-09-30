@@ -4,7 +4,6 @@ Requests are matched with responses here.
 """
 
 import asyncio
-from typing import Dict
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, strex
@@ -25,7 +24,7 @@ class SparkCommander(features.ServiceFeature):
         super().__init__(app)
 
         self._timeout = app['config']['command_timeout']
-        self._requests: Dict[str, asyncio.Future] = {}
+        self._requests: dict[str, asyncio.Future] = {}
         self._conn: connection.SparkConnection = None
 
     def __str__(self):
@@ -52,9 +51,6 @@ class SparkCommander(features.ServiceFeature):
             if fut is None:
                 raise ValueError('Unexpected message')
             fut.set_result(raw_response)
-
-        except asyncio.CancelledError:  # pragma: no cover
-            raise
 
         except Exception as ex:
             LOGGER.error(f'Error parsing message `{msg}` : {strex(ex)}')
@@ -83,9 +79,6 @@ class SparkCommander(features.ServiceFeature):
             # We can raise it here
             if isinstance(decoded, BaseException):
                 raise decoded
-
-        except asyncio.CancelledError:  # pragma: no cover
-            raise
 
         except asyncio.TimeoutError:
             raise exceptions.CommandTimeout(f'{type(command).__name__}')
