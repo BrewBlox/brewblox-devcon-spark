@@ -4,12 +4,12 @@ Tests brewblox_devcon_spark.connect_funcs
 
 import asyncio
 from collections import namedtuple
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from brewblox_service import http
-from mock import AsyncMock, Mock
 
-from brewblox_devcon_spark import connect_funcs, exceptions
+from brewblox_devcon_spark import connect_funcs, exceptions, mdns
 from brewblox_devcon_spark.connect_funcs import ConnectionResult
 
 TESTED = connect_funcs.__name__
@@ -64,7 +64,7 @@ def m_grep_ports(mocker):
 @pytest.fixture
 async def m_mdns(app, loop, mocker):
     m_discover = mocker.patch(TESTED + '.mdns.discover_one', AsyncMock())
-    m_discover.return_value = ('enterprise', 5678, None)
+    m_discover.return_value = mdns.ConnectInfo('enterprise', 5678, None)
     return m_discover
 
 
@@ -235,7 +235,7 @@ async def test_discover_tcp(app, client, m_mdns, m_reader, m_writer, m_connect):
     app['config']['device_id'] = None
     app['config']['discovery'] = 'lan'
 
-    # host/port values are defined in the m_dns fixture
+    # host/port values are defined in the m_mdns fixture
     expected = ConnectionResult(
         host='enterprise',
         port=5678,

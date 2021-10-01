@@ -7,7 +7,6 @@ from copy import deepcopy
 from datetime import datetime
 from functools import partial
 from itertools import count
-from typing import List
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
@@ -142,7 +141,7 @@ class SimulationResponder():
         return self._objects[1]['data']['active']
 
     @staticmethod
-    def _get_content_objects(content: dict) -> List[dict]:
+    def _get_content_objects(content: dict) -> list[dict]:
         objects_to_process = [content]
         with suppress(KeyError):
             objects_to_process += content['objects']

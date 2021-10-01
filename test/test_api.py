@@ -7,7 +7,7 @@ import asyncio
 import pytest
 from brewblox_service import scheduler
 from brewblox_service.testing import response
-from mock import ANY, AsyncMock
+from unittest.mock import ANY, AsyncMock
 
 from brewblox_devcon_spark import (block_cache, block_store, commander_sim,
                                    const, exceptions, global_store,

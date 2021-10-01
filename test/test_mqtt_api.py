@@ -4,7 +4,7 @@ Tests brewblox_devcon_spark.api.mqtt_api
 
 import pytest
 from brewblox_service import scheduler
-from mock import AsyncMock
+from unittest.mock import AsyncMock
 
 from brewblox_devcon_spark import (block_cache, block_store, commander_sim,
                                    exceptions, global_store, service_status,

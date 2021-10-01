@@ -196,6 +196,6 @@ async def connect_discovered_tcp(app: web.Application) -> Optional[ConnectionRes
         resp = await mdns.discover_one(device_id,
                                        BREWBLOX_DNS_TYPE,
                                        DISCOVERY_DNS_TIMEOUT_S)
-        return await connect_tcp(resp[0], resp[1])
+        return await connect_tcp(resp.address, resp.port)
     except asyncio.TimeoutError:
         return None

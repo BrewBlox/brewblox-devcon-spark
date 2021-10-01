@@ -36,8 +36,6 @@ async def check_remote(app: web.Application):
         try:
             await http.session(app).get(f'{STORE_URL}/ping')
             return
-        except asyncio.CancelledError:  # pragma: no cover
-            raise
         except Exception as ex:
             LOGGER.error(strex(ex))
             num_attempts += 1
@@ -82,9 +80,6 @@ class FlushedStore(repeater.RepeaterFeature):
             await asyncio.sleep(FLUSH_DELAY_S)
             await self.write()
             self._changed_event.clear()
-
-        except asyncio.CancelledError:
-            raise
 
         except Exception as ex:
             warnings.warn(f'{self} flush error {strex(ex)}')
