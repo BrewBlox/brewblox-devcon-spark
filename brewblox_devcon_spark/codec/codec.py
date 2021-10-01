@@ -4,9 +4,8 @@ Offers encoding and decoding of objects.
 """
 
 
-import asyncio
 from copy import deepcopy
-from typing import Awaitable, Callable, Optional, Tuple, Union
+from typing import Awaitable, Callable, Optional, Union
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, strex
@@ -20,7 +19,7 @@ from .unit_conversion import get_converter
 
 TranscodeFunc_ = Callable[
     [ObjType_, Union[Encoded_, Decoded_]],
-    Awaitable[Tuple[ObjType_, Union[Encoded_, Decoded_]]]
+    Awaitable[tuple[ObjType_, Union[Encoded_, Decoded_]]]
 ]
 
 LOGGER = brewblox_logger(__name__)
@@ -50,7 +49,7 @@ class Codec(features.ServiceFeature):
     async def encode(self,
                      obj_type: ObjType_,
                      values: Optional[Decoded_] = ...,
-                     ) -> Union[ObjType_, Tuple[ObjType_, Encoded_]]:
+                     ) -> Union[ObjType_, tuple[ObjType_, Encoded_]]:
         """
         Encode given data to a serializable type.
 
@@ -70,7 +69,7 @@ class Codec(features.ServiceFeature):
             ObjType_:
                 If `values` is not set, only encoded object type is returned.
 
-            Tuple[ObjType_, Encoded_]:
+            tuple[ObjType_, Encoded_]:
                 Serializable values of both object type and values.
         """
         if not isinstance(values, (dict, type(...))):
@@ -89,7 +88,7 @@ class Codec(features.ServiceFeature):
                      obj_type: ObjType_,
                      values: Optional[Encoded_] = ...,
                      opts: Optional[DecodeOpts] = None
-                     ) -> Union[ObjType_, Tuple[ObjType_, Decoded_]]:
+                     ) -> Union[ObjType_, tuple[ObjType_, Decoded_]]:
         """
         Decodes given data to a Python-compatible type.
 
@@ -112,7 +111,7 @@ class Codec(features.ServiceFeature):
             ObjType_:
                 If `values` is not set, only decoded object type is returned.
 
-            Tuple[ObjType_, Decoded_]:
+            tuple[ObjType_, Decoded_]:
                 Python-compatible values of both object type and values.
         """
         if not isinstance(values, (bytes, list, type(...))):
@@ -129,9 +128,6 @@ class Codec(features.ServiceFeature):
             trc = Transcoder.get(obj_type, self._mod)
             type_name = trc.type_str()
             return type_name if no_content else (type_name, trc.decode(values, opts))
-
-        except asyncio.CancelledError:  # pragma: no cover
-            raise
 
         except Exception as ex:
             msg = strex(ex)

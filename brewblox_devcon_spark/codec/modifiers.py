@@ -7,7 +7,7 @@ from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
 from dataclasses import dataclass
 from functools import reduce
-from typing import Iterator, List, Optional, Union
+from typing import Iterator, Optional, Union
 
 from brewblox_service import brewblox_logger
 from google.protobuf import json_format
@@ -68,13 +68,13 @@ class Modifier():
         return hexlify(b64decode(s)).decode()
 
     @staticmethod
-    def pack_bit_flags(flags: List[int]) -> int:
+    def pack_bit_flags(flags: list[int]) -> int:
         if next((i for i in flags if i >= 8), None):
             raise ValueError(f'Invalid bit flags in {flags}. Values must be 0-7.')
         return reduce(lambda result, idx: result | 1 << idx, flags, 0)
 
     @staticmethod
-    def unpack_bit_flags(flags: int) -> List[int]:
+    def unpack_bit_flags(flags: int) -> list[int]:
         return [i for i in range(8) if 1 << i & flags]
 
     def _find_options(self, desc: DescriptorBase, obj: dict, nested: bool = False) -> Iterator[OptionElement]:

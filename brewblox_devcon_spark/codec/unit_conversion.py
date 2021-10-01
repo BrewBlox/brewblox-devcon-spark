@@ -3,7 +3,6 @@ User-configurable unit conversion
 """
 
 from dataclasses import dataclass
-from typing import Dict
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
@@ -43,8 +42,8 @@ class UnitMapping:
     user_value: str
 
 
-def derived_table(user_temp) -> Dict[str, UnitMapping]:
-    # Python 3.6+ guarantees values being insertion-ordered
+def derived_table(user_temp) -> dict[str, UnitMapping]:
+    # Python 3.7+ guarantees values being insertion-ordered
     sys_vals = [s.format(temp=SYSTEM_TEMP) for s in FORMATS.values()]
     user_vals = [s.format(temp=user_temp) for s in FORMATS.values()]
 

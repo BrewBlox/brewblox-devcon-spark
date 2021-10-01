@@ -6,7 +6,7 @@ from copy import deepcopy
 
 import pytest
 from brewblox_service import repeater, scheduler
-from mock import ANY, AsyncMock, call
+from unittest.mock import ANY, AsyncMock, call
 
 from brewblox_devcon_spark import (block_cache, block_store, broadcaster,
                                    commander_sim, exceptions, global_store,

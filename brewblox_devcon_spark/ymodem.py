@@ -9,7 +9,7 @@ import re
 import subprocess
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, Awaitable, ByteString, List, Optional
+from typing import Any, Awaitable, ByteString, Optional
 
 import aiofiles
 from brewblox_service import brewblox_logger, strex
@@ -62,7 +62,7 @@ class FileSenderProtocol(asyncio.Protocol):
         return self._queue.get()
 
     @property
-    def connected(self) -> Awaitable:
+    def connected(self) -> Awaitable[None]:
         return self._connection_made_event.wait()
 
     def connection_made(self, transport):
@@ -184,7 +184,7 @@ class FileSender():
 
             await self._send_close(conn)
 
-    async def _trigger(self, conn: Connection) -> Awaitable[HandshakeMessage]:
+    async def _trigger(self, conn: Connection) -> HandshakeMessage:
         message = None
 
         async def _read():
@@ -240,11 +240,11 @@ class FileSender():
         # Signal end of connection
         await self._send_data(conn, 0, [])
 
-    async def _send_header(self, conn: Connection, name: str, size: int) -> Awaitable[SendState]:
+    async def _send_header(self, conn: Connection, name: str, size: int) -> SendState:
         data = [FileSender.PACKET_MARK, *name.encode(), 0, *f'{size} '.encode()]
         return await self._send_data(conn, 0, data)
 
-    async def _send_data(self, conn: Connection, seq: int, data: List[int]) -> Awaitable[SendState]:
+    async def _send_data(self, conn: Connection, seq: int, data: list[int]) -> SendState:
         packet_data = data + [0] * (FileSender.DATA_LEN - len(data))
         packet_seq = seq & 0xFF
         packet_seq_neg = 0xFF - packet_seq

@@ -7,7 +7,7 @@ import asyncio
 import warnings
 from dataclasses import asdict, dataclass
 from functools import partialmethod
-from typing import Awaitable, Optional
+from typing import Optional
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
@@ -245,27 +245,27 @@ def set_updating(app: web.Application):
     fget(app).set_updating()
 
 
-async def wait_autoconnecting(app: web.Application, wait: bool = True) -> Awaitable[bool]:
+async def wait_autoconnecting(app: web.Application, wait: bool = True) -> bool:
     return await fget(app).wait_autoconnecting(wait)
 
 
-async def wait_connected(app: web.Application, wait: bool = True) -> Awaitable[bool]:
+async def wait_connected(app: web.Application, wait: bool = True) -> bool:
     return await fget(app).wait_connected(wait)
 
 
-async def wait_acknowledged(app: web.Application, wait: bool = True) -> Awaitable[bool]:
+async def wait_acknowledged(app: web.Application, wait: bool = True) -> bool:
     return await fget(app).wait_acknowledged(wait)
 
 
-async def wait_synchronized(app: web.Application, wait: bool = True) -> Awaitable[bool]:
+async def wait_synchronized(app: web.Application, wait: bool = True) -> bool:
     return await fget(app).wait_synchronized(wait)
 
 
-async def wait_disconnected(app: web.Application, wait: bool = True) -> Awaitable[bool]:
+async def wait_disconnected(app: web.Application, wait: bool = True) -> bool:
     return await fget(app).wait_disconnected(wait)
 
 
-async def wait_updating(app: web.Application, wait: bool = True) -> Awaitable[bool]:
+async def wait_updating(app: web.Application, wait: bool = True) -> bool:
     return await fget(app).wait_updating(wait)
 
 

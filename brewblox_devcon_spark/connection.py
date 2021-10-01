@@ -5,7 +5,7 @@ Implements async serial connection.
 import asyncio
 from contextlib import suppress
 from subprocess import Popen
-from typing import Callable, Set
+from typing import Callable
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, repeater
@@ -46,7 +46,7 @@ class SparkConnection(repeater.RepeaterFeature):
         return bool(self._writer and not self._writer.is_closing())
 
     @property
-    def data_callbacks(self) -> Set[MessageCallback_]:
+    def data_callbacks(self) -> set[MessageCallback_]:
         return self._data_callbacks
 
     @property
@@ -144,9 +144,6 @@ class SparkConnection(repeater.RepeaterFeature):
                     self._on_data(msg)
 
             raise ConnectionError('Connection closed')
-
-        except asyncio.CancelledError:
-            raise
 
         except ConnectionAbortedError:
             LOGGER.error('Connection aborted. Exiting now.')

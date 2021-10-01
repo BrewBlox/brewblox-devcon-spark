@@ -3,9 +3,10 @@ mDNS discovery of Spark devices
 """
 
 import asyncio
+from collections import namedtuple
 from contextlib import suppress
 from socket import AF_INET, inet_aton, inet_ntoa
-from typing import Optional
+from typing import Generator, Optional
 
 from aiozeroconf import ServiceBrowser, ServiceStateChange, Zeroconf
 from aiozeroconf.aiozeroconf import ServiceInfo
@@ -18,8 +19,13 @@ ID_KEY = 'ID'.encode()
 
 LOGGER = brewblox_logger(__name__)
 
+ConnectInfo = namedtuple('ConnectInfo', ['address', 'port', 'id'])
 
-async def _discover(desired_id: Optional[str], dns_type: str, single: bool):
+
+async def _discover(
+    desired_id: Optional[str],
+    dns_type: str,
+) -> Generator[ConnectInfo, None, None]:
     queue: asyncio.Queue[ServiceInfo] = asyncio.Queue()
     conf = Zeroconf(asyncio.get_event_loop(), address_family=[AF_INET])
 
@@ -45,28 +51,31 @@ async def _discover(desired_id: Optional[str], dns_type: str, single: bool):
             if not id:
                 LOGGER.error(f'Invalid device: {info.name} @ {addr}:{info.port} has no ID TXT property')
                 continue
-
-            if desired_id is None or desired_id.lower() == id:
+            elif desired_id is None or desired_id.lower() == id:
                 LOGGER.info(f'Discovered {id} @ {addr}:{info.port}')
-                yield addr, info.port, id
-                if single:
-                    return
+                yield ConnectInfo(addr, info.port, id)
             else:
                 LOGGER.info(f'Discarding {info.name} @ {addr}:{info.port}')
     finally:
         await conf.close()
 
 
-async def discover_all(desired_id: Optional[str], dns_type: str, timeout_v: float):
+async def discover_all(
+    desired_id: Optional[str],
+    dns_type: str,
+    timeout_v: float,
+) -> Generator[ConnectInfo, None, None]:
     with suppress(asyncio.TimeoutError):
         async with timeout(timeout_v):
-            async for res in _discover(desired_id, dns_type, False):
+            async for res in _discover(desired_id, dns_type):
                 yield res
 
 
-async def discover_one(desired_id: Optional[str], dns_type: str, timeout_v: float = None):
+async def discover_one(
+    desired_id: Optional[str],
+    dns_type: str,
+    timeout_v: Optional[float] = None,
+) -> ConnectInfo:
     async with timeout(timeout_v):
-        retv = None
-        async for res in _discover(desired_id, dns_type, True):
-            retv = res
-        return retv
+        async for res in _discover(desired_id, dns_type):
+            return res

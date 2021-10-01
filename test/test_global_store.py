@@ -7,7 +7,7 @@ import pytest
 from aiohttp import web
 from aresponses import ResponsesMockServer
 from brewblox_service import http, scheduler
-from mock import AsyncMock
+from unittest.mock import AsyncMock
 
 from brewblox_devcon_spark import const, global_store
 from brewblox_devcon_spark.global_store import GlobalConfigStore

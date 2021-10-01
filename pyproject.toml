@@ -14,28 +14,28 @@ useLibraryCodeForTypes = true
 reportMissingImports = "information"
 
 [tool.poetry.dependencies]
-python = ">=3.7,<4"
+python = ">=3.9,<4"
 brewblox-service = "^0.33.0"
 pyserial-asyncio = "^0.5"
-construct = "^2.10.60"
-protobuf = "^3.14.0"
-aiofiles = "^0.6.0"
+construct = "^2.10.67"
+protobuf = "^3.18.0"
+aiofiles = "^0.7.0"
 aiozeroconf = "^0.1.8"
-debugpy = "^1.2.1"
-Pint = "^0.16.1"
+debugpy = "^1.4.3"
+Pint = "^0.17"
 esptool = "^3.1"
+marshmallow = "~3.12.0"
 
 [tool.poetry.dev-dependencies]
-pytest = "^6.2.2"
+pytest = "^6.2.5"
 pytest-flake8 = "^1.0.7"
-pytest-cov = "^2.11.1"
-pytest-mock = "^3.5.1"
+pytest-cov = "^2.12.1"
+pytest-mock = "^3.6.1"
 pytest-aiohttp = "^0.3.0"
-flake8 = "^3.8.4"
-autopep8 = "^1.5.5"
+flake8 = "^3.9.2"
+autopep8 = "^1.5.7"
 aresponses = "^2.1.4"
-flake8-quotes = "^3.2.0"
-asyncmock = "^0.4.2"
+flake8-quotes = "^3.3.0"
 
 [build-system]
 requires = ["poetry>=0.12"]
