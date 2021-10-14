@@ -2,8 +2,6 @@
 Keeps track of global config
 """
 
-import asyncio
-
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, http, mqtt, strex
 
@@ -82,9 +80,6 @@ class GlobalConfigStore(features.ServiceFeature):
                 'ids': [const.GLOBAL_UNITS_ID, const.GLOBAL_TIME_ZONE_ID],
             })
             self.update((await resp.json())['values'])
-
-        except asyncio.CancelledError:  # pragma: no cover
-            raise
 
         except Exception as ex:
             LOGGER.error(f'{self} read error {strex(ex)}')

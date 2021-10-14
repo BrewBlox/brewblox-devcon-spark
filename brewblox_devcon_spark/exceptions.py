@@ -3,9 +3,11 @@ Lists various possible BrewBlox-related exceptions.
 This improves clarity as to what actually went wrong.
 """
 
+from aiohttp import web
+
 
 class BrewbloxException(Exception):
-    status_code = 500
+    http_error = web.HTTPInternalServerError
 
 
 ##################################################################################################
@@ -14,7 +16,7 @@ class BrewbloxException(Exception):
 
 
 class InvalidInput(BrewbloxException):
-    status_code = 400  # HTTP bad request
+    http_error = web.HTTPBadRequest
 
 
 class MissingInput(InvalidInput):
@@ -27,7 +29,7 @@ class MissingInput(InvalidInput):
 
 
 class IdException(BrewbloxException):
-    status_code = 400  # HTTP bad request
+    http_error = web.HTTPBadRequest
 
 
 class InvalidId(IdException):
@@ -35,7 +37,7 @@ class InvalidId(IdException):
 
 
 class ExistingId(IdException):
-    status_code = 409  # HTTP conflict
+    http_error = web.HTTPConflict
 
 
 class UnknownId(IdException):
@@ -52,11 +54,11 @@ class CommandException(BrewbloxException):
 
 
 class CommandParseException(CommandException):
-    status_code = 424  # HTTP failed dependency
+    http_error = web.HTTPFailedDependency
 
 
 class CommandBuildException(CommandException):
-    status_code = 400  # HTTP bad request
+    http_error = web.HTTPBadRequest
 
 
 class CRCFailed(CommandException):
@@ -64,11 +66,11 @@ class CRCFailed(CommandException):
 
 
 class CommandTimeout(CommandException):
-    status_code = 424  # HTTP failed dependency
+    http_error = web.HTTPFailedDependency
 
 
 class UpdateInProgress(CommandException):
-    status_code = 424  # HTTP failed dependency
+    http_error = web.HTTPFailedDependency
 
 
 ##################################################################################################
@@ -81,15 +83,15 @@ class CodecException(BrewbloxException):
 
 
 class EncodeException(CodecException):
-    status_code = 400  # HTTP bad request
+    http_error = web.HTTPBadRequest
 
 
 class DecodeException(CodecException):
-    status_code = 424  # HTTP failed dependency
+    http_error = web.HTTPFailedDependency
 
 
 class UnknownCodecType(CodecException):
-    status_code = 422  # HTTP unprocessable entity
+    http_error = web.HTTPUnprocessableEntity
 
 
 ##################################################################################################
@@ -98,7 +100,7 @@ class UnknownCodecType(CodecException):
 
 
 class ConnectionException(BrewbloxException):
-    status_code = 424  # HTTP failed dependency
+    http_error = web.HTTPFailedDependency
 
 
 class NotConnected(ConnectionException):
@@ -118,7 +120,7 @@ class ConnectionPaused(ConnectionException):
 ##################################################################################################
 
 class FirmwareException(BrewbloxException):
-    status_code = 424  # HTTP failed dependency
+    http_error = web.HTTPFailedDependency
 
 
 class IncompatibleFirmware(FirmwareException):

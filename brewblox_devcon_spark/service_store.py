@@ -73,9 +73,6 @@ class ServiceConfigStore(FlushedStore):
                 else:
                     warnings.warn(f'{self} found no config. Defaults will be used.')
 
-        except asyncio.CancelledError:  # pragma: no cover
-            raise
-
         except Exception as ex:
             warnings.warn(f'{self} read error {strex(ex)}')
 
