@@ -23,7 +23,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x10Spark2Pins.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\xd3\x01\n\nSpark2Pins\x12\x12\n\nsoundAlarm\x18\x05 \x01(\x08\x12\x33\n\x08hardware\x18\x08 \x01(\x0e\x32\x19.blox.Spark2Pins.HardwareB\x06\x8a\xb5\x18\x02(\x01\x12\x33\n\x08\x63hannels\x18\t \x03(\x0b\x32\x0f.blox.IoChannelB\x10\x92?\x02\x10\x04\x92?\x02x\x01\x8a\xb5\x18\x02(\x01\"8\n\x08Hardware\x12\x0e\n\nHW_UNKNOWN\x10\x00\x12\r\n\tHW_SPARK1\x10\x01\x12\r\n\tHW_SPARK2\x10\x02:\r\x8a\xb5\x18\x03\x18\xc0\x02\x8a\xb5\x18\x02H\n*\x8c\x01\n\x10Spark2ChannelIds\x12\x14\n\x10SPARK2_CHAN_NONE\x10\x00\x12\x17\n\x13SPARK2_CHAN_BOTTOM1\x10\x01\x12\x17\n\x13SPARK2_CHAN_BOTTOM2\x10\x02\x12\x17\n\x13SPARK2_CHAN_BOTTOM3\x10\x03\x12\x17\n\x13SPARK2_CHAN_BOTTOM0\x10\x04\x62\x06proto3'
+  serialized_pb=b'\n\x10Spark2Pins.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\xee\x01\n\nSpark2Pins\x12\x12\n\nsoundAlarm\x18\x05 \x01(\x08\x12\x33\n\x08hardware\x18\x08 \x01(\x0e\x32\x19.blox.Spark2Pins.HardwareB\x06\x8a\xb5\x18\x02(\x01\x12\x33\n\x08\x63hannels\x18\t \x03(\x0b\x32\x0f.blox.IoChannelB\x10\x92?\x02\x10\x04\x92?\x02x\x01\x8a\xb5\x18\x02(\x01\x12\x19\n\x04pins\x18Z \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03\"8\n\x08Hardware\x12\x0e\n\nHW_UNKNOWN\x10\x00\x12\r\n\tHW_SPARK1\x10\x01\x12\r\n\tHW_SPARK2\x10\x02:\r\x8a\xb5\x18\x03\x18\xc0\x02\x8a\xb5\x18\x02H\n*\x8c\x01\n\x10Spark2ChannelIds\x12\x14\n\x10SPARK2_CHAN_NONE\x10\x00\x12\x17\n\x13SPARK2_CHAN_BOTTOM1\x10\x01\x12\x17\n\x13SPARK2_CHAN_BOTTOM2\x10\x02\x12\x17\n\x13SPARK2_CHAN_BOTTOM3\x10\x03\x12\x17\n\x13SPARK2_CHAN_BOTTOM0\x10\x04\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,IoArray__pb2.DESCRIPTOR,])
 
@@ -62,8 +62,8 @@ _SPARK2CHANNELIDS = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=286,
-  serialized_end=426,
+  serialized_start=313,
+  serialized_end=453,
 )
 _sym_db.RegisterEnumDescriptor(_SPARK2CHANNELIDS)
 
@@ -100,8 +100,8 @@ _SPARK2PINS_HARDWARE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=212,
-  serialized_end=268,
+  serialized_start=239,
+  serialized_end=295,
 )
 _sym_db.RegisterEnumDescriptor(_SPARK2PINS_HARDWARE)
 
@@ -135,6 +135,13 @@ _SPARK2PINS = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\222?\002\020\004\222?\002x\001\212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='pins', full_name='blox.Spark2Pins.pins', index=3,
+      number=90, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\002H\001\222?\002\030\003', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -149,7 +156,7 @@ _SPARK2PINS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=72,
-  serialized_end=283,
+  serialized_end=310,
 )
 
 _SPARK2PINS.fields_by_name['hardware'].enum_type = _SPARK2PINS_HARDWARE
@@ -169,5 +176,6 @@ _sym_db.RegisterMessage(Spark2Pins)
 
 _SPARK2PINS.fields_by_name['hardware']._options = None
 _SPARK2PINS.fields_by_name['channels']._options = None
+_SPARK2PINS.fields_by_name['pins']._options = None
 _SPARK2PINS._options = None
 # @@protoc_insertion_point(module_scope)

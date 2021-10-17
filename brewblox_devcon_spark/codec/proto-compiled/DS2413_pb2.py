@@ -23,7 +23,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x0c\x44S2413.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\xb0\x01\n\x06\x44S2413\x12\x17\n\x07\x61\x64\x64ress\x18\x01 \x01(\x06\x42\x06\x8a\xb5\x18\x02 \x01\x12\x19\n\tconnected\x18\x06 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12(\n\x0coneWireBusId\x18\x08 \x01(\rB\x12\x8a\xb5\x18\x03\x18\x82\x02\x92?\x02\x38\x10\x8a\xb5\x18\x02(\x01\x12\x33\n\x08\x63hannels\x18\t \x03(\x0b\x32\x0f.blox.IoChannelB\x10\x92?\x02\x10\x02\x92?\x02x\x01\x8a\xb5\x18\x02(\x01:\x13\x8a\xb5\x18\x03\x18\xbb\x02\x8a\xb5\x18\x02H\n\x8a\xb5\x18\x02H\t*N\n\x10\x44S2413ChannelIds\x12\x14\n\x10\x44S2413_CHAN_NONE\x10\x00\x12\x11\n\rDS2413_CHAN_A\x10\x01\x12\x11\n\rDS2413_CHAN_B\x10\x02\x62\x06proto3'
+  serialized_pb=b'\n\x0c\x44S2413.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\xcb\x01\n\x06\x44S2413\x12\x17\n\x07\x61\x64\x64ress\x18\x01 \x01(\x06\x42\x06\x8a\xb5\x18\x02 \x01\x12\x19\n\tconnected\x18\x06 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12(\n\x0coneWireBusId\x18\x08 \x01(\rB\x12\x8a\xb5\x18\x03\x18\x82\x02\x92?\x02\x38\x10\x8a\xb5\x18\x02(\x01\x12\x33\n\x08\x63hannels\x18\t \x03(\x0b\x32\x0f.blox.IoChannelB\x10\x92?\x02\x10\x02\x92?\x02x\x01\x8a\xb5\x18\x02(\x01\x12\x19\n\x04pins\x18Z \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03:\x13\x8a\xb5\x18\x03\x18\xbb\x02\x8a\xb5\x18\x02H\n\x8a\xb5\x18\x02H\t*N\n\x10\x44S2413ChannelIds\x12\x14\n\x10\x44S2413_CHAN_NONE\x10\x00\x12\x11\n\rDS2413_CHAN_A\x10\x01\x12\x11\n\rDS2413_CHAN_B\x10\x02\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,IoArray__pb2.DESCRIPTOR,])
 
@@ -52,8 +52,8 @@ _DS2413CHANNELIDS = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=246,
-  serialized_end=324,
+  serialized_start=273,
+  serialized_end=351,
 )
 _sym_db.RegisterEnumDescriptor(_DS2413CHANNELIDS)
 
@@ -100,6 +100,13 @@ _DS2413 = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\222?\002\020\002\222?\002x\001\212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='pins', full_name='blox.DS2413.pins', index=4,
+      number=90, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\002H\001\222?\002\030\003', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -113,7 +120,7 @@ _DS2413 = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=68,
-  serialized_end=244,
+  serialized_end=271,
 )
 
 _DS2413.fields_by_name['channels'].message_type = IoArray__pb2._IOCHANNEL
@@ -133,5 +140,6 @@ _DS2413.fields_by_name['address']._options = None
 _DS2413.fields_by_name['connected']._options = None
 _DS2413.fields_by_name['oneWireBusId']._options = None
 _DS2413.fields_by_name['channels']._options = None
+_DS2413.fields_by_name['pins']._options = None
 _DS2413._options = None
 # @@protoc_insertion_point(module_scope)
