@@ -84,6 +84,11 @@ steps:
   displayName: Run before_build.sh script
   condition: and(succeeded(), variables.BRANCH)
 
+- bash: |
+    docker pull $(DOCKER_REPO):develop
+  displayName: Fetch previous image for cache
+  condition: and(succeeded(), variables.BRANCH)
+
 - bash: >-
     docker buildx build
     --tag $(DOCKER_REPO):$(TAG)
