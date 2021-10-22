@@ -85,8 +85,25 @@ steps:
   condition: and(succeeded(), variables.BRANCH)
 
 - bash: |
-    docker pull $(DOCKER_REPO):develop
-  displayName: Fetch previous image for cache
+    docker pull $(DOCKER_REPO):$(TAG)--base || true
+  displayName: Fetch cache for base stage of Docker image
+  condition: and(succeeded(), variables.BRANCH)
+
+- bash: >-
+    docker buildx build
+    --tag $(DOCKER_REPO):$(TAG)--base
+    --build-arg service_info="$(git describe) @ $(date)"
+    --cache-from=$(DOCKER_REPO):$(TAG)--base
+    --target=base
+    --push
+    --platform linux/amd64,linux/arm/v7,linux/arm64/v8
+    docker
+  displayName: Build base stage of Docker image
+  condition: and(succeeded(), variables.BRANCH)
+
+- bash: |
+    docker pull $(DOCKER_REPO):$(TAG) || true
+  displayName: Fetch cache for runtime stage of Docker image
   condition: and(succeeded(), variables.BRANCH)
 
 - bash: >-
@@ -94,7 +111,8 @@ steps:
     --tag $(DOCKER_REPO):$(TAG)
     --tag $(DOCKER_REPO):rpi-$(TAG)
     --build-arg service_info="$(git describe) @ $(date)"
-    --cache-from=$(DOCKER_REPO):develop
+    --cache-from=$(DOCKER_REPO):$(TAG)--base
+    --cache-from=$(DOCKER_REPO):$(TAG)
     --push
     --platform linux/amd64,linux/arm/v7,linux/arm64/v8
     docker
