@@ -3,10 +3,10 @@ Tests brewblox_devcon_spark.synchronization
 """
 
 import asyncio
+from unittest.mock import AsyncMock
 
 import pytest
 from brewblox_service import brewblox_logger, scheduler
-from unittest.mock import AsyncMock
 
 from brewblox_devcon_spark import (block_store, commander_sim, global_store,
                                    service_status, service_store, spark,
@@ -41,7 +41,7 @@ async def disconnect(app):
 
 @pytest.fixture(autouse=True)
 def m_timedelta(mocker):
-    mocker.patch(TESTED + '.timedelta')
+    mocker.patch(TESTED + '.timedelta', autospec=True)
 
 
 @pytest.fixture(autouse=True)
@@ -66,7 +66,7 @@ async def app(app, loop):
 
 @pytest.fixture
 async def syncher(app, client, mocker):
-    mocker.patch(TESTED + '.service_status.wait_disconnected', AsyncMock())
+    mocker.patch(TESTED + '.service_status.wait_disconnected', autospec=True)
     s = synchronization.SparkSynchronization(app)
     await s.prepare()
     return s
@@ -84,7 +84,7 @@ async def test_sync_status(app, client, syncher):
 
 
 async def test_sync_errors(app, client, syncher, mocker):
-    mocker.patch(TESTED + '.datastore.check_remote', AsyncMock(side_effect=RuntimeError))
+    mocker.patch(TESTED + '.datastore.check_remote', autospec=True, side_effect=RuntimeError)
 
     await disconnect(app)
     with pytest.raises(RuntimeError):
@@ -94,7 +94,7 @@ async def test_sync_errors(app, client, syncher, mocker):
 
 
 async def test_write_error(app, client, syncher, mocker):
-    mocker.patch.object(spark.fget(app), 'write_object', AsyncMock(side_effect=RuntimeError))
+    mocker.patch.object(spark.fget(app), 'write_object', autospec=True, side_effect=RuntimeError)
     await disconnect(app)
     with pytest.raises(RuntimeError):
         await connect(app, syncher)
@@ -111,7 +111,7 @@ async def test_timeout(app, client, syncher, mocker):
     await syncher.end()
     mocker.patch(TESTED + '.HANDSHAKE_TIMEOUT_S', 0.1)
     mocker.patch(TESTED + '.PING_INTERVAL_S', 0.0001)
-    mocker.patch(TESTED + '.service_status.wait_acknowledged', side_effect=m_wait_ack)
+    mocker.patch(TESTED + '.service_status.wait_acknowledged', autospec=True, side_effect=m_wait_ack)
     mocker.patch.object(spark.fget(app), 'noop', AsyncMock(side_effect=RuntimeError))
 
     service_status.set_connected(app, 'timeout test')
