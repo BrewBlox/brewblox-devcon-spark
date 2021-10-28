@@ -4,7 +4,6 @@ Tests brewblox_devcon_spark.api.mqtt_api
 
 import pytest
 from brewblox_service import scheduler
-from unittest.mock import AsyncMock
 
 from brewblox_devcon_spark import (block_cache, block_store, commander_sim,
                                    exceptions, global_store, service_status,
@@ -17,16 +16,13 @@ TESTED = mqtt_api.__name__
 
 @pytest.fixture(autouse=True)
 def m_publish(mocker):
-    m = mocker.patch(blocks_api.__name__ + '.mqtt.publish', AsyncMock())
+    m = mocker.patch(blocks_api.__name__ + '.mqtt.publish', autospec=True)
     return m
 
 
 @pytest.fixture(autouse=True)
 def m_mqtt(mocker):
-    mocker.patch(TESTED + '.mqtt.listen', AsyncMock())
-    mocker.patch(TESTED + '.mqtt.subscribe', AsyncMock())
-    mocker.patch(TESTED + '.mqtt.unlisten', AsyncMock())
-    mocker.patch(TESTED + '.mqtt.unsubscribe', AsyncMock())
+    mocker.patch(TESTED + '.mqtt', autospec=True)
 
 
 @pytest.fixture

@@ -3,11 +3,11 @@ Tests brewblox_devcon_spark.api
 """
 
 import asyncio
+from unittest.mock import ANY, AsyncMock
 
 import pytest
 from brewblox_service import scheduler
 from brewblox_service.testing import response
-from unittest.mock import ANY, AsyncMock
 
 from brewblox_devcon_spark import (block_cache, block_store, commander_sim,
                                    const, exceptions, global_store,
@@ -42,7 +42,7 @@ def block_args():
 
 @pytest.fixture(autouse=True)
 def m_publish(mocker):
-    m = mocker.patch(blocks_api.__name__ + '.mqtt.publish', AsyncMock())
+    m = mocker.patch(blocks_api.__name__ + '.mqtt.publish', autospec=True)
     return m
 
 
@@ -493,10 +493,10 @@ async def test_system_flash(app, client, mocker):
     mocker.patch(sys_api + '.shutdown_soon', AsyncMock())
     mocker.patch(sys_api + '.mqtt.publish', AsyncMock())
 
-    m_conn = mocker.patch(sys_api + '.ymodem.connect', AsyncMock())
+    m_conn = mocker.patch(sys_api + '.ymodem.connect', autospec=True)
     m_conn.return_value = AsyncMock(ymodem.Connection)
 
-    m_sender = mocker.patch(sys_api + '.ymodem.FileSender')
+    m_sender = mocker.patch(sys_api + '.ymodem.FileSender', autospec=True)
     m_sender.return_value.transfer = AsyncMock()
 
     await response(client.post('/system/flash'))

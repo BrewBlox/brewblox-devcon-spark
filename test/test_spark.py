@@ -2,12 +2,14 @@
 Tests brewblox_devcon_spark.spark
 """
 
-import pytest
-from brewblox_service import scheduler
 from unittest.mock import AsyncMock, Mock
 
-from brewblox_devcon_spark import (block_store, codec, commander_sim, const,
-                                   exceptions, service_status, spark)
+import pytest
+from brewblox_service import scheduler
+
+from brewblox_devcon_spark import (block_store, codec, commander,
+                                   commander_sim, const, exceptions,
+                                   service_status, spark)
 from brewblox_devcon_spark.codec.opts import DecodeOpts
 
 TESTED = spark.__name__
@@ -176,11 +178,9 @@ async def test_check_connection(app, client, mocker):
     s = spark.fget(app)
     await s.check_connection()
 
-    m_wait_sync = mocker.patch(TESTED + '.service_status.wait_synchronized', AsyncMock())
+    m_wait_sync = mocker.patch(TESTED + '.service_status.wait_synchronized', autospec=True)
     m_wait_sync.return_value = False
-    m_cmder = Mock()
-    m_cmder.execute = AsyncMock()
-    m_cmder.start_reconnect = AsyncMock()
+    m_cmder = Mock(spec=commander.SparkCommander)
     mocker.patch(TESTED + '.commander.fget').return_value = m_cmder
 
     await s.check_connection()

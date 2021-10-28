@@ -3,13 +3,13 @@ Tests brewblox_devcon_spark.connection
 """
 
 import asyncio
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from brewblox_service import scheduler
-from unittest.mock import AsyncMock, Mock
 
-from brewblox_devcon_spark import (service_store, connect_funcs, connection,
-                                   exceptions, service_status)
+from brewblox_devcon_spark import (connect_funcs, connection, exceptions,
+                                   service_status, service_store)
 
 TESTED = connection.__name__
 
@@ -43,7 +43,7 @@ def m_writer(loop):
 
 @pytest.fixture
 def m_connect(mocker, m_reader, m_writer):
-    m = mocker.patch(TESTED + '.connect_funcs.connect', AsyncMock())
+    m = mocker.patch(TESTED + '.connect_funcs.connect', autospec=True)
     m.return_value = connect_funcs.ConnectionResult(
         host='localhost',
         port='8332',
@@ -221,9 +221,9 @@ async def test_on_setup_mode(app, init_app, client, m_exit):
         conn._on_event('SETUP_MODE')
 
 
-async def test_retry_exhausted(app, client, m_writer, mocker):
+async def test_retry_exhausted(app, client, m_connect, m_writer, mocker):
     mocker.patch(TESTED + '.CONNECT_RETRY_COUNT', 2)
-    mocker.patch(TESTED + '.connect_funcs.connect', AsyncMock(side_effect=ConnectionRefusedError))
+    m_connect.side_effect = ConnectionRefusedError
 
     service_status.set_autoconnecting(app, True)
     conn = connection.SparkConnection(app)
