@@ -3,11 +3,12 @@ Tests brewblox_devcon_spark.global_store
 """
 
 
+from unittest.mock import AsyncMock
+
 import pytest
 from aiohttp import web
 from aresponses import ResponsesMockServer
 from brewblox_service import http, scheduler
-from unittest.mock import AsyncMock
 
 from brewblox_devcon_spark import const, global_store
 from brewblox_devcon_spark.global_store import GlobalConfigStore
@@ -33,11 +34,7 @@ def add_read_resp(aresponses: ResponsesMockServer, count, status=200):
 
 @pytest.fixture(autouse=True)
 def m_mqtt(mocker):
-    m = mocker.patch(TESTED + '.mqtt')
-    m.listen = AsyncMock()
-    m.subscribe = AsyncMock()
-    m.unlisten = AsyncMock()
-    m.unsubscribe = AsyncMock()
+    m = mocker.patch(TESTED + '.mqtt', autospec=True)
     return m
 
 

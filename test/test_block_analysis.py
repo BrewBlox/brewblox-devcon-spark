@@ -302,12 +302,6 @@ def test_calculate_drive_chains():
         {'target': 'Heat PWM', 'source': 'Heat PID', 'intermediate': []},
         {'target': 'Spark Pins', 'source': 'Cool PID', 'intermediate': ['Cool Actuator', 'Cool PWM']},
         {'target': 'Spark Pins', 'source': 'Heat PID', 'intermediate': ['Heat Actuator', 'Heat PWM']},
-        # ['Cool Actuator', 'Cool PWM', 'Cool PID'],
-        # ['Cool PWM', 'Cool PID'],
-        # ['Heat Actuator', 'Heat PWM', 'Heat PID'],
-        # ['Heat PWM', 'Heat PID'],
-        # ['Spark Pins', 'Cool Actuator', 'Cool PWM', 'Cool PID'],
-        # ['Spark Pins', 'Heat Actuator', 'Heat PWM', 'Heat PID'],
     ]
 
 
