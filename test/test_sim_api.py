@@ -3,7 +3,6 @@ Tests brewblox_devcon_spark.api.sim_api
 """
 
 import asyncio
-from unittest.mock import AsyncMock
 
 import pytest
 from aiohttp import web
@@ -42,7 +41,7 @@ async def app(app):
 
 @pytest.fixture(autouse=True)
 async def m_wait_sync(mocker):
-    mocker.patch(TESTED + '.service_status.wait_synchronized', AsyncMock())
+    mocker.patch(TESTED + '.service_status.wait_synchronized', autospec=True)
 
 
 async def test_sim_display(app, client, mocker):

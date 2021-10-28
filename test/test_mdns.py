@@ -69,7 +69,7 @@ def conf_mock(mocker):
     async def close():
         pass
 
-    m = mocker.patch(TESTED + '.Zeroconf')
+    m = mocker.patch(TESTED + '.Zeroconf', autospec=True)
     m.return_value.get_service_info = get_service_info
     m.return_value.close = close
     return m

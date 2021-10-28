@@ -3,10 +3,10 @@ Tests brewblox_devcon_spark.broadcaster
 """
 
 from copy import deepcopy
+from unittest.mock import ANY, AsyncMock, call
 
 import pytest
 from brewblox_service import repeater, scheduler
-from unittest.mock import ANY, AsyncMock, call
 
 from brewblox_devcon_spark import (block_cache, block_store, broadcaster,
                                    commander_sim, exceptions, global_store,
@@ -19,8 +19,8 @@ TESTED = broadcaster.__name__
 
 @pytest.fixture(autouse=True)
 def m_relations(mocker):
-    mocker.patch(TESTED + '.calculate_relations')
-    mocker.patch(TESTED + '.calculate_drive_chains')
+    mocker.patch(TESTED + '.calculate_relations', autospec=True)
+    mocker.patch(TESTED + '.calculate_drive_chains', autospec=True)
 
 
 @pytest.fixture
@@ -32,8 +32,8 @@ def m_api(mocker):
 
 @pytest.fixture
 def m_publish(mocker):
-    mocker.patch(TESTED + '.mqtt.handler')
-    m = mocker.patch(TESTED + '.mqtt.publish', AsyncMock())
+    mocker.patch(TESTED + '.mqtt.handler', autospec=True)
+    m = mocker.patch(TESTED + '.mqtt.publish', autospec=True)
     return m
 
 
