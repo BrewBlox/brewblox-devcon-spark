@@ -39,21 +39,21 @@ def m_writer():
 
 @pytest.fixture
 def m_popen(mocker):
-    m = mocker.patch(TESTED + '.subprocess.Popen')
+    m = mocker.patch(TESTED + '.subprocess.Popen', autospec=True)
     m.return_value.poll.return_value = None
     return m
 
 
 @pytest.fixture
 def m_connect(mocker, m_reader, m_writer):
-    m = mocker.patch(TESTED + '.asyncio.open_connection', AsyncMock())
+    m = mocker.patch(TESTED + '.asyncio.open_connection', autospec=True)
     m.return_value = (m_reader, m_writer)
     return m
 
 
 @pytest.fixture(autouse=True)
 def m_grep_ports(mocker):
-    m = mocker.patch(TESTED + '.list_ports.grep')
+    m = mocker.patch(TESTED + '.list_ports.grep', autospec=True)
     m.return_value = [
         DummyPortInfo('/dev/ttyX', 'Electron', 'USB VID:PID=2d04:c00a', '1234AB'),
         DummyPortInfo('/dev/ttyY', 'Electron', 'USB VID:PID=2d04:c00a', '4321BA'),
@@ -63,7 +63,7 @@ def m_grep_ports(mocker):
 
 @pytest.fixture
 async def m_mdns(app, loop, mocker):
-    m_discover = mocker.patch(TESTED + '.mdns.discover_one', AsyncMock())
+    m_discover = mocker.patch(TESTED + '.mdns.discover_one', autospec=True)
     m_discover.return_value = mdns.ConnectInfo('enterprise', 5678, None)
     return m_discover
 
@@ -99,7 +99,7 @@ async def test_connect_simulation(app, client, m_reader, m_writer, m_popen, m_co
 async def test_connect_simulation_unsupported(app, client, mocker):
     app['config']['simulation'] = True
 
-    m_machine = mocker.patch(TESTED + '.platform.machine')
+    m_machine = mocker.patch(TESTED + '.platform.machine', autospec=True)
     m_machine.return_value = 'anthill_inside'
 
     with pytest.raises(exceptions.ConnectionImpossible):
