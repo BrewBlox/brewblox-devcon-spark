@@ -106,6 +106,7 @@ class FirmwareUpdater():
                 host, _ = address.split(':')
                 self._notify(f'Sending update prompt to {host}')
                 self._notify('The Spark will now download and apply the new firmware')
+                self._notify('The update is done when the service reconnects')
                 fw_url = ESP_URL_FMT.format(**self.app['ini'])
                 await http.session(self.app).post(f'http://{host}:80/firmware_update', data=fw_url)
 
@@ -115,13 +116,14 @@ class FirmwareUpdater():
 
                 with conn.autoclose():
                     await asyncio.wait_for(sender.transfer(conn), TRANSFER_TIMEOUT_S)
+                    self._notify('Update done!')
 
         except Exception as ex:
             self._notify(f'Failed to update firmware: {strex(ex)}')
             raise exceptions.FirmwareUpdateFailed(strex(ex))
 
         finally:
-            self._notify('Scheduling service reboot')
+            self._notify('Restarting service...')
             await shutdown_soon(self.app, UPDATE_SHUTDOWN_DELAY_S)
 
         return {'address': address, 'version': self.version}
