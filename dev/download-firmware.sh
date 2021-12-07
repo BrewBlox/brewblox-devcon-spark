@@ -12,10 +12,11 @@ echo "Using firmware version ${firmware_date}-${firmware_version}"
 mkdir -p ./firmware
 rm -rf ./firmware/*
 
-# Download all firmware files
-curl -sSf \
-    "https://brewblox.blob.core.windows.net/firmware/${firmware_date}-${firmware_version}/brewblox-release.tar.gz" \
-    | tar -C ./firmware -xzv
+# Download and extract firmware files
+curl -sSfO \
+    "https://brewblox.blob.core.windows.net/firmware/${firmware_date}-${firmware_version}/brewblox-release.tar.gz"
+tar -xzvf brewblox-release.tar.gz -C ./firmware
+rm brewblox-release.tar.gz
 
 # Make simulators executable
 chmod +x ./firmware/*.sim

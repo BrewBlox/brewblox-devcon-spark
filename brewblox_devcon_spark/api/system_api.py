@@ -115,7 +115,15 @@ class FirmwareUpdater():
                 conn = await self._connect(address)
 
                 with conn.autoclose():
-                    await asyncio.wait_for(sender.transfer(conn), TRANSFER_TIMEOUT_S)
+                    handshake = await asyncio.wait_for(sender.start_session(conn), TRANSFER_TIMEOUT_S)
+                    files = [
+                        f'firmware/system-part1-{handshake.platform}.bin',
+                        f'firmware/system-part2-{handshake.platform}.bin',
+                        f'firmware/brewblox-{handshake.platform}.bin',
+                    ]
+                    for file in files:
+                        await asyncio.wait_for(sender.transfer(conn, file), TRANSFER_TIMEOUT_S)
+                    await asyncio.wait_for(sender.end_session(conn), TRANSFER_TIMEOUT_S)
                     self._notify('Update done!')
 
         except Exception as ex:
