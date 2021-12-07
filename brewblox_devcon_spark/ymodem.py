@@ -9,6 +9,8 @@ import re
 import subprocess
 from contextlib import contextmanager
 from dataclasses import dataclass
+from enum import IntEnum
+from pathlib import Path
 from typing import Any, Awaitable, ByteString, Optional
 
 import aiofiles
@@ -122,69 +124,30 @@ async def connect(address) -> Connection:
         return await connect_serial(address)
 
 
+class Control(IntEnum):
+    SOH = 0x01          # 01 - 128 byte blocks
+    STX = 0x02          # 02 - 1K blocks
+    EOT = 0x04          # 04 - End Of Transfer
+    EOF = 0x1A          # 26 - End Of File
+    ACK = 0x06          # 06 - Acknowledge
+    NAK = 0x15          # 21 - Negative Acknowledge
+    CAN = 0x18          # 24 - Cancel
+    C = 0x43            # 67 - Continue
+
+
 class FileSender():
     """
-    Receive_Packet
-    - first byte SOH/STX (for 128/1024 byte size packets)
-    - EOT (end)
-    - CA CA abort
-    - ABORT1 or ABORT2 is abort
-    Then 2 bytes for seq-no (although the sequence number isn't checked)
-    Then the packet data
-    Then CRC16?
-    First packet sent is a filename packet:
-    - zero-terminated filename
-    - file size (ascii) followed by space?
+    See: http://pauillac.inria.fr/~doligez/zmodem/ymodem.txt
     """
 
-    SOH = 1     # 128 byte blocks
-    STX = 2     # 1K blocks
-    EOT = 4
-    ACK = 6
-    NAK = 0x15
-    CA = 0x18           # 24
-    CRC16 = 0x43        # 67
-    ABORT1 = 0x41       # 65
-    ABORT2 = 0x61       # 97
-
-    PACKET_MARK = STX
-    DATA_LEN = 1024 if PACKET_MARK == STX else 128
+    PACKET_MARK = Control.STX
+    DATA_LEN = 1024 if PACKET_MARK == Control.STX else 128
     PACKET_LEN = DATA_LEN + 5
 
     def __init__(self, notify_cb):
         self._notify = notify_cb
 
-    async def transfer(self, conn: Connection):
-        handshake = await self._trigger(conn)
-        filename = f'firmware/brewblox-{handshake.platform}.bin'
-
-        self._notify(f'Controller is in transfer mode, sending file {filename}')
-        async with aiofiles.open(filename, 'rb') as file:
-            await file.seek(0, os.SEEK_END)
-            fsize = await file.tell()
-            num_packets = math.ceil(fsize / FileSender.DATA_LEN)
-            await file.seek(0, os.SEEK_SET)
-
-            self._notify('Sending file header')
-            state: SendState = await self._send_header(conn, 'binary', fsize)
-
-            if state.response != FileSender.ACK:
-                raise ConnectionAbortedError(f'Failed with code {state.response} while sending header')
-
-            self._notify('Sending file data')
-            for i in range(num_packets):
-                current = i + 1  # packet 0 was the header
-                LOGGER.debug(f'Sending packet {current} / {num_packets}')
-                data = await file.read(FileSender.DATA_LEN)
-                state = await self._send_data(conn, current, list(data))
-
-                if state.response != FileSender.ACK:
-                    raise ConnectionAbortedError(
-                        f'Failed with code {state.response} while sending package {current}')
-
-            await self._send_close(conn)
-
-    async def _trigger(self, conn: Connection) -> HandshakeMessage:
+    async def start_session(self, conn: Connection) -> HandshakeMessage:
         message = None
 
         async def _read():
@@ -227,17 +190,44 @@ class FileSender():
         ack = 0
         while ack < 2:
             conn.transport.write(b' ')
-            if (await conn.protocol.message)[0] == FileSender.ACK:
+            if (await conn.protocol.message)[0] == Control.ACK:
                 ack += 1
 
         return message
 
-    async def _send_close(self, conn: Connection):
-        # Send End Of Transfer
-        assert await self._send_packet(conn, [FileSender.EOT]) == FileSender.ACK
-        assert await self._send_packet(conn, [FileSender.EOT]) == FileSender.ACK
+    async def transfer(self, conn: Connection, filename: str):
+        path = Path(filename)
+        self._notify(f'Controller is in transfer mode, sending file {path.name}')
+        async with aiofiles.open(path, 'rb') as file:
+            await file.seek(0, os.SEEK_END)
+            fsize = await file.tell()
+            num_packets = math.ceil(fsize / FileSender.DATA_LEN)
+            await file.seek(0, os.SEEK_SET)
 
-        # Signal end of connection
+            self._notify('Sending file header')
+            state: SendState = await self._send_header(conn, path.name, fsize)
+
+            if state.response != Control.ACK:
+                raise ConnectionAbortedError(f'Failed with code {Control(state.response).name} while sending header')
+
+            self._notify('Sending file data')
+            for i in range(num_packets):
+                current = i + 1  # packet 0 was the header
+                LOGGER.debug(f'Sending packet {current} / {num_packets}')
+                data = await file.read(FileSender.DATA_LEN)
+                state = await self._send_data(conn, current, list(data))
+
+                if state.response != Control.ACK:
+                    raise ConnectionAbortedError(
+                        f'Failed with code {Control(state.response).name} while sending package {current}')
+
+        # Send End Of Transfer
+        LOGGER.debug('Sending EOT 1')
+        assert await self._send_packet(conn, [Control.EOT]) == Control.ACK
+        LOGGER.debug('Sending EOT 2')
+        assert await self._send_packet(conn, [Control.EOT]) == Control.ACK
+
+    async def end_session(self, conn):
         await self._send_data(conn, 0, [])
 
     async def _send_header(self, conn: Connection, name: str, size: int) -> SendState:
@@ -256,19 +246,22 @@ class FileSender():
 
         response = await self._send_packet(conn, packet)
 
-        if response == FileSender.NAK:
+        if response == Control.NAK:
             LOGGER.debug('Retrying packet...')
             await asyncio.sleep(1)
             response = await self._send_packet(conn, packet)
 
         return SendState(seq, response)
 
+    async def _read_character(self, conn: Connection) -> int:
+        resp = await conn.protocol.message
+        return resp[0]
+
     async def _send_packet(self, conn: Connection, packet: str) -> int:
         conn.protocol.clear()
         conn.transport.write(bytes(packet))
         while True:
-            retv = [int(i) for i in await conn.protocol.message][0]
-            if retv != FileSender.CRC16:
-                break
-
-        return retv
+            resp = await self._read_character(conn)
+            if resp == Control.C:
+                continue
+            return resp
