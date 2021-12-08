@@ -496,11 +496,11 @@ async def test_system_flash(app, client, mocker):
     m_conn = mocker.patch(sys_api + '.ymodem.connect', autospec=True)
     m_conn.return_value = AsyncMock(ymodem.Connection)
 
-    m_sender = mocker.patch(sys_api + '.ymodem.FileSender', autospec=True)
-    m_sender.return_value.transfer = AsyncMock()
+    m_ota = mocker.patch(sys_api + '.ymodem.OtaClient', autospec=True)
+    m_ota.return_value.transfer = AsyncMock()
 
     await response(client.post('/system/flash'))
-    m_sender.return_value.transfer.assert_awaited()
+    m_ota.return_value.send.assert_awaited()
     system_api.shutdown_soon.assert_awaited()
 
 
