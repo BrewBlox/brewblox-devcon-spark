@@ -62,17 +62,8 @@ class FirmwareUpdater():
                          },
                          err=False))
 
-    async def _connect(self, address) -> ymodem.Connection:  # pragma: no cover
-        for i in range(CONNECT_ATTEMPTS):
-            try:
-                await asyncio.sleep(CONNECT_INTERVAL_S)
-                return await ymodem.connect(address)
-            except ConnectionRefusedError:
-                LOGGER.debug('Connection refused, retrying...')
-        raise ConnectionRefusedError()
-
     async def flash(self) -> dict:  # pragma: no cover
-        sender = ymodem.FileSender(self._notify)
+        ota = ymodem.OtaClient(self._notify)
         cmder = commander.fget(self.app)
         status_desc = service_status.desc(self.app)
         address = status_desc.device_address
@@ -112,18 +103,12 @@ class FirmwareUpdater():
 
             else:
                 self._notify(f'Connecting to {address}')
-                conn = await self._connect(address)
+                conn = await ymodem.connect(address)
 
                 with conn.autoclose():
-                    handshake = await asyncio.wait_for(sender.start_session(conn), TRANSFER_TIMEOUT_S)
-                    files = [
-                        f'firmware/system-part1-{handshake.platform}.bin',
-                        f'firmware/system-part2-{handshake.platform}.bin',
-                        f'firmware/brewblox-{handshake.platform}.bin',
-                    ]
-                    for file in files:
-                        await asyncio.wait_for(sender.transfer(conn, file), TRANSFER_TIMEOUT_S)
-                    await asyncio.wait_for(sender.end_session(conn), TRANSFER_TIMEOUT_S)
+                    await asyncio.wait_for(
+                        ota.send(conn, f'firmware/brewblox-{platform}.bin'),
+                        TRANSFER_TIMEOUT_S)
                     self._notify('Update done!')
 
         except Exception as ex:
