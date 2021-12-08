@@ -1,5 +1,43 @@
 """
-Communicates with devices using the YMODEM protocol
+Transfer firmware files to Particle-based Spark controllers using the YMODEM protocol.
+
+Spec: http://pauillac.inria.fr/~doligez/zmodem/ymodem.txt
+Reference: https://github.com/particle-iot/particle-cli/blob/master/src/lib/ymodem.js
+
+The default handler on the controller side is controlbox.
+After a firmware update command, controlbox will hand over the serial to the OTA handler.
+
+OTA procedure:
+- Send controlbox firmware update command (not handled here).
+- Connect to serial/TCP. Both are handled the same.
+- Write newline characters until the controller responds with a handshake.
+    - Handshakes are formatted as controlbox events.
+    - The firmware update handshake is different from the generic controlbox handshake.
+- Trigger YMODEM by writing 'F\n' until controller responds with a "ready for firmware" event.
+- Ensure YMODEM is active by writing ' ' until controller responded twice with ACK.
+- Transfer file using YMODEM protocol
+    - >> file header      STX 0x00 0xFF {FILENAME} {FILE LENGTH} {NULL}[1024 - header length] {CRC}[2]
+    - <<                  ACK
+    - <<                  C
+    - >> file packet      STX 0x01 0xFE {DATA}[1024] {CRC}[2]
+    - <<                  ACK
+    - >> file packet      STX 0x02 0xFD {DATA}[1024] {CRC}[2]
+    - <<                  ACK
+    - ...
+    - >> file end         EOT
+    - <<                  ACK
+    - >> transfer end     STX 0x00 0xFF {NULL}[1024]
+- Close connection. The controller will automatically restart.
+
+Notes:
+- The file name in the header is a null-terminated file name.
+- The file length in the header is a space-terminated string (eg. '252464 ').
+- YMODEM supports 256-byte (SOH) and 1024-byte (STX) packet length. STX / 1024 is used here.
+- The header packet is padded with NULL bytes to reach packet length.
+- For the last file packet, the data is padded with NULL bytes to reach packet length.
+- Control characters (STX, index, negating index, CRC) do not count towards the packet length.
+- The second and third byte in packages are its index and 0xFF - index. The header always has index 0x00.
+- CRC bytes are transmitted, but ignored. The reference implementation always sends [0,0] CRC.
 """
 
 import asyncio
@@ -18,14 +56,21 @@ from brewblox_service import brewblox_logger, strex
 
 YMODEM_TRIGGER_BAUD_RATE = 28800
 YMODEM_TRANSFER_BAUD_RATE = 115200
+CONNECT_INTERVAL_S = 3
+CONNECT_ATTEMPTS = 5
 
 LOGGER = brewblox_logger(__name__)
 
 
-@dataclass
-class SendState:
-    seq: int
-    response: int
+class Control(IntEnum):
+    SOH = 0x01          # 01 - 128 byte blocks
+    STX = 0x02          # 02 - 1K blocks
+    EOT = 0x04          # 04 - End Of Transfer
+    EOF = 0x1A          # 26 - End Of File
+    ACK = 0x06          # 06 - Acknowledge
+    NAK = 0x15          # 21 - Negative Acknowledge
+    CAN = 0x18          # 24 - Cancel
+    C = 0x43            # 67 - Continue
 
 
 @dataclass
@@ -117,29 +162,22 @@ async def connect_serial(address) -> Connection:
     raise ConnectionError(last_err)
 
 
-async def connect(address) -> Connection:
+async def connect(address: str) -> Connection:
     if is_tcp(address):
-        return await connect_tcp(address)
+        connect_func = connect_tcp
     else:
-        return await connect_serial(address)
+        connect_func = connect_serial
+
+    for _ in range(CONNECT_ATTEMPTS):
+        try:
+            await asyncio.sleep(CONNECT_INTERVAL_S)
+            return await connect_func(address)
+        except ConnectionRefusedError:
+            LOGGER.debug('Connection refused, retrying...')
+    raise ConnectionRefusedError()
 
 
-class Control(IntEnum):
-    SOH = 0x01          # 01 - 128 byte blocks
-    STX = 0x02          # 02 - 1K blocks
-    EOT = 0x04          # 04 - End Of Transfer
-    EOF = 0x1A          # 26 - End Of File
-    ACK = 0x06          # 06 - Acknowledge
-    NAK = 0x15          # 21 - Negative Acknowledge
-    CAN = 0x18          # 24 - Cancel
-    C = 0x43            # 67 - Continue
-
-
-class FileSender():
-    """
-    See: http://pauillac.inria.fr/~doligez/zmodem/ymodem.txt
-    """
-
+class OtaClient():
     PACKET_MARK = Control.STX
     DATA_LEN = 1024 if PACKET_MARK == Control.STX else 128
     PACKET_LEN = DATA_LEN + 5
@@ -147,7 +185,11 @@ class FileSender():
     def __init__(self, notify_cb):
         self._notify = notify_cb
 
-    async def start_session(self, conn: Connection) -> HandshakeMessage:
+    async def send(self, conn: Connection, filename: str):
+        await self._trigger_ymodem(conn)
+        await self._transfer(conn, filename)
+
+    async def _trigger_ymodem(self, conn: Connection) -> HandshakeMessage:
         message = None
 
         async def _read():
@@ -195,73 +237,71 @@ class FileSender():
 
         return message
 
-    async def transfer(self, conn: Connection, filename: str):
+    async def _transfer(self, conn: Connection, filename: str):
         path = Path(filename)
-        self._notify(f'Controller is in transfer mode, sending file {path.name}')
+        self._notify(f'Starting file transfer for {path.name}')
         async with aiofiles.open(path, 'rb') as file:
             await file.seek(0, os.SEEK_END)
             fsize = await file.tell()
-            num_packets = math.ceil(fsize / FileSender.DATA_LEN)
+            num_packets = math.ceil(fsize / OtaClient.DATA_LEN)
             await file.seek(0, os.SEEK_SET)
 
             self._notify('Sending file header')
-            state: SendState = await self._send_header(conn, path.name, fsize)
+            response = await self._send_header(conn, path.name, fsize)
 
-            if state.response != Control.ACK:
-                raise ConnectionAbortedError(f'Failed with code {Control(state.response).name} while sending header')
+            if response != Control.ACK:
+                raise ConnectionAbortedError(f'Failed with code {response.name} while sending header')
 
-            self._notify('Sending file data')
+            self._notify('Sending file body')
             for i in range(num_packets):
                 current = i + 1  # packet 0 was the header
                 LOGGER.debug(f'Sending packet {current} / {num_packets}')
-                data = await file.read(FileSender.DATA_LEN)
-                state = await self._send_data(conn, current, list(data))
+                data = await file.read(OtaClient.DATA_LEN)
+                response = await self._send_data(conn, current, list(data))
 
-                if state.response != Control.ACK:
+                if response != Control.ACK:
                     raise ConnectionAbortedError(
-                        f'Failed with code {Control(state.response).name} while sending package {current}')
+                        f'Failed with code {response.name} while sending package {current}')
 
-        # Send End Of Transfer
-        LOGGER.debug('Sending EOT 1')
-        assert await self._send_packet(conn, [Control.EOT]) == Control.ACK
-        LOGGER.debug('Sending EOT 2')
+        LOGGER.debug('Sending EOT')
         assert await self._send_packet(conn, [Control.EOT]) == Control.ACK
 
-    async def end_session(self, conn):
+        LOGGER.debug('Sending closing header')
         await self._send_data(conn, 0, [])
 
-    async def _send_header(self, conn: Connection, name: str, size: int) -> SendState:
-        data = [FileSender.PACKET_MARK, *name.encode(), 0, *f'{size} '.encode()]
+        self._notify('File transfer done!')
+
+    async def _send_header(self, conn: Connection, name: str, size: int) -> Control:
+        data = [OtaClient.PACKET_MARK, *name.encode(), 0, *f'{size} '.encode()]
         return await self._send_data(conn, 0, data)
 
-    async def _send_data(self, conn: Connection, seq: int, data: list[int]) -> SendState:
-        packet_data = data + [0] * (FileSender.DATA_LEN - len(data))
+    async def _send_data(self, conn: Connection, seq: int, data: list[int]) -> Control:
+        packet_data = data + [0] * (OtaClient.DATA_LEN - len(data))
         packet_seq = seq & 0xFF
         packet_seq_neg = 0xFF - packet_seq
         crc16 = [0, 0]
 
-        packet = [FileSender.PACKET_MARK, packet_seq, packet_seq_neg, *packet_data, *crc16]
-        if len(packet) != FileSender.PACKET_LEN:
-            raise RuntimeError(f'Packet length mismatch: {len(packet)} / {FileSender.PACKET_LEN}')
+        packet = [OtaClient.PACKET_MARK, packet_seq, packet_seq_neg, *packet_data, *crc16]
+        if len(packet) != OtaClient.PACKET_LEN:
+            raise RuntimeError(f'Packet length mismatch: {len(packet)} / {OtaClient.PACKET_LEN}')
 
         response = await self._send_packet(conn, packet)
 
         if response == Control.NAK:
             LOGGER.debug('Retrying packet...')
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.1)
             response = await self._send_packet(conn, packet)
 
-        return SendState(seq, response)
+        return response
 
-    async def _read_character(self, conn: Connection) -> int:
-        resp = await conn.protocol.message
-        return resp[0]
-
-    async def _send_packet(self, conn: Connection, packet: str) -> int:
+    async def _send_packet(self, conn: Connection, packet: str) -> Control:
         conn.protocol.clear()
         conn.transport.write(bytes(packet))
         while True:
-            resp = await self._read_character(conn)
+            resp: Control = Control((await conn.protocol.message)[0])
+
+            # C is a continue prompt from receiver, and can be ignored
             if resp == Control.C:
                 continue
+
             return resp
