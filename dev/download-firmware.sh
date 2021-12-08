@@ -7,7 +7,7 @@ pushd "$(dirname "$0")/.." > /dev/null
 firmware_date=$(awk -F "=" '/firmware_date/ {print $2}' ./firmware.ini)
 firmware_version=$(awk -F "=" '/firmware_version/ {print $2}' ./firmware.ini)
 
-echo "Using firmware version ${firmware_date}-${firmware_version}"
+echo "Downloading firmware release ${firmware_date}-${firmware_version}"
 
 mkdir -p ./firmware
 rm -rf ./firmware/*
