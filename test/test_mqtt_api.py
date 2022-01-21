@@ -5,19 +5,14 @@ Tests brewblox_devcon_spark.api.mqtt_api
 import pytest
 from brewblox_service import scheduler
 
-from brewblox_devcon_spark import (block_cache, block_store, commander_sim,
-                                   exceptions, global_store, service_status,
-                                   service_store, spark, synchronization)
-from brewblox_devcon_spark.api import blocks_api, mqtt_api
-from brewblox_devcon_spark.codec import codec, unit_conversion
+from brewblox_devcon_spark import (block_cache, block_store, codec, commander,
+                                   connection_sim, controller, exceptions,
+                                   global_store, service_status, service_store,
+                                   synchronization)
+from brewblox_devcon_spark.api import mqtt_api
+from brewblox_devcon_spark.models import Block, BlockIdentity
 
 TESTED = mqtt_api.__name__
-
-
-@pytest.fixture(autouse=True)
-def m_publish(mocker):
-    m = mocker.patch(blocks_api.__name__ + '.mqtt.publish', autospec=True)
-    return m
 
 
 @pytest.fixture(autouse=True)
@@ -28,17 +23,17 @@ def m_mqtt(mocker):
 @pytest.fixture
 async def app(app, loop):
     """App + controller routes"""
-    service_status.setup(app)
     scheduler.setup(app)
-    commander_sim.setup(app)
+    service_status.setup(app)
     block_store.setup(app)
     block_cache.setup(app)
     global_store.setup(app)
     service_store.setup(app)
-    unit_conversion.setup(app)
     codec.setup(app)
+    connection_sim.setup(app)
+    commander.setup(app)
     synchronization.setup(app)
-    spark.setup(app)
+    controller.setup(app)
 
     mqtt_api.setup(app)
 
@@ -46,96 +41,66 @@ async def app(app, loop):
 
 
 def block_args(app):
-    return {
-        'serviceId': app['config']['name'],
-        'id': 'testobj',
-        'groups': [0],
-        'type': 'TempSensorOneWire',
-        'data': {
+    return Block(
+        id='testobj',
+        serviceId=app['config']['name'],
+        type='TempSensorOneWire',
+        data={
             'value': 12345,
             'offset': 20,
             'address': 'FF'
         }
-    }
+    )
 
 
-async def read(app, args):
-    return await blocks_api.BlocksApi(app).read(args)
+async def read(app, args: BlockIdentity):
+    return await controller.fget(app).read_block(args)
 
 
 async def test_create(app, client):
     api = mqtt_api.fget(app)
-    await api._create('topic', block_args(app))
+    await api._create('topic', block_args(app).dict())
 
-    assert await read(app, {'id': block_args(app)['id']})
+    assert await read(app, BlockIdentity(id='testobj'))
 
 
 async def test_write(app, client):
     api = mqtt_api.fget(app)
-    await api._create('topic', block_args(app))
-    await api._write('topic', block_args(app))
+    await api._create('topic', block_args(app).dict())
+    await api._write('topic', block_args(app).dict())
 
-    assert await read(app, {'id': block_args(app)['id']})
+    assert await read(app, BlockIdentity(id='testobj'))
 
 
 async def test_patch(app, client):
     api = mqtt_api.fget(app)
-    await api._create('topic', block_args(app))
-    await api._patch('topic', block_args(app))
+    await api._create('topic', block_args(app).dict())
+    await api._patch('topic', block_args(app).dict())
 
-    assert await read(app, {'id': block_args(app)['id']})
+    assert await read(app, BlockIdentity(id='testobj'))
 
 
 async def test_delete(app, client):
     api = mqtt_api.fget(app)
-    await api._create('topic', block_args(app))
-    await api._delete('topic', {
-        'serviceId': block_args(app)['serviceId'],
-        'id': block_args(app)['id']
-    })
+    await api._create('topic', block_args(app).dict())
+    await api._delete('topic', BlockIdentity(
+        id='testobj',
+        serviceId=app['config']['name'],
+    ).dict())
 
     with pytest.raises(exceptions.UnknownId):
-        await read(app, {'id': block_args(app)['id']})
-
-
-async def test_validate_err(app, client):
-    api = mqtt_api.fget(app)
-
-    await api._create('topic', {})
-    with pytest.raises(exceptions.UnknownId):
-        await read(app, {'id': block_args(app)['id']})
-
-    await api._create('topic', block_args(app))
-
-    updated_args = block_args(app)
-    updated_args['groups'] == [0, 1]
-    await api._write('topic', {})
-
-    actual = await read(app, {'id': block_args(app)['id']})
-    assert actual['groups'] == [0]
-
-    await api._delete('topic', {})
-    await read(app, {'id': block_args(app)['id']})
+        await read(app, BlockIdentity(id='testobj'))
 
 
 async def test_unknown_service_id(app, client):
     api = mqtt_api.fget(app)
 
-    def other_args():
-        return {**block_args(app), 'serviceId': 'timbuktu'}
+    args = block_args(app)
+    args.serviceId = ''
+    await api._create('topic', args.dict())
+    await api._write('topic', args.dict())
+    await api._patch('topic', args.dict())
+    await api._delete('topic', args.dict())
 
-    await api._create('topic', other_args())
     with pytest.raises(exceptions.UnknownId):
-        await read(app, {'id': block_args(app)['id']})
-
-    await api._create('topic', block_args(app))
-
-    updated_args = other_args()
-    updated_args['groups'] == [0, 1]
-    await api._write('topic', other_args())
-
-    actual = await read(app, {'id': block_args(app)['id']})
-    assert actual['groups'] == [0]
-
-    await api._delete('topic', other_args())
-    await read(app, {'id': block_args(app)['id']})
+        await read(app, BlockIdentity(id='testobj'))

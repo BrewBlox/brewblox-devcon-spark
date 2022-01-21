@@ -18,17 +18,17 @@ import nanopb_pb2 as nanopb__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='OneWireGpioModule.proto',
-  package='blox',
+  package='blox.OneWireGpioModule',
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x17OneWireGpioModule.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x9a\x01\n\x11GpioModuleChannel\x12\x11\n\x02id\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08\x12(\n\ndeviceType\x18\x02 \x01(\x0e\x32\x14.blox.GpioDeviceType\x12\x1d\n\x08pinsMask\x18\x03 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12\x14\n\x05width\x18\x04 \x01(\rB\x05\x92?\x02\x38\x08\x12\x13\n\x04name\x18\x05 \x01(\tB\x05\x92?\x02\x08 \"\x91\x05\n\x11OneWireGpioModule\x12\x30\n\x08\x63hannels\x18\x01 \x03(\x0b\x32\x17.blox.GpioModuleChannelB\x05\x92?\x02\x10\x08\x12\x1d\n\x0emodulePosition\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12!\n\x0cmoduleStatus\x18\x03 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12(\n\rpullUpDesired\x18\x04 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12\'\n\x0cpullUpStatus\x18\x05 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12+\n\x10pullUpWhenActive\x18\x06 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12-\n\x12pullUpWhenInactive\x18\x07 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12*\n\x0fpullDownDesired\x18\x08 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12)\n\x0epullDownStatus\x18\t \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12-\n\x12pullDownWhenActive\x18\n \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12/\n\x14pullDownWhenInactive\x18\x0b \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12&\n\x0boverCurrent\x18\x0c \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12#\n\x08openLoad\x18\r \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12\x18\n\x10useExternalPower\x18\x0e \x01(\x08\x12&\n\x11moduleStatusClear\x18  \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01:\x13\x8a\xb5\x18\x03\x18\xc5\x02\x8a\xb5\x18\x02H\n\x8a\xb5\x18\x02H\x0c*\x95\x05\n\x0eGpioDeviceType\x12\x11\n\rGPIO_DEV_NONE\x10\x00\x12\x13\n\x0fGPIO_DEV_SSR_2P\x10\x01\x12\x13\n\x0fGPIO_DEV_SSR_1P\x10\x02\x12 \n\x1cGPIO_DEV_MECHANICAL_RELAY_2P\x10\x03\x12*\n&GPIO_DEV_MECHANICAL_RELAY_1P_HIGH_SIDE\x10\x04\x12)\n%GPIO_DEV_MECHANICAL_RELAY_1P_LOW_SIDE\x10\x05\x12\x14\n\x10GPIO_DEV_COIL_2P\x10\x06\x12\"\n\x1eGPIO_DEV_COIL_2P_BIDIRECTIONAL\x10\x07\x12\x1e\n\x1aGPIO_DEV_COIL_1P_HIGH_SIDE\x10\x08\x12\x1d\n\x19GPIO_DEV_COIL_1P_LOW_SIDE\x10\t\x12\x15\n\x11GPIO_DEV_MOTOR_2P\x10\n\x12#\n\x1fGPIO_DEV_MOTOR_2P_BIDIRECTIONAL\x10\x0b\x12\x1f\n\x1bGPIO_DEV_MOTOR_1P_HIGH_SIDE\x10\x0c\x12\x1e\n\x1aGPIO_DEV_MOTOR_1P_LOW_SIDE\x10\r\x12\x1b\n\x17GPIO_DEV_LOAD_DETECT_2P\x10\x0e\x12%\n!GPIO_DEV_LOAD_DETECT_1P_PULL_DOWN\x10\x0f\x12#\n\x1fGPIO_DEV_LOAD_DETECT_1P_PULL_UP\x10\x10\x12\x15\n\x11GPIO_DEV_POWER_1P\x10\x11\x12!\n\x1dGPIO_DEV_POWER_1P_LOAD_DETECT\x10\x12\x12\x13\n\x0fGPIO_DEV_GND_1P\x10\x13\x12\x1f\n\x1bGPIO_DEV_GND_1P_LOAD_DETECT\x10\x14*\x8a\x02\n\x0eGpioErrorFlags\x12\x11\n\rGPIO_ERR_NONE\x10\x00\x12\x1b\n\x17GPIO_ERR_POWER_ON_RESET\x10\x01\x12\x18\n\x14GPIO_ERR_OVERVOLTAGE\x10\x02\x12\x19\n\x15GPIO_ERR_UNDERVOLTAGE\x10\x04\x12\x18\n\x14GPIO_ERR_OVERCURRENT\x10\x08\x12\x16\n\x12GPIO_ERR_OPEN_LOAD\x10\x10\x12$\n GPIO_ERR_OVERTEMPERATURE_WARNING\x10 \x12\"\n\x1eGPIO_ERR_OVERTEMPERATURE_ERROR\x10@\x12\x17\n\x12GPIO_ERR_SPI_ERROR\x10\x80\x01\x62\x06proto3'
+  serialized_pb=b'\n\x17OneWireGpioModule.proto\x12\x16\x62lox.OneWireGpioModule\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xac\x01\n\x11GpioModuleChannel\x12\x11\n\x02id\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08\x12:\n\ndeviceType\x18\x02 \x01(\x0e\x32&.blox.OneWireGpioModule.GpioDeviceType\x12\x1d\n\x08pinsMask\x18\x03 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12\x14\n\x05width\x18\x04 \x01(\rB\x05\x92?\x02\x38\x08\x12\x13\n\x04name\x18\x05 \x01(\tB\x05\x92?\x02\x08 \"\xa3\x05\n\x11OneWireGpioModule\x12\x42\n\x08\x63hannels\x18\x01 \x03(\x0b\x32).blox.OneWireGpioModule.GpioModuleChannelB\x05\x92?\x02\x10\x08\x12\x1d\n\x0emodulePosition\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12!\n\x0cmoduleStatus\x18\x03 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12(\n\rpullUpDesired\x18\x04 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12\'\n\x0cpullUpStatus\x18\x05 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12+\n\x10pullUpWhenActive\x18\x06 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12-\n\x12pullUpWhenInactive\x18\x07 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12*\n\x0fpullDownDesired\x18\x08 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12)\n\x0epullDownStatus\x18\t \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12-\n\x12pullDownWhenActive\x18\n \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12/\n\x14pullDownWhenInactive\x18\x0b \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12&\n\x0boverCurrent\x18\x0c \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12#\n\x08openLoad\x18\r \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01\x12\x18\n\x10useExternalPower\x18\x0e \x01(\x08\x12&\n\x11moduleStatusClear\x18  \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02P\x01:\x13\x8a\xb5\x18\x03\x18\xc5\x02\x8a\xb5\x18\x02H\n\x8a\xb5\x18\x02H\x0c*\x95\x05\n\x0eGpioDeviceType\x12\x11\n\rGPIO_DEV_NONE\x10\x00\x12\x13\n\x0fGPIO_DEV_SSR_2P\x10\x01\x12\x13\n\x0fGPIO_DEV_SSR_1P\x10\x02\x12 \n\x1cGPIO_DEV_MECHANICAL_RELAY_2P\x10\x03\x12*\n&GPIO_DEV_MECHANICAL_RELAY_1P_HIGH_SIDE\x10\x04\x12)\n%GPIO_DEV_MECHANICAL_RELAY_1P_LOW_SIDE\x10\x05\x12\x14\n\x10GPIO_DEV_COIL_2P\x10\x06\x12\"\n\x1eGPIO_DEV_COIL_2P_BIDIRECTIONAL\x10\x07\x12\x1e\n\x1aGPIO_DEV_COIL_1P_HIGH_SIDE\x10\x08\x12\x1d\n\x19GPIO_DEV_COIL_1P_LOW_SIDE\x10\t\x12\x15\n\x11GPIO_DEV_MOTOR_2P\x10\n\x12#\n\x1fGPIO_DEV_MOTOR_2P_BIDIRECTIONAL\x10\x0b\x12\x1f\n\x1bGPIO_DEV_MOTOR_1P_HIGH_SIDE\x10\x0c\x12\x1e\n\x1aGPIO_DEV_MOTOR_1P_LOW_SIDE\x10\r\x12\x1b\n\x17GPIO_DEV_LOAD_DETECT_2P\x10\x0e\x12%\n!GPIO_DEV_LOAD_DETECT_1P_PULL_DOWN\x10\x0f\x12#\n\x1fGPIO_DEV_LOAD_DETECT_1P_PULL_UP\x10\x10\x12\x15\n\x11GPIO_DEV_POWER_1P\x10\x11\x12!\n\x1dGPIO_DEV_POWER_1P_LOAD_DETECT\x10\x12\x12\x13\n\x0fGPIO_DEV_GND_1P\x10\x13\x12\x1f\n\x1bGPIO_DEV_GND_1P_LOAD_DETECT\x10\x14*\x8a\x02\n\x0eGpioErrorFlags\x12\x11\n\rGPIO_ERR_NONE\x10\x00\x12\x1b\n\x17GPIO_ERR_POWER_ON_RESET\x10\x01\x12\x18\n\x14GPIO_ERR_OVERVOLTAGE\x10\x02\x12\x19\n\x15GPIO_ERR_UNDERVOLTAGE\x10\x04\x12\x18\n\x14GPIO_ERR_OVERCURRENT\x10\x08\x12\x16\n\x12GPIO_ERR_OPEN_LOAD\x10\x10\x12$\n GPIO_ERR_OVERTEMPERATURE_WARNING\x10 \x12\"\n\x1eGPIO_ERR_OVERTEMPERATURE_ERROR\x10@\x12\x17\n\x12GPIO_ERR_SPI_ERROR\x10\x80\x01\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
 _GPIODEVICETYPE = _descriptor.EnumDescriptor(
   name='GpioDeviceType',
-  full_name='blox.GpioDeviceType',
+  full_name='blox.OneWireGpioModule.GpioDeviceType',
   filename=None,
   file=DESCRIPTOR,
   create_key=_descriptor._internal_create_key,
@@ -141,15 +141,15 @@ _GPIODEVICETYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=881,
-  serialized_end=1542,
+  serialized_start=935,
+  serialized_end=1596,
 )
 _sym_db.RegisterEnumDescriptor(_GPIODEVICETYPE)
 
 GpioDeviceType = enum_type_wrapper.EnumTypeWrapper(_GPIODEVICETYPE)
 _GPIOERRORFLAGS = _descriptor.EnumDescriptor(
   name='GpioErrorFlags',
-  full_name='blox.GpioErrorFlags',
+  full_name='blox.OneWireGpioModule.GpioErrorFlags',
   filename=None,
   file=DESCRIPTOR,
   create_key=_descriptor._internal_create_key,
@@ -202,8 +202,8 @@ _GPIOERRORFLAGS = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1545,
-  serialized_end=1811,
+  serialized_start=1599,
+  serialized_end=1865,
 )
 _sym_db.RegisterEnumDescriptor(_GPIOERRORFLAGS)
 
@@ -243,42 +243,42 @@ GPIO_ERR_SPI_ERROR = 128
 
 _GPIOMODULECHANNEL = _descriptor.Descriptor(
   name='GpioModuleChannel',
-  full_name='blox.GpioModuleChannel',
+  full_name='blox.OneWireGpioModule.GpioModuleChannel',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='id', full_name='blox.GpioModuleChannel.id', index=0,
+      name='id', full_name='blox.OneWireGpioModule.GpioModuleChannel.id', index=0,
       number=1, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\222?\0028\010', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='deviceType', full_name='blox.GpioModuleChannel.deviceType', index=1,
+      name='deviceType', full_name='blox.OneWireGpioModule.GpioModuleChannel.deviceType', index=1,
       number=2, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='pinsMask', full_name='blox.GpioModuleChannel.pinsMask', index=2,
+      name='pinsMask', full_name='blox.OneWireGpioModule.GpioModuleChannel.pinsMask', index=2,
       number=3, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\222?\0028\010\212\265\030\002P\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='width', full_name='blox.GpioModuleChannel.width', index=3,
+      name='width', full_name='blox.OneWireGpioModule.GpioModuleChannel.width', index=3,
       number=4, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\222?\0028\010', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='name', full_name='blox.GpioModuleChannel.name', index=4,
+      name='name', full_name='blox.OneWireGpioModule.GpioModuleChannel.name', index=4,
       number=5, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -296,119 +296,119 @@ _GPIOMODULECHANNEL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=64,
-  serialized_end=218,
+  serialized_start=82,
+  serialized_end=254,
 )
 
 
 _ONEWIREGPIOMODULE = _descriptor.Descriptor(
   name='OneWireGpioModule',
-  full_name='blox.OneWireGpioModule',
+  full_name='blox.OneWireGpioModule.OneWireGpioModule',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='channels', full_name='blox.OneWireGpioModule.channels', index=0,
+      name='channels', full_name='blox.OneWireGpioModule.OneWireGpioModule.channels', index=0,
       number=1, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\222?\002\020\010', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='modulePosition', full_name='blox.OneWireGpioModule.modulePosition', index=1,
+      name='modulePosition', full_name='blox.OneWireGpioModule.OneWireGpioModule.modulePosition', index=1,
       number=2, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\222?\0028\010', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='moduleStatus', full_name='blox.OneWireGpioModule.moduleStatus', index=2,
+      name='moduleStatus', full_name='blox.OneWireGpioModule.OneWireGpioModule.moduleStatus', index=2,
       number=3, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\222?\0028\010\212\265\030\002P\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='pullUpDesired', full_name='blox.OneWireGpioModule.pullUpDesired', index=3,
+      name='pullUpDesired', full_name='blox.OneWireGpioModule.OneWireGpioModule.pullUpDesired', index=3,
       number=4, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001\222?\0028\010\212\265\030\002P\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='pullUpStatus', full_name='blox.OneWireGpioModule.pullUpStatus', index=4,
+      name='pullUpStatus', full_name='blox.OneWireGpioModule.OneWireGpioModule.pullUpStatus', index=4,
       number=5, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001\222?\0028\010\212\265\030\002P\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='pullUpWhenActive', full_name='blox.OneWireGpioModule.pullUpWhenActive', index=5,
+      name='pullUpWhenActive', full_name='blox.OneWireGpioModule.OneWireGpioModule.pullUpWhenActive', index=5,
       number=6, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001\222?\0028\010\212\265\030\002P\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='pullUpWhenInactive', full_name='blox.OneWireGpioModule.pullUpWhenInactive', index=6,
+      name='pullUpWhenInactive', full_name='blox.OneWireGpioModule.OneWireGpioModule.pullUpWhenInactive', index=6,
       number=7, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001\222?\0028\010\212\265\030\002P\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='pullDownDesired', full_name='blox.OneWireGpioModule.pullDownDesired', index=7,
+      name='pullDownDesired', full_name='blox.OneWireGpioModule.OneWireGpioModule.pullDownDesired', index=7,
       number=8, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001\222?\0028\010\212\265\030\002P\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='pullDownStatus', full_name='blox.OneWireGpioModule.pullDownStatus', index=8,
+      name='pullDownStatus', full_name='blox.OneWireGpioModule.OneWireGpioModule.pullDownStatus', index=8,
       number=9, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001\222?\0028\010\212\265\030\002P\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='pullDownWhenActive', full_name='blox.OneWireGpioModule.pullDownWhenActive', index=9,
+      name='pullDownWhenActive', full_name='blox.OneWireGpioModule.OneWireGpioModule.pullDownWhenActive', index=9,
       number=10, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001\222?\0028\010\212\265\030\002P\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='pullDownWhenInactive', full_name='blox.OneWireGpioModule.pullDownWhenInactive', index=10,
+      name='pullDownWhenInactive', full_name='blox.OneWireGpioModule.OneWireGpioModule.pullDownWhenInactive', index=10,
       number=11, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001\222?\0028\010\212\265\030\002P\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='overCurrent', full_name='blox.OneWireGpioModule.overCurrent', index=11,
+      name='overCurrent', full_name='blox.OneWireGpioModule.OneWireGpioModule.overCurrent', index=11,
       number=12, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001\222?\0028\010\212\265\030\002P\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='openLoad', full_name='blox.OneWireGpioModule.openLoad', index=12,
+      name='openLoad', full_name='blox.OneWireGpioModule.OneWireGpioModule.openLoad', index=12,
       number=13, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001\222?\0028\010\212\265\030\002P\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='useExternalPower', full_name='blox.OneWireGpioModule.useExternalPower', index=13,
+      name='useExternalPower', full_name='blox.OneWireGpioModule.OneWireGpioModule.useExternalPower', index=13,
       number=14, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='moduleStatusClear', full_name='blox.OneWireGpioModule.moduleStatusClear', index=14,
+      name='moduleStatusClear', full_name='blox.OneWireGpioModule.OneWireGpioModule.moduleStatusClear', index=14,
       number=32, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -426,8 +426,8 @@ _ONEWIREGPIOMODULE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=221,
-  serialized_end=878,
+  serialized_start=257,
+  serialized_end=932,
 )
 
 _GPIOMODULECHANNEL.fields_by_name['deviceType'].enum_type = _GPIODEVICETYPE
@@ -441,14 +441,14 @@ _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 GpioModuleChannel = _reflection.GeneratedProtocolMessageType('GpioModuleChannel', (_message.Message,), {
   'DESCRIPTOR' : _GPIOMODULECHANNEL,
   '__module__' : 'OneWireGpioModule_pb2'
-  # @@protoc_insertion_point(class_scope:blox.GpioModuleChannel)
+  # @@protoc_insertion_point(class_scope:blox.OneWireGpioModule.GpioModuleChannel)
   })
 _sym_db.RegisterMessage(GpioModuleChannel)
 
 OneWireGpioModule = _reflection.GeneratedProtocolMessageType('OneWireGpioModule', (_message.Message,), {
   'DESCRIPTOR' : _ONEWIREGPIOMODULE,
   '__module__' : 'OneWireGpioModule_pb2'
-  # @@protoc_insertion_point(class_scope:blox.OneWireGpioModule)
+  # @@protoc_insertion_point(class_scope:blox.OneWireGpioModule.OneWireGpioModule)
   })
 _sym_db.RegisterMessage(OneWireGpioModule)
 

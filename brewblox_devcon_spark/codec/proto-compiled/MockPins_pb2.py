@@ -19,17 +19,17 @@ import IoArray_pb2 as IoArray__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='MockPins.proto',
-  package='blox',
+  package='blox.MockPins',
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x0eMockPins.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"i\n\x08MockPins\x12\x33\n\x08\x63hannels\x18\x02 \x03(\x0b\x32\x0f.blox.IoChannelB\x10\x92?\x02\x10\x08\x92?\x02x\x01\x8a\xb5\x18\x02(\x01\x12\x19\n\x04pins\x18Z \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03:\r\x8a\xb5\x18\x03\x18\xc3\x02\x8a\xb5\x18\x02H\n*\xd4\x01\n\x12MockPinsChannelIds\x12\x16\n\x12MOCKPINS_CHAN_NONE\x10\x00\x12\x13\n\x0fMOCKPINS_CHAN_A\x10\x01\x12\x13\n\x0fMOCKPINS_CHAN_B\x10\x02\x12\x13\n\x0fMOCKPINS_CHAN_C\x10\x03\x12\x13\n\x0fMOCKPINS_CHAN_D\x10\x04\x12\x13\n\x0fMOCKPINS_CHAN_E\x10\x05\x12\x13\n\x0fMOCKPINS_CHAN_F\x10\x06\x12\x13\n\x0fMOCKPINS_CHAN_G\x10\x07\x12\x13\n\x0fMOCKPINS_CHAN_H\x10\x08\x62\x06proto3'
+  serialized_pb=b'\n\x0eMockPins.proto\x12\rblox.MockPins\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"q\n\x08MockPins\x12;\n\x08\x63hannels\x18\x02 \x03(\x0b\x32\x17.blox.IoArray.IoChannelB\x10\x92?\x02\x10\x08\x92?\x02x\x01\x8a\xb5\x18\x02(\x01\x12\x19\n\x04pins\x18Z \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03:\r\x8a\xb5\x18\x03\x18\xc3\x02\x8a\xb5\x18\x02H\n*\xd4\x01\n\x12MockPinsChannelIds\x12\x16\n\x12MOCKPINS_CHAN_NONE\x10\x00\x12\x13\n\x0fMOCKPINS_CHAN_A\x10\x01\x12\x13\n\x0fMOCKPINS_CHAN_B\x10\x02\x12\x13\n\x0fMOCKPINS_CHAN_C\x10\x03\x12\x13\n\x0fMOCKPINS_CHAN_D\x10\x04\x12\x13\n\x0fMOCKPINS_CHAN_E\x10\x05\x12\x13\n\x0fMOCKPINS_CHAN_F\x10\x06\x12\x13\n\x0fMOCKPINS_CHAN_G\x10\x07\x12\x13\n\x0fMOCKPINS_CHAN_H\x10\x08\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,IoArray__pb2.DESCRIPTOR,])
 
 _MOCKPINSCHANNELIDS = _descriptor.EnumDescriptor(
   name='MockPinsChannelIds',
-  full_name='blox.MockPinsChannelIds',
+  full_name='blox.MockPins.MockPinsChannelIds',
   filename=None,
   file=DESCRIPTOR,
   create_key=_descriptor._internal_create_key,
@@ -82,8 +82,8 @@ _MOCKPINSCHANNELIDS = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=177,
-  serialized_end=389,
+  serialized_start=194,
+  serialized_end=406,
 )
 _sym_db.RegisterEnumDescriptor(_MOCKPINSCHANNELIDS)
 
@@ -102,21 +102,21 @@ MOCKPINS_CHAN_H = 8
 
 _MOCKPINS = _descriptor.Descriptor(
   name='MockPins',
-  full_name='blox.MockPins',
+  full_name='blox.MockPins.MockPins',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='channels', full_name='blox.MockPins.channels', index=0,
+      name='channels', full_name='blox.MockPins.MockPins.channels', index=0,
       number=2, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\222?\002\020\010\222?\002x\001\212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='pins', full_name='blox.MockPins.pins', index=1,
+      name='pins', full_name='blox.MockPins.MockPins.pins', index=1,
       number=90, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -134,8 +134,8 @@ _MOCKPINS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=69,
-  serialized_end=174,
+  serialized_start=78,
+  serialized_end=191,
 )
 
 _MOCKPINS.fields_by_name['channels'].message_type = IoArray__pb2._IOCHANNEL
@@ -146,7 +146,7 @@ _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 MockPins = _reflection.GeneratedProtocolMessageType('MockPins', (_message.Message,), {
   'DESCRIPTOR' : _MOCKPINS,
   '__module__' : 'MockPins_pb2'
-  # @@protoc_insertion_point(class_scope:blox.MockPins)
+  # @@protoc_insertion_point(class_scope:blox.MockPins.MockPins)
   })
 _sym_db.RegisterMessage(MockPins)
 

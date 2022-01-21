@@ -8,10 +8,10 @@ from unittest.mock import AsyncMock
 import pytest
 from brewblox_service import brewblox_logger, scheduler
 
-from brewblox_devcon_spark import (block_store, commander_sim, global_store,
-                                   service_status, service_store, spark,
+from brewblox_devcon_spark import (block_store, codec, commander,
+                                   connection_sim, global_store,
+                                   service_status, service_store,
                                    synchronization)
-from brewblox_devcon_spark.codec import codec, unit_conversion
 from brewblox_devcon_spark.service_status import StatusDescription
 
 TESTED = synchronization.__name__
@@ -52,15 +52,14 @@ def ping_interval_mock(mocker):
 @pytest.fixture
 async def app(app, loop):
     app['config']['volatile'] = True
-    service_status.setup(app)
     scheduler.setup(app)
+    service_status.setup(app)
+    codec.setup(app)
+    connection_sim.setup(app)
+    commander.setup(app)
     global_store.setup(app)
     service_store.setup(app)
     block_store.setup(app)
-    commander_sim.setup(app)
-    unit_conversion.setup(app)
-    codec.setup(app)
-    spark.setup(app)
     return app
 
 
@@ -94,7 +93,7 @@ async def test_sync_errors(app, client, syncher, mocker):
 
 
 async def test_write_error(app, client, syncher, mocker):
-    mocker.patch.object(spark.fget(app), 'write_object', autospec=True, side_effect=RuntimeError)
+    mocker.patch.object(commander.fget(app), 'write_object', autospec=True, side_effect=RuntimeError)
     await disconnect(app)
     with pytest.raises(RuntimeError):
         await connect(app, syncher)
@@ -112,7 +111,7 @@ async def test_timeout(app, client, syncher, mocker):
     mocker.patch(TESTED + '.HANDSHAKE_TIMEOUT_S', 0.1)
     mocker.patch(TESTED + '.PING_INTERVAL_S', 0.0001)
     mocker.patch(TESTED + '.service_status.wait_acknowledged', autospec=True, side_effect=m_wait_ack)
-    mocker.patch.object(spark.fget(app), 'noop', AsyncMock(side_effect=RuntimeError))
+    mocker.patch.object(commander.fget(app), 'noop', AsyncMock(side_effect=RuntimeError))
 
     service_status.set_connected(app, 'timeout test')
     with pytest.raises(asyncio.TimeoutError):

@@ -17,11 +17,11 @@ import nanopb_pb2 as nanopb__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='Ticks.proto',
-  package='blox',
+  package='blox.Ticks',
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x0bTicks.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x8e\x02\n\x05Ticks\x12$\n\x0fmillisSinceBoot\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x38 \x12 \n\x11secondsSinceEpoch\x18\x02 \x01(\rB\x05\x92?\x02\x38 \x12/\n\x14\x61vgCommunicationTask\x18\x03 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x02\x10 \x92?\x02\x38 \x12.\n\x13\x61vgBlocksUpdateTask\x18\x04 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x02\x10 \x92?\x02\x38 \x12)\n\x0e\x61vgDisplayTask\x18\x05 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x02\x10 \x92?\x02\x38 \x12(\n\ravgSystemTask\x18\x06 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x02\x10 \x92?\x02\x38 :\x07\x8a\xb5\x18\x03\x18\x81\x02\x62\x06proto3'
+  serialized_pb=b'\n\x0bTicks.proto\x12\nblox.Ticks\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x8e\x02\n\x05Ticks\x12$\n\x0fmillisSinceBoot\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x38 \x12 \n\x11secondsSinceEpoch\x18\x02 \x01(\rB\x05\x92?\x02\x38 \x12/\n\x14\x61vgCommunicationTask\x18\x03 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x02\x10 \x92?\x02\x38 \x12.\n\x13\x61vgBlocksUpdateTask\x18\x04 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x02\x10 \x92?\x02\x38 \x12)\n\x0e\x61vgDisplayTask\x18\x05 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x02\x10 \x92?\x02\x38 \x12(\n\ravgSystemTask\x18\x06 \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x02\x10 \x92?\x02\x38 :\x07\x8a\xb5\x18\x03\x18\x81\x02\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -30,49 +30,49 @@ DESCRIPTOR = _descriptor.FileDescriptor(
 
 _TICKS = _descriptor.Descriptor(
   name='Ticks',
-  full_name='blox.Ticks',
+  full_name='blox.Ticks.Ticks',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='millisSinceBoot', full_name='blox.Ticks.millisSinceBoot', index=0,
+      name='millisSinceBoot', full_name='blox.Ticks.Ticks.millisSinceBoot', index=0,
       number=1, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001\222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='secondsSinceEpoch', full_name='blox.Ticks.secondsSinceEpoch', index=1,
+      name='secondsSinceEpoch', full_name='blox.Ticks.Ticks.secondsSinceEpoch', index=1,
       number=2, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='avgCommunicationTask', full_name='blox.Ticks.avgCommunicationTask', index=2,
+      name='avgCommunicationTask', full_name='blox.Ticks.Ticks.avgCommunicationTask', index=2,
       number=3, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001\212\265\030\002\020 \222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='avgBlocksUpdateTask', full_name='blox.Ticks.avgBlocksUpdateTask', index=3,
+      name='avgBlocksUpdateTask', full_name='blox.Ticks.Ticks.avgBlocksUpdateTask', index=3,
       number=4, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001\212\265\030\002\020 \222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='avgDisplayTask', full_name='blox.Ticks.avgDisplayTask', index=4,
+      name='avgDisplayTask', full_name='blox.Ticks.Ticks.avgDisplayTask', index=4,
       number=5, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001\212\265\030\002\020 \222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='avgSystemTask', full_name='blox.Ticks.avgSystemTask', index=5,
+      name='avgSystemTask', full_name='blox.Ticks.Ticks.avgSystemTask', index=5,
       number=6, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -90,8 +90,8 @@ _TICKS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=52,
-  serialized_end=322,
+  serialized_start=58,
+  serialized_end=328,
 )
 
 DESCRIPTOR.message_types_by_name['Ticks'] = _TICKS
@@ -100,7 +100,7 @@ _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 Ticks = _reflection.GeneratedProtocolMessageType('Ticks', (_message.Message,), {
   'DESCRIPTOR' : _TICKS,
   '__module__' : 'Ticks_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Ticks)
+  # @@protoc_insertion_point(class_scope:blox.Ticks.Ticks)
   })
 _sym_db.RegisterMessage(Ticks)
 

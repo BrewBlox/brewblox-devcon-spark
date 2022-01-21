@@ -96,5 +96,5 @@ def setup(app: web.Application):
     features.add(app, UnitConverter(app))
 
 
-def get_converter(app: web.Application) -> UnitConverter:
+def fget(app: web.Application) -> UnitConverter:
     return features.get(app, UnitConverter)

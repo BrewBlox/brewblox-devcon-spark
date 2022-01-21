@@ -17,17 +17,17 @@ import nanopb_pb2 as nanopb__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='IoArray.proto',
-  package='blox',
+  package='blox.IoArray',
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\rIoArray.proto\x12\x04\x62lox\x1a\x0cnanopb.proto\"\x1e\n\tIoChannel\x12\x11\n\x02id\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08*\x85\x01\n\x0c\x44igitalState\x12\x12\n\x0eSTATE_INACTIVE\x10\x00\x12\x10\n\x0cSTATE_ACTIVE\x10\x01\x12\x11\n\rSTATE_UNKNOWN\x10\x02\x12\x11\n\rSTATE_REVERSE\x10\x03\x12\x0c\n\x08Inactive\x10\x00\x12\n\n\x06\x41\x63tive\x10\x01\x12\x0b\n\x07Unknown\x10\x02\x1a\x02\x10\x01\x62\x06proto3'
+  serialized_pb=b'\n\rIoArray.proto\x12\x0c\x62lox.IoArray\x1a\x0cnanopb.proto\"\x1e\n\tIoChannel\x12\x11\n\x02id\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08*\x85\x01\n\x0c\x44igitalState\x12\x12\n\x0eSTATE_INACTIVE\x10\x00\x12\x10\n\x0cSTATE_ACTIVE\x10\x01\x12\x11\n\rSTATE_UNKNOWN\x10\x02\x12\x11\n\rSTATE_REVERSE\x10\x03\x12\x0c\n\x08Inactive\x10\x00\x12\n\n\x06\x41\x63tive\x10\x01\x12\x0b\n\x07Unknown\x10\x02\x1a\x02\x10\x01\x62\x06proto3'
   ,
   dependencies=[nanopb__pb2.DESCRIPTOR,])
 
 _DIGITALSTATE = _descriptor.EnumDescriptor(
   name='DigitalState',
-  full_name='blox.DigitalState',
+  full_name='blox.IoArray.DigitalState',
   filename=None,
   file=DESCRIPTOR,
   create_key=_descriptor._internal_create_key,
@@ -70,8 +70,8 @@ _DIGITALSTATE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=b'\020\001',
-  serialized_start=70,
-  serialized_end=203,
+  serialized_start=78,
+  serialized_end=211,
 )
 _sym_db.RegisterEnumDescriptor(_DIGITALSTATE)
 
@@ -88,14 +88,14 @@ Unknown = 2
 
 _IOCHANNEL = _descriptor.Descriptor(
   name='IoChannel',
-  full_name='blox.IoChannel',
+  full_name='blox.IoArray.IoChannel',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='id', full_name='blox.IoChannel.id', index=0,
+      name='id', full_name='blox.IoArray.IoChannel.id', index=0,
       number=1, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -113,8 +113,8 @@ _IOCHANNEL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=37,
-  serialized_end=67,
+  serialized_start=45,
+  serialized_end=75,
 )
 
 DESCRIPTOR.message_types_by_name['IoChannel'] = _IOCHANNEL
@@ -124,7 +124,7 @@ _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 IoChannel = _reflection.GeneratedProtocolMessageType('IoChannel', (_message.Message,), {
   'DESCRIPTOR' : _IOCHANNEL,
   '__module__' : 'IoArray_pb2'
-  # @@protoc_insertion_point(class_scope:blox.IoChannel)
+  # @@protoc_insertion_point(class_scope:blox.IoArray.IoChannel)
   })
 _sym_db.RegisterMessage(IoChannel)
 

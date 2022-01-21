@@ -19,11 +19,11 @@ import IoArray_pb2 as IoArray__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='DigitalActuator.proto',
-  package='blox',
+  package='blox.DigitalActuator',
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x15\x44igitalActuator.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x18\x44igitalConstraints.proto\x1a\rIoArray.proto\"\xab\x02\n\x0f\x44igitalActuator\x12#\n\x08hwDevice\x18\x01 \x01(\rB\x11\x8a\xb5\x18\x02\x18\n\x8a\xb5\x18\x02@\x01\x92?\x02\x38\x10\x12\x16\n\x07\x63hannel\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12/\n\x05state\x18\x03 \x01(\x0e\x32\x12.blox.DigitalStateB\x0c\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x12\x0e\n\x06invert\x18\x04 \x01(\x08\x12/\n\rconstrainedBy\x18\x05 \x01(\x0b\x32\x18.blox.DigitalConstraints\x12\x30\n\x0c\x64\x65siredState\x18\x06 \x01(\x0e\x32\x12.blox.DigitalStateB\x06\x8a\xb5\x18\x02\x30\x01\x12(\n\x0estrippedFields\x18\x63 \x03(\rB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x01:\r\x8a\xb5\x18\x03\x18\xbe\x02\x8a\xb5\x18\x02H\x06\x62\x06proto3'
+  serialized_pb=b'\n\x15\x44igitalActuator.proto\x12\x14\x62lox.DigitalActuator\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x18\x44igitalConstraints.proto\x1a\rIoArray.proto\"\xce\x02\n\x0f\x44igitalActuator\x12#\n\x08hwDevice\x18\x01 \x01(\rB\x11\x8a\xb5\x18\x02\x18\n\x8a\xb5\x18\x02@\x01\x92?\x02\x38\x10\x12\x16\n\x07\x63hannel\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12\x37\n\x05state\x18\x03 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x0c\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x12\x0e\n\x06invert\x18\x04 \x01(\x08\x12\x42\n\rconstrainedBy\x18\x05 \x01(\x0b\x32+.blox.DigitalConstraints.DigitalConstraints\x12\x38\n\x0c\x64\x65siredState\x18\x06 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x06\x8a\xb5\x18\x02\x30\x01\x12(\n\x0estrippedFields\x18\x63 \x03(\rB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x01:\r\x8a\xb5\x18\x03\x18\xbe\x02\x8a\xb5\x18\x02H\x06\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,DigitalConstraints__pb2.DESCRIPTOR,IoArray__pb2.DESCRIPTOR,])
 
@@ -32,56 +32,56 @@ DESCRIPTOR = _descriptor.FileDescriptor(
 
 _DIGITALACTUATOR = _descriptor.Descriptor(
   name='DigitalActuator',
-  full_name='blox.DigitalActuator',
+  full_name='blox.DigitalActuator.DigitalActuator',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='hwDevice', full_name='blox.DigitalActuator.hwDevice', index=0,
+      name='hwDevice', full_name='blox.DigitalActuator.DigitalActuator.hwDevice', index=0,
       number=1, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002\030\n\212\265\030\002@\001\222?\0028\020', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='channel', full_name='blox.DigitalActuator.channel', index=1,
+      name='channel', full_name='blox.DigitalActuator.DigitalActuator.channel', index=1,
       number=2, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\222?\0028\010', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='state', full_name='blox.DigitalActuator.state', index=2,
+      name='state', full_name='blox.DigitalActuator.DigitalActuator.state', index=2,
       number=3, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\0020\001\212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='invert', full_name='blox.DigitalActuator.invert', index=3,
+      name='invert', full_name='blox.DigitalActuator.DigitalActuator.invert', index=3,
       number=4, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='constrainedBy', full_name='blox.DigitalActuator.constrainedBy', index=4,
+      name='constrainedBy', full_name='blox.DigitalActuator.DigitalActuator.constrainedBy', index=4,
       number=5, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='desiredState', full_name='blox.DigitalActuator.desiredState', index=5,
+      name='desiredState', full_name='blox.DigitalActuator.DigitalActuator.desiredState', index=5,
       number=6, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\0020\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='strippedFields', full_name='blox.DigitalActuator.strippedFields', index=6,
+      name='strippedFields', full_name='blox.DigitalActuator.DigitalActuator.strippedFields', index=6,
       number=99, type=13, cpp_type=3, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -99,8 +99,8 @@ _DIGITALACTUATOR = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=103,
-  serialized_end=402,
+  serialized_start=119,
+  serialized_end=453,
 )
 
 _DIGITALACTUATOR.fields_by_name['state'].enum_type = IoArray__pb2._DIGITALSTATE
@@ -112,7 +112,7 @@ _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 DigitalActuator = _reflection.GeneratedProtocolMessageType('DigitalActuator', (_message.Message,), {
   'DESCRIPTOR' : _DIGITALACTUATOR,
   '__module__' : 'DigitalActuator_pb2'
-  # @@protoc_insertion_point(class_scope:blox.DigitalActuator)
+  # @@protoc_insertion_point(class_scope:blox.DigitalActuator.DigitalActuator)
   })
 _sym_db.RegisterMessage(DigitalActuator)
 

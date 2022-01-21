@@ -4,64 +4,92 @@ Object-specific transcoders
 
 
 from abc import ABC, abstractclassmethod, abstractmethod
-from collections import defaultdict
-from typing import Iterable, Union
+from enum import Enum
+from typing import Generator, Optional, Tuple, Type, Union
 
 from brewblox_service import brewblox_logger
 from google.protobuf import json_format
 from google.protobuf.message import Message
+from google.protobuf.reflection import GeneratedProtocolMessageType
 
 from . import pb2
-from .modifiers import Modifier
 from .opts import DecodeOpts, ProtoEnumOpt
+from .processor import ProtobufProcessor
 
-ObjType_ = Union[int, str]
-Decoded_ = dict
-Encoded_ = bytes
+NumIdentifier_ = Tuple[int, int]
+StrIdentifier_ = Tuple[str, Optional[str]]
+Identifier_ = Union[NumIdentifier_, StrIdentifier_]
+
 
 LOGGER = brewblox_logger(__name__)
+
+BlockType = pb2.brewblox_pb2.BrewbloxTypes.BlockType
+REQUEST_TYPE = 'ControlboxRequest'
+RESPONSE_TYPE = 'ControlboxResponse'
+REQUEST_TYPE_INT = -1
+RESPONSE_TYPE_INT = -2
 
 
 class Transcoder(ABC):
 
-    def __init__(self, mods: Modifier):
-        self.mod = mods
+    def __init__(self, proc: ProtobufProcessor):
+        self.proc = proc
 
     @abstractclassmethod
     def type_int(cls) -> int:
-        pass  # pragma: no cover
+        """
+        The numerical enum value for `objtype`
+        """
 
     @abstractclassmethod
     def type_str(cls) -> str:
-        pass  # pragma: no cover
+        """
+        The string enum value for `objtype`.
+        """
 
     @classmethod
-    def type_impl(cls) -> list[int]:
+    def subtype_int(cls) -> int:
+        """
+        Alternative messages must declare a `subtype` that is unique within `objtype`.
+        """
+        return 0
+
+    @classmethod
+    def subtype_str(cls) -> Optional[str]:
+        """
+        Alternative messages must declare a `subtype` that is unique within `objtype`.
+        `subtype` itself is not an enum, so the name of the Protobuf message is used.
+        Naturally, the Protobuf message name must also be unique within the namespace.
+
+        If `subtype` is 0, the subtype name is None.
+        This is applicable for the default Block messages.
+        """
+        return None
+
+    @classmethod
+    def type_impl(cls) -> list[str]:
         return []
 
     @abstractmethod
-    def encode(self, values: Decoded_) -> Encoded_:
-        pass  # pragma: no cover
+    def encode(self, values: dict) -> bytes:
+        """
+        Encode a Python dict to bytes.
+        """
 
     @abstractmethod
-    def decode(self, encoded: Encoded_, opts: DecodeOpts) -> Decoded_:
-        pass  # pragma: no cover
+    def decode(self, encoded: bytes, opts: DecodeOpts) -> dict:
+        """
+        Decode bytes to a Python dict.
+        """
 
     @classmethod
-    def get(cls, obj_type: ObjType_, mods: Modifier) -> 'Transcoder':
-        try:
-            return _TYPE_MAPPING[obj_type](mods)
-        except KeyError:
-            raise KeyError(f'No codec found for object type [{obj_type}]')
-
-    @classmethod
-    def type_tree(cls, mods: Modifier) -> dict[str, list[str]]:
-        impl_tree = defaultdict(list)
+    def get(cls, identifier: Identifier_, proc: ProtobufProcessor) -> 'Transcoder':
+        objtype, subtype = identifier
         for trc in _TRANSCODERS:
-            name = trc.type_str()
-            for intf in [Transcoder.get(t, mods).type_str() for t in trc.type_impl()]:
-                impl_tree[intf].append(name)
-        return impl_tree
+            if objtype == trc.type_str() or objtype == trc.type_int():
+                if subtype == trc.subtype_str() or subtype == trc.subtype_int():
+                    return trc(proc)
+        raise KeyError(f'No transcoder found for identifier {identifier}')
 
 
 class BlockInterfaceTranscoder(Transcoder):
@@ -72,38 +100,13 @@ class BlockInterfaceTranscoder(Transcoder):
 
     @classmethod
     def type_str(cls) -> str:
-        return pb2.brewblox_pb2.BrewBloxTypes.BlockType.Name(cls._ENUM_VAL)
+        return pb2.brewblox_pb2.BrewbloxTypes.BlockType.Name(cls._ENUM_VAL)
 
-    def encode(self, values: Decoded_) -> Encoded_:
+    def encode(self, values: dict) -> bytes:
         return b'\x00'
 
-    def decode(self, values: Encoded_, _: DecodeOpts) -> Decoded_:
+    def decode(self, values: bytes, _: DecodeOpts) -> dict:
         return dict()
-
-
-def interface_factory(value: int) -> BlockInterfaceTranscoder:
-    name = f'{pb2.brewblox_pb2.BrewBloxTypes.BlockType.Name(value)}TranscoderStub'
-    return type(name, (BlockInterfaceTranscoder, ), {'_ENUM_VAL': value})
-
-
-class InactiveObjectTranscoder(Transcoder):
-
-    @classmethod
-    def type_int(cls) -> int:
-        return 65535
-
-    @classmethod
-    def type_str(cls) -> str:
-        return 'InactiveObject'
-
-    def encode(self, values: Decoded_) -> Encoded_:
-        type_id = values['actualType']
-        encoded = Transcoder.get(type_id, self.mod).type_int().to_bytes(2, 'little')
-        return encoded
-
-    def decode(self, encoded: Encoded_, _: DecodeOpts) -> Decoded_:
-        type_id = int.from_bytes(encoded, 'little')
-        return {'actualType': Transcoder.get(type_id, self.mod).type_str()}
 
 
 class DeprecatedObjectTranscoder(Transcoder):
@@ -116,12 +119,12 @@ class DeprecatedObjectTranscoder(Transcoder):
     def type_str(cls) -> str:
         return 'DeprecatedObject'
 
-    def encode(self, values: Decoded_) -> Encoded_:
+    def encode(self, values: dict) -> bytes:
         actual_id = values['actualId']
         encoded = actual_id.to_bytes(2, 'little')
         return encoded
 
-    def decode(self, encoded: Encoded_, _: DecodeOpts) -> Decoded_:
+    def decode(self, encoded: bytes, _: DecodeOpts) -> dict:
         actual_id = int.from_bytes(encoded, 'little')
         return {'actualId': actual_id}
 
@@ -136,39 +139,55 @@ class GroupsTranscoder(Transcoder):
     def type_str(cls) -> str:
         return 'Groups'
 
-    def encode(self, values: Decoded_) -> Encoded_:
-        active = self.mod.pack_bit_flags(values.get('active', []))
+    def encode(self, values: dict) -> bytes:
+        active = self.proc.pack_bit_flags(values.get('active', []))
         return active.to_bytes(1, 'little')
 
-    def decode(self, encoded: Encoded_, _: DecodeOpts) -> Decoded_:
-        active = self.mod.unpack_bit_flags(int.from_bytes(encoded, 'little'))
+    def decode(self, encoded: bytes, _: DecodeOpts) -> dict:
+        active = self.proc.unpack_bit_flags(int.from_bytes(encoded, 'little'))
         return {'active': active}
 
 
-class ProtobufTranscoder(Transcoder):
+class BaseProtobufTranscoder(Transcoder):
+
+    @classmethod
+    def _brewblox_msg(cls):
+        # Message opts as set in BrewbloxMessageOptions in brewblox.proto
+        return cls._MESSAGE.DESCRIPTOR.GetOptions().Extensions[pb2.brewblox_pb2.brewblox_msg]
 
     @classmethod
     def type_int(cls) -> int:
-        return cls._MESSAGE.DESCRIPTOR.GetOptions().Extensions[pb2.brewblox_pb2.brewblox_msg].objtype
+        return cls._brewblox_msg().objtype
 
     @classmethod
     def type_str(cls) -> str:
-        return cls._MESSAGE.__name__
+        return BlockType.Name(cls.type_int())
 
     @classmethod
-    def type_impl(cls) -> list[int]:
-        return cls._MESSAGE.DESCRIPTOR.GetOptions().Extensions[pb2.brewblox_pb2.brewblox_msg].impl
+    def type_impl(cls) -> list[str]:
+        return [BlockType.Name(i) for i in cls._brewblox_msg().impl]
+
+    @classmethod
+    def subtype_int(cls) -> int:
+        return cls._brewblox_msg().subtype
+
+    @classmethod
+    def subtype_str(cls) -> Optional[str]:
+        if cls.subtype_int():
+            return cls._MESSAGE.DESCRIPTOR.name
+        else:
+            return None
 
     def create_message(self) -> Message:
         return self.__class__._MESSAGE()
 
-    def encode(self, values: Decoded_) -> Encoded_:
+    def encode(self, values: dict) -> bytes:
         # LOGGER.debug(f'encoding {values} to {self.__class__._MESSAGE}')
         obj = json_format.ParseDict(values, self.create_message())
         data = obj.SerializeToString()
         return data + b'\x00'  # Include null terminator
 
-    def decode(self, encoded: Encoded_, opts: DecodeOpts) -> Decoded_:
+    def decode(self, encoded: bytes, opts: DecodeOpts) -> dict:
         # Remove null terminator
         encoded = encoded[:-1]
         int_enum = opts.enums == ProtoEnumOpt.INT
@@ -185,19 +204,55 @@ class ProtobufTranscoder(Transcoder):
         return decoded
 
 
-class OptionsTranscoder(ProtobufTranscoder):
+class ControlboxRequestTranscoder(BaseProtobufTranscoder):
+    _MESSAGE = pb2.brewblox_pb2.ControlboxRequest
 
-    def encode(self, values: Decoded_) -> Encoded_:
-        self.mod.encode_options(self.create_message(), values)
+    @classmethod
+    def type_int(cls) -> int:
+        return REQUEST_TYPE_INT  # never a payload
+
+    @classmethod
+    def type_str(cls) -> str:
+        return REQUEST_TYPE
+
+    def encode(self, values: dict) -> bytes:
+        opcode = values.get('opcode')
+        if isinstance(opcode, Enum):
+            values['opcode'] = opcode.name
         return super().encode(values)
 
-    def decode(self, encoded: Encoded_, opts: DecodeOpts) -> Decoded_:
+
+class ControlboxResponseTranscoder(BaseProtobufTranscoder):
+    _MESSAGE = pb2.brewblox_pb2.ControlboxResponse
+
+    @classmethod
+    def type_int(cls) -> int:
+        return RESPONSE_TYPE_INT  # never a payload
+
+    @classmethod
+    def type_str(cls) -> str:
+        return RESPONSE_TYPE
+
+    def encode(self, values: dict) -> bytes:
+        error = values.get('error')
+        if isinstance(error, Enum):
+            values['error'] = error.name
+        return super().encode(values)
+
+
+class ProtobufTranscoder(BaseProtobufTranscoder):
+
+    def encode(self, values: dict) -> bytes:
+        self.proc.pre_encode(self.create_message(), values)
+        return super().encode(values)
+
+    def decode(self, encoded: bytes, opts: DecodeOpts) -> dict:
         decoded = super().decode(encoded, opts)
-        self.mod.decode_options(self.create_message(), decoded, opts)
+        self.proc.post_decode(self.create_message(), decoded, opts)
         return decoded
 
 
-class EdgeCaseTranscoder(OptionsTranscoder):
+class EdgeCaseTranscoder(ProtobufTranscoder):
     _MESSAGE = pb2.EdgeCase_pb2.EdgeCase
 
     @classmethod
@@ -209,65 +264,48 @@ class EdgeCaseTranscoder(OptionsTranscoder):
         return 'EdgeCase'
 
 
-def options_type_factory(message):
-    name = f'{message.__name__}Transcoder'
-    return type(name, (OptionsTranscoder, ), {'_MESSAGE': message})
+class EdgeCaseSubTranscoder(EdgeCaseTranscoder):
+    _MESSAGE = pb2.EdgeCase_pb2.SubCase
 
 
-def _generate_mapping(vals: Iterable[Transcoder]):
-    for trc in vals:
-        yield trc.type_int(), trc
-        yield trc.type_str(), trc
+def interface_transcoder_generator() -> Generator[Type[BlockInterfaceTranscoder], None, None]:
+    for objtype in BlockType.values():
+        name = f'{BlockType.Name(objtype)}_InterfaceTranscoder'
+        yield type(name, (BlockInterfaceTranscoder, ), {'_ENUM_VAL': objtype})
 
 
-_TRANSCODERS = [
+def protobuf_transcoder_generator() -> Generator[Type[ProtobufTranscoder], None, None]:
+    for pb in [getattr(pb2, k) for k in pb2.__all__]:
+        members = [getattr(pb, k)
+                   for k in dir(pb)
+                   if not k.startswith('_')]
+        messages = [el
+                    for el in members
+                    if isinstance(el, GeneratedProtocolMessageType)]
+
+        for msg in messages:
+            desc = msg.DESCRIPTOR
+            opts = desc.GetOptions().Extensions[pb2.brewblox_pb2.brewblox_msg]
+            if opts.objtype:
+                name = f'{BlockType.Name(opts.objtype)}_{desc.name}_Transcoder'
+                yield type(name, (ProtobufTranscoder, ), {'_MESSAGE': msg})
+
+
+_TRANSCODERS: list[Type[Transcoder]] = [
     # Raw system objects
-    InactiveObjectTranscoder,
     DeprecatedObjectTranscoder,
     GroupsTranscoder,
-
-    # Interface objects
-    # Actual implementations will override this later
-    *[
-        interface_factory(v)
-        for v in pb2.brewblox_pb2.BrewBloxTypes.BlockType.values()
-    ],
+    ControlboxRequestTranscoder,
+    ControlboxResponseTranscoder,
 
     # Protobuf objects
-    *[
-        options_type_factory(msg)
-        for msg in [
-            pb2.ActuatorAnalogMock_pb2.ActuatorAnalogMock,
-            pb2.ActuatorLogic_pb2.ActuatorLogic,
-            pb2.ActuatorOffset_pb2.ActuatorOffset,
-            pb2.ActuatorPwm_pb2.ActuatorPwm,
-            pb2.Balancer_pb2.Balancer,
-            pb2.DigitalActuator_pb2.DigitalActuator,
-            pb2.DisplaySettings_pb2.DisplaySettings,
-            pb2.DS2408_pb2.DS2408,
-            pb2.DS2413_pb2.DS2413,
-            pb2.MockPins_pb2.MockPins,
-            pb2.MotorValve_pb2.MotorValve,
-            pb2.Mutex_pb2.Mutex,
-            pb2.OneWireBus_pb2.OneWireBus,
-            pb2.OneWireGpioModule_pb2.OneWireGpioModule,
-            pb2.Pid_pb2.Pid,
-            pb2.SetpointProfile_pb2.SetpointProfile,
-            pb2.SetpointSensorPair_pb2.SetpointSensorPair,
-            pb2.Spark2Pins_pb2.Spark2Pins,
-            pb2.Spark3Pins_pb2.Spark3Pins,
-            pb2.SysInfo_pb2.SysInfo,
-            pb2.TempSensorCombi_pb2.TempSensorCombi,
-            pb2.TempSensorMock_pb2.TempSensorMock,
-            pb2.TempSensorOneWire_pb2.TempSensorOneWire,
-            pb2.Ticks_pb2.Ticks,
-            pb2.TouchSettings_pb2.TouchSettings,
-            pb2.WiFiSettings_pb2.WiFiSettings,
-        ]
-    ],
+    *protobuf_transcoder_generator(),
 
-    # Debugging object
+    # Interface objects
+    # These are fallbacks to be used if there is no direct object
+    *interface_transcoder_generator(),
+
+    # Debugging objects
     EdgeCaseTranscoder,
+    EdgeCaseSubTranscoder,
 ]
-
-_TYPE_MAPPING = {k: v for k, v in _generate_mapping(_TRANSCODERS)}

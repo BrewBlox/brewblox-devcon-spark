@@ -17,11 +17,11 @@ import nanopb_pb2 as nanopb__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='Mutex.proto',
-  package='blox',
+  package='blox.Mutex',
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x0bMutex.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"u\n\x05Mutex\x12,\n\x15\x64ifferentActuatorWait\x18\x01 \x01(\rB\r\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x12/\n\rwaitRemaining\x18\x02 \x01(\rB\x18\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 :\r\x8a\xb5\x18\x03\x18\xb6\x02\x8a\xb5\x18\x02H\x08\x62\x06proto3'
+  serialized_pb=b'\n\x0bMutex.proto\x12\nblox.Mutex\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"u\n\x05Mutex\x12,\n\x15\x64ifferentActuatorWait\x18\x01 \x01(\rB\r\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x12/\n\rwaitRemaining\x18\x02 \x01(\rB\x18\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 :\r\x8a\xb5\x18\x03\x18\xb6\x02\x8a\xb5\x18\x02H\x08\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -30,21 +30,21 @@ DESCRIPTOR = _descriptor.FileDescriptor(
 
 _MUTEX = _descriptor.Descriptor(
   name='Mutex',
-  full_name='blox.Mutex',
+  full_name='blox.Mutex.Mutex',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='differentActuatorWait', full_name='blox.Mutex.differentActuatorWait', index=0,
+      name='differentActuatorWait', full_name='blox.Mutex.Mutex.differentActuatorWait', index=0,
       number=1, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002\010\003\212\265\030\003\020\350\007', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='waitRemaining', full_name='blox.Mutex.waitRemaining', index=1,
+      name='waitRemaining', full_name='blox.Mutex.Mutex.waitRemaining', index=1,
       number=2, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -62,8 +62,8 @@ _MUTEX = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=51,
-  serialized_end=168,
+  serialized_start=57,
+  serialized_end=174,
 )
 
 DESCRIPTOR.message_types_by_name['Mutex'] = _MUTEX
@@ -72,7 +72,7 @@ _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 Mutex = _reflection.GeneratedProtocolMessageType('Mutex', (_message.Message,), {
   'DESCRIPTOR' : _MUTEX,
   '__module__' : 'Mutex_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Mutex)
+  # @@protoc_insertion_point(class_scope:blox.Mutex.Mutex)
   })
 _sym_db.RegisterMessage(Mutex)
 

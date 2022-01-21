@@ -13,7 +13,8 @@ from brewblox_service import brewblox_logger, features, repeater, strex
 
 from brewblox_devcon_spark import (block_store, codec, commander, const,
                                    datastore, exceptions, global_store,
-                                   service_status, service_store, spark)
+                                   service_status, service_store)
+from brewblox_devcon_spark.models import FirmwareBlock, FirmwareBlockIdentity
 
 HANDSHAKE_TIMEOUT_S = 120
 PING_INTERVAL_S = 1
@@ -42,6 +43,14 @@ def subroutine(desc: str):
 
 
 class SparkSynchronization(repeater.RepeaterFeature):
+
+    def __init__(self, app: web.Application):
+        super().__init__(app)
+        self.codec = codec.fget(app)
+        self.commander = commander.fget(app)
+        self.service_store = service_store.fget(self.app)
+        self.global_store = global_store.fget(self.app)
+        self.block_store = block_store.fget(self.app)
 
     async def before_shutdown(self, app: web.Application):
         await self.end()
@@ -130,16 +139,14 @@ class SparkSynchronization(repeater.RepeaterFeature):
 
     @subroutine('sync datastore')
     async def _sync_datastore(self):
-        _service_store = service_store.fget(self.app)
-        _global_store = global_store.fget(self.app)
 
         await datastore.check_remote(self.app)
-        await _service_store.read()
-        await _global_store.read()
+        await self.service_store.read()
+        await self.global_store.read()
 
         await self.set_converter_units()
 
-        with _service_store.open() as config:
+        with self.service_store.open() as config:
             autoconnect = bool(config.setdefault(AUTOCONNECTING_KEY, True))
             service_status.set_autoconnecting(self.app, autoconnect)
 
@@ -165,8 +172,9 @@ class SparkSynchronization(repeater.RepeaterFeature):
                 try:
                     await asyncio.sleep(PING_INTERVAL_S)
                     LOGGER.info('prompting handshake...')
-                    await spark.fget(self.app).noop()
-                except Exception:
+                    await self.commander.noop()
+                except Exception as ex:
+                    LOGGER.error(strex(ex))
                     pass
 
         ack_wait_task = asyncio.create_task(service_status.wait_acknowledged(self.app))
@@ -194,22 +202,21 @@ class SparkSynchronization(repeater.RepeaterFeature):
 
     @subroutine('sync block store')
     async def _sync_block_store(self):
-        store = block_store.fget(self.app)
         await datastore.check_remote(self.app)
-        await store.read(self.device_name)
+        await self.block_store.read(self.device_name)
 
     @subroutine('sync controller time')
     async def _sync_time(self):
         now = datetime.now()
-        ticks_block = await spark.fget(self.app).write_object({
-            'nid': const.SYSTIME_NID,
-            'groups': [const.SYSTEM_GROUP],
-            'type': 'Ticks',
-            'data': {
-                'secondsSinceEpoch': now.timestamp()
-            }
-        })
-        ms = ticks_block['data']['millisSinceBoot']
+        ticks_block = await self.commander.write_object(
+            FirmwareBlock(
+                nid=const.SYSTIME_NID,
+                type='Ticks',
+                data={
+                    'secondsSinceEpoch': int(now.timestamp())
+                }
+            ))
+        ms = ticks_block.data['millisSinceBoot']
         uptime = timedelta(milliseconds=ms)
         LOGGER.info(f'System uptime: {uptime}')
 
@@ -223,53 +230,47 @@ class SparkSynchronization(repeater.RepeaterFeature):
         await self.set_display_settings()
 
     async def set_converter_units(self):
-        store = global_store.fget(self.app)
-        converter = codec.get_converter(self.app)
-        converter.temperature = store.units['temperature']
+        converter = codec.unit_conversion.fget(self.app)
+        converter.temperature = self.global_store.units['temperature']
         LOGGER.info(f'Service temperature unit set to {converter.temperature}')
 
     async def set_display_settings(self):
+        write_required = False
+
         if not service_status.desc(self.app).is_acknowledged:
             return
 
-        store = global_store.fget(self.app)
-        controller = spark.fget(self.app)
-        write_required = False
+        display_block = await self.commander.read_object(
+            FirmwareBlockIdentity(nid=const.DISPLAY_SETTINGS_NID))
 
-        display_block = await controller.read_object({
-            'nid': const.DISPLAY_SETTINGS_NID
-        })
-
-        user_unit = store.units['temperature']
+        user_unit = self.global_store.units['temperature']
         expected_unit = 'TEMP_FAHRENHEIT' if user_unit == 'degF' else 'TEMP_CELSIUS'
-        block_unit = display_block['data']['tempUnit']
+        block_unit = display_block.data['tempUnit']
 
         if expected_unit != block_unit:
             write_required = True
-            display_block['data']['tempUnit'] = expected_unit
+            display_block.data['tempUnit'] = expected_unit
             LOGGER.info(f'Spark display temperature unit set to {user_unit}')
 
-        user_tz_name = store.time_zone['name']
-        user_tz = store.time_zone['posixValue']
-        block_tz = display_block['data']['timeZone']
+        user_tz_name = self.global_store.time_zone['name']
+        user_tz = self.global_store.time_zone['posixValue']
+        block_tz = display_block.data['timeZone']
 
         if user_tz != block_tz:
             write_required = True
-            display_block['data']['timeZone'] = user_tz
+            display_block.data['timeZone'] = user_tz
             LOGGER.info(f'Spark display time zone set to {user_tz} ({user_tz_name})')
 
         if write_required:
-            await controller.write_object(display_block)
+            await self.commander.write_object(display_block)
 
     async def format_trace(self, src):
-        cdc = codec.fget(self.app)
-        store = block_store.fget(self.app)
         dest = []
         for src_v in src:
             action = src_v['action']
             nid = src_v['id']
-            sid = store.left_key(nid, 'Unknown')
-            typename = await cdc.decode(src_v['type'])
+            sid = self.block_store.left_key(nid, 'Unknown')
+            (typename, _), _ = await self.codec.decode((src_v['type'], None), None)
 
             if nid == 0:
                 dest.append(action)
@@ -280,15 +281,16 @@ class SparkSynchronization(repeater.RepeaterFeature):
 
     @subroutine('collect controller call trace')
     async def _collect_call_trace(self):
-        sys_block = await spark.fget(self.app).write_object({
-            'nid': const.SYSINFO_NID,
-            'groups': [const.SYSTEM_GROUP],
-            'type': 'SysInfo',
-            'data': {
-                'command': 'SYS_CMD_TRACE_READ_RESUME'
-            }
-        })
-        trace = '\n'.join(await self.format_trace(sys_block['data']['trace']))
+        sys_block = await self.commander.write_object(
+            FirmwareBlock(
+                nid=const.SYSINFO_NID,
+                type='SysInfo',
+                data={
+                    'command': 'SYS_CMD_TRACE_READ_RESUME'
+                },
+            ))
+
+        trace = '\n'.join(await self.format_trace(sys_block.data['trace']))
         LOGGER.info(f'System trace: \n{trace}')
 
 

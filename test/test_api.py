@@ -9,13 +9,13 @@ import pytest
 from brewblox_service import scheduler
 from brewblox_service.testing import response
 
-from brewblox_devcon_spark import (block_cache, block_store, commander_sim,
-                                   const, exceptions, global_store,
-                                   service_status, service_store, spark,
+from brewblox_devcon_spark import (block_cache, block_store, codec, commander,
+                                   connection_sim, const, controller,
+                                   global_store, service_status, service_store,
                                    synchronization, ymodem)
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
                                        settings_api, system_api)
-from brewblox_devcon_spark.codec import codec, unit_conversion
+from brewblox_devcon_spark.models import ErrorCode, Opcode
 
 
 class DummmyError(BaseException):
@@ -30,7 +30,6 @@ def ret_ids(objects):
 def block_args():
     return {
         'id': 'testobj',
-        'groups': [0],
         'type': 'TempSensorOneWire',
         'data': {
             'value': 12345,
@@ -49,7 +48,6 @@ def m_publish(mocker):
 def repeated_blocks(ids, args):
     return [{
         'id': id,
-        'groups': args['groups'],
         'type': args['type'],
         'data': args['data']
     } for id in ids]
@@ -60,21 +58,21 @@ async def app(app, loop):
     """App + controller routes"""
     service_status.setup(app)
     scheduler.setup(app)
-    commander_sim.setup(app)
+    codec.setup(app)
+    connection_sim.setup(app)
+    commander.setup(app)
     block_store.setup(app)
     block_cache.setup(app)
     global_store.setup(app)
     service_store.setup(app)
-    unit_conversion.setup(app)
-    codec.setup(app)
     synchronization.setup(app)
-    spark.setup(app)
+    controller.setup(app)
 
     error_response.setup(app)
-    debug_api.setup(app)
     blocks_api.setup(app)
     system_api.setup(app)
     settings_api.setup(app)
+    debug_api.setup(app)
 
     return app
 
@@ -83,60 +81,6 @@ async def app(app, loop):
 async def production_app(app, loop):
     app['config']['debug'] = False
     return app
-
-
-async def test_merge():
-    assert blocks_api.merge(
-        {},
-        {'a': True}
-    ) == {'a': True}
-    assert blocks_api.merge(
-        {'a': False},
-        {'a': True}
-    ) == {'a': True}
-    assert blocks_api.merge(
-        {'a': True},
-        {'b': True}
-    ) == {'a': True, 'b': True}
-    assert blocks_api.merge(
-        {'nested': {'a': False, 'b': True}, 'second': {}},
-        {'nested': {'a': True}, 'second': 'empty'}
-    ) == {'nested': {'a': True, 'b': True}, 'second': 'empty'}
-
-
-async def test_do(app, client):
-    command = {
-        'command': 'create_object',
-        'data': {
-            'nid': 0,
-            'type': 'TempSensorOneWire',
-            'groups': [1, 2, 3],
-            'data': {
-                'value': 12345,
-                'offset': 20,
-                'address': 'FF'
-            }
-        }
-    }
-
-    await response(client.post('/_debug/do', json=command))
-
-    error_command = {
-        'command': 'create_object',
-        'data': {}
-    }
-
-    retv = await response(client.post('/_debug/do', json=error_command), 500)
-    assert 'KeyError' in retv['error']
-
-
-async def test_production_do(production_app, client):
-    error_command = {
-        'command': 'create_object',
-        'data': {}
-    }
-
-    await response(client.post('/_debug/do', json=error_command), 500)
 
 
 async def test_create(app, client, block_args):
@@ -153,9 +97,42 @@ async def test_create(app, client, block_args):
 
 
 async def test_invalid_input(app, client, block_args):
-    del block_args['groups']
-    retv = await response(client.post('/blocks/create', json=block_args), 422)
-    assert 'groups' in retv
+    # 400 if input fails schema check
+    del block_args['type']
+    retv = await response(client.post('/blocks/create', json=block_args), 400)
+    assert retv == [{
+        'in': 'body',
+        'loc': ['type'],
+        'msg': 'field required',
+        'type': 'value_error.missing',
+    }]
+
+    # 400 if input fails encoding
+    # This yields a JSON error
+    block_args['type'] = 'dummy'
+    retv = await response(client.post('/blocks/create', json=block_args), 400)
+    assert 'dummy' in retv['error']
+    assert 'traceback' in retv
+
+
+async def test_invalid_input_prod(production_app, client, block_args):
+    # 400 if input fails schema check
+    del block_args['type']
+    retv = await response(client.post('/blocks/create', json=block_args), 400)
+    assert retv == [{
+        'in': 'body',
+        'loc': ['type'],
+        'msg': 'field required',
+        'type': 'value_error.missing',
+    }]
+
+    # 400 if input fails encoding
+    # This yields a JSON error
+    # For production errors, no traceback is returned
+    block_args['type'] = 'dummy'
+    retv = await response(client.post('/blocks/create', json=block_args), 400)
+    assert 'dummy' in retv['error']
+    assert 'traceback' not in retv
 
 
 async def test_create_performance(app, client, block_args):
@@ -255,37 +232,8 @@ async def test_cleanup(app, client, block_args):
     await response(client.post('/blocks/create', json=block_args), 201)
     store['unused', 456] = {}
     retv = await response(client.post('/blocks/cleanup'))
-    assert {'id': 'unused', 'nid': 456} in retv
+    assert {'id': 'unused', 'nid': 456, 'type': None, 'serviceId': 'test_app'} in retv
     assert not [v for v in retv if v['id'] == 'testobj']
-
-
-@pytest.mark.parametrize('sid', [
-    'flabber',
-    'FLABBER',
-    'f(1)',
-    'l12142|35234231',
-    'word'*50,
-])
-async def test_validate_sid(sid):
-    blocks_api.validate_sid(sid)
-
-
-@pytest.mark.parametrize('sid', [
-    '1',
-    '1adsjlfdsf',
-    'pancakes[delicious]',
-    '[',
-    'f]abbergasted',
-    '',
-    'word'*51,
-    'brackey><',
-    'ActiveGroups',
-    'SparkPins',
-    'a;ljfoihoewr*&(%&^&*%*&^(*&^(',
-])
-async def test_validate_sid_error(sid):
-    with pytest.raises(exceptions.InvalidId):
-        blocks_api.validate_sid(sid)
 
 
 async def test_rename(app, client, block_args):
@@ -302,6 +250,7 @@ async def test_rename(app, client, block_args):
 
 
 async def test_ping(app, client):
+    await response(client.get('/system/ping'))
     await response(client.post('/system/ping'))
 
 
@@ -317,17 +266,9 @@ async def test_settings_api(app, client, block_args):
     assert retd == {'enabled': False}
 
 
-async def test_compatible(app, client, block_args):
-    resp = await response(client.post('/blocks/compatible', json={'interface': 'BalancerInterface'}))
-    print(resp)
-    assert all([isinstance(v['id'], str) for v in resp])
-
-
 async def test_discover(app, client):
     resp = await response(client.post('/blocks/discover'))
-    # Commander sim always returns the groups object
-    print(resp)
-    assert resp[0]['id'] == 'DisplaySettings'
+    assert resp[0]['id'] == 'SparkPins'
 
 
 async def test_validate(app, client, block_args):
@@ -391,7 +332,6 @@ async def test_backup_load(app, client, spark_blocks):
     data['blocks'].append({
         'id': 'derpface',
         'nid': 500,
-        'groups': [0],
         'type': 'INVALID',
         'data': {}
     })
@@ -411,7 +351,6 @@ async def test_backup_load(app, client, spark_blocks):
 async def test_read_all_logged(app, client):
     args = {
         'id': 'edgey',
-        'groups': [0],
         'type': 'EdgeCase',
         'data': {
             'logged': 12345,
@@ -441,6 +380,7 @@ async def test_read_all_logged(app, client):
 
 
 async def test_system_status(app, client):
+    await service_status.wait_synchronized(app)
     resp = await response(client.get('/system/status'))
 
     fw_info = {
@@ -504,6 +444,12 @@ async def test_system_flash(app, client, mocker):
     system_api.shutdown_soon.assert_awaited()
 
 
+async def test_system_flash_sim(app, client):
+    # Not implemented for simulations
+    app['config']['simulation'] = True
+    await response(client.post('/system/flash'), 424)
+
+
 async def test_system_resets(app, client, mocker):
     sys_api = system_api.__name__
     mocker.patch(sys_api + '.shutdown_soon', AsyncMock())
@@ -513,3 +459,97 @@ async def test_system_resets(app, client, mocker):
 
     await response(client.post('/system/reboot/controller'))
     await response(client.post('/system/factory_reset'))
+
+
+async def test_debug_encode(app, client):
+    payload = {
+        'blockId': 123,
+        'objtype': 'TempSensorOneWire',
+        'data': {
+            'value': 12345,
+            'offset': 20,
+            'address': 'FF'
+        },
+    }
+
+    # Encode normal (non-nested) message
+    encoded = await response(client.post('/_debug/encode', json=payload))
+    assert encoded['data']
+    assert isinstance(encoded['data'], str)
+
+    decoded = await response(client.post('/_debug/decode', json={
+        'objtype': encoded['objtype'],
+        'data': encoded['data']
+    }))
+    addr = decoded['data']['address']
+    assert addr.lower().startswith('ff')
+
+    # ControlboxRequest has an embedded extra message
+    request_msg = {
+        'msgId': 1,
+        'opcode': Opcode.OPCODE_WRITE_OBJECT.name,
+        'payload': payload,
+    }
+
+    encoded = await response(client.post('/_debug/encode', json={
+        'objtype': codec.REQUEST_TYPE,
+        'data': request_msg,
+    }))
+    assert encoded['data']
+    assert isinstance(encoded['data'], str)
+
+    decoded = await response(client.post('/_debug/decode', json={
+        'objtype': encoded['objtype'],
+        'data': encoded['data']
+    }))
+    addr = decoded['data']['payload']['data']['address']
+    assert addr.lower().startswith('ff')
+
+    # ControlboxResponse has an embedded extra message
+    response_msg = {
+        'msgId': 1,
+        'error': ErrorCode.ERR_INVALID_COMMAND.name,
+        'payload': [payload, payload]
+    }
+
+    encoded = await response(client.post('/_debug/encode', json={
+        'objtype': codec.RESPONSE_TYPE,
+        'data': response_msg,
+    }))
+    assert encoded['data']
+    assert isinstance(encoded['data'], str)
+
+    decoded = await response(client.post('/_debug/decode', json={
+        'objtype': encoded['objtype'],
+        'data': encoded['data']
+    }))
+    addr = decoded['data']['payload'][1]['data']['address']
+    assert addr.lower().startswith('ff')
+
+    # args should be validated
+    await response(client.post('/_debug/decode', json={
+        'objtype': [1],
+        'data': '',
+    }), 400)
+
+    # Payload is optional both ways
+    request_msg = {
+        'msgId': 1,
+        'opcode': Opcode.OPCODE_WRITE_OBJECT.name,
+        'payload': None,
+    }
+    encoded = await response(client.post('/_debug/encode', json={
+        'objtype': codec.REQUEST_TYPE,
+        'data': request_msg,
+    }))
+    await response(client.post('/_debug/decode', json={
+        'objtype': encoded['objtype'],
+        'data': encoded['data']
+    }))
+
+    # Errors are published
+    retv = await response(client.post('/_debug/decode', json={
+        'objtype': encoded['objtype'],
+        'data': 'INVALID',
+    }))
+    assert retv['objtype'] == 'ErrorObject'

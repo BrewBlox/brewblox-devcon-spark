@@ -9,13 +9,12 @@ from os import getenv
 from brewblox_service import brewblox_logger, http, mqtt, scheduler, service
 
 from brewblox_devcon_spark import (block_cache, block_store, broadcaster,
-                                   commander, connection, global_store,
-                                   service_status, service_store, spark,
+                                   codec, commander, connection, controller,
+                                   global_store, service_status, service_store,
                                    synchronization)
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
                                        mqtt_api, settings_api, sim_api,
                                        system_api)
-from brewblox_devcon_spark.codec import codec, unit_conversion
 
 LOGGER = brewblox_logger(__name__)
 
@@ -100,33 +99,31 @@ def main():
     if config['simulation']:
         config['device_id'] = config['device_id'] or '123456789012345678901234'
 
-    service_status.setup(app)
-    http.setup(app)
-
-    connection.setup(app)
-    commander.setup(app)
-
     scheduler.setup(app)
     mqtt.setup(app)
+    http.setup(app)
 
     global_store.setup(app)
     service_store.setup(app)
     block_store.setup(app)
     block_cache.setup(app)
-    unit_conversion.setup(app)
+
+    service_status.setup(app)
     codec.setup(app)
-    spark.setup(app)
+    connection.setup(app)
+    commander.setup(app)
+    synchronization.setup(app)
+
+    controller.setup(app)
     broadcaster.setup(app)
 
     error_response.setup(app)
-    debug_api.setup(app)
     blocks_api.setup(app)
     system_api.setup(app)
     settings_api.setup(app)
     mqtt_api.setup(app)
     sim_api.setup(app)
-
-    synchronization.setup(app)
+    debug_api.setup(app)
 
     service.furnish(app)
     service.run(app)

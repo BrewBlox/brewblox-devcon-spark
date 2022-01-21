@@ -2,12 +2,13 @@
 Tests brewblox codec
 """
 
-import pytest
-from brewblox_service import features, scheduler
 from unittest.mock import ANY
 
-from brewblox_devcon_spark import (codec, commander_sim, service_store,
-                                   exceptions, service_status)
+import pytest
+from brewblox_service import features, scheduler
+
+from brewblox_devcon_spark import (codec, connection_sim, exceptions,
+                                   service_status, service_store)
 from brewblox_devcon_spark.codec import (Codec, DecodeOpts, MetadataOpt,
                                          ProtoEnumOpt)
 
@@ -16,9 +17,9 @@ from brewblox_devcon_spark.codec import (Codec, DecodeOpts, MetadataOpt,
 def app(app):
     service_status.setup(app)
     scheduler.setup(app)
-    service_store.setup(app)
-    commander_sim.setup(app)
     codec.setup(app)
+    service_store.setup(app)
+    connection_sim.setup(app)
     return app
 
 
@@ -46,60 +47,54 @@ async def test_encode_system_objects(app, client, cdc: Codec):
             'type': 'OneWireBus',
             'data': {},
         },
-        {
-            'type': 'Groups',
-            'data': {
-                'active': [0]
-            },
-        }
     ]
 
-    encoded = [await cdc.encode(o['type'], o['data']) for o in objects]
+    encoded = [await cdc.encode((o['type'], None), o['data']) for o in objects]
     assert encoded
 
 
 async def test_encode_errors(app, client, cdc: Codec):
     with pytest.raises(TypeError):
-        await cdc.encode('TempSensorOneWire', None)
+        await cdc.encode(('TempSensorOneWire', None), opts={})
+
+    with pytest.raises(exceptions.EncodeException):
+        await cdc.encode(('MAGIC', None), {})
+
+    with pytest.raises(exceptions.EncodeException):
+        await cdc.encode(('TempSensorOneWire', None), {'Galileo': 'thunderbolts and lightning'})
 
     with pytest.raises(TypeError):
-        await cdc.encode('TempSensorOneWire', opts={})
-
-    with pytest.raises(exceptions.EncodeException):
-        await cdc.encode('MAGIC', {})
-
-    with pytest.raises(exceptions.EncodeException):
-        await cdc.encode('TempSensorOneWire', {'Galileo': 'thunderbolts and lightning'})
+        await cdc.encode(('TempSensorOneWire', None), 'very very frightening me')
 
 
 async def test_decode_errors(app, client, cdc: Codec):
     with pytest.raises(TypeError):
-        await cdc.decode('TempSensorOneWire', 'string')
+        await cdc.decode(('TempSensorOneWire', None), 123)
 
-    type_int = await cdc.encode('TempSensorOneWire')
-    assert await cdc.decode(type_int, b'very very frightening me') \
-        == ('ErrorObject', {'error': ANY, 'type': 'TempSensorOneWire'})
+    identifier, _ = await cdc.encode(('TempSensorOneWire', None), None)
+    assert await cdc.decode(identifier, b'Galileo, Figaro - magnificoo') \
+        == (('ErrorObject', None), {'error': ANY, 'identifier': ('TempSensorOneWire', None)})
 
-    assert await cdc.decode(1e6, b'\x00') == ('ErrorObject', {'error': ANY, 'type': 1e6})
-    assert await cdc.decode(1e6) == 'UnknownType'
+    assert await cdc.decode((1e6, 0), b'\x00') == (('ErrorObject', None), {'error': ANY, 'identifier': (1e6, 0)})
+    assert await cdc.decode((1e6, 0), None) == (('UnknownType', None), None)
 
     with pytest.raises(TypeError):
-        await cdc.decode(1e6, b'\x00', {})
+        await cdc.decode((1e6, 0), b'\x00', {})
 
 
 async def test_invalid_object(app, client, cdc: Codec):
-    assert await cdc.encode('Invalid', {'args': True}) == (0, b'\x00')
-    assert await cdc.decode(0, b'\xAA') == ('Invalid', {})
+    assert await cdc.encode(('Invalid', None), {'args': True}) == ((0, 0), 'AA==')
+    assert await cdc.decode((0, 0), 'AA==') == (('Invalid', None), {})
 
 
 async def test_deprecated_object(app, client, cdc: Codec):
-    assert await cdc.encode('DeprecatedObject', {'actualId': 100}) == (65533, b'\x64\x00')
-    assert await cdc.decode(65533, b'\x64\x00') == ('DeprecatedObject', {'actualId': 100})
+    assert await cdc.encode(('DeprecatedObject', None), {'actualId': 100}) == ((65533, 0), 'ZAA=')
+    assert await cdc.decode((65533, 0), 'ZAA=') == (('DeprecatedObject', None), {'actualId': 100})
 
 
 async def test_encode_constraint(app, client, cdc: Codec):
-    assert await cdc.decode('ActuatorPwm', b'\x00')
-    assert await cdc.encode('ActuatorPwm', {
+    assert await cdc.decode(('ActuatorPwm', None), b'\x00')
+    assert await cdc.encode(('ActuatorPwm', None), {
         'constrainedBy': {
             'constraints': [
                 {'min': -100},
@@ -111,25 +106,44 @@ async def test_encode_constraint(app, client, cdc: Codec):
 
 async def test_encode_delta_sec(app, client, cdc: Codec):
     # Check whether [delta_temperature / time] can be converted
-    enc_id, enc_val = await cdc.encode('EdgeCase', {
+    enc_id, enc_val = await cdc.encode(('EdgeCase', None), {
         'deltaV': 100,
     })
-    dec_id, dec_val = await cdc.decode(enc_id, enc_val, DecodeOpts(metadata=MetadataOpt.POSTFIX))
+    _, dec_val = await cdc.decode(enc_id, enc_val, DecodeOpts(metadata=MetadataOpt.POSTFIX))
     assert dec_val['deltaV[delta_degC / second]'] == pytest.approx(100, 0.1)
 
 
+async def test_encode_submessage(app, client, cdc: Codec):
+    enc_id, enc_val = await cdc.encode(('EdgeCase', 'SubCase'), {})
+    assert enc_id == (9001, 1)
+    dec_id, dec_val = await cdc.decode(enc_id, enc_val)
+    assert dec_id == ('EdgeCase', 'SubCase')
+
+
+async def test_implements(app, client, cdc: Codec):
+    assert await cdc.implements(('EdgeCase', None)) == []
+    assert await cdc.implements(('ActuatorPwm', None)) == [
+        'ProcessValueInterface',
+        'ActuatorAnalogInterface',
+    ]
+    assert await cdc.implements(('ActuatorAnalogInterface', None)) == []
+
+
 async def test_transcode_interfaces(app, client, cdc: Codec):
-    types = [
+    for type in [
         'EdgeCase',
         'BalancerInterface',
         'SetpointSensorPair',
-        'SetpointSensorPairInterface'
-    ]
-    assert [await cdc.decode(await cdc.encode(t)) for t in types] == types
+        'SetpointSensorPairInterface',
+    ]:
+        dec_id = (type, None)
+        enc_id, _ = await cdc.encode(dec_id, None)
+        dec_id, _ = await cdc.decode(enc_id, None)
+        assert dec_id == (type, None)
 
 
 async def test_stripped_fields(app, client, cdc: Codec, sim_cdc: Codec):
-    enc_id, enc_val = await sim_cdc.encode('EdgeCase', {
+    enc_id, enc_val = await sim_cdc.encode(('EdgeCase', None), {
         'deltaV': 100,  # tag 6
         'logged': 10,  # tag 7
         'strippedFields': [6],
@@ -140,13 +154,13 @@ async def test_stripped_fields(app, client, cdc: Codec, sim_cdc: Codec):
     assert dec_val['logged'] == 10
     assert 'strippedFields' not in dec_val.keys()
 
-    dec_id, dec_val = await cdc.decode(enc_id, enc_val,
-                                       DecodeOpts(metadata=MetadataOpt.POSTFIX))
+    _, dec_val = await cdc.decode(enc_id, enc_val,
+                                  DecodeOpts(metadata=MetadataOpt.POSTFIX))
     assert dec_val['deltaV[delta_degC / second]'] is None
 
 
 async def test_driven_fields(app, client, cdc: Codec):
-    enc_id, enc_val = await cdc.encode('EdgeCase', {
+    enc_id, enc_val = await cdc.encode(('EdgeCase', None), {
         'drivenDevice': 10,
         'state': {
             'value[degC]': 10
@@ -159,7 +173,7 @@ async def test_driven_fields(app, client, cdc: Codec):
 
 
 async def test_postfixed_decoding(app, client, cdc: Codec):
-    enc_id, enc_val = await cdc.encode('EdgeCase', {
+    enc_id, enc_val = await cdc.encode(('EdgeCase', None), {
         'drivenDevice': 10,
         'state': {
             'value[degC]': 10
@@ -172,14 +186,14 @@ async def test_postfixed_decoding(app, client, cdc: Codec):
 
 
 async def test_point_presence(app, client, cdc: Codec):
-    enc_id_present, enc_val_present = await cdc.encode('SetpointProfile', {
+    enc_id_present, enc_val_present = await cdc.encode(('SetpointProfile', None), {
         'points': [
             {'time': 0, 'temperature[degC]': 0},
             {'time': 10, 'temperature[degC]': 10},
         ]
     })
 
-    enc_id_absent, enc_val_absent = await cdc.encode('SetpointProfile', {
+    enc_id_absent, enc_val_absent = await cdc.encode(('SetpointProfile', None), {
         'points': [
             {'time': 10, 'temperature[degC]': 10},
         ]
@@ -193,20 +207,15 @@ async def test_point_presence(app, client, cdc: Codec):
     assert dec_val_present['points'][0]['time'] == 0
 
 
-async def test_compatible_types(app, client, cdc: Codec):
-    tree = cdc.compatible_types()
-    assert len(tree['TempSensorInterface']) > 0
-
-
 async def test_enum_decoding(app, client, cdc: Codec):
-    enc_id, enc_val = await cdc.encode('DigitalActuator', {
+    enc_id, enc_val = await cdc.encode(('DigitalActuator', None), {
         'desiredState': 'STATE_ACTIVE',
     })
     dec_id, dec_val = await cdc.decode(enc_id, enc_val)
     assert dec_val['desiredState'] == 'STATE_ACTIVE'
 
     # Both strings and ints are valid input
-    enc_id_alt, enc_val_alt = await cdc.encode('DigitalActuator', {
+    enc_id_alt, enc_val_alt = await cdc.encode(('DigitalActuator', None), {
         'desiredState': 1,
     })
     assert enc_val_alt == enc_val

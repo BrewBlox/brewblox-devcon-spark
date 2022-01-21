@@ -5,7 +5,7 @@ Calculate block metadata
 from itertools import chain
 from typing import Any, Generator, TypedDict
 
-from brewblox_devcon_spark.types import Block
+from brewblox_devcon_spark.models import Block
 
 # Relations to these blocks should be ignored,
 # as they have no impact on control logic
@@ -119,22 +119,22 @@ def _find_nested_relations(
         return []
 
 
-def calculate_relations(blocks: list[dict]) -> list[dict]:
+def calculate_relations(blocks: list[Block]) -> list[dict]:
     """
     Identifies all relation edges between blocks.
     One-sided relations (undefined links) are ignored.
 
     Args:
-        blocks (list[dict]): Set of blocks that will be evaluated
+        blocks (list[Block]): Set of blocks that will be evaluated
 
     Returns:
         list[dict]: Valid relations between blocks in `blocks`.
     """
     output = []
     for block in blocks:
-        if block['type'] in IGNORED_RELATION_TYPES:
+        if block.type in IGNORED_RELATION_TYPES:
             continue
-        output += _find_nested_relations(block['id'], [], block['data'])
+        output += _find_nested_relations(block.id, [], block.data)
 
     return output
 
@@ -207,10 +207,10 @@ def calculate_drive_chains(blocks: list[Block]) -> list[BlockDriveChain]:
     # First map all driven blocks to their drivers
     drivers: dict[str, list[str]] = {}  # key: driven, value: drivers
     for block in blocks:
-        for field in block['data'].values():
+        for field in block.data.values():
             if is_defined_link(field) and field.get('driven') is True:
                 # Link is driven, append block ID to drivers
-                drivers.setdefault(field['id'], []).append(block['id'])
+                drivers.setdefault(field['id'], []).append(block.id)
 
     # Generate and collect all drive chains
     output: list[BlockDriveChain] = []

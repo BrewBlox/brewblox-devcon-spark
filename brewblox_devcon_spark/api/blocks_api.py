@@ -2,525 +2,290 @@
 REST API for Spark blocks
 """
 
-import asyncio
-import re
-from copy import deepcopy
 
 from aiohttp import web
-from aiohttp_apispec import docs, json_schema, response_schema
-from brewblox_service import brewblox_logger, mqtt, strex
+from aiohttp_pydantic import PydanticView
+from aiohttp_pydantic.oas.typing import r200, r201
+from brewblox_service import brewblox_logger, mqtt
 
-from brewblox_devcon_spark import (block_cache, block_store, const, exceptions,
-                                   service_status, spark, twinkeydict, types)
-from brewblox_devcon_spark.api import schemas
-
-SYNC_WAIT_TIMEOUT_S = 20
+from brewblox_devcon_spark import controller
+from brewblox_devcon_spark.models import (Backup, BackupLoadResult, Block,
+                                          BlockIdentity, BlockNameChange)
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
-
-SID_PATTERN = re.compile(r'^[a-zA-Z]{1}[a-zA-Z0-9 _\-\(\)\|]{0,199}$')
-SID_RULES = """
-An object ID must adhere to the following rules:
-- Starts with a letter
-- May only contain alphanumeric characters, space, and _-()|
-- At most 200 characters
-"""
 
 
 def setup(app: web.Application):
     app.router.add_routes(routes)
 
 
-def validate_sid(sid: str):
-    if not re.match(SID_PATTERN, sid):
-        raise exceptions.InvalidId(SID_RULES)
-    if next((keys for keys in const.SYS_OBJECT_KEYS if sid == keys[0]), None):
-        raise exceptions.InvalidId(f'"{sid}" is an ID reserved for system objects')
+class BlocksView(PydanticView):
+    def __init__(self, request: web.Request) -> None:
+        super().__init__(request)
+        self.app = request.app
+        self.controller = controller.fget(request.app)
+
+    async def publish(self, changed: list[Block] = None, deleted: list[BlockIdentity] = None):
+        changed = [v.dict() for v in changed] if changed else []
+        deleted = [v.id for v in deleted] if deleted else []
+        name = self.app['config']['name']
+        topic = self.app['config']['state_topic'] + f'/{name}/patch'
+        await mqtt.publish(self.app,
+                           topic,
+                           err=False,
+                           message={
+                               'key': name,
+                               'type': 'Spark.patch',
+                               'ttl': '1d',
+                               'data': {
+                                   'changed': changed,
+                                   'deleted': deleted,
+                               }
+                           })
 
 
-def merge(a: dict, b: dict):
-    """Merges dict b into dict a"""
-    for key in b:
-        if key in a:
-            if isinstance(a[key], dict) and isinstance(b[key], dict):
-                merge(a[key], b[key])
-            else:
-                a[key] = b[key]
-        else:
-            a[key] = b[key]
-    return a
-
-
-class BlocksApi():
-
-    def __init__(self, app: web.Application):
-        self.app = app
-        self._spark = spark.fget(app)
-        self._store = block_store.fget(app)
-        self._publish_changed = True
-
-    async def wait_for_sync(self):
-        await asyncio.wait_for(
-            service_status.wait_synchronized(self.app),
-            SYNC_WAIT_TIMEOUT_S)
-
-    async def create(self, block: types.Block) -> types.Block:
+@routes.view('/blocks/create')
+class CreateView(BlocksView):
+    async def post(self, args: Block) -> r201[Block]:
         """
-        Creates a new object in the datastore and controller.
+        Create new block.
+
+        Tags: Blocks
         """
-        await self.wait_for_sync()
-        # sid is required for new blocks
-        sid = block.pop('id')
-        validate_sid(sid)
-
-        try:
-            placeholder = object()
-            self._store[sid, placeholder] = 'PLACEHOLDER'
-        except twinkeydict.TwinKeyError as ex:
-            raise exceptions.ExistingId(ex) from ex
-
-        try:
-            created = await self._spark.create_object(block)
-
-        finally:
-            del self._store[sid, placeholder]
-
-        self._store.rename((created['id'], None), (sid, None))
-        created['id'] = sid
-
-        block_cache.set(self.app, created)
-        await self.publish(changed=[created])
-        return created
-
-    async def read(self, ids: types.BlockIds) -> types.Block:
-        await self.wait_for_sync()
-        block = await self._spark.read_object(ids)
-        block_cache.set(self.app, block)
-        return block
-
-    async def read_logged(self, ids: types.BlockIds) -> types.Block:
-        await self.wait_for_sync()
-        return await self._spark.read_logged_object(ids)
-
-    async def read_stored(self, ids: types.BlockIds) -> types.Block:
-        await self.wait_for_sync()
-        return await self._spark.read_stored_object(ids)
-
-    async def write(self, block: types.Block) -> types.Block:
-        await self.wait_for_sync()
-        block = await self._spark.write_object(block)
-        block_cache.set(self.app, block)
+        block = await self.controller.create_block(args)
         await self.publish(changed=[block])
-        return block
+        return web.json_response(
+            block.dict(),
+            status=201
+        )
 
-    async def patch(self, partial: dict) -> types.Block:
-        await self.wait_for_sync()
-        block = block_cache.get(self.app, partial) or await self.read(partial)
-        block = deepcopy(block)
-        merge(block['data'], partial['data'])
-        return await self.write(block)
 
-    async def publish(self, changed: list[types.Block] = None, deleted: list[str] = None):
-        if self._publish_changed:
-            name = self.app['config']['name']
-            topic = self.app['config']['state_topic'] + f'/{name}/patch'
-            await mqtt.publish(self.app,
-                               topic,
-                               err=False,
-                               message={
-                                   'key': name,
-                                   'type': 'Spark.patch',
-                                   'ttl': '1d',
-                                   'data': {
-                                       'changed': changed or [],
-                                       'deleted': deleted or [],
-                                   }
-                               })
-
-    async def delete(self, ids: types.BlockIds) -> types.BlockIds:
+@routes.view('/blocks/read')
+class ReadView(BlocksView):
+    async def post(self, args: BlockIdentity) -> r200[Block]:
         """
-        Deletes object from controller and data store
+        Read block.
+
+        Tags: Blocks
         """
-        await self.wait_for_sync()
-        sid = ids.get('id')
-        nid = ids.get('nid')
-
-        await self._spark.delete_object(ids)
-
-        if sid is None:
-            sid = self._store.left_key(nid)
-        if nid is None:
-            nid = self._store.right_key(sid)
-
-        del self._store[sid, nid]
-        ids = {'id': sid, 'nid': nid}
-        block_cache.delete(self.app, ids)
-        await self.publish(deleted=[sid])
-        return ids
-
-    async def read_all(self) -> list[types.Block]:
-        await self.wait_for_sync()
-        response = await self._spark.list_objects()
-        blocks = response.get('objects', [])
-        block_cache.set_all(self.app, blocks)
-        return blocks
-
-    async def read_all_logged(self) -> list[types.Block]:
-        await self.wait_for_sync()
-        response = await self._spark.list_logged_objects()
-        return response.get('objects', [])
-
-    async def read_all_stored(self) -> list[types.Block]:
-        await self.wait_for_sync()
-        response = await self._spark.list_stored_objects()
-        return response.get('objects', [])
-
-    async def read_all_broadcast(self) -> tuple[list[types.Block], list[types.Block]]:
-        await self.wait_for_sync()
-        blocks_response, logged_response = await self._spark.list_broadcast_objects()
-        blocks = blocks_response.get('objects', [])
-        logged_blocks = logged_response.get('objects', [])
-        block_cache.set_all(self.app, blocks)
-        return (blocks, logged_blocks)
-
-    async def delete_all(self) -> dict:
-        await self.wait_for_sync()
-        await self._spark.clear_objects()
-        self._store.clear()
-        await self._spark.write_object({
-            'nid': const.DISPLAY_SETTINGS_NID,
-            'type': 'DisplaySettings',
-            'groups': [],
-            'data': {},
-        })
-        ids = [sid for (sid, nid) in block_cache.keys(self.app)
-               if nid >= const.USER_NID_START]
-        block_cache.delete_all(self.app)
-        await self.publish(deleted=ids)
-        return {}
-
-    async def compatible(self, interface: str) -> list[str]:
-        await self.wait_for_sync()
-        response = await self._spark.list_compatible_objects({
-            'interface': interface,
-        })
-        return response.get('object_ids', [])
-
-    async def discover(self) -> list[str]:
-        await self.wait_for_sync()
-        response = await self._spark.discover_objects()
-        return response.get('objects', [])
-
-    async def validate(self, partial: dict) -> types.Block:
-        return await self._spark.validate(partial)
-
-    async def rename(self, existing: str, desired: str) -> types.BlockIds:
-        validate_sid(desired)
-        self._store.rename((existing, None), (desired, None))
-        block_cache.rename(self.app, existing, desired)
-        return {
-            'id': desired,
-            'nid': self._store.right_key(desired),
-        }
-
-    async def cleanup(self) -> list[types.BlockIds]:
-        await self.wait_for_sync()
-        actual = [block['id']
-                  for block in await self.read_all()]
-        unused = [(sid, nid)
-                  for (sid, nid) in self._store
-                  if sid not in actual]
-        for (sid, nid) in unused.copy():
-            del self._store[sid, nid]
-        return [{'id': sid, 'nid': nid}
-                for (sid, nid) in unused]
-
-    async def backup_save(self) -> types.Backup:
-        await self.wait_for_sync()
-        store_data = [
-            {'keys': keys, 'data': content}
-            for keys, content in self._store.items()
-        ]
-        blocks_data = await self.read_all_stored()
-        return {
-            'blocks': [
-                block for block in blocks_data
-                if block['nid'] != const.SYSTIME_NID
-            ],
-            'store': store_data,
-        }
-
-    async def backup_load(self, exported: types.Backup) -> types.BackupLoadResult:
-        await self.wait_for_sync()
-        await self.delete_all()
-
-        self._publish_changed = False
-        error_log = []
-
-        # First populate the datastore, to avoid unknown links
-        for entry in exported['store']:
-            keys = entry['keys']
-            data = entry['data']
-
-            try:
-                self._store[keys] = data
-            except twinkeydict.TwinKeyError:
-                sid, nid = keys
-                self._store.rename((None, nid), (sid, None))
-                self._store[keys] = data
-
-        # Now either create or write the objects, depending on whether they are system objects
-        for block in exported['blocks']:
-            try:
-                nid = block.get('nid')
-                if nid is not None and nid < const.USER_NID_START:
-                    await self.write(deepcopy(block))
-                else:
-                    # Bypass BlockApi.create(), to avoid meddling with store IDs
-                    await self._spark.create_object(deepcopy(block))
-            except Exception as ex:
-                message = f'failed to import block. Error={strex(ex)}, block={block}'
-                error_log.append(message)
-                LOGGER.error(message)
-
-        self._publish_changed = True
-        used_nids = [b.get('nid') for b in await self.read_all()]
-        unused = [
-            (sid, nid) for (sid, nid) in self._store
-            if nid >= const.USER_NID_START
-            and nid not in used_nids
-        ]
-        for sid, nid in unused:
-            del self._store[sid, nid]
-            message = f'Removed unused alias [{sid},{nid}]'
-            LOGGER.info(message)
-            error_log.append(message)
-
-        return {'messages': error_log}
+        block = await self.controller.read_block(args)
+        return web.json_response(
+            block.dict()
+        )
 
 
-@docs(
-    tags=['Blocks'],
-    summary='Create new block',
-)
-@routes.post('/blocks/create')
-@json_schema(schemas.BlockSchema)
-@response_schema(schemas.BlockSchema, 201)
-async def _create(request: web.Request) -> web.Response:
-    return web.json_response(
-        await BlocksApi(request.app).create(request['json']),
-        status=201
-    )
+@routes.view('/blocks/read/logged')
+class ReadLoggedView(BlocksView):
+    async def post(self, args: BlockIdentity) -> r200[Block]:
+        """
+        Read block. Data only includes logged fields.
+
+        Tags: Blocks
+        """
+        block = await self.controller.read_logged_block(args)
+        return web.json_response(
+            block.dict()
+        )
 
 
-@docs(
-    tags=['Blocks'],
-    summary='Read block',
-)
-@routes.post('/blocks/read')
-@json_schema(schemas.BlockIdSchema)
-@response_schema(schemas.BlockSchema)
-async def _read(request: web.Request) -> web.Response:
-    return web.json_response(
-        await BlocksApi(request.app).read(request['json'])
-    )
+@routes.view('/blocks/read/stored')
+class ReadStoredView(BlocksView):
+    async def post(self, args: BlockIdentity) -> r200[Block]:
+        """
+        Read block. Data only includes persistent fields.
+
+        Tags: Blocks
+        """
+        block = await self.controller.read_stored_block(args)
+        return web.json_response(
+            block.dict()
+        )
 
 
-@docs(
-    tags=['Blocks'],
-    summary='Read block. Data only includes logged fields.',
-)
-@routes.post('/blocks/read/logged')
-@json_schema(schemas.BlockIdSchema)
-@response_schema(schemas.BlockSchema)
-async def _read_logged(request: web.Request) -> web.Response:
-    return web.json_response(
-        await BlocksApi(request.app).read_logged(request['json'])
-    )
+@routes.view('/blocks/write')
+class WriteView(BlocksView):
+    async def post(self, args: Block) -> r200[Block]:
+        """
+        Write to existing block.
+
+        Tags: Blocks
+        """
+        block = await self.controller.write_block(args)
+        await self.publish(changed=[block])
+        return web.json_response(
+            block.dict()
+        )
 
 
-@docs(
-    tags=['Blocks'],
-    summary='Read block',
-)
-@routes.post('/blocks/read/stored')
-@json_schema(schemas.BlockIdSchema)
-@response_schema(schemas.BlockSchema)
-async def _read_stored(request: web.Request) -> web.Response:
-    return web.json_response(
-        await BlocksApi(request.app).read_stored(request['json'])
-    )
+@routes.view('/blocks/patch')
+class PatchView(BlocksView):
+    async def post(self, args: Block) -> r200[Block]:
+        """
+        Patch existing block.
+
+        Tags: Blocks
+        """
+        block = await self.controller.patch_block(args)
+        await self.publish(changed=[block])
+        return web.json_response(
+            block.dict()
+        )
 
 
-@docs(
-    tags=['Blocks'],
-    summary='Update existing block',
-)
-@routes.post('/blocks/write')
-@json_schema(schemas.BlockSchema)
-@response_schema(schemas.BlockSchema)
-async def _write(request: web.Request) -> web.Response:
-    return web.json_response(
-        await BlocksApi(request.app).write(request['json'])
-    )
+@routes.view('/blocks/delete')
+class DeleteView(BlocksView):
+    async def post(self, args: BlockIdentity) -> r200[BlockIdentity]:
+        """
+        Delete block.
+
+        Tags: Blocks
+        """
+        ident = await self.controller.delete_block(args)
+        await self.publish(deleted=[ident])
+        return web.json_response(
+            ident.dict()
+        )
 
 
-@docs(
-    tags=['Blocks'],
-    summary='Patch existing block',
-)
-@routes.post('/blocks/patch')
-@json_schema(schemas.BlockPatchSchema)
-@response_schema(schemas.BlockSchema)
-async def _patch(request: web.Request) -> web.Response:
-    return web.json_response(
-        await BlocksApi(request.app).patch(request['json'])
-    )
+@routes.view('/blocks/all/read')
+class ReadAllView(BlocksView):
+    async def post(self) -> r200[list[Block]]:
+        """
+        Read all blocks.
+
+        Tags: Blocks
+        """
+        blocks = await self.controller.list_blocks()
+        return web.json_response(
+            [v.dict() for v in blocks]
+        )
 
 
-@docs(
-    tags=['Blocks'],
-    summary='Delete block',
-)
-@routes.post('/blocks/delete')
-@json_schema(schemas.BlockIdSchema(unknown='exclude'))
-@response_schema(schemas.BlockIdSchema)
-async def _delete(request: web.Request) -> web.Response:
-    return web.json_response(
-        await BlocksApi(request.app).delete(request['json'])
-    )
+@routes.view('/blocks/all/read/logged')
+class ReadAllLoggedView(BlocksView):
+    async def post(self) -> r200[list[Block]]:
+        """
+        Read all blocks. Only includes logged fields.
+
+        Tags: Blocks
+        """
+        blocks = await self.controller.list_logged_blocks()
+        return web.json_response(
+            [v.dict() for v in blocks]
+        )
 
 
-@docs(
-    tags=['Blocks'],
-    summary='Get all blocks',
-)
-@routes.post('/blocks/all/read')
-@response_schema(schemas.BlockSchema(many=True))
-async def _all_read(request: web.Request) -> web.Response:
-    return web.json_response(
-        await BlocksApi(request.app).read_all()
-    )
+@routes.view('/blocks/all/read/stored')
+class ReadAllStoredView(BlocksView):
+    async def post(self) -> r200[list[Block]]:
+        """
+        Read all blocks. Only includes stored fields.
+
+        Tags: Blocks
+        """
+        blocks = await self.controller.list_stored_blocks()
+        return web.json_response(
+            [v.dict() for v in blocks]
+        )
 
 
-@docs(
-    tags=['Blocks'],
-    summary='Get all blocks. Only include logged data.',
-)
-@routes.post('/blocks/all/read/logged')
-@response_schema(schemas.BlockSchema(many=True))
-async def _all_read_logged(request: web.Request) -> web.Response:
-    return web.json_response(
-        await BlocksApi(request.app).read_all_logged()
-    )
+@routes.view('/blocks/all/delete')
+class DeleteAllView(BlocksView):
+    async def post(self) -> r200[list[BlockIdentity]]:
+        """
+        Delete all user blocks.
+
+        Tags: Blocks
+        """
+        idents = await self.controller.clear_blocks()
+        await self.publish(deleted=idents)
+        return web.json_response(
+            [v.dict() for v in idents]
+        )
 
 
-@docs(
-    tags=['Blocks'],
-    summary='Get all blocks. Only include stored data.',
-)
-@routes.post('/blocks/all/read/stored')
-@response_schema(schemas.BlockSchema(many=True))
-async def _all_read_stored(request: web.Request) -> web.Response:
-    return web.json_response(
-        await BlocksApi(request.app).read_all_stored()
-    )
+@routes.view('/blocks/cleanup')
+class CleanupView(BlocksView):
+    async def post(self) -> r200[list[BlockIdentity]]:
+        """
+        Clean unused block IDs.
+
+        Tags: Blocks
+        """
+        idents = await self.controller.remove_unused_ids()
+        return web.json_response(
+            [v.dict() for v in idents]
+        )
 
 
-@docs(
-    tags=['Blocks'],
-    summary='Delete all user blocks',
-)
-@routes.post('/blocks/all/delete')
-async def _all_delete(request: web.Request) -> web.Response:
-    return web.json_response(
-        await BlocksApi(request.app).delete_all()
-    )
+@routes.view('/blocks/rename')
+class RenameView(BlocksView):
+    async def post(self, args: BlockNameChange) -> r200[BlockIdentity]:
+        """
+        Rename existing block.
+
+        Tags: Blocks
+        """
+        ident = await self.controller.rename_block(args)
+        return web.json_response(
+            ident.dict()
+        )
 
 
-@docs(
-    tags=['Blocks'],
-    summary='Clean unused block IDs',
-)
-@routes.post('/blocks/cleanup')
-@response_schema(schemas.BlockIdSchema(many=True))
-async def _cleanup(request: web.Request) -> web.Response:
-    return web.json_response(
-        await BlocksApi(request.app).cleanup()
-    )
+@routes.view('/blocks/discover')
+class DiscoverView(BlocksView):
+    async def post(self) -> r200[list[Block]]:
+        """
+        Discover newly connected OneWire devices.
+
+        Tags: Blocks
+        """
+        blocks = await self.controller.discover_blocks()
+        return web.json_response(
+            [v.dict() for v in blocks]
+        )
 
 
-@docs(
-    tags=['Blocks'],
-    summary='Rename existing block',
-)
-@routes.post('/blocks/rename')
-@json_schema(schemas.BlockRenameSchema)
-@response_schema(schemas.BlockIdSchema)
-async def _rename(request: web.Request) -> web.Response:
-    return web.json_response(
-        await BlocksApi(request.app).rename(**request['json'])
-    )
+@routes.view('/blocks/validate')
+class ValidateView(BlocksView):
+    async def post(self, block: Block) -> r200[Block]:
+        """
+        Validate block data.
+        This checks whether the block can be serialized.
+        It will not be sent to the controller.
+
+        Tags: Blocks
+        """
+        block = await self.controller.validate(block)
+        return web.json_response(
+            block.dict()
+        )
 
 
-@docs(
-    tags=['Blocks'],
-    summary='Get IDs for all blocks compatible with interface',
-)
-@routes.post('/blocks/compatible')
-@json_schema(schemas.InterfaceIdSchema)
-@response_schema(schemas.BlockIdSchema(many=True))
-async def _compatible(request: web.Request) -> web.Response:
-    return web.json_response(
-        await BlocksApi(request.app).compatible(**request['json'])
-    )
+@routes.view('/blocks/backup/save')
+class BackupSaveView(BlocksView):
+    async def post(self) -> r200[Backup]:
+        """
+        Export service blocks to a portable format.
+
+        Tags: Blocks
+        """
+        backup = await self.controller.backup_save()
+        return web.json_response(
+            backup.dict()
+        )
 
 
-@docs(
-    tags=['Blocks'],
-    summary='Discover newly connected OneWire devices',
-)
-@routes.post('/blocks/discover')
-@response_schema(schemas.BlockSchema(many=True))
-async def _discover(request: web.Request) -> web.Response:
-    return web.json_response(
-        await BlocksApi(request.app).discover()
-    )
+@routes.view('/blocks/backup/load')
+class BackupLoadView(BlocksView):
+    async def post(self, args: Backup) -> r200[BackupLoadResult]:
+        """
+        Import service blocks from a backup generated by /blocks/backup/save
 
-
-@docs(
-    tags=['Blocks'],
-    summary='Validate block data',
-)
-@routes.post('/blocks/validate')
-@json_schema(schemas.BlockValidateSchema)
-async def _validate(request: web.Request) -> web.Response:
-    return web.json_response(
-        await BlocksApi(request.app).validate(request['json'])
-    )
-
-
-@docs(
-    tags=['Blocks'],
-    summary='Export service blocks to portable format',
-)
-@routes.post('/blocks/backup/save')
-@response_schema(schemas.SparkExportSchema)
-async def _backup_save(request: web.Request) -> web.Response:
-    return web.json_response(
-        await BlocksApi(request.app).backup_save()
-    )
-
-
-@docs(
-    tags=['Blocks'],
-    summary='Import service blocks from portable format',
-)
-@routes.post('/blocks/backup/load')
-@json_schema(schemas.SparkExportSchema)
-@response_schema(schemas.SparkExportResultSchema)
-async def _backup_load(request: web.Request) -> web.Response:
-    return web.json_response(
-        await BlocksApi(request.app).backup_load(request['json'])
-    )
+        Tags: Blocks
+        """
+        result = await self.controller.backup_load(args)
+        return web.json_response(
+            result.dict()
+        )

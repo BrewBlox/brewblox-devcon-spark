@@ -34,7 +34,7 @@ class OptionElement():
     nested: bool
 
 
-class Modifier():
+class ProtobufProcessor():
     _BREWBLOX_PROVIDER: DescriptorBase = brewblox_pb2.brewblox
 
     def __init__(self, converter: UnitConverter, strip_readonly=True):
@@ -107,10 +107,10 @@ class Modifier():
         return field.GetOptions().Extensions[provider]
 
     def _unit_name(self, unit_num: int) -> str:
-        return brewblox_pb2.BrewBloxTypes.UnitType.Name(unit_num)
+        return brewblox_pb2.BrewbloxTypes.UnitType.Name(unit_num)
 
     def _objtype_name(self, objtype_num: int) -> str:
-        return brewblox_pb2.BrewBloxTypes.BlockType.Name(objtype_num)
+        return brewblox_pb2.BrewbloxTypes.BlockType.Name(objtype_num)
 
     def _encode_unit(self, value: Union[float, dict], unit_type: str, postfix: Optional[str]) -> float:
         if isinstance(value, dict):
@@ -121,7 +121,7 @@ class Modifier():
             user_unit = postfix
             return self._converter.to_sys_value(value, unit_type, user_unit)
 
-    def encode_options(self, message: Message, obj: dict) -> dict:
+    def pre_encode(self, message: Message, obj: dict) -> dict:
         """
         Modifies `obj` based on Protobuf options and dict key postfixes.
 
@@ -153,7 +153,7 @@ class Modifier():
                 },
             }
 
-            >>> encode_options(
+            >>> pre_encode(
                     TempSensorOneWire_pb2.TempSensorOneWire(),
                     values)
 
@@ -239,7 +239,7 @@ class Modifier():
 
         return obj
 
-    def decode_options(self, message: Message, obj: dict, opts: DecodeOpts) -> dict:
+    def post_decode(self, message: Message, obj: dict, opts: DecodeOpts) -> dict:
         """
         Post-processes protobuf data based on protobuf / codec options.
 
@@ -272,7 +272,7 @@ class Modifier():
                 }
             }
 
-            >>> decode_options(
+            >>> post_decode(
                     ExampleMessage_pb2.ExampleMessage(),
                     values,
                     DecodeOpts(metadata=MetadataOpt.POSTFIX))

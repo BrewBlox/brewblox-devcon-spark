@@ -17,11 +17,11 @@ import nanopb_pb2 as nanopb__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='SysInfo.proto',
-  package='blox',
+  package='blox.SysInfo',
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\rSysInfo.proto\x12\x04\x62lox\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xea\x05\n\x05Trace\x12\"\n\x06\x61\x63tion\x18\x01 \x01(\x0e\x32\x12.blox.Trace.Action\x12\x11\n\x02id\x18\x02 \x01(\rB\x05\x92?\x02\x38\x10\x12\x13\n\x04type\x18\x03 \x01(\rB\x05\x92?\x02\x38\x10\"\x94\x05\n\x06\x41\x63tion\x12\x08\n\x04NONE\x10\x00\x12\x0f\n\x0bREAD_OBJECT\x10\x01\x12\x10\n\x0cWRITE_OBJECT\x10\x02\x12\x11\n\rCREATE_OBJECT\x10\x03\x12\x11\n\rDELETE_OBJECT\x10\x04\x12\x17\n\x13LIST_ACTIVE_OBJECTS\x10\x05\x12\x16\n\x12READ_STORED_OBJECT\x10\x06\x12\x17\n\x13LIST_STORED_OBJECTS\x10\x07\x12\x11\n\rCLEAR_OBJECTS\x10\x08\x12\n\n\x06REBOOT\x10\t\x12\x11\n\rFACTORY_RESET\x10\n\x12\x1b\n\x17LIST_COMPATIBLE_OBJECTS\x10\x0b\x12\x18\n\x14\x44ISCOVER_NEW_OBJECTS\x10\x0c\x12\x14\n\x10\x43ONSTRUCT_OBJECT\x10\x14\x12\x13\n\x0f\x44\x45STRUCT_OBJECT\x10\x15\x12\x16\n\x12STREAM_FROM_OBJECT\x10\x16\x12\x14\n\x10STREAM_TO_OBJECT\x10\x17\x12\x11\n\rUPDATE_OBJECT\x10\x18\x12\x12\n\x0ePERSIST_OBJECT\x10\x19\x12\x16\n\x12LOAD_STORED_OBJECT\x10\x1a\x12\x12\n\x0eUPDATE_OBJECTS\x10\x1b\x12\x16\n\x12UPDATE_CONNECTIONS\x10\x1c\x12\x12\n\x0eUPDATE_DISPLAY\x10\x65\x12\x10\n\x0cSYSTEM_TASKS\x10\x66\x12\x17\n\x13MANAGE_CONNECTIVITY\x10g\x12\x0e\n\nMDNS_START\x10h\x12\x10\n\x0cMDNS_PROCESS\x10i\x12\x0e\n\nHTTP_START\x10j\x12\r\n\tHTTP_STOP\x10k\x12\x11\n\rHTTP_RESPONSE\x10l\x12\x10\n\x0cWIFI_CONNECT\x10m\x12\x1b\n\x17\x46IRMWARE_UPDATE_STARTED\x10n\"\x99\x04\n\x07SysInfo\x12#\n\x08\x64\x65viceId\x18\x01 \x01(\x0c\x42\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x8a\xb5\x18\x02\x38\x01\x12\x1c\n\x07version\x18\x02 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12\x30\n\x08platform\x18\x03 \x01(\x0e\x32\x16.blox.SysInfo.PlatformB\x06\x8a\xb5\x18\x02(\x01\x12$\n\x0fprotocolVersion\x18\x07 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12 \n\x0breleaseDate\x18\x08 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12!\n\x0cprotocolDate\x18\t \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12-\n\x07\x63ommand\x18\n \x01(\x0e\x32\x1c.blox.SysInfo.SysInfoCommand\x12\'\n\x05trace\x18\x0b \x03(\x0b\x32\x0b.blox.TraceB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x10\n\"X\n\x08Platform\x12\x14\n\x10PLATFORM_UNKNOWN\x10\x00\x12\x10\n\x0cPLATFORM_GCC\x10\x03\x12\x13\n\x0fPLATFORM_PHOTON\x10\x06\x12\x0f\n\x0bPLATFORM_P1\x10\x08\"s\n\x0eSysInfoCommand\x12\x10\n\x0cSYS_CMD_NONE\x10\x00\x12\x16\n\x12SYS_CMD_TRACE_READ\x10\x01\x12\x18\n\x14SYS_CMD_TRACE_RESUME\x10\x02\x12\x1d\n\x19SYS_CMD_TRACE_READ_RESUME\x10\x03:\x07\x8a\xb5\x18\x03\x18\x80\x02\x62\x06proto3'
+  serialized_pb=b'\n\rSysInfo.proto\x12\x0c\x62lox.SysInfo\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xf2\x05\n\x05Trace\x12*\n\x06\x61\x63tion\x18\x01 \x01(\x0e\x32\x1a.blox.SysInfo.Trace.Action\x12\x11\n\x02id\x18\x02 \x01(\rB\x05\x92?\x02\x38\x10\x12\x13\n\x04type\x18\x03 \x01(\rB\x05\x92?\x02\x38\x10\"\x94\x05\n\x06\x41\x63tion\x12\x08\n\x04NONE\x10\x00\x12\x0f\n\x0bREAD_OBJECT\x10\x01\x12\x10\n\x0cWRITE_OBJECT\x10\x02\x12\x11\n\rCREATE_OBJECT\x10\x03\x12\x11\n\rDELETE_OBJECT\x10\x04\x12\x17\n\x13LIST_ACTIVE_OBJECTS\x10\x05\x12\x16\n\x12READ_STORED_OBJECT\x10\x06\x12\x17\n\x13LIST_STORED_OBJECTS\x10\x07\x12\x11\n\rCLEAR_OBJECTS\x10\x08\x12\n\n\x06REBOOT\x10\t\x12\x11\n\rFACTORY_RESET\x10\n\x12\x1b\n\x17LIST_COMPATIBLE_OBJECTS\x10\x0b\x12\x18\n\x14\x44ISCOVER_NEW_OBJECTS\x10\x0c\x12\x14\n\x10\x43ONSTRUCT_OBJECT\x10\x14\x12\x13\n\x0f\x44\x45STRUCT_OBJECT\x10\x15\x12\x16\n\x12STREAM_FROM_OBJECT\x10\x16\x12\x14\n\x10STREAM_TO_OBJECT\x10\x17\x12\x11\n\rUPDATE_OBJECT\x10\x18\x12\x12\n\x0ePERSIST_OBJECT\x10\x19\x12\x16\n\x12LOAD_STORED_OBJECT\x10\x1a\x12\x12\n\x0eUPDATE_OBJECTS\x10\x1b\x12\x16\n\x12UPDATE_CONNECTIONS\x10\x1c\x12\x12\n\x0eUPDATE_DISPLAY\x10\x65\x12\x10\n\x0cSYSTEM_TASKS\x10\x66\x12\x17\n\x13MANAGE_CONNECTIVITY\x10g\x12\x0e\n\nMDNS_START\x10h\x12\x10\n\x0cMDNS_PROCESS\x10i\x12\x0e\n\nHTTP_START\x10j\x12\r\n\tHTTP_STOP\x10k\x12\x11\n\rHTTP_RESPONSE\x10l\x12\x10\n\x0cWIFI_CONNECT\x10m\x12\x1b\n\x17\x46IRMWARE_UPDATE_STARTED\x10n\"\xb1\x04\n\x07SysInfo\x12#\n\x08\x64\x65viceId\x18\x01 \x01(\x0c\x42\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x8a\xb5\x18\x02\x38\x01\x12\x1c\n\x07version\x18\x02 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12\x38\n\x08platform\x18\x03 \x01(\x0e\x32\x1e.blox.SysInfo.SysInfo.PlatformB\x06\x8a\xb5\x18\x02(\x01\x12$\n\x0fprotocolVersion\x18\x07 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12 \n\x0breleaseDate\x18\x08 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12!\n\x0cprotocolDate\x18\t \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12\x35\n\x07\x63ommand\x18\n \x01(\x0e\x32$.blox.SysInfo.SysInfo.SysInfoCommand\x12/\n\x05trace\x18\x0b \x03(\x0b\x32\x13.blox.SysInfo.TraceB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x10\n\"X\n\x08Platform\x12\x14\n\x10PLATFORM_UNKNOWN\x10\x00\x12\x10\n\x0cPLATFORM_GCC\x10\x03\x12\x13\n\x0fPLATFORM_PHOTON\x10\x06\x12\x0f\n\x0bPLATFORM_P1\x10\x08\"s\n\x0eSysInfoCommand\x12\x10\n\x0cSYS_CMD_NONE\x10\x00\x12\x16\n\x12SYS_CMD_TRACE_READ\x10\x01\x12\x18\n\x14SYS_CMD_TRACE_RESUME\x10\x02\x12\x1d\n\x19SYS_CMD_TRACE_READ_RESUME\x10\x03:\x07\x8a\xb5\x18\x03\x18\x80\x02\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -29,7 +29,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
 
 _TRACE_ACTION = _descriptor.EnumDescriptor(
   name='Action',
-  full_name='blox.Trace.Action',
+  full_name='blox.SysInfo.Trace.Action',
   filename=None,
   file=DESCRIPTOR,
   create_key=_descriptor._internal_create_key,
@@ -197,14 +197,14 @@ _TRACE_ACTION = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=140,
-  serialized_end=800,
+  serialized_start=156,
+  serialized_end=816,
 )
 _sym_db.RegisterEnumDescriptor(_TRACE_ACTION)
 
 _SYSINFO_PLATFORM = _descriptor.EnumDescriptor(
   name='Platform',
-  full_name='blox.SysInfo.Platform',
+  full_name='blox.SysInfo.SysInfo.Platform',
   filename=None,
   file=DESCRIPTOR,
   create_key=_descriptor._internal_create_key,
@@ -232,14 +232,14 @@ _SYSINFO_PLATFORM = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1126,
-  serialized_end=1214,
+  serialized_start=1166,
+  serialized_end=1254,
 )
 _sym_db.RegisterEnumDescriptor(_SYSINFO_PLATFORM)
 
 _SYSINFO_SYSINFOCOMMAND = _descriptor.EnumDescriptor(
   name='SysInfoCommand',
-  full_name='blox.SysInfo.SysInfoCommand',
+  full_name='blox.SysInfo.SysInfo.SysInfoCommand',
   filename=None,
   file=DESCRIPTOR,
   create_key=_descriptor._internal_create_key,
@@ -267,36 +267,36 @@ _SYSINFO_SYSINFOCOMMAND = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1216,
-  serialized_end=1331,
+  serialized_start=1256,
+  serialized_end=1371,
 )
 _sym_db.RegisterEnumDescriptor(_SYSINFO_SYSINFOCOMMAND)
 
 
 _TRACE = _descriptor.Descriptor(
   name='Trace',
-  full_name='blox.Trace',
+  full_name='blox.SysInfo.Trace',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='action', full_name='blox.Trace.action', index=0,
+      name='action', full_name='blox.SysInfo.Trace.action', index=0,
       number=1, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='id', full_name='blox.Trace.id', index=1,
+      name='id', full_name='blox.SysInfo.Trace.id', index=1,
       number=2, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\222?\0028\020', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='type', full_name='blox.Trace.type', index=2,
+      name='type', full_name='blox.SysInfo.Trace.type', index=2,
       number=3, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -315,70 +315,70 @@ _TRACE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=54,
-  serialized_end=800,
+  serialized_start=62,
+  serialized_end=816,
 )
 
 
 _SYSINFO = _descriptor.Descriptor(
   name='SysInfo',
-  full_name='blox.SysInfo',
+  full_name='blox.SysInfo.SysInfo',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='deviceId', full_name='blox.SysInfo.deviceId', index=0,
+      name='deviceId', full_name='blox.SysInfo.SysInfo.deviceId', index=0,
       number=1, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=b"",
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001\222?\002\010\014\212\265\030\0028\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='version', full_name='blox.SysInfo.version', index=1,
+      name='version', full_name='blox.SysInfo.SysInfo.version', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001\222?\002\010\014', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='platform', full_name='blox.SysInfo.platform', index=2,
+      name='platform', full_name='blox.SysInfo.SysInfo.platform', index=2,
       number=3, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='protocolVersion', full_name='blox.SysInfo.protocolVersion', index=3,
+      name='protocolVersion', full_name='blox.SysInfo.SysInfo.protocolVersion', index=3,
       number=7, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001\222?\002\010\014', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='releaseDate', full_name='blox.SysInfo.releaseDate', index=4,
+      name='releaseDate', full_name='blox.SysInfo.SysInfo.releaseDate', index=4,
       number=8, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001\222?\002\010\014', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='protocolDate', full_name='blox.SysInfo.protocolDate', index=5,
+      name='protocolDate', full_name='blox.SysInfo.SysInfo.protocolDate', index=5,
       number=9, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001\222?\002\010\014', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='command', full_name='blox.SysInfo.command', index=6,
+      name='command', full_name='blox.SysInfo.SysInfo.command', index=6,
       number=10, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='trace', full_name='blox.SysInfo.trace', index=7,
+      name='trace', full_name='blox.SysInfo.SysInfo.trace', index=7,
       number=11, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -398,8 +398,8 @@ _SYSINFO = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=803,
-  serialized_end=1340,
+  serialized_start=819,
+  serialized_end=1380,
 )
 
 _TRACE.fields_by_name['action'].enum_type = _TRACE_ACTION
@@ -416,14 +416,14 @@ _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 Trace = _reflection.GeneratedProtocolMessageType('Trace', (_message.Message,), {
   'DESCRIPTOR' : _TRACE,
   '__module__' : 'SysInfo_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Trace)
+  # @@protoc_insertion_point(class_scope:blox.SysInfo.Trace)
   })
 _sym_db.RegisterMessage(Trace)
 
 SysInfo = _reflection.GeneratedProtocolMessageType('SysInfo', (_message.Message,), {
   'DESCRIPTOR' : _SYSINFO,
   '__module__' : 'SysInfo_pb2'
-  # @@protoc_insertion_point(class_scope:blox.SysInfo)
+  # @@protoc_insertion_point(class_scope:blox.SysInfo.SysInfo)
   })
 _sym_db.RegisterMessage(SysInfo)
 
