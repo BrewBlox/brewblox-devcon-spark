@@ -67,7 +67,7 @@ async def discover_all(
 ) -> Generator[ConnectInfo, None, None]:
     with suppress(asyncio.TimeoutError):
         async with timeout(timeout_v):
-            async for res in _discover(desired_id, dns_type):
+            async for res in _discover(desired_id, dns_type):  # pragma: no branch
                 yield res
 
 
@@ -77,5 +77,5 @@ async def discover_one(
     timeout_v: Optional[float] = None,
 ) -> ConnectInfo:
     async with timeout(timeout_v):
-        async for res in _discover(desired_id, dns_type):
+        async for res in _discover(desired_id, dns_type):  # pragma: no branch
             return res

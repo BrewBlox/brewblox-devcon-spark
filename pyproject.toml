@@ -34,7 +34,6 @@ flake8 = "*"
 autopep8 = "*"
 aresponses = "*"
 flake8-quotes = "*"
-grpcio-tools = "^1.43.0"
 
 [build-system]
 requires = ["poetry>=0.12"]

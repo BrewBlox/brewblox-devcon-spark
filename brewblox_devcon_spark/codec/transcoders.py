@@ -23,7 +23,7 @@ Identifier_ = Union[NumIdentifier_, StrIdentifier_]
 
 LOGGER = brewblox_logger(__name__)
 
-BlockType = pb2.brewblox_pb2.BrewbloxTypes.BlockType
+BlockType = pb2.brewblox_pb2.BlockType
 REQUEST_TYPE = 'ControlboxRequest'
 RESPONSE_TYPE = 'ControlboxResponse'
 REQUEST_TYPE_INT = -1
@@ -100,7 +100,7 @@ class BlockInterfaceTranscoder(Transcoder):
 
     @classmethod
     def type_str(cls) -> str:
-        return pb2.brewblox_pb2.BrewbloxTypes.BlockType.Name(cls._ENUM_VAL)
+        return pb2.brewblox_pb2.BlockType.Name(cls._ENUM_VAL)
 
     def encode(self, values: dict) -> bytes:
         return b'\x00'
@@ -205,7 +205,7 @@ class BaseProtobufTranscoder(Transcoder):
 
 
 class ControlboxRequestTranscoder(BaseProtobufTranscoder):
-    _MESSAGE = pb2.brewblox_pb2.ControlboxRequest
+    _MESSAGE = pb2.Controlbox_pb2.Request
 
     @classmethod
     def type_int(cls) -> int:
@@ -223,7 +223,7 @@ class ControlboxRequestTranscoder(BaseProtobufTranscoder):
 
 
 class ControlboxResponseTranscoder(BaseProtobufTranscoder):
-    _MESSAGE = pb2.brewblox_pb2.ControlboxResponse
+    _MESSAGE = pb2.Controlbox_pb2.Response
 
     @classmethod
     def type_int(cls) -> int:
@@ -253,7 +253,7 @@ class ProtobufTranscoder(BaseProtobufTranscoder):
 
 
 class EdgeCaseTranscoder(ProtobufTranscoder):
-    _MESSAGE = pb2.EdgeCase_pb2.EdgeCase
+    _MESSAGE = pb2.EdgeCase_pb2.Block
 
     @classmethod
     def type_int(cls) -> int:

@@ -15,12 +15,19 @@ To set up the development environment, follow the instructions at https://github
 When running integration tests (`pytest --integration`), additional system packages are required in order to run the firmware simulator:
 
 ```
-sudo apt update && sudo apt install -y \
+sudo apt install -y \
     socat \
     libboost-system1.67.0 \
     libboost-program-options1.67.0 \
     libboost-random1.67.0 \
     libboost-thread1.67.0
+```
+
+When updating firmware, the protobuf compiler is required:
+
+```
+sudo apt install -y \
+    protobuf-compiler
 ```
 
 ## Firmware

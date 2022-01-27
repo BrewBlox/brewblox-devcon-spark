@@ -10,4 +10,4 @@ pushd "$(dirname "$0")/.." > /dev/null
 
 pushd "brewblox_devcon_spark/codec" > /dev/null
 rm -f ./proto-compiled/*_pb2.py
-python3 -m grpc_tools.protoc -I=./proto --python_out=./proto-compiled ./proto/**.proto
+protoc -I=./proto --python_out=./proto-compiled ./proto/**.proto
