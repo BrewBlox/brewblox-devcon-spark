@@ -153,7 +153,7 @@ class BaseProtobufTranscoder(Transcoder):
     @classmethod
     def _brewblox_msg(cls):
         # Message opts as set in BrewbloxMessageOptions in brewblox.proto
-        return cls._MESSAGE.DESCRIPTOR.GetOptions().Extensions[pb2.brewblox_pb2.brewblox_msg]
+        return cls._MESSAGE.DESCRIPTOR.GetOptions().Extensions[pb2.brewblox_pb2.msg]
 
     @classmethod
     def type_int(cls) -> int:
@@ -205,7 +205,7 @@ class BaseProtobufTranscoder(Transcoder):
 
 
 class ControlboxRequestTranscoder(BaseProtobufTranscoder):
-    _MESSAGE = pb2.Controlbox_pb2.Request
+    _MESSAGE = pb2.controlbox_pb2.Request
 
     @classmethod
     def type_int(cls) -> int:
@@ -223,7 +223,7 @@ class ControlboxRequestTranscoder(BaseProtobufTranscoder):
 
 
 class ControlboxResponseTranscoder(BaseProtobufTranscoder):
-    _MESSAGE = pb2.Controlbox_pb2.Response
+    _MESSAGE = pb2.controlbox_pb2.Response
 
     @classmethod
     def type_int(cls) -> int:
@@ -285,7 +285,7 @@ def protobuf_transcoder_generator() -> Generator[Type[ProtobufTranscoder], None,
 
         for msg in messages:
             desc = msg.DESCRIPTOR
-            opts = desc.GetOptions().Extensions[pb2.brewblox_pb2.brewblox_msg]
+            opts = desc.GetOptions().Extensions[pb2.brewblox_pb2.msg]
             if opts.objtype:
                 name = f'{BlockType.Name(opts.objtype)}_{desc.name}_Transcoder'
                 yield type(name, (ProtobufTranscoder, ), {'_MESSAGE': msg})

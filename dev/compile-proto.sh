@@ -5,9 +5,7 @@
 # When pulling external updates, use update-firmware.sh
 #
 set -euo pipefail
-pushd "$(dirname "$0")/.." > /dev/null
-. .venv/bin/activate
+pushd "$(dirname "$0")/../brewblox_devcon_spark/codec" > /dev/null
 
-pushd "brewblox_devcon_spark/codec" > /dev/null
 rm -f ./proto-compiled/*_pb2.py
 protoc -I=./proto --python_out=./proto-compiled ./proto/**.proto

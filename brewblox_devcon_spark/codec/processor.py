@@ -35,7 +35,7 @@ class OptionElement():
 
 
 class ProtobufProcessor():
-    _BREWBLOX_PROVIDER: DescriptorBase = brewblox_pb2.brewblox
+    _BREWBLOX_PROVIDER: DescriptorBase = brewblox_pb2.field
 
     def __init__(self, converter: UnitConverter, strip_readonly=True):
         self._converter = converter
