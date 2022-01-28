@@ -25,10 +25,7 @@ git -C ${proto_dir} fetch
 git -C ${proto_dir} checkout --quiet "${proto_version}"
 
 # Compile proto files
-pushd brewblox_devcon_spark/codec > /dev/null
-rm -f ./proto-compiled/*_pb2.py
-protoc -I=./proto --python_out=./proto-compiled ./proto/*.proto
-popd > /dev/null
+bash dev/compile-proto.sh
 
 # Download local files to be sure
 bash dev/download-firmware.sh

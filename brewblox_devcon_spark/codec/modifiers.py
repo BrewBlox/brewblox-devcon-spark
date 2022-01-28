@@ -35,7 +35,7 @@ class OptionElement():
 
 
 class Modifier():
-    _BREWBLOX_PROVIDER: DescriptorBase = brewblox_pb2.brewblox
+    _BREWBLOX_PROVIDER: DescriptorBase = brewblox_pb2.field
 
     def __init__(self, converter: UnitConverter, strip_readonly=True):
         self._converter = converter
@@ -107,10 +107,10 @@ class Modifier():
         return field.GetOptions().Extensions[provider]
 
     def _unit_name(self, unit_num: int) -> str:
-        return brewblox_pb2.BrewBloxTypes.UnitType.Name(unit_num)
+        return brewblox_pb2.UnitType.Name(unit_num)
 
     def _objtype_name(self, objtype_num: int) -> str:
-        return brewblox_pb2.BrewBloxTypes.BlockType.Name(objtype_num)
+        return brewblox_pb2.BlockType.Name(objtype_num)
 
     def _encode_unit(self, value: Union[float, dict], unit_type: str, postfix: Optional[str]) -> float:
         if isinstance(value, dict):

@@ -2,14 +2,14 @@
 Object-specific transcoders
 """
 
-
 from abc import ABC, abstractclassmethod, abstractmethod
 from collections import defaultdict
-from typing import Iterable, Union
+from typing import Generator, Type, Union
 
 from brewblox_service import brewblox_logger
 from google.protobuf import json_format
 from google.protobuf.message import Message
+from google.protobuf.reflection import GeneratedProtocolMessageType
 
 from . import pb2
 from .modifiers import Modifier
@@ -20,6 +20,8 @@ Decoded_ = dict
 Encoded_ = bytes
 
 LOGGER = brewblox_logger(__name__)
+
+BlockType = pb2.brewblox_pb2.BlockType
 
 
 class Transcoder(ABC):
@@ -49,10 +51,10 @@ class Transcoder(ABC):
 
     @classmethod
     def get(cls, obj_type: ObjType_, mods: Modifier) -> 'Transcoder':
-        try:
-            return _TYPE_MAPPING[obj_type](mods)
-        except KeyError:
-            raise KeyError(f'No codec found for object type [{obj_type}]')
+        for trc in _TRANSCODERS:
+            if obj_type == trc.type_str() or obj_type == trc.type_int():
+                return trc(mods)
+        raise KeyError(f'No transcoder found for identifier {obj_type}')
 
     @classmethod
     def type_tree(cls, mods: Modifier) -> dict[str, list[str]]:
@@ -72,18 +74,13 @@ class BlockInterfaceTranscoder(Transcoder):
 
     @classmethod
     def type_str(cls) -> str:
-        return pb2.brewblox_pb2.BrewBloxTypes.BlockType.Name(cls._ENUM_VAL)
+        return BlockType.Name(cls._ENUM_VAL)
 
     def encode(self, values: Decoded_) -> Encoded_:
         return b'\x00'
 
     def decode(self, values: Encoded_, _: DecodeOpts) -> Decoded_:
         return dict()
-
-
-def interface_factory(value: int) -> BlockInterfaceTranscoder:
-    name = f'{pb2.brewblox_pb2.BrewBloxTypes.BlockType.Name(value)}TranscoderStub'
-    return type(name, (BlockInterfaceTranscoder, ), {'_ENUM_VAL': value})
 
 
 class InactiveObjectTranscoder(Transcoder):
@@ -145,19 +142,24 @@ class GroupsTranscoder(Transcoder):
         return {'active': active}
 
 
-class ProtobufTranscoder(Transcoder):
+class BaseProtobufTranscoder(Transcoder):
+
+    @classmethod
+    def _brewblox_msg(cls):
+        # Message opts as set in BrewbloxMessageOptions in brewblox.proto
+        return cls._MESSAGE.DESCRIPTOR.GetOptions().Extensions[pb2.brewblox_pb2.msg]
 
     @classmethod
     def type_int(cls) -> int:
-        return cls._MESSAGE.DESCRIPTOR.GetOptions().Extensions[pb2.brewblox_pb2.brewblox_msg].objtype
+        return cls._brewblox_msg().objtype
 
     @classmethod
     def type_str(cls) -> str:
-        return cls._MESSAGE.__name__
+        return BlockType.Name(cls.type_int())
 
     @classmethod
-    def type_impl(cls) -> list[int]:
-        return cls._MESSAGE.DESCRIPTOR.GetOptions().Extensions[pb2.brewblox_pb2.brewblox_msg].impl
+    def type_impl(cls) -> list[str]:
+        return [BlockType.Name(i) for i in cls._brewblox_msg().impl]
 
     def create_message(self) -> Message:
         return self.__class__._MESSAGE()
@@ -185,7 +187,7 @@ class ProtobufTranscoder(Transcoder):
         return decoded
 
 
-class OptionsTranscoder(ProtobufTranscoder):
+class ProtobufTranscoder(BaseProtobufTranscoder):
 
     def encode(self, values: Decoded_) -> Encoded_:
         self.mod.encode_options(self.create_message(), values)
@@ -197,8 +199,8 @@ class OptionsTranscoder(ProtobufTranscoder):
         return decoded
 
 
-class EdgeCaseTranscoder(OptionsTranscoder):
-    _MESSAGE = pb2.EdgeCase_pb2.EdgeCase
+class EdgeCaseTranscoder(ProtobufTranscoder):
+    _MESSAGE = pb2.EdgeCase_pb2.Block
 
     @classmethod
     def type_int(cls) -> int:
@@ -209,65 +211,42 @@ class EdgeCaseTranscoder(OptionsTranscoder):
         return 'EdgeCase'
 
 
-def options_type_factory(message):
-    name = f'{message.__name__}Transcoder'
-    return type(name, (OptionsTranscoder, ), {'_MESSAGE': message})
+def interface_transcoder_generator() -> Generator[Type[BlockInterfaceTranscoder], None, None]:
+    for objtype in BlockType.values():
+        name = f'{BlockType.Name(objtype)}_InterfaceTranscoder'
+        yield type(name, (BlockInterfaceTranscoder, ), {'_ENUM_VAL': objtype})
 
 
-def _generate_mapping(vals: Iterable[Transcoder]):
-    for trc in vals:
-        yield trc.type_int(), trc
-        yield trc.type_str(), trc
+def protobuf_transcoder_generator() -> Generator[Type[ProtobufTranscoder], None, None]:
+    for pb in [getattr(pb2, k) for k in pb2.__all__]:
+        members = [getattr(pb, k)
+                   for k in dir(pb)
+                   if not k.startswith('_')]
+        messages = [el
+                    for el in members
+                    if isinstance(el, GeneratedProtocolMessageType)]
+
+        for msg in messages:
+            desc = msg.DESCRIPTOR
+            opts = desc.GetOptions().Extensions[pb2.brewblox_pb2.msg]
+            if opts.objtype:
+                name = f'{BlockType.Name(opts.objtype)}_{desc.name}_Transcoder'
+                yield type(name, (ProtobufTranscoder, ), {'_MESSAGE': msg})
 
 
-_TRANSCODERS = [
+_TRANSCODERS: list[Type[Transcoder]] = [
     # Raw system objects
     InactiveObjectTranscoder,
     DeprecatedObjectTranscoder,
     GroupsTranscoder,
 
-    # Interface objects
-    # Actual implementations will override this later
-    *[
-        interface_factory(v)
-        for v in pb2.brewblox_pb2.BrewBloxTypes.BlockType.values()
-    ],
-
     # Protobuf objects
-    *[
-        options_type_factory(msg)
-        for msg in [
-            pb2.ActuatorAnalogMock_pb2.ActuatorAnalogMock,
-            pb2.ActuatorLogic_pb2.ActuatorLogic,
-            pb2.ActuatorOffset_pb2.ActuatorOffset,
-            pb2.ActuatorPwm_pb2.ActuatorPwm,
-            pb2.Balancer_pb2.Balancer,
-            pb2.DigitalActuator_pb2.DigitalActuator,
-            pb2.DisplaySettings_pb2.DisplaySettings,
-            pb2.DS2408_pb2.DS2408,
-            pb2.DS2413_pb2.DS2413,
-            pb2.MockPins_pb2.MockPins,
-            pb2.MotorValve_pb2.MotorValve,
-            pb2.Mutex_pb2.Mutex,
-            pb2.OneWireBus_pb2.OneWireBus,
-            pb2.OneWireGpioModule_pb2.OneWireGpioModule,
-            pb2.Pid_pb2.Pid,
-            pb2.SetpointProfile_pb2.SetpointProfile,
-            pb2.SetpointSensorPair_pb2.SetpointSensorPair,
-            pb2.Spark2Pins_pb2.Spark2Pins,
-            pb2.Spark3Pins_pb2.Spark3Pins,
-            pb2.SysInfo_pb2.SysInfo,
-            pb2.TempSensorCombi_pb2.TempSensorCombi,
-            pb2.TempSensorMock_pb2.TempSensorMock,
-            pb2.TempSensorOneWire_pb2.TempSensorOneWire,
-            pb2.Ticks_pb2.Ticks,
-            pb2.TouchSettings_pb2.TouchSettings,
-            pb2.WiFiSettings_pb2.WiFiSettings,
-        ]
-    ],
+    *protobuf_transcoder_generator(),
 
-    # Debugging object
+    # Interface objects
+    # These are fallbacks to be used if there is no direct object
+    *interface_transcoder_generator(),
+
+    # Debugging objects
     EdgeCaseTranscoder,
 ]
-
-_TYPE_MAPPING = {k: v for k, v in _generate_mapping(_TRANSCODERS)}
