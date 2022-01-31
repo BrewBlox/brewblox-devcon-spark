@@ -18,7 +18,8 @@ RUN set -ex \
     && if [ "${ARCH}" = "amd64" ]; then OTHER_SIM='brewblox-{arm32,arm64}.sim'; fi \
     && if [ "${ARCH}" = "armhf" ]; then OTHER_SIM='brewblox-{amd64,arm64}.sim'; fi \
     && if [ "${ARCH}" = "arm64" ]; then OTHER_SIM='brewblox-{amd64,arm32}.sim'; fi \
-    && bash -c "rm /app/firmware/${OTHER_SIM}"
+    && bash -c "rm /app/firmware/${OTHER_SIM}" \
+    && rm /app/firmware/*.elf
 
 FROM python:3.9-slim-buster
 EXPOSE 5000
