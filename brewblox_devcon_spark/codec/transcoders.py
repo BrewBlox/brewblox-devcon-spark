@@ -2,7 +2,6 @@
 Object-specific transcoders
 """
 
-
 from abc import ABC, abstractclassmethod, abstractmethod
 from enum import Enum
 from typing import Generator, Optional, Tuple, Type, Union
@@ -297,6 +296,9 @@ _TRANSCODERS: list[Type[Transcoder]] = [
     GroupsTranscoder,
     ControlboxRequestTranscoder,
     ControlboxResponseTranscoder,
+
+    # Protobuf objects
+    *protobuf_transcoder_generator(),
 
     # Protobuf objects
     *protobuf_transcoder_generator(),
