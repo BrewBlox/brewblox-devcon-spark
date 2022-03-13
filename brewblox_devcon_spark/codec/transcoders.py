@@ -184,11 +184,9 @@ class BaseProtobufTranscoder(Transcoder):
         # LOGGER.debug(f'encoding {values} to {self.__class__._MESSAGE}')
         obj = json_format.ParseDict(values, self.create_message())
         data = obj.SerializeToString()
-        return data + b'\x00'  # Include null terminator
+        return data
 
     def decode(self, encoded: bytes, opts: DecodeOpts) -> dict:
-        # Remove null terminator
-        encoded = encoded[:-1]
         int_enum = opts.enums == ProtoEnumOpt.INT
 
         obj = self.create_message()

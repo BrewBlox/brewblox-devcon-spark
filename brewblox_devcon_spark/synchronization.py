@@ -101,7 +101,6 @@ class SparkSynchronization(repeater.RepeaterFeature):
             await self._sync_block_store()
             await self._sync_time()
             await self._sync_display()
-            await self._collect_call_trace()
 
             service_status.set_synchronized(self.app)
             LOGGER.info('Service synchronized!')
@@ -263,35 +262,6 @@ class SparkSynchronization(repeater.RepeaterFeature):
 
         if write_required:
             await self.commander.write_object(display_block)
-
-    async def format_trace(self, src):
-        dest = []
-        for src_v in src:
-            action = src_v['action']
-            nid = src_v['id']
-            sid = self.block_store.left_key(nid, 'Unknown')
-            (typename, _), _ = await self.codec.decode((src_v['type'], None), None)
-
-            if nid == 0:
-                dest.append(action)
-            else:
-                dest.append(f'{action.ljust(20)} {typename.ljust(20)} [{sid},{nid}]')
-
-        return dest
-
-    @subroutine('collect controller call trace')
-    async def _collect_call_trace(self):
-        sys_block = await self.commander.write_object(
-            FirmwareBlock(
-                nid=const.SYSINFO_NID,
-                type='SysInfo',
-                data={
-                    'command': 'SYS_CMD_TRACE_READ_RESUME'
-                },
-            ))
-
-        trace = '\n'.join(await self.format_trace(sys_block.data['trace']))
-        LOGGER.info(f'System trace: \n{trace}')
 
 
 def setup(app: web.Application):

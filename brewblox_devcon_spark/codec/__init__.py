@@ -110,7 +110,9 @@ class Codec(features.ServiceFeature):
             if data is None:
                 return (decoded_identifier, None)
             else:
-                return (decoded_identifier, trc.decode(b64decode(data), opts))
+                data = data if isinstance(data, str) else data.decode()
+                data = b''.join((b64decode(subs) for subs in data.split(',')))
+                return (decoded_identifier, trc.decode(data, opts))
 
         except Exception as ex:
             msg = strex(ex)

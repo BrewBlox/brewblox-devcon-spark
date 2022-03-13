@@ -72,7 +72,6 @@ async def test_ping(app, client):
 async def test_create_read(app, client):
     await response(client.post('/blocks/create', json={
         'id': 'sensor-1',
-        'groups': [0],
         'type': 'TempSensorMock',
         'data': {
             'value[celsius]': 20.89789201,

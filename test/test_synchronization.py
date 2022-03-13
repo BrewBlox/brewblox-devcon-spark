@@ -160,21 +160,3 @@ async def test_errors(app, client, syncher, mocker):
     await disconnect(app)
     await connect(app, syncher)
     assert states(app) == [False, True, False]
-
-
-async def test_format_trace(app, client, syncher):
-    await syncher.run()
-    src = [{'action': 'UPDATE_BLOCK', 'id': 19, 'type': 319},
-           {'action': 'UPDATE_BLOCK', 'id': 101, 'type': 318},
-           {'action': 'UPDATE_BLOCK', 'id': 102, 'type': 301},
-           {'action': 'UPDATE_BLOCK', 'id': 103, 'type': 311},
-           {'action': 'UPDATE_BLOCK', 'id': 104, 'type': 302},
-           {'action': 'SYSTEM_TASKS', 'id': 0, 'type': 0},
-           {'action': 'UPDATE_DISPLAY', 'id': 0, 'type': 0},
-           {'action': 'UPDATE_CONNECTIONS', 'id': 0, 'type': 0},
-           {'action': 'WRITE_BLOCK', 'id': 2, 'type': 256},
-           {'action': 'PERSIST_BLOCK', 'id': 2, 'type': 256}]
-    parsed = await syncher.format_trace(src)
-    assert parsed[0] == 'UPDATE_BLOCK         Spark3Pins           [SparkPins,19]'
-    assert parsed[-1] == 'PERSIST_BLOCK        SysInfo              [SystemInfo,2]'
-    assert parsed[5] == 'SYSTEM_TASKS'
