@@ -42,3 +42,5 @@ SYS_OBJECT_KEYS: list[tuple[str, int]] = [
     ['DisplaySettings', DISPLAY_SETTINGS_NID],
     ['SparkPins', SPARK_PINS_NID],
 ]
+
+DEPRECATED_NIDS = [GROUPS_NID]

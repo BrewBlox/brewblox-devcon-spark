@@ -30,13 +30,6 @@ def default_objects() -> dict[int, FirmwareBlock]:
         block.nid: block
         for block in [
             FirmwareBlock(
-                nid=const.GROUPS_NID,
-                type='Groups',
-                data={
-                    'active': [0, const.SYSTEM_GROUP]
-                }
-            ),
-            FirmwareBlock(
                 nid=const.SYSINFO_NID,
                 type='SysInfo',
                 data={

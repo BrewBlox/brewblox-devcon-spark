@@ -146,12 +146,20 @@ class EncodedPayload(BaseModel):
     subtype: Optional[Union[int, str]]
     data: Optional[str]
 
+    class Config:
+        # ensures integers in Union[int, str] are parsed correctly
+        smart_union = True
+
 
 class DecodedPayload(BaseModel):
     blockId: int
     objtype: Optional[Union[int, str]]
     subtype: Optional[Union[int, str]]
     data: Optional[dict]
+
+    class Config:
+        # ensures integers in Union[int, str] are parsed correctly
+        smart_union = True
 
 
 class ControlboxRequest(BaseModel):
@@ -197,11 +205,19 @@ class EncodeArgs(BaseModel):
     subtype: Optional[Union[int, str]]
     data: Optional[dict]
 
+    class Config:
+        # ensures integers in Union[int, str] are parsed correctly
+        smart_union = True
+
 
 class DecodeArgs(BaseModel):
     objtype: Union[int, str]
     subtype: Optional[Union[int, str]]
     data: Optional[str]
+
+    class Config:
+        # ensures integers in Union[int, str] are parsed correctly
+        smart_union = True
 
 
 @dataclass

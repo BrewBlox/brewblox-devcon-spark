@@ -128,25 +128,6 @@ class DeprecatedObjectTranscoder(Transcoder):
         return {'actualId': actual_id}
 
 
-class GroupsTranscoder(Transcoder):
-
-    @classmethod
-    def type_int(cls) -> int:
-        return 65534
-
-    @classmethod
-    def type_str(cls) -> str:
-        return 'Groups'
-
-    def encode(self, values: dict) -> bytes:
-        active = self.proc.pack_bit_flags(values.get('active', []))
-        return active.to_bytes(1, 'little')
-
-    def decode(self, encoded: bytes, _: DecodeOpts) -> dict:
-        active = self.proc.unpack_bit_flags(int.from_bytes(encoded, 'little'))
-        return {'active': active}
-
-
 class BaseProtobufTranscoder(Transcoder):
 
     @classmethod
@@ -291,7 +272,6 @@ def protobuf_transcoder_generator() -> Generator[Type[ProtobufTranscoder], None,
 _TRANSCODERS: list[Type[Transcoder]] = [
     # Raw system objects
     DeprecatedObjectTranscoder,
-    GroupsTranscoder,
     ControlboxRequestTranscoder,
     ControlboxResponseTranscoder,
 

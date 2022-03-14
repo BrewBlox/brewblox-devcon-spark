@@ -600,6 +600,9 @@ class SparkController(features.ServiceFeature):
             # Now either create or write the objects, depending on whether they are system objects
             for block in exported.blocks:
                 try:
+                    if block.nid in const.DEPRECATED_NIDS:
+                        continue
+
                     block = block.copy(deep=True)
                     if block.nid is not None and block.nid < const.USER_NID_START:
                         await self.write_block(block)

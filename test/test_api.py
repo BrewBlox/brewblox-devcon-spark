@@ -311,7 +311,7 @@ async def test_backup_load(app, client, spark_blocks):
     # reverse the set, to ensure some blocks are written with invalid references
     data = {
         'store': [{'keys': [block['id'], block['nid']], 'data': dict()} for block in spark_blocks],
-        'blocks': spark_blocks[::-1],
+        'blocks': spark_blocks[::-1] + [{'nid': const.GROUPS_NID, 'type': 'Groups', 'data': {}}],
     }
     resp = await response(client.post('/blocks/backup/load', json=data))
     assert resp == {'messages': []}
@@ -320,7 +320,8 @@ async def test_backup_load(app, client, spark_blocks):
     ids = ret_ids(spark_blocks)
     resp_ids = ret_ids(resp)
     assert set(ids).issubset(resp_ids)
-    assert 'ActiveGroups' in resp_ids
+    assert 'ActiveGroups' not in resp_ids
+    assert 'SystemInfo' in resp_ids
 
     # Add an unused store alias
     data['store'].append({'keys': ['TROLOLOL', 9999], 'data': dict()})

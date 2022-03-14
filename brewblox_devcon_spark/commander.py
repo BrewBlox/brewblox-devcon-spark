@@ -134,7 +134,7 @@ class SparkCommander(features.ServiceFeature):
                 enc_response = await asyncio.wait_for(fut, timeout=self._timeout)
 
                 if enc_response.error != ErrorCode.ERR_OK:
-                    raise exceptions.CommandException(enc_response.error)
+                    raise exceptions.CommandException(f'{opcode.name}, {enc_response.error.name}')
 
                 return enc_response.payload
             else:

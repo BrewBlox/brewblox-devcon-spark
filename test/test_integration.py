@@ -35,26 +35,25 @@ def app(app):
     app['config']['device_id'] = '123456789012345678901234'
 
     service_status.setup(app)
+    scheduler.setup(app)
+    codec.setup(app)
 
     connection.setup(app)
     commander.setup(app)
-
-    scheduler.setup(app)
-    mqtt.setup(app)
 
     global_store.setup(app)
     service_store.setup(app)
     block_store.setup(app)
     block_cache.setup(app)
-    codec.setup(app)
+    synchronization.setup(app)
     controller.setup(app)
 
     error_response.setup(app)
     blocks_api.setup(app)
     system_api.setup(app)
     settings_api.setup(app)
+    mqtt.setup(app)
 
-    synchronization.setup(app)
     return app
 
 
