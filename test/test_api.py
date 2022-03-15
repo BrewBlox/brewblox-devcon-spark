@@ -468,8 +468,8 @@ async def test_system_resets(app, client, mocker):
 async def test_debug_encode(app, client):
     payload = {
         'blockId': 123,
-        'objtype': 'TempSensorOneWire',
-        'data': {
+        'blockType': 'TempSensorOneWire',
+        'content': {
             'value': 12345,
             'offset': 20,
             'address': 'FF'
@@ -478,53 +478,53 @@ async def test_debug_encode(app, client):
 
     # Encode normal (non-nested) message
     encoded = await response(client.post('/_debug/encode', json=payload))
-    assert encoded['data']
-    assert isinstance(encoded['data'], str)
+    assert encoded['content']
+    assert isinstance(encoded['content'], str)
 
     decoded = await response(client.post('/_debug/decode', json={
-        'objtype': encoded['objtype'],
-        'data': encoded['data']
+        'blockType': encoded['blockType'],
+        'content': encoded['content']
     }))
-    addr = decoded['data']['address']
+    addr = decoded['content']['address']
     assert addr.lower().startswith('ff')
 
     # ControlboxRequest has an embedded extra message
     request_msg = {
         'msgId': 1,
-        'opcode': Opcode.OPCODE_WRITE_OBJECT.name,
+        'opcode': Opcode.BLOCK_WRITE.name,
         'payload': payload,
     }
 
     encoded = await response(client.post('/_debug/encode', json={
-        'objtype': codec.REQUEST_TYPE,
-        'data': request_msg,
+        'blockType': codec.REQUEST_TYPE,
+        'content': request_msg,
     }))
-    assert encoded['data']
-    assert isinstance(encoded['data'], str)
+    assert encoded['content']
+    assert isinstance(encoded['content'], str)
 
     decoded = await response(client.post('/_debug/decode', json={
-        'objtype': encoded['objtype'],
-        'data': encoded['data']
+        'blockType': encoded['blockType'],
+        'content': encoded['content']
     }))
-    addr = decoded['data']['payload']['data']['address']
+    addr = decoded['data']['payload']['content']['address']
     assert addr.lower().startswith('ff')
 
     # ControlboxResponse has an embedded extra message
     response_msg = {
         'msgId': 1,
-        'error': ErrorCode.ERR_INVALID_COMMAND.name,
+        'error': ErrorCode.INVALID_OPCODE.name,
         'payload': [payload, payload]
     }
 
     encoded = await response(client.post('/_debug/encode', json={
-        'objtype': codec.RESPONSE_TYPE,
+        'blockType': codec.RESPONSE_TYPE,
         'data': response_msg,
     }))
     assert encoded['data']
     assert isinstance(encoded['data'], str)
 
     decoded = await response(client.post('/_debug/decode', json={
-        'objtype': encoded['objtype'],
+        'blockType': encoded['blockType'],
         'data': encoded['data']
     }))
     addr = decoded['data']['payload'][1]['data']['address']
@@ -532,28 +532,28 @@ async def test_debug_encode(app, client):
 
     # args should be validated
     await response(client.post('/_debug/decode', json={
-        'objtype': [1],
+        'blockType': [1],
         'data': '',
     }), 400)
 
     # Payload is optional both ways
     request_msg = {
         'msgId': 1,
-        'opcode': Opcode.OPCODE_WRITE_OBJECT.name,
+        'opcode': Opcode.BLOCK_WRITE.name,
         'payload': None,
     }
     encoded = await response(client.post('/_debug/encode', json={
-        'objtype': codec.REQUEST_TYPE,
+        'blockType': codec.REQUEST_TYPE,
         'data': request_msg,
     }))
     await response(client.post('/_debug/decode', json={
-        'objtype': encoded['objtype'],
+        'blockType': encoded['blockType'],
         'data': encoded['data']
     }))
 
     # Errors are published
     retv = await response(client.post('/_debug/decode', json={
-        'objtype': encoded['objtype'],
+        'blockType': encoded['blockType'],
         'data': 'INVALID',
     }))
-    assert retv['objtype'] == 'ErrorObject'
+    assert retv['blockType'] == 'ErrorObject'

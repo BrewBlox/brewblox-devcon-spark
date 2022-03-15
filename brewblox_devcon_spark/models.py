@@ -83,68 +83,77 @@ class ResetData(enum.Enum):
 
 
 class Opcode(enum.Enum):
-    OPCODE_NONE = 0
-    OPCODE_READ_OBJECT = 1
-    OPCODE_WRITE_OBJECT = 2
-    OPCODE_CREATE_OBJECT = 3
-    OPCODE_DELETE_OBJECT = 4
-    OPCODE_LIST_OBJECTS = 5
-    OPCODE_READ_STORED_OBJECT = 6
-    OPCODE_LIST_STORED_OBJECTS = 7
-    OPCODE_CLEAR_OBJECTS = 8
-    OPCODE_REBOOT = 9
-    OPCODE_FACTORY_RESET = 10
-    OPCODE_LIST_COMPATIBLE_OBJECTS = 11
-    OPCODE_DISCOVER_OBJECTS = 12
-    OPCODE_FIRMWARE_UPDATE = 100
+    NONE = 0
+    VERSION = 1
+
+    BLOCK_READ = 10
+    BLOCK_READ_ALL = 11
+    BLOCK_WRITE = 12
+    BLOCK_CREATE = 13
+    BLOCK_DELETE = 14
+    BLOCK_DISCOVER = 15
+
+    STORAGE_READ = 20
+    STORAGE_READ_ALL = 21
+
+    REBOOT = 30
+    CLEAR_BLOCKS = 31
+    CLEAR_WIFI = 32
+    FACTORY_RESET = 33
+
+    FIRMWARE_UPDATE = 40
 
 
 class ErrorCode(enum.Enum):
-    ERR_OK = 0
-    ERR_UNKNOWN_ERROR = 1
+    OK = 0
+    UNKNOWN_ERROR = 1
+    INVALID_OPCODE = 2
 
-    # object creation
-    ERR_INSUFFICIENT_HEAP = 4
+    # Memory errors
+    INSUFFICIENT_HEAP = 4
+    INSUFFICIENT_STORAGE = 5
 
-    # generic stream errors
-    ERR_STREAM_ERROR_UNSPECIFIED = 8
-    ERR_OUTPUT_STREAM_WRITE_ERROR = 9
-    ERR_INPUT_STREAM_READ_ERROR = 10
-    ERR_INPUT_STREAM_DECODING_ERROR = 11
-    ERR_OUTPUT_STREAM_ENCODING_ERROR = 12
+    # Network I/O errors
+    NETWORK_ERROR = 10
+    NETWORK_READ_ERROR = 11
+    NETWORK_DECODING_ERROR = 12
+    NETWORK_WRITE_ERROR = 13
+    NETWORK_ENCODING_ERROR = 14
 
-    # storage errors
-    ERR_INSUFFICIENT_PERSISTENT_STORAGE = 16
-    ERR_PERSISTED_OBJECT_NOT_FOUND = 17
-    ERR_INVALID_PERSISTED_BLOCK_TYPE = 18
-    ERR_COULD_NOT_READ_PERSISTED_BLOCK_SIZE = 19
-    ERR_PERSISTED_BLOCK_STREAM_ERROR = 20
-    ERR_PERSISTED_STORAGE_WRITE_ERROR = 21
-    ERR_CRC_ERROR_IN_STORED_OBJECT = 22
+    # Storage I/O errors
+    STORAGE_ERROR = 20
+    STORAGE_READ_ERROR = 21
+    STORAGE_DECODING_ERROR = 22
+    STORAGE_CRC_ERROR = 23
+    STORAGE_WRITE_ERROR = 24
+    STORAGE_ENCODING_ERROR = 25
 
-    # invalid actions
-    ERR_OBJECT_NOT_WRITABLE = 32
-    ERR_OBJECT_NOT_READABLE = 33
-    ERR_OBJECT_NOT_CREATABLE = 34
-    ERR_OBJECT_NOT_DELETABLE = 35
+    # Invalid actions
+    BLOCK_NOT_WRITABLE = 30
+    BLOCK_NOT_READABLE = 31
+    BLOCK_NOT_CREATABLE = 32
+    BLOCK_NOT_DELETABLE = 33
 
-    # invalid parameters
-    ERR_INVALID_COMMAND = 63
-    ERR_INVALID_OBJECT_ID = 64
-    ERR_INVALID_OBJECT_TYPE = 65
-    ERR_INVALID_OBJECT_GROUPS = 66
-    ERR_CRC_ERROR_IN_COMMAND = 67
-    ERR_OBJECT_DATA_NOT_ACCEPTED = 68
+    # Invalid block data
+    INVALID_BLOCK = 40
+    INVALID_BLOCK_ID = 41
+    INVALID_BLOCK_TYPE = 42
+    INVALID_BLOCK_SUBTYPE = 43
+    INVALID_BLOCK_CONTENT = 44
 
-    # freak events that should not be possible
-    ERR_WRITE_TO_INACTIVE_OBJECT = 200
+    # Invalid stored block data
+    INVALID_STORED_BLOCK = 50
+    INVALID_STORED_BLOCK_ID = 51
+    INVALID_STORED_BLOCK_TYPE = 52
+    INVALID_STORED_BLOCK_SUBTYPE = 53
+    INVALID_STORED_BLOCK_CONTENT = 54
 
 
 class EncodedPayload(BaseModel):
     blockId: int
-    objtype: Optional[Union[int, str]]
+    blockType: Optional[Union[int, str]]
     subtype: Optional[Union[int, str]]
-    data: Optional[str]
+    content: Optional[str]
 
     class Config:
         # ensures integers in Union[int, str] are parsed correctly
@@ -153,9 +162,9 @@ class EncodedPayload(BaseModel):
 
 class DecodedPayload(BaseModel):
     blockId: int
-    objtype: Optional[Union[int, str]]
+    blockType: Optional[Union[int, str]]
     subtype: Optional[Union[int, str]]
-    data: Optional[dict]
+    content: Optional[dict]
 
     class Config:
         # ensures integers in Union[int, str] are parsed correctly
@@ -201,7 +210,7 @@ class DecodedResponse(ControlboxResponse):
 
 
 class EncodeArgs(BaseModel):
-    objtype: Union[int, str]
+    blockType: Union[int, str]
     subtype: Optional[Union[int, str]]
     data: Optional[dict]
 
@@ -211,7 +220,7 @@ class EncodeArgs(BaseModel):
 
 
 class DecodeArgs(BaseModel):
-    objtype: Union[int, str]
+    blockType: Union[int, str]
     subtype: Optional[Union[int, str]]
     data: Optional[str]
 

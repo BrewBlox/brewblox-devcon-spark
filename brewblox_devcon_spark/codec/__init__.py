@@ -134,7 +134,7 @@ class Codec(features.ServiceFeature):
 
         Return:
             list[str]:
-                All objtype values implemented by the transcoder.
+                All blockType values implemented by the transcoder.
                 Corresponds to brewblox_msg.impl in protobuf.
         """
         trc = Transcoder.get(identifier, self._proto_proc)

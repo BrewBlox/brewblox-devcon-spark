@@ -114,7 +114,7 @@ async def test_error(app, m_publish, client, synchronized):
     b = broadcaster.Broadcaster(app)
     await b.prepare()
 
-    connection_sim.fget(app).next_error.append(ErrorCode.ERR_UNKNOWN_ERROR)
+    connection_sim.fget(app).next_error.append(ErrorCode.UNKNOWN_ERROR)
     with pytest.raises(exceptions.CommandException):
         await b.run()
 

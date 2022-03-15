@@ -150,17 +150,17 @@ class SparkConnectionSim(connection.SparkConnection):
             request = EncodedRequest(**dec_data)
             payload = request.payload
             if payload:
-                req_payload_ident, req_payload_data = await self._codec.decode(
-                    (payload.objtype, payload.subtype),
-                    payload.data,
+                req_payload_ident, req_payload_content = await self._codec.decode(
+                    (payload.blockType, payload.subtype),
+                    payload.content,
                 )
             else:
                 req_payload_ident = (0, 0)
-                req_payload_data = None
+                req_payload_content = None
 
             response = EncodedResponse(
                 msgId=request.msgId,
-                error=ErrorCode.ERR_OK,
+                error=ErrorCode.OK,
                 payload=[]
             )
 
@@ -171,141 +171,138 @@ class SparkConnectionSim(connection.SparkConnection):
                 else:
                     response.error = error
 
-            elif request.opcode == Opcode.OPCODE_NONE:
+            elif request.opcode == Opcode.NONE:
                 await self.welcome()
 
             elif request.opcode in [
-                Opcode.OPCODE_READ_OBJECT,
-                Opcode.OPCODE_READ_STORED_OBJECT
+                Opcode.BLOCK_READ,
+                Opcode.STORAGE_READ
             ]:
                 block = self._objects.get(payload.blockId)
                 if not block:
-                    response.error = ErrorCode.ERR_INVALID_OBJECT_ID
+                    response.error = ErrorCode.INVALID_BLOCK_ID
                 else:
-                    (objtype, subtype), data = await self._codec.encode(
+                    (blockType, subtype), data = await self._codec.encode(
                         (block.type, None),
                         block.data,
                     )
 
                     response.payload = [EncodedPayload(
                         blockId=block.nid,
-                        objtype=objtype,
+                        blockType=blockType,
                         subtype=subtype,
                         data=data
                     )]
 
-            elif request.opcode == Opcode.OPCODE_WRITE_OBJECT:
+            elif request.opcode == Opcode.BLOCK_WRITE:
                 block = self._objects.get(payload.blockId)
                 if not block:
-                    response.error = ErrorCode.ERR_INVALID_OBJECT_ID
-                elif not req_payload_data:
-                    response.error = ErrorCode.ERR_OBJECT_DATA_NOT_ACCEPTED
+                    response.error = ErrorCode.INVALID_BLOCK_ID
+                elif not req_payload_content:
+                    response.error = ErrorCode.INVALID_BLOCK
                 elif req_payload_ident[0] != block.type:
-                    response.error = ErrorCode.ERR_INVALID_OBJECT_TYPE
+                    response.error = ErrorCode.INVALID_BLOCK_TYPE
                 else:
-                    block.data = req_payload_data
-                    (objtype, subtype), data = await self._codec.encode(
+                    block.data = req_payload_content
+                    (blockType, subtype), data = await self._codec.encode(
                         (block.type, None),
                         block.data,
                     )
                     response.payload = [EncodedPayload(
                         blockId=block.nid,
-                        objtype=objtype,
+                        blockType=blockType,
                         subtype=subtype,
                         data=data
                     )]
 
-            elif request.opcode == Opcode.OPCODE_CREATE_OBJECT:
+            elif request.opcode == Opcode.BLOCK_CREATE:
                 nid = payload.blockId
                 block = self._objects.get(nid)
                 if block:
-                    response.error = ErrorCode.ERR_OBJECT_NOT_CREATABLE
+                    response.error = ErrorCode.BLOCK_NOT_CREATABLE
                 elif nid > 0 and nid < const.USER_NID_START:
-                    response.error = ErrorCode.ERR_OBJECT_NOT_CREATABLE
-                elif not req_payload_data:
-                    response.error = ErrorCode.ERR_OBJECT_DATA_NOT_ACCEPTED
+                    response.error = ErrorCode.BLOCK_NOT_CREATABLE
+                elif not req_payload_content:
+                    response.error = ErrorCode.INVALID_BLOCK
                 else:
                     nid = nid or next(self._id_counter)
                     block = FirmwareBlock(
                         nid=nid,
                         type=req_payload_ident[0],
-                        data=req_payload_data,
+                        data=req_payload_content,
                     )
                     self._objects[nid] = block
-                    (objtype, subtype), data = await self._codec.encode(
+                    (blockType, subtype), content = await self._codec.encode(
                         (block.type, None),
                         block.data,
                     )
                     response.payload = [EncodedPayload(
                         blockId=block.nid,
-                        objtype=objtype,
+                        blockType=blockType,
                         subtype=subtype,
-                        data=data
+                        content=content,
                     )]
 
-            elif request.opcode == Opcode.OPCODE_DELETE_OBJECT:
+            elif request.opcode == Opcode.BLOCK_DELETE:
                 nid = payload.blockId
                 block = self._objects.get(nid)
                 if not block:
-                    response.error = ErrorCode.ERR_OBJECT_NOT_DELETABLE
+                    response.error = ErrorCode.INVALID_BLOCK_ID
                 elif nid < const.USER_NID_START:
-                    response.error = ErrorCode.ERR_OBJECT_NOT_DELETABLE
+                    response.error = ErrorCode.BLOCK_NOT_DELETABLE
                 else:
                     del self._objects[nid]
 
             elif request.opcode in [
-                Opcode.OPCODE_LIST_OBJECTS,
-                Opcode.OPCODE_LIST_STORED_OBJECTS
+                Opcode.BLOCK_READ_ALL,
+                Opcode.STORAGE_READ_ALL,
             ]:
                 for block in self._objects.values():
-                    (objtype, subtype), data = await self._codec.encode(
+                    (blockType, subtype), content = await self._codec.encode(
                         (block.type, None),
                         block.data,
                     )
                     response.payload.append(EncodedPayload(
                         blockId=block.nid,
-                        objtype=objtype,
+                        blockType=blockType,
                         subtype=subtype,
-                        data=data
+                        content=content,
                     ))
 
-            elif request.opcode == Opcode.OPCODE_CLEAR_OBJECTS:
+            elif request.opcode == Opcode.CLEAR_BLOCKS:
                 self._objects = default_objects()
                 self.update_ticks()
 
-            elif request.opcode == Opcode.OPCODE_REBOOT:
+            elif request.opcode == Opcode.REBOOT:
                 self._start_time = datetime.now()
                 self.update_ticks()
 
                 # No response
                 return
 
-            elif request.opcode == Opcode.OPCODE_FACTORY_RESET:
+            elif request.opcode == Opcode.FACTORY_RESET:
                 # No response
                 return
 
-            elif request.opcode == Opcode.OPCODE_LIST_COMPATIBLE_OBJECTS:
-                pass
-
-            elif request.opcode == Opcode.OPCODE_DISCOVER_OBJECTS:
+            elif request.opcode == Opcode.BLOCK_DISCOVER:
                 # Always return spark pins when discovering blocks
                 block = self._objects[const.SPARK_PINS_NID]
-                (objtype, subtype), data = await self._codec.encode(
+                (blockType, subtype), content = await self._codec.encode(
                     (block.type, None),
                     block.data,
                 )
                 response.payload = [EncodedPayload(
                     blockId=block.nid,
-                    objtype=objtype,
+                    blockType=blockType,
                     subtype=subtype,
-                    data=data
+                    content=content,
                 )]
 
-            elif request.opcode == Opcode.OPCODE_FIRMWARE_UPDATE:
+            elif request.opcode == Opcode.FIRMWARE_UPDATE:
                 pass
 
             else:
-                response.error = ErrorCode.ERR_INVALID_COMMAND
+                response.error = ErrorCode.INVALID_OPCODE
 
             _, resp_str = await self._codec.encode(
                 (codec.RESPONSE_TYPE, None),

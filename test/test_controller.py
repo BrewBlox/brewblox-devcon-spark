@@ -198,7 +198,7 @@ async def test_check_connection(app, client, mocker):
     assert s_noop.await_count == 4
 
     with pytest.raises(exceptions.CommandTimeout):
-        sim.next_error += [None, ErrorCode.ERR_INSUFFICIENT_HEAP]
+        sim.next_error += [None, ErrorCode.INSUFFICIENT_HEAP]
         await ctrl.noop()
 
     await asyncio.sleep(0.01)

@@ -86,14 +86,14 @@ class SparkController(features.ServiceFeature):
         if (sid, None) in self._store:
             raise exceptions.ExistingId(f'`{sid}` is already in use')
 
-    def _assign_sid(self, objtype: str):
-        clean_name = re.sub(r',driven', '', objtype)
+    def _assign_sid(self, blockType: str):
+        clean_name = re.sub(r',driven', '', blockType)
         for i in itertools.count(start=1):  # pragma: no cover
             name = f'{const.GENERATED_ID_PREFIX}{clean_name}-{i}'
             if (name, None) not in self._store:
                 return name
 
-    def _find_nid(self, sid: str, objtype: str) -> int:
+    def _find_nid(self, sid: str, blockType: str) -> int:
         if sid is None:
             return 0
 
@@ -103,9 +103,9 @@ class SparkController(features.ServiceFeature):
         try:
             return self._store.right_key(sid)
         except KeyError:
-            raise exceptions.UnknownId(f'No numeric ID matching [sid={sid},type={objtype}] found in store')
+            raise exceptions.UnknownId(f'No numeric ID matching [sid={sid},type={blockType}] found in store')
 
-    def _find_sid(self, nid: int, objtype: str) -> str:
+    def _find_sid(self, nid: int, blockType: str) -> str:
         if nid is None or nid == 0:
             return None
 
@@ -116,7 +116,7 @@ class SparkController(features.ServiceFeature):
             sid = self._store.left_key(nid)
         except KeyError:
             # If service ID not found, randomly generate one
-            sid = self._assign_sid(objtype)
+            sid = self._assign_sid(blockType)
             self._store[sid, nid] = dict()
 
         return sid

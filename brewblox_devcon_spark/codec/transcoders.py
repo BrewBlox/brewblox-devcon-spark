@@ -37,26 +37,26 @@ class Transcoder(ABC):
     @abstractclassmethod
     def type_int(cls) -> int:
         """
-        The numerical enum value for `objtype`
+        The numerical enum value for `blockType`
         """
 
     @abstractclassmethod
     def type_str(cls) -> str:
         """
-        The string enum value for `objtype`.
+        The string enum value for `blockType`.
         """
 
     @classmethod
     def subtype_int(cls) -> int:
         """
-        Alternative messages must declare a `subtype` that is unique within `objtype`.
+        Alternative messages must declare a `subtype` that is unique within `blockType`.
         """
         return 0
 
     @classmethod
     def subtype_str(cls) -> Optional[str]:
         """
-        Alternative messages must declare a `subtype` that is unique within `objtype`.
+        Alternative messages must declare a `subtype` that is unique within `blockType`.
         `subtype` itself is not an enum, so the name of the Protobuf message is used.
         Naturally, the Protobuf message name must also be unique within the namespace.
 
@@ -83,9 +83,9 @@ class Transcoder(ABC):
 
     @classmethod
     def get(cls, identifier: Identifier_, proc: ProtobufProcessor) -> 'Transcoder':
-        objtype, subtype = identifier
+        blockType, subtype = identifier
         for trc in _TRANSCODERS:
-            if objtype == trc.type_str() or objtype == trc.type_int():
+            if blockType == trc.type_str() or blockType == trc.type_int():
                 if subtype == trc.subtype_str() or subtype == trc.subtype_int():
                     return trc(proc)
         raise KeyError(f'No transcoder found for identifier {identifier}')
@@ -183,7 +183,7 @@ class BaseProtobufTranscoder(Transcoder):
 
 
 class ControlboxRequestTranscoder(BaseProtobufTranscoder):
-    _MESSAGE = pb2.controlbox_pb2.Request
+    _MESSAGE = pb2.command_pb2.Request
 
     @classmethod
     def type_int(cls) -> int:
@@ -201,7 +201,7 @@ class ControlboxRequestTranscoder(BaseProtobufTranscoder):
 
 
 class ControlboxResponseTranscoder(BaseProtobufTranscoder):
-    _MESSAGE = pb2.controlbox_pb2.Response
+    _MESSAGE = pb2.command_pb2.Response
 
     @classmethod
     def type_int(cls) -> int:
@@ -247,9 +247,9 @@ class EdgeCaseSubTranscoder(EdgeCaseTranscoder):
 
 
 def interface_transcoder_generator() -> Generator[Type[BlockInterfaceTranscoder], None, None]:
-    for objtype in BlockType.values():
-        name = f'{BlockType.Name(objtype)}_InterfaceTranscoder'
-        yield type(name, (BlockInterfaceTranscoder, ), {'_ENUM_VAL': objtype})
+    for blockType in BlockType.values():
+        name = f'{BlockType.Name(blockType)}_InterfaceTranscoder'
+        yield type(name, (BlockInterfaceTranscoder, ), {'_ENUM_VAL': blockType})
 
 
 def protobuf_transcoder_generator() -> Generator[Type[ProtobufTranscoder], None, None]:
