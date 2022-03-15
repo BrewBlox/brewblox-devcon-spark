@@ -77,7 +77,7 @@ async def test_validate_sid(sid, app, client):
     '',
     'word'*51,
     'brackey><',
-    'ActiveGroups',
+    'SystemInfo',
     'SparkPins',
     'a;ljfoihoewr*&(%&^&*%*&^(*&^(',
 ])

@@ -15,7 +15,6 @@ from brewblox_service import brewblox_logger
 
 DEFAULT_TIMEOUT_S = 5
 SIM_ADDR = inet_aton('0.0.0.0')
-ID_KEY = 'ID'.encode()
 
 LOGGER = brewblox_logger(__name__)
 
@@ -46,7 +45,7 @@ async def _discover(
                 continue  # discard unknown addresses and simulators
 
             addr = inet_ntoa(info.address)
-            id = info.properties.get(ID_KEY, bytes()).decode().lower()
+            id = info.properties.get(b'ID', bytes()).decode().lower()
 
             if not id:
                 LOGGER.error(f'Invalid device: {info.name} @ {addr}:{info.port} has no ID TXT property')

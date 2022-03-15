@@ -583,6 +583,7 @@ class SparkController(features.ServiceFeature):
         """
         async with self._discovery_lock:
             await self.clear_blocks()
+            sys_nids = [k[1] for k in const.SYS_OBJECT_KEYS]
             error_log = []
 
             # First populate the datastore, to avoid unknown links
@@ -600,12 +601,10 @@ class SparkController(features.ServiceFeature):
             # Now either create or write the objects, depending on whether they are system objects
             for block in exported.blocks:
                 try:
-                    if block.nid in const.DEPRECATED_NIDS:
-                        continue
-
                     block = block.copy(deep=True)
                     if block.nid is not None and block.nid < const.USER_NID_START:
-                        await self.write_block(block)
+                        if block.nid in sys_nids:  # Ignore deprecated system blocks
+                            await self.write_block(block)
                     else:
                         # Bypass self.create_block(), to avoid meddling with store IDs
                         await self._cmder.create_object(
