@@ -483,7 +483,7 @@ async def test_debug_encode(app, client):
 
     decoded = await response(client.post('/_debug/decode', json={
         'blockType': encoded['blockType'],
-        'content': encoded['content']
+        'content': encoded['content'],
     }))
     addr = decoded['content']['address']
     assert addr.lower().startswith('ff')
@@ -506,7 +506,7 @@ async def test_debug_encode(app, client):
         'blockType': encoded['blockType'],
         'content': encoded['content']
     }))
-    addr = decoded['data']['payload']['content']['address']
+    addr = decoded['content']['payload']['content']['address']
     assert addr.lower().startswith('ff')
 
     # ControlboxResponse has an embedded extra message
@@ -518,22 +518,22 @@ async def test_debug_encode(app, client):
 
     encoded = await response(client.post('/_debug/encode', json={
         'blockType': codec.RESPONSE_TYPE,
-        'data': response_msg,
+        'content': response_msg,
     }))
-    assert encoded['data']
-    assert isinstance(encoded['data'], str)
+    assert encoded['content']
+    assert isinstance(encoded['content'], str)
 
     decoded = await response(client.post('/_debug/decode', json={
         'blockType': encoded['blockType'],
-        'data': encoded['data']
+        'content': encoded['content']
     }))
-    addr = decoded['data']['payload'][1]['data']['address']
+    addr = decoded['content']['payload'][1]['content']['address']
     assert addr.lower().startswith('ff')
 
     # args should be validated
     await response(client.post('/_debug/decode', json={
         'blockType': [1],
-        'data': '',
+        'content': '',
     }), 400)
 
     # Payload is optional both ways
@@ -544,16 +544,16 @@ async def test_debug_encode(app, client):
     }
     encoded = await response(client.post('/_debug/encode', json={
         'blockType': codec.REQUEST_TYPE,
-        'data': request_msg,
+        'content': request_msg,
     }))
     await response(client.post('/_debug/decode', json={
         'blockType': encoded['blockType'],
-        'data': encoded['data']
+        'content': encoded['content']
     }))
 
     # Errors are published
     retv = await response(client.post('/_debug/decode', json={
         'blockType': encoded['blockType'],
-        'data': 'INVALID',
+        'content': 'INVALID',
     }))
     assert retv['blockType'] == 'ErrorObject'

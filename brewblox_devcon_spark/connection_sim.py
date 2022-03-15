@@ -62,7 +62,9 @@ def default_objects() -> dict[int, FirmwareBlock]:
             FirmwareBlock(
                 nid=const.DISPLAY_SETTINGS_NID,
                 type='DisplaySettings',
-                data={},
+                data={
+                    'timeZone': 'Africa/Casablanca'
+                },
             ),
             FirmwareBlock(
                 nid=const.SPARK_PINS_NID,
@@ -143,20 +145,23 @@ class SparkConnectionSim(connection.SparkConnection):
     async def start_reconnect(self):
         pass
 
-    async def write(self, msg: Union[str, bytes]):  # pragma: no cover
+    async def write(self, request_b64: Union[str, bytes]):  # pragma: no cover
         try:
             self.update_ticks()
-            _, dec_data = await self._codec.decode((codec.REQUEST_TYPE, None), msg)
-            request = EncodedRequest(**dec_data)
+            _, dict_content = await self._codec.decode(
+                (codec.REQUEST_TYPE, None),
+                request_b64,
+            )
+            request = EncodedRequest(**dict_content)
             payload = request.payload
             if payload:
-                req_payload_ident, req_payload_content = await self._codec.decode(
+                (in_blockType, _), in_content = await self._codec.decode(
                     (payload.blockType, payload.subtype),
                     payload.content,
                 )
             else:
-                req_payload_ident = (0, 0)
-                req_payload_content = None
+                in_blockType = 0
+                in_content = None
 
             response = EncodedResponse(
                 msgId=request.msgId,
@@ -171,7 +176,10 @@ class SparkConnectionSim(connection.SparkConnection):
                 else:
                     response.error = error
 
-            elif request.opcode == Opcode.NONE:
+            elif request.opcode in [
+                Opcode.NONE,
+                Opcode.VERSION,
+            ]:
                 await self.welcome()
 
             elif request.opcode in [
@@ -182,7 +190,7 @@ class SparkConnectionSim(connection.SparkConnection):
                 if not block:
                     response.error = ErrorCode.INVALID_BLOCK_ID
                 else:
-                    (blockType, subtype), data = await self._codec.encode(
+                    (blockType, subtype), content = await self._codec.encode(
                         (block.type, None),
                         block.data,
                     )
@@ -191,19 +199,19 @@ class SparkConnectionSim(connection.SparkConnection):
                         blockId=block.nid,
                         blockType=blockType,
                         subtype=subtype,
-                        data=data
+                        content=content
                     )]
 
             elif request.opcode == Opcode.BLOCK_WRITE:
                 block = self._objects.get(payload.blockId)
                 if not block:
                     response.error = ErrorCode.INVALID_BLOCK_ID
-                elif not req_payload_content:
+                elif not in_content:
                     response.error = ErrorCode.INVALID_BLOCK
-                elif req_payload_ident[0] != block.type:
+                elif in_blockType != block.type:
                     response.error = ErrorCode.INVALID_BLOCK_TYPE
                 else:
-                    block.data = req_payload_content
+                    block.data = in_content
                     (blockType, subtype), data = await self._codec.encode(
                         (block.type, None),
                         block.data,
@@ -222,14 +230,14 @@ class SparkConnectionSim(connection.SparkConnection):
                     response.error = ErrorCode.BLOCK_NOT_CREATABLE
                 elif nid > 0 and nid < const.USER_NID_START:
                     response.error = ErrorCode.BLOCK_NOT_CREATABLE
-                elif not req_payload_content:
+                elif not in_content:
                     response.error = ErrorCode.INVALID_BLOCK
                 else:
                     nid = nid or next(self._id_counter)
                     block = FirmwareBlock(
                         nid=nid,
-                        type=req_payload_ident[0],
-                        data=req_payload_content,
+                        type=in_blockType,
+                        data=in_content,
                     )
                     self._objects[nid] = block
                     (blockType, subtype), content = await self._codec.encode(
@@ -304,11 +312,11 @@ class SparkConnectionSim(connection.SparkConnection):
             else:
                 response.error = ErrorCode.INVALID_OPCODE
 
-            _, resp_str = await self._codec.encode(
+            _, response_b64 = await self._codec.encode(
                 (codec.RESPONSE_TYPE, None),
                 response.dict()
             )
-            await self._on_data(resp_str)
+            await self._on_data(response_b64)
 
         except Exception as ex:
             LOGGER.error(strex(ex))

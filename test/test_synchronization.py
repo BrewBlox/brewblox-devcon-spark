@@ -138,6 +138,7 @@ async def test_on_global_store_change(app, client, syncher):
     # Update during runtime
     await syncher.run()
     global_store.fget(app).units['temperature'] = 'degF'
+    global_store.fget(app).time_zone['posixValue'] = 'Africa/Casablanca'
     await syncher.on_global_store_change()
 
     # Should safely handle disconnected state

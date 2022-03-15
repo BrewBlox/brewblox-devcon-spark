@@ -212,7 +212,7 @@ class DecodedResponse(ControlboxResponse):
 class EncodeArgs(BaseModel):
     blockType: Union[int, str]
     subtype: Optional[Union[int, str]]
-    data: Optional[dict]
+    content: Optional[dict]
 
     class Config:
         # ensures integers in Union[int, str] are parsed correctly
@@ -222,7 +222,7 @@ class EncodeArgs(BaseModel):
 class DecodeArgs(BaseModel):
     blockType: Union[int, str]
     subtype: Optional[Union[int, str]]
-    data: Optional[str]
+    content: Optional[str]
 
     class Config:
         # ensures integers in Union[int, str] are parsed correctly

@@ -39,7 +39,7 @@ async def test_unexpected_message(app, client, mocker):
     cmder = commander.fget(app)
     message = EncodedResponse(
         msgId=123,
-        error=ErrorCode.ERR_OK,
+        error=ErrorCode.OK,
         payload=[]
     )
     _, enc_message = await codec.fget(app).encode((codec.RESPONSE_TYPE, None), message.dict())

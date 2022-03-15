@@ -30,22 +30,22 @@ class CodecView(PydanticView):
             return
         blockType = payload['blockType']
         subtype = payload.get('subtype')
-        data = payload['data']
-        (blockType, subtype), data = await self.codec.encode((blockType, subtype), data)
+        content = payload['content']
+        (blockType, subtype), content = await self.codec.encode((blockType, subtype), content)
         payload['blockType'] = blockType
         payload['subtype'] = subtype
-        payload['data'] = data
+        payload['content'] = content
 
     async def decode_payload(self, payload: Optional[dict]):
         if not payload:
             return
         blockType = payload['blockType']
         subtype = payload.get('subtype')
-        data = payload['data']
-        (blockType, subtype), data = await self.codec.decode((blockType, subtype), data)
+        content = payload['content']
+        (blockType, subtype), content = await self.codec.decode((blockType, subtype), content)
         payload['blockType'] = blockType
         payload['subtype'] = subtype
-        payload['data'] = data
+        payload['content'] = content
 
 
 @routes.view('/_debug/encode')
@@ -57,21 +57,21 @@ class EncodeView(CodecView):
         Tags: Debug
         """
         if args.blockType in [codec.REQUEST_TYPE, codec.REQUEST_TYPE_INT]:
-            await self.encode_payload(args.data['payload'])
+            await self.encode_payload(args.content['payload'])
 
         if args.blockType in [codec.RESPONSE_TYPE, codec.RESPONSE_TYPE_INT]:
-            for payload in args.data.get('payload', []):
+            for payload in args.content.get('payload', []):
                 await self.encode_payload(payload)
 
-        (blockType, subtype), data = await self.codec.encode(
+        (blockType, subtype), content = await self.codec.encode(
             (args.blockType, args.subtype),
-            args.data
+            args.content
         )
 
         encoded = DecodeArgs(
             blockType=blockType,
             subtype=subtype,
-            data=data,
+            content=content,
         )
 
         return web.json_response(
@@ -87,22 +87,22 @@ class DecodeView(CodecView):
 
         Tags: Debug
         """
-        (blockType, subtype), data = await self.codec.decode(
+        (blockType, subtype), content = await self.codec.decode(
             (args.blockType, args.subtype),
-            args.data
+            args.content
         )
 
         if blockType in [codec.REQUEST_TYPE, codec.REQUEST_TYPE_INT]:
-            await self.decode_payload(data.get('payload'))
+            await self.decode_payload(content.get('payload'))
 
         if blockType in [codec.RESPONSE_TYPE, codec.RESPONSE_TYPE_INT]:
-            for payload in data.get('payload', []):
+            for payload in content.get('payload', []):
                 await self.decode_payload(payload)
 
         decoded = EncodeArgs(
             blockType=blockType,
             subtype=subtype,
-            data=data,
+            content=content,
         )
 
         return web.json_response(
