@@ -36,7 +36,7 @@ def conf_mock(mocker):
                 service_type,
                 f'{name}.{dns_type}',
                 address=inet_aton('0.0.0.0'),
-                properties={mdns.ID_KEY: name.encode()},
+                properties={b'ID': name.encode()},
             )
         if name == 'id1':
             return ServiceInfo(
@@ -45,7 +45,7 @@ def conf_mock(mocker):
                 server=f'{name}.local.',
                 address=inet_aton('1.2.3.4'),
                 port=1234,
-                properties={mdns.ID_KEY: name.encode()},
+                properties={b'ID': name.encode()},
             )
         if name == 'id2':
             return ServiceInfo(
@@ -54,7 +54,7 @@ def conf_mock(mocker):
                 server=f'{name}.local.',
                 address=inet_aton('4.3.2.1'),
                 port=4321,
-                properties={mdns.ID_KEY: name.encode()},
+                properties={b'ID': name.encode()},
             )
         if name == 'id3':
             return ServiceInfo(

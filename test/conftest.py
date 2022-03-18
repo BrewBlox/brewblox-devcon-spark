@@ -82,6 +82,7 @@ def app_ini() -> dict:
         'proto_date': '2019-06-06',
         'firmware_version': 'd264dc6c',
         'firmware_date': '2019-07-03',
+        'system_version': '3.1.0',
     }
 
 
@@ -120,14 +121,12 @@ def spark_blocks():
         {
             'id': 'balancer-1',
             'nid': 200,
-            'groups': [0],
             'type': 'Balancer',
             'data': {}
         },
         {
             'id': 'mutex-1',
             'nid': 300,
-            'groups': [0],
             'type': 'Mutex',
             'data': {
                 'differentActuatorWait': 43
@@ -136,7 +135,6 @@ def spark_blocks():
         {
             'id': 'profile-1',
             'nid': 201,
-            'groups': [0],
             'type': 'SetpointProfile',
             'data': {
                 'points': [
@@ -159,7 +157,6 @@ def spark_blocks():
         {
             'id': 'sensor-1',
             'nid': 202,
-            'groups': [0],
             'type': 'TempSensorMock',
             'data': {
                 'value[celsius]': 20.89789201,
@@ -169,7 +166,6 @@ def spark_blocks():
         {
             'id': 'sensor-onewire-1',
             'nid': 203,
-            'groups': [0],
             'type': 'TempSensorOneWire',
             'data': {
                 'value[celsius]': 20.89789201,
@@ -180,7 +176,6 @@ def spark_blocks():
         {
             'id': 'setpoint-sensor-pair-1',
             'nid': 204,
-            'groups': [0],
             'type': 'SetpointSensorPair',
             'data': {
                 'sensorId<>': 'sensor-1',
@@ -194,7 +189,6 @@ def spark_blocks():
         {
             'id': 'setpoint-sensor-pair-2',
             'nid': 205,
-            'groups': [0],
             'type': 'SetpointSensorPair',
             'data': {
                 'sensorId<>': 0,
@@ -206,7 +200,6 @@ def spark_blocks():
         {
             'id': 'actuator-1',
             'nid': 206,
-            'groups': [0],
             'type': 'ActuatorAnalogMock',
             'data': {
                 'setting': 20,
@@ -220,7 +213,6 @@ def spark_blocks():
         {
             'id': 'actuator-pwm-1',
             'nid': 207,
-            'groups': [0],
             'type': 'ActuatorPwm',
             'data': {
                 'constrainedBy': {
@@ -232,7 +224,7 @@ def spark_blocks():
                             'max': 50
                         },
                         {
-                            'balanced<>': {
+                            'balanced': {
                                 'balancerId<>': 'balancer-1'
                             }
                         }
@@ -245,7 +237,6 @@ def spark_blocks():
         {
             'id': 'actuator-digital-1',
             'nid': 208,
-            'groups': [0],
             'type': 'DigitalActuator',
             'data': {
                 'channel': 1,
@@ -269,7 +260,6 @@ def spark_blocks():
         {
             'id': 'offset-1',
             'nid': 209,
-            'groups': [0],
             'type': 'ActuatorOffset',
             'data': {
                 'targetId<>': 'setpoint-sensor-pair-1',
@@ -279,7 +269,6 @@ def spark_blocks():
         {
             'id': 'pid-1',
             'nid': 210,
-            'groups': [0],
             'type': 'Pid',
             'data': {
                 'inputId<>': 'setpoint-sensor-pair-1',
@@ -294,7 +283,6 @@ def spark_blocks():
         {
             'id': 'DisplaySettings',
             'nid': 7,
-            'groups': [7],
             'type': 'DisplaySettings',
             'data': {
                 'widgets': [
@@ -329,7 +317,6 @@ def spark_blocks():
         {
             'id': 'ds2413-hw-1',
             'nid': 211,
-            'groups': [0, 1, 2, 3, 4, 5, 6],
             'type': 'DS2413',
             'data': {
                 'address': '4444444444444444'
@@ -338,7 +325,6 @@ def spark_blocks():
         {
             'id': 'ow-act',
             'nid': 212,
-            'groups': [0, 1, 2, 3, 4, 5, 6],
             'type': 'DigitalActuator',
             'data': {
                 'channel': 1,

@@ -5,13 +5,14 @@ Implements async serial connection.
 import asyncio
 from contextlib import suppress
 from subprocess import Popen
-from typing import Callable
+from typing import Callable, Union
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, repeater
 
-from brewblox_devcon_spark import (cbox_parser, commands, connect_funcs, const,
-                                   exceptions, service_status, service_store)
+from brewblox_devcon_spark import (cbox_parser, connect_funcs, exceptions,
+                                   service_status, service_store)
+from brewblox_devcon_spark.models import DeviceInfo, HandshakeMessage
 
 MessageCallback_ = Callable[[str], None]
 
@@ -20,6 +21,11 @@ LOGGER = brewblox_logger(__name__)
 BASE_RETRY_INTERVAL_S = 2
 MAX_RETRY_INTERVAL_S = 30
 CONNECT_RETRY_COUNT = 20
+
+WELCOME_PREFIX = 'BREWBLOX'
+UPDATER_PREFIX = 'FIRMWARE_UPDATER'
+CBOX_ERR_PREFIX = 'CBOXERROR'
+SETUP_MODE_PREFIX = 'SETUP_MODE'
 
 
 class SparkConnection(repeater.RepeaterFeature):
@@ -68,39 +74,36 @@ class SparkConnection(repeater.RepeaterFeature):
     def increase_retry_interval(self):
         self.retry_interval = min(MAX_RETRY_INTERVAL_S, round(1.5 * self.retry_interval))
 
-    def _on_event(self, msg: str):
-        if msg.startswith(const.WELCOME_PREFIX):
-            welcome = commands.HandshakeMessage(*msg.split(','))
+    async def _on_event(self, msg: str):
+        if msg.startswith(WELCOME_PREFIX):
+            welcome = HandshakeMessage(*msg.split(','))
             LOGGER.info(welcome)
 
-            device = service_status.DeviceInfo(
-                welcome.firmware_version,
-                welcome.proto_version,
-                welcome.firmware_date,
-                welcome.proto_date,
-                welcome.device_id,
-                welcome.system_version,
-                welcome.platform,
-                welcome.reset_reason,
+            device = DeviceInfo(
+                firmware_version=welcome.firmware_version,
+                proto_version=welcome.proto_version,
+                firmware_date=welcome.firmware_date,
+                proto_date=welcome.proto_date,
+                device_id=welcome.device_id,
+                system_version=welcome.system_version,
+                platform=welcome.platform,
+                reset_reason=welcome.reset_reason,
             )
             service_status.set_acknowledged(self.app, device)
 
-        elif msg.startswith(const.CBOX_ERR_PREFIX):
-            try:
-                LOGGER.error('Spark CBOX error: ' + commands.Errorcode(int(msg[-2:], 16)).name)
-            except ValueError:
-                LOGGER.error('Unknown Spark CBOX error: ' + msg)
-
-        elif msg.startswith(const.SETUP_MODE_PREFIX):
+        elif msg.startswith(SETUP_MODE_PREFIX):
             LOGGER.error('Controller entered listening mode. Exiting service now.')
             raise web.GracefulExit()
 
         else:
             LOGGER.info(f'Spark event: `{msg}`')
 
-    def _on_data(self, msg: str):
+    async def _on_data(self, msg: str):
         for cb in self._data_callbacks:
-            cb(msg)
+            await cb(msg)
+
+    async def before_shutdown(self, app: web.Application):
+        await self.end()
 
     async def run(self):
         """Implements RepeaterFeature.run"""
@@ -139,9 +142,9 @@ class SparkConnection(repeater.RepeaterFeature):
 
                 # Drain parsed messages
                 for msg in self._parser.event_messages():
-                    self._on_event(msg)
+                    await self._on_event(msg)
                 for msg in self._parser.data_messages():
-                    self._on_data(msg)
+                    await self._on_data(msg)
 
             raise ConnectionError('Connection closed')
 
@@ -175,15 +178,15 @@ class SparkConnection(repeater.RepeaterFeature):
             self._writer = None
             self._parser = None
 
-    async def write(self, data: str):
-        return await self.write_encoded(data.encode())
+    async def write(self, msg: Union[str, bytes]):
+        if isinstance(msg, str):
+            msg = msg.encode()
 
-    async def write_encoded(self, data: bytes):
         if not self.connected:
             raise exceptions.NotConnected(f'{self} not connected')
 
-        LOGGER.debug(f'{self} writing: {data}')
-        self._writer.write(data + b'\n')
+        LOGGER.debug(f'{self} writing: {msg}')
+        self._writer.write(msg + b'\n')
         await self._writer.drain()
 
     async def start_reconnect(self):

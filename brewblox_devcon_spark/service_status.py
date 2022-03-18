@@ -5,65 +5,16 @@ Awaitable events for tracking device and network status
 
 import asyncio
 import warnings
-from dataclasses import asdict, dataclass
 from functools import partialmethod
 from typing import Optional
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
 
+from brewblox_devcon_spark.models import (DeviceInfo, HandshakeInfo,
+                                          ServiceInfo, StatusDescription)
+
 LOGGER = brewblox_logger(__name__)
-
-
-@dataclass
-class SharedInfo:
-    firmware_version: str
-    proto_version: str
-    firmware_date: str
-    proto_date: str
-    device_id: str
-
-    def __post_init__(self):
-        self.device_id = self.device_id.lower()
-
-        # We only compare the first 8 characters of git hashes
-        self.firmware_version = self.firmware_version[:8]
-        self.proto_version = self.proto_version[:8]
-
-
-@dataclass
-class ServiceInfo(SharedInfo):
-    name: str
-
-
-@dataclass
-class DeviceInfo(SharedInfo):
-    system_version: str
-    platform: str
-    reset_reason: str
-
-
-@dataclass
-class HandshakeInfo:
-    is_compatible_firmware: bool
-    is_latest_firmware: bool
-    is_valid_device_id: bool
-
-
-@dataclass
-class StatusDescription:
-    device_address: str
-    connection_kind: str
-
-    service_info: ServiceInfo
-    device_info: DeviceInfo
-    handshake_info: HandshakeInfo
-
-    is_autoconnecting: bool
-    is_connected: bool
-    is_acknowledged: bool
-    is_synchronized: bool
-    is_updating: bool
 
 
 class ServiceStatus(features.ServiceFeature):
@@ -271,7 +222,3 @@ async def wait_updating(app: web.Application, wait: bool = True) -> bool:
 
 def desc(app: web.Application) -> StatusDescription:
     return fget(app).desc()
-
-
-def desc_dict(app: web.Application) -> dict:
-    return asdict(desc(app))

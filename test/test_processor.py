@@ -1,10 +1,11 @@
 """
-Tests brewblox_devcon_spark.codec.modifiers
+Tests brewblox_devcon_spark.codec.processor
 """
 
 import pytest
 
-from brewblox_devcon_spark.codec import DecodeOpts, modifiers, unit_conversion
+from brewblox_devcon_spark.codec import (DecodeOpts, ProtobufProcessor,
+                                         unit_conversion)
 from brewblox_devcon_spark.codec.pb2 import TempSensorOneWire_pb2
 
 
@@ -12,15 +13,15 @@ from brewblox_devcon_spark.codec.pb2 import TempSensorOneWire_pb2
 def f_mod(app):
     c = unit_conversion.UnitConverter(app)
     c.temperature = 'degF'
-    m = modifiers.Modifier(c, strip_readonly=False)
+    m = ProtobufProcessor(c, strip_readonly=False)
     return m
 
 
 @pytest.fixture
-def c_mod(app):
+def proc(app):
     c = unit_conversion.UnitConverter(app)
     c.temperature = 'degC'
-    return modifiers.Modifier(c)
+    return ProtobufProcessor(c)
 
 
 def generate_encoding_data():
@@ -39,9 +40,9 @@ def generate_decoding_data():
     }
 
 
-def test_encode_options(f_mod):
+def test_pre_encode_fields(f_mod):
     vals = generate_encoding_data()
-    f_mod.encode_options(TempSensorOneWire_pb2.Block(), vals)
+    f_mod.pre_encode(TempSensorOneWire_pb2.Block(), vals)
 
     # converted to (delta) degC
     # scaled * 256
@@ -49,16 +50,16 @@ def test_encode_options(f_mod):
     assert vals == generate_decoding_data()
 
 
-def test_decode_options(f_mod):
+def test_post_decode_fields(f_mod):
     vals = generate_decoding_data()
-    f_mod.decode_options(TempSensorOneWire_pb2.Block(), vals, DecodeOpts())
+    f_mod.post_decode(TempSensorOneWire_pb2.Block(), vals, DecodeOpts())
     assert vals['offset']['value'] == pytest.approx(20, 0.1)
     assert vals['value']['value'] == pytest.approx(100, 0.1)
 
 
-def test_decode_no_system(c_mod):
+def test_decode_no_system(proc):
     vals = generate_decoding_data()
-    c_mod.decode_options(TempSensorOneWire_pb2.Block(), vals, DecodeOpts())
+    proc.post_decode(TempSensorOneWire_pb2.Block(), vals, DecodeOpts())
     assert vals['offset']['value'] > 0
     assert vals['value']['value'] > 0
 
@@ -80,5 +81,5 @@ def test_null_values(f_mod):
     vals['offset[delta_degF]'] = None
     vals['address'] = None
 
-    f_mod.encode_options(TempSensorOneWire_pb2.Block(), vals)
+    f_mod.pre_encode(TempSensorOneWire_pb2.Block(), vals)
     assert 'address' not in vals

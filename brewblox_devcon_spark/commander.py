@@ -4,93 +4,272 @@ Requests are matched with responses here.
 """
 
 import asyncio
+from typing import Optional
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, strex
 
-from brewblox_devcon_spark import commands, connection, exceptions
+from brewblox_devcon_spark import codec, connection, exceptions
+from brewblox_devcon_spark.models import (EncodedPayload, EncodedRequest,
+                                          EncodedResponse, ErrorCode,
+                                          FirmwareBlock, FirmwareBlockIdentity,
+                                          Opcode)
 
 LOGGER = brewblox_logger(__name__)
 
 
-# Spark protocol is to echo the request in the response
-# To prevent decoding ambiguity, a non-hexadecimal character separates the request and response
-RESPONSE_SEPARATOR = '|'
+def split_type(type_str: str) -> tuple[str, Optional[str]]:
+    if '.' in type_str:
+        return tuple(type_str.split('.', 1))
+    else:
+        return type_str, None
+
+
+def join_type(blockType: str, subtype: Optional[str]) -> str:
+    if subtype:
+        return f'{blockType}.{subtype}'
+    else:
+        return blockType
 
 
 class SparkCommander(features.ServiceFeature):
 
+    default_decode_opts = codec.DecodeOpts()
+    stored_decode_opts = codec.DecodeOpts(enums=codec.ProtoEnumOpt.INT)
+    logged_decode_opts = codec.DecodeOpts(enums=codec.ProtoEnumOpt.INT,
+                                          filter=codec.FilterOpt.LOGGED,
+                                          metadata=codec.MetadataOpt.POSTFIX)
+
     def __init__(self, app: web.Application):
         super().__init__(app)
 
+        self._msgid = 0
         self._timeout = app['config']['command_timeout']
-        self._requests: dict[str, asyncio.Future] = {}
-        self._conn: connection.SparkConnection = None
+        self._active_messages: dict[int, asyncio.Future] = {}
+        self._codec = codec.fget(app)
+        self._conn = connection.fget(app)
 
     def __str__(self):
-        return f'<{type(self).__name__} for {self._conn} at {hex(id(self))}>'
+        return f'<{type(self).__name__} for {self._conn}>'
 
     async def startup(self, app: web.Application):
-        self._requests.clear()
-        self._conn = connection.fget(app)
-        self._conn.data_callbacks.add(self.data_callback)
+        self._active_messages.clear()
+        self._conn.data_callbacks.add(self._data_callback)
 
     async def shutdown(self, app: web.Application):
-        if self._conn:
-            await self._conn.end()
-            self._conn.data_callbacks.discard(self.data_callback)
-            self._conn = None
+        self._conn.data_callbacks.discard(self._data_callback)
 
-    def data_callback(self, msg: str):
+    def _next_id(self):
+        self._msgid = (self._msgid + 1) % 0xFFFF
+        return self._msgid
+
+    async def _to_payload(self, block: FirmwareBlock, include_data=True) -> EncodedPayload:
+        if block.type:
+            (blockType, subtype) = split_type(block.type)
+            data = block.data if include_data else None
+            (blockType, subtype), content = await self._codec.encode((blockType, subtype), data)
+            return EncodedPayload(
+                blockId=block.nid,
+                blockType=blockType,
+                subtype=subtype,
+                content=content,
+            )
+        else:
+            return EncodedPayload(
+                blockId=block.nid
+            )
+
+    async def _to_block(self,
+                        payload: EncodedPayload,
+                        opts: codec.DecodeOpts,
+                        ) -> FirmwareBlock:
+        enc_id = (payload.blockType, payload.subtype)
+        enc_content = payload.content
+        (blockType, subtype), data = await self._codec.decode(enc_id, enc_content, opts)
+        return FirmwareBlock(
+            nid=payload.blockId,
+            type=join_type(blockType, subtype),
+            data=data,
+        )
+
+    async def _data_callback(self, msg: str):
         try:
-            raw_request, raw_response = msg.upper().replace(' ', '').split(RESPONSE_SEPARATOR)
+            _, dec_data = await self._codec.decode(
+                (codec.RESPONSE_TYPE, None),
+                msg,
+            )
+            response = EncodedResponse(**dec_data)
 
             # Get the Future object awaiting this request
-            # key is the encoded request
-            fut: asyncio.Future = self._requests.get(raw_request)
+            # the msgid field is key
+            fut = self._active_messages.get(response.msgId)
             if fut is None:
-                raise ValueError('Unexpected message')
-            fut.set_result(raw_response)
+                raise ValueError(f'Unexpected message {response}')
+            fut.set_result(response)
 
         except Exception as ex:
             LOGGER.error(f'Error parsing message `{msg}` : {strex(ex)}')
 
-    def add_request(self, request: str) -> asyncio.Future:
-        fut = asyncio.get_running_loop().create_future()
-        self._requests[request] = fut
-        return fut
+    async def _execute(self,
+                       opcode: Opcode,
+                       payload: Optional[EncodedPayload],
+                       /,
+                       has_response=True,
+                       ) -> list[EncodedPayload]:
+        msg_id = self._next_id()
 
-    def remove_request(self, request: str):
-        del self._requests[request]
+        request = EncodedRequest(
+            msgId=msg_id,
+            opcode=opcode,
+            payload=payload
+        )
 
-    async def execute(self, command: commands.Command) -> dict:
-        encoded_request = command.encoded_request.upper()
-        resp_future = self.add_request(encoded_request)
+        _, request_data = await self._codec.encode((codec.REQUEST_TYPE, None), request.dict())
+        fut: asyncio.Future[EncodedResponse] = asyncio.get_running_loop().create_future()
+        self._active_messages[msg_id] = fut
 
         try:
-            await self._conn.write(encoded_request)
-            message = await asyncio.wait_for(resp_future, timeout=self._timeout)
+            await self._conn.write(request_data)
+            if has_response:
+                enc_response = await asyncio.wait_for(fut, timeout=self._timeout)
 
-            # Create a new command of the same type to contain response
-            response_cmd = type(command).from_encoded(encoded_request, message)
-            decoded = response_cmd.decoded_response
+                if enc_response.error != ErrorCode.OK:
+                    raise exceptions.CommandException(f'{opcode.name}, {enc_response.error.name}')
 
-            # If the call failed, its response will be an exception
-            # We can raise it here
-            if isinstance(decoded, BaseException):
-                raise decoded
+                return enc_response.payload
+            else:
+                return []
 
         except asyncio.TimeoutError:
-            raise exceptions.CommandTimeout(f'{type(command).__name__}')
+            raise exceptions.CommandTimeout(opcode.name)
 
         finally:
-            self.remove_request(encoded_request)
-
-        return decoded
+            del self._active_messages[msg_id]
 
     async def start_reconnect(self):
-        if self._conn:
-            await self._conn.start_reconnect()
+        await self._conn.start_reconnect()
+
+    async def validate(self, block: FirmwareBlock) -> FirmwareBlock:
+        request = EncodedRequest(
+            msgId=0,
+            opcode=Opcode.NONE,
+            payload=await self._to_payload(block)
+        )
+        await self._codec.encode((codec.REQUEST_TYPE, None), request.dict())
+        return block
+
+    async def noop(self) -> None:
+        await self._execute(Opcode.NONE, None)
+
+    async def read_object(self, ident: FirmwareBlockIdentity) -> FirmwareBlock:
+        payloads = await self._execute(
+            Opcode.BLOCK_READ,
+            await self._to_payload(ident, False),
+        )
+        return await self._to_block(payloads[0], self.default_decode_opts)
+
+    async def read_logged_object(self, ident: FirmwareBlockIdentity) -> FirmwareBlock:
+        payloads = await self._execute(
+            Opcode.BLOCK_READ,
+            await self._to_payload(ident, False),
+        )
+        return await self._to_block(payloads[0], self.logged_decode_opts)
+
+    async def read_stored_object(self, ident: FirmwareBlockIdentity) -> FirmwareBlock:
+        payloads = await self._execute(
+            Opcode.STORAGE_READ,
+            await self._to_payload(ident, False),
+        )
+        return await self._to_block(payloads[0], self.stored_decode_opts)
+
+    async def write_object(self, block: FirmwareBlock) -> FirmwareBlock:
+        payloads = await self._execute(
+            Opcode.BLOCK_WRITE,
+            await self._to_payload(block),
+        )
+        return await self._to_block(payloads[0], self.default_decode_opts)
+
+    async def create_object(self, block: FirmwareBlock) -> FirmwareBlock:
+        payloads = await self._execute(
+            Opcode.BLOCK_CREATE,
+            await self._to_payload(block),
+        )
+        return await self._to_block(payloads[0], self.default_decode_opts)
+
+    async def delete_object(self, ident: FirmwareBlockIdentity) -> None:
+        await self._execute(
+            Opcode.BLOCK_DELETE,
+            await self._to_payload(ident, False),
+        )
+
+    async def list_objects(self) -> list[FirmwareBlock]:
+        payloads = await self._execute(
+            Opcode.BLOCK_READ_ALL,
+            None,
+        )
+        return [await self._to_block(v, self.default_decode_opts)
+                for v in payloads]
+
+    async def list_logged_objects(self) -> list[FirmwareBlock]:
+        payloads = await self._execute(
+            Opcode.BLOCK_READ_ALL,
+            None,
+        )
+        return [await self._to_block(v, self.logged_decode_opts)
+                for v in payloads]
+
+    async def list_stored_objects(self) -> list[FirmwareBlock]:
+        payloads = await self._execute(
+            Opcode.STORAGE_READ_ALL,
+            None,
+        )
+        return [await self._to_block(v, self.stored_decode_opts)
+                for v in payloads]
+
+    async def list_broadcast_objects(self) -> tuple[list[FirmwareBlock], list[FirmwareBlock]]:
+        payloads = await self._execute(
+            Opcode.BLOCK_READ_ALL,
+            None,
+        )
+        default_retv = [await self._to_block(v, self.default_decode_opts)
+                        for v in payloads]
+        logged_retv = [await self._to_block(v, self.logged_decode_opts)
+                       for v in payloads]
+        return (default_retv, logged_retv)
+
+    async def clear_objects(self) -> None:
+        await self._execute(
+            Opcode.CLEAR_BLOCKS,
+            None,
+        )
+
+    async def factory_reset(self) -> None:
+        await self._execute(
+            Opcode.FACTORY_RESET,
+            None,
+            has_response=False
+        )
+
+    async def reboot(self) -> None:
+        await self._execute(
+            Opcode.REBOOT,
+            None,
+            has_response=False,
+        )
+
+    async def discover_objects(self) -> list[FirmwareBlock]:
+        payloads = await self._execute(
+            Opcode.BLOCK_DISCOVER,
+            None,
+        )
+        return [await self._to_block(v, self.default_decode_opts)
+                for v in payloads]
+
+    async def firmware_update(self) -> None:
+        await self._execute(
+            Opcode.FIRMWARE_UPDATE,
+            None,
+        )
 
 
 def setup(app: web.Application):

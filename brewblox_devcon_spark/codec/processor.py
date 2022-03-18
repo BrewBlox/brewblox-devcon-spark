@@ -34,7 +34,7 @@ class OptionElement():
     nested: bool
 
 
-class Modifier():
+class ProtobufProcessor():
     _BREWBLOX_PROVIDER: DescriptorBase = brewblox_pb2.field
 
     def __init__(self, converter: UnitConverter, strip_readonly=True):
@@ -109,8 +109,8 @@ class Modifier():
     def _unit_name(self, unit_num: int) -> str:
         return brewblox_pb2.UnitType.Name(unit_num)
 
-    def _objtype_name(self, objtype_num: int) -> str:
-        return brewblox_pb2.BlockType.Name(objtype_num)
+    def _blockType_name(self, blockType_num: int) -> str:
+        return brewblox_pb2.BlockType.Name(blockType_num)
 
     def _encode_unit(self, value: Union[float, dict], unit_type: str, postfix: Optional[str]) -> float:
         if isinstance(value, dict):
@@ -121,14 +121,14 @@ class Modifier():
             user_unit = postfix
             return self._converter.to_sys_value(value, unit_type, user_unit)
 
-    def encode_options(self, message: Message, obj: dict) -> dict:
+    def pre_encode(self, message: Message, obj: dict) -> dict:
         """
         Modifies `obj` based on Protobuf options and dict key postfixes.
 
         Supported Protobuf options:
         * unit:         Convert metadata unit notation (postfix or typed object) to Protobuf unit.
         * scale:        Multiply value with scale after unit conversion.
-        * objtype:      Strip link key postfix (<TempSensorInterface> or <>), or extract id from typed object.
+        * blockType:      Strip link key postfix (<TempSensorInterface> or <>), or extract id from typed object.
         * hexed:        Convert hexadecimal string to int64.
         * readonly:     Strip value from protobuf input.
         * ignored:      Strip value from protobuf input.
@@ -153,7 +153,7 @@ class Modifier():
                 },
             }
 
-            >>> encode_options(
+            >>> pre_encode(
                     TempSensorOneWire_pb2.TempSensorOneWire(),
                     values)
 
@@ -163,7 +163,7 @@ class Modifier():
             #   message Settings {
             #     fixed64 address = 1 [(brewblox).hexed = true];
             #     sint32 offset = 2 [(brewblox).unit = DeltaTemp, (brewblox).scale = 256];
-            #     uint16 sensor = 3 [(brewblox).objtype = TempSensorInterface];
+            #     uint16 sensor = 3 [(brewblox).blockType = TempSensorInterface];
             #     sint32 output = 4 [(brewblox).readonly = true];
             #     sint32 desiredSetting = 5 [(brewblox).unit = Temp];
             #   }
@@ -239,7 +239,7 @@ class Modifier():
 
         return obj
 
-    def decode_options(self, message: Message, obj: dict, opts: DecodeOpts) -> dict:
+    def post_decode(self, message: Message, obj: dict, opts: DecodeOpts) -> dict:
         """
         Post-processes protobuf data based on protobuf / codec options.
 
@@ -272,7 +272,7 @@ class Modifier():
                 }
             }
 
-            >>> decode_options(
+            >>> post_decode(
                     ExampleMessage_pb2.ExampleMessage(),
                     values,
                     DecodeOpts(metadata=MetadataOpt.POSTFIX))
@@ -348,12 +348,12 @@ class Modifier():
                     new_key += f'[{user_unit}]'
 
             if options.objtype:
-                objtype = self._objtype_name(options.objtype)
+                blockType = self._blockType_name(options.objtype)
 
                 if opts.metadata == MetadataOpt.TYPED:
                     shared = {
                         '__bloxtype': 'Link',
-                        'type': objtype,
+                        'type': blockType,
                     }
                     if options.driven:
                         shared['driven'] = True
@@ -361,7 +361,7 @@ class Modifier():
                     val = [{**shared, 'id': v if not stripped else None} for v in val]
 
                 if opts.metadata == MetadataOpt.POSTFIX:
-                    postfix = f'<{objtype},driven>' if options.driven else f'<{objtype}>'
+                    postfix = f'<{blockType},driven>' if options.driven else f'<{blockType}>'
                     new_key += postfix
 
             if options.hexed:

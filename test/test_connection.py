@@ -105,6 +105,11 @@ async def test_write(app, init_app, client, m_writer):
     m_writer.write.assert_called_once_with(b'testey\n')
     m_writer.drain.assert_awaited_once()
 
+    m_writer.reset_mock()
+    await conn.write(b'testey')
+    m_writer.write.assert_called_once_with(b'testey\n')
+    m_writer.drain.assert_awaited_once()
+
     await conn.start_reconnect()
     m_writer.close.assert_called_once()
 
@@ -129,24 +134,24 @@ async def test_callback(app, init_app, client, m_reader, m_writer):
     service_status.set_autoconnecting(app, True)
     await asyncio.sleep(0.01)
     conn = connection.fget(app)
-    m_data_cb = Mock()
-    m_data_cb2 = Mock()
+    m_data_cb = AsyncMock()
+    m_data_cb2 = AsyncMock()
 
     conn.data_callbacks.add(m_data_cb)
     conn.data_callbacks.add(m_data_cb2)
 
     m_reader.feed_data('<!connected:sensor>bunnies<fluffy>\n'.encode())
     await asyncio.sleep(0.01)
-    m_data_cb.assert_called_with('bunnies')
-    m_data_cb2.assert_called_with('bunnies')
+    m_data_cb.assert_awaited_with('bunnies')
+    m_data_cb2.assert_awaited_with('bunnies')
 
     # Close it down
     m_reader.feed_data('puppies\n'.encode())
     m_writer.is_closing.return_value = True
 
     await asyncio.sleep(0.01)
-    m_data_cb.assert_called_with('puppies')
-    m_data_cb2.assert_called_with('puppies')
+    m_data_cb.assert_awaited_with('puppies')
+    m_data_cb2.assert_awaited_with('puppies')
     assert conn.active
     assert not conn.connected
     assert not service_status.desc(app).is_connected
@@ -155,16 +160,17 @@ async def test_callback(app, init_app, client, m_reader, m_writer):
 async def test_error_callback(app, init_app, client, m_reader, m_writer):
     service_status.set_autoconnecting(app, True)
     conn = connection.fget(app)
-    m_data_cb = Mock(side_effect=RuntimeError)
+    m_data_cb = AsyncMock(side_effect=RuntimeError)
     conn.data_callbacks.add(m_data_cb)
 
     m_reader.feed_data('<!connected:sensor>bunnies<fluffy>\n'.encode())
     await asyncio.sleep(0.01)
-    m_data_cb.assert_called_with('bunnies')
+    m_data_cb.assert_awaited_with('bunnies')
     assert conn.connected
 
 
 async def test_on_welcome(app, init_app, client, mocker, welcome):
+    mocker.patch(TESTED + '.web.GracefulExit', DummyExit)
     conn = connection.fget(app)
     status = service_status.fget(app)
     status.set_autoconnecting(True)
@@ -173,28 +179,30 @@ async def test_on_welcome(app, init_app, client, mocker, welcome):
     nok_welcome = welcome.copy()
     nok_welcome[2] = 'NOPE'
     nok_msg = ','.join(nok_welcome)
-    conn._on_event(ok_msg)
+    await conn._on_event(ok_msg)
     assert status.desc().handshake_info.is_compatible_firmware
-
     status.service_info.device_id = '1234567f0case'
-    conn._on_event(ok_msg)
+    await conn._on_event(ok_msg)
     assert status.desc().handshake_info.is_valid_device_id
 
     status.service_info.device_id = '01345'
     with pytest.warns(UserWarning, match='Handshake error'):
-        conn._on_event(ok_msg)
+        await conn._on_event(ok_msg)
     assert not status.desc().handshake_info.is_valid_device_id
 
     status.service_info.device_id = None
     app['config']['skip_version_check'] = True
-    conn._on_event(nok_msg)
+    await conn._on_event(nok_msg)
     assert status.desc().handshake_info.is_compatible_firmware
 
     app['config']['skip_version_check'] = False
     with pytest.warns(UserWarning, match='Handshake error'):
-        conn._on_event(nok_msg)
+        await conn._on_event(nok_msg)
     assert not status.desc().handshake_info.is_compatible_firmware
     assert not status.desc().is_synchronized
+
+    with pytest.raises(DummyExit):
+        await conn._on_event(connection.SETUP_MODE_PREFIX)
 
 
 async def test_on_cbox_err(app, init_app, client, cbox_err):
@@ -204,21 +212,15 @@ async def test_on_cbox_err(app, init_app, client, cbox_err):
     assert status.desc().device_address == 'addr'
 
     msg = ':'.join(cbox_err)
-    conn._on_event(msg)
+    await conn._on_event(msg)
 
     # shouldn't fail on non-existent error message
     msg = ':'.join([cbox_err[0], 'ffff'])
-    conn._on_event(msg)
+    await conn._on_event(msg)
 
     # shouldn't fail on invalid error
     msg = ':'.join([cbox_err[0], 'not hex'])
-    conn._on_event(msg)
-
-
-async def test_on_setup_mode(app, init_app, client, m_exit):
-    conn = connection.fget(app)
-    with pytest.raises(DummyExit):
-        conn._on_event('SETUP_MODE')
+    await conn._on_event(msg)
 
 
 async def test_retry_exhausted(app, client, m_connect, m_writer, mocker):

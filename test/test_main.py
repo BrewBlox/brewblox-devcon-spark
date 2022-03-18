@@ -7,7 +7,7 @@ from brewblox_service import mqtt
 
 from brewblox_devcon_spark import __main__ as main
 from brewblox_devcon_spark import (block_store, broadcaster, commander,
-                                   service_store, spark)
+                                   controller, service_store)
 
 TESTED = main.__name__
 
@@ -29,7 +29,7 @@ def test_main(mocker, app):
         commander.fget(app),
         service_store.fget(app),
         block_store.fget(app),
-        spark.fget(app),
+        controller.fget(app),
         mqtt.handler(app),
         broadcaster.fget(app)
     ]
