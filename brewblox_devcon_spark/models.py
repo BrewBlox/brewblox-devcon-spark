@@ -171,7 +171,7 @@ class DecodedPayload(BaseModel):
         smart_union = True
 
 
-class ControlboxRequest(BaseModel):
+class BaseRequest(BaseModel):
     msgId: int
     opcode: Opcode
 
@@ -182,15 +182,15 @@ class ControlboxRequest(BaseModel):
         return v
 
 
-class EncodedRequest(ControlboxRequest):
+class EncodedRequest(BaseRequest):
     payload: Optional[EncodedPayload]
 
 
-class DecodedRequest(ControlboxRequest):
+class DecodedRequest(BaseRequest):
     payload: Optional[DecodedPayload]
 
 
-class ControlboxResponse(BaseModel):
+class BaseResponse(BaseModel):
     msgId: int
     error: ErrorCode
 
@@ -201,11 +201,11 @@ class ControlboxResponse(BaseModel):
         return v
 
 
-class EncodedResponse(ControlboxResponse):
+class EncodedResponse(BaseResponse):
     payload: list[EncodedPayload]
 
 
-class DecodedResponse(ControlboxResponse):
+class DecodedResponse(BaseResponse):
     payload: list[DecodedPayload]
 
 

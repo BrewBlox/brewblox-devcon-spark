@@ -23,8 +23,8 @@ Identifier_ = Union[NumIdentifier_, StrIdentifier_]
 LOGGER = brewblox_logger(__name__)
 
 BlockType = pb2.brewblox_pb2.BlockType
-REQUEST_TYPE = 'ControlboxRequest'
-RESPONSE_TYPE = 'ControlboxResponse'
+REQUEST_TYPE = 'Request'
+RESPONSE_TYPE = 'Response'
 REQUEST_TYPE_INT = -1
 RESPONSE_TYPE_INT = -2
 

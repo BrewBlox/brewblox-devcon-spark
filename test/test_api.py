@@ -488,7 +488,7 @@ async def test_debug_encode(app, client):
     addr = decoded['content']['address']
     assert addr.lower().startswith('ff')
 
-    # ControlboxRequest has an embedded extra message
+    # Request has an embedded extra message
     request_msg = {
         'msgId': 1,
         'opcode': Opcode.BLOCK_WRITE.name,
@@ -509,7 +509,7 @@ async def test_debug_encode(app, client):
     addr = decoded['content']['payload']['content']['address']
     assert addr.lower().startswith('ff')
 
-    # ControlboxResponse has an embedded extra message
+    # Response has an embedded extra message
     response_msg = {
         'msgId': 1,
         'error': ErrorCode.INVALID_OPCODE.name,
