@@ -25,7 +25,7 @@ from brewblox_devcon_spark.models import (EncodedPayload, EncodedRequest,
                                           ResetReason)
 
 
-def default_objects() -> dict[int, FirmwareBlock]:
+def default_blocks() -> dict[int, FirmwareBlock]:
     return {
         block.nid: block
         for block in [
@@ -98,7 +98,7 @@ class SparkConnectionSim(connection.SparkConnection):
         self._start_time = datetime.now()
         self._codec: codec.Codec = features.get(app, key='sim_codec')
         self._id_counter = count(start=const.USER_NID_START)
-        self._objects: dict[int, FirmwareBlock] = default_objects()
+        self._blocks: dict[int, FirmwareBlock] = default_blocks()
 
     @property
     def connected(self) -> bool:  # pragma: no cover
@@ -106,7 +106,7 @@ class SparkConnectionSim(connection.SparkConnection):
 
     def update_ticks(self):
         elapsed = datetime.now() - self._start_time
-        ticks_block = self._objects[const.SYSTIME_NID]
+        ticks_block = self._blocks[const.SYSTIME_NID]
         ticks_block.data['millisSinceBoot'] = elapsed.total_seconds() * 1000
         ticks_block.data['secondsSinceEpoch'] = self._start_time.timestamp() + elapsed.total_seconds()
 
@@ -186,7 +186,7 @@ class SparkConnectionSim(connection.SparkConnection):
                 Opcode.BLOCK_READ,
                 Opcode.STORAGE_READ
             ]:
-                block = self._objects.get(payload.blockId)
+                block = self._blocks.get(payload.blockId)
                 if not block:
                     response.error = ErrorCode.INVALID_BLOCK_ID
                 else:
@@ -202,8 +202,24 @@ class SparkConnectionSim(connection.SparkConnection):
                         content=content
                     )]
 
+            elif request.opcode in [
+                Opcode.BLOCK_READ_ALL,
+                Opcode.STORAGE_READ_ALL,
+            ]:
+                for block in self._blocks.values():
+                    (blockType, subtype), content = await self._codec.encode(
+                        (block.type, None),
+                        block.data,
+                    )
+                    response.payload.append(EncodedPayload(
+                        blockId=block.nid,
+                        blockType=blockType,
+                        subtype=subtype,
+                        content=content,
+                    ))
+
             elif request.opcode == Opcode.BLOCK_WRITE:
-                block = self._objects.get(payload.blockId)
+                block = self._blocks.get(payload.blockId)
                 if not block:
                     response.error = ErrorCode.INVALID_BLOCK_ID
                 elif not in_content:
@@ -225,7 +241,7 @@ class SparkConnectionSim(connection.SparkConnection):
 
             elif request.opcode == Opcode.BLOCK_CREATE:
                 nid = payload.blockId
-                block = self._objects.get(nid)
+                block = self._blocks.get(nid)
                 if block:
                     response.error = ErrorCode.BLOCK_NOT_CREATABLE
                 elif nid > 0 and nid < const.USER_NID_START:
@@ -239,7 +255,7 @@ class SparkConnectionSim(connection.SparkConnection):
                         type=in_blockType,
                         data=in_content,
                     )
-                    self._objects[nid] = block
+                    self._blocks[nid] = block
                     (blockType, subtype), content = await self._codec.encode(
                         (block.type, None),
                         block.data,
@@ -253,48 +269,17 @@ class SparkConnectionSim(connection.SparkConnection):
 
             elif request.opcode == Opcode.BLOCK_DELETE:
                 nid = payload.blockId
-                block = self._objects.get(nid)
+                block = self._blocks.get(nid)
                 if not block:
                     response.error = ErrorCode.INVALID_BLOCK_ID
                 elif nid < const.USER_NID_START:
                     response.error = ErrorCode.BLOCK_NOT_DELETABLE
                 else:
-                    del self._objects[nid]
-
-            elif request.opcode in [
-                Opcode.BLOCK_READ_ALL,
-                Opcode.STORAGE_READ_ALL,
-            ]:
-                for block in self._objects.values():
-                    (blockType, subtype), content = await self._codec.encode(
-                        (block.type, None),
-                        block.data,
-                    )
-                    response.payload.append(EncodedPayload(
-                        blockId=block.nid,
-                        blockType=blockType,
-                        subtype=subtype,
-                        content=content,
-                    ))
-
-            elif request.opcode == Opcode.CLEAR_BLOCKS:
-                self._objects = default_objects()
-                self.update_ticks()
-
-            elif request.opcode == Opcode.REBOOT:
-                self._start_time = datetime.now()
-                self.update_ticks()
-
-                # No response
-                return
-
-            elif request.opcode == Opcode.FACTORY_RESET:
-                # No response
-                return
+                    del self._blocks[nid]
 
             elif request.opcode == Opcode.BLOCK_DISCOVER:
                 # Always return spark pins when discovering blocks
-                block = self._objects[const.SPARK_PINS_NID]
+                block = self._blocks[const.SPARK_PINS_NID]
                 (blockType, subtype), content = await self._codec.encode(
                     (block.type, None),
                     block.data,
@@ -305,6 +290,21 @@ class SparkConnectionSim(connection.SparkConnection):
                     subtype=subtype,
                     content=content,
                 )]
+
+            elif request.opcode == Opcode.REBOOT:
+                self._start_time = datetime.now()
+                self.update_ticks()
+
+            elif request.opcode == Opcode.CLEAR_BLOCKS:
+                self._blocks = default_blocks()
+                self.update_ticks()
+
+            elif request.opcode == Opcode.CLEAR_WIFI:
+                self._blocks[const.WIFI_SETTINGS_NID]['data'] = {}
+
+            elif request.opcode == Opcode.FACTORY_RESET:
+                self._blocks = default_blocks()
+                self.update_ticks()
 
             elif request.opcode == Opcode.FIRMWARE_UPDATE:
                 pass

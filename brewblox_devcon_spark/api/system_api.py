@@ -104,6 +104,19 @@ class RebootServiceView(PydanticView):
         return web.Response()
 
 
+@routes.view('/system/clear_wifi')
+class ClearWifiView(PydanticView):
+    async def post(self):
+        """
+        Clear Wifi settings on the controller.
+        The controller may reboot or lose connection.
+
+        Tags: System
+        """
+        await controller.fget(self.request.app).clear_wifi()
+        return web.Response()
+
+
 @routes.view('/system/factory_reset')
 class FactoryResetView(PydanticView):
     async def post(self):
@@ -167,9 +180,8 @@ class FlashView(PydanticView):
             service_status.set_updating(self.app)
             await asyncio.sleep(FLUSH_PERIOD_S)  # Wait for in-progress commands to finish
 
-            if platform != 'esp32':  # pragma: no cover
-                self._notify('Sending update command to controller')
-                await cmder.firmware_update()
+            self._notify('Sending update command to controller')
+            await cmder.firmware_update()
 
             self._notify('Waiting for normal connection to close')
             await connection.fget(self.app).end()

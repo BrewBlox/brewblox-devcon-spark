@@ -75,7 +75,7 @@ class SparkSynchronization(repeater.RepeaterFeature):
         - Connect to controller
             - Wait for 'connected' event to be set by connection.py
         - Synchronize handshake
-            - Keep sending a Noop command until 'acknowledged' event is set
+            - Keep sending a Version command until 'acknowledged' event is set
             - Check firmware info in handshake for compatibility
             - Abort synchronization if firmware/ID is not compatible
         - Synchronize block store
@@ -85,9 +85,6 @@ class SparkSynchronization(repeater.RepeaterFeature):
         - Synchronize controller display unit
             - Send correct unit to controller if mismatched
             - Send timezone to controller if mismatched
-        - Collect and log controller tracing
-            - Write read/resume command to SysInfo
-            - Tracing is included in response
         - Set 'synchronized' event
         - Wait for 'disconnected' event
 
@@ -171,7 +168,7 @@ class SparkSynchronization(repeater.RepeaterFeature):
                 try:
                     await asyncio.sleep(PING_INTERVAL_S)
                     LOGGER.info('prompting handshake...')
-                    await self.commander.noop()
+                    await self.commander.version()
                 except Exception as ex:
                     LOGGER.error(strex(ex))
                     pass
@@ -207,7 +204,7 @@ class SparkSynchronization(repeater.RepeaterFeature):
     @subroutine('sync controller time')
     async def _sync_time(self):
         now = datetime.now()
-        ticks_block = await self.commander.write_object(
+        ticks_block = await self.commander.write_block(
             FirmwareBlock(
                 nid=const.SYSTIME_NID,
                 type='Ticks',
@@ -239,7 +236,7 @@ class SparkSynchronization(repeater.RepeaterFeature):
         if not service_status.desc(self.app).is_acknowledged:
             return
 
-        display_block = await self.commander.read_object(
+        display_block = await self.commander.read_block(
             FirmwareBlockIdentity(nid=const.DISPLAY_SETTINGS_NID))
 
         user_unit = self.global_store.units['temperature']
@@ -261,7 +258,7 @@ class SparkSynchronization(repeater.RepeaterFeature):
             LOGGER.info(f'Spark display time zone set to {user_tz} ({user_tz_name})')
 
         if write_required:
-            await self.commander.write_object(display_block)
+            await self.commander.write_block(display_block)
 
 
 def setup(app: web.Application):

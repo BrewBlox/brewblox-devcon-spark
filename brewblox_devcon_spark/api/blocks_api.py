@@ -156,7 +156,7 @@ class ReadAllView(BlocksView):
 
         Tags: Blocks
         """
-        blocks = await self.controller.list_blocks()
+        blocks = await self.controller.read_all_blocks()
         return web.json_response(
             [v.dict() for v in blocks]
         )
@@ -170,7 +170,7 @@ class ReadAllLoggedView(BlocksView):
 
         Tags: Blocks
         """
-        blocks = await self.controller.list_logged_blocks()
+        blocks = await self.controller.read_all_logged_blocks()
         return web.json_response(
             [v.dict() for v in blocks]
         )
@@ -184,7 +184,7 @@ class ReadAllStoredView(BlocksView):
 
         Tags: Blocks
         """
-        blocks = await self.controller.list_stored_blocks()
+        blocks = await self.controller.read_all_stored_blocks()
         return web.json_response(
             [v.dict() for v in blocks]
         )

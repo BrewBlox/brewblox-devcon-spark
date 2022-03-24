@@ -161,48 +161,24 @@ class SparkCommander(features.ServiceFeature):
     async def noop(self) -> None:
         await self._execute(Opcode.NONE, None)
 
-    async def read_object(self, ident: FirmwareBlockIdentity) -> FirmwareBlock:
+    async def version(self) -> None:
+        await self._execute(Opcode.VERSION, None)
+
+    async def read_block(self, ident: FirmwareBlockIdentity) -> FirmwareBlock:
         payloads = await self._execute(
             Opcode.BLOCK_READ,
             await self._to_payload(ident, False),
         )
         return await self._to_block(payloads[0], self.default_decode_opts)
 
-    async def read_logged_object(self, ident: FirmwareBlockIdentity) -> FirmwareBlock:
+    async def read_logged_block(self, ident: FirmwareBlockIdentity) -> FirmwareBlock:
         payloads = await self._execute(
             Opcode.BLOCK_READ,
             await self._to_payload(ident, False),
         )
         return await self._to_block(payloads[0], self.logged_decode_opts)
 
-    async def read_stored_object(self, ident: FirmwareBlockIdentity) -> FirmwareBlock:
-        payloads = await self._execute(
-            Opcode.STORAGE_READ,
-            await self._to_payload(ident, False),
-        )
-        return await self._to_block(payloads[0], self.stored_decode_opts)
-
-    async def write_object(self, block: FirmwareBlock) -> FirmwareBlock:
-        payloads = await self._execute(
-            Opcode.BLOCK_WRITE,
-            await self._to_payload(block),
-        )
-        return await self._to_block(payloads[0], self.default_decode_opts)
-
-    async def create_object(self, block: FirmwareBlock) -> FirmwareBlock:
-        payloads = await self._execute(
-            Opcode.BLOCK_CREATE,
-            await self._to_payload(block),
-        )
-        return await self._to_block(payloads[0], self.default_decode_opts)
-
-    async def delete_object(self, ident: FirmwareBlockIdentity) -> None:
-        await self._execute(
-            Opcode.BLOCK_DELETE,
-            await self._to_payload(ident, False),
-        )
-
-    async def list_objects(self) -> list[FirmwareBlock]:
+    async def read_all_blocks(self) -> list[FirmwareBlock]:
         payloads = await self._execute(
             Opcode.BLOCK_READ_ALL,
             None,
@@ -210,7 +186,7 @@ class SparkCommander(features.ServiceFeature):
         return [await self._to_block(v, self.default_decode_opts)
                 for v in payloads]
 
-    async def list_logged_objects(self) -> list[FirmwareBlock]:
+    async def read_all_logged_blocks(self) -> list[FirmwareBlock]:
         payloads = await self._execute(
             Opcode.BLOCK_READ_ALL,
             None,
@@ -218,15 +194,7 @@ class SparkCommander(features.ServiceFeature):
         return [await self._to_block(v, self.logged_decode_opts)
                 for v in payloads]
 
-    async def list_stored_objects(self) -> list[FirmwareBlock]:
-        payloads = await self._execute(
-            Opcode.STORAGE_READ_ALL,
-            None,
-        )
-        return [await self._to_block(v, self.stored_decode_opts)
-                for v in payloads]
-
-    async def list_broadcast_objects(self) -> tuple[list[FirmwareBlock], list[FirmwareBlock]]:
+    async def read_all_broadcast_blocks(self) -> tuple[list[FirmwareBlock], list[FirmwareBlock]]:
         payloads = await self._execute(
             Opcode.BLOCK_READ_ALL,
             None,
@@ -237,9 +205,65 @@ class SparkCommander(features.ServiceFeature):
                        for v in payloads]
         return (default_retv, logged_retv)
 
-    async def clear_objects(self) -> None:
+    async def write_block(self, block: FirmwareBlock) -> FirmwareBlock:
+        payloads = await self._execute(
+            Opcode.BLOCK_WRITE,
+            await self._to_payload(block),
+        )
+        return await self._to_block(payloads[0], self.default_decode_opts)
+
+    async def create_block(self, block: FirmwareBlock) -> FirmwareBlock:
+        payloads = await self._execute(
+            Opcode.BLOCK_CREATE,
+            await self._to_payload(block),
+        )
+        return await self._to_block(payloads[0], self.default_decode_opts)
+
+    async def delete_block(self, ident: FirmwareBlockIdentity) -> None:
+        await self._execute(
+            Opcode.BLOCK_DELETE,
+            await self._to_payload(ident, False),
+        )
+
+    async def discover_blocks(self) -> list[FirmwareBlock]:
+        payloads = await self._execute(
+            Opcode.BLOCK_DISCOVER,
+            None,
+        )
+        return [await self._to_block(v, self.default_decode_opts)
+                for v in payloads]
+
+    async def read_stored_block(self, ident: FirmwareBlockIdentity) -> FirmwareBlock:
+        payloads = await self._execute(
+            Opcode.STORAGE_READ,
+            await self._to_payload(ident, False),
+        )
+        return await self._to_block(payloads[0], self.stored_decode_opts)
+
+    async def read_all_stored_blocks(self) -> list[FirmwareBlock]:
+        payloads = await self._execute(
+            Opcode.STORAGE_READ_ALL,
+            None,
+        )
+        return [await self._to_block(v, self.stored_decode_opts)
+                for v in payloads]
+
+    async def reboot(self) -> None:
+        await self._execute(
+            Opcode.REBOOT,
+            None,
+            has_response=False,
+        )
+
+    async def clear_blocks(self) -> None:
         await self._execute(
             Opcode.CLEAR_BLOCKS,
+            None,
+        )
+
+    async def clear_wifi(self) -> None:
+        await self._execute(
+            Opcode.CLEAR_WIFI,
             None,
         )
 
@@ -249,21 +273,6 @@ class SparkCommander(features.ServiceFeature):
             None,
             has_response=False
         )
-
-    async def reboot(self) -> None:
-        await self._execute(
-            Opcode.REBOOT,
-            None,
-            has_response=False,
-        )
-
-    async def discover_objects(self) -> list[FirmwareBlock]:
-        payloads = await self._execute(
-            Opcode.BLOCK_DISCOVER,
-            None,
-        )
-        return [await self._to_block(v, self.default_decode_opts)
-                for v in payloads]
 
     async def firmware_update(self) -> None:
         await self._execute(
