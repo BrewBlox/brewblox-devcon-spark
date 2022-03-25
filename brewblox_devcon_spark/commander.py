@@ -114,7 +114,6 @@ class SparkCommander(features.ServiceFeature):
                        opcode: Opcode,
                        payload: Optional[EncodedPayload],
                        /,
-                       has_response=True,
                        ) -> list[EncodedPayload]:
         msg_id = self._next_id()
 
@@ -130,15 +129,12 @@ class SparkCommander(features.ServiceFeature):
 
         try:
             await self._conn.write(request_data)
-            if has_response:
-                enc_response = await asyncio.wait_for(fut, timeout=self._timeout)
+            enc_response = await asyncio.wait_for(fut, timeout=self._timeout)
 
-                if enc_response.error != ErrorCode.OK:
-                    raise exceptions.CommandException(f'{opcode.name}, {enc_response.error.name}')
+            if enc_response.error != ErrorCode.OK:
+                raise exceptions.CommandException(f'{opcode.name}, {enc_response.error.name}')
 
-                return enc_response.payload
-            else:
-                return []
+            return enc_response.payload
 
         except asyncio.TimeoutError:
             raise exceptions.CommandTimeout(opcode.name)
@@ -252,7 +248,6 @@ class SparkCommander(features.ServiceFeature):
         await self._execute(
             Opcode.REBOOT,
             None,
-            has_response=False,
         )
 
     async def clear_blocks(self) -> None:
@@ -271,7 +266,6 @@ class SparkCommander(features.ServiceFeature):
         await self._execute(
             Opcode.FACTORY_RESET,
             None,
-            has_response=False
         )
 
     async def firmware_update(self) -> None:

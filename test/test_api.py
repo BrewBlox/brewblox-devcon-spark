@@ -462,6 +462,7 @@ async def test_system_resets(app, client, mocker):
     system_api.shutdown_soon.assert_awaited()
 
     await response(client.post('/system/reboot/controller'))
+    await response(client.post('/system/clear_wifi'))
     await response(client.post('/system/factory_reset'))
 
 

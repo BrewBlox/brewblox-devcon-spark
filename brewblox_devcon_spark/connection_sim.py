@@ -300,7 +300,7 @@ class SparkConnectionSim(connection.SparkConnection):
                 self.update_ticks()
 
             elif request.opcode == Opcode.CLEAR_WIFI:
-                self._blocks[const.WIFI_SETTINGS_NID]['data'] = {}
+                self._blocks[const.WIFI_SETTINGS_NID].data.clear()
 
             elif request.opcode == Opcode.FACTORY_RESET:
                 self._blocks = default_blocks()
