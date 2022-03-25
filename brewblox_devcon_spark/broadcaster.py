@@ -64,7 +64,7 @@ class Broadcaster(repeater.RepeaterFeature):
 
             try:
                 if synched:
-                    blocks, logged_blocks = await controller.fget(self.app).list_broadcast_blocks()
+                    blocks, logged_blocks = await controller.fget(self.app).read_all_broadcast_blocks()
 
                     # Convert list to key/value format suitable for history
                     history_data = {

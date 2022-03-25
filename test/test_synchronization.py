@@ -93,7 +93,7 @@ async def test_sync_errors(app, client, syncher, mocker):
 
 
 async def test_write_error(app, client, syncher, mocker):
-    mocker.patch.object(commander.fget(app), 'write_object', autospec=True, side_effect=RuntimeError)
+    mocker.patch.object(commander.fget(app), 'write_block', autospec=True, side_effect=RuntimeError)
     await disconnect(app)
     with pytest.raises(RuntimeError):
         await connect(app, syncher)
@@ -111,7 +111,7 @@ async def test_timeout(app, client, syncher, mocker):
     mocker.patch(TESTED + '.HANDSHAKE_TIMEOUT_S', 0.1)
     mocker.patch(TESTED + '.PING_INTERVAL_S', 0.0001)
     mocker.patch(TESTED + '.service_status.wait_acknowledged', autospec=True, side_effect=m_wait_ack)
-    mocker.patch.object(commander.fget(app), 'noop', AsyncMock(side_effect=RuntimeError))
+    mocker.patch.object(commander.fget(app), 'version', AsyncMock(side_effect=RuntimeError))
 
     service_status.set_connected(app, 'timeout test')
     with pytest.raises(asyncio.TimeoutError):

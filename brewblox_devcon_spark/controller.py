@@ -234,7 +234,7 @@ class SparkController(features.ServiceFeature):
         """
         async with self._execute('Read block'):
             block = self._to_firmware_block_identity(block)
-            block = await self._cmder.read_object(block)
+            block = await self._cmder.read_block(block)
             block = self._to_block(block)
             block_cache.set(self.app, block)
             return block
@@ -258,7 +258,7 @@ class SparkController(features.ServiceFeature):
         """
         async with self._execute('Read block (logged)'):
             block = self._to_firmware_block_identity(block)
-            block = await self._cmder.read_logged_object(block)
+            block = await self._cmder.read_logged_block(block)
             block = self._to_block(block)
             return block
 
@@ -282,7 +282,7 @@ class SparkController(features.ServiceFeature):
         """
         async with self._execute('Read block (stored)'):
             block = self._to_firmware_block_identity(block)
-            block = await self._cmder.read_stored_object(block)
+            block = await self._cmder.read_stored_block(block)
             block = self._to_block(block)
             return block
 
@@ -302,7 +302,7 @@ class SparkController(features.ServiceFeature):
         """
         async with self._execute('Write block'):
             block = self._to_firmware_block(block)
-            block = await self._cmder.write_object(block)
+            block = await self._cmder.write_block(block)
             block = self._to_block(block)
             block_cache.set(self.app, block)
             return block
@@ -356,7 +356,7 @@ class SparkController(features.ServiceFeature):
             self._store[desired_sid, placeholder_nid] = 'PLACEHOLDER'
 
             try:
-                block = await self._cmder.create_object(block)
+                block = await self._cmder.create_block(block)
             finally:
                 del self._store[desired_sid, placeholder_nid]
 
@@ -384,7 +384,7 @@ class SparkController(features.ServiceFeature):
         """
         async with self._execute('Delete block'):
             block = self._to_firmware_block_identity(block)
-            await self._cmder.delete_object(block)
+            await self._cmder.delete_block(block)
 
             nid = block.nid
             sid = self._store.left_key(nid)
@@ -398,7 +398,7 @@ class SparkController(features.ServiceFeature):
             block_cache.delete(self.app, ident)
             return ident
 
-    async def list_blocks(self) -> list[Block]:
+    async def read_all_blocks(self) -> list[Block]:
         """
         Read all blocks on the controller.
         No particular order is guaranteed.
@@ -408,12 +408,12 @@ class SparkController(features.ServiceFeature):
                 All present blocks on the controller.
         """
         async with self._execute('Read all blocks'):
-            blocks = await self._cmder.list_objects()
+            blocks = await self._cmder.read_all_blocks()
             blocks = [self._to_block(v) for v in blocks]
             block_cache.set_all(self.app, blocks)
             return blocks
 
-    async def list_logged_blocks(self) -> list[Block]:
+    async def read_all_logged_blocks(self) -> list[Block]:
         """
         Read all blocks on the controller.
         Block data is formatted to be suitable for logging.
@@ -425,11 +425,11 @@ class SparkController(features.ServiceFeature):
                 marked for logging, and units will use the postfixed format.
         """
         async with self._execute('Read all blocks (logged)'):
-            blocks = await self._cmder.list_logged_objects()
+            blocks = await self._cmder.read_all_logged_blocks()
             blocks = [self._to_block(v) for v in blocks]
             return blocks
 
-    async def list_stored_blocks(self) -> list[Block]:
+    async def read_all_stored_blocks(self) -> list[Block]:
         """
         Read all blocks on the controller.
         Block data is formatted to be suitable for logging.
@@ -442,11 +442,11 @@ class SparkController(features.ServiceFeature):
                 Non-persistent fields will be absent or set to a default value.
         """
         async with self._execute('Read all blocks (stored)'):
-            blocks = await self._cmder.list_stored_objects()
+            blocks = await self._cmder.read_all_stored_blocks()
             blocks = [self._to_block(v) for v in blocks]
             return blocks
 
-    async def list_broadcast_blocks(self) -> tuple[list[Block], list[Block]]:
+    async def read_all_broadcast_blocks(self) -> tuple[list[Block], list[Block]]:
         """
         Read all blocks on the controller.
         The same raw data is formatted both normally, and suitable for logging.
@@ -458,7 +458,7 @@ class SparkController(features.ServiceFeature):
                 the second is suitable for logging.
         """
         async with self._execute('Read all blocks (broadcast)'):
-            blocks, logged_blocks = await self._cmder.list_broadcast_objects()
+            blocks, logged_blocks = await self._cmder.read_all_broadcast_blocks()
             blocks = [self._to_block(v) for v in blocks]
             logged_blocks = [self._to_block(v) for v in logged_blocks]
             block_cache.set_all(self.app, blocks)
@@ -476,7 +476,7 @@ class SparkController(features.ServiceFeature):
         """
         async with self._execute('Discover blocks'):
             async with self._discovery_lock:
-                blocks = await self._cmder.discover_objects()
+                blocks = await self._cmder.discover_blocks()
             blocks = [self._to_block(v) for v in blocks]
             return blocks
 
@@ -491,9 +491,9 @@ class SparkController(features.ServiceFeature):
                 The ids of all removed blocks.
         """
         async with self._execute('Remove all blocks'):
-            await self._cmder.clear_objects()
+            await self._cmder.clear_blocks()
             self._store.clear()
-            await self._cmder.write_object(FirmwareBlock(
+            await self._cmder.write_block(FirmwareBlock(
                 nid=const.DISPLAY_SETTINGS_NID,
                 type='DisplaySettings',
                 data={},
@@ -537,7 +537,7 @@ class SparkController(features.ServiceFeature):
                 Unused (and now removed) block IDs.
         """
         actual = [block.id
-                  for block in await self.list_blocks()]
+                  for block in await self.read_all_blocks()]
         unused = [(sid, nid)
                   for (sid, nid) in self._store
                   if sid not in actual]
@@ -557,7 +557,7 @@ class SparkController(features.ServiceFeature):
         """
         store_data = [{'keys': keys, 'data': content}
                       for keys, content in self._store.items()]
-        blocks_data = await self.list_stored_blocks()
+        blocks_data = await self.read_all_stored_blocks()
         return Backup(
             blocks=[block for block in blocks_data
                     if block.nid != const.SYSTIME_NID],
@@ -607,15 +607,14 @@ class SparkController(features.ServiceFeature):
                             await self.write_block(block)
                     else:
                         # Bypass self.create_block(), to avoid meddling with store IDs
-                        await self._cmder.create_object(
-                            self._to_firmware_block(block))
+                        await self._cmder.create_block(self._to_firmware_block(block))
 
                 except Exception as ex:
                     message = f'failed to import block. Error={strex(ex)}, block={block}'
                     error_log.append(message)
                     LOGGER.error(message)
 
-            used_nids = [b.nid for b in await self.list_blocks()]
+            used_nids = [b.nid for b in await self.read_all_blocks()]
             unused = [
                 (sid, nid) for (sid, nid) in self._store
                 if nid >= const.USER_NID_START
@@ -629,10 +628,17 @@ class SparkController(features.ServiceFeature):
 
             return BackupLoadResult(messages=error_log)
 
+    async def clear_wifi(self):
+        """
+        Clear Wifi settings on the controller.
+        The controller may reboot or lose connection.
+        """
+        async with self._execute('Clear Wifi settings'):
+            await self._cmder.clear_wifi()
+
     async def factory_reset(self) -> None:
         """
         Prompt the controller to perform a factory reset.
-        This function will return immediately after writing the command.
         """
         async with self._execute('Factory reset'):
             await self._cmder.factory_reset()
@@ -640,7 +646,6 @@ class SparkController(features.ServiceFeature):
     async def reboot(self) -> None:
         """
         Prompt the controller to reboot itself.
-        This function will return immediately after writing the command.
         """
         async with self._execute('Reboot'):
             await self._cmder.reboot()

@@ -215,4 +215,4 @@ async def test_start_update(app, client):
     service_status.fget(app).set_updating()
 
     with pytest.raises(exceptions.UpdateInProgress):
-        await controller.fget(app).list_blocks()
+        await controller.fget(app).read_all_blocks()
