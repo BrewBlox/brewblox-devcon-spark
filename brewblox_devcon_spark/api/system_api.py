@@ -23,7 +23,7 @@ FLUSH_PERIOD_S = 3
 SHUTDOWN_DELAY_S = 1
 UPDATE_SHUTDOWN_DELAY_S = 5
 
-ESP_URL_FMT = 'https://brewblox.blob.core.windows.net/firmware/{firmware_date}-{firmware_version}/brewblox-esp32.bin'
+ESP_URL_FMT = 'http://brewblox.blob.core.windows.net/firmware/{firmware_date}-{firmware_version}/brewblox-esp32.bin'
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
