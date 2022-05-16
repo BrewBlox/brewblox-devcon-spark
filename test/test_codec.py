@@ -11,6 +11,7 @@ from brewblox_devcon_spark import (codec, connection_sim, exceptions,
                                    service_status, service_store)
 from brewblox_devcon_spark.codec import (Codec, DecodeOpts, MetadataOpt,
                                          ProtoEnumOpt)
+from brewblox_devcon_spark.codec.transcoders import SequenceTranscoder
 
 
 @pytest.fixture
@@ -125,6 +126,7 @@ async def test_implements(app, client, cdc: Codec):
     assert await cdc.implements(('ActuatorPwm', None)) == [
         'ProcessValueInterface',
         'ActuatorAnalogInterface',
+        'EnablerInterface',
     ]
     assert await cdc.implements(('ActuatorAnalogInterface', None)) == []
 
@@ -222,3 +224,9 @@ async def test_enum_decoding(app, client, cdc: Codec):
 
     dec_id, dec_val = await cdc.decode(enc_id, enc_val, DecodeOpts(enums=ProtoEnumOpt.INT))
     assert dec_val['desiredState'] == 1
+
+
+async def test_sequence_encoding():
+    assert SequenceTranscoder.split_instruction(
+        'SET_SETPOINT target=Kettle Setpoint, setting=40C') == \
+        ('SET_SETPOINT', {'setting': '40C', 'target': 'Kettle Setpoint'})

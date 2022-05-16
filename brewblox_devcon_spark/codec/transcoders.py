@@ -4,7 +4,7 @@ Object-specific transcoders
 
 from abc import ABC, abstractclassmethod, abstractmethod
 from enum import Enum
-from typing import Generator, Optional, Tuple, Type, Union
+from typing import Any, Generator, Optional, Tuple, Type, Union
 
 from brewblox_service import brewblox_logger
 from google.protobuf import json_format
@@ -230,6 +230,54 @@ class ProtobufTranscoder(BaseProtobufTranscoder):
         return decoded
 
 
+class SequenceTranscoder(ProtobufTranscoder):
+    _MESSAGE = pb2.Sequence_pb2.Block
+
+    @classmethod
+    def split_instruction(cls, line: str) -> tuple[str, dict[str, str]]:
+        opcode, args = line.split(' ', 1)
+        argdict = {argk.strip(): argv.strip()
+                   for (argk, _, argv)
+                   in [arg.partition('=') for arg in args.split(',')]}
+
+        return opcode, argdict
+
+    @classmethod
+    def parse_value(cls, line: str) -> dict[str, dict[str, Any]]:
+        opcode, args = cls.split_instruction(line)
+
+        return ('key', 1)
+
+    @classmethod
+    def serialize(cls, key: str, value: Any) -> str:
+        return f'{key}={value}'
+
+    def encode(self, values: dict) -> bytes:
+        # instructions: list[dict[str, dict[str, Any]]] = []
+
+        # values['instructions'] = {k: v
+        #                           for k, v in
+        #                           [SequenceTranscoder.parse_value(s)
+        #                            for s in values['instructions']]}
+        return super().encode(values)
+
+    def decode(self, encoded: bytes, opts: DecodeOpts) -> dict:
+        decoded = super().decode(encoded, opts)
+        instructions: list[str] = []
+
+        for ins in decoded['instructions']:
+            ins: dict[str, dict[str, Any]]
+            if not ins:
+                continue
+            key, args = ins.popitem()
+            instructions.append(' '.join([
+                key,
+                *[SequenceTranscoder.serialize(k, v) for k, v in args.items()]
+            ]))
+
+        return decoded
+
+
 class EdgeCaseTranscoder(ProtobufTranscoder):
     _MESSAGE = pb2.EdgeCase_pb2.Block
 
@@ -274,6 +322,9 @@ _TRANSCODERS: list[Type[Transcoder]] = [
     DeprecatedObjectTranscoder,
     ControlboxRequestTranscoder,
     ControlboxResponseTranscoder,
+
+    # Special overrides
+    SequenceTranscoder,
 
     # Protobuf objects
     *protobuf_transcoder_generator(),
