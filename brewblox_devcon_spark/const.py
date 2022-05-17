@@ -31,3 +31,6 @@ SYS_OBJECT_KEYS: list[tuple[str, int]] = [
     ['DisplaySettings', DISPLAY_SETTINGS_NID],
     ['SparkPins', SPARK_PINS_NID],
 ]
+
+# Relevant block types
+SEQUENCE_BLOCK_TYPE = 'Sequence'

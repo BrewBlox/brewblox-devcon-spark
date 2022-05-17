@@ -10,8 +10,7 @@ from brewblox_service import features, scheduler
 from brewblox_devcon_spark import (codec, connection_sim, exceptions,
                                    service_status, service_store)
 from brewblox_devcon_spark.codec import (Codec, DecodeOpts, MetadataOpt,
-                                         ProtoEnumOpt)
-from brewblox_devcon_spark.codec.transcoders import SequenceTranscoder
+                                         ProtoEnumOpt, sequence)
 
 
 @pytest.fixture
@@ -227,6 +226,76 @@ async def test_enum_decoding(app, client, cdc: Codec):
 
 
 async def test_sequence_encoding():
-    assert SequenceTranscoder.split_instruction(
-        'SET_SETPOINT target=Kettle Setpoint, setting=40C') == \
-        ('SET_SETPOINT', {'setting': '40C', 'target': 'Kettle Setpoint'})
+    assert sequence.from_line(
+        'SET_SETPOINT target=Kettle Setpoint, setting=40C',
+        1
+    ) == {
+        'SET_SETPOINT': {
+            'target': {
+                '__bloxtype': 'Link',
+                'id': 'Kettle Setpoint',
+            },
+            'setting': {
+                '__bloxtype': 'Quantity',
+                'value': pytest.approx(40.0),
+                'unit': 'degC',
+            },
+        },
+    }
+
+    assert sequence.from_line(
+        "SET_SETPOINT target='Kettle Setpoint   ', setting= 40 C ",
+        1
+    ) == {
+        'SET_SETPOINT': {
+            'target': {
+                '__bloxtype': 'Link',
+                'id': 'Kettle Setpoint   ',
+            },
+            'setting': {
+                '__bloxtype': 'Quantity',
+                'value': pytest.approx(40.0),
+                'unit': 'degC',
+            },
+        },
+    }
+
+    assert sequence.to_line({
+        'SET_SETPOINT': {
+            'target': {
+                '__bloxtype': 'Link',
+                'id': 'Kettle Setpoint   ',
+            },
+            'setting': {
+                '__bloxtype': 'Quantity',
+                'value': 40.0,
+                'unit': 'degC',
+            },
+        },
+    }) == "SET_SETPOINT target='Kettle Setpoint   ', setting=40.0C"
+
+    assert sequence.from_line(
+        'WAIT_SETPOINT target=Kettle Setpoint, precision=1dC',
+        1
+    ) == {
+        'WAIT_SETPOINT': {
+            'target': {
+                '__bloxtype': 'Link',
+                'id': 'Kettle Setpoint',
+            },
+            'precision': {
+                '__bloxtype': 'Quantity',
+                'value': pytest.approx(1.0),
+                'unit': 'delta_degC',
+            },
+        },
+    }
+
+    with pytest.raises(ValueError, match=r'line 1: Missing argument separator: `target=Kettle Setpoint setting=40C`'):
+        sequence.from_line('SET_SETPOINT target=Kettle Setpoint setting=40C', 1)
+
+    with pytest.raises(ValueError, match=r'line 1: Invalid instruction name: `set_setpoint`'):
+        sequence.from_line('set_setpoint target=Kettle Setpoint, setting=40C', 1)
+
+    with pytest.raises(ValueError, match=r'line 1: Invalid argument name: `magic`'):
+        sequence.from_line('SET_SETPOINT magic=1', 1)

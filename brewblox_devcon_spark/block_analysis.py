@@ -5,6 +5,7 @@ Calculate block metadata
 from itertools import chain
 from typing import Any, Generator, TypedDict
 
+from brewblox_devcon_spark.codec import bloxfield
 from brewblox_devcon_spark.models import Block
 
 # Relations to these blocks should be ignored,
@@ -45,20 +46,6 @@ class BlockDriveChain(TypedDict):
     intermediate: list[str]
 
 
-def is_blox_field(obj):
-    return isinstance(obj, dict) and '__bloxtype' in obj
-
-
-def is_link(obj):
-    return isinstance(obj, dict) and obj.get('__bloxtype') == 'Link'
-
-
-def is_defined_link(obj):
-    return is_link(obj) \
-        and obj.get('id') \
-        and obj.get('type')
-
-
 def _find_nested_relations(
     parent_id: str,
     relation: list[str],
@@ -81,7 +68,7 @@ def _find_nested_relations(
     if relation and relation[0] in IGNORED_RELATION_FIELDS:
         return []
 
-    elif is_defined_link(field):
+    elif bloxfield.is_defined_link(field):
         source, target = parent_id, field['id']
         if relation and relation[0] in INVERTED_RELATION_FIELDS:
             source, target = target, source
@@ -92,7 +79,7 @@ def _find_nested_relations(
                           relation=relation)
         ]
 
-    elif is_blox_field(field):
+    elif bloxfield.is_bloxfield(field):
         # Ignored:
         # - driven links
         # - unset links
@@ -208,7 +195,7 @@ def calculate_drive_chains(blocks: list[Block]) -> list[BlockDriveChain]:
     drivers: dict[str, list[str]] = {}  # key: driven, value: drivers
     for block in blocks:
         for field in block.data.values():
-            if is_defined_link(field) and field.get('driven') is True:
+            if bloxfield.is_defined_link(field) and field.get('driven') is True:
                 # Link is driven, append block ID to drivers
                 drivers.setdefault(field['id'], []).append(block.id)
 

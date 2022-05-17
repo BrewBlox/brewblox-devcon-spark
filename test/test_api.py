@@ -249,6 +249,36 @@ async def test_rename(app, client, block_args):
     await response(client.post('/blocks/read', json={'id': desired}))
 
 
+async def test_sequence(app, client):
+    setpoint_block = {
+        'id': 'setpoint',
+        'type': 'SetpointSensorPair',
+        'data': {}
+    }
+
+    sequence_block = {
+        'id': 'sequence',
+        'type': 'Sequence',
+        'data': {
+            'enabled': True,
+            'instructions': [
+                'SET_SETPOINT target=setpoint, setting=40C',
+                'WAIT_SETPOINT target=setpoint, precision=1dC',
+                'RESTART',
+            ]
+        }
+    }
+
+    await response(client.post('/blocks/create', json=setpoint_block), 201)
+    retd = await response(client.post('/blocks/create', json=sequence_block), 201)
+
+    assert retd['data']['instructions'] == [
+        'SET_SETPOINT target=setpoint, setting=40.0C',
+        'WAIT_SETPOINT target=setpoint, precision=1.0dC',
+        'RESTART',
+    ]
+
+
 async def test_ping(app, client):
     await response(client.get('/system/ping'))
     await response(client.post('/system/ping'))
