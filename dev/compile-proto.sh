@@ -5,7 +5,9 @@
 # When pulling external updates, use update-firmware.sh
 #
 set -euo pipefail
-pushd "$(dirname "$0")/../brewblox_devcon_spark/codec" > /dev/null
+pushd "$(git rev-parse --show-toplevel)" >/dev/null
 
-rm -f ./proto-compiled/*_pb2.py
-protoc -I=./proto --python_out=./proto-compiled ./proto/**.proto
+TARGET=brewblox_devcon_spark/codec/proto-compiled
+
+rm -f ${TARGET}/*_pb2.py
+protoc -I=./brewblox-proto --python_out=${TARGET} ./brewblox-proto/**.proto
