@@ -11,7 +11,7 @@ from brewblox_service import brewblox_logger, features, strex
 
 from brewblox_devcon_spark import exceptions
 
-from . import bloxfield, unit_conversion
+from . import bloxfield, time_utils, unit_conversion
 from .opts import DecodeOpts, FilterOpt, MetadataOpt, ProtoEnumOpt
 from .processor import ProtobufProcessor
 from .transcoders import (REQUEST_TYPE, REQUEST_TYPE_INT,  # noqa: F401
@@ -167,6 +167,7 @@ __all__ = [
     'REQUEST_TYPE_INT',
     'RESPONSE_TYPE_INT',
 
-    # bloxfield
+    # utils
     'bloxfield',
+    'time_utils',
 ]
