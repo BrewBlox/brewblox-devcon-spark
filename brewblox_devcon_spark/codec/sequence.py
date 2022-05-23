@@ -149,13 +149,15 @@ def parse(block: Block):
     """
     Converts instructions in given Sequence block from line to dict format.
     """
-    block.data['instructions'] = [from_line(s, idx + 1)
-                                  for idx, s in enumerate(block.data['instructions'])]
+    if 'instructions' in block.data:
+        block.data['instructions'] = [from_line(s, idx + 1)
+                                      for idx, s in enumerate(block.data['instructions'])]
 
 
 def serialize(block: Block):
     """
     Converts instructions in given Sequence block from dict to line format.
     """
-    block.data['instructions'] = [to_line(d)
-                                  for d in block.data['instructions']]
+    if 'instructions' in block.data:
+        block.data['instructions'] = [to_line(d)
+                                      for d in block.data['instructions']]
