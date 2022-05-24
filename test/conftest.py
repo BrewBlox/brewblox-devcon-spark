@@ -87,13 +87,6 @@ def app_ini() -> dict:
 
 
 @pytest.fixture
-def event_loop(loop):
-    # aresponses uses the 'event_loop' fixture
-    # this makes loop available under either name
-    yield loop
-
-
-@pytest.fixture
 def app(sys_args, app_ini):
     parser = create_parser('default')
     app = service.create_app(parser=parser, raw_args=sys_args[1:])

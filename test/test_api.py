@@ -54,7 +54,7 @@ def repeated_blocks(ids, args):
 
 
 @pytest.fixture
-async def app(app, loop):
+async def app(app, event_loop):
     """App + controller routes"""
     service_status.setup(app)
     scheduler.setup(app)
@@ -78,7 +78,7 @@ async def app(app, loop):
 
 
 @pytest.fixture
-async def production_app(app, loop):
+async def production_app(app, event_loop):
     app['config']['debug'] = False
     return app
 

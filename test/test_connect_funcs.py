@@ -25,8 +25,8 @@ def m_sleep(mocker):
 
 
 @pytest.fixture
-def m_reader(loop):
-    return asyncio.StreamReader(loop=loop)
+def m_reader(event_loop):
+    return asyncio.StreamReader(loop=event_loop)
 
 
 @pytest.fixture
@@ -62,7 +62,7 @@ def m_grep_ports(mocker):
 
 
 @pytest.fixture
-async def m_mdns(app, loop, mocker):
+async def m_mdns(app, event_loop, mocker):
     m_discover = mocker.patch(TESTED + '.mdns.discover_one', autospec=True)
     m_discover.return_value = mdns.ConnectInfo('enterprise', 5678, None)
     return m_discover

@@ -5,6 +5,7 @@ Tests brewblox_devcon_spark.codec.sequence
 import pytest
 
 from brewblox_devcon_spark.codec import sequence
+from brewblox_devcon_spark.models import Block
 
 
 def test_sequence_from_line():
@@ -159,3 +160,13 @@ def test_sequence_to_line():
             'setting': 23.4567
         }
     }) == 'SET_PWM target=actuator, setting=23.46'
+
+
+def test_partial():
+    # Logged blocks will not include instructions
+    # User input may not include instructions
+    block = Block(id='sequence', type='Sequence', data={})
+    sequence.parse(block)
+    assert not block.data
+    sequence.serialize(block)
+    assert not block.data

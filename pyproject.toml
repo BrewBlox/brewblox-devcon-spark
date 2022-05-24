@@ -21,8 +21,8 @@ protobuf = "^3.19.1"
 aiofiles = "^0.8.0"
 aiozeroconf = "^0.1.8"
 debugpy = "^1.5.1"
-Pint = "^0.18"
-esptool = "^3.2"
+Pint = "^0.19"
+esptool = "^4.0"
 pytimeparse = "^1.1.8"
 
 [tool.poetry.dev-dependencies]

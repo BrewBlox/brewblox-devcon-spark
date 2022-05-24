@@ -29,12 +29,12 @@ def m_interval(mocker):
 
 
 @pytest.fixture
-def m_reader(loop):
-    return asyncio.StreamReader(loop=loop)
+def m_reader(event_loop):
+    return asyncio.StreamReader(loop=event_loop)
 
 
 @pytest.fixture
-def m_writer(loop):
+def m_writer(event_loop):
     m = Mock()
     m.drain = AsyncMock()
     m.is_closing.return_value = False
@@ -169,6 +169,7 @@ async def test_error_callback(app, init_app, client, m_reader, m_writer):
     assert conn.connected
 
 
+@pytest.mark.filterwarnings('ignore:Handshake error')
 async def test_on_welcome(app, init_app, client, mocker, welcome):
     mocker.patch(TESTED + '.web.GracefulExit', DummyExit)
     conn = connection.fget(app)
