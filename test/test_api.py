@@ -54,7 +54,7 @@ def repeated_blocks(ids, args):
 
 
 @pytest.fixture
-async def app(app, loop):
+async def app(app, event_loop):
     """App + controller routes"""
     service_status.setup(app)
     scheduler.setup(app)
@@ -78,7 +78,7 @@ async def app(app, loop):
 
 
 @pytest.fixture
-async def production_app(app, loop):
+async def production_app(app, event_loop):
     app['config']['debug'] = False
     return app
 
@@ -247,6 +247,36 @@ async def test_rename(app, client, block_args):
         'desired': desired
     }))
     await response(client.post('/blocks/read', json={'id': desired}))
+
+
+async def test_sequence(app, client):
+    setpoint_block = {
+        'id': 'setpoint',
+        'type': 'SetpointSensorPair',
+        'data': {}
+    }
+
+    sequence_block = {
+        'id': 'sequence',
+        'type': 'Sequence',
+        'data': {
+            'enabled': True,
+            'instructions': [
+                'SET_SETPOINT target=setpoint, setting=40C',
+                'WAIT_SETPOINT target=setpoint, precision=1dC',
+                'RESTART',
+            ]
+        }
+    }
+
+    await response(client.post('/blocks/create', json=setpoint_block), 201)
+    retd = await response(client.post('/blocks/create', json=sequence_block), 201)
+
+    assert retd['data']['instructions'] == [
+        'SET_SETPOINT target=setpoint, setting=40.0C',
+        'WAIT_SETPOINT target=setpoint, precision=1.0dC',
+        'RESTART',
+    ]
 
 
 async def test_ping(app, client):

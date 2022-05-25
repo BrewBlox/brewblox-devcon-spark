@@ -21,7 +21,7 @@ def m_mqtt(mocker):
 
 
 @pytest.fixture
-async def app(app, loop):
+async def app(app, event_loop):
     """App + controller routes"""
     scheduler.setup(app)
     service_status.setup(app)

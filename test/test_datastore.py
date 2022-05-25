@@ -48,7 +48,7 @@ async def test_cancel_check_remote(app, client, aresponses: ResponsesMockServer)
         await asyncio.wait_for(datastore.check_remote(app), timeout=0.001)
 
 
-async def test_non_volatile(app, loop):
+async def test_non_volatile(app, event_loop):
     class VolatileTester():
         def __init__(self, volatile: bool):
             self.volatile = volatile

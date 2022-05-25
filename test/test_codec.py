@@ -125,6 +125,7 @@ async def test_implements(app, client, cdc: Codec):
     assert await cdc.implements(('ActuatorPwm', None)) == [
         'ProcessValueInterface',
         'ActuatorAnalogInterface',
+        'EnablerInterface',
     ]
     assert await cdc.implements(('ActuatorAnalogInterface', None)) == []
 

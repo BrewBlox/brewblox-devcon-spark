@@ -13,7 +13,7 @@ from brewblox_service import brewblox_logger, features, strex
 
 from brewblox_devcon_spark import (block_cache, block_store, commander, const,
                                    exceptions, service_status, twinkeydict)
-from brewblox_devcon_spark.block_analysis import is_link
+from brewblox_devcon_spark.codec import bloxfield, sequence
 from brewblox_devcon_spark.models import (Backup, BackupLoadResult, Block,
                                           BlockIdentity, BlockNameChange,
                                           FirmwareBlock, FirmwareBlockIdentity)
@@ -53,7 +53,7 @@ def resolve_data_ids(data: Union[dict, list, tuple],
 
     for k, v in iter:
         # Object-style link
-        if is_link(v):
+        if bloxfield.is_link(v):
             v['id'] = replacer(v['id'], v.get('type'))
         # Postfix-style link
         elif str(k).endswith(const.OBJECT_LINK_POSTFIX_END):
@@ -130,6 +130,11 @@ class SparkController(features.ServiceFeature):
 
         block.id = self._find_sid(block.nid, block.type) if find_sid else None
         resolve_data_ids(block.data, self._find_sid)
+
+        # Special case, where the API data format differs from proto-ready format
+        if block.type == const.SEQUENCE_BLOCK_TYPE:
+            sequence.serialize(block)
+
         return block
 
     def _to_firmware_block_identity(self, block: BlockIdentity) -> FirmwareBlockIdentity:
@@ -162,6 +167,11 @@ class SparkController(features.ServiceFeature):
             type=block.type,
             data=block.data
         )
+
+        # Special case, where the API data format differs from proto-ready format
+        if block.type == const.SEQUENCE_BLOCK_TYPE:
+            sequence.parse(block)
+
         resolve_data_ids(block.data, self._find_nid)
         return block
 

@@ -50,7 +50,7 @@ def ping_interval_mock(mocker):
 
 
 @pytest.fixture
-async def app(app, loop):
+async def app(app, event_loop):
     app['config']['volatile'] = True
     scheduler.setup(app)
     service_status.setup(app)
