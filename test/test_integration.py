@@ -62,9 +62,9 @@ async def wait_sync(app, client):
     await asyncio.wait_for(service_status.wait_synchronized(app), 5)
 
 
-@pytest.mark.integration
-async def test_ping(app, client):
-    await response(client.post('/system/ping'))
+# @pytest.mark.integration
+# async def test_ping(app, client):
+#     await response(client.post('/system/ping'))
 
 
 @pytest.mark.integration
