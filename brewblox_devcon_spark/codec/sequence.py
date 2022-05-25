@@ -96,12 +96,15 @@ def from_line(line: str, line_num: int) -> dict:
                for (argk, _, argv)
                in [arg.partition('=') for arg in args.split(',') if arg]}
 
-    return {
-        opcode: {
-            key: parse_arg_value(key, value)
-            for key, value in argdict.items()
-        }
+    parsed = {
+        key: parse_arg_value(key, value)
+        for key, value in argdict.items()
     }
+
+    if missing := set(arg_fields_by_name.keys()) - set(parsed.keys()):
+        raise ValueError(f'line {line_num}: Missing arguments: `{", ".join(missing)}`')
+
+    return {opcode: parsed}
 
 
 def to_line(args: dict) -> str:
