@@ -23,7 +23,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox.Sequence',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0eSequence.proto\x12\rblox.Sequence\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\t\n\x07Restart\",\n\rEnableDisable\x12\x1b\n\x06target\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x0f\x92?\x02\x38\x10\"-\n\x0cWaitDuration\x12\x1d\n\x08\x64uration\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x08\x03\x92?\x02\x38 \"&\n\tWaitUntil\x12\x19\n\x04time\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02X\x01\x92?\x02\x38 \"t\n\x0fWaitTemperature\x12\x1b\n\x06target\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x02\x92?\x02\x38\x10\x12!\n\x05lower\x18\x02 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12!\n\x05upper\x18\x03 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \"Y\n\x17WaitTemperatureBoundary\x12\x1b\n\x06target\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x02\x92?\x02\x38\x10\x12!\n\x05value\x18\x02 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \"O\n\x0bSetSetpoint\x12\x1b\n\x06target\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x04\x92?\x02\x38\x10\x12#\n\x07setting\x18\x02 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \"R\n\x0cWaitSetpoint\x12\x1b\n\x06target\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x04\x92?\x02\x38\x10\x12%\n\tprecision\x18\x02 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x06\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \"V\n\nSetDigital\x12\x1b\n\x06target\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x06\x92?\x02\x38\x10\x12+\n\x07setting\x18\x02 \x01(\x0e\x32\x1a.blox.IoArray.DigitalState\"*\n\x0bWaitDigital\x12\x1b\n\x06target\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x06\x92?\x02\x38\x10\"E\n\x06SetPwm\x12\x1c\n\x06target\x18\x01 \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xb3\x02\x92?\x02\x38\x10\x12\x1d\n\x07setting\x18\x02 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \"H\n\x07WaitPwm\x12\x1c\n\x06target\x18\x01 \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xb3\x02\x92?\x02\x38\x10\x12\x1f\n\tprecision\x18\x02 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \"0\n\x10StartWaitProfile\x12\x1c\n\x06target\x18\x01 \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xb7\x02\x92?\x02\x38\x10\"1\n\x11StartWaitSequence\x12\x1c\n\x06target\x18\x01 \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xc6\x02\x92?\x02\x38\x10\"\xfc\x07\n\x0bInstruction\x12)\n\x07RESTART\x18\x01 \x01(\x0b\x32\x16.blox.Sequence.RestartH\x00\x12.\n\x06\x45NABLE\x18\x02 \x01(\x0b\x32\x1c.blox.Sequence.EnableDisableH\x00\x12/\n\x07\x44ISABLE\x18\x03 \x01(\x0b\x32\x1c.blox.Sequence.EnableDisableH\x00\x12\x34\n\rWAIT_DURATION\x18\x04 \x01(\x0b\x32\x1b.blox.Sequence.WaitDurationH\x00\x12.\n\nWAIT_UNTIL\x18\x05 \x01(\x0b\x32\x18.blox.Sequence.WaitUntilH\x00\x12\x42\n\x18WAIT_TEMPERATURE_BETWEEN\x18\x06 \x01(\x0b\x32\x1e.blox.Sequence.WaitTemperatureH\x00\x12H\n\x16WAIT_TEMPERATURE_ABOVE\x18\x07 \x01(\x0b\x32&.blox.Sequence.WaitTemperatureBoundaryH\x00\x12H\n\x16WAIT_TEMPERATURE_BELOW\x18\x08 \x01(\x0b\x32&.blox.Sequence.WaitTemperatureBoundaryH\x00\x12\x32\n\x0cSET_SETPOINT\x18\t \x01(\x0b\x32\x1a.blox.Sequence.SetSetpointH\x00\x12\x34\n\rWAIT_SETPOINT\x18\n \x01(\x0b\x32\x1b.blox.Sequence.WaitSetpointH\x00\x12\x30\n\x0bSET_DIGITAL\x18\x0b \x01(\x0b\x32\x19.blox.Sequence.SetDigitalH\x00\x12\x32\n\x0cWAIT_DIGITAL\x18\x0c \x01(\x0b\x32\x1a.blox.Sequence.WaitDigitalH\x00\x12(\n\x07SET_PWM\x18\r \x01(\x0b\x32\x15.blox.Sequence.SetPwmH\x00\x12*\n\x08WAIT_PWM\x18\x0e \x01(\x0b\x32\x16.blox.Sequence.WaitPwmH\x00\x12\x38\n\rSTART_PROFILE\x18\x0f \x01(\x0b\x32\x1f.blox.Sequence.StartWaitProfileH\x00\x12\x37\n\x0cWAIT_PROFILE\x18\x10 \x01(\x0b\x32\x1f.blox.Sequence.StartWaitProfileH\x00\x12:\n\x0eSTART_SEQUENCE\x18\x11 \x01(\x0b\x32 .blox.Sequence.StartWaitSequenceH\x00\x12\x39\n\rWAIT_SEQUENCE\x18\x12 \x01(\x0b\x32 .blox.Sequence.StartWaitSequenceH\x00\x42\x13\n\x11instruction_oneof\"_\n\x10InstructionReset\x12 \n\x11\x61\x63tiveInstruction\x18\x01 \x01(\rB\x05\x92?\x02\x38\x10\x12)\n\x1a\x61\x63tiveInstructionStartedAt\x18\x02 \x01(\rB\x05\x92?\x02\x38 \"\x8b\x03\n\x05\x42lock\x12\x17\n\x07\x65nabled\x18\x01 \x01(\x08\x42\x06\x8a\xb5\x18\x02\x30\x01\x12\x30\n\x0cinstructions\x18\x02 \x03(\x0b\x32\x1a.blox.Sequence.Instruction\x12\x15\n\roverrideState\x18\x03 \x01(\x08\x12&\n\x11\x61\x63tiveInstruction\x18\x04 \x01(\rB\x0b\x92?\x02\x38\x10\x8a\xb5\x18\x02\x30\x01\x12\x35\n\x1a\x61\x63tiveInstructionStartedAt\x18\x05 \x01(\rB\x11\x92?\x02\x38 \x8a\xb5\x18\x02X\x01\x8a\xb5\x18\x02\x30\x01\x12\x1f\n\ndisabledAt\x18\x06 \x01(\rB\x0b\x92?\x02\x38 \x8a\xb5\x18\x02X\x01\x12%\n\x10\x64isabledDuration\x18\x07 \x01(\rB\x0b\x92?\x02\x38 \x8a\xb5\x18\x02\x08\x03\x12\x35\n\x06status\x18\x08 \x01(\x0e\x32\x1d.blox.Sequence.SequenceStatusB\x06\x8a\xb5\x18\x02(\x01\x12\x33\n\x05\x65rror\x18\t \x01(\x0e\x32\x1c.blox.Sequence.SequenceErrorB\x06\x8a\xb5\x18\x02(\x01:\r\x8a\xb5\x18\x03\x18\xc6\x02\x8a\xb5\x18\x02H\x0f*o\n\x0eSequenceStatus\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0c\n\x08\x44ISABLED\x10\x01\x12\n\n\x06PAUSED\x10\x02\x12\x08\n\x04NEXT\x10\x03\x12\x0b\n\x07WAITING\x10\x04\x12\x07\n\x03\x45ND\x10\x05\x12\x0b\n\x07RESTART\x10\x06\x12\t\n\x05\x45RROR\x10\x07*\x8c\x01\n\rSequenceError\x12\x08\n\x04NONE\x10\x00\x12\x14\n\x10INVALID_ARGUMENT\x10\x01\x12\x12\n\x0eINVALID_TARGET\x10\x02\x12\x13\n\x0fINACTIVE_TARGET\x10\x03\x12\x13\n\x0f\x44ISABLED_TARGET\x10\x04\x12\x1d\n\x19SYSTEM_TIME_NOT_AVAILABLE\x10\x05\x62\x06proto3')
+  serialized_pb=_b('\n\x0eSequence.proto\x12\rblox.Sequence\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\t\n\x07Restart\",\n\rEnableDisable\x12\x1b\n\x06target\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x0f\x92?\x02\x38\x10\"-\n\x0cWaitDuration\x12\x1d\n\x08\x64uration\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x08\x03\x92?\x02\x38 \"&\n\tWaitUntil\x12\x19\n\x04time\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02X\x01\x92?\x02\x38 \"y\n\x14WaitTemperatureRange\x12\x1b\n\x06target\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x02\x92?\x02\x38\x10\x12!\n\x05lower\x18\x02 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12!\n\x05upper\x18\x03 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \"Y\n\x17WaitTemperatureBoundary\x12\x1b\n\x06target\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x02\x92?\x02\x38\x10\x12!\n\x05value\x18\x02 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \"O\n\x0bSetSetpoint\x12\x1b\n\x06target\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x04\x92?\x02\x38\x10\x12#\n\x07setting\x18\x02 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \"R\n\x0cWaitSetpoint\x12\x1b\n\x06target\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x04\x92?\x02\x38\x10\x12%\n\tprecision\x18\x02 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x06\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \"V\n\nSetDigital\x12\x1b\n\x06target\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x06\x92?\x02\x38\x10\x12+\n\x07setting\x18\x02 \x01(\x0e\x32\x1a.blox.IoArray.DigitalState\"*\n\x0bWaitDigital\x12\x1b\n\x06target\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x06\x92?\x02\x38\x10\"E\n\x06SetPwm\x12\x1c\n\x06target\x18\x01 \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xb3\x02\x92?\x02\x38\x10\x12\x1d\n\x07setting\x18\x02 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \"-\n\rTargetProfile\x12\x1c\n\x06target\x18\x01 \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xb7\x02\x92?\x02\x38\x10\".\n\x0eTargetSequence\x12\x1c\n\x06target\x18\x01 \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xc6\x02\x92?\x02\x38\x10\"\xbf\x08\n\x0bInstruction\x12)\n\x07RESTART\x18\x01 \x01(\x0b\x32\x16.blox.Sequence.RestartH\x00\x12.\n\x06\x45NABLE\x18\x02 \x01(\x0b\x32\x1c.blox.Sequence.EnableDisableH\x00\x12/\n\x07\x44ISABLE\x18\x03 \x01(\x0b\x32\x1c.blox.Sequence.EnableDisableH\x00\x12\x34\n\rWAIT_DURATION\x18\x04 \x01(\x0b\x32\x1b.blox.Sequence.WaitDurationH\x00\x12.\n\nWAIT_UNTIL\x18\x05 \x01(\x0b\x32\x18.blox.Sequence.WaitUntilH\x00\x12@\n\x11WAIT_TEMP_BETWEEN\x18\x06 \x01(\x0b\x32#.blox.Sequence.WaitTemperatureRangeH\x00\x12\x44\n\x15WAIT_TEMP_NOT_BETWEEN\x18\x07 \x01(\x0b\x32#.blox.Sequence.WaitTemperatureRangeH\x00\x12\x43\n\x14WAIT_TEMP_UNEXPECTED\x18\x08 \x01(\x0b\x32#.blox.Sequence.WaitTemperatureRangeH\x00\x12\x41\n\x0fWAIT_TEMP_ABOVE\x18\t \x01(\x0b\x32&.blox.Sequence.WaitTemperatureBoundaryH\x00\x12\x41\n\x0fWAIT_TEMP_BELOW\x18\n \x01(\x0b\x32&.blox.Sequence.WaitTemperatureBoundaryH\x00\x12\x32\n\x0cSET_SETPOINT\x18\x0b \x01(\x0b\x32\x1a.blox.Sequence.SetSetpointH\x00\x12\x34\n\rWAIT_SETPOINT\x18\x0c \x01(\x0b\x32\x1b.blox.Sequence.WaitSetpointH\x00\x12\x30\n\x0bSET_DIGITAL\x18\r \x01(\x0b\x32\x19.blox.Sequence.SetDigitalH\x00\x12\x32\n\x0cWAIT_DIGITAL\x18\x0e \x01(\x0b\x32\x1a.blox.Sequence.WaitDigitalH\x00\x12(\n\x07SET_PWM\x18\x0f \x01(\x0b\x32\x15.blox.Sequence.SetPwmH\x00\x12\x35\n\rSTART_PROFILE\x18\x10 \x01(\x0b\x32\x1c.blox.Sequence.TargetProfileH\x00\x12\x34\n\x0cWAIT_PROFILE\x18\x11 \x01(\x0b\x32\x1c.blox.Sequence.TargetProfileH\x00\x12\x37\n\x0eSTART_SEQUENCE\x18\x12 \x01(\x0b\x32\x1d.blox.Sequence.TargetSequenceH\x00\x12\x36\n\rWAIT_SEQUENCE\x18\x13 \x01(\x0b\x32\x1d.blox.Sequence.TargetSequenceH\x00\x42\x13\n\x11instruction_oneof\"\x8b\x03\n\x05\x42lock\x12\x17\n\x07\x65nabled\x18\x01 \x01(\x08\x42\x06\x8a\xb5\x18\x02\x30\x01\x12\x30\n\x0cinstructions\x18\x02 \x03(\x0b\x32\x1a.blox.Sequence.Instruction\x12\x15\n\roverrideState\x18\x03 \x01(\x08\x12&\n\x11\x61\x63tiveInstruction\x18\x04 \x01(\rB\x0b\x92?\x02\x38\x10\x8a\xb5\x18\x02\x30\x01\x12\x35\n\x1a\x61\x63tiveInstructionStartedAt\x18\x05 \x01(\rB\x11\x92?\x02\x38 \x8a\xb5\x18\x02X\x01\x8a\xb5\x18\x02\x30\x01\x12\x1f\n\ndisabledAt\x18\x06 \x01(\rB\x0b\x92?\x02\x38 \x8a\xb5\x18\x02X\x01\x12%\n\x10\x64isabledDuration\x18\x07 \x01(\rB\x0b\x92?\x02\x38 \x8a\xb5\x18\x02\x08\x03\x12\x35\n\x06status\x18\x08 \x01(\x0e\x32\x1d.blox.Sequence.SequenceStatusB\x06\x8a\xb5\x18\x02(\x01\x12\x33\n\x05\x65rror\x18\t \x01(\x0e\x32\x1c.blox.Sequence.SequenceErrorB\x06\x8a\xb5\x18\x02(\x01:\r\x8a\xb5\x18\x03\x18\xc6\x02\x8a\xb5\x18\x02H\x0f*l\n\x0eSequenceStatus\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0c\n\x08\x44ISABLED\x10\x01\x12\n\n\x06PAUSED\x10\x02\x12\x08\n\x04NEXT\x10\x03\x12\x08\n\x04WAIT\x10\x04\x12\x07\n\x03\x45ND\x10\x05\x12\x0b\n\x07RESTART\x10\x06\x12\t\n\x05\x45RROR\x10\x07*\x8c\x01\n\rSequenceError\x12\x08\n\x04NONE\x10\x00\x12\x14\n\x10INVALID_ARGUMENT\x10\x01\x12\x12\n\x0eINVALID_TARGET\x10\x02\x12\x13\n\x0fINACTIVE_TARGET\x10\x03\x12\x13\n\x0f\x44ISABLED_TARGET\x10\x04\x12\x1d\n\x19SYSTEM_TIME_NOT_AVAILABLE\x10\x05\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,IoArray__pb2.DESCRIPTOR,])
 
@@ -50,7 +50,7 @@ _SEQUENCESTATUS = _descriptor.EnumDescriptor(
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='WAITING', index=4, number=4,
+      name='WAIT', index=4, number=4,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
@@ -68,8 +68,8 @@ _SEQUENCESTATUS = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=2492,
-  serialized_end=2603,
+  serialized_start=2387,
+  serialized_end=2495,
 )
 _sym_db.RegisterEnumDescriptor(_SEQUENCESTATUS)
 
@@ -107,8 +107,8 @@ _SEQUENCEERROR = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=2606,
-  serialized_end=2746,
+  serialized_start=2498,
+  serialized_end=2638,
 )
 _sym_db.RegisterEnumDescriptor(_SEQUENCEERROR)
 
@@ -117,7 +117,7 @@ UNKNOWN = 0
 DISABLED = 1
 PAUSED = 2
 NEXT = 3
-WAITING = 4
+WAIT = 4
 END = 5
 RESTART = 6
 ERROR = 7
@@ -247,29 +247,29 @@ _WAITUNTIL = _descriptor.Descriptor(
 )
 
 
-_WAITTEMPERATURE = _descriptor.Descriptor(
-  name='WaitTemperature',
-  full_name='blox.Sequence.WaitTemperature',
+_WAITTEMPERATURERANGE = _descriptor.Descriptor(
+  name='WaitTemperatureRange',
+  full_name='blox.Sequence.WaitTemperatureRange',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='target', full_name='blox.Sequence.WaitTemperature.target', index=0,
+      name='target', full_name='blox.Sequence.WaitTemperatureRange.target', index=0,
       number=1, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\212\265\030\002\030\002\222?\0028\020'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='lower', full_name='blox.Sequence.WaitTemperature.lower', index=1,
+      name='lower', full_name='blox.Sequence.WaitTemperatureRange.lower', index=1,
       number=2, type=17, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\212\265\030\002\010\001\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='upper', full_name='blox.Sequence.WaitTemperature.upper', index=2,
+      name='upper', full_name='blox.Sequence.WaitTemperatureRange.upper', index=2,
       number=3, type=17, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -288,7 +288,7 @@ _WAITTEMPERATURE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=222,
-  serialized_end=338,
+  serialized_end=343,
 )
 
 
@@ -325,8 +325,8 @@ _WAITTEMPERATUREBOUNDARY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=340,
-  serialized_end=429,
+  serialized_start=345,
+  serialized_end=434,
 )
 
 
@@ -363,8 +363,8 @@ _SETSETPOINT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=431,
-  serialized_end=510,
+  serialized_start=436,
+  serialized_end=515,
 )
 
 
@@ -401,8 +401,8 @@ _WAITSETPOINT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=512,
-  serialized_end=594,
+  serialized_start=517,
+  serialized_end=599,
 )
 
 
@@ -439,8 +439,8 @@ _SETDIGITAL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=596,
-  serialized_end=682,
+  serialized_start=601,
+  serialized_end=687,
 )
 
 
@@ -470,8 +470,8 @@ _WAITDIGITAL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=684,
-  serialized_end=726,
+  serialized_start=689,
+  serialized_end=731,
 )
 
 
@@ -508,58 +508,20 @@ _SETPWM = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=728,
-  serialized_end=797,
+  serialized_start=733,
+  serialized_end=802,
 )
 
 
-_WAITPWM = _descriptor.Descriptor(
-  name='WaitPwm',
-  full_name='blox.Sequence.WaitPwm',
+_TARGETPROFILE = _descriptor.Descriptor(
+  name='TargetProfile',
+  full_name='blox.Sequence.TargetProfile',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='target', full_name='blox.Sequence.WaitPwm.target', index=0,
-      number=1, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\003\030\263\002\222?\0028\020'), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='precision', full_name='blox.Sequence.WaitPwm.precision', index=1,
-      number=2, type=17, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\003\020\200 \222?\0028 '), file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=799,
-  serialized_end=871,
-)
-
-
-_STARTWAITPROFILE = _descriptor.Descriptor(
-  name='StartWaitProfile',
-  full_name='blox.Sequence.StartWaitProfile',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='target', full_name='blox.Sequence.StartWaitProfile.target', index=0,
+      name='target', full_name='blox.Sequence.TargetProfile.target', index=0,
       number=1, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -577,20 +539,20 @@ _STARTWAITPROFILE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=873,
-  serialized_end=921,
+  serialized_start=804,
+  serialized_end=849,
 )
 
 
-_STARTWAITSEQUENCE = _descriptor.Descriptor(
-  name='StartWaitSequence',
-  full_name='blox.Sequence.StartWaitSequence',
+_TARGETSEQUENCE = _descriptor.Descriptor(
+  name='TargetSequence',
+  full_name='blox.Sequence.TargetSequence',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='target', full_name='blox.Sequence.StartWaitSequence.target', index=0,
+      name='target', full_name='blox.Sequence.TargetSequence.target', index=0,
       number=1, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -608,8 +570,8 @@ _STARTWAITSEQUENCE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=923,
-  serialized_end=972,
+  serialized_start=851,
+  serialized_end=897,
 )
 
 
@@ -656,92 +618,99 @@ _INSTRUCTION = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='WAIT_TEMPERATURE_BETWEEN', full_name='blox.Sequence.Instruction.WAIT_TEMPERATURE_BETWEEN', index=5,
+      name='WAIT_TEMP_BETWEEN', full_name='blox.Sequence.Instruction.WAIT_TEMP_BETWEEN', index=5,
       number=6, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='WAIT_TEMPERATURE_ABOVE', full_name='blox.Sequence.Instruction.WAIT_TEMPERATURE_ABOVE', index=6,
+      name='WAIT_TEMP_NOT_BETWEEN', full_name='blox.Sequence.Instruction.WAIT_TEMP_NOT_BETWEEN', index=6,
       number=7, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='WAIT_TEMPERATURE_BELOW', full_name='blox.Sequence.Instruction.WAIT_TEMPERATURE_BELOW', index=7,
+      name='WAIT_TEMP_UNEXPECTED', full_name='blox.Sequence.Instruction.WAIT_TEMP_UNEXPECTED', index=7,
       number=8, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='SET_SETPOINT', full_name='blox.Sequence.Instruction.SET_SETPOINT', index=8,
+      name='WAIT_TEMP_ABOVE', full_name='blox.Sequence.Instruction.WAIT_TEMP_ABOVE', index=8,
       number=9, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='WAIT_SETPOINT', full_name='blox.Sequence.Instruction.WAIT_SETPOINT', index=9,
+      name='WAIT_TEMP_BELOW', full_name='blox.Sequence.Instruction.WAIT_TEMP_BELOW', index=9,
       number=10, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='SET_DIGITAL', full_name='blox.Sequence.Instruction.SET_DIGITAL', index=10,
+      name='SET_SETPOINT', full_name='blox.Sequence.Instruction.SET_SETPOINT', index=10,
       number=11, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='WAIT_DIGITAL', full_name='blox.Sequence.Instruction.WAIT_DIGITAL', index=11,
+      name='WAIT_SETPOINT', full_name='blox.Sequence.Instruction.WAIT_SETPOINT', index=11,
       number=12, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='SET_PWM', full_name='blox.Sequence.Instruction.SET_PWM', index=12,
+      name='SET_DIGITAL', full_name='blox.Sequence.Instruction.SET_DIGITAL', index=12,
       number=13, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='WAIT_PWM', full_name='blox.Sequence.Instruction.WAIT_PWM', index=13,
+      name='WAIT_DIGITAL', full_name='blox.Sequence.Instruction.WAIT_DIGITAL', index=13,
       number=14, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='START_PROFILE', full_name='blox.Sequence.Instruction.START_PROFILE', index=14,
+      name='SET_PWM', full_name='blox.Sequence.Instruction.SET_PWM', index=14,
       number=15, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='WAIT_PROFILE', full_name='blox.Sequence.Instruction.WAIT_PROFILE', index=15,
+      name='START_PROFILE', full_name='blox.Sequence.Instruction.START_PROFILE', index=15,
       number=16, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='START_SEQUENCE', full_name='blox.Sequence.Instruction.START_SEQUENCE', index=16,
+      name='WAIT_PROFILE', full_name='blox.Sequence.Instruction.WAIT_PROFILE', index=16,
       number=17, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='WAIT_SEQUENCE', full_name='blox.Sequence.Instruction.WAIT_SEQUENCE', index=17,
+      name='START_SEQUENCE', full_name='blox.Sequence.Instruction.START_SEQUENCE', index=17,
       number=18, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='WAIT_SEQUENCE', full_name='blox.Sequence.Instruction.WAIT_SEQUENCE', index=18,
+      number=19, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -761,46 +730,8 @@ _INSTRUCTION = _descriptor.Descriptor(
       name='instruction_oneof', full_name='blox.Sequence.Instruction.instruction_oneof',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=975,
-  serialized_end=1995,
-)
-
-
-_INSTRUCTIONRESET = _descriptor.Descriptor(
-  name='InstructionReset',
-  full_name='blox.Sequence.InstructionReset',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='activeInstruction', full_name='blox.Sequence.InstructionReset.activeInstruction', index=0,
-      number=1, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\222?\0028\020'), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='activeInstructionStartedAt', full_name='blox.Sequence.InstructionReset.activeInstructionStartedAt', index=1,
-      number=2, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\222?\0028 '), file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=1997,
-  serialized_end=2092,
+  serialized_start=900,
+  serialized_end=1987,
 )
 
 
@@ -886,8 +817,8 @@ _BLOCK = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2095,
-  serialized_end=2490,
+  serialized_start=1990,
+  serialized_end=2385,
 )
 
 _SETDIGITAL.fields_by_name['setting'].enum_type = IoArray__pb2._DIGITALSTATE
@@ -896,19 +827,20 @@ _INSTRUCTION.fields_by_name['ENABLE'].message_type = _ENABLEDISABLE
 _INSTRUCTION.fields_by_name['DISABLE'].message_type = _ENABLEDISABLE
 _INSTRUCTION.fields_by_name['WAIT_DURATION'].message_type = _WAITDURATION
 _INSTRUCTION.fields_by_name['WAIT_UNTIL'].message_type = _WAITUNTIL
-_INSTRUCTION.fields_by_name['WAIT_TEMPERATURE_BETWEEN'].message_type = _WAITTEMPERATURE
-_INSTRUCTION.fields_by_name['WAIT_TEMPERATURE_ABOVE'].message_type = _WAITTEMPERATUREBOUNDARY
-_INSTRUCTION.fields_by_name['WAIT_TEMPERATURE_BELOW'].message_type = _WAITTEMPERATUREBOUNDARY
+_INSTRUCTION.fields_by_name['WAIT_TEMP_BETWEEN'].message_type = _WAITTEMPERATURERANGE
+_INSTRUCTION.fields_by_name['WAIT_TEMP_NOT_BETWEEN'].message_type = _WAITTEMPERATURERANGE
+_INSTRUCTION.fields_by_name['WAIT_TEMP_UNEXPECTED'].message_type = _WAITTEMPERATURERANGE
+_INSTRUCTION.fields_by_name['WAIT_TEMP_ABOVE'].message_type = _WAITTEMPERATUREBOUNDARY
+_INSTRUCTION.fields_by_name['WAIT_TEMP_BELOW'].message_type = _WAITTEMPERATUREBOUNDARY
 _INSTRUCTION.fields_by_name['SET_SETPOINT'].message_type = _SETSETPOINT
 _INSTRUCTION.fields_by_name['WAIT_SETPOINT'].message_type = _WAITSETPOINT
 _INSTRUCTION.fields_by_name['SET_DIGITAL'].message_type = _SETDIGITAL
 _INSTRUCTION.fields_by_name['WAIT_DIGITAL'].message_type = _WAITDIGITAL
 _INSTRUCTION.fields_by_name['SET_PWM'].message_type = _SETPWM
-_INSTRUCTION.fields_by_name['WAIT_PWM'].message_type = _WAITPWM
-_INSTRUCTION.fields_by_name['START_PROFILE'].message_type = _STARTWAITPROFILE
-_INSTRUCTION.fields_by_name['WAIT_PROFILE'].message_type = _STARTWAITPROFILE
-_INSTRUCTION.fields_by_name['START_SEQUENCE'].message_type = _STARTWAITSEQUENCE
-_INSTRUCTION.fields_by_name['WAIT_SEQUENCE'].message_type = _STARTWAITSEQUENCE
+_INSTRUCTION.fields_by_name['START_PROFILE'].message_type = _TARGETPROFILE
+_INSTRUCTION.fields_by_name['WAIT_PROFILE'].message_type = _TARGETPROFILE
+_INSTRUCTION.fields_by_name['START_SEQUENCE'].message_type = _TARGETSEQUENCE
+_INSTRUCTION.fields_by_name['WAIT_SEQUENCE'].message_type = _TARGETSEQUENCE
 _INSTRUCTION.oneofs_by_name['instruction_oneof'].fields.append(
   _INSTRUCTION.fields_by_name['RESTART'])
 _INSTRUCTION.fields_by_name['RESTART'].containing_oneof = _INSTRUCTION.oneofs_by_name['instruction_oneof']
@@ -925,14 +857,20 @@ _INSTRUCTION.oneofs_by_name['instruction_oneof'].fields.append(
   _INSTRUCTION.fields_by_name['WAIT_UNTIL'])
 _INSTRUCTION.fields_by_name['WAIT_UNTIL'].containing_oneof = _INSTRUCTION.oneofs_by_name['instruction_oneof']
 _INSTRUCTION.oneofs_by_name['instruction_oneof'].fields.append(
-  _INSTRUCTION.fields_by_name['WAIT_TEMPERATURE_BETWEEN'])
-_INSTRUCTION.fields_by_name['WAIT_TEMPERATURE_BETWEEN'].containing_oneof = _INSTRUCTION.oneofs_by_name['instruction_oneof']
+  _INSTRUCTION.fields_by_name['WAIT_TEMP_BETWEEN'])
+_INSTRUCTION.fields_by_name['WAIT_TEMP_BETWEEN'].containing_oneof = _INSTRUCTION.oneofs_by_name['instruction_oneof']
 _INSTRUCTION.oneofs_by_name['instruction_oneof'].fields.append(
-  _INSTRUCTION.fields_by_name['WAIT_TEMPERATURE_ABOVE'])
-_INSTRUCTION.fields_by_name['WAIT_TEMPERATURE_ABOVE'].containing_oneof = _INSTRUCTION.oneofs_by_name['instruction_oneof']
+  _INSTRUCTION.fields_by_name['WAIT_TEMP_NOT_BETWEEN'])
+_INSTRUCTION.fields_by_name['WAIT_TEMP_NOT_BETWEEN'].containing_oneof = _INSTRUCTION.oneofs_by_name['instruction_oneof']
 _INSTRUCTION.oneofs_by_name['instruction_oneof'].fields.append(
-  _INSTRUCTION.fields_by_name['WAIT_TEMPERATURE_BELOW'])
-_INSTRUCTION.fields_by_name['WAIT_TEMPERATURE_BELOW'].containing_oneof = _INSTRUCTION.oneofs_by_name['instruction_oneof']
+  _INSTRUCTION.fields_by_name['WAIT_TEMP_UNEXPECTED'])
+_INSTRUCTION.fields_by_name['WAIT_TEMP_UNEXPECTED'].containing_oneof = _INSTRUCTION.oneofs_by_name['instruction_oneof']
+_INSTRUCTION.oneofs_by_name['instruction_oneof'].fields.append(
+  _INSTRUCTION.fields_by_name['WAIT_TEMP_ABOVE'])
+_INSTRUCTION.fields_by_name['WAIT_TEMP_ABOVE'].containing_oneof = _INSTRUCTION.oneofs_by_name['instruction_oneof']
+_INSTRUCTION.oneofs_by_name['instruction_oneof'].fields.append(
+  _INSTRUCTION.fields_by_name['WAIT_TEMP_BELOW'])
+_INSTRUCTION.fields_by_name['WAIT_TEMP_BELOW'].containing_oneof = _INSTRUCTION.oneofs_by_name['instruction_oneof']
 _INSTRUCTION.oneofs_by_name['instruction_oneof'].fields.append(
   _INSTRUCTION.fields_by_name['SET_SETPOINT'])
 _INSTRUCTION.fields_by_name['SET_SETPOINT'].containing_oneof = _INSTRUCTION.oneofs_by_name['instruction_oneof']
@@ -948,9 +886,6 @@ _INSTRUCTION.fields_by_name['WAIT_DIGITAL'].containing_oneof = _INSTRUCTION.oneo
 _INSTRUCTION.oneofs_by_name['instruction_oneof'].fields.append(
   _INSTRUCTION.fields_by_name['SET_PWM'])
 _INSTRUCTION.fields_by_name['SET_PWM'].containing_oneof = _INSTRUCTION.oneofs_by_name['instruction_oneof']
-_INSTRUCTION.oneofs_by_name['instruction_oneof'].fields.append(
-  _INSTRUCTION.fields_by_name['WAIT_PWM'])
-_INSTRUCTION.fields_by_name['WAIT_PWM'].containing_oneof = _INSTRUCTION.oneofs_by_name['instruction_oneof']
 _INSTRUCTION.oneofs_by_name['instruction_oneof'].fields.append(
   _INSTRUCTION.fields_by_name['START_PROFILE'])
 _INSTRUCTION.fields_by_name['START_PROFILE'].containing_oneof = _INSTRUCTION.oneofs_by_name['instruction_oneof']
@@ -970,18 +905,16 @@ DESCRIPTOR.message_types_by_name['Restart'] = _RESTART
 DESCRIPTOR.message_types_by_name['EnableDisable'] = _ENABLEDISABLE
 DESCRIPTOR.message_types_by_name['WaitDuration'] = _WAITDURATION
 DESCRIPTOR.message_types_by_name['WaitUntil'] = _WAITUNTIL
-DESCRIPTOR.message_types_by_name['WaitTemperature'] = _WAITTEMPERATURE
+DESCRIPTOR.message_types_by_name['WaitTemperatureRange'] = _WAITTEMPERATURERANGE
 DESCRIPTOR.message_types_by_name['WaitTemperatureBoundary'] = _WAITTEMPERATUREBOUNDARY
 DESCRIPTOR.message_types_by_name['SetSetpoint'] = _SETSETPOINT
 DESCRIPTOR.message_types_by_name['WaitSetpoint'] = _WAITSETPOINT
 DESCRIPTOR.message_types_by_name['SetDigital'] = _SETDIGITAL
 DESCRIPTOR.message_types_by_name['WaitDigital'] = _WAITDIGITAL
 DESCRIPTOR.message_types_by_name['SetPwm'] = _SETPWM
-DESCRIPTOR.message_types_by_name['WaitPwm'] = _WAITPWM
-DESCRIPTOR.message_types_by_name['StartWaitProfile'] = _STARTWAITPROFILE
-DESCRIPTOR.message_types_by_name['StartWaitSequence'] = _STARTWAITSEQUENCE
+DESCRIPTOR.message_types_by_name['TargetProfile'] = _TARGETPROFILE
+DESCRIPTOR.message_types_by_name['TargetSequence'] = _TARGETSEQUENCE
 DESCRIPTOR.message_types_by_name['Instruction'] = _INSTRUCTION
-DESCRIPTOR.message_types_by_name['InstructionReset'] = _INSTRUCTIONRESET
 DESCRIPTOR.message_types_by_name['Block'] = _BLOCK
 DESCRIPTOR.enum_types_by_name['SequenceStatus'] = _SEQUENCESTATUS
 DESCRIPTOR.enum_types_by_name['SequenceError'] = _SEQUENCEERROR
@@ -1015,12 +948,12 @@ WaitUntil = _reflection.GeneratedProtocolMessageType('WaitUntil', (_message.Mess
   ))
 _sym_db.RegisterMessage(WaitUntil)
 
-WaitTemperature = _reflection.GeneratedProtocolMessageType('WaitTemperature', (_message.Message,), dict(
-  DESCRIPTOR = _WAITTEMPERATURE,
+WaitTemperatureRange = _reflection.GeneratedProtocolMessageType('WaitTemperatureRange', (_message.Message,), dict(
+  DESCRIPTOR = _WAITTEMPERATURERANGE,
   __module__ = 'Sequence_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Sequence.WaitTemperature)
+  # @@protoc_insertion_point(class_scope:blox.Sequence.WaitTemperatureRange)
   ))
-_sym_db.RegisterMessage(WaitTemperature)
+_sym_db.RegisterMessage(WaitTemperatureRange)
 
 WaitTemperatureBoundary = _reflection.GeneratedProtocolMessageType('WaitTemperatureBoundary', (_message.Message,), dict(
   DESCRIPTOR = _WAITTEMPERATUREBOUNDARY,
@@ -1064,26 +997,19 @@ SetPwm = _reflection.GeneratedProtocolMessageType('SetPwm', (_message.Message,),
   ))
 _sym_db.RegisterMessage(SetPwm)
 
-WaitPwm = _reflection.GeneratedProtocolMessageType('WaitPwm', (_message.Message,), dict(
-  DESCRIPTOR = _WAITPWM,
+TargetProfile = _reflection.GeneratedProtocolMessageType('TargetProfile', (_message.Message,), dict(
+  DESCRIPTOR = _TARGETPROFILE,
   __module__ = 'Sequence_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Sequence.WaitPwm)
+  # @@protoc_insertion_point(class_scope:blox.Sequence.TargetProfile)
   ))
-_sym_db.RegisterMessage(WaitPwm)
+_sym_db.RegisterMessage(TargetProfile)
 
-StartWaitProfile = _reflection.GeneratedProtocolMessageType('StartWaitProfile', (_message.Message,), dict(
-  DESCRIPTOR = _STARTWAITPROFILE,
+TargetSequence = _reflection.GeneratedProtocolMessageType('TargetSequence', (_message.Message,), dict(
+  DESCRIPTOR = _TARGETSEQUENCE,
   __module__ = 'Sequence_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Sequence.StartWaitProfile)
+  # @@protoc_insertion_point(class_scope:blox.Sequence.TargetSequence)
   ))
-_sym_db.RegisterMessage(StartWaitProfile)
-
-StartWaitSequence = _reflection.GeneratedProtocolMessageType('StartWaitSequence', (_message.Message,), dict(
-  DESCRIPTOR = _STARTWAITSEQUENCE,
-  __module__ = 'Sequence_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Sequence.StartWaitSequence)
-  ))
-_sym_db.RegisterMessage(StartWaitSequence)
+_sym_db.RegisterMessage(TargetSequence)
 
 Instruction = _reflection.GeneratedProtocolMessageType('Instruction', (_message.Message,), dict(
   DESCRIPTOR = _INSTRUCTION,
@@ -1091,13 +1017,6 @@ Instruction = _reflection.GeneratedProtocolMessageType('Instruction', (_message.
   # @@protoc_insertion_point(class_scope:blox.Sequence.Instruction)
   ))
 _sym_db.RegisterMessage(Instruction)
-
-InstructionReset = _reflection.GeneratedProtocolMessageType('InstructionReset', (_message.Message,), dict(
-  DESCRIPTOR = _INSTRUCTIONRESET,
-  __module__ = 'Sequence_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Sequence.InstructionReset)
-  ))
-_sym_db.RegisterMessage(InstructionReset)
 
 Block = _reflection.GeneratedProtocolMessageType('Block', (_message.Message,), dict(
   DESCRIPTOR = _BLOCK,
@@ -1110,9 +1029,9 @@ _sym_db.RegisterMessage(Block)
 _ENABLEDISABLE.fields_by_name['target']._options = None
 _WAITDURATION.fields_by_name['duration']._options = None
 _WAITUNTIL.fields_by_name['time']._options = None
-_WAITTEMPERATURE.fields_by_name['target']._options = None
-_WAITTEMPERATURE.fields_by_name['lower']._options = None
-_WAITTEMPERATURE.fields_by_name['upper']._options = None
+_WAITTEMPERATURERANGE.fields_by_name['target']._options = None
+_WAITTEMPERATURERANGE.fields_by_name['lower']._options = None
+_WAITTEMPERATURERANGE.fields_by_name['upper']._options = None
 _WAITTEMPERATUREBOUNDARY.fields_by_name['target']._options = None
 _WAITTEMPERATUREBOUNDARY.fields_by_name['value']._options = None
 _SETSETPOINT.fields_by_name['target']._options = None
@@ -1123,12 +1042,8 @@ _SETDIGITAL.fields_by_name['target']._options = None
 _WAITDIGITAL.fields_by_name['target']._options = None
 _SETPWM.fields_by_name['target']._options = None
 _SETPWM.fields_by_name['setting']._options = None
-_WAITPWM.fields_by_name['target']._options = None
-_WAITPWM.fields_by_name['precision']._options = None
-_STARTWAITPROFILE.fields_by_name['target']._options = None
-_STARTWAITSEQUENCE.fields_by_name['target']._options = None
-_INSTRUCTIONRESET.fields_by_name['activeInstruction']._options = None
-_INSTRUCTIONRESET.fields_by_name['activeInstructionStartedAt']._options = None
+_TARGETPROFILE.fields_by_name['target']._options = None
+_TARGETSEQUENCE.fields_by_name['target']._options = None
 _BLOCK.fields_by_name['enabled']._options = None
 _BLOCK.fields_by_name['activeInstruction']._options = None
 _BLOCK.fields_by_name['activeInstructionStartedAt']._options = None

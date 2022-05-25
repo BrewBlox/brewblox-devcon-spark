@@ -112,7 +112,7 @@ def test_sequence_from_line():
         sequence.from_line('WAIT_DURATION 1s', 1)
 
     with pytest.raises(ValueError, match=r'Invalid temperature'):
-        sequence.from_line('WAIT_TEMPERATURE_ABOVE value=10m', 1)
+        sequence.from_line('WAIT_TEMP_ABOVE value=10m', 1)
 
 
 def test_sequence_to_line():
