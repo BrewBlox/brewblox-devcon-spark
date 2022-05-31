@@ -204,7 +204,7 @@ class SparkSynchronization(repeater.RepeaterFeature):
     @subroutine('sync controller time')
     async def _sync_time(self):
         now = datetime.now()
-        ticks_block = await self.commander.read_block(
+        ticks_block = await self.commander.write_block(
             FirmwareBlock(
                 nid=const.SYSTIME_NID,
                 type='Ticks',
