@@ -33,4 +33,4 @@ def serialize_duration(td: timedelta) -> str:
         if seconds >= period_s:
             period_value, seconds = divmod(seconds, period_s)
             output += f'{period_value}{period_postfix}'
-    return output
+    return output or '0s'
