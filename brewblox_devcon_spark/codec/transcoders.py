@@ -8,6 +8,7 @@ from typing import Generator, Optional, Tuple, Type, Union
 
 from brewblox_service import brewblox_logger
 from google.protobuf import json_format
+from google.protobuf.descriptor import Descriptor
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
@@ -131,13 +132,21 @@ class DeprecatedObjectTranscoder(Transcoder):
 class BaseProtobufTranscoder(Transcoder):
 
     @classmethod
-    def _brewblox_msg(cls):
+    def descriptor(cls) -> Descriptor:
+        return cls._MESSAGE_TYPE.DESCRIPTOR
+
+    @classmethod
+    def message(cls) -> Message:
+        return cls._MESSAGE_TYPE()
+
+    @classmethod
+    def _message_opts(cls) -> pb2.brewblox_pb2.MessageOpts:
         # Message opts as set in BrewbloxMessageOptions in brewblox.proto
-        return cls._MESSAGE.DESCRIPTOR.GetOptions().Extensions[pb2.brewblox_pb2.msg]
+        return cls.descriptor().GetOptions().Extensions[pb2.brewblox_pb2.msg]
 
     @classmethod
     def type_int(cls) -> int:
-        return cls._brewblox_msg().objtype
+        return cls._message_opts().objtype
 
     @classmethod
     def type_str(cls) -> str:
@@ -145,45 +154,42 @@ class BaseProtobufTranscoder(Transcoder):
 
     @classmethod
     def type_impl(cls) -> list[str]:
-        return [BlockType.Name(i) for i in cls._brewblox_msg().impl]
+        return [BlockType.Name(i) for i in cls._message_opts().impl]
 
     @classmethod
     def subtype_int(cls) -> int:
-        return cls._brewblox_msg().subtype
+        return cls._message_opts().subtype
 
     @classmethod
     def subtype_str(cls) -> Optional[str]:
         if cls.subtype_int():
-            return cls._MESSAGE.DESCRIPTOR.name
+            return cls.descriptor().name
         else:
             return None
 
-    def create_message(self) -> Message:
-        return self.__class__._MESSAGE()
-
     def encode(self, values: dict) -> bytes:
-        # LOGGER.debug(f'encoding {values} to {self.__class__._MESSAGE}')
-        obj = json_format.ParseDict(values, self.create_message())
+        # LOGGER.debug(f'encoding {values} to {self.__class__._MESSAGE_TYPE}')
+        obj = json_format.ParseDict(values, self.message())
         data = obj.SerializeToString()
         return data
 
     def decode(self, encoded: bytes, opts: DecodeOpts) -> dict:
         int_enum = opts.enums == ProtoEnumOpt.INT
 
-        obj = self.create_message()
-        obj.ParseFromString(encoded)
+        msg = self.message()
+        msg.ParseFromString(encoded)
         decoded = json_format.MessageToDict(
-            message=obj,
+            message=msg,
             preserving_proto_field_name=True,
             including_default_value_fields=True,
             use_integers_for_enums=int_enum,
         )
-        # LOGGER.debug(f'decoded {self.__class__._MESSAGE} to {decoded}')
+        # LOGGER.debug(f'decoded {self.__class__._MESSAGE_TYPE} to {decoded}')
         return decoded
 
 
 class ControlboxRequestTranscoder(BaseProtobufTranscoder):
-    _MESSAGE = pb2.command_pb2.Request
+    _MESSAGE_TYPE = pb2.command_pb2.Request
 
     @classmethod
     def type_int(cls) -> int:
@@ -201,7 +207,7 @@ class ControlboxRequestTranscoder(BaseProtobufTranscoder):
 
 
 class ControlboxResponseTranscoder(BaseProtobufTranscoder):
-    _MESSAGE = pb2.command_pb2.Response
+    _MESSAGE_TYPE = pb2.command_pb2.Response
 
     @classmethod
     def type_int(cls) -> int:
@@ -221,17 +227,17 @@ class ControlboxResponseTranscoder(BaseProtobufTranscoder):
 class ProtobufTranscoder(BaseProtobufTranscoder):
 
     def encode(self, values: dict) -> bytes:
-        self.proc.pre_encode(self.create_message(), values)
+        self.proc.pre_encode(self.descriptor(), values)
         return super().encode(values)
 
     def decode(self, encoded: bytes, opts: DecodeOpts) -> dict:
         decoded = super().decode(encoded, opts)
-        self.proc.post_decode(self.create_message(), decoded, opts)
+        self.proc.post_decode(self.descriptor(), decoded, opts)
         return decoded
 
 
 class EdgeCaseTranscoder(ProtobufTranscoder):
-    _MESSAGE = pb2.EdgeCase_pb2.Block
+    _MESSAGE_TYPE = pb2.EdgeCase_pb2.Block
 
     @classmethod
     def type_int(cls) -> int:
@@ -243,7 +249,7 @@ class EdgeCaseTranscoder(ProtobufTranscoder):
 
 
 class EdgeCaseSubTranscoder(EdgeCaseTranscoder):
-    _MESSAGE = pb2.EdgeCase_pb2.SubCase
+    _MESSAGE_TYPE = pb2.EdgeCase_pb2.SubCase
 
 
 def interface_transcoder_generator() -> Generator[Type[BlockInterfaceTranscoder], None, None]:
@@ -266,7 +272,7 @@ def protobuf_transcoder_generator() -> Generator[Type[ProtobufTranscoder], None,
             opts = desc.GetOptions().Extensions[pb2.brewblox_pb2.msg]
             if opts.objtype:
                 name = f'{BlockType.Name(opts.objtype)}_{desc.name}_Transcoder'
-                yield type(name, (ProtobufTranscoder, ), {'_MESSAGE': msg})
+                yield type(name, (ProtobufTranscoder, ), {'_MESSAGE_TYPE': msg})
 
 
 _TRANSCODERS: list[Type[Transcoder]] = [

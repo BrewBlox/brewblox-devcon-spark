@@ -24,8 +24,8 @@ LOGGER = brewblox_logger(__name__)
 class Codec(features.ServiceFeature):
     def __init__(self, app: web.Application, strip_readonly=True):
         super().__init__(app)
-        self._proto_proc = ProtobufProcessor(unit_conversion.fget(app),
-                                             strip_readonly)
+        self._processor = ProtobufProcessor(unit_conversion.fget(app),
+                                            strip_readonly)
 
     async def encode(self,
                      identifier: Identifier_,
@@ -55,7 +55,7 @@ class Codec(features.ServiceFeature):
             raise TypeError(f'Unable to encode [{type(data).__name__}]')
 
         try:
-            trc = Transcoder.get(identifier, self._proto_proc)
+            trc = Transcoder.get(identifier, self._processor)
             encoded_identifier = (trc.type_int(), trc.subtype_int())
             if data is None:
                 return (encoded_identifier, None)
@@ -105,7 +105,7 @@ class Codec(features.ServiceFeature):
 
         try:
             opts = opts or DecodeOpts()
-            trc = Transcoder.get(identifier, self._proto_proc)
+            trc = Transcoder.get(identifier, self._processor)
             decoded_identifier = (trc.type_str(), trc.subtype_str())
             if data is None:
                 return (decoded_identifier, None)
@@ -137,7 +137,7 @@ class Codec(features.ServiceFeature):
                 All blockType values implemented by the transcoder.
                 Corresponds to brewblox_msg.impl in protobuf.
         """
-        trc = Transcoder.get(identifier, self._proto_proc)
+        trc = Transcoder.get(identifier, self._processor)
         return trc.type_impl()
 
 

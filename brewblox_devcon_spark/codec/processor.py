@@ -11,8 +11,7 @@ from typing import Iterator, Optional, Union
 
 from brewblox_service import brewblox_logger
 from google.protobuf import json_format
-from google.protobuf.descriptor import DescriptorBase, FieldDescriptor
-from google.protobuf.message import Message
+from google.protobuf.descriptor import Descriptor, FieldDescriptor
 
 from .opts import DecodeOpts, FilterOpt, MetadataOpt
 from .pb2 import brewblox_pb2
@@ -35,7 +34,7 @@ class OptionElement():
 
 
 class ProtobufProcessor():
-    _BREWBLOX_PROVIDER: DescriptorBase = brewblox_pb2.field
+    _BREWBLOX_PROVIDER: FieldDescriptor = brewblox_pb2.field
 
     def __init__(self, converter: UnitConverter, strip_readonly=True):
         self._converter = converter
@@ -77,7 +76,7 @@ class ProtobufProcessor():
     def unpack_bit_flags(flags: int) -> list[int]:
         return [i for i in range(8) if 1 << i & flags]
 
-    def _find_options(self, desc: DescriptorBase, obj: dict, nested: bool = False) -> Iterator[OptionElement]:
+    def _find_options(self, desc: Descriptor, obj: dict, nested: bool = False) -> Iterator[OptionElement]:
         """
         Recursively walks `obj`, and yields an `OptionElement` for each value.
 
@@ -121,7 +120,7 @@ class ProtobufProcessor():
             user_unit = postfix
             return self._converter.to_sys_value(value, unit_type, user_unit)
 
-    def pre_encode(self, message: Message, obj: dict) -> dict:
+    def pre_encode(self, desc: Descriptor, obj: dict) -> dict:
         """
         Modifies `obj` based on Protobuf options and dict key postfixes.
 
@@ -180,7 +179,7 @@ class ProtobufProcessor():
                 }
             }
         """
-        for element in self._find_options(message.DESCRIPTOR, obj):
+        for element in self._find_options(desc, obj):
             options = self._field_options(element.field)
             val = element.obj[element.key]
             new_key = element.base_key
@@ -239,7 +238,7 @@ class ProtobufProcessor():
 
         return obj
 
-    def post_decode(self, message: Message, obj: dict, opts: DecodeOpts) -> dict:
+    def post_decode(self, desc: Descriptor, obj: dict, opts: DecodeOpts) -> dict:
         """
         Post-processes protobuf data based on protobuf / codec options.
 
@@ -302,7 +301,7 @@ class ProtobufProcessor():
         """
         stripped_fields = obj.pop(STRIP_FIELDS_KEY, [])
 
-        for element in self._find_options(message.DESCRIPTOR, obj):
+        for element in self._find_options(desc, obj):
             options = self._field_options(element.field)
             val = element.obj[element.key]
             new_key = element.key
@@ -385,3 +384,10 @@ class ProtobufProcessor():
             element.obj[new_key] = val
 
         return obj
+
+    def obj_tags(self, desc: Descriptor, obj: dict) -> list[int]:
+        return [
+            desc.fields_by_name[key].number
+            for key in obj.keys()
+            if key in desc.fields_by_name
+        ]

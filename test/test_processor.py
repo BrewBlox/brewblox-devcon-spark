@@ -10,7 +10,7 @@ from brewblox_devcon_spark.codec.pb2 import TempSensorOneWire_pb2
 
 
 @pytest.fixture
-def f_mod(app):
+def degf_processor(app):
     c = unit_conversion.UnitConverter(app)
     c.temperature = 'degF'
     m = ProtobufProcessor(c, strip_readonly=False)
@@ -18,10 +18,15 @@ def f_mod(app):
 
 
 @pytest.fixture
-def proc(app):
+def degc_processor(app):
     c = unit_conversion.UnitConverter(app)
     c.temperature = 'degC'
     return ProtobufProcessor(c)
+
+
+@pytest.fixture
+def desc():
+    return TempSensorOneWire_pb2.Block.DESCRIPTOR
 
 
 def generate_encoding_data():
@@ -40,9 +45,9 @@ def generate_decoding_data():
     }
 
 
-def test_pre_encode_fields(f_mod):
+def test_pre_encode_fields(degf_processor, desc):
     vals = generate_encoding_data()
-    f_mod.pre_encode(TempSensorOneWire_pb2.Block(), vals)
+    degf_processor.pre_encode(desc, vals)
 
     # converted to (delta) degC
     # scaled * 256
@@ -50,36 +55,46 @@ def test_pre_encode_fields(f_mod):
     assert vals == generate_decoding_data()
 
 
-def test_post_decode_fields(f_mod):
+def test_post_decode_fields(degf_processor, desc):
     vals = generate_decoding_data()
-    f_mod.post_decode(TempSensorOneWire_pb2.Block(), vals, DecodeOpts())
+    degf_processor.post_decode(desc, vals, DecodeOpts())
     assert vals['offset']['value'] == pytest.approx(20, 0.1)
     assert vals['value']['value'] == pytest.approx(100, 0.1)
 
 
-def test_decode_no_system(proc):
+def test_decode_no_system(degc_processor, desc):
     vals = generate_decoding_data()
-    proc.post_decode(TempSensorOneWire_pb2.Block(), vals, DecodeOpts())
+    degc_processor.post_decode(desc, vals, DecodeOpts())
     assert vals['offset']['value'] > 0
     assert vals['value']['value'] > 0
 
 
-def test_pack_bit_flags(f_mod):
-    assert f_mod.pack_bit_flags([0, 2, 1]) == 7
+def test_pack_bit_flags(degf_processor):
+    assert degf_processor.pack_bit_flags([0, 2, 1]) == 7
 
     with pytest.raises(ValueError):
-        f_mod.pack_bit_flags([8])
+        degf_processor.pack_bit_flags([8])
 
 
-def test_unpack_bit_flags(f_mod):
-    assert f_mod.unpack_bit_flags(7) == [0, 1, 2]
-    assert f_mod.unpack_bit_flags(255) == [i for i in range(8)]
+def test_unpack_bit_flags(degf_processor):
+    assert degf_processor.unpack_bit_flags(7) == [0, 1, 2]
+    assert degf_processor.unpack_bit_flags(255) == [i for i in range(8)]
 
 
-def test_null_values(f_mod):
+def test_null_values(degf_processor, desc):
     vals = generate_encoding_data()
     vals['offset[delta_degF]'] = None
     vals['address'] = None
 
-    f_mod.pre_encode(TempSensorOneWire_pb2.Block(), vals)
+    degf_processor.pre_encode(desc, vals)
     assert 'address' not in vals
+
+
+def test_get_obj_tags(degf_processor, desc):
+    vals = generate_encoding_data()
+    degf_processor.pre_encode(desc, vals)
+    assert sorted(degf_processor.obj_tags(desc, vals)) == [
+        1,  # value
+        3,  # offset
+        4,  # address
+    ]
