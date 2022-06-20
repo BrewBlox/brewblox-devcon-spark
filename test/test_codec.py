@@ -11,6 +11,7 @@ from brewblox_devcon_spark import (codec, connection_sim, exceptions,
                                    service_status, service_store)
 from brewblox_devcon_spark.codec import (Codec, DecodeOpts, MetadataOpt,
                                          ProtoEnumOpt)
+from brewblox_devcon_spark.models import DecodedPayload, EncodedPayload
 
 
 @pytest.fixture
@@ -34,42 +35,57 @@ def sim_cdc(app) -> Codec:
 
 
 async def test_encode_system_objects(app, client, cdc: Codec):
-    objects = [
-        {
-            'type': 'SysInfo',
-            'data': {},
-        },
-        {
-            'type': 'Ticks',
-            'data': {},
-        },
-        {
-            'type': 'OneWireBus',
-            'data': {},
-        },
+    types = [
+        'SysInfo',
+        'Ticks',
+        'OneWireBus'
     ]
 
-    encoded = [await cdc.encode((o['type'], None), o['data']) for o in objects]
+    encoded = [
+        cdc.encode_payload(DecodedPayload(
+            blockId=1,
+            blockType=t,
+            content={},
+        ))
+        for t in types]
+
     assert encoded
 
 
 async def test_encode_errors(app, client, cdc: Codec):
-    with pytest.raises(TypeError):
-        await cdc.encode(('TempSensorOneWire', None), opts={})
+    with pytest.raises(exceptions.EncodeException):
+        cdc.encode_payload(DecodedPayload(
+            blockId=1,
+            blockType='MAGIC'
+        ))
 
     with pytest.raises(exceptions.EncodeException):
-        await cdc.encode(('MAGIC', None), {})
-
-    with pytest.raises(exceptions.EncodeException):
-        await cdc.encode(('TempSensorOneWire', None), {'Galileo': 'thunderbolts and lightning'})
+        cdc.encode_payload(DecodedPayload(
+            blockId=1,
+            blockType='TempSensorOneWire',
+            content={'Galileo': 'thunderbolts and lightning'}
+        ))
 
     with pytest.raises(TypeError):
-        await cdc.encode(('TempSensorOneWire', None), 'very very frightening me')
+        cdc.encode_payload(DecodedPayload(
+            blockId=1,
+            blockType='TempSensorOneWire',
+            content='very very frightening me'
+        ))
 
 
 async def test_decode_errors(app, client, cdc: Codec):
     with pytest.raises(TypeError):
-        await cdc.decode(('TempSensorOneWire', None), 123)
+        cdc.decode_payload(EncodedPayload(
+            blockId=1,
+            blockType=302,  # TempSensorOneWire
+            content=123,
+        ))
+
+    encoded = cdc.encode_payload(DecodedPayload(
+        blockId=1,
+        blockType='TempSensorOneWire',
+    ))
 
     identifier, _ = await cdc.encode(('TempSensorOneWire', None), None)
     assert await cdc.decode(identifier, b'Galileo, Figaro - magnificoo') \

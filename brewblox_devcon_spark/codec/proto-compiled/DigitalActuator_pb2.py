@@ -23,7 +23,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox.DigitalActuator',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x15\x44igitalActuator.proto\x12\x14\x62lox.DigitalActuator\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x11\x43onstraints.proto\x1a\rIoArray.proto\"\xbd\x02\n\x05\x42lock\x12#\n\x08hwDevice\x18\x01 \x01(\rB\x11\x8a\xb5\x18\x02\x18\n\x8a\xb5\x18\x02@\x01\x92?\x02\x38\x10\x12\x16\n\x07\x63hannel\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12\x37\n\x05state\x18\x03 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x0c\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x12\x0e\n\x06invert\x18\x04 \x01(\x08\x12;\n\rconstrainedBy\x18\x05 \x01(\x0b\x32$.blox.Constraints.DigitalConstraints\x12\x38\n\x0c\x64\x65siredState\x18\x06 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x06\x8a\xb5\x18\x02\x30\x01\x12(\n\x0estrippedFields\x18\x63 \x03(\rB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x01:\r\x8a\xb5\x18\x03\x18\xbe\x02\x8a\xb5\x18\x02H\x06\x62\x06proto3')
+  serialized_pb=_b('\n\x15\x44igitalActuator.proto\x12\x14\x62lox.DigitalActuator\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x11\x43onstraints.proto\x1a\rIoArray.proto\"\x93\x02\n\x05\x42lock\x12#\n\x08hwDevice\x18\x01 \x01(\rB\x11\x8a\xb5\x18\x02\x18\n\x8a\xb5\x18\x02@\x01\x92?\x02\x38\x10\x12\x16\n\x07\x63hannel\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12\x37\n\x05state\x18\x03 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x0c\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x12\x0e\n\x06invert\x18\x04 \x01(\x08\x12;\n\rconstrainedBy\x18\x05 \x01(\x0b\x32$.blox.Constraints.DigitalConstraints\x12\x38\n\x0c\x64\x65siredState\x18\x06 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x06\x8a\xb5\x18\x02\x30\x01:\r\x8a\xb5\x18\x03\x18\xbe\x02\x8a\xb5\x18\x02H\x06\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,Constraints__pb2.DESCRIPTOR,IoArray__pb2.DESCRIPTOR,])
 
@@ -79,13 +79,6 @@ _BLOCK = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\212\265\030\0020\001'), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='strippedFields', full_name='blox.DigitalActuator.Block.strippedFields', index=6,
-      number=99, type=13, cpp_type=3, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002(\001\222?\0028\020\222?\002\020\001'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -99,7 +92,7 @@ _BLOCK = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=112,
-  serialized_end=429,
+  serialized_end=387,
 )
 
 _BLOCK.fields_by_name['state'].enum_type = IoArray__pb2._DIGITALSTATE
@@ -120,6 +113,5 @@ _BLOCK.fields_by_name['hwDevice']._options = None
 _BLOCK.fields_by_name['channel']._options = None
 _BLOCK.fields_by_name['state']._options = None
 _BLOCK.fields_by_name['desiredState']._options = None
-_BLOCK.fields_by_name['strippedFields']._options = None
 _BLOCK._options = None
 # @@protoc_insertion_point(module_scope)

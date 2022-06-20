@@ -8,7 +8,7 @@ from brewblox_service.testing import matching
 
 from brewblox_devcon_spark import (codec, commander, connection_sim,
                                    service_status)
-from brewblox_devcon_spark.models import EncodedResponse, ErrorCode
+from brewblox_devcon_spark.models import ErrorCode, IntermediateResponse
 
 TESTED = commander.__name__
 
@@ -37,11 +37,11 @@ async def test_type_conversion():
 async def test_unexpected_message(app, client, mocker):
     m_log_error = mocker.patch(TESTED + '.LOGGER.error', autospec=True)
     cmder = commander.fget(app)
-    message = EncodedResponse(
+    response = IntermediateResponse(
         msgId=123,
         error=ErrorCode.OK,
         payload=[]
     )
-    _, enc_message = await codec.fget(app).encode((codec.RESPONSE_TYPE, None), message.dict())
-    await cmder._data_callback(enc_message)
+    message = codec.fget(app).encode_response(response)
+    await cmder._data_callback(message)
     m_log_error.assert_called_with(matching(r'.*Unexpected message'))
