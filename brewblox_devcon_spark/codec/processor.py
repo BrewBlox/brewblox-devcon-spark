@@ -319,6 +319,8 @@ class ProtobufProcessor():
                 excluded = element.field.number not in payload.mask
             elif payload.maskMode == MaskMode.EXCLUSIVE:
                 excluded = element.field.number in payload.mask
+            else:
+                raise NotImplementedError(f'{payload.maskMode=}')
 
             if options.ignored:
                 del element.obj[element.key]
@@ -382,27 +384,22 @@ class ProtobufProcessor():
             if options.hexstr:
                 val = [self.b64_to_hex(v) for v in val]
 
+            if excluded:
+                if options.unit and opts.metadata == MetadataOpt.TYPED:
+                    val = [{**v, 'value': None} for v in val]
+                elif options.objtype and opts.metadata == MetadataOpt.TYPED:
+                    val = [{**v, 'id': None} for v in val]
+                elif is_list:
+                    val = [None for v in val]
+                else:
+                    val = [None]
+
             if not is_list:
                 val = val[0]
 
             if element.key != new_key:
                 del element.obj[element.key]
 
-            if excluded:
-                if options.unit and opts.metadata == MetadataOpt.TYPED:
-                    val['value'] = None
-                elif options.objtype and opts.metadata == MetadataOpt.TYPED:
-                    val['id'] = None
-                else:
-                    val = None
-
             element.obj[new_key] = val
 
         return payload
-
-    def obj_tags(self, desc: Descriptor, obj: dict) -> list[int]:
-        return [
-            desc.fields_by_name[key].number
-            for key in obj.keys()
-            if key in desc.fields_by_name
-        ]

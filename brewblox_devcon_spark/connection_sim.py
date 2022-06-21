@@ -19,6 +19,7 @@ from brewblox_service import features, strex
 
 from brewblox_devcon_spark import codec, connection, const, service_status
 from brewblox_devcon_spark.__main__ import LOGGER
+from brewblox_devcon_spark.codec import bloxfield
 from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
                                           ErrorCode, FirmwareBlock,
                                           IntermediateResponse, Opcode,
@@ -105,18 +106,13 @@ class SparkConnectionSim(connection.SparkConnection):
         return True
 
     def _to_payload(self, block: FirmwareBlock) -> EncodedPayload:
-        if block.type:
-            (blockType, subtype) = codec.split_type(block.type)
-            payload = DecodedPayload(
-                blockId=block.nid,
-                blockType=blockType,
-                subypte=subtype,
-                content=block.data
-            )
-        else:
-            payload = DecodedPayload(blockId=block.nid)
-
-        return self._codec.encode_payload(payload)
+        (blockType, subtype) = codec.split_type(block.type)
+        return self._codec.encode_payload(DecodedPayload(
+            blockId=block.nid,
+            blockType=blockType,
+            subypte=subtype,
+            content=block.data
+        ))
 
     def _to_block(self, payload: EncodedPayload) -> FirmwareBlock:
         payload = self._codec.decode_payload(payload)
@@ -125,6 +121,27 @@ class SparkConnectionSim(connection.SparkConnection):
             type=codec.join_type(payload.blockType, payload.subtype),
             data=payload.content,
         )
+
+    def _default_block(self, block_id: int, block_type: str) -> FirmwareBlock:
+        return self._to_block(
+            self._codec.encode_payload(
+                DecodedPayload(
+                    blockId=block_id,
+                    blockType=block_type,
+                    content={}
+                )
+            )
+        )
+
+    def _merge_blocks(self, dest: FirmwareBlock, src: FirmwareBlock):
+        for key in dest.data.keys():
+            v_new = src.data[key]
+            if any([
+                bloxfield.is_defined_link(v_new),
+                bloxfield.is_defined_quantity(v_new),
+                not bloxfield.is_bloxfield(v_new) and v_new is not None,
+            ]):
+                dest.data[key] = v_new
 
     def update_ticks(self):
         elapsed = datetime.now() - self._start_time
@@ -212,12 +229,13 @@ class SparkConnectionSim(connection.SparkConnection):
                 block = self._blocks.get(request.payload.blockId)
                 if not block:
                     response.error = ErrorCode.INVALID_BLOCK_ID
-                elif not request.payload.content:
+                elif request.payload.content is None:
                     response.error = ErrorCode.INVALID_BLOCK
                 elif request.payload.blockType != block.type:
                     response.error = ErrorCode.INVALID_BLOCK_TYPE
                 else:
-                    block.data = self._to_block(request.payload).data
+                    src = self._to_block(request.payload)
+                    self._merge_blocks(block, src)
                     response.payload = [self._to_payload(block)]
 
             elif request.opcode == Opcode.BLOCK_CREATE:
@@ -227,12 +245,13 @@ class SparkConnectionSim(connection.SparkConnection):
                     response.error = ErrorCode.BLOCK_NOT_CREATABLE
                 elif nid > 0 and nid < const.USER_NID_START:
                     response.error = ErrorCode.BLOCK_NOT_CREATABLE
-                elif not request.payload.content:
+                elif request.payload.content is None:
                     response.error = ErrorCode.INVALID_BLOCK
                 else:
                     nid = nid or next(self._id_counter)
-                    block = self._to_block(request.payload)
-                    block.nid = nid
+                    argblock = self._to_block(request.payload)
+                    block = self._default_block(nid, argblock.type)
+                    self._merge_blocks(block, argblock)
                     self._blocks[nid] = block
                     response.payload = [self._to_payload(block)]
 
@@ -256,6 +275,8 @@ class SparkConnectionSim(connection.SparkConnection):
                 self.update_ticks()
 
             elif request.opcode == Opcode.CLEAR_BLOCKS:
+                response.payload = [self._to_payload(block)
+                                    for block in self._blocks.values()]
                 self._blocks = default_blocks()
                 self.update_ticks()
 

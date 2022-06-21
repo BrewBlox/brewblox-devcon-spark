@@ -24,16 +24,6 @@ def app(app, mocker):
     return app
 
 
-async def test_type_conversion():
-    for (joined, split) in [
-        ['Pid', ('Pid', None)],
-        ['Pid.subtype', ('Pid', 'subtype')],
-        ['Pid.subtype.subsubtype', ('Pid', 'subtype.subsubtype')]
-    ]:
-        assert commander.split_type(joined) == split
-        assert commander.join_type(*split) == joined
-
-
 async def test_unexpected_message(app, client, mocker):
     m_log_error = mocker.patch(TESTED + '.LOGGER.error', autospec=True)
     cmder = commander.fget(app)

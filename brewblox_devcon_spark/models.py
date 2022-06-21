@@ -157,7 +157,7 @@ class MaskMode(enum.Enum):
 
 class BasePayload(BaseModel):
     blockId: int
-    mask: Optional[list[int]]
+    mask: list[int] = Field(default_factory=list)
     maskMode: MaskMode = Field(default=MaskMode.ANY)
 
     @validator('maskMode', pre=True)
@@ -176,7 +176,7 @@ class BasePayload(BaseModel):
 class EncodedPayload(BasePayload):
     blockType: Optional[Union[int, str]]
     subtype: Optional[Union[int, str]]
-    content: Optional[str]
+    content: str = Field(default='')
 
     class Config:
         # ensures integers in Union[int, str] are parsed correctly
@@ -243,24 +243,8 @@ class DecodedResponse(BaseResponse):
     payload: list[DecodedPayload]
 
 
-class EncodeArgs(BaseModel):
-    blockType: Union[int, str]
-    subtype: Optional[Union[int, str]]
-    content: Optional[dict]
-
-    class Config:
-        # ensures integers in Union[int, str] are parsed correctly
-        smart_union = True
-
-
-class DecodeArgs(BaseModel):
-    blockType: Union[int, str]
-    subtype: Optional[Union[int, str]]
-    content: Optional[str]
-
-    class Config:
-        # ensures integers in Union[int, str] are parsed correctly
-        smart_union = True
+class EncodedMessage(BaseModel):
+    message: str
 
 
 @dataclass

@@ -7,10 +7,9 @@ from unittest.mock import ANY, AsyncMock, call
 import pytest
 from brewblox_service import repeater, scheduler
 
-from brewblox_devcon_spark import (block_cache, block_store, broadcaster,
-                                   codec, commander, connection_sim,
-                                   controller, exceptions, global_store,
-                                   service_status, service_store,
+from brewblox_devcon_spark import (block_store, broadcaster, codec, commander,
+                                   connection_sim, controller, exceptions,
+                                   global_store, service_status, service_store,
                                    synchronization)
 from brewblox_devcon_spark.models import ErrorCode
 
@@ -37,7 +36,6 @@ def app(app):
     app['config']['state_topic'] = 'testcast/state'
     service_status.setup(app)
     scheduler.setup(app)
-    block_cache.setup(app)
     codec.setup(app)
     block_store.setup(app)
     global_store.setup(app)

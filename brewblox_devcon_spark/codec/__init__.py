@@ -2,7 +2,6 @@
 Default exports for codec module
 """
 
-import json
 from base64 import b64decode, b64encode
 from typing import Optional
 
@@ -22,6 +21,8 @@ from .processor import ProtobufProcessor
 
 DEPRECATED_TYPE_INT = 65533
 DEPRECATED_TYPE_STR = 'DeprecatedObject'
+UNKNOWN_TYPE_STR = 'UnknownType'
+ERROR_TYPE_STR = 'ErrorObject'
 LOGGER = brewblox_logger(__name__)
 
 
@@ -130,7 +131,7 @@ class Codec(features.ServiceFeature):
                                if v.type_str == payload.blockType))
                 return EncodedPayload(
                     blockId=payload.blockId,
-                    blockType=payload.blockType,
+                    blockType=lookup.type_int,
                 )
 
             # Payload contains data
@@ -169,12 +170,6 @@ class Codec(features.ServiceFeature):
                        opts: DecodeOpts = DecodeOpts(),
                        ) -> DecodedPayload:
         try:
-            # No decoding required
-            if not payload.blockType:
-                return DecodedPayload(
-                    blockId=payload.blockId
-                )
-
             if payload.blockType == DEPRECATED_TYPE_INT:
                 content_bytes = b64decode(payload.content)
                 content = {'actualId': int.from_bytes(content_bytes, 'little')}
@@ -189,157 +184,61 @@ class Codec(features.ServiceFeature):
                            if payload.blockType in [v.type_str, v.type_int]
                            and payload.subtype in [v.subtype_str, v.subtype_int]), None)
 
-            # No object lookup found. Try the interfaces.
-            if not lookup:
-                lookup = next((v for v in INTERFACE_LOOKUPS
-                               if payload.blockType in [v.type_str, v.type_int]))
-                return DecodedPayload(
+            if lookup:
+                # We have an object lookup, and can decode the content
+                int_enum = opts.enums == ProtoEnumOpt.INT
+                message = lookup.message_cls()
+                message.ParseFromString(b64decode(payload.content))
+                content: dict = json_format.MessageToDict(
+                    message=message,
+                    preserving_proto_field_name=True,
+                    including_default_value_fields=True,
+                    use_integers_for_enums=int_enum,
+                )
+                decoded = DecodedPayload(
                     blockId=payload.blockId,
                     blockType=lookup.type_str,
+                    subtype=lookup.subtype_str,
+                    content=content,
+                    mask=payload.mask,
+                    maskMode=payload.maskMode,
+                )
+                return self._processor.post_decode(message.DESCRIPTOR, decoded, opts)
+
+            # No object lookup found. Try the interfaces.
+            intf_lookup = next((v for v in INTERFACE_LOOKUPS
+                                if payload.blockType in [v.type_str, v.type_int]), None)
+
+            if intf_lookup:
+                return DecodedPayload(
+                    blockId=payload.blockId,
+                    blockType=intf_lookup.type_str,
                 )
 
-            # We have an object lookup, and can decode the content
-            int_enum = opts.enums == ProtoEnumOpt.INT
-            message = lookup.message_cls()
-            message.ParseFromString(b64decode(payload.content))
-            content: dict = json_format.MessageToDict(
-                message=message,
-                preserving_proto_field_name=True,
-                including_default_value_fields=True,
-                use_integers_for_enums=int_enum,
-            )
-            decoded = DecodedPayload(
-                blockId=payload.blockId,
-                blockType=lookup.type_str,
-                subtype=lookup.subtype_str,
-                content=content,
-                mask=payload.mask,
-                maskMode=payload.maskMode,
-            )
-            return self._processor.post_decode(message.DESCRIPTOR, decoded, opts)
-
-        except StopIteration:
+            # No lookup of any kind found
+            # We're decoding (returned) data, so would rather return a stub than raise an error
             msg = f'No codec entry found for {payload.blockType}.{payload.subtype}'
             LOGGER.debug(msg, exc_info=True)
-            raise exceptions.DecodeException(msg)
+            return DecodedPayload(
+                blockId=payload.blockId,
+                blockType=UNKNOWN_TYPE_STR,
+                content={
+                    'error': msg,
+                },
+            )
 
         except Exception as ex:
             msg = strex(ex)
             LOGGER.debug(msg, exc_info=True)
-            raise exceptions.DecodeException(msg)
-
-    # def encode(self,
-    #                  identifier: Identifier_,
-    #                  data: Optional[dict],
-    #                  ) -> tuple[Identifier_, Optional[str]]:
-    #     """
-    #     Encode given data to a serializable type.
-
-    #     Does not guarantee perfect symmetry with `decode()`, only symmetric compatibility.
-    #     `decode()` can correctly interpret the return values of `encode()`, and vice versa.
-
-    #     Args:
-    #         identifier (Identifier_):
-    #             The fully qualified identifier of the codec type.
-    #             This determines how `data` is encoded.
-
-    #         data (Optional(dict)):
-    #             Decoded representation of the message.
-    #             If not set, only encoded object type will be returned.
-
-    #     Returns:
-    #         tuple[Identifier, Optional[str]]:
-    #             Numeric identifier, and encoded data.
-    #             Data will be None if it was None in args.
-    #     """
-    #     if data is not None and not isinstance(data, dict):
-    #         raise TypeError(f'Unable to encode [{type(data).__name__}]')
-
-    #     try:
-    #         trc = Transcoder.get(identifier, self._processor)
-    #         encoded_identifier = (trc.type_int(), trc.subtype_int())
-    #         if data is None:
-    #             return (encoded_identifier, None)
-    #         else:
-    #             return (encoded_identifier, b64encode(trc.encode(deepcopy(data))).decode())
-
-    #     except Exception as ex:
-    #         msg = strex(ex)
-    #         LOGGER.debug(msg, exc_info=True)
-    #         raise exceptions.EncodeException(msg)
-
-    # def decode(self,
-    #                  identifier: Identifier_,
-    #                  data: Optional[Union[str, bytes]],
-    #                  opts: Optional[DecodeOpts] = None
-    #                  ) -> tuple[Identifier_, Optional[dict]]:
-    #     """
-    #     Decodes given data to a Python-compatible type.
-
-    #     Does not guarantee perfect symmetry with `encode()`, only symmetric compatibility.
-    #     `encode()` can correctly interpret the return values of `decode()`, and vice versa.
-
-    #     Args:
-    #         identifier (Identifier_):
-    #             The unique identifier of the codec type.
-    #             This determines how `values` are decoded.
-
-    #         data (Optional[Union[str, bytes]]):
-    #             Base-64 representation of the message bytes.
-    #             A byte string is acceptable.
-
-    #         opts (Optional[DecodeOpts]):
-    #             Additional options that are passed to the transcoder.
-
-    #     Returns:
-    #         tuple[Identifier_, Optional[dict]]:
-    #             Decoded identifier, and decoded data.
-    #             Data will be None if it was None in args.
-    #     """
-    #     if data is not None and not isinstance(data, (str, bytes)):
-    #         raise TypeError(f'Unable to decode [{type(data).__name__}]')
-
-    #     if opts is not None and not isinstance(opts, DecodeOpts):
-    #         raise TypeError(f'Invalid codec opts: {opts}')
-
-    #     decoded_identifier = identifier
-
-    #     try:
-    #         opts = opts or DecodeOpts()
-    #         trc = Transcoder.get(identifier, self._processor)
-    #         decoded_identifier = (trc.type_str(), trc.subtype_str())
-    #         if data is None:
-    #             return (decoded_identifier, None)
-    #         else:
-    #             data = data if isinstance(data, str) else data.decode()
-    #             data = b''.join((b64decode(subs) for subs in data.split(',')))
-    #             return (decoded_identifier, trc.decode(data, opts))
-
-    #     except Exception as ex:
-    #         msg = strex(ex)
-    #         LOGGER.debug(msg, exc_info=True)
-    #         if data is None:
-    #             return (('UnknownType', None), None)
-    #         else:
-    #             return (('ErrorObject', None), {'error': msg, 'identifier': decoded_identifier})
-
-    # def implements(self,
-    #                      identifier: Identifier_,
-    #                      ) -> list[str]:
-    #     """
-    #     Gets (interface) types implemented by identifier.
-
-    #     Args:
-    #         identifier (Identifier_):
-    #             The unique identifier of the codec type.
-
-    #     Return:
-    #         list[str]:
-    #             All blockType values implemented by the transcoder.
-    #             Corresponds to brewblox_msg.impl in protobuf.
-    #     """
-    #     trc = Transcoder.get(identifier, self._processor)
-    #     return trc.type_impl()
+            return DecodedPayload(
+                blockId=payload.blockId,
+                blockType=ERROR_TYPE_STR,
+                content={
+                    'error': msg,
+                    'blockType': payload.blockType,
+                    'subtype': payload.subtype,
+                },
+            )
 
 
 def setup(app: web.Application):
