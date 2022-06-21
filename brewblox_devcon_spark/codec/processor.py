@@ -313,7 +313,7 @@ class ProtobufProcessor():
             val = element.obj[element.key]
             new_key = element.key
 
-            if payload.maskMode == MaskMode.ANY or element.nested:
+            if payload.maskMode == MaskMode.NO_MASK or element.nested:
                 excluded = False
             elif payload.maskMode == MaskMode.INCLUSIVE:
                 excluded = element.field.number not in payload.mask

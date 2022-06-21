@@ -63,7 +63,7 @@ class SparkCommander(features.ServiceFeature):
                 blockType=blockType,
                 subypte=subtype,
                 content=(None if identity_only else block.data),
-                maskMode=(MaskMode.INCLUSIVE if patch else MaskMode.ANY),
+                maskMode=(MaskMode.INCLUSIVE if patch else MaskMode.NO_MASK),
             )
         else:
             payload = DecodedPayload(blockId=block.nid)

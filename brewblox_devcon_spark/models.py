@@ -150,7 +150,7 @@ class ErrorCode(enum.Enum):
 
 
 class MaskMode(enum.Enum):
-    ANY = 0
+    NO_MASK = 0
     INCLUSIVE = 1
     EXCLUSIVE = 2
 
@@ -158,7 +158,7 @@ class MaskMode(enum.Enum):
 class BasePayload(BaseModel):
     blockId: int
     mask: list[int] = Field(default_factory=list)
-    maskMode: MaskMode = Field(default=MaskMode.ANY)
+    maskMode: MaskMode = Field(default=MaskMode.NO_MASK)
 
     @validator('maskMode', pre=True)
     def from_string_mask_mode(cls, v):
