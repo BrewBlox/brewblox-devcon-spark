@@ -276,7 +276,8 @@ class SparkConnectionSim(connection.SparkConnection):
 
             elif request.opcode == Opcode.CLEAR_BLOCKS:
                 response.payload = [self._to_payload(block)
-                                    for block in self._blocks.values()]
+                                    for block in self._blocks.values()
+                                    if block.nid >= const.USER_NID_START]
                 self._blocks = default_blocks()
                 self.update_ticks()
 

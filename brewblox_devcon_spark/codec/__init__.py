@@ -165,8 +165,7 @@ class Codec(features.ServiceFeature):
             raise exceptions.EncodeException(msg)
 
     def decode_payload(self,
-                       payload: EncodedPayload,
-                       /,
+                       payload: EncodedPayload, /,
                        opts: DecodeOpts = DecodeOpts(),
                        ) -> DecodedPayload:
         try:

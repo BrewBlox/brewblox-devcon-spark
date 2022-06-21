@@ -52,7 +52,8 @@ class SparkCommander(features.ServiceFeature):
         self._msgid = (self._msgid + 1) % 0xFFFF
         return self._msgid
 
-    def _to_payload(self, block: FirmwareBlock, /,
+    def _to_payload(self,
+                    block: FirmwareBlock, /,
                     identity_only=False,
                     patch=False
                     ) -> EncodedPayload:

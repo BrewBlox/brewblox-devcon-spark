@@ -121,6 +121,14 @@ class SparkController(features.ServiceFeature):
 
         return sid
 
+    def _to_block_identity(self, block: FirmwareBlock) -> BlockIdentity:
+        return BlockIdentity(
+            id=self._find_sid(block.nid, block.type),
+            nid=block.nid,
+            type=block.type,
+            serviceId=self._name
+        )
+
     def _to_block(self, block: FirmwareBlock, find_sid=True) -> Block:
         block = Block(
             **block.dict(),
@@ -487,16 +495,21 @@ class SparkController(features.ServiceFeature):
         Remove all user-created blocks on the controller.
         System blocks will not be removed, but the display settings
         will be reset.
+
+         Returns:
+            list[BlockIdentity]:
+                IDs of all removed blocks.
         """
         async with self._execute('Remove all blocks'):
             blocks = await self._cmder.clear_blocks()
+            identities = [self._to_block_identity(v) for v in blocks]
             self._store.clear()
             await self._cmder.write_block(FirmwareBlock(
                 nid=const.DISPLAY_SETTINGS_NID,
                 type='DisplaySettings',
                 data={},
             ))
-            return [self._to_block(v) for v in blocks]
+            return identities
 
     async def rename_block(self, change: BlockNameChange) -> BlockIdentity:
         """
