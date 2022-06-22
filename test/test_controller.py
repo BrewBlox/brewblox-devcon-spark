@@ -7,7 +7,7 @@ import asyncio
 import pytest
 from brewblox_service import scheduler
 
-from brewblox_devcon_spark import (block_cache, block_store, codec, commander,
+from brewblox_devcon_spark import (block_store, codec, commander,
                                    connection_sim, const, controller,
                                    exceptions, global_store, service_status,
                                    service_store, synchronization)
@@ -25,7 +25,6 @@ def app(app):
     connection_sim.setup(app)
     commander.setup(app)
     block_store.setup(app)
-    block_cache.setup(app)
     global_store.setup(app)
     service_store.setup(app)
     synchronization.setup(app)

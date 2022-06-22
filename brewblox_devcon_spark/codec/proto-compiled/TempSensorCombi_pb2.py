@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox.TempSensorCombi',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x15TempSensorCombi.proto\x12\x14\x62lox.TempSensorCombi\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xce\x01\n\x05\x42lock\x12-\n\x05value\x18\x01 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02(\x01\x92?\x02\x38 \x12:\n\x0b\x63ombineFunc\x18\x02 \x01(\x0e\x32%.blox.TempSensorCombi.SensorCombiFunc\x12!\n\x07sensors\x18\x03 \x03(\rB\x10\x8a\xb5\x18\x02\x18\x02\x92?\x02\x38\x10\x92?\x02\x10\x08\x12(\n\x0estrippedFields\x18\x63 \x03(\rB\x10\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x92?\x02\x10\x01:\r\x8a\xb5\x18\x03\x18\xc4\x02\x8a\xb5\x18\x02H\x02*b\n\x0fSensorCombiFunc\x12\x19\n\x15SENSOR_COMBI_FUNC_AVG\x10\x00\x12\x19\n\x15SENSOR_COMBI_FUNC_MIN\x10\x01\x12\x19\n\x15SENSOR_COMBI_FUNC_MAX\x10\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x15TempSensorCombi.proto\x12\x14\x62lox.TempSensorCombi\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xa4\x01\n\x05\x42lock\x12-\n\x05value\x18\x01 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02(\x01\x92?\x02\x38 \x12:\n\x0b\x63ombineFunc\x18\x02 \x01(\x0e\x32%.blox.TempSensorCombi.SensorCombiFunc\x12!\n\x07sensors\x18\x03 \x03(\rB\x10\x8a\xb5\x18\x02\x18\x02\x92?\x02\x38\x10\x92?\x02\x10\x08:\r\x8a\xb5\x18\x03\x18\xc4\x02\x8a\xb5\x18\x02H\x02*b\n\x0fSensorCombiFunc\x12\x19\n\x15SENSOR_COMBI_FUNC_AVG\x10\x00\x12\x19\n\x15SENSOR_COMBI_FUNC_MIN\x10\x01\x12\x19\n\x15SENSOR_COMBI_FUNC_MAX\x10\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -47,8 +47,8 @@ _SENSORCOMBIFUNC = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=286,
-  serialized_end=384,
+  serialized_start=244,
+  serialized_end=342,
 )
 _sym_db.RegisterEnumDescriptor(_SENSORCOMBIFUNC)
 
@@ -87,13 +87,6 @@ _BLOCK = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\212\265\030\002\030\002\222?\0028\020\222?\002\020\010'), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='strippedFields', full_name='blox.TempSensorCombi.Block.strippedFields', index=3,
-      number=99, type=13, cpp_type=3, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\212\265\030\002(\001\222?\0028\020\222?\002\020\001'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -107,7 +100,7 @@ _BLOCK = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=78,
-  serialized_end=284,
+  serialized_end=242,
 )
 
 _BLOCK.fields_by_name['combineFunc'].enum_type = _SENSORCOMBIFUNC
@@ -125,6 +118,5 @@ _sym_db.RegisterMessage(Block)
 
 _BLOCK.fields_by_name['value']._options = None
 _BLOCK.fields_by_name['sensors']._options = None
-_BLOCK.fields_by_name['strippedFields']._options = None
 _BLOCK._options = None
 # @@protoc_insertion_point(module_scope)

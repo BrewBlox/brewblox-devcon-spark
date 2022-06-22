@@ -2,15 +2,15 @@
 REST API for system debugging
 """
 
-from typing import Optional
-
 from aiohttp import web
 from aiohttp_pydantic import PydanticView
 from aiohttp_pydantic.oas.typing import r200
 from brewblox_service import brewblox_logger
 
 from brewblox_devcon_spark import codec
-from brewblox_devcon_spark.models import DecodeArgs, EncodeArgs
+from brewblox_devcon_spark.models import (DecodedPayload, EncodedMessage,
+                                          EncodedPayload, IntermediateRequest,
+                                          IntermediateResponse)
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -25,86 +25,56 @@ class CodecView(PydanticView):
         super().__init__(request)
         self.codec = codec.fget(request.app)
 
-    async def encode_payload(self, payload: Optional[dict]):
-        if not payload:
-            return
-        blockType = payload['blockType']
-        subtype = payload.get('subtype')
-        content = payload['content']
-        (blockType, subtype), content = await self.codec.encode((blockType, subtype), content)
-        payload['blockType'] = blockType
-        payload['subtype'] = subtype
-        payload['content'] = content
 
-    async def decode_payload(self, payload: Optional[dict]):
-        if not payload:
-            return
-        blockType = payload['blockType']
-        subtype = payload.get('subtype')
-        content = payload['content']
-        (blockType, subtype), content = await self.codec.decode((blockType, subtype), content)
-        payload['blockType'] = blockType
-        payload['subtype'] = subtype
-        payload['content'] = content
-
-
-@routes.view('/_debug/encode')
-class EncodeView(CodecView):
-    async def post(self, args: EncodeArgs) -> r200[DecodeArgs]:
-        """
-        Manually encode a protobuf message.
-
-        Tags: Debug
-        """
-        if args.blockType in [codec.REQUEST_TYPE, codec.REQUEST_TYPE_INT]:
-            await self.encode_payload(args.content['payload'])
-
-        if args.blockType in [codec.RESPONSE_TYPE, codec.RESPONSE_TYPE_INT]:
-            for payload in args.content.get('payload', []):
-                await self.encode_payload(payload)
-
-        (blockType, subtype), content = await self.codec.encode(
-            (args.blockType, args.subtype),
-            args.content
-        )
-
-        encoded = DecodeArgs(
-            blockType=blockType,
-            subtype=subtype,
-            content=content,
-        )
-
+@routes.view('/_debug/encode_request')
+class EncodeRequestView(CodecView):
+    async def post(self, args: IntermediateRequest) -> r200[EncodedMessage]:
+        message = self.codec.encode_request(args)
         return web.json_response(
-            encoded.dict()
+            EncodedMessage(message=message).dict()
         )
 
 
-@routes.view('/_debug/decode')
-class DecodeView(CodecView):
-    async def post(self, args: DecodeArgs) -> r200[EncodeArgs]:
-        """
-        Manually decode a protobuf message.
-
-        Tags: Debug
-        """
-        (blockType, subtype), content = await self.codec.decode(
-            (args.blockType, args.subtype),
-            args.content
-        )
-
-        if blockType in [codec.REQUEST_TYPE, codec.REQUEST_TYPE_INT]:
-            await self.decode_payload(content.get('payload'))
-
-        if blockType in [codec.RESPONSE_TYPE, codec.RESPONSE_TYPE_INT]:
-            for payload in content.get('payload', []):
-                await self.decode_payload(payload)
-
-        decoded = EncodeArgs(
-            blockType=blockType,
-            subtype=subtype,
-            content=content,
-        )
-
+@routes.view('/_debug/decode_request')
+class DecodeRequestView(CodecView):
+    async def post(self, args: EncodedMessage) -> r200[IntermediateRequest]:
+        request = self.codec.decode_request(args.message)
         return web.json_response(
-            decoded.dict()
+            request.clean_dict()
+        )
+
+
+@routes.view('/_debug/encode_response')
+class EncodeResponseView(CodecView):
+    async def post(self, args: IntermediateResponse) -> r200[EncodedMessage]:
+        message = self.codec.encode_response(args)
+        return web.json_response(
+            EncodedMessage(message=message).dict()
+        )
+
+
+@routes.view('/_debug/decode_response')
+class DecodeResponseView(CodecView):
+    async def post(self, args: EncodedMessage) -> r200[IntermediateResponse]:
+        response = self.codec.decode_response(args.message)
+        return web.json_response(
+            response.clean_dict()
+        )
+
+
+@routes.view('/_debug/encode_payload')
+class EncodePayloadView(CodecView):
+    async def post(self, args: DecodedPayload) -> r200[EncodedPayload]:
+        payload = self.codec.encode_payload(args)
+        return web.json_response(
+            payload.clean_dict()
+        )
+
+
+@routes.view('/_debug/decode_payload')
+class DecodePayloadView(CodecView):
+    async def post(self, args: EncodedPayload) -> r200[DecodedPayload]:
+        payload = self.codec.decode_payload(args)
+        return web.json_response(
+            payload.clean_dict()
         )

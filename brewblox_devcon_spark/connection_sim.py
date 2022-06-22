@@ -19,10 +19,11 @@ from brewblox_service import features, strex
 
 from brewblox_devcon_spark import codec, connection, const, service_status
 from brewblox_devcon_spark.__main__ import LOGGER
-from brewblox_devcon_spark.models import (EncodedPayload, EncodedRequest,
-                                          EncodedResponse, ErrorCode,
-                                          FirmwareBlock, Opcode, ResetData,
-                                          ResetReason)
+from brewblox_devcon_spark.codec import bloxfield
+from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
+                                          ErrorCode, FirmwareBlock,
+                                          IntermediateResponse, Opcode,
+                                          ResetData, ResetReason)
 
 
 def default_blocks() -> dict[int, FirmwareBlock]:
@@ -104,6 +105,44 @@ class SparkConnectionSim(connection.SparkConnection):
     def connected(self) -> bool:  # pragma: no cover
         return True
 
+    def _to_payload(self, block: FirmwareBlock) -> EncodedPayload:
+        (blockType, subtype) = codec.split_type(block.type)
+        return self._codec.encode_payload(DecodedPayload(
+            blockId=block.nid,
+            blockType=blockType,
+            subypte=subtype,
+            content=block.data
+        ))
+
+    def _to_block(self, payload: EncodedPayload) -> FirmwareBlock:
+        payload = self._codec.decode_payload(payload)
+        return FirmwareBlock(
+            nid=payload.blockId,
+            type=codec.join_type(payload.blockType, payload.subtype),
+            data=payload.content,
+        )
+
+    def _default_block(self, block_id: int, block_type: str) -> FirmwareBlock:
+        return self._to_block(
+            self._codec.encode_payload(
+                DecodedPayload(
+                    blockId=block_id,
+                    blockType=block_type,
+                    content={}
+                )
+            )
+        )
+
+    def _merge_blocks(self, dest: FirmwareBlock, src: FirmwareBlock):
+        for key in dest.data.keys():
+            v_new = src.data[key]
+            if any([
+                bloxfield.is_defined_link(v_new),
+                bloxfield.is_defined_quantity(v_new),
+                not bloxfield.is_bloxfield(v_new) and v_new is not None,
+            ]):
+                dest.data[key] = v_new
+
     def update_ticks(self):
         elapsed = datetime.now() - self._start_time
         ticks_block = self._blocks[const.SYSTIME_NID]
@@ -145,25 +184,12 @@ class SparkConnectionSim(connection.SparkConnection):
     async def start_reconnect(self):
         pass
 
-    async def write(self, request_b64: Union[str, bytes]):  # pragma: no cover
+    async def write(self, request_b64: str):  # pragma: no cover
         try:
             self.update_ticks()
-            _, dict_content = await self._codec.decode(
-                (codec.REQUEST_TYPE, None),
-                request_b64,
-            )
-            request = EncodedRequest(**dict_content)
-            payload = request.payload
-            if payload:
-                (in_blockType, _), in_content = await self._codec.decode(
-                    (payload.blockType, payload.subtype),
-                    payload.content,
-                )
-            else:
-                in_blockType = 0
-                in_content = None
+            request = self._codec.decode_request(request_b64)
 
-            response = EncodedResponse(
+            response = IntermediateResponse(
                 msgId=request.msgId,
                 error=ErrorCode.OK,
                 payload=[]
@@ -186,89 +212,51 @@ class SparkConnectionSim(connection.SparkConnection):
                 Opcode.BLOCK_READ,
                 Opcode.STORAGE_READ
             ]:
-                block = self._blocks.get(payload.blockId)
+                block = self._blocks.get(request.payload.blockId)
                 if not block:
                     response.error = ErrorCode.INVALID_BLOCK_ID
                 else:
-                    (blockType, subtype), content = await self._codec.encode(
-                        (block.type, None),
-                        block.data,
-                    )
-
-                    response.payload = [EncodedPayload(
-                        blockId=block.nid,
-                        blockType=blockType,
-                        subtype=subtype,
-                        content=content
-                    )]
+                    response.payload = [self._to_payload(block)]
 
             elif request.opcode in [
                 Opcode.BLOCK_READ_ALL,
                 Opcode.STORAGE_READ_ALL,
             ]:
-                for block in self._blocks.values():
-                    (blockType, subtype), content = await self._codec.encode(
-                        (block.type, None),
-                        block.data,
-                    )
-                    response.payload.append(EncodedPayload(
-                        blockId=block.nid,
-                        blockType=blockType,
-                        subtype=subtype,
-                        content=content,
-                    ))
+                response.payload = [self._to_payload(block)
+                                    for block in self._blocks.values()]
 
             elif request.opcode == Opcode.BLOCK_WRITE:
-                block = self._blocks.get(payload.blockId)
+                block = self._blocks.get(request.payload.blockId)
                 if not block:
                     response.error = ErrorCode.INVALID_BLOCK_ID
-                elif not in_content:
+                elif request.payload.content is None:
                     response.error = ErrorCode.INVALID_BLOCK
-                elif in_blockType != block.type:
+                elif request.payload.blockType != block.type:
                     response.error = ErrorCode.INVALID_BLOCK_TYPE
                 else:
-                    block.data = in_content
-                    (blockType, subtype), data = await self._codec.encode(
-                        (block.type, None),
-                        block.data,
-                    )
-                    response.payload = [EncodedPayload(
-                        blockId=block.nid,
-                        blockType=blockType,
-                        subtype=subtype,
-                        data=data
-                    )]
+                    src = self._to_block(request.payload)
+                    self._merge_blocks(block, src)
+                    response.payload = [self._to_payload(block)]
 
             elif request.opcode == Opcode.BLOCK_CREATE:
-                nid = payload.blockId
+                nid = request.payload.blockId
                 block = self._blocks.get(nid)
                 if block:
                     response.error = ErrorCode.BLOCK_NOT_CREATABLE
                 elif nid > 0 and nid < const.USER_NID_START:
                     response.error = ErrorCode.BLOCK_NOT_CREATABLE
-                elif not in_content:
+                elif request.payload.content is None:
                     response.error = ErrorCode.INVALID_BLOCK
                 else:
                     nid = nid or next(self._id_counter)
-                    block = FirmwareBlock(
-                        nid=nid,
-                        type=in_blockType,
-                        data=in_content,
-                    )
+                    argblock = self._to_block(request.payload)
+                    block = self._default_block(nid, argblock.type)
+                    self._merge_blocks(block, argblock)
                     self._blocks[nid] = block
-                    (blockType, subtype), content = await self._codec.encode(
-                        (block.type, None),
-                        block.data,
-                    )
-                    response.payload = [EncodedPayload(
-                        blockId=block.nid,
-                        blockType=blockType,
-                        subtype=subtype,
-                        content=content,
-                    )]
+                    response.payload = [self._to_payload(block)]
 
             elif request.opcode == Opcode.BLOCK_DELETE:
-                nid = payload.blockId
+                nid = request.payload.blockId
                 block = self._blocks.get(nid)
                 if not block:
                     response.error = ErrorCode.INVALID_BLOCK_ID
@@ -280,22 +268,16 @@ class SparkConnectionSim(connection.SparkConnection):
             elif request.opcode == Opcode.BLOCK_DISCOVER:
                 # Always return spark pins when discovering blocks
                 block = self._blocks[const.SPARK_PINS_NID]
-                (blockType, subtype), content = await self._codec.encode(
-                    (block.type, None),
-                    block.data,
-                )
-                response.payload = [EncodedPayload(
-                    blockId=block.nid,
-                    blockType=blockType,
-                    subtype=subtype,
-                    content=content,
-                )]
+                response.payload = [self._to_payload(block)]
 
             elif request.opcode == Opcode.REBOOT:
                 self._start_time = datetime.now()
                 self.update_ticks()
 
             elif request.opcode == Opcode.CLEAR_BLOCKS:
+                response.payload = [self._to_payload(block)
+                                    for block in self._blocks.values()
+                                    if block.nid >= const.USER_NID_START]
                 self._blocks = default_blocks()
                 self.update_ticks()
 
@@ -312,11 +294,7 @@ class SparkConnectionSim(connection.SparkConnection):
             else:
                 response.error = ErrorCode.INVALID_OPCODE
 
-            _, response_b64 = await self._codec.encode(
-                (codec.RESPONSE_TYPE, None),
-                response.dict()
-            )
-            await self._on_data(response_b64)
+            await self._on_data(self._codec.encode_response(response))
 
         except Exception as ex:
             LOGGER.error(strex(ex))

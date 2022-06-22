@@ -9,13 +9,15 @@ import pytest
 from brewblox_service import scheduler
 from brewblox_service.testing import response
 
-from brewblox_devcon_spark import (block_cache, block_store, codec, commander,
+from brewblox_devcon_spark import (block_store, codec, commander,
                                    connection_sim, const, controller,
                                    global_store, service_status, service_store,
                                    synchronization, ymodem)
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
                                        settings_api, system_api)
-from brewblox_devcon_spark.models import ErrorCode, Opcode
+from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
+                                          ErrorCode, IntermediateRequest,
+                                          IntermediateResponse, Opcode)
 
 
 class DummmyError(BaseException):
@@ -62,7 +64,6 @@ async def app(app, event_loop):
     connection_sim.setup(app)
     commander.setup(app)
     block_store.setup(app)
-    block_cache.setup(app)
     global_store.setup(app)
     service_store.setup(app)
     synchronization.setup(app)
@@ -496,95 +497,75 @@ async def test_system_resets(app, client, mocker):
     await response(client.post('/system/factory_reset'))
 
 
-async def test_debug_encode(app, client):
-    payload = {
-        'blockId': 123,
-        'blockType': 'TempSensorOneWire',
-        'content': {
+async def test_debug_encode_request(app, client):
+    payload = DecodedPayload(
+        blockId=123,
+        blockType='TempSensorOneWire',
+        content={
             'value': 12345,
             'offset': 20,
             'address': 'FF'
-        },
-    }
+        }
+    )
 
-    # Encode normal (non-nested) message
-    encoded = await response(client.post('/_debug/encode', json=payload))
-    assert encoded['content']
-    assert isinstance(encoded['content'], str)
+    retv = await response(client.post('/_debug/encode_payload',
+                                      json=payload.clean_dict()))
+    payload = EncodedPayload(**retv)
 
-    decoded = await response(client.post('/_debug/decode', json={
-        'blockType': encoded['blockType'],
-        'content': encoded['content'],
-    }))
-    addr = decoded['content']['address']
-    assert addr.lower().startswith('ff')
+    req = IntermediateRequest(
+        msgId=1,
+        opcode=Opcode.BLOCK_WRITE,
+        payload=payload,
+    )
 
-    # Request has an embedded extra message
-    request_msg = {
-        'msgId': 1,
-        'opcode': Opcode.BLOCK_WRITE.name,
-        'payload': payload,
-    }
+    retv = await response(client.post('/_debug/encode_request',
+                                      json=req.clean_dict()))
+    assert retv['message']
 
-    encoded = await response(client.post('/_debug/encode', json={
-        'blockType': codec.REQUEST_TYPE,
-        'content': request_msg,
-    }))
-    assert encoded['content']
-    assert isinstance(encoded['content'], str)
+    retv = await response(client.post('/_debug/decode_request',
+                                      json=retv))
+    req = IntermediateRequest(**retv)
+    assert req.opcode == Opcode.BLOCK_WRITE
 
-    decoded = await response(client.post('/_debug/decode', json={
-        'blockType': encoded['blockType'],
-        'content': encoded['content']
-    }))
-    addr = decoded['content']['payload']['content']['address']
-    assert addr.lower().startswith('ff')
+    retv = await response(client.post('/_debug/decode_payload',
+                                      json=req.payload.clean_dict()))
+    payload = DecodedPayload(**retv)
 
-    # Response has an embedded extra message
-    response_msg = {
-        'msgId': 1,
-        'error': ErrorCode.INVALID_OPCODE.name,
-        'payload': [payload, payload]
-    }
+    assert payload.content['value']['value'] == 0  # Readonly value
+    assert payload.content['offset']['value'] == 20
 
-    encoded = await response(client.post('/_debug/encode', json={
-        'blockType': codec.RESPONSE_TYPE,
-        'content': response_msg,
-    }))
-    assert encoded['content']
-    assert isinstance(encoded['content'], str)
 
-    decoded = await response(client.post('/_debug/decode', json={
-        'blockType': encoded['blockType'],
-        'content': encoded['content']
-    }))
-    addr = decoded['content']['payload'][1]['content']['address']
-    assert addr.lower().startswith('ff')
+async def test_debug_encode_response(app, client):
+    payload = DecodedPayload(
+        blockId=123,
+        blockType='TempSensorOneWire',
+        content={
+            'value': 12345,
+            'offset': 20,
+            'address': 'FF'
+        }
+    )
+    retv = await response(client.post('/_debug/encode_payload',
+                                      json=payload.clean_dict()))
+    payload = EncodedPayload(**retv)
 
-    # args should be validated
-    await response(client.post('/_debug/decode', json={
-        'blockType': [1],
-        'content': '',
-    }), 400)
+    resp = IntermediateResponse(
+        msgId=1,
+        error=ErrorCode.INVALID_BLOCK,
+        payload=[payload],
+    )
+    retv = await response(client.post('/_debug/encode_response',
+                                      json=resp.clean_dict()))
+    assert retv['message']
 
-    # Payload is optional both ways
-    request_msg = {
-        'msgId': 1,
-        'opcode': Opcode.BLOCK_WRITE.name,
-        'payload': None,
-    }
-    encoded = await response(client.post('/_debug/encode', json={
-        'blockType': codec.REQUEST_TYPE,
-        'content': request_msg,
-    }))
-    await response(client.post('/_debug/decode', json={
-        'blockType': encoded['blockType'],
-        'content': encoded['content']
-    }))
+    retv = await response(client.post('/_debug/decode_response',
+                                      json=retv))
+    resp = IntermediateResponse(**retv)
+    assert resp.error == ErrorCode.INVALID_BLOCK
 
-    # Errors are published
-    retv = await response(client.post('/_debug/decode', json={
-        'blockType': encoded['blockType'],
-        'content': 'INVALID',
-    }))
-    assert retv['blockType'] == 'ErrorObject'
+    retv = await response(client.post('/_debug/decode_payload',
+                                      json=resp.payload[0].clean_dict()))
+    payload = DecodedPayload(**retv)
+
+    assert payload.content['value']['value'] == 0  # Readonly value
+    assert payload.content['offset']['value'] == 20

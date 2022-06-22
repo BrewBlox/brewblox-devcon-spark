@@ -11,8 +11,8 @@ from typing import Callable, Union
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, strex
 
-from brewblox_devcon_spark import (block_cache, block_store, commander, const,
-                                   exceptions, service_status, twinkeydict)
+from brewblox_devcon_spark import (block_store, commander, const, exceptions,
+                                   service_status, twinkeydict)
 from brewblox_devcon_spark.codec import bloxfield, sequence
 from brewblox_devcon_spark.models import (Backup, BackupLoadResult, Block,
                                           BlockIdentity, BlockNameChange,
@@ -120,6 +120,14 @@ class SparkController(features.ServiceFeature):
             self._store[sid, nid] = dict()
 
         return sid
+
+    def _to_block_identity(self, block: FirmwareBlock) -> BlockIdentity:
+        return BlockIdentity(
+            id=self._find_sid(block.nid, block.type),
+            nid=block.nid,
+            type=block.type,
+            serviceId=self._name
+        )
 
     def _to_block(self, block: FirmwareBlock, find_sid=True) -> Block:
         block = Block(
@@ -246,7 +254,6 @@ class SparkController(features.ServiceFeature):
             block = self._to_firmware_block_identity(block)
             block = await self._cmder.read_block(block)
             block = self._to_block(block)
-            block_cache.set(self.app, block)
             return block
 
     async def read_logged_block(self, block: BlockIdentity) -> Block:
@@ -314,15 +321,12 @@ class SparkController(features.ServiceFeature):
             block = self._to_firmware_block(block)
             block = await self._cmder.write_block(block)
             block = self._to_block(block)
-            block_cache.set(self.app, block)
             return block
 
-    async def patch_block(self, partial: Block) -> Block:
+    async def patch_block(self, block: Block) -> Block:
         """
         Write to a pre-existing block on the controller.
-        Data in `partial` is locally merged with last-known block data before writing.
-        Existing block data is read from the controller if the block is not
-        present in the service-side cache.
+        Existing values will be used for all fields not present in `block.data`.
 
         Args:
             block (Block):
@@ -334,10 +338,10 @@ class SparkController(features.ServiceFeature):
                 The desired block, as present on the controller after writing.
         """
         async with self._execute('Patch block'):
-            block = block_cache.get(self.app, partial) or await self.read_block(partial)
-            block = block.copy(deep=True)
-            merge(block.data, partial.data)
-            return await self.write_block(block)
+            block = self._to_firmware_block(block)
+            block = await self._cmder.patch_block(block)
+            block = self._to_block(block)
+            return block
 
     async def create_block(self, block: Block) -> Block:
         """
@@ -374,7 +378,6 @@ class SparkController(features.ServiceFeature):
             self._store[desired_sid, block.nid] = dict()
 
             block = self._to_block(block)
-            block_cache.set(self.app, block)
             return block
 
     async def delete_block(self, block: BlockIdentity) -> BlockIdentity:
@@ -405,7 +408,6 @@ class SparkController(features.ServiceFeature):
                 type=block.type,
                 serviceId=self._name,
             )
-            block_cache.delete(self.app, ident)
             return ident
 
     async def read_all_blocks(self) -> list[Block]:
@@ -420,7 +422,6 @@ class SparkController(features.ServiceFeature):
         async with self._execute('Read all blocks'):
             blocks = await self._cmder.read_all_blocks()
             blocks = [self._to_block(v) for v in blocks]
-            block_cache.set_all(self.app, blocks)
             return blocks
 
     async def read_all_logged_blocks(self) -> list[Block]:
@@ -471,7 +472,6 @@ class SparkController(features.ServiceFeature):
             blocks, logged_blocks = await self._cmder.read_all_broadcast_blocks()
             blocks = [self._to_block(v) for v in blocks]
             logged_blocks = [self._to_block(v) for v in logged_blocks]
-            block_cache.set_all(self.app, blocks)
             return (blocks, logged_blocks)
 
     async def discover_blocks(self) -> list[Block]:
@@ -496,23 +496,20 @@ class SparkController(features.ServiceFeature):
         System blocks will not be removed, but the display settings
         will be reset.
 
-        Returns:
+         Returns:
             list[BlockIdentity]:
-                The ids of all removed blocks.
+                IDs of all removed blocks.
         """
         async with self._execute('Remove all blocks'):
-            await self._cmder.clear_blocks()
+            blocks = await self._cmder.clear_blocks()
+            identities = [self._to_block_identity(v) for v in blocks]
             self._store.clear()
             await self._cmder.write_block(FirmwareBlock(
                 nid=const.DISPLAY_SETTINGS_NID,
                 type='DisplaySettings',
                 data={},
             ))
-            ids = [BlockIdentity(id=sid, nid=nid, serviceId=self._name)
-                   for (sid, nid) in block_cache.keys(self.app)
-                   if nid >= const.USER_NID_START]
-            block_cache.delete_all(self.app)
-            return ids
+            return identities
 
     async def rename_block(self, change: BlockNameChange) -> BlockIdentity:
         """
@@ -530,7 +527,6 @@ class SparkController(features.ServiceFeature):
         """
         self._validate_sid(change.desired)
         self._store.rename((change.existing, None), (change.desired, None))
-        block_cache.rename(self.app, change.existing, change.desired)
         return BlockIdentity(
             id=change.desired,
             nid=self._store.right_key(change.desired),

@@ -11,14 +11,13 @@ from typing import Iterator, Optional, Union
 
 from brewblox_service import brewblox_logger
 from google.protobuf import json_format
-from google.protobuf.descriptor import DescriptorBase, FieldDescriptor
-from google.protobuf.message import Message
+from google.protobuf.descriptor import Descriptor, FieldDescriptor
+
+from brewblox_devcon_spark.models import DecodedPayload, MaskMode
 
 from .opts import DecodeOpts, FilterOpt, MetadataOpt
 from .pb2 import brewblox_pb2
 from .unit_conversion import UnitConverter
-
-STRIP_FIELDS_KEY = 'strippedFields'
 
 LOGGER = brewblox_logger(__name__)
 
@@ -35,7 +34,7 @@ class OptionElement():
 
 
 class ProtobufProcessor():
-    _BREWBLOX_PROVIDER: DescriptorBase = brewblox_pb2.field
+    _BREWBLOX_PROVIDER: FieldDescriptor = brewblox_pb2.field
 
     def __init__(self, converter: UnitConverter, strip_readonly=True):
         self._converter = converter
@@ -77,7 +76,7 @@ class ProtobufProcessor():
     def unpack_bit_flags(flags: int) -> list[int]:
         return [i for i in range(8) if 1 << i & flags]
 
-    def _find_options(self, desc: DescriptorBase, obj: dict, nested: bool = False) -> Iterator[OptionElement]:
+    def _find_elements(self, desc: Descriptor, obj: dict, nested: bool = False) -> Iterator[OptionElement]:
         """
         Recursively walks `obj`, and yields an `OptionElement` for each value.
 
@@ -96,7 +95,7 @@ class ProtobufProcessor():
                     children = [obj[key]]
 
                 for c in children:
-                    yield from self._find_options(field.message_type, c, True)
+                    yield from self._find_elements(field.message_type, c, True)
 
             yield OptionElement(field, obj, key, base_key, postfix, postfix_arg, nested)
 
@@ -121,9 +120,12 @@ class ProtobufProcessor():
             user_unit = postfix
             return self._converter.to_sys_value(value, unit_type, user_unit)
 
-    def pre_encode(self, message: Message, obj: dict) -> dict:
+    def pre_encode(self,
+                   desc: Descriptor,
+                   payload: DecodedPayload,
+                   ) -> DecodedPayload:
         """
-        Modifies `obj` based on Protobuf options and dict key postfixes.
+        Modifies `payload` based on Protobuf options and dict key postfixes.
 
         Supported Protobuf options:
         * unit:         Convert metadata unit notation (postfix or typed object) to Protobuf unit.
@@ -134,12 +136,13 @@ class ProtobufProcessor():
         * ignored:      Strip value from protobuf input.
         * hexstr:       Convert hexadecimal string to base64 string.
 
-        The output is a dict where values use controller units.
+        The output is the same payload object, but with modified content and mask.
+        Content values use controller units.
 
         Postfix notations and typed objects can be mixed in the same data.
 
         Example:
-            >>> values = {
+            >>> payload.content = {
                 'settings': {
                     'address': 'aabbccdd',
                     'offset[delta_degF]': 20,
@@ -155,7 +158,7 @@ class ProtobufProcessor():
 
             >>> pre_encode(
                     TempSensorOneWire_pb2.TempSensorOneWire(),
-                    values)
+                    payload)
 
             # ExampleMessage.proto:
             #
@@ -169,18 +172,18 @@ class ProtobufProcessor():
             #   }
             # ...
 
-            >>> print(values)
+            >>> print(payload.content)
             {
                 'settings': {
                     'address': 2864434397,  # Converted from Hex to int64
                     'offset': 2844,         # Converted to delta_degC, scaled * 256, and rounded to int
-                    'sensor': 10,           # Object type postfix stripped
-                                            # 'output' is readonly -> stripped from dict
+                    'sensor': 10,           # Object type postfix excluded
+                                            # 'output' is readonly -> excluded from dict
                     'desiredSetting': 15,   # No conversion required - value already used degC
                 }
             }
         """
-        for element in self._find_options(message.DESCRIPTOR, obj):
+        for element in self._find_elements(desc, payload.content):
             options = self._field_options(element.field)
             val = element.obj[element.key]
             new_key = element.base_key
@@ -192,6 +195,10 @@ class ProtobufProcessor():
             if options.readonly and self._strip_readonly:
                 del element.obj[element.key]
                 continue
+
+            # We don't support exclusive masks at this level
+            if payload.maskMode == MaskMode.INCLUSIVE and not element.nested:
+                payload.mask.append(element.field.number)
 
             is_list = isinstance(val, (list, set))
 
@@ -237,9 +244,13 @@ class ProtobufProcessor():
 
             element.obj[new_key] = val
 
-        return obj
+        return payload
 
-    def post_decode(self, message: Message, obj: dict, opts: DecodeOpts) -> dict:
+    def post_decode(self,
+                    desc: Descriptor,
+                    payload: DecodedPayload,
+                    opts: DecodeOpts,
+                    ) -> DecodedPayload:
         """
         Post-processes protobuf data based on protobuf / codec options.
 
@@ -254,11 +265,8 @@ class ProtobufProcessor():
         * ignored:      Strip value from output.
         * logged:       Tag for filtering output data.
 
-        Supported special field names:
-        * strippedFields:  lists all fields that should be set to None in the current message.
-
         Supported codec options:
-        * filter:       If opts.filter == LOGGED, all values without options.logged are stripped from output.
+        * filter:       If opts.filter == LOGGED, all values without options.logged are excluded from output.
         * metadata:     Format used to serialize object metadata.
                         Determines whether units/links are postfixed or rendered as typed object.
 
@@ -300,13 +308,19 @@ class ProtobufProcessor():
                 }
             }
         """
-        stripped_fields = obj.pop(STRIP_FIELDS_KEY, [])
-
-        for element in self._find_options(message.DESCRIPTOR, obj):
+        for element in self._find_elements(desc, payload.content):
             options = self._field_options(element.field)
             val = element.obj[element.key]
             new_key = element.key
-            stripped = element.field.number in stripped_fields and not element.nested
+
+            if payload.maskMode == MaskMode.NO_MASK or element.nested:
+                excluded = False
+            elif payload.maskMode == MaskMode.INCLUSIVE:
+                excluded = element.field.number not in payload.mask
+            elif payload.maskMode == MaskMode.EXCLUSIVE:
+                excluded = element.field.number in payload.mask
+            else:
+                raise NotImplementedError(f'{payload.maskMode=}')
 
             if options.ignored:
                 del element.obj[element.key]
@@ -342,7 +356,7 @@ class ProtobufProcessor():
                     if options.readonly:
                         shared['readonly'] = True
 
-                    val = [{**shared, 'value': v if not stripped else None} for v in val]
+                    val = [{**shared, 'value': v} for v in val]
 
                 if opts.metadata == MetadataOpt.POSTFIX:
                     new_key += f'[{user_unit}]'
@@ -358,7 +372,7 @@ class ProtobufProcessor():
                     if options.driven:
                         shared['driven'] = True
 
-                    val = [{**shared, 'id': v if not stripped else None} for v in val]
+                    val = [{**shared, 'id': v} for v in val]
 
                 if opts.metadata == MetadataOpt.POSTFIX:
                     postfix = f'<{blockType},driven>' if options.driven else f'<{blockType}>'
@@ -370,18 +384,22 @@ class ProtobufProcessor():
             if options.hexstr:
                 val = [self.b64_to_hex(v) for v in val]
 
+            if excluded:
+                if options.unit and opts.metadata == MetadataOpt.TYPED:
+                    val = [{**v, 'value': None} for v in val]
+                elif options.objtype and opts.metadata == MetadataOpt.TYPED:
+                    val = [{**v, 'id': None} for v in val]
+                elif is_list:
+                    val = [None for v in val]
+                else:
+                    val = [None]
+
             if not is_list:
                 val = val[0]
 
             if element.key != new_key:
                 del element.obj[element.key]
 
-            if stripped:
-                if (options.unit or options.objtype) and opts.metadata == MetadataOpt.TYPED:
-                    pass  # Already handled
-                else:
-                    val = None
-
             element.obj[new_key] = val
 
-        return obj
+        return payload

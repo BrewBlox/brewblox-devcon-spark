@@ -1,8 +1,8 @@
 import enum
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Optional, TypedDict, Union
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, Field, validator
 
 
 class BlockIdentity(BaseModel):
@@ -149,31 +149,50 @@ class ErrorCode(enum.Enum):
     INVALID_STORED_BLOCK_CONTENT = 54
 
 
-class EncodedPayload(BaseModel):
+class MaskMode(enum.Enum):
+    NO_MASK = 0
+    INCLUSIVE = 1
+    EXCLUSIVE = 2
+
+
+class BasePayload(BaseModel):
     blockId: int
+    mask: list[int] = Field(default_factory=list)
+    maskMode: MaskMode = Field(default=MaskMode.NO_MASK)
+
+    @validator('maskMode', pre=True)
+    def from_string_mask_mode(cls, v):
+        if isinstance(v, str):
+            v = MaskMode[v]
+        return v
+
+    def clean_dict(self):
+        return {
+            **self.dict(),
+            'maskMode': self.maskMode.name,
+        }
+
+
+class EncodedPayload(BasePayload):
     blockType: Optional[Union[int, str]]
     subtype: Optional[Union[int, str]]
-    content: Optional[str]
+    content: str = Field(default='')
 
     class Config:
         # ensures integers in Union[int, str] are parsed correctly
         smart_union = True
 
 
-class DecodedPayload(BaseModel):
-    blockId: int
-    blockType: Optional[Union[int, str]]
-    subtype: Optional[Union[int, str]]
+class DecodedPayload(BasePayload):
+    blockType: Optional[str]
+    subtype: Optional[str]
     content: Optional[dict]
-
-    class Config:
-        # ensures integers in Union[int, str] are parsed correctly
-        smart_union = True
 
 
 class BaseRequest(BaseModel):
     msgId: int
     opcode: Opcode
+    payload: Optional[BasePayload]
 
     @validator('opcode', pre=True)
     def from_string_opcode(cls, v):
@@ -181,8 +200,15 @@ class BaseRequest(BaseModel):
             v = Opcode[v]
         return v
 
+    def clean_dict(self):
+        return {
+            **self.dict(),
+            'opcode': self.opcode.name,
+            'payload': self.payload.clean_dict() if self.payload else None,
+        }
 
-class EncodedRequest(BaseRequest):
+
+class IntermediateRequest(BaseRequest):
     payload: Optional[EncodedPayload]
 
 
@@ -193,6 +219,7 @@ class DecodedRequest(BaseRequest):
 class BaseResponse(BaseModel):
     msgId: int
     error: ErrorCode
+    payload: list[BasePayload]
 
     @validator('error', pre=True)
     def from_string_error(cls, v):
@@ -200,8 +227,15 @@ class BaseResponse(BaseModel):
             v = ErrorCode[v]
         return v
 
+    def clean_dict(self):
+        return {
+            **self.dict(),
+            'error': self.error.name,
+            'payload': [v.clean_dict() for v in self.payload]
+        }
 
-class EncodedResponse(BaseResponse):
+
+class IntermediateResponse(BaseResponse):
     payload: list[EncodedPayload]
 
 
@@ -209,24 +243,8 @@ class DecodedResponse(BaseResponse):
     payload: list[DecodedPayload]
 
 
-class EncodeArgs(BaseModel):
-    blockType: Union[int, str]
-    subtype: Optional[Union[int, str]]
-    content: Optional[dict]
-
-    class Config:
-        # ensures integers in Union[int, str] are parsed correctly
-        smart_union = True
-
-
-class DecodeArgs(BaseModel):
-    blockType: Union[int, str]
-    subtype: Optional[Union[int, str]]
-    content: Optional[str]
-
-    class Config:
-        # ensures integers in Union[int, str] are parsed correctly
-        smart_union = True
+class EncodedMessage(BaseModel):
+    message: str
 
 
 @dataclass
@@ -240,9 +258,9 @@ class HandshakeMessage:
     platform: str
     reset_reason_hex: str
     reset_data_hex: str
-    device_id: str = field(default='')
-    reset_reason: str = field(init=False)
-    reset_data: str = field(init=False)
+    device_id: str = Field(default='')
+    reset_reason: str = Field(init=False)
+    reset_data: str = Field(init=False)
 
     def __post_init__(self):
         self.reset_reason = ResetReason(self.reset_reason_hex.upper()).name

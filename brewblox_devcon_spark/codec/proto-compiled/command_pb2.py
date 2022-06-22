@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='command',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\rcommand.proto\x12\x07\x63ommand\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"r\n\x07Payload\x12\x16\n\x07\x62lockId\x18\x01 \x01(\rB\x05\x92?\x02\x38\x10\x12&\n\tblockType\x18\x02 \x01(\x0e\x32\x13.brewblox.BlockType\x12\x16\n\x07subtype\x18\x03 \x01(\rB\x05\x92?\x02\x38\x10\x12\x0f\n\x07\x63ontent\x18\x04 \x01(\t\"\\\n\x07Request\x12\r\n\x05msgId\x18\x01 \x01(\r\x12\x1f\n\x06opcode\x18\x02 \x01(\x0e\x32\x0f.command.Opcode\x12!\n\x07payload\x18\x03 \x01(\x0b\x32\x10.command.Payload\"_\n\x08Response\x12\r\n\x05msgId\x18\x01 \x01(\r\x12!\n\x05\x65rror\x18\x02 \x01(\x0e\x32\x12.command.ErrorCode\x12!\n\x07payload\x18\x03 \x03(\x0b\x32\x10.command.Payload*\x8a\x02\n\x06Opcode\x12\x08\n\x04NONE\x10\x00\x12\x0b\n\x07VERSION\x10\x01\x12\x0e\n\nBLOCK_READ\x10\n\x12\x12\n\x0e\x42LOCK_READ_ALL\x10\x0b\x12\x0f\n\x0b\x42LOCK_WRITE\x10\x0c\x12\x10\n\x0c\x42LOCK_CREATE\x10\r\x12\x10\n\x0c\x42LOCK_DELETE\x10\x0e\x12\x12\n\x0e\x42LOCK_DISCOVER\x10\x0f\x12\x10\n\x0cSTORAGE_READ\x10\x14\x12\x14\n\x10STORAGE_READ_ALL\x10\x15\x12\n\n\x06REBOOT\x10\x1e\x12\x10\n\x0c\x43LEAR_BLOCKS\x10\x1f\x12\x0e\n\nCLEAR_WIFI\x10 \x12\x11\n\rFACTORY_RESET\x10!\x12\x13\n\x0f\x46IRMWARE_UPDATE\x10(*\xed\x05\n\tErrorCode\x12\x06\n\x02OK\x10\x00\x12\x11\n\rUNKNOWN_ERROR\x10\x01\x12\x12\n\x0eINVALID_OPCODE\x10\x02\x12\x15\n\x11INSUFFICIENT_HEAP\x10\x04\x12\x18\n\x14INSUFFICIENT_STORAGE\x10\x05\x12\x11\n\rNETWORK_ERROR\x10\n\x12\x16\n\x12NETWORK_READ_ERROR\x10\x0b\x12\x1a\n\x16NETWORK_DECODING_ERROR\x10\x0c\x12\x17\n\x13NETWORK_WRITE_ERROR\x10\r\x12\x1a\n\x16NETWORK_ENCODING_ERROR\x10\x0e\x12\x11\n\rSTORAGE_ERROR\x10\x14\x12\x16\n\x12STORAGE_READ_ERROR\x10\x15\x12\x1a\n\x16STORAGE_DECODING_ERROR\x10\x16\x12\x15\n\x11STORAGE_CRC_ERROR\x10\x17\x12\x17\n\x13STORAGE_WRITE_ERROR\x10\x18\x12\x1a\n\x16STORAGE_ENCODING_ERROR\x10\x19\x12\x16\n\x12\x42LOCK_NOT_WRITABLE\x10\x1e\x12\x16\n\x12\x42LOCK_NOT_READABLE\x10\x1f\x12\x17\n\x13\x42LOCK_NOT_CREATABLE\x10 \x12\x17\n\x13\x42LOCK_NOT_DELETABLE\x10!\x12\x11\n\rINVALID_BLOCK\x10(\x12\x14\n\x10INVALID_BLOCK_ID\x10)\x12\x16\n\x12INVALID_BLOCK_TYPE\x10*\x12\x19\n\x15INVALID_BLOCK_SUBTYPE\x10+\x12\x19\n\x15INVALID_BLOCK_CONTENT\x10,\x12\x18\n\x14INVALID_STORED_BLOCK\x10\x32\x12\x1b\n\x17INVALID_STORED_BLOCK_ID\x10\x33\x12\x1d\n\x19INVALID_STORED_BLOCK_TYPE\x10\x34\x12 \n\x1cINVALID_STORED_BLOCK_SUBTYPE\x10\x35\x12 \n\x1cINVALID_STORED_BLOCK_CONTENT\x10\x36\x62\x06proto3')
+  serialized_pb=_b('\n\rcommand.proto\x12\x07\x63ommand\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xac\x01\n\x07Payload\x12\x16\n\x07\x62lockId\x18\x01 \x01(\rB\x05\x92?\x02\x38\x10\x12&\n\tblockType\x18\x02 \x01(\x0e\x32\x13.brewblox.BlockType\x12\x16\n\x07subtype\x18\x03 \x01(\rB\x05\x92?\x02\x38\x10\x12\x0f\n\x07\x63ontent\x18\x04 \x01(\t\x12\x13\n\x04mask\x18\x05 \x03(\rB\x05\x92?\x02\x38\x10\x12#\n\x08maskMode\x18\x06 \x01(\x0e\x32\x11.command.MaskMode\"\\\n\x07Request\x12\r\n\x05msgId\x18\x01 \x01(\r\x12\x1f\n\x06opcode\x18\x02 \x01(\x0e\x32\x0f.command.Opcode\x12!\n\x07payload\x18\x03 \x01(\x0b\x32\x10.command.Payload\"_\n\x08Response\x12\r\n\x05msgId\x18\x01 \x01(\r\x12!\n\x05\x65rror\x18\x02 \x01(\x0e\x32\x12.command.ErrorCode\x12!\n\x07payload\x18\x03 \x03(\x0b\x32\x10.command.Payload*\x8a\x02\n\x06Opcode\x12\x08\n\x04NONE\x10\x00\x12\x0b\n\x07VERSION\x10\x01\x12\x0e\n\nBLOCK_READ\x10\n\x12\x12\n\x0e\x42LOCK_READ_ALL\x10\x0b\x12\x0f\n\x0b\x42LOCK_WRITE\x10\x0c\x12\x10\n\x0c\x42LOCK_CREATE\x10\r\x12\x10\n\x0c\x42LOCK_DELETE\x10\x0e\x12\x12\n\x0e\x42LOCK_DISCOVER\x10\x0f\x12\x10\n\x0cSTORAGE_READ\x10\x14\x12\x14\n\x10STORAGE_READ_ALL\x10\x15\x12\n\n\x06REBOOT\x10\x1e\x12\x10\n\x0c\x43LEAR_BLOCKS\x10\x1f\x12\x0e\n\nCLEAR_WIFI\x10 \x12\x11\n\rFACTORY_RESET\x10!\x12\x13\n\x0f\x46IRMWARE_UPDATE\x10(*\xed\x05\n\tErrorCode\x12\x06\n\x02OK\x10\x00\x12\x11\n\rUNKNOWN_ERROR\x10\x01\x12\x12\n\x0eINVALID_OPCODE\x10\x02\x12\x15\n\x11INSUFFICIENT_HEAP\x10\x04\x12\x18\n\x14INSUFFICIENT_STORAGE\x10\x05\x12\x11\n\rNETWORK_ERROR\x10\n\x12\x16\n\x12NETWORK_READ_ERROR\x10\x0b\x12\x1a\n\x16NETWORK_DECODING_ERROR\x10\x0c\x12\x17\n\x13NETWORK_WRITE_ERROR\x10\r\x12\x1a\n\x16NETWORK_ENCODING_ERROR\x10\x0e\x12\x11\n\rSTORAGE_ERROR\x10\x14\x12\x16\n\x12STORAGE_READ_ERROR\x10\x15\x12\x1a\n\x16STORAGE_DECODING_ERROR\x10\x16\x12\x15\n\x11STORAGE_CRC_ERROR\x10\x17\x12\x17\n\x13STORAGE_WRITE_ERROR\x10\x18\x12\x1a\n\x16STORAGE_ENCODING_ERROR\x10\x19\x12\x16\n\x12\x42LOCK_NOT_WRITABLE\x10\x1e\x12\x16\n\x12\x42LOCK_NOT_READABLE\x10\x1f\x12\x17\n\x13\x42LOCK_NOT_CREATABLE\x10 \x12\x17\n\x13\x42LOCK_NOT_DELETABLE\x10!\x12\x11\n\rINVALID_BLOCK\x10(\x12\x14\n\x10INVALID_BLOCK_ID\x10)\x12\x16\n\x12INVALID_BLOCK_TYPE\x10*\x12\x19\n\x15INVALID_BLOCK_SUBTYPE\x10+\x12\x19\n\x15INVALID_BLOCK_CONTENT\x10,\x12\x18\n\x14INVALID_STORED_BLOCK\x10\x32\x12\x1b\n\x17INVALID_STORED_BLOCK_ID\x10\x33\x12\x1d\n\x19INVALID_STORED_BLOCK_TYPE\x10\x34\x12 \n\x1cINVALID_STORED_BLOCK_SUBTYPE\x10\x35\x12 \n\x1cINVALID_STORED_BLOCK_CONTENT\x10\x36*5\n\x08MaskMode\x12\x0b\n\x07NO_MASK\x10\x00\x12\r\n\tINCLUSIVE\x10\x01\x12\r\n\tEXCLUSIVE\x10\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -95,8 +95,8 @@ _OPCODE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=364,
-  serialized_end=630,
+  serialized_start=423,
+  serialized_end=689,
 )
 _sym_db.RegisterEnumDescriptor(_OPCODE)
 
@@ -230,12 +230,39 @@ _ERRORCODE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=633,
-  serialized_end=1382,
+  serialized_start=692,
+  serialized_end=1441,
 )
 _sym_db.RegisterEnumDescriptor(_ERRORCODE)
 
 ErrorCode = enum_type_wrapper.EnumTypeWrapper(_ERRORCODE)
+_MASKMODE = _descriptor.EnumDescriptor(
+  name='MaskMode',
+  full_name='command.MaskMode',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='NO_MASK', index=0, number=0,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='INCLUSIVE', index=1, number=1,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='EXCLUSIVE', index=2, number=2,
+      serialized_options=None,
+      type=None),
+  ],
+  containing_type=None,
+  serialized_options=None,
+  serialized_start=1443,
+  serialized_end=1496,
+)
+_sym_db.RegisterEnumDescriptor(_MASKMODE)
+
+MaskMode = enum_type_wrapper.EnumTypeWrapper(_MASKMODE)
 NONE = 0
 VERSION = 1
 BLOCK_READ = 10
@@ -281,6 +308,9 @@ INVALID_STORED_BLOCK_ID = 51
 INVALID_STORED_BLOCK_TYPE = 52
 INVALID_STORED_BLOCK_SUBTYPE = 53
 INVALID_STORED_BLOCK_CONTENT = 54
+NO_MASK = 0
+INCLUSIVE = 1
+EXCLUSIVE = 2
 
 
 
@@ -319,6 +349,20 @@ _PAYLOAD = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='mask', full_name='command.Payload.mask', index=4,
+      number=5, type=13, cpp_type=3, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\222?\0028\020'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='maskMode', full_name='command.Payload.maskMode', index=5,
+      number=6, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -331,8 +375,8 @@ _PAYLOAD = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=56,
-  serialized_end=170,
+  serialized_start=57,
+  serialized_end=229,
 )
 
 
@@ -376,8 +420,8 @@ _REQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=172,
-  serialized_end=264,
+  serialized_start=231,
+  serialized_end=323,
 )
 
 
@@ -421,11 +465,12 @@ _RESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=266,
-  serialized_end=361,
+  serialized_start=325,
+  serialized_end=420,
 )
 
 _PAYLOAD.fields_by_name['blockType'].enum_type = brewblox__pb2._BLOCKTYPE
+_PAYLOAD.fields_by_name['maskMode'].enum_type = _MASKMODE
 _REQUEST.fields_by_name['opcode'].enum_type = _OPCODE
 _REQUEST.fields_by_name['payload'].message_type = _PAYLOAD
 _RESPONSE.fields_by_name['error'].enum_type = _ERRORCODE
@@ -435,6 +480,7 @@ DESCRIPTOR.message_types_by_name['Request'] = _REQUEST
 DESCRIPTOR.message_types_by_name['Response'] = _RESPONSE
 DESCRIPTOR.enum_types_by_name['Opcode'] = _OPCODE
 DESCRIPTOR.enum_types_by_name['ErrorCode'] = _ERRORCODE
+DESCRIPTOR.enum_types_by_name['MaskMode'] = _MASKMODE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 Payload = _reflection.GeneratedProtocolMessageType('Payload', (_message.Message,), dict(
@@ -461,4 +507,5 @@ _sym_db.RegisterMessage(Response)
 
 _PAYLOAD.fields_by_name['blockId']._options = None
 _PAYLOAD.fields_by_name['subtype']._options = None
+_PAYLOAD.fields_by_name['mask']._options = None
 # @@protoc_insertion_point(module_scope)

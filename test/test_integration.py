@@ -12,10 +12,9 @@ import pytest
 from brewblox_service import mqtt, scheduler
 from brewblox_service.testing import response
 
-from brewblox_devcon_spark import (block_cache, block_store, codec, commander,
-                                   connection, controller, global_store,
-                                   service_status, service_store,
-                                   synchronization)
+from brewblox_devcon_spark import (block_store, codec, commander, connection,
+                                   controller, global_store, service_status,
+                                   service_store, synchronization)
 from brewblox_devcon_spark.__main__ import parse_ini
 from brewblox_devcon_spark.api import (blocks_api, error_response,
                                        settings_api, system_api)
@@ -44,7 +43,6 @@ def app(app):
     global_store.setup(app)
     service_store.setup(app)
     block_store.setup(app)
-    block_cache.setup(app)
     synchronization.setup(app)
     controller.setup(app)
 

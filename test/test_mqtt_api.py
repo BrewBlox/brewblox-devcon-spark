@@ -5,7 +5,7 @@ Tests brewblox_devcon_spark.api.mqtt_api
 import pytest
 from brewblox_service import scheduler
 
-from brewblox_devcon_spark import (block_cache, block_store, codec, commander,
+from brewblox_devcon_spark import (block_store, codec, commander,
                                    connection_sim, controller, exceptions,
                                    global_store, service_status, service_store,
                                    synchronization)
@@ -26,7 +26,6 @@ async def app(app, event_loop):
     scheduler.setup(app)
     service_status.setup(app)
     block_store.setup(app)
-    block_cache.setup(app)
     global_store.setup(app)
     service_store.setup(app)
     codec.setup(app)

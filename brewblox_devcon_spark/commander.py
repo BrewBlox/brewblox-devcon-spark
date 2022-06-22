@@ -10,26 +10,15 @@ from aiohttp import web
 from brewblox_service import brewblox_logger, features, strex
 
 from brewblox_devcon_spark import codec, connection, exceptions
-from brewblox_devcon_spark.models import (EncodedPayload, EncodedRequest,
-                                          EncodedResponse, ErrorCode,
-                                          FirmwareBlock, FirmwareBlockIdentity,
+from brewblox_devcon_spark.codec.opts import DecodeOpts
+from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
+                                          ErrorCode, FirmwareBlock,
+                                          FirmwareBlockIdentity,
+                                          IntermediateRequest,
+                                          IntermediateResponse, MaskMode,
                                           Opcode)
 
 LOGGER = brewblox_logger(__name__)
-
-
-def split_type(type_str: str) -> tuple[str, Optional[str]]:
-    if '.' in type_str:
-        return tuple(type_str.split('.', 1))
-    else:
-        return type_str, None
-
-
-def join_type(blockType: str, subtype: Optional[str]) -> str:
-    if subtype:
-        return f'{blockType}.{subtype}'
-    else:
-        return blockType
 
 
 class SparkCommander(features.ServiceFeature):
@@ -45,7 +34,7 @@ class SparkCommander(features.ServiceFeature):
 
         self._msgid = 0
         self._timeout = app['config']['command_timeout']
-        self._active_messages: dict[int, asyncio.Future] = {}
+        self._active_messages: dict[int, asyncio.Future[IntermediateResponse]] = {}
         self._codec = codec.fget(app)
         self._conn = connection.fget(app)
 
@@ -63,48 +52,42 @@ class SparkCommander(features.ServiceFeature):
         self._msgid = (self._msgid + 1) % 0xFFFF
         return self._msgid
 
-    async def _to_payload(self, block: FirmwareBlock, include_data=True) -> EncodedPayload:
+    def _to_payload(self,
+                    block: FirmwareBlock, /,
+                    identity_only=False,
+                    patch=False
+                    ) -> EncodedPayload:
         if block.type:
-            (blockType, subtype) = split_type(block.type)
-            data = block.data if include_data else None
-            (blockType, subtype), content = await self._codec.encode((blockType, subtype), data)
-            return EncodedPayload(
+            (blockType, subtype) = codec.split_type(block.type)
+            payload = DecodedPayload(
                 blockId=block.nid,
                 blockType=blockType,
-                subtype=subtype,
-                content=content,
+                subypte=subtype,
+                content=(None if identity_only else block.data),
+                maskMode=(MaskMode.INCLUSIVE if patch else MaskMode.NO_MASK),
             )
         else:
-            return EncodedPayload(
-                blockId=block.nid
-            )
+            payload = DecodedPayload(blockId=block.nid)
 
-    async def _to_block(self,
-                        payload: EncodedPayload,
-                        opts: codec.DecodeOpts,
-                        ) -> FirmwareBlock:
-        enc_id = (payload.blockType, payload.subtype)
-        enc_content = payload.content
-        (blockType, subtype), data = await self._codec.decode(enc_id, enc_content, opts)
+        return self._codec.encode_payload(payload)
+
+    def _to_block(self, payload: EncodedPayload, opts: DecodeOpts) -> FirmwareBlock:
+        payload = self._codec.decode_payload(payload, opts=opts)
         return FirmwareBlock(
             nid=payload.blockId,
-            type=join_type(blockType, subtype),
-            data=data,
+            type=codec.join_type(payload.blockType, payload.subtype),
+            data=payload.content,
         )
 
     async def _data_callback(self, msg: str):
         try:
-            _, dec_data = await self._codec.decode(
-                (codec.RESPONSE_TYPE, None),
-                msg,
-            )
-            response = EncodedResponse(**dec_data)
+            response = self._codec.decode_response(msg)
 
             # Get the Future object awaiting this request
             # the msgid field is key
             fut = self._active_messages.get(response.msgId)
             if fut is None:
-                raise ValueError(f'Unexpected message {response}')
+                raise ValueError(f'Unexpected message, {response=}')
             fut.set_result(response)
 
         except Exception as ex:
@@ -113,28 +96,27 @@ class SparkCommander(features.ServiceFeature):
     async def _execute(self,
                        opcode: Opcode,
                        payload: Optional[EncodedPayload],
-                       /,
                        ) -> list[EncodedPayload]:
         msg_id = self._next_id()
 
-        request = EncodedRequest(
+        request = IntermediateRequest(
             msgId=msg_id,
             opcode=opcode,
             payload=payload
         )
 
-        _, request_data = await self._codec.encode((codec.REQUEST_TYPE, None), request.dict())
-        fut: asyncio.Future[EncodedResponse] = asyncio.get_running_loop().create_future()
+        request_msg = self._codec.encode_request(request)
+        fut: asyncio.Future[IntermediateResponse] = asyncio.get_running_loop().create_future()
         self._active_messages[msg_id] = fut
 
         try:
-            await self._conn.write(request_data)
-            enc_response = await asyncio.wait_for(fut, timeout=self._timeout)
+            await self._conn.write(request_msg)
+            response = await asyncio.wait_for(fut, timeout=self._timeout)
 
-            if enc_response.error != ErrorCode.OK:
-                raise exceptions.CommandException(f'{opcode.name}, {enc_response.error.name}')
+            if response.error != ErrorCode.OK:
+                raise exceptions.CommandException(f'{opcode.name}, {response.error.name}')
 
-            return enc_response.payload
+            return response.payload
 
         except asyncio.TimeoutError:
             raise exceptions.CommandTimeout(opcode.name)
@@ -146,12 +128,12 @@ class SparkCommander(features.ServiceFeature):
         await self._conn.start_reconnect()
 
     async def validate(self, block: FirmwareBlock) -> FirmwareBlock:
-        request = EncodedRequest(
+        request = IntermediateRequest(
             msgId=0,
             opcode=Opcode.NONE,
-            payload=await self._to_payload(block)
+            payload=self._to_payload(block),
         )
-        await self._codec.encode((codec.REQUEST_TYPE, None), request.dict())
+        self._codec.encode_request(request)
         return block
 
     async def noop(self) -> None:
@@ -163,23 +145,23 @@ class SparkCommander(features.ServiceFeature):
     async def read_block(self, ident: FirmwareBlockIdentity) -> FirmwareBlock:
         payloads = await self._execute(
             Opcode.BLOCK_READ,
-            await self._to_payload(ident, False),
+            self._to_payload(ident, identity_only=True),
         )
-        return await self._to_block(payloads[0], self.default_decode_opts)
+        return self._to_block(payloads[0], self.default_decode_opts)
 
     async def read_logged_block(self, ident: FirmwareBlockIdentity) -> FirmwareBlock:
         payloads = await self._execute(
             Opcode.BLOCK_READ,
-            await self._to_payload(ident, False),
+            self._to_payload(ident, identity_only=True),
         )
-        return await self._to_block(payloads[0], self.logged_decode_opts)
+        return self._to_block(payloads[0], self.logged_decode_opts)
 
     async def read_all_blocks(self) -> list[FirmwareBlock]:
         payloads = await self._execute(
             Opcode.BLOCK_READ_ALL,
             None,
         )
-        return [await self._to_block(v, self.default_decode_opts)
+        return [self._to_block(v, self.default_decode_opts)
                 for v in payloads]
 
     async def read_all_logged_blocks(self) -> list[FirmwareBlock]:
@@ -187,7 +169,7 @@ class SparkCommander(features.ServiceFeature):
             Opcode.BLOCK_READ_ALL,
             None,
         )
-        return [await self._to_block(v, self.logged_decode_opts)
+        return [self._to_block(v, self.logged_decode_opts)
                 for v in payloads]
 
     async def read_all_broadcast_blocks(self) -> tuple[list[FirmwareBlock], list[FirmwareBlock]]:
@@ -195,30 +177,37 @@ class SparkCommander(features.ServiceFeature):
             Opcode.BLOCK_READ_ALL,
             None,
         )
-        default_retv = [await self._to_block(v, self.default_decode_opts)
+        default_retv = [self._to_block(v, self.default_decode_opts)
                         for v in payloads]
-        logged_retv = [await self._to_block(v, self.logged_decode_opts)
+        logged_retv = [self._to_block(v, self.logged_decode_opts)
                        for v in payloads]
         return (default_retv, logged_retv)
 
     async def write_block(self, block: FirmwareBlock) -> FirmwareBlock:
         payloads = await self._execute(
             Opcode.BLOCK_WRITE,
-            await self._to_payload(block),
+            self._to_payload(block),
         )
-        return await self._to_block(payloads[0], self.default_decode_opts)
+        return self._to_block(payloads[0], self.default_decode_opts)
+
+    async def patch_block(self, block: FirmwareBlock) -> FirmwareBlock:
+        payloads = await self._execute(
+            Opcode.BLOCK_WRITE,
+            self._to_payload(block, patch=True),
+        )
+        return self._to_block(payloads[0], self.default_decode_opts)
 
     async def create_block(self, block: FirmwareBlock) -> FirmwareBlock:
         payloads = await self._execute(
             Opcode.BLOCK_CREATE,
-            await self._to_payload(block),
+            self._to_payload(block, patch=True),
         )
-        return await self._to_block(payloads[0], self.default_decode_opts)
+        return self._to_block(payloads[0], self.default_decode_opts)
 
     async def delete_block(self, ident: FirmwareBlockIdentity) -> None:
         await self._execute(
             Opcode.BLOCK_DELETE,
-            await self._to_payload(ident, False),
+            self._to_payload(ident, identity_only=True),
         )
 
     async def discover_blocks(self) -> list[FirmwareBlock]:
@@ -226,22 +215,22 @@ class SparkCommander(features.ServiceFeature):
             Opcode.BLOCK_DISCOVER,
             None,
         )
-        return [await self._to_block(v, self.default_decode_opts)
+        return [self._to_block(v, self.default_decode_opts)
                 for v in payloads]
 
     async def read_stored_block(self, ident: FirmwareBlockIdentity) -> FirmwareBlock:
         payloads = await self._execute(
             Opcode.STORAGE_READ,
-            await self._to_payload(ident, False),
+            self._to_payload(ident, identity_only=True),
         )
-        return await self._to_block(payloads[0], self.stored_decode_opts)
+        return self._to_block(payloads[0], self.stored_decode_opts)
 
     async def read_all_stored_blocks(self) -> list[FirmwareBlock]:
         payloads = await self._execute(
             Opcode.STORAGE_READ_ALL,
             None,
         )
-        return [await self._to_block(v, self.stored_decode_opts)
+        return [self._to_block(v, self.stored_decode_opts)
                 for v in payloads]
 
     async def reboot(self) -> None:
@@ -250,11 +239,13 @@ class SparkCommander(features.ServiceFeature):
             None,
         )
 
-    async def clear_blocks(self) -> None:
-        await self._execute(
+    async def clear_blocks(self) -> list[FirmwareBlock]:
+        payloads = await self._execute(
             Opcode.CLEAR_BLOCKS,
             None,
         )
+        return [self._to_block(v, self.default_decode_opts)
+                for v in payloads]
 
     async def clear_wifi(self) -> None:
         await self._execute(
