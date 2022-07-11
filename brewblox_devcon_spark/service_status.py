@@ -11,8 +11,8 @@ from typing import Optional
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
 
-from brewblox_devcon_spark.models import (DeviceInfo, HandshakeMessage,
-                                          ServiceInfo, ServiceStatusInfo)
+from brewblox_devcon_spark.models import (DeviceInfo, HandshakeInfo,
+                                          ServiceInfo, StatusDescription)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -38,7 +38,7 @@ class ServiceStatus(features.ServiceFeature):
         self.device_info: DeviceInfo = None
         self.handshake_info: HandshakeInfo = None
 
-        self.enabled_ev: asyncio.Event = None
+        self.autoconnecting_ev: asyncio.Event = None
         self.connected_ev: asyncio.Event = None
         self.acknowledged_ev: asyncio.Event = None
         self.synchronized_ev: asyncio.Event = None
@@ -46,7 +46,7 @@ class ServiceStatus(features.ServiceFeature):
         self.updating_ev: asyncio.Event = None
 
     async def startup(self, _):
-        self.enabled_ev = asyncio.Event()
+        self.autoconnecting_ev = asyncio.Event()
         self.connected_ev = asyncio.Event()
         self.acknowledged_ev = asyncio.Event()
         self.synchronized_ev = asyncio.Event()
@@ -54,7 +54,7 @@ class ServiceStatus(features.ServiceFeature):
         self.updating_ev = asyncio.Event()
 
     async def shutdown(self, _):
-        self.enabled_ev.clear()
+        self.autoconnecting_ev.clear()
         self.connected_ev.clear()
         self.acknowledged_ev.clear()
         self.synchronized_ev.clear()
@@ -68,7 +68,7 @@ class ServiceStatus(features.ServiceFeature):
             service_info=self.service_info,
             device_info=self.device_info,
             handshake_info=self.handshake_info,
-            is_enabled=self.enabled_ev.is_set(),
+            is_autoconnecting=self.autoconnecting_ev.is_set(),
             is_connected=self.connected_ev.is_set(),
             is_acknowledged=self.acknowledged_ev.is_set(),
             is_synchronized=self.synchronized_ev.is_set(),
@@ -115,11 +115,11 @@ class ServiceStatus(features.ServiceFeature):
             self.device_info = None
             self.handshake_info = None
 
-    def set_enabled(self, enabled: bool):
+    def set_autoconnecting(self, enabled: bool):
         if enabled:
-            self.enabled_ev.set()
+            self.autoconnecting_ev.set()
         else:
-            self.enabled_ev.clear()
+            self.autoconnecting_ev.clear()
 
     def set_connected(self, address: str):
         self._set_address(address)
@@ -154,7 +154,7 @@ class ServiceStatus(features.ServiceFeature):
             return ev.is_set()
         return await ev.wait()
 
-    wait_enabled = partialmethod(_wait_ev, 'enabled_ev')
+    wait_autoconnecting = partialmethod(_wait_ev, 'autoconnecting_ev')
     wait_connected = partialmethod(_wait_ev, 'connected_ev')
     wait_acknowledged = partialmethod(_wait_ev, 'acknowledged_ev')
     wait_synchronized = partialmethod(_wait_ev, 'synchronized_ev')
@@ -172,8 +172,8 @@ def fget(app: web.Application) -> ServiceStatus:
 
 # Convenience functions
 
-def set_enabled(app: web.Application, enabled: bool):
-    fget(app).set_enabled(enabled)
+def set_autoconnecting(app: web.Application, enabled: bool):
+    fget(app).set_autoconnecting(enabled)
 
 
 def set_connected(app: web.Application, address: str):
@@ -196,8 +196,8 @@ def set_updating(app: web.Application):
     fget(app).set_updating()
 
 
-async def wait_enabled(app: web.Application, wait: bool = True) -> bool:
-    return await fget(app).wait_enabled(wait)
+async def wait_autoconnecting(app: web.Application, wait: bool = True) -> bool:
+    return await fget(app).wait_autoconnecting(wait)
 
 
 async def wait_connected(app: web.Application, wait: bool = True) -> bool:

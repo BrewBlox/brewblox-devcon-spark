@@ -9,7 +9,6 @@ import pytest
 from brewblox_service import brewblox_logger, features, service
 
 from brewblox_devcon_spark.__main__ import create_parser
-from brewblox_devcon_spark.models import ServiceConfig
 
 LOGGER = brewblox_logger(__name__)
 
@@ -43,26 +42,20 @@ def log_enabled():
 
 
 @pytest.fixture
-def app_config() -> ServiceConfig:
-    # return ServiceConfig({
-    #     'name': 'test_app',
-    #     'host': 'localhost',
-    #     'port': 1234,
-    #     'debug': True,
-    #     'device_serial': '/dev/TESTEH',
-    #     'device_id': '1234',
-    #     'discovery': 'all',
-    #     'simulation': False,
-    #     'command_timeout': 10,
-    #     'broadcast_interval': 5,
-    #     'volatile': True,
-    # })
-    return ServiceConfig(
-        name='test_app',
-        host='localhost',
-        port=1234,
-        # TODO(Bob)
-    )
+def app_config() -> dict:
+    return {
+        'name': 'test_app',
+        'host': 'localhost',
+        'port': 1234,
+        'debug': True,
+        'device_serial': '/dev/TESTEH',
+        'device_id': '1234',
+        'discovery': 'all',
+        'simulation': False,
+        'command_timeout': 10,
+        'broadcast_interval': 5,
+        'volatile': True,
+    }
 
 
 @pytest.fixture
