@@ -37,6 +37,7 @@ if 'brewblox_pb2' not in sys.modules:  # pragma: no cover
     import Spark3Pins_pb2
     import SysInfo_pb2
     import TempSensorCombi_pb2
+    import TempSensorExternal_pb2
     import TempSensorMock_pb2
     import TempSensorOneWire_pb2
     import Ticks_pb2
@@ -70,6 +71,7 @@ __all__ = [
     'Spark3Pins_pb2',
     'SysInfo_pb2',
     'TempSensorCombi_pb2',
+    'TempSensorExternal_pb2',
     'TempSensorMock_pb2',
     'TempSensorOneWire_pb2',
     'Ticks_pb2',

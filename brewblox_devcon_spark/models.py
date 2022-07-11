@@ -1,8 +1,31 @@
 import enum
 from dataclasses import dataclass
-from typing import Any, Optional, TypedDict, Union
+from typing import Any, Literal, Optional, TypedDict, Union
 
 from pydantic import BaseModel, Field, validator
+
+
+class ServiceFirmwareSpec(BaseModel):
+    firmware_version: str
+    firmware_date: str
+    firmware_sha: str
+    proto_version: str
+    proto_date: str
+    system_version: str
+
+
+class ServiceConfig(BaseModel):
+    name: str
+    host: str
+    port: int
+    debug: bool
+    device_serial: Optional[str]
+    device_id: Optional[str]
+    discovery: Literal['all', 'usb', 'wifi', 'lan']
+    simulation: bool
+    command_timeout: float
+    broadcast_interval: float
+    volatile: bool
 
 
 class BlockIdentity(BaseModel):
@@ -270,16 +293,11 @@ class HandshakeMessage:
             self.reset_data = self.reset_data_hex.upper()
 
 
-class SharedInfo(BaseModel):
+class FirmwareInfo(BaseModel):
     firmware_version: str
     proto_version: str
     firmware_date: str
     proto_date: str
-    device_id: str
-
-    @validator('device_id')
-    def lower_device_id(cls, v: str):
-        return v.lower()
 
     @validator('firmware_version', 'proto_version')
     def truncate_version(cls, v: str):
@@ -287,32 +305,55 @@ class SharedInfo(BaseModel):
         return v[:8]
 
 
-class ServiceInfo(SharedInfo):
+class DeviceInfo(BaseModel):
+    device_id: str
+
+    @validator('device_id')
+    def lower_device_id(cls, v: str):
+        return v.lower()
+
+
+class ServiceInfo(BaseModel):
     name: str
+    firmware: FirmwareInfo
+    device: DeviceInfo
 
 
-class DeviceInfo(SharedInfo):
+class ControllerInfo(BaseModel):
     system_version: str
     platform: str
     reset_reason: str
+    firmware: FirmwareInfo
+    device: DeviceInfo
 
 
-class HandshakeInfo(BaseModel):
-    is_compatible_firmware: bool
-    is_latest_firmware: bool
-    is_valid_device_id: bool
+class ServiceStatusInfo(BaseModel):
+    enabled: bool
+    service: ServiceInfo
+    controller: Optional[ControllerInfo]
+    address: Optional[str]
 
-
-class StatusDescription(BaseModel):
-    device_address: Optional[str]
-    connection_kind: Optional[str]
-
-    service_info: ServiceInfo
-    device_info: Optional[DeviceInfo]
-    handshake_info: Optional[HandshakeInfo]
-
-    is_autoconnecting: bool
-    is_connected: bool
-    is_acknowledged: bool
-    is_synchronized: bool
-    is_updating: bool
+    connection_kind: Literal[
+        None,
+        'Simulation',
+        'Usb',
+        'Lan',
+    ]
+    connection_status: Literal[
+        'Disabled',
+        'Disconnected',
+        'Connected',
+        'Acknowledged',
+        'Synchronized',
+        'Updating',
+    ]
+    firmware_error: Literal[
+        None,
+        'Incompatible',
+        'Outdated',
+    ]
+    device_id_error: Literal[
+        None,
+        'Wildcard',
+        'Invalid',
+    ]
