@@ -386,9 +386,11 @@ class ProtobufProcessor():
 
             if excluded:
                 if options.unit and opts.metadata == MetadataOpt.TYPED:
-                    val = [{**v, 'value': None} for v in val]
+                    for v in val:
+                        v['value'] = None
                 elif options.objtype and opts.metadata == MetadataOpt.TYPED:
-                    val = [{**v, 'id': None} for v in val]
+                    for v in val:
+                        v['id'] = None
                 elif is_list:
                     val = [None for v in val]
                 else:

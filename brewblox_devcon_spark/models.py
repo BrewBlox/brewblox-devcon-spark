@@ -161,10 +161,10 @@ class BasePayload(BaseModel):
     maskMode: MaskMode = Field(default=MaskMode.NO_MASK)
 
     @validator('maskMode', pre=True)
-    def from_string_mask_mode(cls, v):
+    def from_raw_mask_mode(cls, v):
         if isinstance(v, str):
-            v = MaskMode[v]
-        return v
+            return MaskMode[v]
+        return MaskMode(v)
 
     def clean_dict(self):
         return {
@@ -195,10 +195,10 @@ class BaseRequest(BaseModel):
     payload: Optional[BasePayload]
 
     @validator('opcode', pre=True)
-    def from_string_opcode(cls, v):
+    def from_raw_opcode(cls, v):
         if isinstance(v, str):
-            v = Opcode[v]
-        return v
+            return Opcode[v]
+        return Opcode(v)
 
     def clean_dict(self):
         return {
@@ -224,8 +224,8 @@ class BaseResponse(BaseModel):
     @validator('error', pre=True)
     def from_string_error(cls, v):
         if isinstance(v, str):
-            v = ErrorCode[v]
-        return v
+            return ErrorCode[v]
+        return ErrorCode(v)
 
     def clean_dict(self):
         return {
