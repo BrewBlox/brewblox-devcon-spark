@@ -1,8 +1,40 @@
 import enum
 from dataclasses import dataclass
-from typing import Any, Optional, TypedDict, Union
+from typing import Any, Literal, Optional, TypedDict, Union
 
 from pydantic import BaseModel, Field, validator
+
+
+class ServiceFirmwareIni(TypedDict):
+    firmware_version: str
+    firmware_date: str
+    firmware_sha: str
+    proto_version: str
+    proto_date: str
+    system_version: str
+
+
+class ServiceConfig(TypedDict):
+    # brewblox_service
+    name: str
+    host: str
+    port: int
+    debug: bool
+    mqtt_protocol: Literal['mqtt', 'mqtts', 'ws', 'wss']
+    mqtt_host: str
+    mqtt_port: int
+    mqtt_path: str
+    history_topic: str
+    state_topic: str
+
+    # brewblox_devcon_spark
+    device_serial: Optional[str]
+    device_id: Optional[str]
+    discovery: Literal['all', 'usb', 'wifi', 'lan']
+    simulation: bool
+    command_timeout: float
+    broadcast_interval: float
+    volatile: bool
 
 
 class BlockIdentity(BaseModel):
@@ -222,7 +254,7 @@ class BaseResponse(BaseModel):
     payload: list[BasePayload]
 
     @validator('error', pre=True)
-    def from_string_error(cls, v):
+    def from_raw_error(cls, v):
         if isinstance(v, str):
             return ErrorCode[v]
         return ErrorCode(v)
@@ -270,16 +302,11 @@ class HandshakeMessage:
             self.reset_data = self.reset_data_hex.upper()
 
 
-class SharedInfo(BaseModel):
+class FirmwareDescription(BaseModel):
     firmware_version: str
     proto_version: str
     firmware_date: str
     proto_date: str
-    device_id: str
-
-    @validator('device_id')
-    def lower_device_id(cls, v: str):
-        return v.lower()
 
     @validator('firmware_version', 'proto_version')
     def truncate_version(cls, v: str):
@@ -287,32 +314,51 @@ class SharedInfo(BaseModel):
         return v[:8]
 
 
-class ServiceInfo(SharedInfo):
+class DeviceDescription(BaseModel):
+    device_id: str
+
+    @validator('device_id')
+    def lower_device_id(cls, v: str):
+        return v.lower()
+
+
+class ServiceDescription(BaseModel):
     name: str
+    firmware: FirmwareDescription
+    device: DeviceDescription
 
 
-class DeviceInfo(SharedInfo):
+class ControllerDescription(BaseModel):
     system_version: str
     platform: str
     reset_reason: str
+    firmware: FirmwareDescription
+    device: DeviceDescription
 
 
-class HandshakeInfo(BaseModel):
-    is_compatible_firmware: bool
-    is_latest_firmware: bool
-    is_valid_device_id: bool
+class ServiceStatusDescription(BaseModel):
+    enabled: bool
+    service: ServiceDescription
+    controller: Optional[ControllerDescription]
+    address: Optional[str]
 
-
-class StatusDescription(BaseModel):
-    device_address: Optional[str]
-    connection_kind: Optional[str]
-
-    service_info: ServiceInfo
-    device_info: Optional[DeviceInfo]
-    handshake_info: Optional[HandshakeInfo]
-
-    is_autoconnecting: bool
-    is_connected: bool
-    is_acknowledged: bool
-    is_synchronized: bool
-    is_updating: bool
+    connection_kind: Optional[Literal[
+        'SIMULATION',
+        'USB',
+        'TCP',
+    ]]
+    connection_status: Literal[
+        'DISCONNECTED',
+        'CONNECTED',
+        'ACKNOWLEDGED',
+        'SYNCHRONIZED',
+        'UPDATING',
+    ]
+    firmware_error: Optional[Literal[
+        'INCOMPATIBLE',
+        'MISMATCHED',
+    ]]
+    identity_error: Optional[Literal[
+        'INCOMPATIBLE',
+        'WILDCARD_ID',
+    ]]

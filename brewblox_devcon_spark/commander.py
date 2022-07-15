@@ -16,7 +16,7 @@ from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
                                           FirmwareBlockIdentity,
                                           IntermediateRequest,
                                           IntermediateResponse, MaskMode,
-                                          Opcode)
+                                          Opcode, ServiceConfig)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -31,9 +31,10 @@ class SparkCommander(features.ServiceFeature):
 
     def __init__(self, app: web.Application):
         super().__init__(app)
+        config: ServiceConfig = app['config']
 
         self._msgid = 0
-        self._timeout = app['config']['command_timeout']
+        self._timeout = config['command_timeout']
         self._active_messages: dict[int, asyncio.Future[IntermediateResponse]] = {}
         self._codec = codec.fget(app)
         self._conn = connection.fget(app)

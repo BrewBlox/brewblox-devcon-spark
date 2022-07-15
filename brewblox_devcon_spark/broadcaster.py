@@ -11,6 +11,7 @@ from brewblox_service import brewblox_logger, features, mqtt, repeater, strex
 from brewblox_devcon_spark import const, controller, service_status
 from brewblox_devcon_spark.block_analysis import (calculate_drive_chains,
                                                   calculate_relations)
+from brewblox_devcon_spark.models import ServiceConfig
 
 LOGGER = brewblox_logger(__name__)
 
@@ -20,7 +21,7 @@ class Broadcaster(repeater.RepeaterFeature):
     def __init__(self, app: web.Application):
         super().__init__(app)
 
-        config = app['config']
+        config: ServiceConfig = app['config']
         self.name = config['name']
         self.interval = config['broadcast_interval']
         self.volatile = self.interval <= 0 or config['volatile']
@@ -30,10 +31,7 @@ class Broadcaster(repeater.RepeaterFeature):
         self._will_message = {
             'key': self.name,
             'type': 'Spark.state',
-            'data': {
-                'status': None,
-                'blocks': [],
-            },
+            'data': None,
         }
 
         # A will is published if the client connection is broken

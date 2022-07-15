@@ -12,7 +12,7 @@ from pydantic import BaseModel
 
 from brewblox_devcon_spark import (commander, connection, controller,
                                    exceptions, service_status, ymodem)
-from brewblox_devcon_spark.models import StatusDescription
+from brewblox_devcon_spark.models import ServiceStatusDescription
 
 TRANSFER_TIMEOUT_S = 30
 STATE_TIMEOUT_S = 20
@@ -47,7 +47,7 @@ async def shutdown_soon(app: web.Application, wait: float):  # pragma: no cover
 
 @routes.view('/system/status')
 class StatusView(PydanticView):
-    async def get(self) -> r200[StatusDescription]:
+    async def get(self) -> r200[ServiceStatusDescription]:
         """
         Get service status
 
@@ -162,14 +162,13 @@ class FlashView(PydanticView):
         """
         ota = ymodem.OtaClient(self._notify)
         cmder = commander.fget(self.app)
-        status_desc = service_status.desc(self.app)
-        address = status_desc.device_address
-        platform = status_desc.device_info.platform
+        desc = service_status.desc(self.app)
+        address = desc.address
 
         self._notify(f'Started updating {self.name}@{address} to version {self.version} ({self.date})')
 
         try:
-            if not status_desc.is_connected:
+            if desc.connection_status not in ['ACKNOWLEDGED', 'SYNCHRONIZED']:
                 self._notify('Controller is not connected. Aborting update.')
                 raise exceptions.NotConnected()
 
@@ -188,6 +187,7 @@ class FlashView(PydanticView):
             await asyncio.wait_for(
                 service_status.wait_disconnected(self.app), STATE_TIMEOUT_S)
 
+            platform = desc.controller.platform
             if platform == 'esp32':  # pragma: no cover
                 # ESP connections will always be a TCP address
                 host, _ = address.split(':')

@@ -12,7 +12,7 @@ from brewblox_devcon_spark import (block_store, codec, commander,
                                    connection_sim, global_store,
                                    service_status, service_store,
                                    synchronization)
-from brewblox_devcon_spark.service_status import StatusDescription
+from brewblox_devcon_spark.models import ServiceStatusDescription
 
 TESTED = synchronization.__name__
 LOGGER = brewblox_logger(__name__)
@@ -131,7 +131,7 @@ async def test_autoconnecting(app, client, syncher):
     assert syncher.get_autoconnecting() is True
     assert await syncher.set_autoconnecting(False) is False
     assert syncher.get_autoconnecting() is False
-    assert await service_status.wait_autoconnecting(app, False) is False
+    assert await service_status.wait_enabled(app, False) is False
 
 
 async def test_on_global_store_change(app, client, syncher):
@@ -147,17 +147,17 @@ async def test_on_global_store_change(app, client, syncher):
 
 
 async def test_errors(app, client, syncher, mocker):
-    m_desc: StatusDescription = mocker.patch(TESTED + '.service_status.desc').return_value
+    m_desc: ServiceStatusDescription = mocker.patch(TESTED + '.service_status.desc').return_value
     await syncher.run()
 
-    m_desc.handshake_info.is_compatible_firmware = False
-    m_desc.handshake_info.is_valid_device_id = True
+    m_desc.firmware_error = 'INCOMPATIBLE'
+    m_desc.identity_error = None
     await disconnect(app)
     await connect(app, syncher)
     assert states(app) == [False, True, False]
 
-    m_desc.handshake_info.is_compatible_firmware = True
-    m_desc.handshake_info.is_valid_device_id = False
+    m_desc.firmware_error = None
+    m_desc.identity_error = 'INVALID'
     await disconnect(app)
     await connect(app, syncher)
     assert states(app) == [False, True, False]

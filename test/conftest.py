@@ -9,6 +9,7 @@ import pytest
 from brewblox_service import brewblox_logger, features, service
 
 from brewblox_devcon_spark.__main__ import create_parser
+from brewblox_devcon_spark.models import ServiceConfig
 
 LOGGER = brewblox_logger(__name__)
 
@@ -42,12 +43,21 @@ def log_enabled():
 
 
 @pytest.fixture
-def app_config() -> dict:
+def app_config() -> ServiceConfig:
     return {
+        # From brewblox_service
         'name': 'test_app',
         'host': 'localhost',
         'port': 1234,
         'debug': True,
+        'mqtt_protocol': 'mqtt',
+        'mqtt_host': 'eventbus',
+        'mqtt_port': 1883,
+        'mqtt_path': '/eventbus',
+        'history_topic': '/brewcast/history',
+        'state_topic': '/brewcast/state',
+
+        # From brewblox_devcon_spark
         'device_serial': '/dev/TESTEH',
         'device_id': '1234',
         'discovery': 'all',

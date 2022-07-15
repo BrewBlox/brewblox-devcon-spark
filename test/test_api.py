@@ -418,46 +418,43 @@ async def test_system_status(app, client):
     await service_status.wait_synchronized(app)
     resp = await response(client.get('/system/status'))
 
-    fw_info = {
+    firmware_desc = {
         'firmware_version': ANY,
         'proto_version': ANY,
         'firmware_date': ANY,
         'proto_date': ANY,
+    }
+
+    device_desc = {
         'device_id': ANY,
     }
 
     assert resp == {
-        'device_address': 'simulation:1234',
-        'connection_kind': 'wifi',
-
-        'service_info': {
-            **fw_info,
+        'enabled': True,
+        'service': {
             'name': 'test_app',
+            'firmware': firmware_desc,
+            'device': device_desc,
         },
-        'device_info': {
-            **fw_info,
+        'controller': {
             'system_version': ANY,
             'platform': ANY,
             'reset_reason': ANY,
+            'firmware': firmware_desc,
+            'device': device_desc,
         },
-        'handshake_info': {
-            'is_compatible_firmware': True,
-            'is_latest_firmware': True,
-            'is_valid_device_id': True,
-        },
-        'is_autoconnecting': True,
-        'is_connected': True,
-        'is_acknowledged': True,
-        'is_synchronized': True,
-        'is_updating': False,
+        'address': 'simulation:1234',
+        'connection_kind': 'TCP',
+        'connection_status': 'SYNCHRONIZED',
+        'firmware_error': None,
+        'identity_error': None,
     }
 
     service_status.set_disconnected(app)
     await asyncio.sleep(0.01)
     resp = await response(client.get('/system/status'))
-    assert resp['is_synchronized'] is False
-    assert resp['is_connected'] is False
-    assert resp['device_info'] is None
+    assert resp['connection_status'] == 'DISCONNECTED'
+    assert resp['controller'] is None
 
 
 async def test_system_flash(app, client, mocker):
