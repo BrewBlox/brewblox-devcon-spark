@@ -66,7 +66,8 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict[str, int, dict]):
                     'namespace': const.SPARK_NAMESPACE,
                 })
                 self.key = key
-                data = (await resp.json())['value'].get('data', [])
+                content = await resp.json()
+                data = content.get('value', {}).get('data', [])
                 LOGGER.info(f'{self} Read {len(data)} blocks')
 
         except asyncio.CancelledError:  # pragma: no cover
