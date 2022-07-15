@@ -15,6 +15,7 @@ from brewblox_devcon_spark import (block_store, broadcaster, codec, commander,
 from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
                                        mqtt_api, settings_api, sim_api,
                                        system_api)
+from brewblox_devcon_spark.models import ServiceConfig, ServiceFirmwareIni
 
 LOGGER = brewblox_logger(__name__)
 
@@ -77,7 +78,7 @@ def create_parser(default_name='spark'):
     return parser
 
 
-def parse_ini(app):  # pragma: no cover
+def parse_ini(app) -> ServiceFirmwareIni:  # pragma: no cover
     parser = ConfigParser()
     parser.read('firmware/firmware.ini')
     config = dict(parser['FIRMWARE'].items())
@@ -88,7 +89,7 @@ def parse_ini(app):  # pragma: no cover
 def main():
     app = service.create_app(parser=create_parser())
     logging.captureWarnings(True)
-    config = app['config']
+    config: ServiceConfig = app['config']
     app['ini'] = parse_ini(app)
 
     if getenv('ENABLE_DEBUGGER', False):  # pragma: no cover

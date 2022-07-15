@@ -166,7 +166,7 @@ class SparkConnectionSim(connection.SparkConnection):
 
     async def run(self):
         try:
-            await service_status.wait_autoconnecting(self.app)
+            await service_status.wait_enabled(self.app)
             service_status.set_connected(self.app, self._address)
             self.update_ticks()
             await self.welcome()

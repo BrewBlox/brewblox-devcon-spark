@@ -12,7 +12,10 @@ from brewblox_service import brewblox_logger, features, repeater
 
 from brewblox_devcon_spark import (cbox_parser, connect_funcs, exceptions,
                                    service_status, service_store)
-from brewblox_devcon_spark.models import DeviceInfo, HandshakeMessage
+from brewblox_devcon_spark.models import (ControllerDescription,
+                                          DeviceDescription,
+                                          FirmwareDescription,
+                                          HandshakeMessage)
 
 MessageCallback_ = Callable[[str], None]
 
@@ -76,20 +79,24 @@ class SparkConnection(repeater.RepeaterFeature):
 
     async def _on_event(self, msg: str):
         if msg.startswith(WELCOME_PREFIX):
-            welcome = HandshakeMessage(*msg.split(','))
-            LOGGER.info(welcome)
+            handshake = HandshakeMessage(*msg.split(','))
+            LOGGER.info(handshake)
 
-            device = DeviceInfo(
-                firmware_version=welcome.firmware_version,
-                proto_version=welcome.proto_version,
-                firmware_date=welcome.firmware_date,
-                proto_date=welcome.proto_date,
-                device_id=welcome.device_id,
-                system_version=welcome.system_version,
-                platform=welcome.platform,
-                reset_reason=welcome.reset_reason,
+            desc = ControllerDescription(
+                system_version=handshake.system_version,
+                platform=handshake.platform,
+                reset_reason=handshake.reset_reason,
+                firmware=FirmwareDescription(
+                    firmware_version=handshake.firmware_version,
+                    proto_version=handshake.proto_version,
+                    firmware_date=handshake.firmware_date,
+                    proto_date=handshake.proto_date,
+                ),
+                device=DeviceDescription(
+                    device_id=handshake.device_id,
+                ),
             )
-            service_status.set_acknowledged(self.app, device)
+            service_status.set_acknowledged(self.app, desc)
 
         elif msg.startswith(SETUP_MODE_PREFIX):
             LOGGER.error('Controller entered listening mode. Exiting service now.')
@@ -115,7 +122,7 @@ class SparkConnection(repeater.RepeaterFeature):
             if self._retry_count > 0:
                 await asyncio.sleep(self.retry_interval)
 
-            await service_status.wait_autoconnecting(self.app)
+            await service_status.wait_enabled(self.app)
             result = await connect_funcs.connect(self.app)
             self._proc = result.process
             self._address = result.address

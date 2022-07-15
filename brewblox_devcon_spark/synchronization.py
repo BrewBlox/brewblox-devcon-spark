@@ -121,14 +121,14 @@ class SparkSynchronization(repeater.RepeaterFeature):
         if self.app['config']['simulation']:
             return 'simulator__' + self.app['config']['name']
 
-        return service_status.desc(self.app).device_info.device_id
+        return service_status.desc(self.app).controller.device.device_id
 
-    def get_autoconnecting(self):
-        return service_status.desc(self.app).is_autoconnecting
+    def get_autoconnecting(self) -> bool:
+        return service_status.desc(self.app).enabled
 
-    async def set_autoconnecting(self, enabled):
+    async def set_autoconnecting(self, enabled: bool):
         enabled = bool(enabled)
-        service_status.set_autoconnecting(self.app, enabled)
+        service_status.set_enabled(self.app, enabled)
         with service_store.fget(self.app).open() as config:
             config[AUTOCONNECTING_KEY] = enabled
         return enabled
@@ -143,8 +143,8 @@ class SparkSynchronization(repeater.RepeaterFeature):
         await self.set_converter_units()
 
         with self.service_store.open() as config:
-            autoconnect = bool(config.setdefault(AUTOCONNECTING_KEY, True))
-            service_status.set_autoconnecting(self.app, autoconnect)
+            enabled = bool(config.setdefault(AUTOCONNECTING_KEY, True))
+            service_status.set_enabled(self.app, enabled)
 
             # Units were moved to global config (2021/04/02)
             with suppress(KeyError):
@@ -188,12 +188,12 @@ class SparkSynchronization(repeater.RepeaterFeature):
         if not await service_status.wait_acknowledged(self.app, wait=False):
             raise asyncio.TimeoutError()
 
-        handshake = service_status.desc(self.app).handshake_info
+        desc = service_status.desc(self.app)
 
-        if not handshake.is_compatible_firmware:
+        if desc.firmware_error == 'INCOMPATIBLE':
             raise exceptions.IncompatibleFirmware()
 
-        if not handshake.is_valid_device_id:
+        if desc.identity_error == 'INVALID':
             raise exceptions.InvalidDeviceId()
 
     @subroutine('sync block store')
@@ -233,7 +233,8 @@ class SparkSynchronization(repeater.RepeaterFeature):
     async def set_display_settings(self):
         write_required = False
 
-        if not service_status.desc(self.app).is_acknowledged:
+        connection_status = service_status.desc(self.app).connection_status
+        if connection_status not in ['ACKNOWLEDGED', 'SYNCHRONIZED']:
             return
 
         display_block = await self.commander.read_block(
