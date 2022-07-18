@@ -2,6 +2,7 @@
 Input/output modification functions for transcoding
 """
 
+import ipaddress
 import re
 from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
@@ -101,9 +102,8 @@ class ProtobufProcessor():
 
         return
 
-    def _field_options(self, field: FieldDescriptor, provider: FieldDescriptor = None):
-        provider = provider or self._BREWBLOX_PROVIDER
-        return field.GetOptions().Extensions[provider]
+    def _field_options(self, field: FieldDescriptor) -> brewblox_pb2.FieldOpts:
+        return field.GetOptions().Extensions[self._BREWBLOX_PROVIDER]
 
     def _unit_name(self, unit_num: int) -> str:
         return brewblox_pb2.UnitType.Name(unit_num)
@@ -135,6 +135,7 @@ class ProtobufProcessor():
         * readonly:     Strip value from protobuf input.
         * ignored:      Strip value from protobuf input.
         * hexstr:       Convert hexadecimal string to base64 string.
+        * ipv4address:  Converts dot string notation to integer IP address.
 
         The output is the same payload object, but with modified content and mask.
         Content values use controller units.
@@ -233,6 +234,9 @@ class ProtobufProcessor():
             if options.hexstr:
                 val = [self.hex_to_b64(v) for v in val]
 
+            if options.ipv4address:
+                val = [int(ipaddress.ip_address(v)) for v in val]
+
             if element.field.cpp_type in json_format._INT_TYPES:
                 val = [int(round(v)) for v in val]
 
@@ -261,6 +265,7 @@ class ProtobufProcessor():
         * driven        Adds the "driven" flag to postfix or typed object.
         * hexed:        Converts base64 decoder output to int.
         * hexstr:       Converts base64 decoder output to hexadecimal string.
+        * ipv4address:  Converts integer IP address to dot string notation.
         * readonly:     Ignored: decoding means reading from controller.
         * ignored:      Strip value from output.
         * logged:       Tag for filtering output data.
@@ -383,6 +388,9 @@ class ProtobufProcessor():
 
             if options.hexstr:
                 val = [self.b64_to_hex(v) for v in val]
+
+            if options.ipv4address:
+                val = [ipaddress.ip_address(v).compressed for v in val]
 
             if excluded:
                 if options.unit and opts.metadata == MetadataOpt.TYPED:

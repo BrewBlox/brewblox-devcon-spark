@@ -247,6 +247,18 @@ async def test_postfixed_decoding(app, client, cdc: Codec):
     assert payload.content['state']['value[degC]'] == pytest.approx(10, 0.01)
 
 
+async def test_ipv4_encoding(app, client, cdc: Codec):
+    payload = cdc.encode_payload(DecodedPayload(
+        blockId=1,
+        blockType='EdgeCase',
+        content={
+            'ip': '192.168.0.1'
+        },
+    ))
+    payload = cdc.decode_payload(payload)
+    assert payload.content['ip'] == '192.168.0.1'
+
+
 async def test_point_presence(app, client, cdc: Codec):
     present_payload = cdc.encode_payload(DecodedPayload(
         blockId=1,
