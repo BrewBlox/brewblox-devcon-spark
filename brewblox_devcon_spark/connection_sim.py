@@ -12,7 +12,7 @@ This prevents having to spin up a simulator in a separate process for tests.
 import asyncio
 from datetime import datetime
 from itertools import count
-from typing import Union
+from typing import Optional, Union
 
 from aiohttp import web
 from brewblox_service import features, strex
@@ -22,6 +22,7 @@ from brewblox_devcon_spark.__main__ import LOGGER
 from brewblox_devcon_spark.codec import bloxfield
 from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
                                           ErrorCode, FirmwareBlock,
+                                          IntermediateRequest,
                                           IntermediateResponse, Opcode,
                                           ResetData, ResetReason)
 
@@ -164,6 +165,114 @@ class SparkConnectionSim(connection.SparkConnection):
         ]
         await self._on_event(','.join(welcome))
 
+    async def handle_command(self, request: IntermediateRequest) -> Optional[IntermediateResponse]:  # pragma: no cover
+        response = IntermediateResponse(
+            msgId=request.msgId,
+            error=ErrorCode.OK,
+            payload=[]
+        )
+
+        if self.next_error:
+            error = self.next_error.pop(0)
+            if error is None:
+                return None  # No response at all
+            else:
+                response.error = error
+
+        elif request.opcode in [
+            Opcode.NONE,
+            Opcode.VERSION,
+        ]:
+            await self.welcome()
+
+        elif request.opcode in [
+            Opcode.BLOCK_READ,
+            Opcode.STORAGE_READ
+        ]:
+            block = self._blocks.get(request.payload.blockId)
+            if not block:
+                response.error = ErrorCode.INVALID_BLOCK_ID
+            else:
+                response.payload = [self._to_payload(block)]
+
+        elif request.opcode in [
+            Opcode.BLOCK_READ_ALL,
+            Opcode.STORAGE_READ_ALL,
+        ]:
+            response.payload = [self._to_payload(block)
+                                for block in self._blocks.values()]
+
+        elif request.opcode == Opcode.BLOCK_WRITE:
+            block = self._blocks.get(request.payload.blockId)
+            if not block:
+                response.error = ErrorCode.INVALID_BLOCK_ID
+            elif request.payload.content is None:
+                response.error = ErrorCode.INVALID_BLOCK
+            elif request.payload.blockType != block.type:
+                response.error = ErrorCode.INVALID_BLOCK_TYPE
+            else:
+                src = self._to_block(request.payload)
+                self._merge_blocks(block, src)
+                response.payload = [self._to_payload(block)]
+
+        elif request.opcode == Opcode.BLOCK_CREATE:
+            nid = request.payload.blockId
+            block = self._blocks.get(nid)
+            if block:
+                response.error = ErrorCode.BLOCK_NOT_CREATABLE
+            elif nid > 0 and nid < const.USER_NID_START:
+                response.error = ErrorCode.BLOCK_NOT_CREATABLE
+            elif request.payload.content is None:
+                response.error = ErrorCode.INVALID_BLOCK
+            else:
+                nid = nid or next(self._id_counter)
+                argblock = self._to_block(request.payload)
+                block = self._default_block(nid, argblock.type)
+                self._merge_blocks(block, argblock)
+                self._blocks[nid] = block
+                response.payload = [self._to_payload(block)]
+
+        elif request.opcode == Opcode.BLOCK_DELETE:
+            nid = request.payload.blockId
+            block = self._blocks.get(nid)
+            if not block:
+                response.error = ErrorCode.INVALID_BLOCK_ID
+            elif nid < const.USER_NID_START:
+                response.error = ErrorCode.BLOCK_NOT_DELETABLE
+            else:
+                del self._blocks[nid]
+
+        elif request.opcode == Opcode.BLOCK_DISCOVER:
+            # Always return spark pins when discovering blocks
+            block = self._blocks[const.SPARK_PINS_NID]
+            response.payload = [self._to_payload(block)]
+
+        elif request.opcode == Opcode.REBOOT:
+            self._start_time = datetime.now()
+            self.update_ticks()
+
+        elif request.opcode == Opcode.CLEAR_BLOCKS:
+            response.payload = [self._to_payload(block)
+                                for block in self._blocks.values()
+                                if block.nid >= const.USER_NID_START]
+            self._blocks = default_blocks()
+            self.update_ticks()
+
+        elif request.opcode == Opcode.CLEAR_WIFI:
+            self._blocks[const.WIFI_SETTINGS_NID].data.clear()
+
+        elif request.opcode == Opcode.FACTORY_RESET:
+            self._blocks = default_blocks()
+            self.update_ticks()
+
+        elif request.opcode == Opcode.FIRMWARE_UPDATE:
+            pass
+
+        else:
+            response.error = ErrorCode.INVALID_OPCODE
+
+        return response
+
     async def run(self):
         try:
             await service_status.wait_enabled(self.app)
@@ -188,113 +297,10 @@ class SparkConnectionSim(connection.SparkConnection):
         try:
             self.update_ticks()
             request = self._codec.decode_request(request_b64)
+            response = await self.handle_command(request)
 
-            response = IntermediateResponse(
-                msgId=request.msgId,
-                error=ErrorCode.OK,
-                payload=[]
-            )
-
-            if self.next_error:
-                error = self.next_error.pop(0)
-                if error is None:
-                    return  # No response at all
-                else:
-                    response.error = error
-
-            elif request.opcode in [
-                Opcode.NONE,
-                Opcode.VERSION,
-            ]:
-                await self.welcome()
-
-            elif request.opcode in [
-                Opcode.BLOCK_READ,
-                Opcode.STORAGE_READ
-            ]:
-                block = self._blocks.get(request.payload.blockId)
-                if not block:
-                    response.error = ErrorCode.INVALID_BLOCK_ID
-                else:
-                    response.payload = [self._to_payload(block)]
-
-            elif request.opcode in [
-                Opcode.BLOCK_READ_ALL,
-                Opcode.STORAGE_READ_ALL,
-            ]:
-                response.payload = [self._to_payload(block)
-                                    for block in self._blocks.values()]
-
-            elif request.opcode == Opcode.BLOCK_WRITE:
-                block = self._blocks.get(request.payload.blockId)
-                if not block:
-                    response.error = ErrorCode.INVALID_BLOCK_ID
-                elif request.payload.content is None:
-                    response.error = ErrorCode.INVALID_BLOCK
-                elif request.payload.blockType != block.type:
-                    response.error = ErrorCode.INVALID_BLOCK_TYPE
-                else:
-                    src = self._to_block(request.payload)
-                    self._merge_blocks(block, src)
-                    response.payload = [self._to_payload(block)]
-
-            elif request.opcode == Opcode.BLOCK_CREATE:
-                nid = request.payload.blockId
-                block = self._blocks.get(nid)
-                if block:
-                    response.error = ErrorCode.BLOCK_NOT_CREATABLE
-                elif nid > 0 and nid < const.USER_NID_START:
-                    response.error = ErrorCode.BLOCK_NOT_CREATABLE
-                elif request.payload.content is None:
-                    response.error = ErrorCode.INVALID_BLOCK
-                else:
-                    nid = nid or next(self._id_counter)
-                    argblock = self._to_block(request.payload)
-                    block = self._default_block(nid, argblock.type)
-                    self._merge_blocks(block, argblock)
-                    self._blocks[nid] = block
-                    response.payload = [self._to_payload(block)]
-
-            elif request.opcode == Opcode.BLOCK_DELETE:
-                nid = request.payload.blockId
-                block = self._blocks.get(nid)
-                if not block:
-                    response.error = ErrorCode.INVALID_BLOCK_ID
-                elif nid < const.USER_NID_START:
-                    response.error = ErrorCode.BLOCK_NOT_DELETABLE
-                else:
-                    del self._blocks[nid]
-
-            elif request.opcode == Opcode.BLOCK_DISCOVER:
-                # Always return spark pins when discovering blocks
-                block = self._blocks[const.SPARK_PINS_NID]
-                response.payload = [self._to_payload(block)]
-
-            elif request.opcode == Opcode.REBOOT:
-                self._start_time = datetime.now()
-                self.update_ticks()
-
-            elif request.opcode == Opcode.CLEAR_BLOCKS:
-                response.payload = [self._to_payload(block)
-                                    for block in self._blocks.values()
-                                    if block.nid >= const.USER_NID_START]
-                self._blocks = default_blocks()
-                self.update_ticks()
-
-            elif request.opcode == Opcode.CLEAR_WIFI:
-                self._blocks[const.WIFI_SETTINGS_NID].data.clear()
-
-            elif request.opcode == Opcode.FACTORY_RESET:
-                self._blocks = default_blocks()
-                self.update_ticks()
-
-            elif request.opcode == Opcode.FIRMWARE_UPDATE:
-                pass
-
-            else:
-                response.error = ErrorCode.INVALID_OPCODE
-
-            await self._on_data(self._codec.encode_response(response))
+            if response:
+                await self._on_data(self._codec.encode_response(response))
 
         except Exception as ex:
             LOGGER.error(strex(ex))

@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox.SysInfo',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\rSysInfo.proto\x12\x0c\x62lox.SysInfo\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xf2\x05\n\x05Trace\x12*\n\x06\x61\x63tion\x18\x01 \x01(\x0e\x32\x1a.blox.SysInfo.Trace.Action\x12\x11\n\x02id\x18\x02 \x01(\rB\x05\x92?\x02\x38\x10\x12\x13\n\x04type\x18\x03 \x01(\rB\x05\x92?\x02\x38\x10\"\x94\x05\n\x06\x41\x63tion\x12\x08\n\x04NONE\x10\x00\x12\x0f\n\x0bREAD_OBJECT\x10\x01\x12\x10\n\x0cWRITE_OBJECT\x10\x02\x12\x11\n\rCREATE_OBJECT\x10\x03\x12\x11\n\rDELETE_OBJECT\x10\x04\x12\x17\n\x13LIST_ACTIVE_OBJECTS\x10\x05\x12\x16\n\x12READ_STORED_OBJECT\x10\x06\x12\x17\n\x13LIST_STORED_OBJECTS\x10\x07\x12\x11\n\rCLEAR_OBJECTS\x10\x08\x12\n\n\x06REBOOT\x10\t\x12\x11\n\rFACTORY_RESET\x10\n\x12\x1b\n\x17LIST_COMPATIBLE_OBJECTS\x10\x0b\x12\x18\n\x14\x44ISCOVER_NEW_OBJECTS\x10\x0c\x12\x14\n\x10\x43ONSTRUCT_OBJECT\x10\x14\x12\x13\n\x0f\x44\x45STRUCT_OBJECT\x10\x15\x12\x16\n\x12STREAM_FROM_OBJECT\x10\x16\x12\x14\n\x10STREAM_TO_OBJECT\x10\x17\x12\x11\n\rUPDATE_OBJECT\x10\x18\x12\x12\n\x0ePERSIST_OBJECT\x10\x19\x12\x16\n\x12LOAD_STORED_OBJECT\x10\x1a\x12\x12\n\x0eUPDATE_OBJECTS\x10\x1b\x12\x16\n\x12UPDATE_CONNECTIONS\x10\x1c\x12\x12\n\x0eUPDATE_DISPLAY\x10\x65\x12\x10\n\x0cSYSTEM_TASKS\x10\x66\x12\x17\n\x13MANAGE_CONNECTIVITY\x10g\x12\x0e\n\nMDNS_START\x10h\x12\x10\n\x0cMDNS_PROCESS\x10i\x12\x0e\n\nHTTP_START\x10j\x12\r\n\tHTTP_STOP\x10k\x12\x11\n\rHTTP_RESPONSE\x10l\x12\x10\n\x0cWIFI_CONNECT\x10m\x12\x1b\n\x17\x46IRMWARE_UPDATE_STARTED\x10n\"\xc9\x02\n\x05\x42lock\x12#\n\x08\x64\x65viceId\x18\x01 \x01(\x0c\x42\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x8a\xb5\x18\x02\x38\x01\x12\x1c\n\x07version\x18\x02 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12\x30\n\x08platform\x18\x03 \x01(\x0e\x32\x16.blox.SysInfo.PlatformB\x06\x8a\xb5\x18\x02(\x01\x12$\n\x0fprotocolVersion\x18\x07 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12 \n\x0breleaseDate\x18\x08 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12!\n\x0cprotocolDate\x18\t \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12&\n\x07\x63ommand\x18\n \x01(\x0e\x32\x15.blox.SysInfo.Command\x12/\n\x05trace\x18\x0b \x03(\x0b\x32\x13.blox.SysInfo.TraceB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x10\n:\x07\x8a\xb5\x18\x03\x18\x80\x02*X\n\x08Platform\x12\x14\n\x10PLATFORM_UNKNOWN\x10\x00\x12\x10\n\x0cPLATFORM_GCC\x10\x03\x12\x13\n\x0fPLATFORM_PHOTON\x10\x06\x12\x0f\n\x0bPLATFORM_P1\x10\x08*l\n\x07\x43ommand\x12\x10\n\x0cSYS_CMD_NONE\x10\x00\x12\x16\n\x12SYS_CMD_TRACE_READ\x10\x01\x12\x18\n\x14SYS_CMD_TRACE_RESUME\x10\x02\x12\x1d\n\x19SYS_CMD_TRACE_READ_RESUME\x10\x03\x62\x06proto3')
+  serialized_pb=_b('\n\rSysInfo.proto\x12\x0c\x62lox.SysInfo\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xf2\x05\n\x05Trace\x12*\n\x06\x61\x63tion\x18\x01 \x01(\x0e\x32\x1a.blox.SysInfo.Trace.Action\x12\x11\n\x02id\x18\x02 \x01(\rB\x05\x92?\x02\x38\x10\x12\x13\n\x04type\x18\x03 \x01(\rB\x05\x92?\x02\x38\x10\"\x94\x05\n\x06\x41\x63tion\x12\x08\n\x04NONE\x10\x00\x12\x0f\n\x0bREAD_OBJECT\x10\x01\x12\x10\n\x0cWRITE_OBJECT\x10\x02\x12\x11\n\rCREATE_OBJECT\x10\x03\x12\x11\n\rDELETE_OBJECT\x10\x04\x12\x17\n\x13LIST_ACTIVE_OBJECTS\x10\x05\x12\x16\n\x12READ_STORED_OBJECT\x10\x06\x12\x17\n\x13LIST_STORED_OBJECTS\x10\x07\x12\x11\n\rCLEAR_OBJECTS\x10\x08\x12\n\n\x06REBOOT\x10\t\x12\x11\n\rFACTORY_RESET\x10\n\x12\x1b\n\x17LIST_COMPATIBLE_OBJECTS\x10\x0b\x12\x18\n\x14\x44ISCOVER_NEW_OBJECTS\x10\x0c\x12\x14\n\x10\x43ONSTRUCT_OBJECT\x10\x14\x12\x13\n\x0f\x44\x45STRUCT_OBJECT\x10\x15\x12\x16\n\x12STREAM_FROM_OBJECT\x10\x16\x12\x14\n\x10STREAM_TO_OBJECT\x10\x17\x12\x11\n\rUPDATE_OBJECT\x10\x18\x12\x12\n\x0ePERSIST_OBJECT\x10\x19\x12\x16\n\x12LOAD_STORED_OBJECT\x10\x1a\x12\x12\n\x0eUPDATE_OBJECTS\x10\x1b\x12\x16\n\x12UPDATE_CONNECTIONS\x10\x1c\x12\x12\n\x0eUPDATE_DISPLAY\x10\x65\x12\x10\n\x0cSYSTEM_TASKS\x10\x66\x12\x17\n\x13MANAGE_CONNECTIVITY\x10g\x12\x0e\n\nMDNS_START\x10h\x12\x10\n\x0cMDNS_PROCESS\x10i\x12\x0e\n\nHTTP_START\x10j\x12\r\n\tHTTP_STOP\x10k\x12\x11\n\rHTTP_RESPONSE\x10l\x12\x10\n\x0cWIFI_CONNECT\x10m\x12\x1b\n\x17\x46IRMWARE_UPDATE_STARTED\x10n\"\xe8\x02\n\x05\x42lock\x12#\n\x08\x64\x65viceId\x18\x01 \x01(\x0c\x42\x11\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x8a\xb5\x18\x02\x38\x01\x12\x1c\n\x07version\x18\x02 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12\x30\n\x08platform\x18\x03 \x01(\x0e\x32\x16.blox.SysInfo.PlatformB\x06\x8a\xb5\x18\x02(\x01\x12$\n\x0fprotocolVersion\x18\x07 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12 \n\x0breleaseDate\x18\x08 \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12!\n\x0cprotocolDate\x18\t \x01(\tB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x08\x0c\x12\x1d\n\x02ip\x18\n \x01(\rB\x11\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x02`\x01\x92?\x02\x38 \x12&\n\x07\x63ommand\x18\x64 \x01(\x0e\x32\x15.blox.SysInfo.Command\x12/\n\x05trace\x18\x65 \x03(\x0b\x32\x13.blox.SysInfo.TraceB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x10\n:\x07\x8a\xb5\x18\x03\x18\x80\x02*X\n\x08Platform\x12\x14\n\x10PLATFORM_UNKNOWN\x10\x00\x12\x10\n\x0cPLATFORM_GCC\x10\x03\x12\x13\n\x0fPLATFORM_PHOTON\x10\x06\x12\x0f\n\x0bPLATFORM_P1\x10\x08*l\n\x07\x43ommand\x12\x10\n\x0cSYS_CMD_NONE\x10\x00\x12\x16\n\x12SYS_CMD_TRACE_READ\x10\x01\x12\x18\n\x14SYS_CMD_TRACE_RESUME\x10\x02\x12\x1d\n\x19SYS_CMD_TRACE_READ_RESUME\x10\x03\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -51,8 +51,8 @@ _PLATFORM = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1150,
-  serialized_end=1238,
+  serialized_start=1181,
+  serialized_end=1269,
 )
 _sym_db.RegisterEnumDescriptor(_PLATFORM)
 
@@ -82,8 +82,8 @@ _COMMAND = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1240,
-  serialized_end=1348,
+  serialized_start=1271,
+  serialized_end=1379,
 )
 _sym_db.RegisterEnumDescriptor(_COMMAND)
 
@@ -337,15 +337,22 @@ _BLOCK = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=_b('\212\265\030\002(\001\222?\002\010\014'), file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='command', full_name='blox.SysInfo.Block.command', index=6,
-      number=10, type=14, cpp_type=8, label=1,
+      name='ip', full_name='blox.SysInfo.Block.ip', index=6,
+      number=10, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\002(\001\212\265\030\002`\001\222?\0028 '), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='command', full_name='blox.SysInfo.Block.command', index=7,
+      number=100, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='trace', full_name='blox.SysInfo.Block.trace', index=7,
-      number=11, type=11, cpp_type=10, label=3,
+      name='trace', full_name='blox.SysInfo.Block.trace', index=8,
+      number=101, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -363,7 +370,7 @@ _BLOCK = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=819,
-  serialized_end=1148,
+  serialized_end=1179,
 )
 
 _TRACE.fields_by_name['action'].enum_type = _TRACE_ACTION
@@ -400,6 +407,7 @@ _BLOCK.fields_by_name['platform']._options = None
 _BLOCK.fields_by_name['protocolVersion']._options = None
 _BLOCK.fields_by_name['releaseDate']._options = None
 _BLOCK.fields_by_name['protocolDate']._options = None
+_BLOCK.fields_by_name['ip']._options = None
 _BLOCK.fields_by_name['trace']._options = None
 _BLOCK._options = None
 # @@protoc_insertion_point(module_scope)
