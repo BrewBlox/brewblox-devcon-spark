@@ -16,7 +16,8 @@ from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
 
 from . import pb2, time_utils, unit_conversion
 from .lookup import INTERFACE_LOOKUPS, OBJECT_LOOKUPS
-from .opts import DecodeOpts, FilterOpt, MetadataOpt, ProtoEnumOpt
+from .opts import (DateFormatOpt, DecodeOpts, FilterOpt, MetadataOpt,
+                   ProtoEnumOpt)
 from .processor import ProtobufProcessor
 
 DEPRECATED_TYPE_INT = 65533
@@ -261,6 +262,7 @@ __all__ = [
     'ProtoEnumOpt',
     'FilterOpt',
     'MetadataOpt',
+    'DateFormatOpt',
     'ProtobufProcessor'
 
     # utils

@@ -265,8 +265,8 @@ async def test_point_presence(app, client, cdc: Codec):
         blockType='SetpointProfile',
         content={
             'points': [
-                {'time': 0, 'temperature[degC]': 0},
-                {'time': 10, 'temperature[degC]': 10},
+                {'time[s]': 0, 'temperature[degC]': 0},
+                {'time[s]': 10, 'temperature[degC]': 10},
             ]
         },
     ))
@@ -276,7 +276,7 @@ async def test_point_presence(app, client, cdc: Codec):
         blockType='SetpointProfile',
         content={
             'points': [
-                {'time': 10, 'temperature[degC]': 10},
+                {'time[s]': 10, 'temperature[degC]': 10},
             ]
         },
     ))
@@ -285,7 +285,7 @@ async def test_point_presence(app, client, cdc: Codec):
 
     present_payload = cdc.decode_payload(present_payload)
     absent_payload = cdc.decode_payload(absent_payload)
-    assert present_payload.content['points'][0]['time'] == 0
+    assert present_payload.content['points'][0]['time']['value'] == 0
 
 
 async def test_enum_decoding(app, client, cdc: Codec):

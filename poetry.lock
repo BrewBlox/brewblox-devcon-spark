@@ -174,6 +174,14 @@ python-versions = ">=3.6.0"
 unicode_backport = ["unicodedata2"]
 
 [[package]]
+name = "ciso8601"
+version = "2.2.0"
+description = "Fast ISO8601 date time parser for Python written in C"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "colorama"
 version = "0.4.5"
 description = "Cross-platform colored terminal text."
@@ -650,7 +658,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<4"
-content-hash = "878a61d3e911e6e956f87ec799fb4c2209f31558ca3589ec25674709f6ea5ffe"
+content-hash = "2b521297bef0c584d794907c4f39f7c336d44ba7415a44a35eac4270b2f93597"
 
 [metadata.files]
 aiofiles = [
@@ -766,6 +774,9 @@ bitstring = [
 brewblox-service = []
 cffi = []
 charset-normalizer = []
+ciso8601 = [
+    {file = "ciso8601-2.2.0.tar.gz", hash = "sha256:14ad817ed31a698372d42afa81b0173d71cd1d0b48b7499a2da2a01dcc8695e6"},
+]
 colorama = []
 coverage = []
 cryptography = []

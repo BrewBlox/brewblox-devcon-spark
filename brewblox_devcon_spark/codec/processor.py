@@ -16,8 +16,9 @@ from google.protobuf.descriptor import Descriptor, FieldDescriptor
 
 from brewblox_devcon_spark.models import DecodedPayload, MaskMode
 
-from .opts import DecodeOpts, FilterOpt, MetadataOpt
+from .opts import DateFormatOpt, DecodeOpts, FilterOpt, MetadataOpt
 from .pb2 import brewblox_pb2
+from .time_utils import serialize_datetime
 from .unit_conversion import UnitConverter
 
 LOGGER = brewblox_logger(__name__)
@@ -130,11 +131,12 @@ class ProtobufProcessor():
         Supported Protobuf options:
         * unit:         Convert metadata unit notation (postfix or typed object) to Protobuf unit.
         * scale:        Multiply value with scale after unit conversion.
-        * blockType:      Strip link key postfix (<TempSensorInterface> or <>), or extract id from typed object.
+        * objtype:      Strip link key postfix (<TempSensorInterface> or <>), or extract id from typed object.
         * hexed:        Convert hexadecimal string to int64.
         * readonly:     Strip value from protobuf input.
         * ignored:      Strip value from protobuf input.
         * hexstr:       Convert hexadecimal string to base64 string.
+        * datetime:     Convert ms / s / ISO-8601 value to seconds since UTC.
         * ipv4address:  Converts dot string notation to integer IP address.
 
         The output is the same payload object, but with modified content and mask.
@@ -234,6 +236,10 @@ class ProtobufProcessor():
             if options.hexstr:
                 val = [self.hex_to_b64(v) for v in val]
 
+            if options.datetime:
+                fmt = DateFormatOpt.SECONDS
+                val = [serialize_datetime(v, fmt) for v in val]
+
             if options.ipv4address:
                 val = [int(ipaddress.ip_address(v)) for v in val]
 
@@ -265,6 +271,7 @@ class ProtobufProcessor():
         * driven        Adds the "driven" flag to postfix or typed object.
         * hexed:        Converts base64 decoder output to int.
         * hexstr:       Converts base64 decoder output to hexadecimal string.
+        * datetime:     Convert value to formatting specified by opts.dates.
         * ipv4address:  Converts integer IP address to dot string notation.
         * readonly:     Ignored: decoding means reading from controller.
         * ignored:      Strip value from output.
@@ -388,6 +395,9 @@ class ProtobufProcessor():
 
             if options.hexstr:
                 val = [self.b64_to_hex(v) for v in val]
+
+            if options.datetime:
+                val = [serialize_datetime(v, opts.dates) for v in val]
 
             if options.ipv4address:
                 val = [ipaddress.ip_address(v).compressed for v in val]

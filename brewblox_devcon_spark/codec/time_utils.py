@@ -2,9 +2,15 @@
 Utility functions for datetime and duration handling
 """
 
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
+from typing import Union
 
+import ciso8601
 from pytimeparse.timeparse import timeparse
+
+from .opts import DateFormatOpt
+
+DatetimeSrc_ = Union[str, int, float, datetime, None]
 
 
 def parse_duration(value: str) -> timedelta:
@@ -34,3 +40,40 @@ def serialize_duration(td: timedelta) -> str:
             period_value, seconds = divmod(seconds, period_s)
             output += f'{period_value}{period_postfix}'
     return output or '0s'
+
+
+def parse_datetime(value: DatetimeSrc_) -> Union[datetime, None]:
+    if not value:
+        return None
+
+    elif isinstance(value, datetime):
+        return value
+
+    elif isinstance(value, str):
+        return ciso8601.parse_datetime(value)
+
+    elif isinstance(value, (int, float)):
+        # This is an educated guess
+        # 10e10 falls in 1973 if the timestamp is in milliseconds,
+        # and in 5138 if the timestamp is in seconds
+        if value > 10e10:
+            value //= 1000
+        return datetime.fromtimestamp(value, tz=timezone.utc)
+
+    else:
+        raise ValueError(str(value))
+
+
+def serialize_datetime(value: DatetimeSrc_, fmt: DateFormatOpt) -> Union[int, str, None]:
+    dt = parse_datetime(value)
+
+    if dt is None:
+        return None if fmt == DateFormatOpt.ISO8601 else 0
+    elif fmt == DateFormatOpt.MILLISECONDS:
+        return int(dt.timestamp() * 1000)
+    elif fmt == DateFormatOpt.SECONDS:
+        return int(dt.timestamp())
+    elif fmt == DateFormatOpt.ISO8601:
+        return dt.isoformat(timespec='seconds').replace('+00:00', 'Z')
+    else:
+        raise ValueError(f'Invalid formatting requested: {fmt}')
