@@ -27,7 +27,8 @@ class SparkCommander(features.ServiceFeature):
     stored_decode_opts = codec.DecodeOpts(enums=codec.ProtoEnumOpt.INT)
     logged_decode_opts = codec.DecodeOpts(enums=codec.ProtoEnumOpt.INT,
                                           filter=codec.FilterOpt.LOGGED,
-                                          metadata=codec.MetadataOpt.POSTFIX)
+                                          metadata=codec.MetadataOpt.POSTFIX,
+                                          dates=codec.DateFormatOpt.SECONDS)
 
     def __init__(self, app: web.Application):
         super().__init__(app)
