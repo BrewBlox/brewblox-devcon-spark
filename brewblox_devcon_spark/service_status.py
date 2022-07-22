@@ -108,6 +108,12 @@ class ServiceStatus(features.ServiceFeature):
         config: ServiceConfig = self.app['config']
         service = self.status_desc.service
 
+        # Do not revert to acknowledged if we're already synchronized.
+        # For there to be a meaningful change,
+        # there must have been a disconnect/connect first.
+        if self.synchronized_ev.is_set():
+            return
+
         wildcard_id = not service.device.device_id
         compatible_firmware = service.firmware.proto_version == controller.firmware.proto_version \
             or bool(config['skip_version_check'])
