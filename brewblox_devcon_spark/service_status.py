@@ -108,12 +108,6 @@ class ServiceStatus(features.ServiceFeature):
         config: ServiceConfig = self.app['config']
         service = self.status_desc.service
 
-        # Do not revert to acknowledged if we're already synchronized.
-        # For there to be a meaningful change,
-        # there must have been a disconnect/connect first.
-        if self.synchronized_ev.is_set():
-            return
-
         wildcard_id = not service.device.device_id
         compatible_firmware = service.firmware.proto_version == controller.firmware.proto_version \
             or bool(config['skip_version_check'])
@@ -143,8 +137,13 @@ class ServiceStatus(features.ServiceFeature):
         else:
             identity_error = None
 
+        # Do not revert to acknowledged if we're already synchronized.
+        # For there to be a meaningful change,
+        # there must have been a disconnect/connect first.
+        if not self.synchronized_ev.is_set():
+            self.status_desc.connection_status = 'ACKNOWLEDGED'
+
         self.status_desc.controller = controller
-        self.status_desc.connection_status = 'ACKNOWLEDGED'
         self.status_desc.firmware_error = firmware_error
         self.status_desc.identity_error = identity_error
 
