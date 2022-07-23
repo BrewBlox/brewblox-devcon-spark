@@ -8,6 +8,7 @@ from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
 from dataclasses import dataclass
 from functools import reduce
+from socket import htonl, ntohl
 from typing import Iterator, Optional, Union
 
 from brewblox_service import brewblox_logger
@@ -241,7 +242,7 @@ class ProtobufProcessor():
                 val = [serialize_datetime(v, fmt) for v in val]
 
             if options.ipv4address:
-                val = [int(ipaddress.ip_address(v)) for v in val]
+                val = [ntohl(int(ipaddress.ip_address(v))) for v in val]
 
             if element.field.cpp_type in json_format._INT_TYPES:
                 val = [int(round(v)) for v in val]
@@ -400,7 +401,7 @@ class ProtobufProcessor():
                 val = [serialize_datetime(v, opts.dates) for v in val]
 
             if options.ipv4address:
-                val = [ipaddress.ip_address(v).compressed for v in val]
+                val = [ipaddress.ip_address(htonl(v)).compressed for v in val]
 
             if excluded:
                 if options.unit and opts.metadata == MetadataOpt.TYPED:
