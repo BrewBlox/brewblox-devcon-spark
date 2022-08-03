@@ -57,7 +57,7 @@ def make_blocks() -> list[Block]:
                 'value': temp_qty(None),
                 'valueUnfiltered': temp_qty(None),
                 'resetFilter': False,
-                'settingEnabled': True,
+                'enabled': True,
                 'filter': 'FILTER_15s',
                 'filterThreshold': delta_temp_qty(5),
             },

@@ -23,7 +23,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox.DigitalActuator',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x15\x44igitalActuator.proto\x12\x14\x62lox.DigitalActuator\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x11\x43onstraints.proto\x1a\rIoArray.proto\"\x93\x02\n\x05\x42lock\x12#\n\x08hwDevice\x18\x01 \x01(\rB\x11\x8a\xb5\x18\x02\x18\n\x8a\xb5\x18\x02@\x01\x92?\x02\x38\x10\x12\x16\n\x07\x63hannel\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12\x37\n\x05state\x18\x03 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x0c\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x12\x0e\n\x06invert\x18\x04 \x01(\x08\x12;\n\rconstrainedBy\x18\x05 \x01(\x0b\x32$.blox.Constraints.DigitalConstraints\x12\x38\n\x0c\x64\x65siredState\x18\x06 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x06\x8a\xb5\x18\x02\x30\x01:\r\x8a\xb5\x18\x03\x18\xbe\x02\x8a\xb5\x18\x02H\x06\x62\x06proto3')
+  serialized_pb=_b('\n\x15\x44igitalActuator.proto\x12\x14\x62lox.DigitalActuator\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x11\x43onstraints.proto\x1a\rIoArray.proto\"\xae\x03\n\x05\x42lock\x12#\n\x08hwDevice\x18\x01 \x01(\rB\x11\x8a\xb5\x18\x02\x18\n\x8a\xb5\x18\x02@\x01\x92?\x02\x38\x10\x12\x16\n\x07\x63hannel\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12\x37\n\x05state\x18\x03 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x0c\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x12\x0e\n\x06invert\x18\x04 \x01(\x08\x12;\n\rconstrainedBy\x18\x05 \x01(\x0b\x32$.blox.Constraints.DigitalConstraints\x12\x38\n\x0c\x64\x65siredState\x18\x06 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x06\x8a\xb5\x18\x02\x30\x01\x12\x36\n\x0fsoftTransitions\x18\x07 \x01(\x0e\x32\x1d.blox.IoArray.SoftTransitions\x12\x30\n\x19transitionDurationSetting\x18\x08 \x01(\rB\r\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x12/\n\x12transitionDuration\x18\t \x01(\rB\x13\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x8a\xb5\x18\x02(\x01:\r\x8a\xb5\x18\x03\x18\xbe\x02\x8a\xb5\x18\x02H\x06\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,Constraints__pb2.DESCRIPTOR,IoArray__pb2.DESCRIPTOR,])
 
@@ -79,6 +79,27 @@ _BLOCK = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\212\265\030\0020\001'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='softTransitions', full_name='blox.DigitalActuator.Block.softTransitions', index=6,
+      number=7, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='transitionDurationSetting', full_name='blox.DigitalActuator.Block.transitionDurationSetting', index=7,
+      number=8, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\002\010\003\212\265\030\003\020\350\007'), file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='transitionDuration', full_name='blox.DigitalActuator.Block.transitionDuration', index=8,
+      number=9, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=_b('\212\265\030\002\010\003\212\265\030\003\020\350\007\212\265\030\002(\001'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -92,12 +113,13 @@ _BLOCK = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=112,
-  serialized_end=387,
+  serialized_end=542,
 )
 
 _BLOCK.fields_by_name['state'].enum_type = IoArray__pb2._DIGITALSTATE
 _BLOCK.fields_by_name['constrainedBy'].message_type = Constraints__pb2._DIGITALCONSTRAINTS
 _BLOCK.fields_by_name['desiredState'].enum_type = IoArray__pb2._DIGITALSTATE
+_BLOCK.fields_by_name['softTransitions'].enum_type = IoArray__pb2._SOFTTRANSITIONS
 DESCRIPTOR.message_types_by_name['Block'] = _BLOCK
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -113,5 +135,7 @@ _BLOCK.fields_by_name['hwDevice']._options = None
 _BLOCK.fields_by_name['channel']._options = None
 _BLOCK.fields_by_name['state']._options = None
 _BLOCK.fields_by_name['desiredState']._options = None
+_BLOCK.fields_by_name['transitionDurationSetting']._options = None
+_BLOCK.fields_by_name['transitionDuration']._options = None
 _BLOCK._options = None
 # @@protoc_insertion_point(module_scope)
