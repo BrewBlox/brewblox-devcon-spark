@@ -10,23 +10,37 @@ from pytimeparse.timeparse import timeparse
 
 from .opts import DateFormatOpt
 
+DurationSrc_ = Union[str, int, dict, timedelta, None]
 DatetimeSrc_ = Union[str, int, float, datetime, None]
 
 
-def parse_duration(value: str) -> timedelta:
+def parse_duration(value: DurationSrc_) -> timedelta:
+    if not value:
+        return timedelta(seconds=0)
+
+    elif isinstance(value, timedelta):
+        return value
+
+    if isinstance(value, dict):
+        v = value['value'] or 0
+        u = value['unit']
+        return parse_duration(f'{v} {u}')
+
     try:
         return timedelta(seconds=float(value))
     except ValueError:
         return timedelta(seconds=timeparse(value))
 
 
-def serialize_duration(td: timedelta) -> str:
+def serialize_duration(value: DurationSrc_) -> str:
     """
     Format timedelta as d(ays)h(ours)m(inutes)s(econds)
 
     timedelta(seconds=70) == 1m10s
     timedelta(hours=1.5) == 1h30m
     """
+    td = parse_duration(value)
+
     periods = [
         ('d', 60*60*24),
         ('h', 60*60),

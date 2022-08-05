@@ -5,7 +5,7 @@ Regulates actions that should be taken when the service connects to a controller
 
 import asyncio
 from contextlib import suppress
-from datetime import datetime, timedelta
+from datetime import datetime
 from functools import wraps
 
 from aiohttp import web
@@ -14,6 +14,7 @@ from brewblox_service import brewblox_logger, features, repeater, strex
 from brewblox_devcon_spark import (block_store, codec, commander, const,
                                    datastore, exceptions, global_store,
                                    service_status, service_store)
+from brewblox_devcon_spark.codec.time_utils import serialize_duration
 from brewblox_devcon_spark.models import FirmwareBlock, FirmwareBlockIdentity
 
 HANDSHAKE_TIMEOUT_S = 120
@@ -80,10 +81,9 @@ class SparkSynchronization(repeater.RepeaterFeature):
             - Abort synchronization if firmware/ID is not compatible
         - Synchronize block store
             - Read controller-specific data in datastore
-        - Synchronize controller time
-            - Send current abs time to controller block
-        - Synchronize controller display unit
-            - Send correct unit to controller if mismatched
+        - Synchronize controller settings
+            - Send sysTime to controller if mismatched
+            - Send temp Unit to controller if mismatched
             - Send timezone to controller if mismatched
         - Set 'synchronized' event
         - Wait for 'disconnected' event
@@ -96,8 +96,7 @@ class SparkSynchronization(repeater.RepeaterFeature):
             await service_status.wait_connected(self.app)
             await self._sync_handshake()
             await self._sync_block_store()
-            await self._sync_time()
-            await self._sync_display()
+            await self._sync_sysinfo()
 
             service_status.set_synchronized(self.app)
             LOGGER.info('Service synchronized!')
@@ -201,65 +200,58 @@ class SparkSynchronization(repeater.RepeaterFeature):
         await datastore.check_remote(self.app)
         await self.block_store.read(self.device_name)
 
-    @subroutine('sync controller time')
-    async def _sync_time(self):
-        now = datetime.now()
-        ticks_block = await self.commander.write_block(
-            FirmwareBlock(
-                nid=const.SYSTIME_NID,
-                type='Ticks',
-                data={
-                    'secondsSinceEpoch': int(now.timestamp())
-                }
-            ))
-        ms = ticks_block.data['millisSinceBoot']
-        uptime = timedelta(milliseconds=ms)
-        LOGGER.info(f'System uptime: {uptime}')
-
-    @subroutine('sync display settings')
-    async def _sync_display(self):
-        await self.set_display_settings()
+    @subroutine('sync controller settings')
+    async def _sync_sysinfo(self):
+        await self.set_sysinfo_settings()
 
     async def on_global_store_change(self):
         """Callback invoked by global_store"""
         await self.set_converter_units()
-        await self.set_display_settings()
+
+        if await service_status.wait_acknowledged(self.app, wait=False):
+            await self.set_sysinfo_settings()
 
     async def set_converter_units(self):
         converter = codec.unit_conversion.fget(self.app)
         converter.temperature = self.global_store.units['temperature']
         LOGGER.info(f'Service temperature unit set to {converter.temperature}')
 
-    async def set_display_settings(self):
-        write_required = False
+    async def set_sysinfo_settings(self):
+        sysinfo = await self.commander.read_block(
+            FirmwareBlockIdentity(nid=const.SYSINFO_NID))
 
-        connection_status = service_status.desc(self.app).connection_status
-        if connection_status not in ['ACKNOWLEDGED', 'SYNCHRONIZED']:
-            return
+        uptime = sysinfo.data['uptime']['value']
+        LOGGER.info(f'System uptime: {serialize_duration(uptime)}')
 
-        display_block = await self.commander.read_block(
-            FirmwareBlockIdentity(nid=const.DISPLAY_SETTINGS_NID))
+        update_freq = sysinfo.data['updatesPerSecond']
+        LOGGER.info(f'System updates per second: {update_freq}')
 
-        user_unit = self.global_store.units['temperature']
-        expected_unit = 'TEMP_FAHRENHEIT' if user_unit == 'degF' else 'TEMP_CELSIUS'
-        block_unit = display_block.data['tempUnit']
+        # Always try and write system time
+        patch_data = {'systemTime': datetime.now()}
 
-        if expected_unit != block_unit:
-            write_required = True
-            display_block.data['tempUnit'] = expected_unit
-            LOGGER.info(f'Spark display temperature unit set to {user_unit}')
-
+        # Check system time zone
         user_tz_name = self.global_store.time_zone['name']
         user_tz = self.global_store.time_zone['posixValue']
-        block_tz = display_block.data['timeZone']
+        block_tz = sysinfo.data['timeZone']
 
         if user_tz != block_tz:
-            write_required = True
-            display_block.data['timeZone'] = user_tz
-            LOGGER.info(f'Spark display time zone set to {user_tz} ({user_tz_name})')
+            LOGGER.info(f'Updating Spark time zone: {user_tz} ({user_tz_name})')
+            patch_data['timeZone'] = user_tz
 
-        if write_required:
-            await self.commander.write_block(display_block)
+        # Check system temp unit
+        user_unit = self.global_store.units['temperature']
+        expected_unit = 'TEMP_FAHRENHEIT' if user_unit == 'degF' else 'TEMP_CELSIUS'
+        block_unit = sysinfo.data['tempUnit']
+
+        if expected_unit != block_unit:
+            LOGGER.info(f'Updating Spark temp unit: {user_unit}')
+            patch_data['tempUnit'] = expected_unit
+
+        await self.commander.patch_block(FirmwareBlock(
+            nid=const.SYSINFO_NID,
+            type='SysInfo',
+            data=patch_data,
+        ))
 
 
 def setup(app: web.Application):

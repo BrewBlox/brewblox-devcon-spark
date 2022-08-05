@@ -35,15 +35,9 @@ def default_blocks() -> dict[int, FirmwareBlock]:
                 nid=const.SYSINFO_NID,
                 type='SysInfo',
                 data={
-                    'deviceId': 'FACADE'
-                },
-            ),
-            FirmwareBlock(
-                nid=const.SYSTIME_NID,
-                type='Ticks',
-                data={
-                    'millisSinceBoot': 0,
-                    'secondsSinceEpoch': 0,
+                    'deviceId': 'FACADE',
+                    'timeZone': 'Africa/Casablanca',
+                    'updatesPerSecond': 9001,
                 },
             ),
             FirmwareBlock(
@@ -64,9 +58,7 @@ def default_blocks() -> dict[int, FirmwareBlock]:
             FirmwareBlock(
                 nid=const.DISPLAY_SETTINGS_NID,
                 type='DisplaySettings',
-                data={
-                    'timeZone': 'Africa/Casablanca'
-                },
+                data={},
             ),
             FirmwareBlock(
                 nid=const.SPARK_PINS_NID,
@@ -144,11 +136,11 @@ class SparkConnectionSim(connection.SparkConnection):
             ]):
                 dest.data[key] = v_new
 
-    def update_ticks(self):
+    def update_systime(self):
         elapsed = datetime.now() - self._start_time
-        ticks_block = self._blocks[const.SYSTIME_NID]
-        ticks_block.data['millisSinceBoot'] = elapsed.total_seconds() * 1000
-        ticks_block.data['secondsSinceEpoch'] = self._start_time.timestamp() + elapsed.total_seconds()
+        sysinfo_block = self._blocks[const.SYSINFO_NID]
+        sysinfo_block.data['uptime'] = elapsed.total_seconds() * 1000
+        sysinfo_block.data['systemTime'] = self._start_time.timestamp() + elapsed.total_seconds()
 
     async def welcome(self):
         welcome = [
@@ -249,21 +241,21 @@ class SparkConnectionSim(connection.SparkConnection):
 
         elif request.opcode == Opcode.REBOOT:
             self._start_time = datetime.now()
-            self.update_ticks()
+            self.update_systime()
 
         elif request.opcode == Opcode.CLEAR_BLOCKS:
             response.payload = [self._to_payload(block)
                                 for block in self._blocks.values()
                                 if block.nid >= const.USER_NID_START]
             self._blocks = default_blocks()
-            self.update_ticks()
+            self.update_systime()
 
         elif request.opcode == Opcode.CLEAR_WIFI:
             self._blocks[const.WIFI_SETTINGS_NID].data.clear()
 
         elif request.opcode == Opcode.FACTORY_RESET:
             self._blocks = default_blocks()
-            self.update_ticks()
+            self.update_systime()
 
         elif request.opcode == Opcode.FIRMWARE_UPDATE:
             pass
@@ -277,7 +269,7 @@ class SparkConnectionSim(connection.SparkConnection):
         try:
             await service_status.wait_enabled(self.app)
             service_status.set_connected(self.app, self._address)
-            self.update_ticks()
+            self.update_systime()
             await self.welcome()
 
             while True:
@@ -295,7 +287,7 @@ class SparkConnectionSim(connection.SparkConnection):
 
     async def write(self, request_b64: str):  # pragma: no cover
         try:
-            self.update_ticks()
+            self.update_systime()
             request = self._codec.decode_request(request_b64)
             response = await self.handle_command(request)
 
