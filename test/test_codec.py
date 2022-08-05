@@ -48,8 +48,7 @@ async def test_type_conversion():
 async def test_encode_system_objects(app, client, cdc: Codec):
     types = [
         'SysInfo',
-        'Ticks',
-        'OneWireBus'
+        'OneWireBus',
     ]
 
     encoded = [

@@ -3,7 +3,6 @@
 
 import sys
 _b=sys.version_info[0]<3 and (lambda x:x) or (lambda x:x.encode('latin1'))
-from google.protobuf.internal import enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
@@ -22,35 +21,10 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='blox.DisplaySettings',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x15\x44isplaySettings.proto\x12\x14\x62lox.DisplaySettings\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xf2\x01\n\x06Widget\x12\x12\n\x03pos\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08\x12\x1f\n\x05\x63olor\x18\x02 \x01(\x0c\x42\x10\x92?\x02\x08\x03\x92?\x02x\x01\x8a\xb5\x18\x02\x38\x01\x12\x13\n\x04name\x18\x03 \x01(\tB\x05\x92?\x02\x08\x10\x12!\n\ntempSensor\x18\n \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x02\x92?\x02\x38\x10H\x00\x12)\n\x12setpointSensorPair\x18\x0b \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x04\x92?\x02\x38\x10H\x00\x12%\n\x0e\x61\x63tuatorAnalog\x18\x0c \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x05\x92?\x02\x38\x10H\x00\x12\x1b\n\x03pid\x18\x0e \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xb0\x02\x92?\x02\x38\x10H\x00\x42\x0c\n\nWidgetType\"\xc8\x01\n\x05\x42lock\x12\x34\n\x07widgets\x18\x01 \x03(\x0b\x32\x1c.blox.DisplaySettings.WidgetB\x05\x92?\x02\x10\x06\x12\x13\n\x04name\x18\x02 \x01(\tB\x05\x92?\x02\x08(\x12\x37\n\x08tempUnit\x18\x03 \x01(\x0e\x32%.blox.DisplaySettings.TemperatureUnit\x12\x19\n\nbrightness\x18\x04 \x01(\rB\x05\x92?\x02\x38\x08\x12\x17\n\x08timeZone\x18\x05 \x01(\tB\x05\x92?\x02\x08 :\x07\x8a\xb5\x18\x03\x18\xba\x02*8\n\x0fTemperatureUnit\x12\x10\n\x0cTEMP_CELSIUS\x10\x00\x12\x13\n\x0fTEMP_FAHRENHEIT\x10\x01\x62\x06proto3')
+  serialized_pb=_b('\n\x15\x44isplaySettings.proto\x12\x14\x62lox.DisplaySettings\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xf2\x01\n\x06Widget\x12\x12\n\x03pos\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08\x12\x1f\n\x05\x63olor\x18\x02 \x01(\x0c\x42\x10\x92?\x02\x08\x03\x92?\x02x\x01\x8a\xb5\x18\x02\x38\x01\x12\x13\n\x04name\x18\x03 \x01(\tB\x05\x92?\x02\x08\x10\x12!\n\ntempSensor\x18\n \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x02\x92?\x02\x38\x10H\x00\x12)\n\x12setpointSensorPair\x18\x0b \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x04\x92?\x02\x38\x10H\x00\x12%\n\x0e\x61\x63tuatorAnalog\x18\x0c \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x05\x92?\x02\x38\x10H\x00\x12\x1b\n\x03pid\x18\x0e \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xb0\x02\x92?\x02\x38\x10H\x00\x42\x0c\n\nWidgetType\"[\n\x05\x42lock\x12\x34\n\x07widgets\x18\x01 \x03(\x0b\x32\x1c.blox.DisplaySettings.WidgetB\x05\x92?\x02\x10\x06\x12\x13\n\x04name\x18\x02 \x01(\tB\x05\x92?\x02\x08(:\x07\x8a\xb5\x18\x03\x18\xba\x02\x62\x06proto3')
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
-_TEMPERATUREUNIT = _descriptor.EnumDescriptor(
-  name='TemperatureUnit',
-  full_name='blox.DisplaySettings.TemperatureUnit',
-  filename=None,
-  file=DESCRIPTOR,
-  values=[
-    _descriptor.EnumValueDescriptor(
-      name='TEMP_CELSIUS', index=0, number=0,
-      serialized_options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='TEMP_FAHRENHEIT', index=1, number=1,
-      serialized_options=None,
-      type=None),
-  ],
-  containing_type=None,
-  serialized_options=None,
-  serialized_start=525,
-  serialized_end=581,
-)
-_sym_db.RegisterEnumDescriptor(_TEMPERATUREUNIT)
-
-TemperatureUnit = enum_type_wrapper.EnumTypeWrapper(_TEMPERATUREUNIT)
-TEMP_CELSIUS = 0
-TEMP_FAHRENHEIT = 1
 
 
 
@@ -151,27 +125,6 @@ _BLOCK = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=_b('\222?\002\010('), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='tempUnit', full_name='blox.DisplaySettings.Block.tempUnit', index=2,
-      number=3, type=14, cpp_type=8, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='brightness', full_name='blox.DisplaySettings.Block.brightness', index=3,
-      number=4, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\222?\0028\010'), file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='timeZone', full_name='blox.DisplaySettings.Block.timeZone', index=4,
-      number=5, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=_b('\222?\002\010 '), file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -184,8 +137,8 @@ _BLOCK = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=323,
-  serialized_end=523,
+  serialized_start=322,
+  serialized_end=413,
 )
 
 _WIDGET.oneofs_by_name['WidgetType'].fields.append(
@@ -201,10 +154,8 @@ _WIDGET.oneofs_by_name['WidgetType'].fields.append(
   _WIDGET.fields_by_name['pid'])
 _WIDGET.fields_by_name['pid'].containing_oneof = _WIDGET.oneofs_by_name['WidgetType']
 _BLOCK.fields_by_name['widgets'].message_type = _WIDGET
-_BLOCK.fields_by_name['tempUnit'].enum_type = _TEMPERATUREUNIT
 DESCRIPTOR.message_types_by_name['Widget'] = _WIDGET
 DESCRIPTOR.message_types_by_name['Block'] = _BLOCK
-DESCRIPTOR.enum_types_by_name['TemperatureUnit'] = _TEMPERATUREUNIT
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 Widget = _reflection.GeneratedProtocolMessageType('Widget', (_message.Message,), dict(
@@ -231,7 +182,5 @@ _WIDGET.fields_by_name['actuatorAnalog']._options = None
 _WIDGET.fields_by_name['pid']._options = None
 _BLOCK.fields_by_name['widgets']._options = None
 _BLOCK.fields_by_name['name']._options = None
-_BLOCK.fields_by_name['brightness']._options = None
-_BLOCK.fields_by_name['timeZone']._options = None
 _BLOCK._options = None
 # @@protoc_insertion_point(module_scope)

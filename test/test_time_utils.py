@@ -13,6 +13,19 @@ def test_parse_duration():
     assert time_utils.parse_duration('1d99m') == \
         timedelta(days=1, hours=1, minutes=39)
 
+    assert time_utils.parse_duration(100) == \
+        timedelta(seconds=100)
+
+    assert time_utils.parse_duration(None) == \
+        timedelta(seconds=0)
+
+    assert time_utils.parse_duration({
+        '__bloxtype': 'Quantity',
+        'unit': 'minute',
+        'value': 20
+    }) == \
+        timedelta(minutes=20)
+
 
 def test_serialize_duration():
     assert time_utils.serialize_duration(

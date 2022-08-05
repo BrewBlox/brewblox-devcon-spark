@@ -40,11 +40,6 @@ async def disconnect(app):
 
 
 @pytest.fixture(autouse=True)
-def m_timedelta(mocker):
-    mocker.patch(TESTED + '.timedelta', autospec=True)
-
-
-@pytest.fixture(autouse=True)
 def ping_interval_mock(mocker):
     mocker.patch(TESTED + '.PING_INTERVAL_S', 0.0001)
 
@@ -93,7 +88,7 @@ async def test_sync_errors(app, client, syncher, mocker):
 
 
 async def test_write_error(app, client, syncher, mocker):
-    mocker.patch.object(commander.fget(app), 'write_block', autospec=True, side_effect=RuntimeError)
+    mocker.patch.object(commander.fget(app), 'patch_block', autospec=True, side_effect=RuntimeError)
     await disconnect(app)
     with pytest.raises(RuntimeError):
         await connect(app, syncher)
