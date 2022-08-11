@@ -9,7 +9,7 @@ from pathlib import Path
 # For this to happen without polluting the repo root directory, we have to extend sys.path
 # The import is done inside the if statement to avoid autopep8 / isort interfering
 if 'brewblox_pb2' not in sys.modules:  # pragma: no cover
-    sys.path.append(f'{Path(__file__).parent.absolute()}/proto-compiled/')
+    sys.path.append(f'{Path(__file__).parent.resolve()}/proto-compiled/')
 
     import ActuatorAnalogMock_pb2
     import ActuatorLogic_pb2
@@ -23,6 +23,7 @@ if 'brewblox_pb2' not in sys.modules:  # pragma: no cover
     import DS2408_pb2
     import DS2413_pb2
     import EdgeCase_pb2
+    import FastPwm_pb2
     import MockPins_pb2
     import MotorValve_pb2
     import Mutex_pb2
@@ -56,6 +57,7 @@ __all__ = [
     'DS2408_pb2',
     'DS2413_pb2',
     'EdgeCase_pb2',
+    'FastPwm_pb2',
     'MockPins_pb2',
     'MotorValve_pb2',
     'Mutex_pb2',
