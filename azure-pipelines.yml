@@ -1,5 +1,5 @@
 pool:
-  vmImage: 'Ubuntu-20.04'
+  vmImage: "Ubuntu-20.04"
 
 trigger:
   tags:
@@ -12,7 +12,7 @@ trigger:
 pr:
   branches:
     include:
-      - '*'
+      - "*"
 
 variables:
   # Variables imported from brewblox group:
@@ -20,94 +20,95 @@ variables:
   # DOCKER_PASSWORD
   - group: brewblox
   - name: BOOST_VERSION
-    value: '1.67.0'
+    value: "1.67.0"
 
 steps:
-- task: UsePythonVersion@0
-  inputs:
-    addToPath: true
-    versionSpec: '3.9'
-    architecture: 'x64'
+  - task: UsePythonVersion@0
+    inputs:
+      addToPath: true
+      versionSpec: "3.9"
+      architecture: "x64"
 
-- bash: |
-    set -o allexport; source .env; set +o allexport
-    echo "##vso[task.setvariable variable=DOCKER_REPO]$DOCKER_REPO"
-    echo "##vso[task.setvariable variable=FLASHER_REPO]$FLASHER_REPO"
-  displayName: Export .env variables
+  - bash: |
+      set -o allexport; source .env; set +o allexport
+      echo "##vso[task.setvariable variable=DOCKER_REPO]$DOCKER_REPO"
+      echo "##vso[task.setvariable variable=FLASHER_REPO]$FLASHER_REPO"
+    displayName: Export .env variables
 
-- bash: |
-    BRANCH=$(echo $(Build.SourceBranch) | grep -oP "^refs/heads/\K.*")
-    TAG=$(echo $BRANCH | tr '/' '-' | tr '[:upper:]' '[:lower:]')
-    echo "##vso[task.setvariable variable=BRANCH]$BRANCH"
-    echo "##vso[task.setvariable variable=TAG]$TAG"
-  displayName: Export build variables
+  - bash: |
+      BRANCH=$(echo $(Build.SourceBranch) | grep -oP "^refs/heads/\K.*")
+      TAG=$(echo $BRANCH | tr '/' '-' | tr '[:upper:]' '[:lower:]')
+      echo "##vso[task.setvariable variable=BRANCH]$BRANCH"
+      echo "##vso[task.setvariable variable=TAG]$TAG"
+    displayName: Export build variables
 
-- bash: |
-    pip install poetry wheel
-    poetry install
-  displayName: Install dependencies
+  - bash: |
+      pip install poetry wheel
+      poetry install
+    displayName: Install dependencies
 
-- bash: |
-    bash dev/download-firmware.sh
-  displayName: Download firmware
+  - bash: |
+      bash dev/download-firmware.sh
+    displayName: Download firmware
 
-- bash: >-
-    sudo apt update -y &&
-    sudo apt install -y
-    socat
-    libboost-system$(BOOST_VERSION)
-    libboost-program-options$(BOOST_VERSION)
-    libboost-random$(BOOST_VERSION)
-    libboost-thread$(BOOST_VERSION)
-  displayName: Install test dependencies
+  - bash: >-
+      sudo apt update -y &&
+      sudo apt install -y
+      socat
+      libboost-system$(BOOST_VERSION)
+      libboost-program-options$(BOOST_VERSION)
+      libboost-random$(BOOST_VERSION)
+      libboost-thread$(BOOST_VERSION)
+    displayName: Install test dependencies
 
-- bash: |
-    poetry run pytest --integration
-  displayName: Run Pytest
+  - bash: |
+      poetry run pytest --integration
+      poetry run flake8
+    displayName: Test
 
-- bash: |
-    docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-    docker buildx create --use
-    docker buildx inspect --bootstrap
-  displayName: Prepare buildx
-  condition: and(succeeded(), variables.BRANCH)
+  - bash: |
+      docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+      docker buildx create --use
+      docker buildx inspect --bootstrap
+    displayName: Prepare buildx
+    condition: and(succeeded(), variables.BRANCH)
 
-- bash: |
-    echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USER) --password-stdin
-  displayName: Docker login
-  condition: and(succeeded(), variables.BRANCH)
+  - bash: |
+      echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USER) --password-stdin
+    displayName: Docker login
+    condition: and(succeeded(), variables.BRANCH)
 
-# Service image
+  # Service image
 
-- bash: |
-    bash docker/before_build.sh
-  displayName: Run before_build.sh script
-  condition: and(succeeded(), variables.BRANCH)
+  - bash: |
+      bash docker/before_build.sh
+    displayName: Run before_build.sh script
+    condition: and(succeeded(), variables.BRANCH)
 
-- bash: >-
-    docker buildx build
-    --tag $(DOCKER_REPO):$(TAG)
-    --tag $(DOCKER_REPO):rpi-$(TAG)
-    --build-arg service_info="$(git describe) @ $(date)"
-    --push
-    --platform linux/amd64,linux/arm/v7,linux/arm64/v8
-    docker
-  displayName: Build Docker image
-  condition: and(succeeded(), variables.BRANCH)
+  - bash: >-
+      docker buildx build
+      --tag $(DOCKER_REPO):$(TAG)
+      --tag $(DOCKER_REPO):rpi-$(TAG)
+      --build-arg service_info="$(git describe) @ $(date)"
+      --push
+      --platform linux/amd64,linux/arm/v7,linux/arm64/v8
+      docker
+    displayName: Build Docker image
+    condition: and(succeeded(), variables.BRANCH)
 
-# Flasher image
+  # Flasher image
 
-- bash: |
-    bash flasher/before_build.sh
-  displayName: (Flasher) Run before_build.sh script
-  condition: and(succeeded(), variables.BRANCH)
+  - bash: |
+      bash flasher/before_build.sh
+    displayName: (Flasher) Run before_build.sh script
+    condition: and(succeeded(), variables.BRANCH)
 
-- bash: >-
-    docker buildx build
-    --tag $(FLASHER_REPO):$(TAG)
-    --tag $(FLASHER_REPO):rpi-$(TAG)
-    --push
-    --platform linux/amd64,linux/arm/v7,linux/arm64/v8
-    flasher
-  displayName: (Flasher) Build Docker image
-  condition: and(succeeded(), variables.BRANCH)
+  - bash: >-
+      docker buildx build
+      --tag $(FLASHER_REPO):$(TAG)
+      --tag $(FLASHER_REPO):rpi-$(TAG)
+      --push
+      --platform linux/amd64,linux/arm/v7,linux/arm64/v8
+      flasher
+    displayName: (Flasher) Build Docker image
+    condition: and(succeeded(), variables.BRANCH)

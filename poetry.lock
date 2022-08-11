@@ -559,18 +559,6 @@ pytest = ">=4.6"
 testing = ["virtualenv", "pytest-xdist", "six", "process-tests", "hunter", "fields"]
 
 [[package]]
-name = "pytest-flake8"
-version = "1.1.1"
-description = "pytest plugin to check FLAKE8 requirements"
-category = "dev"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-flake8 = ">=4.0"
-pytest = ">=7.0"
-
-[[package]]
 name = "pytest-mock"
 version = "3.8.2"
 description = "Thin-wrapper around the mock package for easier use with pytest"
@@ -658,7 +646,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<4"
-content-hash = "2b521297bef0c584d794907c4f39f7c336d44ba7415a44a35eac4270b2f93597"
+content-hash = "6f5a729d00a1004d5398a539ab628b76474a9927436c1327552a42bab00739cf"
 
 [metadata.files]
 aiofiles = [
@@ -1290,10 +1278,6 @@ pytest-asyncio = [
 pytest-cov = [
     {file = "pytest-cov-3.0.0.tar.gz", hash = "sha256:e7f0f5b1617d2210a2cabc266dfe2f4c75a8d32fb89eafb7ad9d06f6d076d470"},
     {file = "pytest_cov-3.0.0-py3-none-any.whl", hash = "sha256:578d5d15ac4a25e5f961c938b85a05b09fdaae9deef3bb6de9a6e766622ca7a6"},
-]
-pytest-flake8 = [
-    {file = "pytest-flake8-1.1.1.tar.gz", hash = "sha256:ba4f243de3cb4c2486ed9e70752c80dd4b636f7ccb27d4eba763c35ed0cd316e"},
-    {file = "pytest_flake8-1.1.1-py2.py3-none-any.whl", hash = "sha256:e0661a786f8cbf976c185f706fdaf5d6df0b1667c3bcff8e823ba263618627e7"},
 ]
 pytest-mock = [
     {file = "pytest-mock-3.8.2.tar.gz", hash = "sha256:77f03f4554392558700295e05aed0b1096a20d4a60a4f3ddcde58b0c31c8fca2"},
