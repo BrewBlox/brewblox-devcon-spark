@@ -2,8 +2,7 @@
 Calculate block metadata
 """
 
-from itertools import chain
-from typing import Any, Generator, TypedDict
+from typing import Any, Optional, TypedDict
 
 from brewblox_devcon_spark.codec import bloxfield
 from brewblox_devcon_spark.models import Block
@@ -17,9 +16,7 @@ IGNORED_RELATION_TYPES = [
 # Relations with this field name should be ignored
 # This may be a duplicate driven field, or a meaningless link to a system object
 IGNORED_RELATION_FIELDS = [
-    'drivenOutputId',  # PID
-    'drivenTargetId',  # Setpoint, Setpoint Driver, Logic Actuator
-    'drivenActuatorId',  # PWM
+    'claimedBy',
     'oneWireBusId',  # OneWireTempSensor, DS2408, DS2413
 ]
 
@@ -37,10 +34,11 @@ INVERTED_RELATION_FIELDS = [
 class BlockRelation(TypedDict):
     source: str
     target: str
+    claimed: Optional[bool]
     relation: list[str]
 
 
-class BlockDriveChain(TypedDict):
+class BlockClaim(TypedDict):
     source: str
     target: str
     intermediate: list[str]
@@ -65,7 +63,7 @@ def _find_nested_relations(
     Returns:
         list[BlockRelation]: relations detected in `field` and its children.
     """
-    if relation and relation[0] in IGNORED_RELATION_FIELDS:
+    if relation and relation[-1] in IGNORED_RELATION_FIELDS:
         return []
 
     elif bloxfield.is_defined_link(field):
@@ -81,7 +79,7 @@ def _find_nested_relations(
 
     elif bloxfield.is_bloxfield(field):
         # Ignored:
-        # - driven links
+        # - claim links
         # - unset links
         # - quantities
         return []
@@ -106,7 +104,7 @@ def _find_nested_relations(
         return []
 
 
-def calculate_relations(blocks: list[Block]) -> list[dict]:
+def calculate_relations(blocks: list[Block]) -> list[BlockRelation]:
     """
     Identifies all relation edges between blocks.
     One-sided relations (undefined links) are ignored.
@@ -115,99 +113,62 @@ def calculate_relations(blocks: list[Block]) -> list[dict]:
         blocks (list[Block]): Set of blocks that will be evaluated
 
     Returns:
-        list[dict]: Valid relations between blocks in `blocks`.
+        list[BlockRelation]: Valid relations between blocks in `blocks`.
     """
-    output = []
+    relations = []
     for block in blocks:
         if block.type in IGNORED_RELATION_TYPES:
             continue
-        output += _find_nested_relations(block.id, [], block.data)
+        relations += _find_nested_relations(block.id, [], block.data)
 
-    return output
-
-
-def _generate_chains(
-    drivers: dict[str, list[str]],
-    chain: list[str],
-    block_id: str,
-) -> Generator[list[str], None, None]:
-    """
-    Recursively constructs driver chains for all driven blocks
-    The chain ends when `block_id` is not driven, or a circular reference is detected
-
-    Args:
-        drivers (dict[str, list[str]]): key: driven ID, value: driver IDs.
-        chain (list[str]): [description] Drive chain leading to `block_id`.
-        block_id (str): [description] Evaluated ID. Not necessarily driven.
-
-    Yields:
-        list[list[str]]: list of chains terminating at `block_id`.
-            A chain is generated for every initial driver.
-    """
-    # check if driving block is itself driven
-    super_drivers = drivers.get(block_id)
-
-    if block_id in chain:
-        # Circular relation detected
-        # Add block ID to complete the circle, and then end recursion
-        yield [*chain, block_id]
-    elif super_drivers:
-        # Increase recursion level until initial driver is found
-        for driver_id in super_drivers:
-            yield from _generate_chains(drivers, [*chain, block_id], driver_id)
-    else:
-        # We've reached the initial driver
-        yield [*chain, block_id]
-
-
-def calculate_drive_chains(blocks: list[Block]) -> list[BlockDriveChain]:
-    """
-    Finds driving links in `blocks`, and constructs end-to-end drive chains.
-
-    All driven blocks get at least one chain.
-    If any block in the chain is driven by multiple blocks,
-    a chain is generated for every connected initial driver (a driving block that is not driven).
-
-    Given a typical fermentation control scheme with these blocks...
-        - Heat PID
-        - Heat PWM
-        - Heat Actuator
-        - Cool PID
-        - Cool PWM
-        - Cool Actuator
-        - Spark Pins
-
-    ...the following drive chains will be generated
-        - target=Spark Pins, source=Heat PID, intermediate=[Heat Actuator, Heat PWM]
-        - target=Heat Actuator, source=Heat PID, intermediate=[Heat PWM]
-        - target=Heat PWM, source=Heat PID, intermediate=[]
-        - target=Spark Pins, source=Cool PID, intermediate=[Cool Actuator, Cool PWM]
-        - target=Cool Actuator, source=Cool PID, intermediate=[Cool PWM]
-        - target=Cool PWM, source=Cool PID, intermediate=[]
-
-    Args:
-        blocks (list[Block]): Input block array. Expected to be complete.
-
-    Returns:
-        list[BlockDriveChain]: All detected drive chains.
-    """
-    # First map all driven blocks to their drivers
-    drivers: dict[str, list[str]] = {}  # key: driven, value: drivers
     for block in blocks:
-        for field in block.data.values():
-            if bloxfield.is_defined_link(field) and field.get('driven') is True:
-                # Link is driven, append block ID to drivers
-                drivers.setdefault(field['id'], []).append(block.id)
+        claim = block.data.get('claimedBy')
+        if claim and claim['id']:
+            target = block.id
+            source = claim['id']
+            for r in relations:  # pragma: no branch
+                if r['target'] == target and r['source'] == source:
+                    r['claimed'] = True
+                    break
 
-    # Generate and collect all drive chains
-    output: list[BlockDriveChain] = []
-    for drive_chain in chain.from_iterable(
-        _generate_chains(drivers, [], driven_id)
-        for driven_id in drivers.keys()
-    ):
-        output.append(BlockDriveChain(
-            target=drive_chain[0],
-            source=drive_chain[-1],
-            intermediate=drive_chain[1:-1]
-        ))
-    return output
+    return relations
+
+
+def calculate_claims(blocks: list[Block]) -> list[BlockClaim]:
+    claim_dict: dict[str, BlockClaim] = {}
+    channel_claims: list[BlockClaim] = []
+
+    for block in blocks:
+        # Claims to the entire block
+        link = block.data.get('claimedBy')
+        if link and link['id']:
+            claim_dict[block.id] = BlockClaim(source=link['id'],
+                                              target=block.id,
+                                              intermediate=[])
+
+        # On IoArrays, individual channels are claimed
+        channels = block.data.get('channels', [])
+        for c in channels:
+            link = c['claimedBy']
+            if link and link['id']:
+                channel_claims.append(BlockClaim(source=link['id'],
+                                                 target=block.id,
+                                                 intermediate=[]))
+
+    def extended_claim(claim: BlockClaim) -> BlockClaim:
+        source_claim = claim_dict.get(claim['source'])
+        if not source_claim:
+            return claim
+
+        grand_source = source_claim['source']
+        if grand_source in claim['intermediate']:
+            return claim  # Circular claim
+
+        # Shift claim, look further up the tree
+        return extended_claim(
+            BlockClaim(source=grand_source,
+                       target=claim['target'],
+                       intermediate=[*claim['intermediate'], claim['source']]))
+
+    return [extended_claim(c)
+            for c in [*claim_dict.values(), *channel_claims]]

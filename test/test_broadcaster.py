@@ -19,7 +19,7 @@ TESTED = broadcaster.__name__
 @pytest.fixture(autouse=True)
 def m_relations(mocker):
     mocker.patch(TESTED + '.calculate_relations', autospec=True)
-    mocker.patch(TESTED + '.calculate_drive_chains', autospec=True)
+    mocker.patch(TESTED + '.calculate_claims', autospec=True)
 
 
 @pytest.fixture
@@ -98,7 +98,7 @@ async def test_broadcast(app, m_publish, client, synchronized):
                      'status': ANY,
                      'blocks': ANY,
                      'relations': ANY,
-                     'drive_chains': ANY,
+                     'claims': ANY,
                  },
              }),
     ])

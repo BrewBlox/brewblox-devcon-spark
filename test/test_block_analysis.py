@@ -8,12 +8,11 @@ from brewblox_devcon_spark import block_analysis
 from brewblox_devcon_spark.models import Block
 
 
-def blox_link(id: Optional[str], blockType: Optional[str] = None, driven=None):
+def blox_link(id: Optional[str], blockType: Optional[str] = None):
     return {
         '__bloxtype': 'Link',
         'id': id,
         'type': blockType,
-        'driven': driven,
     }
 
 
@@ -89,7 +88,6 @@ def make_blocks() -> list[Block]:
                 'boilModeActive': False,
                 'inputId': blox_link('Setpoint', 'SetpointSensorPair'),
                 'outputId': blox_link('Heat PWM', 'ActuatorPwm'),
-                'drivenOutputId': blox_link('Heat PWM', 'ActuatorPwm', True),
             },
         ),
         Block(
@@ -102,13 +100,9 @@ def make_blocks() -> list[Block]:
                 'setting': 50,
                 'value': 50,
                 'actuatorId': blox_link('Heat Actuator', 'DigitalActuator'),
-                'drivenActuatorId': blox_link(
-                    'Heat Actuator',
-                    'DigitalActuator',
-                    True,
-                ),
                 'enabled': True,
                 'period': blox_qty(10, 's'),
+                'claimedBy': blox_link('Heat PID', 'Any'),
             },
         ),
         Block(
@@ -127,8 +121,9 @@ def make_blocks() -> list[Block]:
                 },
                 'desiredState': 'STATE_ACTIVE',
                 'state': 'STATE_ACTIVE',
-                'hwDevice': blox_link('Spark Pins', 'Spark3Pins', True),
+                'hwDevice': blox_link('Spark Pins', 'Spark3Pins'),
                 'invert': False,
+                'claimedBy': blox_link('Heat PWM', 'Any'),
             },
         ),
         Block(
@@ -158,7 +153,6 @@ def make_blocks() -> list[Block]:
                 'boilModeActive': False,
                 'inputId': blox_link('Setpoint', 'SetpointSensorPair'),
                 'outputId': blox_link('Cool PWM', 'ActuatorPwm'),
-                'drivenOutputId': blox_link('Cool PWM', 'ActuatorPwm', True),
             },
         ),
         Block(
@@ -186,13 +180,9 @@ def make_blocks() -> list[Block]:
                 'setting': 50,
                 'value': 50,
                 'actuatorId': blox_link('Cool Actuator', 'DigitalActuator'),
-                'drivenActuatorId': blox_link(
-                    'Cool Actuator',
-                    'DigitalActuator',
-                    True,
-                ),
                 'enabled': True,
                 'period': blox_qty(10, 's'),
+                'claimedBy': blox_link('Cool PID', 'Any'),
             },
         ),
         Block(
@@ -215,8 +205,23 @@ def make_blocks() -> list[Block]:
                 },
                 'desiredState': 'STATE_ACTIVE',
                 'state': 'STATE_ACTIVE',
-                'hwDevice': blox_link('Spark Pins', 'Spark3Pins', True),
+                'hwDevice': blox_link('Spark Pins', 'Spark3Pins'),
                 'invert': False,
+                'claimedBy': blox_link('Cool PWM', 'Any'),
+            },
+        ),
+        Block(
+            id='Unused Actuator',
+            type='DigitalActuator',
+            serviceId='test',
+            data={
+                'channel': 0,
+                'constrainedBy': {},
+                'desiredState': 'STATE_ACTIVE',
+                'state': 'STATE_ACTIVE',
+                'hwDevice': blox_link(None, 'Spark3Pins'),
+                'invert': False,
+                'claimedBy': blox_link(None, 'Any'),
             },
         ),
         Block(
@@ -226,7 +231,23 @@ def make_blocks() -> list[Block]:
             data={
                 'enableIoSupply12V': True,
                 'enableIoSupply5V': True,
-                'channels': [],
+                'channels': [
+                    {
+                        'id': 1,
+                        'capabilities': 0,
+                        'claimedBy': blox_link('Heat Actuator', 'Any'),
+                    },
+                    {
+                        'id': 2,
+                        'capabilities': 0,
+                        'claimedBy': blox_link('Cool Actuator', 'Any'),
+                    },
+                    {
+                        'id': 3,
+                        'capabilities': 0,
+                        'claimedBy': blox_link(None, 'Any'),
+                    },
+                ],
                 'soundAlarm': False,
                 'voltage12': 12,
                 'voltage5': 5,
@@ -260,7 +281,7 @@ def test_calculate_relations():
     result = sorted(result, key=lambda v: v['source'] + ' ' + v['target'])
     assert result == [
         {'source': 'Cool Actuator', 'target': 'Spark Pins', 'relation': ['hwDevice']},
-        {'source': 'Cool PID', 'target': 'Cool PWM', 'relation': ['outputId']},
+        {'source': 'Cool PID', 'target': 'Cool PWM', 'relation': ['outputId'], 'claimed': True},
         {
             'source': 'Cool PWM',
             'target': 'Balancer',
@@ -272,19 +293,19 @@ def test_calculate_relations():
                 'balancerId',
             ],
         },
-        {'source': 'Cool PWM', 'target': 'Cool Actuator', 'relation': ['actuatorId']},
+        {'source': 'Cool PWM', 'target': 'Cool Actuator', 'relation': ['actuatorId'], 'claimed': True},
         {'source': 'Heat Actuator', 'target': 'Spark Pins', 'relation': ['hwDevice']},
-        {'source': 'Heat PID', 'target': 'Heat PWM', 'relation': ['outputId']},
-        {'source': 'Heat PWM', 'target': 'Heat Actuator', 'relation': ['actuatorId']},
+        {'source': 'Heat PID', 'target': 'Heat PWM', 'relation': ['outputId'], 'claimed': True},
+        {'source': 'Heat PWM', 'target': 'Heat Actuator', 'relation': ['actuatorId'], 'claimed': True},
         {'source': 'Sensor', 'target': 'Setpoint', 'relation': ['sensorId']},
         {'source': 'Setpoint', 'target': 'Cool PID', 'relation': ['inputId']},
         {'source': 'Setpoint', 'target': 'Heat PID', 'relation': ['inputId']},
     ]
 
 
-def test_calculate_drive_chains():
+def test_calculate_claims():
     blocks = make_blocks()
-    result = block_analysis.calculate_drive_chains(blocks)
+    result = block_analysis.calculate_claims(blocks)
     result = sorted(result, key=lambda v: v['target'] + ' ' + v['source'])
     assert result == [
         {'target': 'Cool Actuator', 'source': 'Cool PID', 'intermediate': ['Cool PWM']},
@@ -296,32 +317,31 @@ def test_calculate_drive_chains():
     ]
 
 
-def test_calculate_circular_drive_chains():
+def test_calculate_circular_claims():
     blocks = [
-
         Block(
             id='block-1',
             type='test',
             data={
-               'ptr1': blox_link('block-2', 'test', True)
+               'claimedBy': blox_link('block-3', 'Any')
             }
         ),
         Block(
             id='block-2',
             type='test',
             data={
-               'ptr2': blox_link('block-3', 'test', True)
+               'claimedBy': blox_link('block-1', 'Any')
             }
         ),
         Block(
             id='block-3',
             type='test',
             data={
-               'ptr3': blox_link('block-1', 'test', True)
+               'claimedBy': blox_link('block-2', 'Any')
             }
         ),
     ]
-    result = block_analysis.calculate_drive_chains(blocks)
+    result = block_analysis.calculate_claims(blocks)
     result = sorted(result, key=lambda v: v['target'])
     assert result == [
         {'target': 'block-1', 'source': 'block-1', 'intermediate': ['block-3', 'block-2']},

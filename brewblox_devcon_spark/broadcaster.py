@@ -9,7 +9,7 @@ from aiohttp import web
 from brewblox_service import brewblox_logger, features, mqtt, repeater, strex
 
 from brewblox_devcon_spark import const, controller, service_status
-from brewblox_devcon_spark.block_analysis import (calculate_drive_chains,
+from brewblox_devcon_spark.block_analysis import (calculate_claims,
                                                   calculate_relations)
 from brewblox_devcon_spark.models import ServiceConfig
 
@@ -92,7 +92,7 @@ class Broadcaster(repeater.RepeaterFeature):
                                            'status': status_data.dict(),
                                            'blocks': [v.dict() for v in blocks],
                                            'relations': calculate_relations(blocks),
-                                           'drive_chains': calculate_drive_chains(blocks),
+                                           'claims': calculate_claims(blocks),
                                        },
                                    })
 
