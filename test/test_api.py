@@ -321,7 +321,7 @@ async def test_validate(app, client, block_args):
             'sensorId<>': 'Santa',
             'setting': 0,
             'value': 0,
-            'settingEnabled': True,
+            'enabled': True,
             'filter': 'FILT_15s',
             'filterThreshold': 2
         }

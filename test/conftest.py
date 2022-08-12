@@ -184,7 +184,7 @@ def spark_blocks():
                 'sensorId<>': 'sensor-1',
                 'setting': 0,
                 'value': 0,
-                'settingEnabled': True,
+                'enabled': True,
                 'filter': 1,  # FILTER_15s
                 'filterThreshold': 2
             }
@@ -197,7 +197,7 @@ def spark_blocks():
                 'sensorId<>': 0,
                 'setting': 0,
                 'value': 0,
-                'settingEnabled': True
+                'enabled': True
             }
         },
         {
