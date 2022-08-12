@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x12WiFiSettings.proto\x12\x11\x62lox.WiFiSettings\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xbb\x01\n\x05\x42lock\x12\x13\n\x04ssid\x18\x01 \x01(\tB\x05\x92?\x02\x08!\x12\x17\n\x08password\x18\x02 \x01(\tB\x05\x92?\x02\x08@\x12-\n\x08security\x18\x03 \x01(\x0e\x32\x1b.blox.WiFiSettings.Security\x12)\n\x06\x63ipher\x18\x04 \x01(\x0e\x32\x19.blox.WiFiSettings.Cipher\x12!\n\x06signal\x18\x05 \x01(\x05\x42\x11\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x02\x30\x01\x92?\x02\x38\x08:\x07\x8a\xb5\x18\x03\x18\xb8\x02*\xa7\x01\n\x08Security\x12\x12\n\x0eWLAN_SEC_UNSEC\x10\x00\x12\x10\n\x0cWLAN_SEC_WEP\x10\x01\x12\x10\n\x0cWLAN_SEC_WPA\x10\x02\x12\x11\n\rWLAN_SEC_WPA2\x10\x03\x12\x1b\n\x17WLAN_SEC_WPA_ENTERPRISE\x10\x04\x12\x1c\n\x18WLAN_SEC_WPA2_ENTERPRISE\x10\x05\x12\x15\n\x10WLAN_SEC_NOT_SET\x10\xff\x01*i\n\x06\x43ipher\x12\x17\n\x13WLAN_CIPHER_NOT_SET\x10\x00\x12\x13\n\x0fWLAN_CIPHER_AES\x10\x01\x12\x14\n\x10WLAN_CIPHER_TKIP\x10\x02\x12\x1b\n\x17WLAN_CIPHER_AES_OR_TKIP\x10\x03\x62\x06proto3'
+  serialized_pb=b'\n\x12WiFiSettings.proto\x12\x11\x62lox.WiFiSettings\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xd4\x01\n\x05\x42lock\x12\x13\n\x04ssid\x18\x01 \x01(\tB\x05\x92?\x02\x08!\x12\x17\n\x08password\x18\x02 \x01(\tB\x05\x92?\x02\x08@\x12-\n\x08security\x18\x03 \x01(\x0e\x32\x1b.blox.WiFiSettings.Security\x12)\n\x06\x63ipher\x18\x04 \x01(\x0e\x32\x19.blox.WiFiSettings.Cipher\x12!\n\x06signal\x18\x05 \x01(\x05\x42\x11\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x02\x30\x01\x92?\x02\x38\x08\x12\x17\n\x02ip\x18Z \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03:\x07\x8a\xb5\x18\x03\x18\xb8\x02*\xa7\x01\n\x08Security\x12\x12\n\x0eWLAN_SEC_UNSEC\x10\x00\x12\x10\n\x0cWLAN_SEC_WEP\x10\x01\x12\x10\n\x0cWLAN_SEC_WPA\x10\x02\x12\x11\n\rWLAN_SEC_WPA2\x10\x03\x12\x1b\n\x17WLAN_SEC_WPA_ENTERPRISE\x10\x04\x12\x1c\n\x18WLAN_SEC_WPA2_ENTERPRISE\x10\x05\x12\x15\n\x10WLAN_SEC_NOT_SET\x10\xff\x01*i\n\x06\x43ipher\x12\x17\n\x13WLAN_CIPHER_NOT_SET\x10\x00\x12\x13\n\x0fWLAN_CIPHER_AES\x10\x01\x12\x14\n\x10WLAN_CIPHER_TKIP\x10\x02\x12\x1b\n\x17WLAN_CIPHER_AES_OR_TKIP\x10\x03\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -71,8 +71,8 @@ _SECURITY = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=262,
-  serialized_end=429,
+  serialized_start=287,
+  serialized_end=454,
 )
 _sym_db.RegisterEnumDescriptor(_SECURITY)
 
@@ -107,8 +107,8 @@ _CIPHER = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=431,
-  serialized_end=536,
+  serialized_start=456,
+  serialized_end=561,
 )
 _sym_db.RegisterEnumDescriptor(_CIPHER)
 
@@ -170,6 +170,13 @@ _BLOCK = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001\212\265\030\0020\001\222?\0028\010', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='ip', full_name='blox.WiFiSettings.Block.ip', index=5,
+      number=90, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\002H\001\222?\002\030\003', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -183,7 +190,7 @@ _BLOCK = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=72,
-  serialized_end=259,
+  serialized_end=284,
 )
 
 _BLOCK.fields_by_name['security'].enum_type = _SECURITY
@@ -204,5 +211,6 @@ _sym_db.RegisterMessage(Block)
 _BLOCK.fields_by_name['ssid']._options = None
 _BLOCK.fields_by_name['password']._options = None
 _BLOCK.fields_by_name['signal']._options = None
+_BLOCK.fields_by_name['ip']._options = None
 _BLOCK._options = None
 # @@protoc_insertion_point(module_scope)
