@@ -213,36 +213,19 @@ async def test_exclusive_mask(app, client, cdc: Codec, sim_cdc: Codec):
     assert payload.content['deltaV[delta_degC / second]'] is None
 
 
-async def test_driven_fields(app, client, cdc: Codec):
-    payload = cdc.encode_payload(DecodedPayload(
-        blockId=1,
-        blockType='EdgeCase',
-        content={
-            'drivenDevice': 10,
-            'state': {
-                'value[degC]': 10
-            }
-        },
-    ))
-    payload = cdc.decode_payload(payload)
-    assert payload.content['drivenDevice']['id'] == 10
-    assert payload.content['drivenDevice']['driven'] is True
-    assert payload.content['drivenDevice']['type'] == 'DS2413'
-
-
 async def test_postfixed_decoding(app, client, cdc: Codec):
     payload = cdc.encode_payload(DecodedPayload(
         blockId=1,
         blockType='EdgeCase',
         content={
-            'drivenDevice': 10,
+            'link': 10,
             'state': {
                 'value[degC]': 10
             }
         },
     ))
     payload = cdc.decode_payload(payload, opts=DecodeOpts(metadata=MetadataOpt.POSTFIX))
-    assert payload.content['drivenDevice<DS2413,driven>'] == 10
+    assert payload.content['link<ActuatorAnalogInterface>'] == 10
     assert payload.content['state']['value[degC]'] == pytest.approx(10, 0.01)
 
 

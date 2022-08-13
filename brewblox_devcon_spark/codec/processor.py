@@ -32,7 +32,6 @@ class OptionElement():
     key: str
     base_key: str
     postfix: str
-    postfix_arg: str
     nested: bool
 
 
@@ -45,12 +44,11 @@ class ProtobufProcessor():
 
         symbols = re.escape('[]<>')
         self._postfix_pattern = re.compile(''.join([
-            f'([^{symbols}]+)',  # "value" -> captured
-            f'[{symbols}]?',     # "["
-            f'([^{symbols},]*)',  # "degC" -> captured
-            ',?',  # option separator
-            f'([^{symbols}]*)',  # "driven" -> captured
-            f'[{symbols}]?',     # "]"
+            f'([^{symbols}]+)',     # "value" -> captured
+            f'[{symbols}]?',        # "["
+            f'([^{symbols},]*)',    # "degC" -> captured
+            f',?[^{symbols}]*',     # ",driven" -> (backwards compatibility)
+            f'[{symbols}]?',        # "]"
         ]))
 
     @staticmethod
@@ -88,7 +86,7 @@ class ProtobufProcessor():
         Any entries added to the parent object after an element is yielded will not be considered.
         """
         for key in set(obj.keys()):
-            base_key, postfix, postfix_arg = self._postfix_pattern.findall(key)[0]
+            base_key, postfix = self._postfix_pattern.findall(key)[0]
             field: FieldDescriptor = desc.fields_by_name[base_key]
 
             if field.message_type:
@@ -100,7 +98,7 @@ class ProtobufProcessor():
                 for c in children:
                     yield from self._find_elements(field.message_type, c, True)
 
-            yield OptionElement(field, obj, key, base_key, postfix, postfix_arg, nested)
+            yield OptionElement(field, obj, key, base_key, postfix, nested)
 
         return
 
@@ -269,7 +267,6 @@ class ProtobufProcessor():
         * scale:        Divides value by scale before unit conversion.
         * unit:         Adds unit to output, using either a [] postfix, or a typed object.
         * objtype:      Adds object type to output, using either a <> postfix, or a typed object.
-        * driven        Adds the "driven" flag to postfix or typed object.
         * hexed:        Converts base64 decoder output to int.
         * hexstr:       Converts base64 decoder output to hexadecimal string.
         * datetime:     Convert value to formatting specified by opts.dates.
@@ -362,14 +359,11 @@ class ProtobufProcessor():
                 ]
 
                 if opts.metadata == MetadataOpt.TYPED:
-                    shared = {
-                        '__bloxtype': 'Quantity',
-                        'unit': user_unit,
-                    }
-                    if options.readonly:
-                        shared['readonly'] = True
+                    val = [{'__bloxtype': 'Quantity', 'unit': user_unit, 'value': v} for v in val]
 
-                    val = [{**shared, 'value': v} for v in val]
+                    if options.readonly:
+                        for v in val:
+                            v['readonly'] = True
 
                 if opts.metadata == MetadataOpt.POSTFIX:
                     new_key += f'[{user_unit}]'
@@ -378,18 +372,10 @@ class ProtobufProcessor():
                 blockType = self._blockType_name(options.objtype)
 
                 if opts.metadata == MetadataOpt.TYPED:
-                    shared = {
-                        '__bloxtype': 'Link',
-                        'type': blockType,
-                    }
-                    if options.driven:
-                        shared['driven'] = True
-
-                    val = [{**shared, 'id': v} for v in val]
+                    val = [{'__bloxtype': 'Link', 'type': blockType, 'id': v} for v in val]
 
                 if opts.metadata == MetadataOpt.POSTFIX:
-                    postfix = f'<{blockType},driven>' if options.driven else f'<{blockType}>'
-                    new_key += postfix
+                    new_key += f'<{blockType}>'
 
             if options.hexed:
                 val = [self.int_to_hex(v) for v in val]

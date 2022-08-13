@@ -14,10 +14,9 @@ IGNORED_RELATION_TYPES = [
 ]
 
 # Relations with this field name should be ignored
-# This may be a duplicate driven field, or a meaningless link to a system object
 IGNORED_RELATION_FIELDS = [
-    'claimedBy',
-    'oneWireBusId',  # OneWireTempSensor, DS2408, DS2413
+    'claimedBy',  # Always mirror an existing target link
+    'oneWireBusId',  # OneWireBus system blocks are not rendered
 ]
 
 # Relations with this field name should be inverted

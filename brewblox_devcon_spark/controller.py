@@ -87,9 +87,8 @@ class SparkController(features.ServiceFeature):
             raise exceptions.ExistingId(f'`{sid}` is already in use')
 
     def _assign_sid(self, blockType: str):
-        clean_name = re.sub(r',driven', '', blockType)
         for i in itertools.count(start=1):  # pragma: no cover
-            name = f'{const.GENERATED_ID_PREFIX}{clean_name}-{i}'
+            name = f'{const.GENERATED_ID_PREFIX}{blockType}-{i}'
             if (name, None) not in self._store:
                 return name
 
