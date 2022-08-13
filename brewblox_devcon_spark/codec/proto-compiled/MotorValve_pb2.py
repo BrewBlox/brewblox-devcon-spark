@@ -24,7 +24,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x10MotorValve.proto\x12\x0f\x62lox.MotorValve\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x11\x43onstraints.proto\x1a\rIoArray.proto\"\xee\x02\n\x05\x42lock\x12\x1d\n\x08hwDevice\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x0b\x92?\x02\x38\x10\x12\x1b\n\x0cstartChannel\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12\x37\n\x05state\x18\x03 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x0c\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x12;\n\rconstrainedBy\x18\x05 \x01(\x0b\x32$.blox.Constraints.DigitalConstraints\x12=\n\nvalveState\x18\x06 \x01(\x0e\x32\x1b.blox.MotorValve.ValveStateB\x0c\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x12\x38\n\x0c\x64\x65siredState\x18\x07 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x06\x8a\xb5\x18\x02\x30\x01\x12%\n\tclaimedBy\x18\x08 \x01(\rB\x12\x8a\xb5\x18\x03\x18\xff\x01\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10:\x13\x8a\xb5\x18\x03\x18\xc1\x02\x8a\xb5\x18\x02H\x06\x8a\xb5\x18\x02H\x10*\x96\x01\n\nValveState\x12\x11\n\rVALVE_UNKNOWN\x10\x00\x12\x0e\n\nVALVE_OPEN\x10\x01\x12\x10\n\x0cVALVE_CLOSED\x10\x02\x12\x11\n\rVALVE_OPENING\x10\x03\x12\x11\n\rVALVE_CLOSING\x10\x04\x12\x18\n\x14VALVE_HALF_OPEN_IDLE\x10\x05\x12\x13\n\x0fVALVE_INIT_IDLE\x10\x06\x62\x06proto3'
+  serialized_pb=b'\n\x10MotorValve.proto\x12\x0f\x62lox.MotorValve\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x11\x43onstraints.proto\x1a\rIoArray.proto\"\x8c\x03\n\x05\x42lock\x12\x1d\n\x08hwDevice\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x0b\x92?\x02\x38\x10\x12\x16\n\x07\x63hannel\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12\x37\n\x05state\x18\x03 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x0c\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x12;\n\rconstrainedBy\x18\x05 \x01(\x0b\x32$.blox.Constraints.DigitalConstraints\x12=\n\nvalveState\x18\x06 \x01(\x0e\x32\x1b.blox.MotorValve.ValveStateB\x0c\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x12\x38\n\x0c\x64\x65siredState\x18\x07 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x06\x8a\xb5\x18\x02\x30\x01\x12%\n\tclaimedBy\x18\x08 \x01(\rB\x12\x8a\xb5\x18\x03\x18\xff\x01\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x12!\n\x0cstartChannel\x18Z \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03:\x13\x8a\xb5\x18\x03\x18\xc1\x02\x8a\xb5\x18\x02H\x06\x8a\xb5\x18\x02H\x10*\x96\x01\n\nValveState\x12\x11\n\rVALVE_UNKNOWN\x10\x00\x12\x0e\n\nVALVE_OPEN\x10\x01\x12\x10\n\x0cVALVE_CLOSED\x10\x02\x12\x11\n\rVALVE_OPENING\x10\x03\x12\x11\n\rVALVE_CLOSING\x10\x04\x12\x18\n\x14VALVE_HALF_OPEN_IDLE\x10\x05\x12\x13\n\x0fVALVE_INIT_IDLE\x10\x06\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,Constraints__pb2.DESCRIPTOR,IoArray__pb2.DESCRIPTOR,])
 
@@ -73,8 +73,8 @@ _VALVESTATE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=471,
-  serialized_end=621,
+  serialized_start=501,
+  serialized_end=651,
 )
 _sym_db.RegisterEnumDescriptor(_VALVESTATE)
 
@@ -105,7 +105,7 @@ _BLOCK = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002\030\013\222?\0028\020', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='startChannel', full_name='blox.MotorValve.Block.startChannel', index=1,
+      name='channel', full_name='blox.MotorValve.Block.channel', index=1,
       number=2, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -146,6 +146,13 @@ _BLOCK = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\003\030\377\001\212\265\030\002(\001\222?\0028\020', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='startChannel', full_name='blox.MotorValve.Block.startChannel', index=7,
+      number=90, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\002H\001\222?\002\030\003', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -159,7 +166,7 @@ _BLOCK = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=102,
-  serialized_end=468,
+  serialized_end=498,
 )
 
 _BLOCK.fields_by_name['state'].enum_type = IoArray__pb2._DIGITALSTATE
@@ -179,10 +186,11 @@ _sym_db.RegisterMessage(Block)
 
 
 _BLOCK.fields_by_name['hwDevice']._options = None
-_BLOCK.fields_by_name['startChannel']._options = None
+_BLOCK.fields_by_name['channel']._options = None
 _BLOCK.fields_by_name['state']._options = None
 _BLOCK.fields_by_name['valveState']._options = None
 _BLOCK.fields_by_name['desiredState']._options = None
 _BLOCK.fields_by_name['claimedBy']._options = None
+_BLOCK.fields_by_name['startChannel']._options = None
 _BLOCK._options = None
 # @@protoc_insertion_point(module_scope)
