@@ -9,7 +9,7 @@ from binascii import hexlify, unhexlify
 from dataclasses import dataclass
 from functools import reduce
 from socket import htonl, ntohl
-from typing import Iterator, Optional, Union
+from typing import Any, Iterator, Optional, Union
 
 from brewblox_service import brewblox_logger
 from google.protobuf import json_format
@@ -68,6 +68,14 @@ class ProtobufProcessor():
         return hexlify(b64decode(s)).decode()
 
     @staticmethod
+    def ipv4_to_int(ip: str) -> int:
+        return ntohl(int(ipaddress.ip_address(ip)))
+
+    @staticmethod
+    def int_to_ipv4(ip: int) -> str:
+        return ipaddress.ip_address(htonl(ip)).compressed
+
+    @staticmethod
     def pack_bit_flags(flags: list[int]) -> int:
         if next((i for i in flags if i >= 8), None):
             raise ValueError(f'Invalid bit flags in {flags}. Values must be 0-7.')
@@ -108,7 +116,7 @@ class ProtobufProcessor():
     def _unit_name(self, unit_num: int) -> str:
         return brewblox_pb2.UnitType.Name(unit_num)
 
-    def _blockType_name(self, blockType_num: int) -> str:
+    def _type_name(self, blockType_num: int) -> str:
         return brewblox_pb2.BlockType.Name(blockType_num)
 
     def _encode_unit(self, value: Union[float, dict], unit_type: str, postfix: Optional[str]) -> float:
@@ -187,8 +195,6 @@ class ProtobufProcessor():
         """
         for element in self._find_elements(desc, payload.content):
             options = self._field_options(element.field)
-            val = element.obj[element.key]
-            new_key = element.base_key
 
             if options.ignored:
                 del element.obj[element.key]
@@ -202,56 +208,54 @@ class ProtobufProcessor():
             if payload.maskMode == MaskMode.INCLUSIVE and not element.nested:
                 payload.mask.append(element.field.number)
 
-            is_list = isinstance(val, (list, set))
+            def _convert_value(value: Any) -> Union[str, int, float]:
+                if options.unit:
+                    unit_name = self._unit_name(options.unit)
+                    value = self._encode_unit(value, unit_name, element.postfix or None)
 
-            if not is_list:
-                val = [val]
+                if options.objtype:
+                    if isinstance(value, dict):
+                        value = value['id']
 
-            val = [v for v in val if v is not None]
+                if options.scale:
+                    value *= options.scale
 
-            if not val:
+                if options.hexed:
+                    value = self.hex_to_int(value)
+
+                if options.hexstr:
+                    value = self.hex_to_b64(value)
+
+                if options.ipv4address:
+                    value = self.ipv4_to_int(value)
+
+                if options.datetime:
+                    value = serialize_datetime(value, DateFormatOpt.SECONDS)
+
+                if element.field.cpp_type in json_format._INT_TYPES:
+                    value = int(round(value))
+
+                return value
+
+            new_key = element.base_key
+            new_value = element.obj[element.key]
+
+            if new_value is None:
                 del element.obj[element.key]
                 continue
 
-            if options.unit:
-                unit_name = self._unit_name(options.unit)
-                val = [
-                    self._encode_unit(v, unit_name, element.postfix or None)
-                    for v in val
-                ]
+            if isinstance(new_value, (list, set)):
+                new_value = [_convert_value(v)
+                             for v in new_value
+                             if v is not None]
+            else:
+                new_value = _convert_value(new_value)
 
-            if options.objtype:
-                val = [
-                    v['id'] if isinstance(v, dict) else v
-                    for v in val
-                ]
-
-            if options.scale:
-                val = [v * options.scale for v in val]
-
-            if options.hexed:
-                val = [self.hex_to_int(v) for v in val]
-
-            if options.hexstr:
-                val = [self.hex_to_b64(v) for v in val]
-
-            if options.datetime:
-                fmt = DateFormatOpt.SECONDS
-                val = [serialize_datetime(v, fmt) for v in val]
-
-            if options.ipv4address:
-                val = [ntohl(int(ipaddress.ip_address(v))) for v in val]
-
-            if element.field.cpp_type in json_format._INT_TYPES:
-                val = [int(round(v)) for v in val]
-
-            if not is_list:
-                val = val[0]
-
+            # The key changed if postfixed metadata was used
             if element.key != new_key:
                 del element.obj[element.key]
 
-            element.obj[new_key] = val
+            element.obj[new_key] = new_value
 
         return payload
 
@@ -320,8 +324,6 @@ class ProtobufProcessor():
         """
         for element in self._find_elements(desc, payload.content):
             options = self._field_options(element.field)
-            val = element.obj[element.key]
-            new_key = element.key
 
             if payload.maskMode == MaskMode.NO_MASK or element.nested:
                 excluded = False
@@ -340,73 +342,82 @@ class ProtobufProcessor():
                 del element.obj[element.key]
                 continue
 
-            is_list = isinstance(val, (list, set))
+            link_type = self._type_name(options.objtype)
+            qty_system_unit = self._unit_name(options.unit)
+            qty_user_unit = self._converter.to_user_unit(qty_system_unit)
 
-            if not is_list:
-                val = [val]
+            def _convert_value(value: Union[float, int, str]) -> Any:
+                if options.scale:
+                    value /= options.scale
 
-            if options.scale:
-                val = [v / options.scale for v in val]
+                if options.unit:
+                    if excluded:
+                        value = None
+                    else:
+                        value = self._converter.to_user_value(value, qty_system_unit)
 
-            if options.unit:
-                unit_name = self._unit_name(options.unit)
-                user_unit = self._converter.to_user_unit(unit_name)
+                    if opts.metadata == MetadataOpt.TYPED:
+                        value = {
+                            '__bloxtype': 'Quantity',
+                            'unit': qty_user_unit,
+                            'value': value
+                        }
 
-                # Always convert value
-                val = [
-                    self._converter.to_user_value(v, unit_name)
-                    for v in val
-                ]
+                        if options.readonly:
+                            value['readonly'] = True
 
-                if opts.metadata == MetadataOpt.TYPED:
-                    val = [{'__bloxtype': 'Quantity', 'unit': user_unit, 'value': v} for v in val]
+                    return value
 
-                    if options.readonly:
-                        for v in val:
-                            v['readonly'] = True
+                if options.objtype:
+                    if excluded:
+                        value = None
 
-                if opts.metadata == MetadataOpt.POSTFIX:
-                    new_key += f'[{user_unit}]'
+                    if opts.metadata == MetadataOpt.TYPED:
+                        value = {
+                            '__bloxtype': 'Link',
+                            'type': link_type,
+                            'id': value,
+                        }
 
-            if options.objtype:
-                blockType = self._blockType_name(options.objtype)
+                    return value
 
-                if opts.metadata == MetadataOpt.TYPED:
-                    val = [{'__bloxtype': 'Link', 'type': blockType, 'id': v} for v in val]
+                if excluded:
+                    return None
 
-                if opts.metadata == MetadataOpt.POSTFIX:
-                    new_key += f'<{blockType}>'
+                if options.hexed:
+                    return self.int_to_hex(value)
 
-            if options.hexed:
-                val = [self.int_to_hex(v) for v in val]
+                if options.hexstr:
+                    return self.b64_to_hex(value)
 
-            if options.hexstr:
-                val = [self.b64_to_hex(v) for v in val]
+                if options.ipv4address:
+                    return self.int_to_ipv4(value)
 
-            if options.datetime:
-                val = [serialize_datetime(v, opts.dates) for v in val]
+                if options.datetime:
+                    return serialize_datetime(value, opts.dates)
 
-            if options.ipv4address:
-                val = [ipaddress.ip_address(htonl(v)).compressed for v in val]
+                return value
 
-            if excluded:
-                if options.unit and opts.metadata == MetadataOpt.TYPED:
-                    for v in val:
-                        v['value'] = None
-                elif options.objtype and opts.metadata == MetadataOpt.TYPED:
-                    for v in val:
-                        v['id'] = None
-                elif is_list:
-                    val = [None for v in val]
-                else:
-                    val = [None]
+            new_key = element.key
+            new_value = element.obj[element.key]
 
-            if not is_list:
-                val = val[0]
+            # If metadata is postfixed, we may need to update the key
+            if opts.metadata == MetadataOpt.POSTFIX:
+                if options.objtype:
+                    new_key = f'{element.key}<{link_type}>'
+                if options.unit:
+                    new_key = f'{element.key}[{qty_user_unit}]'
 
+            # Convert value
+            if isinstance(new_value, (list, set)):
+                new_value = [_convert_value(v) for v in new_value]
+            else:
+                new_value = _convert_value(new_value)
+
+            # Remove old key/value if we updated the key
             if element.key != new_key:
                 del element.obj[element.key]
 
-            element.obj[new_key] = val
+            element.obj[new_key] = new_value
 
         return payload
