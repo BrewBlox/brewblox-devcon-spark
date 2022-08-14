@@ -20,6 +20,7 @@ _UREG = UnitRegistry()
 SYSTEM_TEMP = 'degC'
 
 FORMATS = {
+    'NotSet': '',
     'Celsius': '{temp}',
     'InverseCelsius': '1 / {temp}',
     'Second': 'second',
