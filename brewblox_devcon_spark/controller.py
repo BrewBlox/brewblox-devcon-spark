@@ -564,8 +564,7 @@ class SparkController(features.ServiceFeature):
                       for keys, content in self._store.items()]
         blocks_data = await self.read_all_stored_blocks()
         return Backup(
-            blocks=[block for block in blocks_data
-                    if block.nid != const.SYSTIME_NID],
+            blocks=[block for block in blocks_data],
             store=store_data,
         )
 

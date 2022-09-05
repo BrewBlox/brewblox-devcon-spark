@@ -14,7 +14,6 @@ GLOBAL_TIME_ZONE_ID = 'timeZone'
 
 # Numeric IDs of system objects
 SYSINFO_NID = 2
-SYSTIME_NID = 3
 ONEWIREBUS_NID = 4
 WIFI_SETTINGS_NID = 5
 TOUCH_SETTINGS_NID = 6
@@ -24,7 +23,6 @@ SPARK_PINS_NID = 19
 # Default SID/NID for system objects
 SYS_OBJECT_KEYS: list[tuple[str, int]] = [
     ['SystemInfo', SYSINFO_NID],
-    ['SystemTime', SYSTIME_NID],
     ['OneWireBus', ONEWIREBUS_NID],
     ['WiFiSettings', WIFI_SETTINGS_NID],
     ['TouchSettings', TOUCH_SETTINGS_NID],
