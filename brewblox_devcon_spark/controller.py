@@ -5,7 +5,7 @@ Offers a functional interface to the device functionality
 import asyncio
 import itertools
 import re
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from typing import Callable, Union
 
 from aiohttp import web
@@ -143,6 +143,14 @@ class SparkController(features.ServiceFeature):
             sequence.serialize(block)
 
         return block
+
+    def _to_block_list(self, blocks: list[FirmwareBlock]) -> list[Block]:
+        # Resolve all block sids before links are resolved
+        # This prevents auto-generated names using interface types
+        for block in blocks:
+            self._find_sid(block.nid, block.type)
+
+        return [self._to_block(block) for block in blocks]
 
     def _to_firmware_block_identity(self, block: BlockIdentity) -> FirmwareBlockIdentity:
         sid = block.id
@@ -373,6 +381,11 @@ class SparkController(features.ServiceFeature):
             finally:
                 del self._store[desired_sid, placeholder_nid]
 
+            # It's possible there is a leftover entry with the generated nid
+            # In this case, the newly created entry takes precedence
+            with suppress(KeyError):
+                del self._store[None, block.nid]
+
             # The placeholder is always removed - add real entry if create was ok
             self._store[desired_sid, block.nid] = dict()
 
@@ -420,7 +433,7 @@ class SparkController(features.ServiceFeature):
         """
         async with self._execute('Read all blocks'):
             blocks = await self._cmder.read_all_blocks()
-            blocks = [self._to_block(v) for v in blocks]
+            blocks = self._to_block_list(blocks)
             return blocks
 
     async def read_all_logged_blocks(self) -> list[Block]:
@@ -436,7 +449,7 @@ class SparkController(features.ServiceFeature):
         """
         async with self._execute('Read all blocks (logged)'):
             blocks = await self._cmder.read_all_logged_blocks()
-            blocks = [self._to_block(v) for v in blocks]
+            blocks = self._to_block_list(blocks)
             return blocks
 
     async def read_all_stored_blocks(self) -> list[Block]:
@@ -453,7 +466,7 @@ class SparkController(features.ServiceFeature):
         """
         async with self._execute('Read all blocks (stored)'):
             blocks = await self._cmder.read_all_stored_blocks()
-            blocks = [self._to_block(v) for v in blocks]
+            blocks = self._to_block_list(blocks)
             return blocks
 
     async def read_all_broadcast_blocks(self) -> tuple[list[Block], list[Block]]:
@@ -469,8 +482,8 @@ class SparkController(features.ServiceFeature):
         """
         async with self._execute('Read all blocks (broadcast)'):
             blocks, logged_blocks = await self._cmder.read_all_broadcast_blocks()
-            blocks = [self._to_block(v) for v in blocks]
-            logged_blocks = [self._to_block(v) for v in logged_blocks]
+            blocks = self._to_block_list(blocks)
+            logged_blocks = self._to_block_list(logged_blocks)
             return (blocks, logged_blocks)
 
     async def discover_blocks(self) -> list[Block]:
@@ -486,7 +499,7 @@ class SparkController(features.ServiceFeature):
         async with self._execute('Discover blocks'):
             async with self._discovery_lock:
                 blocks = await self._cmder.discover_blocks()
-            blocks = [self._to_block(v) for v in blocks]
+            blocks = self._to_block_list(blocks)
             return blocks
 
     async def clear_blocks(self) -> list[BlockIdentity]:
