@@ -275,7 +275,7 @@ async def test_enum_decoding(app, client, cdc: Codec):
         blockId=1,
         blockType='DigitalActuator',
         content={
-            'desiredState': 'STATE_ACTIVE',
+            'storedState': 'STATE_ACTIVE',
         },
     ))
 
@@ -283,7 +283,7 @@ async def test_enum_decoding(app, client, cdc: Codec):
         blockId=1,
         blockType='DigitalActuator',
         content={
-            'desiredState': 1,
+            'storedState': 1,
         },
     ))
 
@@ -291,7 +291,7 @@ async def test_enum_decoding(app, client, cdc: Codec):
     assert encoded_payload.content == encoded_int_payload.content
 
     payload = cdc.decode_payload(encoded_payload)
-    assert payload.content['desiredState'] == 'STATE_ACTIVE'
+    assert payload.content['storedState'] == 'STATE_ACTIVE'
 
     payload = cdc.decode_payload(encoded_payload, opts=DecodeOpts(enums=ProtoEnumOpt.INT))
-    assert payload.content['desiredState'] == 1
+    assert payload.content['storedState'] == 1
