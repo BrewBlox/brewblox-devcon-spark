@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x0bMutex.proto\x12\nblox.Mutex\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"u\n\x05\x42lock\x12,\n\x15\x64ifferentActuatorWait\x18\x01 \x01(\rB\r\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x12/\n\rwaitRemaining\x18\x02 \x01(\rB\x18\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 :\r\x8a\xb5\x18\x03\x18\xb6\x02\x8a\xb5\x18\x02H\x08\x62\x06proto3'
+  serialized_pb=b'\n\x0bMutex.proto\x12\nblox.Mutex\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"s\n\x05\x42lock\x12/\n\rwaitRemaining\x18\x02 \x01(\rB\x18\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 \x12*\n\x15\x64ifferentActuatorWait\x18Z \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03:\r\x8a\xb5\x18\x03\x18\xb6\x02\x8a\xb5\x18\x02H\x08\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -37,19 +37,19 @@ _BLOCK = _descriptor.Descriptor(
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='differentActuatorWait', full_name='blox.Mutex.Block.differentActuatorWait', index=0,
-      number=1, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=b'\212\265\030\002\010\003\212\265\030\003\020\350\007', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='waitRemaining', full_name='blox.Mutex.Block.waitRemaining', index=1,
+      name='waitRemaining', full_name='blox.Mutex.Block.waitRemaining', index=0,
       number=2, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001\212\265\030\002\010\003\212\265\030\003\020\350\007\222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='differentActuatorWait', full_name='blox.Mutex.Block.differentActuatorWait', index=1,
+      number=90, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\002H\001\222?\002\030\003', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -63,7 +63,7 @@ _BLOCK = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=57,
-  serialized_end=174,
+  serialized_end=172,
 )
 
 DESCRIPTOR.message_types_by_name['Block'] = _BLOCK
@@ -77,7 +77,7 @@ Block = _reflection.GeneratedProtocolMessageType('Block', (_message.Message,), {
 _sym_db.RegisterMessage(Block)
 
 
-_BLOCK.fields_by_name['differentActuatorWait']._options = None
 _BLOCK.fields_by_name['waitRemaining']._options = None
+_BLOCK.fields_by_name['differentActuatorWait']._options = None
 _BLOCK._options = None
 # @@protoc_insertion_point(module_scope)

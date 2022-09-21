@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x11\x43onstraints.proto\x12\x10\x62lox.Constraints\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"d\n\x08\x42\x61lanced\x12\x1f\n\nbalancerId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x07\x92?\x02\x38\x10\x12\x1e\n\x07granted\x18\x02 \x01(\rB\r\x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02(\x01\x12\x17\n\x02id\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\"\x86\x01\n\x07Mutexed\x12\x1c\n\x07mutexId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x08\x92?\x02\x38\x10\x12)\n\rextraHoldTime\x18\x02 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 \x12\x19\n\x11hasCustomHoldTime\x18\x03 \x01(\x08\x12\x17\n\x07hasLock\x18\x04 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\"\xa4\x01\n\x10\x41nalogConstraint\x12\x1b\n\x03min\x18\x01 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 H\x00\x12\x1b\n\x03max\x18\x02 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 H\x00\x12.\n\x08\x62\x61lanced\x18\x03 \x01(\x0b\x32\x1a.blox.Constraints.BalancedH\x00\x12\x18\n\x08limiting\x18\x64 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x42\x0c\n\nconstraint\"S\n\x11\x41nalogConstraints\x12>\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32\".blox.Constraints.AnalogConstraintB\x05\x92?\x02\x10\x08\"\xd7\x02\n\x11\x44igitalConstraint\x12$\n\x06minOff\x18\x01 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12#\n\x05minOn\x18\x02 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12,\n\x07mutexed\x18\x04 \x01(\x0b\x32\x19.blox.Constraints.MutexedH\x00\x12(\n\ndelayedOff\x18\x05 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12\'\n\tdelayedOn\x18\x06 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12\x1c\n\x05mutex\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x08\x92?\x02\x38\x10H\x00\x12\x1d\n\x08limiting\x18\x64 \x01(\rB\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03\x12+\n\tremaining\x18\x65 \x01(\rB\x18\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x8a\xb5\x18\x02(\x01\x92?\x02\x38 B\x0c\n\nconstraint\"U\n\x12\x44igitalConstraints\x12?\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32#.blox.Constraints.DigitalConstraintB\x05\x92?\x02\x10\x08\x62\x06proto3'
+  serialized_pb=b'\n\x11\x43onstraints.proto\x12\x10\x62lox.Constraints\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"d\n\x08\x42\x61lanced\x12\x1f\n\nbalancerId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x07\x92?\x02\x38\x10\x12\x1e\n\x07granted\x18\x02 \x01(\rB\r\x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02(\x01\x12\x17\n\x02id\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x08\"\x93\x01\n\x07Mutexed\x12\x1c\n\x07mutexId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x08\x92?\x02\x38\x10\x12)\n\rextraHoldTime\x18\x02 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 \x12\x17\n\x07hasLock\x18\x04 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12&\n\x11hasCustomHoldTime\x18Z \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03\"\xa4\x01\n\x10\x41nalogConstraint\x12\x1b\n\x03min\x18\x01 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 H\x00\x12\x1b\n\x03max\x18\x02 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 H\x00\x12.\n\x08\x62\x61lanced\x18\x03 \x01(\x0b\x32\x1a.blox.Constraints.BalancedH\x00\x12\x18\n\x08limiting\x18\x64 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x42\x0c\n\nconstraint\"S\n\x11\x41nalogConstraints\x12>\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32\".blox.Constraints.AnalogConstraintB\x05\x92?\x02\x10\x08\"\xd7\x02\n\x11\x44igitalConstraint\x12$\n\x06minOff\x18\x01 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12#\n\x05minOn\x18\x02 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12,\n\x07mutexed\x18\x04 \x01(\x0b\x32\x19.blox.Constraints.MutexedH\x00\x12(\n\ndelayedOff\x18\x05 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12\'\n\tdelayedOn\x18\x06 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12\x1c\n\x05mutex\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x08\x92?\x02\x38\x10H\x00\x12\x1d\n\x08limiting\x18\x64 \x01(\rB\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03\x12+\n\tremaining\x18\x65 \x01(\rB\x18\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x8a\xb5\x18\x02(\x01\x92?\x02\x38 B\x0c\n\nconstraint\"U\n\x12\x44igitalConstraints\x12?\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32#.blox.Constraints.DigitalConstraintB\x05\x92?\x02\x10\x08\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -97,19 +97,19 @@ _MUTEXED = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002\010\003\212\265\030\003\020\350\007\222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='hasCustomHoldTime', full_name='blox.Constraints.Mutexed.hasCustomHoldTime', index=2,
-      number=3, type=8, cpp_type=7, label=1,
-      has_default_value=False, default_value=False,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='hasLock', full_name='blox.Constraints.Mutexed.hasLock', index=3,
+      name='hasLock', full_name='blox.Constraints.Mutexed.hasLock', index=2,
       number=4, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='hasCustomHoldTime', full_name='blox.Constraints.Mutexed.hasCustomHoldTime', index=3,
+      number=90, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\002H\001\222?\002\030\003', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -123,7 +123,7 @@ _MUTEXED = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=172,
-  serialized_end=306,
+  serialized_end=319,
 )
 
 
@@ -180,8 +180,8 @@ _ANALOGCONSTRAINT = _descriptor.Descriptor(
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=309,
-  serialized_end=473,
+  serialized_start=322,
+  serialized_end=486,
 )
 
 
@@ -212,8 +212,8 @@ _ANALOGCONSTRAINTS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=475,
-  serialized_end=558,
+  serialized_start=488,
+  serialized_end=571,
 )
 
 
@@ -298,8 +298,8 @@ _DIGITALCONSTRAINT = _descriptor.Descriptor(
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=561,
-  serialized_end=904,
+  serialized_start=574,
+  serialized_end=917,
 )
 
 
@@ -330,8 +330,8 @@ _DIGITALCONSTRAINTS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=906,
-  serialized_end=991,
+  serialized_start=919,
+  serialized_end=1004,
 )
 
 _ANALOGCONSTRAINT.fields_by_name['balanced'].message_type = _BALANCED
@@ -422,6 +422,7 @@ _BALANCED.fields_by_name['id']._options = None
 _MUTEXED.fields_by_name['mutexId']._options = None
 _MUTEXED.fields_by_name['extraHoldTime']._options = None
 _MUTEXED.fields_by_name['hasLock']._options = None
+_MUTEXED.fields_by_name['hasCustomHoldTime']._options = None
 _ANALOGCONSTRAINT.fields_by_name['min']._options = None
 _ANALOGCONSTRAINT.fields_by_name['max']._options = None
 _ANALOGCONSTRAINT.fields_by_name['limiting']._options = None
