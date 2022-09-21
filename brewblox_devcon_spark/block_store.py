@@ -9,9 +9,10 @@ from contextlib import suppress
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, http, strex
 
-from brewblox_devcon_spark import const, types
+from brewblox_devcon_spark import const
 from brewblox_devcon_spark.datastore import (STORE_URL, FlushedStore,
                                              non_volatile)
+from brewblox_devcon_spark.models import StoreEntry
 from brewblox_devcon_spark.twinkeydict import TwinKeyDict, TwinKeyError
 
 BLOCK_STORE_KEY = '{id}-blocks-db'
@@ -30,7 +31,7 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict[str, int, dict]):
     TwinKeyDict subclass to periodically flush contained objects to Redis.
     """
 
-    def __init__(self, app: web.Application, defaults: list[types.StoreEntry]):
+    def __init__(self, app: web.Application, defaults: list[StoreEntry]):
         self: TwinKeyDict[str, int, dict]
         FlushedStore.__init__(self, app)
         TwinKeyDict.__init__(self)
@@ -65,7 +66,8 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict[str, int, dict]):
                     'namespace': const.SPARK_NAMESPACE,
                 })
                 self.key = key
-                data = (await resp.json())['value'].get('data', [])
+                content = await resp.json()
+                data = content.get('value', {}).get('data', [])
                 LOGGER.info(f'{self} Read {len(data)} blocks')
 
         except asyncio.CancelledError:  # pragma: no cover
@@ -91,7 +93,7 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict[str, int, dict]):
         await asyncio.wait_for(self._ready_event.wait(), READY_TIMEOUT_S)
         if self.key is None:
             raise RuntimeError('Document key not set - did read() fail?')
-        data: list[types.StoreEntry] = [
+        data: list[StoreEntry] = [
             {'keys': keys, 'data': content}
             for keys, content in self.items()
         ]

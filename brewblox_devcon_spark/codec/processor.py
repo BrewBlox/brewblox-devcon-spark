@@ -2,23 +2,25 @@
 Input/output modification functions for transcoding
 """
 
+import ipaddress
 import re
 from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
 from dataclasses import dataclass
 from functools import reduce
-from typing import Iterator, Optional, Union
+from socket import htonl, ntohl
+from typing import Any, Iterator, Optional, Union
 
 from brewblox_service import brewblox_logger
 from google.protobuf import json_format
-from google.protobuf.descriptor import DescriptorBase, FieldDescriptor
-from google.protobuf.message import Message
+from google.protobuf.descriptor import Descriptor, FieldDescriptor
 
-from .opts import DecodeOpts, FilterOpt, MetadataOpt
+from brewblox_devcon_spark.models import DecodedPayload, MaskMode
+
+from .opts import DateFormatOpt, DecodeOpts, FilterOpt, MetadataOpt
 from .pb2 import brewblox_pb2
+from .time_utils import serialize_datetime
 from .unit_conversion import UnitConverter
-
-STRIP_FIELDS_KEY = 'strippedFields'
 
 LOGGER = brewblox_logger(__name__)
 
@@ -30,12 +32,11 @@ class OptionElement():
     key: str
     base_key: str
     postfix: str
-    postfix_arg: str
     nested: bool
 
 
-class Modifier():
-    _BREWBLOX_PROVIDER: DescriptorBase = brewblox_pb2.brewblox
+class ProtobufProcessor():
+    _BREWBLOX_PROVIDER: FieldDescriptor = brewblox_pb2.field
 
     def __init__(self, converter: UnitConverter, strip_readonly=True):
         self._converter = converter
@@ -43,12 +44,11 @@ class Modifier():
 
         symbols = re.escape('[]<>')
         self._postfix_pattern = re.compile(''.join([
-            f'([^{symbols}]+)',  # "value" -> captured
-            f'[{symbols}]?',     # "["
-            f'([^{symbols},]*)',  # "degC" -> captured
-            ',?',  # option separator
-            f'([^{symbols}]*)',  # "driven" -> captured
-            f'[{symbols}]?',     # "]"
+            f'([^{symbols}]+)',     # "value" -> captured
+            f'[{symbols}]?',        # "["
+            f'([^{symbols},]*)',    # "degC" -> captured
+            f',?[^{symbols}]*',     # ",driven" -> (backwards compatibility)
+            f'[{symbols}]?',        # "]"
         ]))
 
     @staticmethod
@@ -68,6 +68,14 @@ class Modifier():
         return hexlify(b64decode(s)).decode()
 
     @staticmethod
+    def ipv4_to_int(ip: str) -> int:
+        return ntohl(int(ipaddress.ip_address(ip)))
+
+    @staticmethod
+    def int_to_ipv4(ip: int) -> str:
+        return ipaddress.ip_address(htonl(ip)).compressed
+
+    @staticmethod
     def pack_bit_flags(flags: list[int]) -> int:
         if next((i for i in flags if i >= 8), None):
             raise ValueError(f'Invalid bit flags in {flags}. Values must be 0-7.')
@@ -77,7 +85,7 @@ class Modifier():
     def unpack_bit_flags(flags: int) -> list[int]:
         return [i for i in range(8) if 1 << i & flags]
 
-    def _find_options(self, desc: DescriptorBase, obj: dict, nested: bool = False) -> Iterator[OptionElement]:
+    def _find_elements(self, desc: Descriptor, obj: dict, nested: bool = False) -> Iterator[OptionElement]:
         """
         Recursively walks `obj`, and yields an `OptionElement` for each value.
 
@@ -86,7 +94,7 @@ class Modifier():
         Any entries added to the parent object after an element is yielded will not be considered.
         """
         for key in set(obj.keys()):
-            base_key, postfix, postfix_arg = self._postfix_pattern.findall(key)[0]
+            base_key, postfix = self._postfix_pattern.findall(key)[0]
             field: FieldDescriptor = desc.fields_by_name[base_key]
 
             if field.message_type:
@@ -96,21 +104,20 @@ class Modifier():
                     children = [obj[key]]
 
                 for c in children:
-                    yield from self._find_options(field.message_type, c, True)
+                    yield from self._find_elements(field.message_type, c, True)
 
-            yield OptionElement(field, obj, key, base_key, postfix, postfix_arg, nested)
+            yield OptionElement(field, obj, key, base_key, postfix, nested)
 
         return
 
-    def _field_options(self, field: FieldDescriptor, provider: FieldDescriptor = None):
-        provider = provider or self._BREWBLOX_PROVIDER
-        return field.GetOptions().Extensions[provider]
+    def _field_options(self, field: FieldDescriptor) -> brewblox_pb2.FieldOpts:
+        return field.GetOptions().Extensions[self._BREWBLOX_PROVIDER]
 
     def _unit_name(self, unit_num: int) -> str:
-        return brewblox_pb2.BrewBloxTypes.UnitType.Name(unit_num)
+        return brewblox_pb2.UnitType.Name(unit_num)
 
-    def _objtype_name(self, objtype_num: int) -> str:
-        return brewblox_pb2.BrewBloxTypes.BlockType.Name(objtype_num)
+    def _type_name(self, blockType_num: int) -> str:
+        return brewblox_pb2.BlockType.Name(blockType_num)
 
     def _encode_unit(self, value: Union[float, dict], unit_type: str, postfix: Optional[str]) -> float:
         if isinstance(value, dict):
@@ -121,9 +128,12 @@ class Modifier():
             user_unit = postfix
             return self._converter.to_sys_value(value, unit_type, user_unit)
 
-    def encode_options(self, message: Message, obj: dict) -> dict:
+    def pre_encode(self,
+                   desc: Descriptor,
+                   payload: DecodedPayload,
+                   ) -> DecodedPayload:
         """
-        Modifies `obj` based on Protobuf options and dict key postfixes.
+        Modifies `payload` based on Protobuf options and dict key postfixes.
 
         Supported Protobuf options:
         * unit:         Convert metadata unit notation (postfix or typed object) to Protobuf unit.
@@ -133,13 +143,16 @@ class Modifier():
         * readonly:     Strip value from protobuf input.
         * ignored:      Strip value from protobuf input.
         * hexstr:       Convert hexadecimal string to base64 string.
+        * datetime:     Convert ms / s / ISO-8601 value to seconds since UTC.
+        * ipv4address:  Converts dot string notation to integer IP address.
 
-        The output is a dict where values use controller units.
+        The output is the same payload object, but with modified content and mask.
+        Content values use controller units.
 
         Postfix notations and typed objects can be mixed in the same data.
 
         Example:
-            >>> values = {
+            >>> payload.content = {
                 'settings': {
                     'address': 'aabbccdd',
                     'offset[delta_degF]': 20,
@@ -153,9 +166,9 @@ class Modifier():
                 },
             }
 
-            >>> encode_options(
+            >>> pre_encode(
                     TempSensorOneWire_pb2.TempSensorOneWire(),
-                    values)
+                    payload)
 
             # ExampleMessage.proto:
             #
@@ -163,27 +176,25 @@ class Modifier():
             #   message Settings {
             #     fixed64 address = 1 [(brewblox).hexed = true];
             #     sint32 offset = 2 [(brewblox).unit = DeltaTemp, (brewblox).scale = 256];
-            #     uint16 sensor = 3 [(brewblox).objtype = TempSensorInterface];
+            #     uint16 sensor = 3 [(brewblox).blockType = TempSensorInterface];
             #     sint32 output = 4 [(brewblox).readonly = true];
             #     sint32 desiredSetting = 5 [(brewblox).unit = Temp];
             #   }
             # ...
 
-            >>> print(values)
+            >>> print(payload.content)
             {
                 'settings': {
                     'address': 2864434397,  # Converted from Hex to int64
                     'offset': 2844,         # Converted to delta_degC, scaled * 256, and rounded to int
-                    'sensor': 10,           # Object type postfix stripped
-                                            # 'output' is readonly -> stripped from dict
+                    'sensor': 10,           # Object type postfix excluded
+                                            # 'output' is readonly -> excluded from dict
                     'desiredSetting': 15,   # No conversion required - value already used degC
                 }
             }
         """
-        for element in self._find_options(message.DESCRIPTOR, obj):
+        for element in self._find_elements(desc, payload.content):
             options = self._field_options(element.field)
-            val = element.obj[element.key]
-            new_key = element.base_key
 
             if options.ignored:
                 del element.obj[element.key]
@@ -193,53 +204,66 @@ class Modifier():
                 del element.obj[element.key]
                 continue
 
-            is_list = isinstance(val, (list, set))
+            # We don't support exclusive masks at this level
+            if payload.maskMode == MaskMode.INCLUSIVE and not element.nested:
+                payload.mask.append(element.field.number)
 
-            if not is_list:
-                val = [val]
+            def _convert_value(value: Any) -> Union[str, int, float]:
+                if options.unit:
+                    unit_name = self._unit_name(options.unit)
+                    value = self._encode_unit(value, unit_name, element.postfix or None)
 
-            val = [v for v in val if v is not None]
+                if options.objtype:
+                    if isinstance(value, dict):
+                        value = value['id']
 
-            if not val:
+                if options.scale:
+                    value *= options.scale
+
+                if options.hexed:
+                    value = self.hex_to_int(value)
+
+                if options.hexstr:
+                    value = self.hex_to_b64(value)
+
+                if options.ipv4address:
+                    value = self.ipv4_to_int(value)
+
+                if options.datetime:
+                    value = serialize_datetime(value, DateFormatOpt.SECONDS)
+
+                if element.field.cpp_type in json_format._INT_TYPES:
+                    value = int(round(value))
+
+                return value
+
+            new_key = element.base_key
+            new_value = element.obj[element.key]
+
+            if new_value is None:
                 del element.obj[element.key]
                 continue
 
-            if options.unit:
-                unit_name = self._unit_name(options.unit)
-                val = [
-                    self._encode_unit(v, unit_name, element.postfix or None)
-                    for v in val
-                ]
+            if isinstance(new_value, (list, set)):
+                new_value = [_convert_value(v)
+                             for v in new_value
+                             if v is not None]
+            else:
+                new_value = _convert_value(new_value)
 
-            if options.objtype:
-                val = [
-                    v['id'] if isinstance(v, dict) else v
-                    for v in val
-                ]
-
-            if options.scale:
-                val = [v * options.scale for v in val]
-
-            if options.hexed:
-                val = [self.hex_to_int(v) for v in val]
-
-            if options.hexstr:
-                val = [self.hex_to_b64(v) for v in val]
-
-            if element.field.cpp_type in json_format._INT_TYPES:
-                val = [int(round(v)) for v in val]
-
-            if not is_list:
-                val = val[0]
-
+            # The key changed if postfixed metadata was used
             if element.key != new_key:
                 del element.obj[element.key]
 
-            element.obj[new_key] = val
+            element.obj[new_key] = new_value
 
-        return obj
+        return payload
 
-    def decode_options(self, message: Message, obj: dict, opts: DecodeOpts) -> dict:
+    def post_decode(self,
+                    desc: Descriptor,
+                    payload: DecodedPayload,
+                    opts: DecodeOpts,
+                    ) -> DecodedPayload:
         """
         Post-processes protobuf data based on protobuf / codec options.
 
@@ -247,18 +271,16 @@ class Modifier():
         * scale:        Divides value by scale before unit conversion.
         * unit:         Adds unit to output, using either a [] postfix, or a typed object.
         * objtype:      Adds object type to output, using either a <> postfix, or a typed object.
-        * driven        Adds the "driven" flag to postfix or typed object.
         * hexed:        Converts base64 decoder output to int.
         * hexstr:       Converts base64 decoder output to hexadecimal string.
+        * datetime:     Convert value to formatting specified by opts.dates.
+        * ipv4address:  Converts integer IP address to dot string notation.
         * readonly:     Ignored: decoding means reading from controller.
         * ignored:      Strip value from output.
         * logged:       Tag for filtering output data.
 
-        Supported special field names:
-        * strippedFields:  lists all fields that should be set to None in the current message.
-
         Supported codec options:
-        * filter:       If opts.filter == LOGGED, all values without options.logged are stripped from output.
+        * filter:       If opts.filter == LOGGED, all values without options.logged are excluded from output.
         * metadata:     Format used to serialize object metadata.
                         Determines whether units/links are postfixed or rendered as typed object.
 
@@ -272,7 +294,7 @@ class Modifier():
                 }
             }
 
-            >>> decode_options(
+            >>> post_decode(
                     ExampleMessage_pb2.ExampleMessage(),
                     values,
                     DecodeOpts(metadata=MetadataOpt.POSTFIX))
@@ -300,13 +322,17 @@ class Modifier():
                 }
             }
         """
-        stripped_fields = obj.pop(STRIP_FIELDS_KEY, [])
-
-        for element in self._find_options(message.DESCRIPTOR, obj):
+        for element in self._find_elements(desc, payload.content):
             options = self._field_options(element.field)
-            val = element.obj[element.key]
-            new_key = element.key
-            stripped = element.field.number in stripped_fields and not element.nested
+
+            if payload.maskMode == MaskMode.NO_MASK or element.nested:
+                excluded = False
+            elif payload.maskMode == MaskMode.INCLUSIVE:
+                excluded = element.field.number not in payload.mask
+            elif payload.maskMode == MaskMode.EXCLUSIVE:
+                excluded = element.field.number in payload.mask
+            else:
+                raise NotImplementedError(f'{payload.maskMode=}')
 
             if options.ignored:
                 del element.obj[element.key]
@@ -316,72 +342,82 @@ class Modifier():
                 del element.obj[element.key]
                 continue
 
-            is_list = isinstance(val, (list, set))
+            link_type = self._type_name(options.objtype)
+            qty_system_unit = self._unit_name(options.unit)
+            qty_user_unit = self._converter.to_user_unit(qty_system_unit)
 
-            if not is_list:
-                val = [val]
+            def _convert_value(value: Union[float, int, str]) -> Any:
+                if options.scale:
+                    value /= options.scale
 
-            if options.scale:
-                val = [v / options.scale for v in val]
+                if options.unit:
+                    if excluded:
+                        value = None
+                    else:
+                        value = self._converter.to_user_value(value, qty_system_unit)
 
-            if options.unit:
-                unit_name = self._unit_name(options.unit)
-                user_unit = self._converter.to_user_unit(unit_name)
+                    if opts.metadata == MetadataOpt.TYPED:
+                        value = {
+                            '__bloxtype': 'Quantity',
+                            'unit': qty_user_unit,
+                            'value': value
+                        }
 
-                # Always convert value
-                val = [
-                    self._converter.to_user_value(v, unit_name)
-                    for v in val
-                ]
+                        if options.readonly:
+                            value['readonly'] = True
 
-                if opts.metadata == MetadataOpt.TYPED:
-                    shared = {
-                        '__bloxtype': 'Quantity',
-                        'unit': user_unit,
-                    }
-                    if options.readonly:
-                        shared['readonly'] = True
+                    return value
 
-                    val = [{**shared, 'value': v if not stripped else None} for v in val]
+                if options.objtype:
+                    if excluded:
+                        value = None
 
-                if opts.metadata == MetadataOpt.POSTFIX:
-                    new_key += f'[{user_unit}]'
+                    if opts.metadata == MetadataOpt.TYPED:
+                        value = {
+                            '__bloxtype': 'Link',
+                            'type': link_type,
+                            'id': value,
+                        }
 
-            if options.objtype:
-                objtype = self._objtype_name(options.objtype)
+                    return value
 
-                if opts.metadata == MetadataOpt.TYPED:
-                    shared = {
-                        '__bloxtype': 'Link',
-                        'type': objtype,
-                    }
-                    if options.driven:
-                        shared['driven'] = True
+                if excluded:
+                    return None
 
-                    val = [{**shared, 'id': v if not stripped else None} for v in val]
+                if options.hexed:
+                    return self.int_to_hex(value)
 
-                if opts.metadata == MetadataOpt.POSTFIX:
-                    postfix = f'<{objtype},driven>' if options.driven else f'<{objtype}>'
-                    new_key += postfix
+                if options.hexstr:
+                    return self.b64_to_hex(value)
 
-            if options.hexed:
-                val = [self.int_to_hex(v) for v in val]
+                if options.ipv4address:
+                    return self.int_to_ipv4(value)
 
-            if options.hexstr:
-                val = [self.b64_to_hex(v) for v in val]
+                if options.datetime:
+                    return serialize_datetime(value, opts.dates)
 
-            if not is_list:
-                val = val[0]
+                return value
 
+            new_key = element.key
+            new_value = element.obj[element.key]
+
+            # If metadata is postfixed, we may need to update the key
+            if opts.metadata == MetadataOpt.POSTFIX:
+                if options.objtype:
+                    new_key = f'{element.key}<{link_type}>'
+                if options.unit:
+                    new_key = f'{element.key}[{qty_user_unit}]'
+
+            # Convert value
+            if isinstance(new_value, (list, set)):
+                new_value = [_convert_value(v) for v in new_value]
+            else:
+                new_value = _convert_value(new_value)
+
+            # Remove old key/value if we updated the key
             if element.key != new_key:
                 del element.obj[element.key]
 
-            if stripped:
-                if (options.unit or options.objtype) and opts.metadata == MetadataOpt.TYPED:
-                    pass  # Already handled
-                else:
-                    val = None
+            element.obj[new_key] = new_value
 
-            element.obj[new_key] = val
-
-        return obj
+        return payload

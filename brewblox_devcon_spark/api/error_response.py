@@ -38,8 +38,8 @@ async def controller_error_middleware(request: web.Request, handler) -> web.Resp
 
         if isinstance(ex, BrewbloxException):
             http_error = ex.http_error
-        else:
+        else:  # pragma: no cover
             http_error = web.HTTPInternalServerError
 
-        return http_error(text=json.dumps(response),
-                          content_type='application/json')
+        raise http_error(text=json.dumps(response),
+                         content_type='application/json')

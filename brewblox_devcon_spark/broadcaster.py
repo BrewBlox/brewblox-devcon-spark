@@ -8,10 +8,10 @@ import asyncio
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, mqtt, repeater, strex
 
-from brewblox_devcon_spark import const, exceptions, service_status
-from brewblox_devcon_spark.api.blocks_api import BlocksApi
-from brewblox_devcon_spark.block_analysis import (calculate_drive_chains,
+from brewblox_devcon_spark import const, controller, service_status
+from brewblox_devcon_spark.block_analysis import (calculate_claims,
                                                   calculate_relations)
+from brewblox_devcon_spark.models import ServiceConfig
 
 LOGGER = brewblox_logger(__name__)
 
@@ -21,7 +21,7 @@ class Broadcaster(repeater.RepeaterFeature):
     def __init__(self, app: web.Application):
         super().__init__(app)
 
-        config = app['config']
+        config: ServiceConfig = app['config']
         self.name = config['name']
         self.interval = config['broadcast_interval']
         self.volatile = self.interval <= 0 or config['volatile']
@@ -31,10 +31,7 @@ class Broadcaster(repeater.RepeaterFeature):
         self._will_message = {
             'key': self.name,
             'type': 'Spark.state',
-            'data': {
-                'status': None,
-                'blocks': [],
-            },
+            'data': None,
         }
 
         # A will is published if the client connection is broken
@@ -60,19 +57,18 @@ class Broadcaster(repeater.RepeaterFeature):
             await asyncio.sleep(self.interval)
             synched = await service_status.wait_synchronized(self.app, wait=False)
 
-            status_data = service_status.desc_dict(self.app)
+            status_data = service_status.desc(self.app)
             blocks = []
 
             try:
                 if synched:
-                    api = BlocksApi(self.app)
-                    blocks, logged_blocks = await api.read_all_broadcast()
+                    blocks, logged_blocks = await controller.fget(self.app).read_all_broadcast_blocks()
 
                     # Convert list to key/value format suitable for history
                     history_data = {
-                        block['id']: block['data']
+                        block.id: block.data
                         for block in logged_blocks
-                        if not block['id'].startswith(const.GENERATED_ID_PREFIX)
+                        if not block.id.startswith(const.GENERATED_ID_PREFIX)
                     }
 
                     await mqtt.publish(self.app,
@@ -93,19 +89,16 @@ class Broadcaster(repeater.RepeaterFeature):
                                        'key': self.name,
                                        'type': 'Spark.state',
                                        'data': {
-                                           'status': status_data,
-                                           'blocks': blocks,
+                                           'status': status_data.dict(),
+                                           'blocks': [v.dict() for v in blocks],
                                            'relations': calculate_relations(blocks),
-                                           'drive_chains': calculate_drive_chains(blocks),
+                                           'claims': calculate_claims(blocks),
                                        },
                                    })
 
-        except exceptions.ConnectionPaused:
-            LOGGER.debug(f'{self} interrupted: connection paused')
-
         except Exception as ex:
             LOGGER.debug(f'{self} exception: {strex(ex)}')
-            raise
+            raise ex
 
 
 def setup(app: web.Application):

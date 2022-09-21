@@ -15,7 +15,6 @@ from brewblox_service import brewblox_logger
 
 DEFAULT_TIMEOUT_S = 5
 SIM_ADDR = inet_aton('0.0.0.0')
-ID_KEY = 'ID'.encode()
 
 LOGGER = brewblox_logger(__name__)
 
@@ -46,7 +45,7 @@ async def _discover(
                 continue  # discard unknown addresses and simulators
 
             addr = inet_ntoa(info.address)
-            id = info.properties.get(ID_KEY, bytes()).decode().lower()
+            id = info.properties.get(b'ID', bytes()).decode().lower()
 
             if not id:
                 LOGGER.error(f'Invalid device: {info.name} @ {addr}:{info.port} has no ID TXT property')
@@ -67,7 +66,7 @@ async def discover_all(
 ) -> Generator[ConnectInfo, None, None]:
     with suppress(asyncio.TimeoutError):
         async with timeout(timeout_v):
-            async for res in _discover(desired_id, dns_type):
+            async for res in _discover(desired_id, dns_type):  # pragma: no branch
                 yield res
 
 
@@ -77,5 +76,5 @@ async def discover_one(
     timeout_v: Optional[float] = None,
 ) -> ConnectInfo:
     async with timeout(timeout_v):
-        async for res in _discover(desired_id, dns_type):
+        async for res in _discover(desired_id, dns_type):  # pragma: no branch
             return res

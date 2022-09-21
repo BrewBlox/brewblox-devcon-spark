@@ -15,6 +15,7 @@ from brewblox_service import brewblox_logger, strex
 from serial.tools import list_ports
 
 from brewblox_devcon_spark import exceptions, mdns
+from brewblox_devcon_spark.models import ServiceConfig
 
 LOGGER = brewblox_logger(__name__)
 
@@ -62,7 +63,7 @@ class DiscoveryAbortedError(Exception):
 
 
 async def connect(app: web.Application) -> ConnectionResult:
-    config = app['config']
+    config: ServiceConfig = app['config']
 
     simulation = config['simulation']
     device_serial = config['device_serial']

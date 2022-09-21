@@ -5,7 +5,7 @@ Regulates actions that should be taken when the service connects to a controller
 
 import asyncio
 from contextlib import suppress
-from datetime import datetime, timedelta
+from datetime import datetime
 from functools import wraps
 
 from aiohttp import web
@@ -13,7 +13,9 @@ from brewblox_service import brewblox_logger, features, repeater, strex
 
 from brewblox_devcon_spark import (block_store, codec, commander, const,
                                    datastore, exceptions, global_store,
-                                   service_status, service_store, spark)
+                                   service_status, service_store)
+from brewblox_devcon_spark.codec.time_utils import serialize_duration
+from brewblox_devcon_spark.models import FirmwareBlock, FirmwareBlockIdentity
 
 HANDSHAKE_TIMEOUT_S = 120
 PING_INTERVAL_S = 1
@@ -43,6 +45,14 @@ def subroutine(desc: str):
 
 class SparkSynchronization(repeater.RepeaterFeature):
 
+    def __init__(self, app: web.Application):
+        super().__init__(app)
+        self.codec = codec.fget(app)
+        self.commander = commander.fget(app)
+        self.service_store = service_store.fget(self.app)
+        self.global_store = global_store.fget(self.app)
+        self.block_store = block_store.fget(self.app)
+
     async def before_shutdown(self, app: web.Application):
         await self.end()
 
@@ -66,19 +76,15 @@ class SparkSynchronization(repeater.RepeaterFeature):
         - Connect to controller
             - Wait for 'connected' event to be set by connection.py
         - Synchronize handshake
-            - Keep sending a Noop command until 'acknowledged' event is set
+            - Keep sending a Version command until 'acknowledged' event is set
             - Check firmware info in handshake for compatibility
             - Abort synchronization if firmware/ID is not compatible
         - Synchronize block store
             - Read controller-specific data in datastore
-        - Synchronize controller time
-            - Send current abs time to controller block
-        - Synchronize controller display unit
-            - Send correct unit to controller if mismatched
+        - Synchronize controller settings
+            - Send sysTime to controller if mismatched
+            - Send temp Unit to controller if mismatched
             - Send timezone to controller if mismatched
-        - Collect and log controller tracing
-            - Write read/resume command to SysInfo
-            - Tracing is included in response
         - Set 'synchronized' event
         - Wait for 'disconnected' event
 
@@ -90,9 +96,7 @@ class SparkSynchronization(repeater.RepeaterFeature):
             await service_status.wait_connected(self.app)
             await self._sync_handshake()
             await self._sync_block_store()
-            await self._sync_time()
-            await self._sync_display()
-            await self._collect_call_trace()
+            await self._sync_sysinfo()
 
             service_status.set_synchronized(self.app)
             LOGGER.info('Service synchronized!')
@@ -116,32 +120,30 @@ class SparkSynchronization(repeater.RepeaterFeature):
         if self.app['config']['simulation']:
             return 'simulator__' + self.app['config']['name']
 
-        return service_status.desc(self.app).device_info.device_id
+        return service_status.desc(self.app).controller.device.device_id
 
-    def get_autoconnecting(self):
-        return service_status.desc(self.app).is_autoconnecting
+    def get_autoconnecting(self) -> bool:
+        return service_status.desc(self.app).enabled
 
-    async def set_autoconnecting(self, enabled):
+    async def set_autoconnecting(self, enabled: bool):
         enabled = bool(enabled)
-        service_status.set_autoconnecting(self.app, enabled)
+        service_status.set_enabled(self.app, enabled)
         with service_store.fget(self.app).open() as config:
             config[AUTOCONNECTING_KEY] = enabled
         return enabled
 
     @subroutine('sync datastore')
     async def _sync_datastore(self):
-        _service_store = service_store.fget(self.app)
-        _global_store = global_store.fget(self.app)
 
         await datastore.check_remote(self.app)
-        await _service_store.read()
-        await _global_store.read()
+        await self.service_store.read()
+        await self.global_store.read()
 
         await self.set_converter_units()
 
-        with _service_store.open() as config:
-            autoconnect = bool(config.setdefault(AUTOCONNECTING_KEY, True))
-            service_status.set_autoconnecting(self.app, autoconnect)
+        with self.service_store.open() as config:
+            enabled = bool(config.setdefault(AUTOCONNECTING_KEY, True))
+            service_status.set_enabled(self.app, enabled)
 
             # Units were moved to global config (2021/04/02)
             with suppress(KeyError):
@@ -165,8 +167,9 @@ class SparkSynchronization(repeater.RepeaterFeature):
                 try:
                     await asyncio.sleep(PING_INTERVAL_S)
                     LOGGER.info('prompting handshake...')
-                    await spark.fget(self.app).noop()
-                except Exception:
+                    await self.commander.version()
+                except Exception as ex:
+                    LOGGER.error(strex(ex))
                     pass
 
         ack_wait_task = asyncio.create_task(service_status.wait_acknowledged(self.app))
@@ -184,112 +187,71 @@ class SparkSynchronization(repeater.RepeaterFeature):
         if not await service_status.wait_acknowledged(self.app, wait=False):
             raise asyncio.TimeoutError()
 
-        handshake = service_status.desc(self.app).handshake_info
+        desc = service_status.desc(self.app)
 
-        if not handshake.is_compatible_firmware:
+        if desc.firmware_error == 'INCOMPATIBLE':
             raise exceptions.IncompatibleFirmware()
 
-        if not handshake.is_valid_device_id:
+        if desc.identity_error == 'INVALID':
             raise exceptions.InvalidDeviceId()
 
     @subroutine('sync block store')
     async def _sync_block_store(self):
-        store = block_store.fget(self.app)
         await datastore.check_remote(self.app)
-        await store.read(self.device_name)
+        await self.block_store.read(self.device_name)
 
-    @subroutine('sync controller time')
-    async def _sync_time(self):
-        now = datetime.now()
-        ticks_block = await spark.fget(self.app).write_object({
-            'nid': const.SYSTIME_NID,
-            'groups': [const.SYSTEM_GROUP],
-            'type': 'Ticks',
-            'data': {
-                'secondsSinceEpoch': now.timestamp()
-            }
-        })
-        ms = ticks_block['data']['millisSinceBoot']
-        uptime = timedelta(milliseconds=ms)
-        LOGGER.info(f'System uptime: {uptime}')
-
-    @subroutine('sync display settings')
-    async def _sync_display(self):
-        await self.set_display_settings()
+    @subroutine('sync controller settings')
+    async def _sync_sysinfo(self):
+        await self.set_sysinfo_settings()
 
     async def on_global_store_change(self):
         """Callback invoked by global_store"""
         await self.set_converter_units()
-        await self.set_display_settings()
+
+        if await service_status.wait_acknowledged(self.app, wait=False):
+            await self.set_sysinfo_settings()
 
     async def set_converter_units(self):
-        store = global_store.fget(self.app)
-        converter = codec.get_converter(self.app)
-        converter.temperature = store.units['temperature']
+        converter = codec.unit_conversion.fget(self.app)
+        converter.temperature = self.global_store.units['temperature']
         LOGGER.info(f'Service temperature unit set to {converter.temperature}')
 
-    async def set_display_settings(self):
-        if not service_status.desc(self.app).is_acknowledged:
-            return
+    async def set_sysinfo_settings(self):
+        sysinfo = await self.commander.read_block(
+            FirmwareBlockIdentity(nid=const.SYSINFO_NID))
 
-        store = global_store.fget(self.app)
-        controller = spark.fget(self.app)
-        write_required = False
+        uptime = sysinfo.data['uptime']['value']
+        LOGGER.info(f'System uptime: {serialize_duration(uptime)}')
 
-        display_block = await controller.read_object({
-            'nid': const.DISPLAY_SETTINGS_NID
-        })
+        update_freq = sysinfo.data['updatesPerSecond']
+        LOGGER.info(f'System updates per second: {update_freq}')
 
-        user_unit = store.units['temperature']
-        expected_unit = 'TEMP_FAHRENHEIT' if user_unit == 'degF' else 'TEMP_CELSIUS'
-        block_unit = display_block['data']['tempUnit']
+        # Always try and write system time
+        patch_data = {'systemTime': datetime.now()}
 
-        if expected_unit != block_unit:
-            write_required = True
-            display_block['data']['tempUnit'] = expected_unit
-            LOGGER.info(f'Spark display temperature unit set to {user_unit}')
-
-        user_tz_name = store.time_zone['name']
-        user_tz = store.time_zone['posixValue']
-        block_tz = display_block['data']['timeZone']
+        # Check system time zone
+        user_tz_name = self.global_store.time_zone['name']
+        user_tz = self.global_store.time_zone['posixValue']
+        block_tz = sysinfo.data['timeZone']
 
         if user_tz != block_tz:
-            write_required = True
-            display_block['data']['timeZone'] = user_tz
-            LOGGER.info(f'Spark display time zone set to {user_tz} ({user_tz_name})')
+            LOGGER.info(f'Updating Spark time zone: {user_tz} ({user_tz_name})')
+            patch_data['timeZone'] = user_tz
 
-        if write_required:
-            await controller.write_object(display_block)
+        # Check system temp unit
+        user_unit = self.global_store.units['temperature']
+        expected_unit = 'TEMP_FAHRENHEIT' if user_unit == 'degF' else 'TEMP_CELSIUS'
+        block_unit = sysinfo.data['tempUnit']
 
-    async def format_trace(self, src):
-        cdc = codec.fget(self.app)
-        store = block_store.fget(self.app)
-        dest = []
-        for src_v in src:
-            action = src_v['action']
-            nid = src_v['id']
-            sid = store.left_key(nid, 'Unknown')
-            typename = await cdc.decode(src_v['type'])
+        if expected_unit != block_unit:
+            LOGGER.info(f'Updating Spark temp unit: {user_unit}')
+            patch_data['tempUnit'] = expected_unit
 
-            if nid == 0:
-                dest.append(action)
-            else:
-                dest.append(f'{action.ljust(20)} {typename.ljust(20)} [{sid},{nid}]')
-
-        return dest
-
-    @subroutine('collect controller call trace')
-    async def _collect_call_trace(self):
-        sys_block = await spark.fget(self.app).write_object({
-            'nid': const.SYSINFO_NID,
-            'groups': [const.SYSTEM_GROUP],
-            'type': 'SysInfo',
-            'data': {
-                'command': 'SYS_CMD_TRACE_READ_RESUME'
-            }
-        })
-        trace = '\n'.join(await self.format_trace(sys_block['data']['trace']))
-        LOGGER.info(f'System trace: \n{trace}')
+        await self.commander.patch_block(FirmwareBlock(
+            nid=const.SYSINFO_NID,
+            type='SysInfo',
+            data=patch_data,
+        ))
 
 
 def setup(app: web.Application):

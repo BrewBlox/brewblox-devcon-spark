@@ -7,6 +7,7 @@ from brewblox_service import brewblox_logger, features, http, mqtt, strex
 
 from brewblox_devcon_spark import const
 from brewblox_devcon_spark.datastore import STORE_URL
+from brewblox_devcon_spark.models import ServiceConfig
 
 LOGGER = brewblox_logger(__name__)
 
@@ -27,8 +28,9 @@ def default_time_zone():
 class GlobalConfigStore(features.ServiceFeature):
     def __init__(self, app: web.Application):
         super().__init__(app)
-        self._volatile = app['config']['volatile']
-        self._datastore_topic = app['config']['datastore_topic']
+        config: ServiceConfig = app['config']
+        self._volatile = config['volatile']
+        self._datastore_topic = config['datastore_topic']
         self._global_topic = f'{self._datastore_topic}/{const.GLOBAL_NAMESPACE}'
 
         self.units = default_units()

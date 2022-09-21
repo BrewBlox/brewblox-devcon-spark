@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-pushd "$(dirname "$0")/.." > /dev/null
+pushd "$(dirname "$0")/.." >/dev/null
 
 # Args
 # Release can be either firmware branch name,
@@ -20,15 +20,11 @@ proto_version=$(awk -F "=" '/proto_version/ {print $2}' ./firmware.ini)
 echo "Updating to firmware release ${firmware_date}-${firmware_version}"
 
 # Pull proto submodule
-proto_dir=brewblox_devcon_spark/codec/proto
-git -C ${proto_dir} fetch
-git -C ${proto_dir} checkout --quiet "${proto_version}"
+git -C brewblox-proto fetch
+git -C brewblox-proto checkout --quiet "${proto_version}"
 
 # Compile proto files
-pushd brewblox_devcon_spark/codec > /dev/null
-rm -f ./proto-compiled/*_pb2.py
-protoc -I=./proto --python_out=./proto-compiled ./proto/*.proto
-popd > /dev/null
+bash dev/compile-proto.sh
 
 # Download local files to be sure
 bash dev/download-firmware.sh

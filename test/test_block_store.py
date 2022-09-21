@@ -129,6 +129,7 @@ async def test_block_read_error(app, client, store, aresponses):
     aresponses.assert_plan_strictly_followed()
 
 
+@pytest.mark.filterwarnings('ignore:<ServiceBlockStore> flush error')
 async def test_block_write_error(app, client, store, aresponses):
     add_block_read_resp(aresponses, 1)
     add_write_resp(aresponses, 1)

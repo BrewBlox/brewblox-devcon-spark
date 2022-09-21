@@ -20,6 +20,7 @@ _UREG = UnitRegistry()
 SYSTEM_TEMP = 'degC'
 
 FORMATS = {
+    'NotSet': '',
     'Celsius': '{temp}',
     'InverseCelsius': '1 / {temp}',
     'Second': 'second',
@@ -96,5 +97,5 @@ def setup(app: web.Application):
     features.add(app, UnitConverter(app))
 
 
-def get_converter(app: web.Application) -> UnitConverter:
+def fget(app: web.Application) -> UnitConverter:
     return features.get(app, UnitConverter)
