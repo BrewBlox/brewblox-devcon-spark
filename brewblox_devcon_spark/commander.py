@@ -78,7 +78,7 @@ class SparkCommander(features.ServiceFeature):
         return FirmwareBlock(
             nid=payload.blockId,
             type=codec.join_type(payload.blockType, payload.subtype),
-            data=payload.content,
+            data=payload.content or {},
         )
 
     async def _data_callback(self, msg: str):

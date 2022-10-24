@@ -82,9 +82,9 @@ class SparkController(features.ServiceFeature):
         if not re.match(SID_PATTERN, sid):
             raise exceptions.InvalidId(SID_RULES)
         if next((keys for keys in const.SYS_OBJECT_KEYS if sid == keys[0]), None):
-            raise exceptions.InvalidId(f'`{sid}` is an ID reserved for system objects')
+            raise exceptions.InvalidId(f'Block ID `{sid}` is reserved for system objects')
         if (sid, None) in self._store:
-            raise exceptions.ExistingId(f'`{sid}` is already in use')
+            raise exceptions.ExistingId(f'Block ID `{sid}` is already in use')
 
     def _assign_sid(self, blockType: str):
         for i in itertools.count(start=1):  # pragma: no cover
@@ -102,14 +102,14 @@ class SparkController(features.ServiceFeature):
         try:
             return self._store.right_key(sid)
         except KeyError:
-            raise exceptions.UnknownId(f'No numeric ID matching [sid={sid},type={blockType}] found in store')
+            raise exceptions.UnknownId(f'Block ID `{sid}` not found. type={blockType}')
 
     def _find_sid(self, nid: int, blockType: str) -> str:
         if nid is None or nid == 0:
             return None
 
         if isinstance(nid, str):
-            raise exceptions.DecodeException(f'Expected numeric ID, got string "{nid}"')
+            raise exceptions.DecodeException(f'Expected numeric block ID, got string `{nid}`')
 
         try:
             sid = self._store.left_key(nid)
@@ -160,7 +160,7 @@ class SparkController(features.ServiceFeature):
             try:
                 nid = self._store.right_key(sid)
             except KeyError:
-                raise exceptions.UnknownId(f'No numeric ID matching [sid={block.id},type={block.type}] found in store')
+                raise exceptions.UnknownId(f'Block ID `{sid}` not found. type={block.type}')
 
         return FirmwareBlockIdentity(
             nid=nid,
@@ -175,7 +175,7 @@ class SparkController(features.ServiceFeature):
             try:
                 nid = self._store.right_key(sid) if find_nid else 0
             except KeyError:
-                raise exceptions.UnknownId(f'No numeric ID matching [sid={block.id},type={block.type}] found in store')
+                raise exceptions.UnknownId(f'Block ID `{sid}` not found. type={block.type}')
 
         block = FirmwareBlock(
             nid=nid,
