@@ -20,7 +20,7 @@ variables:
   # DOCKER_PASSWORD
   - group: brewblox
   - name: BOOST_VERSION
-    value: "1.74"
+    value: "1.74.0"
 
 steps:
   - task: UsePythonVersion@0
