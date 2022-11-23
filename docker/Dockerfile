@@ -1,6 +1,4 @@
-# Firmware depends on Boost 1.67
-# Bullseye repositories only provide 1.74
-FROM python:3.9-buster as base
+FROM python:3.9 as base
 
 ENV PIP_EXTRA_INDEX_URL=https://www.piwheels.org/simple
 ENV PIP_FIND_LINKS=/wheeley
@@ -21,13 +19,13 @@ RUN set -ex \
     && bash -c "rm /app/firmware/${OTHER_SIM}" \
     && rm /app/firmware/*.elf
 
-FROM python:3.9-slim-buster
+FROM python:3.9-slim
 EXPOSE 5000
 WORKDIR /app
 
 ARG service_info=UNKNOWN
 ENV SERVICE_INFO=${service_info}
-ENV BOOST_V=1.67.0
+ENV BOOST_V=1.74
 
 RUN set -ex \
     && apt-get update \
