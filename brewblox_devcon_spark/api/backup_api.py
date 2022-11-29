@@ -69,6 +69,34 @@ class BackupStoredAllView(BackupView):
         )
 
 
+@routes.view('/blocks/backup/stored/download')
+class BackupStoredDownloadView(BackupView):
+    async def post(self, args: BackupIdentity) -> r200[Backup]:
+        """
+        Download stored backup without applying it.
+
+        Tags: Backup
+        """
+        result = await self.storage.read(args)
+        return web.json_response(
+            result.dict()
+        )
+
+
+@routes.view('/blocks/backup/stored/upload')
+class BackupStoredUploadView(BackupView):
+    async def post(self, args: Backup) -> r200[Backup]:
+        """
+        Download stored backup without applying it.
+
+        Tags: Backup
+        """
+        result = await self.storage.write(args)
+        return web.json_response(
+            result.dict()
+        )
+
+
 @routes.view('/blocks/backup/stored/save')
 class BackupStoredSaveView(BackupView):
     async def post(self, args: BackupIdentity) -> r200[Backup]:
@@ -78,20 +106,6 @@ class BackupStoredSaveView(BackupView):
         Tags: Backup
         """
         result = await self.storage.save(args)
-        return web.json_response(
-            result.dict()
-        )
-
-
-@routes.view('/blocks/backup/stored/read')
-class BackupStoredReadView(BackupView):
-    async def post(self, args: BackupIdentity) -> r200[Backup]:
-        """
-        Read stored backup without applying it.
-
-        Tags: Backup
-        """
-        result = await self.storage.read(args)
         return web.json_response(
             result.dict()
         )

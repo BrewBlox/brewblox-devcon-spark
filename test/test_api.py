@@ -405,10 +405,16 @@ async def test_backup_stored(app, client, block_args):
 
     assert len(portable['blocks']) == len(saved_stored['blocks'])
 
-    read_stored = await response(client.post('/blocks/backup/stored/read', json={
+    download_stored = await response(client.post('/blocks/backup/stored/download', json={
         'name': 'stored',
     }))
-    assert saved_stored == read_stored
+    assert saved_stored == download_stored
+
+    upload_stored = await response(client.post('/blocks/backup/stored/upload', json=download_stored))
+    assert saved_stored == upload_stored
+
+    download_stored['name'] = None
+    await response(client.post('/blocks/backup/stored/upload', json=download_stored), status=400)
 
     all_stored = await response(client.post('/blocks/backup/stored/all'))
     assert all_stored == [{'name': 'stored'}]

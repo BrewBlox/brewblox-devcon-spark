@@ -586,6 +586,7 @@ class SparkController(features.ServiceFeature):
         return Backup(
             blocks=[block for block in blocks_data],
             store=store_data,
+            name=None,
             timestamp=timestamp,
             firmware=controller_info.firmware,
             device=controller_info.device,

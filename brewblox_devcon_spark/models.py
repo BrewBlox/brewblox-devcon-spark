@@ -364,6 +364,7 @@ class BackupIdentity(BaseModel):
 class Backup(BaseModel):
     # Older backups won't have these fields
     # They will not be used when loading backups
+    name: Optional[str]
     timestamp: Optional[str]
     firmware: Optional[FirmwareDescription]
     device: Optional[DeviceDescription]
