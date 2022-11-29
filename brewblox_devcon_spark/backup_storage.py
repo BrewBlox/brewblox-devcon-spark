@@ -10,7 +10,7 @@ from pathlib import Path
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, repeater, strex
 
-from brewblox_devcon_spark import controller, service_status
+from brewblox_devcon_spark import controller, exceptions, service_status
 from brewblox_devcon_spark.models import (Backup, BackupApplyResult,
                                           BackupIdentity, ServiceConfig)
 
@@ -50,7 +50,7 @@ class BackupStorage(repeater.RepeaterFeature):
             synched = await service_status.wait_synchronized(self.app, wait=False)
 
             if synched:
-                name = 'spark_autosave_backup_' + datetime.today().strftime('%Y-%m-%d')
+                name = f'autosave-blocks-{self.name}-' + datetime.today().strftime('%Y-%m-%d')
                 await self.save(BackupIdentity(name=name))
                 self.last_ok = True
 
@@ -77,16 +77,20 @@ class BackupStorage(repeater.RepeaterFeature):
         with infile.open('r') as f:
             return Backup(**json.load(f))
 
-    async def write(self, ident: BackupIdentity, data: Backup):
-        outfile = self.dir / f'{ident.name}.json'
+    async def write(self, data: Backup) -> Backup:
+        if not data.name:
+            raise exceptions.InvalidInput('Missing name in backup')
+        outfile = self.dir / f'{data.name}.json'
         LOGGER.debug(f'Writing backup to {outfile.resolve()}')
 
         with outfile.open('w') as f:
             json.dump(data.dict(), f)
+        return data
 
     async def save(self, ident: BackupIdentity):
         data = await controller.fget(self.app).make_backup()
-        await self.write(ident, data)
+        data.name = ident.name
+        await self.write(data)
         return data
 
     async def load(self, ident: BackupIdentity) -> BackupApplyResult:
