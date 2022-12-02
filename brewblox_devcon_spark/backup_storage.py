@@ -50,7 +50,7 @@ class BackupStorage(repeater.RepeaterFeature):
             synched = await service_status.wait_synchronized(self.app, wait=False)
 
             if synched:
-                name = f'autosave-blocks-{self.name}-' + datetime.today().strftime('%Y-%m-%d')
+                name = f'autosave_blocks_{self.name}_' + datetime.today().strftime('%Y-%m-%d')
                 await self.save(BackupIdentity(name=name))
                 self.last_ok = True
 
