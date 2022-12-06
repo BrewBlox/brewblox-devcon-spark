@@ -65,6 +65,8 @@ def app_config() -> ServiceConfig:
         'command_timeout': 10,
         'broadcast_interval': 5,
         'volatile': True,
+        'backup_interval': 3600,
+        'backup_retry_interval': 300,
     }
 
 
@@ -81,6 +83,8 @@ def sys_args(app_config) -> list:
         '--discovery', app_config['discovery'],
         '--command-timeout', app_config['command_timeout'],
         '--broadcast-interval', app_config['broadcast_interval'],
+        '--backup-interval', app_config['backup_interval'],
+        '--backup-retry-interval', app_config['backup_retry_interval'],
         '--volatile',
     ]]
 

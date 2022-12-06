@@ -8,13 +8,13 @@ from os import getenv
 
 from brewblox_service import brewblox_logger, http, mqtt, scheduler, service
 
-from brewblox_devcon_spark import (block_store, broadcaster, codec, commander,
-                                   connection, controller, global_store,
-                                   service_status, service_store,
+from brewblox_devcon_spark import (backup_storage, block_store, broadcaster,
+                                   codec, commander, connection, controller,
+                                   global_store, service_status, service_store,
                                    synchronization)
-from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
-                                       mqtt_api, settings_api, sim_api,
-                                       system_api)
+from brewblox_devcon_spark.api import (backup_api, blocks_api, debug_api,
+                                       error_response, mqtt_api, settings_api,
+                                       sim_api, system_api)
 from brewblox_devcon_spark.models import ServiceConfig, ServiceFirmwareIni
 
 LOGGER = brewblox_logger(__name__)
@@ -75,6 +75,20 @@ def create_parser(default_name='spark'):
                        help='Skip firmware version check: will not raise error on mismatch',
                        action='store_true')
 
+    # Backup options
+    group = parser.add_argument_group('Backup')
+    group.add_argument('--backup-interval',
+                       help='Interval (in seconds) between backups of controller state. '
+                       'Set to a value <= 0 to disable. [%(default)s]',
+                       type=float,
+                       default=3600)
+    group.add_argument('--backup-retry-interval',
+                       help='Interval (in seconds) between backups of controller state '
+                       'after startup, or after a failed backup. '
+                       'Set to a value <= 0 to always use the value of --backup-interval. [%(default)s]',
+                       type=float,
+                       default=300)
+
     return parser
 
 
@@ -115,6 +129,7 @@ def main():
     synchronization.setup(app)
 
     controller.setup(app)
+    backup_storage.setup(app)
     broadcaster.setup(app)
 
     error_response.setup(app)
@@ -123,6 +138,7 @@ def main():
     settings_api.setup(app)
     mqtt_api.setup(app)
     sim_api.setup(app)
+    backup_api.setup(app)
     debug_api.setup(app)
 
     service.furnish(app)
