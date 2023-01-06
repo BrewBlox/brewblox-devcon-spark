@@ -17,6 +17,7 @@ IGNORED_RELATION_TYPES = [
 IGNORED_RELATION_FIELDS = [
     'claimedBy',  # Always mirror an existing target link
     'oneWireBusId',  # OneWireBus system blocks are not rendered
+    'clients',  # Balancer clients are mirrored in client constraints
 ]
 
 # Relations with this field name should be inverted
