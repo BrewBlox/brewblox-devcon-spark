@@ -222,14 +222,14 @@ class SparkCommander(features.ServiceFeature):
 
     async def read_stored_block(self, ident: FirmwareBlockIdentity) -> FirmwareBlock:
         payloads = await self._execute(
-            Opcode.STORAGE_READ,
+            Opcode.BLOCK_STORED_READ,
             self._to_payload(ident, identity_only=True),
         )
         return self._to_block(payloads[0], self.stored_decode_opts)
 
     async def read_all_stored_blocks(self) -> list[FirmwareBlock]:
         payloads = await self._execute(
-            Opcode.STORAGE_READ_ALL,
+            Opcode.BLOCK_STORED_READ_ALL,
             None,
         )
         return [self._to_block(v, self.stored_decode_opts)
