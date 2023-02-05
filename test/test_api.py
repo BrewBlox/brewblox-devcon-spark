@@ -9,12 +9,13 @@ import pytest
 from brewblox_service import scheduler
 from brewblox_service.testing import response
 
-from brewblox_devcon_spark import (block_store, codec, commander,
-                                   connection_sim, const, controller,
-                                   global_store, service_status, service_store,
-                                   synchronization, ymodem)
-from brewblox_devcon_spark.api import (blocks_api, debug_api, error_response,
-                                       settings_api, system_api)
+from brewblox_devcon_spark import (backup_storage, block_store, codec,
+                                   commander, connection_sim, const,
+                                   controller, global_store, service_status,
+                                   service_store, synchronization, ymodem)
+from brewblox_devcon_spark.api import (backup_api, blocks_api, debug_api,
+                                       error_response, settings_api,
+                                       system_api)
 from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
                                           ErrorCode, IntermediateRequest,
                                           IntermediateResponse, Opcode)
@@ -47,6 +48,11 @@ def m_publish(mocker):
     return m
 
 
+@pytest.fixture(autouse=True)
+def m_backup_dir(mocker, tmp_path):
+    mocker.patch(backup_storage.__name__ + '.BASE_BACKUP_DIR', tmp_path)
+
+
 def repeated_blocks(ids, args):
     return [{
         'id': id,
@@ -68,9 +74,11 @@ async def app(app, event_loop):
     service_store.setup(app)
     synchronization.setup(app)
     controller.setup(app)
+    backup_storage.setup(app)
 
     error_response.setup(app)
     blocks_api.setup(app)
+    backup_api.setup(app)
     system_api.setup(app)
     settings_api.setup(app)
     debug_api.setup(app)
@@ -381,6 +389,44 @@ async def test_backup_load(app, client, spark_blocks):
     resp_ids = ret_ids(resp)
     assert 'renamed_wifi' in resp_ids
     assert 'derpface' not in resp_ids
+
+
+async def test_backup_stored(app, client, block_args):
+    portable = await response(client.post('/blocks/backup/save'))
+    saved_stored = await response(client.post('/blocks/backup/stored/save', json={
+        'name': 'stored',
+    }))
+
+    assert saved_stored['blocks']
+    assert saved_stored['store']
+    assert saved_stored['timestamp']
+    assert saved_stored['firmware']
+    assert saved_stored['device']
+
+    assert len(portable['blocks']) == len(saved_stored['blocks'])
+
+    download_stored = await response(client.post('/blocks/backup/stored/download', json={
+        'name': 'stored',
+    }))
+    assert saved_stored == download_stored
+
+    upload_stored = await response(client.post('/blocks/backup/stored/upload', json=download_stored))
+    assert saved_stored == upload_stored
+
+    download_stored['name'] = None
+    await response(client.post('/blocks/backup/stored/upload', json=download_stored), status=400)
+
+    all_stored = await response(client.post('/blocks/backup/stored/all'))
+    assert all_stored == [{'name': 'stored'}]
+
+    # Create block not in backup
+    # Then restore backup
+    await response(client.post('/blocks/create', json=block_args), 201)
+    await response(client.post('/blocks/backup/stored/load', json={
+        'name': 'stored',
+    }))
+    ids = ret_ids(await response(client.post('/blocks/all/read')))
+    assert block_args['id'] not in ids
 
 
 async def test_read_all_logged(app, client):

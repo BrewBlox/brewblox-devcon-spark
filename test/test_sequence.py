@@ -117,6 +117,12 @@ def test_sequence_from_line():
     with pytest.raises(ValueError, match=r'Missing arguments'):
         sequence.from_line('SET_SETPOINT target=setpoint', 1)
 
+    with pytest.raises(ValueError, match=r'Mismatch between delta and absolute'):
+        sequence.from_line('WAIT_SETPOINT target=setpoint, precision=1C', 1)
+
+    with pytest.raises(ValueError, match=r'Mismatch between delta and absolute'):
+        sequence.from_line('SET_SETPOINT target=setpoint, setting=20dF', 1)
+
 
 def test_sequence_to_line():
 

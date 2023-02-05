@@ -35,6 +35,8 @@ class ServiceConfig(TypedDict):
     command_timeout: float
     broadcast_interval: float
     volatile: bool
+    backup_interval: float
+    backup_retry_interval: float
 
 
 class BlockIdentity(BaseModel):
@@ -67,15 +69,6 @@ class FirmwareBlock(BaseModel):
 class StoreEntry(TypedDict):
     keys: tuple[str, int]
     data: dict
-
-
-class Backup(BaseModel):
-    blocks: list[Block]
-    store: list[StoreEntry]
-
-
-class BackupLoadResult(BaseModel):
-    messages: list[str]
 
 
 class BlockNameChange(BaseModel):
@@ -124,6 +117,8 @@ class Opcode(enum.Enum):
     BLOCK_CREATE = 13
     BLOCK_DELETE = 14
     BLOCK_DISCOVER = 15
+    BLOCK_STORED_READ = 16
+    BLOCK_STORED_READ_ALL = 17
 
     STORAGE_READ = 20
     STORAGE_READ_ALL = 21
@@ -362,3 +357,23 @@ class ServiceStatusDescription(BaseModel):
         'INCOMPATIBLE',
         'WILDCARD_ID',
     ]]
+
+
+class BackupIdentity(BaseModel):
+    name: str
+
+
+class Backup(BaseModel):
+    # Older backups won't have these fields
+    # They will not be used when loading backups
+    name: Optional[str]
+    timestamp: Optional[str]
+    firmware: Optional[FirmwareDescription]
+    device: Optional[DeviceDescription]
+
+    blocks: list[Block]
+    store: list[StoreEntry]
+
+
+class BackupApplyResult(BaseModel):
+    messages: list[str]

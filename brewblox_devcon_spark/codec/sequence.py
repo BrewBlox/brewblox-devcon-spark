@@ -63,6 +63,10 @@ def from_line(line: str, line_num: int) -> dict:
                 value = float(match[1])
                 unit = match[2].replace('d', 'delta_').replace('C', 'degC').replace('F', 'degF')
 
+                if ('Delta' in unit_name) != ('delta_' in unit):
+                    raise ValueError(
+                        f'line {line_num}: Mismatch between delta and absolute temperature: `{key}={value}{unit}`')
+
                 return {
                     '__bloxtype': 'Quantity',
                     'value': value,

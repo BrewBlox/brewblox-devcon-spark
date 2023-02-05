@@ -179,7 +179,8 @@ class SparkConnectionSim(connection.SparkConnection):
 
         elif request.opcode in [
             Opcode.BLOCK_READ,
-            Opcode.STORAGE_READ
+            Opcode.BLOCK_STORED_READ,
+            Opcode.STORAGE_READ,
         ]:
             block = self._blocks.get(request.payload.blockId)
             if not block:
@@ -189,6 +190,7 @@ class SparkConnectionSim(connection.SparkConnection):
 
         elif request.opcode in [
             Opcode.BLOCK_READ_ALL,
+            Opcode.BLOCK_STORED_READ_ALL,
             Opcode.STORAGE_READ_ALL,
         ]:
             response.payload = [self._to_payload(block)
