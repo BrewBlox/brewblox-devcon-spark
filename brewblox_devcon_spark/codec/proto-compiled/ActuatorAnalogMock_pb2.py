@@ -23,7 +23,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x18\x41\x63tuatorAnalogMock.proto\x12\x17\x62lox.ActuatorAnalogMock\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x11\x43onstraints.proto\x1a\x0c\x43laims.proto\"\x86\x04\n\x05\x42lock\x12\x0f\n\x07\x65nabled\x18\r \x01(\x08\x12)\n\rstoredSetting\x18\x0b \x01(\x11\x42\x12\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x30\n\x0e\x64\x65siredSetting\x18\t \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12)\n\x07setting\x18\x01 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\'\n\x05value\x18\x02 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12 \n\nminSetting\x18\x04 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12 \n\nmaxSetting\x18\x05 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x1e\n\x08minValue\x18\x06 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x1e\n\x08maxValue\x18\x07 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12:\n\rconstrainedBy\x18\x08 \x01(\x0b\x32#.blox.Constraints.AnalogConstraints\x12%\n\tclaimedBy\x18\n \x01(\rB\x12\x8a\xb5\x18\x03\x18\xff\x01\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x12-\n\x0bsettingMode\x18\x0c \x01(\x0e\x32\x18.blox.Claims.SettingMode:%\x8a\xb5\x18\x03\x18\xb1\x02\x8a\xb5\x18\x02H\x01\x8a\xb5\x18\x02H\x05\x8a\xb5\x18\x02H\x13\x8a\xb5\x18\x02H\x0f\x8a\xb5\x18\x02H\x10\x62\x06proto3'
+  serialized_pb=b'\n\x18\x41\x63tuatorAnalogMock.proto\x12\x17\x62lox.ActuatorAnalogMock\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x11\x43onstraints.proto\x1a\x0c\x43laims.proto\"\xca\x04\n\x05\x42lock\x12\x0f\n\x07\x65nabled\x18\r \x01(\x08\x12)\n\rstoredSetting\x18\x0b \x01(\x11\x42\x12\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x30\n\x0e\x64\x65siredSetting\x18\t \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12)\n\x07setting\x18\x01 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\'\n\x05value\x18\x02 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12 \n\nminSetting\x18\x04 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12 \n\nmaxSetting\x18\x05 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x1e\n\x08minValue\x18\x06 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x1e\n\x08maxValue\x18\x07 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x44\n\rconstrainedBy\x18\x08 \x01(\x0b\x32-.blox.Constraints.DeprecatedAnalogConstraints\x12\x38\n\x0b\x63onstraints\x18\x0e \x01(\x0b\x32#.blox.Constraints.AnalogConstraints\x12%\n\tclaimedBy\x18\n \x01(\rB\x12\x8a\xb5\x18\x03\x18\xff\x01\x8a\xb5\x18\x02(\x01\x92?\x02\x38\x10\x12-\n\x0bsettingMode\x18\x0c \x01(\x0e\x32\x18.blox.Claims.SettingMode:%\x8a\xb5\x18\x03\x18\xb1\x02\x8a\xb5\x18\x02H\x01\x8a\xb5\x18\x02H\x05\x8a\xb5\x18\x02H\x13\x8a\xb5\x18\x02H\x0f\x8a\xb5\x18\x02H\x10\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,Constraints__pb2.DESCRIPTOR,Claims__pb2.DESCRIPTOR,])
 
@@ -109,14 +109,21 @@ _BLOCK = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='claimedBy', full_name='blox.ActuatorAnalogMock.Block.claimedBy', index=10,
+      name='constraints', full_name='blox.ActuatorAnalogMock.Block.constraints', index=10,
+      number=14, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='claimedBy', full_name='blox.ActuatorAnalogMock.Block.claimedBy', index=11,
       number=10, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\003\030\377\001\212\265\030\002(\001\222?\0028\020', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='settingMode', full_name='blox.ActuatorAnalogMock.Block.settingMode', index=11,
+      name='settingMode', full_name='blox.ActuatorAnalogMock.Block.settingMode', index=12,
       number=12, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -135,10 +142,11 @@ _BLOCK = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=117,
-  serialized_end=635,
+  serialized_end=703,
 )
 
-_BLOCK.fields_by_name['constrainedBy'].message_type = Constraints__pb2._ANALOGCONSTRAINTS
+_BLOCK.fields_by_name['constrainedBy'].message_type = Constraints__pb2._DEPRECATEDANALOGCONSTRAINTS
+_BLOCK.fields_by_name['constraints'].message_type = Constraints__pb2._ANALOGCONSTRAINTS
 _BLOCK.fields_by_name['settingMode'].enum_type = Claims__pb2._SETTINGMODE
 DESCRIPTOR.message_types_by_name['Block'] = _BLOCK
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
