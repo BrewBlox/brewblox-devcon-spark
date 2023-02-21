@@ -11,7 +11,7 @@ from brewblox_service import brewblox_logger, features
 
 from brewblox_devcon_spark import service_status
 
-SPARK_WS_ADDR = 'ws://localhost:7376/'
+SPARK_WS_ADDR = 'ws://localhost:7377/'
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
