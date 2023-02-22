@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "brewblox-devcon-spark"
-version = "0.5.2"
+version = "1.0.0"
 description = "Communication with Spark controllers"
 authors = ["BrewPi <development@brewpi.com>"]
 license = "GPL-3.0"
