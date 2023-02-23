@@ -125,9 +125,6 @@ async def connect_simulation(app: web.Application) -> ConnectionResult:
 
     workdir = Path('simulator/').resolve()
     workdir.mkdir(mode=0o777, exist_ok=True)
-    workdir.joinpath('device_key.der').touch(mode=0o777, exist_ok=True)
-    workdir.joinpath('server_key.der').touch(mode=0o777, exist_ok=True)
-    workdir.joinpath('eeprom.bin').touch(mode=0o777, exist_ok=True)
 
     proc = subprocess.Popen(
         [f'../firmware/{binary}', '--device_id', device_id],
