@@ -67,6 +67,7 @@ def app_config() -> ServiceConfig:
         'volatile': True,
         'backup_interval': 3600,
         'backup_retry_interval': 300,
+        'time_sync_interval': 900,
     }
 
 
