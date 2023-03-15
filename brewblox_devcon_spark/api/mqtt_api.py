@@ -41,17 +41,17 @@ class MqttApi(features.ServiceFeature):
         if block.serviceId == self.name:
             await self.controller.create_block(block)
 
-    async def _write(self, topic: str,  msg: dict):
+    async def _write(self, topic: str, msg: dict):
         block = Block(**msg)
         if block.serviceId == self.name:
             await self.controller.write_block(block)
 
-    async def _patch(self, topic: str,  msg: dict):
+    async def _patch(self, topic: str, msg: dict):
         block = Block(**msg)
         if block.serviceId == self.name:
             await self.controller.patch_block(block)
 
-    async def _delete(self, topic: str,  msg: dict):
+    async def _delete(self, topic: str, msg: dict):
         ident = BlockIdentity(**msg)
         if ident.serviceId == self.name:
             await self.controller.delete_block(ident)

@@ -62,6 +62,7 @@ def app_config() -> ServiceConfig:
         'device_id': '1234',
         'discovery': 'all',
         'simulation': False,
+        'mock': True,
         'command_timeout': 10,
         'broadcast_interval': 5,
         'volatile': True,

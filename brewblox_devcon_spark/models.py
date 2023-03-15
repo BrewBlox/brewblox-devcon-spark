@@ -30,8 +30,9 @@ class ServiceConfig(TypedDict):
     # brewblox_devcon_spark
     device_serial: Optional[str]
     device_id: Optional[str]
-    discovery: Literal['all', 'usb', 'wifi', 'lan']
+    discovery: Literal['all', 'usb', 'wifi', 'lan', 'mqtt']
     simulation: bool
+    mock: bool
     command_timeout: float
     broadcast_interval: float
     volatile: bool

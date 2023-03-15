@@ -112,7 +112,7 @@ class SparkCommander(features.ServiceFeature):
         self._active_messages[msg_id] = fut
 
         try:
-            await self._conn.write(request_msg)
+            await self._conn.send_request(request_msg)
             response = await asyncio.wait_for(fut, timeout=self._timeout)
 
             if response.error != ErrorCode.OK:

@@ -3,11 +3,10 @@ An in-process firmware simulation.
 This is not intended to simulate firmware processes,
 only to provide encoded responses that make some sense.
 
-connection_sim.py serves as a short-circuit replacement of connection.py
-Instead of binary data being written to a stream,
-it is decoded and immediately replied to.
+MockConnection is an alternative to StreamConnection or MqttConnection.
 This prevents having to spin up a simulator in a separate process for tests.
 """
+
 
 import asyncio
 from datetime import datetime
@@ -15,9 +14,9 @@ from itertools import count
 from typing import Optional, Union
 
 from aiohttp import web
-from brewblox_service import features, strex
+from brewblox_service import strex
 
-from brewblox_devcon_spark import codec, connection, const, service_status
+from brewblox_devcon_spark import codec, const
 from brewblox_devcon_spark.__main__ import LOGGER
 from brewblox_devcon_spark.codec import bloxfield
 from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
@@ -25,6 +24,8 @@ from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
                                           IntermediateRequest,
                                           IntermediateResponse, Opcode,
                                           ResetData, ResetReason)
+
+from .base_connection import BaseConnection
 
 
 def default_blocks() -> dict[int, FirmwareBlock]:
@@ -76,26 +77,25 @@ def default_blocks() -> dict[int, FirmwareBlock]:
         ]}
 
 
-class SparkConnectionSim(connection.SparkConnection):
-
-    def __init__(self, app: web.Application):
-        super().__init__(app)
-
-        self._address = 'simulation:1234'
-        self._data_callbacks = set()
-        self._event_callbacks = set()
+class MockConnection(BaseConnection):
+    def __init__(self, app: web.Application) -> None:
+        super().__init__('simulation:1234')
 
         # an ErrorCode will be returned
         # a None value will cause no response to be returned
         self.next_error: list[Union[ErrorCode, None]] = []
 
+        self._close_evt: asyncio.Event = None
         self._start_time = datetime.now()
-        self._codec: codec.Codec = features.get(app, key='sim_codec')
+        self._codec = codec.Codec(app, strip_readonly=False)
         self._id_counter = count(start=const.USER_NID_START)
         self._blocks: dict[int, FirmwareBlock] = default_blocks()
 
+    async def async_init(self):
+        self._close_evt = asyncio.Event()
+
     @property
-    def connected(self) -> bool:  # pragma: no cover
+    def connected(self) -> bool:
         return True
 
     def _to_payload(self, block: FirmwareBlock) -> EncodedPayload:
@@ -155,7 +155,7 @@ class SparkConnectionSim(connection.SparkConnection):
             ResetData.NOT_SPECIFIED.value,
             self.app['config']['device_id'] or '1234567F0CASE',
         ]
-        await self._on_event(','.join(welcome))
+        await self.on_event(','.join(welcome))
 
     async def handle_command(self, request: IntermediateRequest) -> Optional[IntermediateResponse]:  # pragma: no cover
         response = IntermediateResponse(
@@ -267,47 +267,30 @@ class SparkConnectionSim(connection.SparkConnection):
 
         return response
 
-    async def run(self):
-        try:
-            await service_status.wait_enabled(self.app)
-            service_status.set_connected(self.app, self._address)
-            self.update_systime()
-            await self.welcome()
+    async def send_request(self, request_b64: Union[str, bytes]):
+        if not isinstance(request_b64, str):
+            request_b64 = request_b64.decode()
 
-            while True:
-                await asyncio.sleep(3600)
-
-        except Exception as ex:  # pragma: no cover
-            LOGGER.error(strex(ex))
-            raise ex
-
-        finally:
-            service_status.set_disconnected(self.app)
-
-    async def start_reconnect(self):
-        pass
-
-    async def write(self, request_b64: str):  # pragma: no cover
         try:
             self.update_systime()
             request = self._codec.decode_request(request_b64)
             response = await self.handle_command(request)
 
             if response:
-                await self._on_data(self._codec.encode_response(response))
+                await self.on_response(self._codec.encode_response(response))
 
         except Exception as ex:
             LOGGER.error(strex(ex))
             raise ex
 
+    async def drain(self):
+        await self._close_evt.wait()
 
-def setup(app: web.Application):
-    # Before returning, the simulator encodes + decodes values
-    # We want to avoid stripping readonly values here
-    features.add(app, codec.Codec(app, strip_readonly=False), key='sim_codec')
-    # Register as a SparkConnection, so connection.fget(app) still works
-    features.add(app, SparkConnectionSim(app), key=connection.SparkConnection)
+    async def close(self):
+        self._close_evt.set()
 
 
-def fget(app: web.Application) -> SparkConnectionSim:
-    return features.get(app, connection.SparkConnection)
+async def connect_mock(app: web.Application) -> BaseConnection:
+    conn = MockConnection(app)
+    await conn.async_init()
+    return conn

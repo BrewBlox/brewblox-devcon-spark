@@ -27,9 +27,16 @@ def create_parser(default_name='spark'):
     group = parser.add_argument_group('Device communication')
     group.add_argument('--simulation',
                        help='Start in simulation mode. Will not connect to a physical device. '
-                       'This option takes precedence over other connection options. '
+                       'This option takes precedence over other connection options except --mock. '
                        'The simulator is assigned the --device-id value if set or 123456789012345678901234. '
-                       'If you are using multiple simulators, you need to assign them unique device IDs. '
+                       'If you are using multiple simulators or mocks, you need to assign them unique device IDs. '
+                       '[%(default)s]',
+                       action='store_true')
+    group.add_argument('--mock',
+                       help='Start in mocked mode. Will not connect to a controller or simulation process. '
+                       'This option takes precedence over other connection options and --simulation. '
+                       'The mock is assigned the --device-id value if set or 123456789012345678901234. '
+                       'If you are using multiple simulators or mocks, you need to assign them unique device IDs. '
                        '[%(default)s]',
                        action='store_true')
     group.add_argument('--device-host',
@@ -48,7 +55,7 @@ def create_parser(default_name='spark'):
                        help='Enabled types of device discovery. '
                        '--device-serial and --device-host disable discovery. '
                        '--device-id specifies which discovered device is valid. ',
-                       choices=['all', 'usb', 'wifi', 'lan'],
+                       choices=['all', 'usb', 'wifi', 'lan', 'mqtt'],
                        default='all')
 
     # Service network options
@@ -119,7 +126,7 @@ def main():
         debugpy.listen(('0.0.0.0', 5678))
         LOGGER.info('Debugger is enabled and listening on 5678')
 
-    if config['simulation']:
+    if config['simulation'] or config['mock']:
         config['device_id'] = config['device_id'] or '123456789012345678901234'
 
     scheduler.setup(app)
