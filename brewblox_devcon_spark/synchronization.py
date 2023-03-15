@@ -5,7 +5,6 @@ Regulates actions that should be taken when the service connects to a controller
 
 import asyncio
 from contextlib import suppress
-from datetime import datetime
 from functools import wraps
 
 from aiohttp import web
@@ -219,15 +218,13 @@ class SparkSynchronization(repeater.RepeaterFeature):
     async def set_sysinfo_settings(self):
         sysinfo = await self.commander.read_block(
             FirmwareBlockIdentity(nid=const.SYSINFO_NID))
+        patch_data = {}
 
         uptime = sysinfo.data['uptime']['value']
         LOGGER.info(f'System uptime: {serialize_duration(uptime)}')
 
         update_freq = sysinfo.data['updatesPerSecond']
         LOGGER.info(f'System updates per second: {update_freq}')
-
-        # Always try and write system time
-        patch_data = {'systemTime': datetime.now()}
 
         # Check system time zone
         user_tz_name = self.global_store.time_zone['name']
@@ -247,11 +244,12 @@ class SparkSynchronization(repeater.RepeaterFeature):
             LOGGER.info(f'Updating Spark temp unit: {user_unit}')
             patch_data['tempUnit'] = expected_unit
 
-        await self.commander.patch_block(FirmwareBlock(
-            nid=const.SYSINFO_NID,
-            type='SysInfo',
-            data=patch_data,
-        ))
+        if patch_data:
+            await self.commander.patch_block(FirmwareBlock(
+                nid=const.SYSINFO_NID,
+                type='SysInfo',
+                data=patch_data,
+            ))
 
 
 def setup(app: web.Application):

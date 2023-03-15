@@ -37,6 +37,7 @@ class ServiceConfig(TypedDict):
     volatile: bool
     backup_interval: float
     backup_retry_interval: float
+    time_sync_interval: float
 
 
 class BlockIdentity(BaseModel):
