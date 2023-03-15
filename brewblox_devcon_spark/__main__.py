@@ -89,6 +89,14 @@ def create_parser(default_name='spark'):
                        type=float,
                        default=300)
 
+    # Time sync options
+    group = parser.add_argument_group('Time Sync')
+    group.add_argument('--time-sync-interval',
+                       help='Interval (in seconds) between sending UTC time to the controller. '
+                       'Set to a value <= 0 to disable. [%(default)s]',
+                       type=float,
+                       default=900)
+
     return parser
 
 
