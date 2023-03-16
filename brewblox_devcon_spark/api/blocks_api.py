@@ -3,6 +3,8 @@ REST API for Spark blocks
 """
 
 
+import json
+
 from aiohttp import web
 from aiohttp_pydantic import PydanticView
 from aiohttp_pydantic.oas.typing import r200, r201
@@ -33,7 +35,7 @@ class BlocksView(PydanticView):
         await mqtt.publish(self.app,
                            topic,
                            err=False,
-                           message={
+                           message=json.dumps({
                                'key': name,
                                'type': 'Spark.patch',
                                'ttl': '1d',
@@ -41,7 +43,7 @@ class BlocksView(PydanticView):
                                    'changed': changed,
                                    'deleted': deleted,
                                }
-                           })
+                           }))
 
 
 @routes.view('/blocks/create')

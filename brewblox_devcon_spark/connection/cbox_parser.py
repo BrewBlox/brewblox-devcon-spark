@@ -40,10 +40,7 @@ class ControlboxParser():
         # Most annotations can be discarded, except for event messages
         # Event messages are annotations that start with !
         for msg in self._coerce_message_from_buffer(EVENT_PATTERN, EVENT_END):
-            if msg.startswith('!'):  # Event
-                self._events.put(msg[1:])
-            else:
-                LOGGER.info(f'Spark log: {msg}')
+            self._events.put(msg)
 
         # Once annotations are filtered, all that remains is data
         # Data is newline-separated

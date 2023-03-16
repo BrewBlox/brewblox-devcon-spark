@@ -14,10 +14,9 @@ from itertools import count
 from typing import Optional, Union
 
 from aiohttp import web
-from brewblox_service import strex
+from brewblox_service import brewblox_logger, strex
 
 from brewblox_devcon_spark import codec, const
-from brewblox_devcon_spark.__main__ import LOGGER
 from brewblox_devcon_spark.codec import bloxfield
 from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
                                           ErrorCode, FirmwareBlock,
@@ -26,6 +25,8 @@ from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
                                           ResetData, ResetReason)
 
 from .base_connection import BaseConnection
+
+LOGGER = brewblox_logger(__name__)
 
 
 def default_blocks() -> dict[int, FirmwareBlock]:
@@ -78,8 +79,8 @@ def default_blocks() -> dict[int, FirmwareBlock]:
 
 
 class MockConnection(BaseConnection):
-    def __init__(self, app: web.Application) -> None:
-        super().__init__('simulation:1234')
+    def __init__(self, app: web.Application, device_id: str) -> None:
+        super().__init__('MOCK', device_id)
 
         # an ErrorCode will be returned
         # a None value will cause no response to be returned
@@ -144,7 +145,7 @@ class MockConnection(BaseConnection):
 
     async def welcome(self):
         welcome = [
-            'BREWBLOX',
+            '!BREWBLOX',
             self.app['ini']['firmware_version'],
             self.app['ini']['proto_version'],
             self.app['ini']['firmware_date'],
@@ -153,7 +154,7 @@ class MockConnection(BaseConnection):
             self._address,
             ResetReason.NONE.value,
             ResetData.NOT_SPECIFIED.value,
-            self.app['config']['device_id'] or '1234567F0CASE',
+            self.app['config']['device_id'],
         ]
         await self.on_event(','.join(welcome))
 
@@ -283,14 +284,15 @@ class MockConnection(BaseConnection):
             LOGGER.error(strex(ex))
             raise ex
 
-    async def drain(self):
-        await self._close_evt.wait()
+    async def start(self):
+        pass
 
     async def close(self):
         self._close_evt.set()
 
 
 async def connect_mock(app: web.Application) -> BaseConnection:
-    conn = MockConnection(app)
+    device_id = app['config']['device_id']
+    conn = MockConnection(app, device_id)
     await conn.async_init()
     return conn

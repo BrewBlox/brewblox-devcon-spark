@@ -5,7 +5,7 @@ Tests brewblox codec
 import pytest
 from brewblox_service import features, scheduler
 
-from brewblox_devcon_spark import (codec, connection_sim, exceptions,
+from brewblox_devcon_spark import (codec, connection, exceptions,
                                    service_status, service_store)
 from brewblox_devcon_spark.codec import (Codec, DecodeOpts, MetadataOpt,
                                          ProtoEnumOpt)
@@ -21,7 +21,7 @@ def app(app):
     scheduler.setup(app)
     codec.setup(app)
     service_store.setup(app)
-    connection_sim.setup(app)
+    connection.setup(app)
     return app
 
 

@@ -8,9 +8,8 @@ from unittest.mock import AsyncMock
 import pytest
 from brewblox_service import brewblox_logger, scheduler
 
-from brewblox_devcon_spark import (block_store, codec, commander,
-                                   connection_sim, global_store,
-                                   service_status, service_store,
+from brewblox_devcon_spark import (block_store, codec, commander, connection,
+                                   global_store, service_status, service_store,
                                    synchronization)
 from brewblox_devcon_spark.models import ServiceStatusDescription
 
@@ -50,7 +49,7 @@ async def app(app, event_loop):
     scheduler.setup(app)
     service_status.setup(app)
     codec.setup(app)
-    connection_sim.setup(app)
+    connection.setup(app)
     commander.setup(app)
     global_store.setup(app)
     service_store.setup(app)

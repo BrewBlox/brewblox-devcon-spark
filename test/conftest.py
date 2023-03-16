@@ -88,6 +88,7 @@ def sys_args(app_config) -> list:
         '--backup-interval', app_config['backup_interval'],
         '--backup-retry-interval', app_config['backup_retry_interval'],
         '--volatile',
+        '--mock',
     ]]
 
 

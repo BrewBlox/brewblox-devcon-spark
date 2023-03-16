@@ -85,16 +85,7 @@ class ServiceStatus(features.ServiceFeature):
         else:
             self.enabled_ev.clear()
 
-    def set_connected(self, address: str):
-        config: ServiceConfig = self.app['config']
-
-        if config['simulation']:
-            connection_kind = 'SIMULATION'
-        elif ':' in address:
-            connection_kind = 'TCP'
-        else:
-            connection_kind = 'USB'
-
+    def set_connected(self, connection_kind: str,  address: str):
         self.status_desc.address = address
         self.status_desc.connection_kind = connection_kind
         self.status_desc.connection_status = 'CONNECTED'
@@ -103,6 +94,7 @@ class ServiceStatus(features.ServiceFeature):
         self.acknowledged_ev.clear()
         self.synchronized_ev.clear()
         self.disconnected_ev.clear()
+        LOGGER.info('Service connected')
 
     def set_acknowledged(self, controller: ControllerDescription):
         config: ServiceConfig = self.app['config']
@@ -148,10 +140,12 @@ class ServiceStatus(features.ServiceFeature):
         self.status_desc.identity_error = identity_error
 
         self.acknowledged_ev.set()
+        LOGGER.info('Service acknowledged')
 
     def set_synchronized(self):
         self.status_desc.connection_status = 'SYNCHRONIZED'
         self.synchronized_ev.set()
+        LOGGER.info('Service synchronized')
 
     def set_disconnected(self):
         self.status_desc.controller = None
@@ -165,10 +159,12 @@ class ServiceStatus(features.ServiceFeature):
         self.acknowledged_ev.clear()
         self.synchronized_ev.clear()
         self.disconnected_ev.set()
+        LOGGER.info('Service disconnected')
 
     def set_updating(self):
         self.status_desc.connection_status = 'UPDATING'
         self.updating_ev.set()
+        LOGGER.info('Service updating')
 
     async def _wait_ev(self, ev_name: str, wait: bool = True) -> bool:
         ev: asyncio.Event = getattr(self, ev_name)
@@ -198,8 +194,8 @@ def set_enabled(app: web.Application, enabled: bool):
     fget(app).set_enabled(enabled)
 
 
-def set_connected(app: web.Application, address: str):
-    fget(app).set_connected(address)
+def set_connected(app: web.Application, kind: str, address: str):
+    fget(app).set_connected(kind, address)
 
 
 def set_acknowledged(app: web.Application, controller: ControllerDescription):

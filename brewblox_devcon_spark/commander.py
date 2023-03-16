@@ -45,10 +45,10 @@ class SparkCommander(features.ServiceFeature):
 
     async def startup(self, app: web.Application):
         self._active_messages.clear()
-        self._conn.data_callbacks.add(self._data_callback)
+        self._conn.response_callbacks.add(self._data_callback)
 
     async def shutdown(self, app: web.Application):
-        self._conn.data_callbacks.discard(self._data_callback)
+        self._conn.response_callbacks.discard(self._data_callback)
 
     def _next_id(self):
         self._msgid = (self._msgid + 1) % 0xFFFF

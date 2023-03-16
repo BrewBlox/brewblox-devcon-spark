@@ -1,9 +1,9 @@
 """
-Tests brewblox_devcon_spark.cbox_parser
+Tests brewblox_devcon_spark.connection.cbox_parser
 """
 
 
-from brewblox_devcon_spark.cbox_parser import ControlboxParser
+from brewblox_devcon_spark.connection.cbox_parser import ControlboxParser
 
 
 def serial_data():
@@ -22,11 +22,11 @@ def serial_data():
 
 def expected_events():
     return [
-        'connected:sensor',
+        '!connected:sensor',
         'spaced message',
         'interrupt',
         'connected:message',
-        'interrupted! message'
+        '!interrupted! message'
     ]
 
 
@@ -61,5 +61,5 @@ def test_parser_partial():
     assert [msg for msg in parser.data_messages()] == []
 
     parser.push(chunks[1])
-    assert [msg for msg in parser.event_messages()] == ['connected:sensor']
+    assert [msg for msg in parser.event_messages()] == ['!connected:sensor']
     assert [msg for msg in parser.data_messages()] == []

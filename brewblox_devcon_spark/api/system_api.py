@@ -3,6 +3,7 @@ Specific endpoints for using system objects
 """
 
 import asyncio
+import json
 
 from aiohttp import web
 from aiohttp_pydantic import PydanticView
@@ -145,13 +146,13 @@ class FlashView(PydanticView):
         asyncio.create_task(
             mqtt.publish(self.app,
                          self.topic,
-                         {
+                         json.dumps({
                              'key': self.name,
                              'type': 'Spark.update',
                              'data': {
                                  'log': [msg],
                              },
-                         },
+                         }),
                          err=False))
 
     async def post(self) -> r200[FlashResponse]:  # pragma: no cover
@@ -163,6 +164,8 @@ class FlashView(PydanticView):
         ota = ymodem.OtaClient(self._notify)
         cmder = commander.fget(self.app)
         desc = service_status.desc(self.app)
+        platform = desc.controller.platform
+        connection_kind = desc.connection_kind
         address = desc.address
 
         self._notify(f'Started updating {self.name}@{address} to version {self.version} ({self.date})')
@@ -172,7 +175,7 @@ class FlashView(PydanticView):
                 self._notify('Controller is not connected. Aborting update.')
                 raise exceptions.NotConnected()
 
-            if self.simulation:
+            if connection_kind in ['MOCK', 'SIM']:
                 raise NotImplementedError('Firmware updates not available for simulation controllers')
 
             self._notify('Preparing update')
@@ -187,17 +190,24 @@ class FlashView(PydanticView):
             await asyncio.wait_for(
                 service_status.wait_disconnected(self.app), STATE_TIMEOUT_S)
 
-            platform = desc.controller.platform
             if platform == 'esp32':  # pragma: no cover
-                # ESP connections will always be a TCP address
-                host, _ = address.split(':')
-                self._notify(f'Sending update prompt to {host}')
-                self._notify('The Spark will now download and apply the new firmware')
-                self._notify('The update is done when the service reconnects')
                 fw_url = ESP_URL_FMT.format(**self.app['ini'])
-                await http.session(self.app).post(f'http://{host}:80/firmware_update', data=fw_url)
 
-            else:
+                if connection_kind == 'TCP':
+                    host, _ = address.split(':')
+                    self._notify(f'Sending update prompt to {host}')
+                    self._notify('The Spark will now download and apply the new firmware')
+                    self._notify('The update is done when the service reconnects')
+                    await http.session(self.app).post(f'http://{host}:80/firmware_update', data=fw_url)
+
+                if connection_kind == 'MQTT':
+                    topic = f'brewcast/cbox/fw/{address}'
+                    self._notify(f'Sending update prompt to {topic}')
+                    self._notify('The Spark will now download and apply the new firmware')
+                    self._notify('The update is done when the service reconnects')
+                    await mqtt.publish(self.app, topic, fw_url)
+
+            if platform in ['photon', 'p1']:
                 self._notify(f'Connecting to {address}')
                 conn = await ymodem.connect(address)
 

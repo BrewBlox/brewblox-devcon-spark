@@ -7,9 +7,10 @@ For serial and simulation targets, the TCP server is a subprocess.
 import asyncio
 import platform
 from contextlib import suppress
+from functools import partial
 from pathlib import Path
 from subprocess import Popen
-from typing import Optional, Union
+from typing import Awaitable, Optional, Union
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, strex
@@ -17,7 +18,7 @@ from serial.tools import list_ports
 
 from brewblox_devcon_spark import exceptions, mdns
 
-from .base_connection import BaseConnection
+from .base_connection import BaseConnection, ConnKind_
 from .cbox_parser import ControlboxParser
 
 LOGGER = brewblox_logger(__name__)
@@ -47,77 +48,133 @@ SPARK_DEVICE_REGEX = f'(?:{"|".join([dev for dev in SPARK_HWIDS])})'
 
 
 class StreamConnection(BaseConnection):
+    def __init__(self, kind: ConnKind_,  address: str) -> None:
+        super().__init__(kind, address)
 
-    def __init__(self,
-                 address: str,
-                 reader: asyncio.StreamReader,
-                 writer: asyncio.StreamWriter,
-                 ) -> None:
-        super().__init__(address)
-
-        self._reader = reader
-        self._writer = writer
+        self._transport: asyncio.Transport = None
+        self._connected = asyncio.Event()
+        self._disconnected = asyncio.Event()
+        self._active = asyncio.Event()
         self._parser = ControlboxParser()
 
     @property
-    def connected(self) -> bool:
-        return bool(self._writer and not self._writer.is_closing())
+    def connected(self) -> Awaitable[bool]:
+        return self._connected.wait()
+
+    @property
+    def disconnected(self) -> Awaitable[bool]:
+        return self._disconnected.wait()
+
+    def connection_made(self, transport: asyncio.Transport):
+        self._transport = transport
+        self._connected.set()
+        self._active.set()
+
+    def data_received(self, recv: bytes):
+        self._parser.push(recv.decode())
+
+        # Drain parsed messages
+        for msg in self._parser.event_messages():
+            asyncio.create_task(self.on_event(msg))
+        for msg in self._parser.data_messages():
+            asyncio.create_task(self.on_response(msg))
+
+    def pause_writing(self):
+        self._active.clear()
+
+    def resume_writing(self):
+        self._active.set()
+
+    def connection_lost(self, ex: Optional[Exception]):
+        if ex:
+            LOGGER.error(f'Connection closed with error: {strex(ex)}')
+        self._disconnected.set()
 
     async def send_request(self, msg: Union[str, bytes]):
         if isinstance(msg, str):
             msg = msg.encode()
 
-        self._writer.write(msg + b'\n')
-        await self._writer.drain()
-
-    async def drain(self):
-        while self.connected:
-            # read() does not raise an exception when connection is closed
-            # connected status must be checked explicitly later
-            recv = await self._reader.read(100)
-
-            # read() returns empty if EOF received
-            if not recv:  # pragma: no cover
-                raise ConnectionError('EOF received')
-
-            # Send to parser
-            self._parser.push(recv.decode())
-
-            # Drain parsed messages
-            for msg in self._parser.event_messages():
-                await self.on_event(msg)
-            for msg in self._parser.data_messages():
-                await self.on_response(msg)
+        # Maybe?
+        # await self._active.wait()
+        self._transport.write(msg + b'\n')
 
     async def close(self):
-        with suppress(Exception):
-            self._writer.close()
-            LOGGER.info(f'{self} closed stream writer')
+        if self._transport:
+            self._transport.close()
+
+
+# class StreamConnection(BaseConnection):
+
+#     def __init__(self,
+#                  kind: ConnKind_,
+#                  address: str,
+#                  reader: asyncio.StreamReader,
+#                  writer: asyncio.StreamWriter,
+#                  ) -> None:
+#         super().__init__(kind, address)
+
+#         self._reader = reader
+#         self._writer = writer
+#         self._parser = ControlboxParser()
+
+#     @property
+#     def connected(self) -> bool:
+#         return bool(self._writer and not self._writer.is_closing())
+
+#     async def send_request(self, msg: Union[str, bytes]):
+#         if isinstance(msg, str):
+#             msg = msg.encode()
+
+#         self._writer.write(msg + b'\n')
+#         await self._writer.drain()
+
+#     async def drain(self):
+#         while self.connected:
+#             # read() does not raise an exception when connection is closed
+#             # connected status must be checked explicitly later
+#             recv = await self._reader.read(100)
+
+#             # read() returns empty if EOF received
+#             if not recv:  # pragma: no cover
+#                 raise ConnectionError('EOF received')
+
+#             # Send to parser
+#             self._parser.push(recv.decode())
+
+#             # Drain parsed messages
+#             for msg in self._parser.event_messages():
+#                 await self.on_event(msg)
+#             for msg in self._parser.data_messages():
+#                 await self.on_response(msg)
+
+#     async def close(self):
+#         with suppress(Exception):
+#             self._writer.close()
+#             LOGGER.info(f'{self} closed stream writer')
 
 
 class SubprocessConnection(StreamConnection):
 
-    def __init__(self,
-                 address: str,
-                 proc: Popen,
-                 reader: asyncio.StreamReader,
-                 writer: asyncio.StreamWriter,
-                 ) -> None:
-        super().__init__(address, reader, writer)
+    def __init__(self, kind: ConnKind_, address: str, proc: Popen) -> None:
+        super().__init__(kind, address)
         self._proc = proc
 
     async def close(self):
         with suppress(Exception):
+            await super().close()
             self._proc.terminate()
             LOGGER.info(f'{self} terminated subprocess')
 
 
 async def connect_tcp(host: str, port: int) -> BaseConnection:
-    reader, writer = await asyncio.open_connection(host, port)
-    return StreamConnection(f'{host}:{port}', reader, writer)
+    # reader, writer = await asyncio.open_connection(host, port)
+    # return StreamConnection('TCP', f'{host}:{port}', reader, writer)
+    factory = partial(StreamConnection, 'TCP', f'{host}:{port}')
+    _, protocol = asyncio.get_event_loop().create_connection(factory, host, port)
+    return protocol
 
 
-async def connect_subprocess(proc: Popen, address: str) -> BaseConnection:
+async def connect_subprocess(proc: Popen, kind: ConnKind_, address: str) -> BaseConnection:
     host = SUBPROCESS_HOST
     port = SUBPROCESS_PORT
     message = None
@@ -131,8 +188,11 @@ async def connect_subprocess(proc: Popen, address: str) -> BaseConnection:
             raise ChildProcessError(f'Subprocess exited with return code {proc.returncode}')
 
         try:
-            reader, writer = await asyncio.open_connection(host, port)
-            return SubprocessConnection(address, proc, reader, writer)
+            # reader, writer = await asyncio.open_connection(host, port)
+            # return SubprocessConnection(kind, address, proc, reader, writer)
+            factory = partial(SubprocessConnection, kind, address, proc)
+            _, protocol = asyncio.get_event_loop().create_connection(factory, host, port)
+            return protocol
 
         except OSError as ex:
             message = strex(ex)
@@ -160,16 +220,16 @@ async def connect_simulation(app: web.Application) -> BaseConnection:
     proc = Popen(
         [f'../firmware/{binary}', '--device_id', device_id],
         cwd=workdir)
-    return await connect_subprocess(proc, binary)
+    return await connect_subprocess(proc, 'SIM', binary)
 
 
-async def connect_serial(address: str) -> BaseConnection:
+async def connect_serial(devfile: str) -> BaseConnection:
     proc = Popen([
         '/usr/bin/socat',
         f'tcp-listen:{SUBPROCESS_PORT},reuseaddr,fork',
-        f'file:{address},raw,echo=0,b{USB_BAUD_RATE}'
+        f'file:{devfile},raw,echo=0,b{USB_BAUD_RATE}'
     ])
-    return await connect_subprocess(proc, address)
+    return await connect_subprocess(proc, 'USB', devfile)
 
 
 async def discover_tcp(app: web.Application) -> Optional[BaseConnection]:

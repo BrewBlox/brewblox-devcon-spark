@@ -2,6 +2,8 @@
 Keeps track of global config
 """
 
+import json
+
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, http, mqtt, strex
 
@@ -50,7 +52,8 @@ class GlobalConfigStore(features.ServiceFeature):
             await mqtt.unlisten(app, self._global_topic, self._on_event)
             await mqtt.unsubscribe(app, self._global_topic)
 
-    async def _on_event(self, topic: str, obj: dict):
+    async def _on_event(self, topic: str, payload: str):
+        obj = json.loads(payload)
         if self.update(obj.get('changed', [])):
             for cb in set(self.listeners):
                 await cb()

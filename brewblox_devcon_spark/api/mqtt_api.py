@@ -2,6 +2,8 @@
 MQTT API for Spark blocks
 """
 
+import json
+
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, mqtt
 
@@ -36,23 +38,23 @@ class MqttApi(features.ServiceFeature):
         for path, listener in self.listeners.items():
             await mqtt.unlisten(app, BLOCKS_TOPIC + path, listener)
 
-    async def _create(self, topic: str, msg: dict):
-        block = Block(**msg)
+    async def _create(self, topic: str, msg: str):
+        block = Block(**json.loads(msg))
         if block.serviceId == self.name:
             await self.controller.create_block(block)
 
-    async def _write(self, topic: str, msg: dict):
-        block = Block(**msg)
+    async def _write(self, topic: str, msg: str):
+        block = Block(**json.loads(msg))
         if block.serviceId == self.name:
             await self.controller.write_block(block)
 
-    async def _patch(self, topic: str, msg: dict):
-        block = Block(**msg)
+    async def _patch(self, topic: str, msg: str):
+        block = Block(**json.loads(msg))
         if block.serviceId == self.name:
             await self.controller.patch_block(block)
 
-    async def _delete(self, topic: str, msg: dict):
-        ident = BlockIdentity(**msg)
+    async def _delete(self, topic: str, msg: str):
+        ident = BlockIdentity(**json.loads(msg))
         if ident.serviceId == self.name:
             await self.controller.delete_block(ident)
 

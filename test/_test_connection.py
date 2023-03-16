@@ -137,8 +137,8 @@ async def test_callback(app, init_app, client, m_reader, m_writer):
     m_data_cb = AsyncMock()
     m_data_cb2 = AsyncMock()
 
-    conn.data_callbacks.add(m_data_cb)
-    conn.data_callbacks.add(m_data_cb2)
+    conn.response_callbacks.add(m_data_cb)
+    conn.response_callbacks.add(m_data_cb2)
 
     m_reader.feed_data('<!connected:sensor>bunnies<fluffy>\n'.encode())
     await asyncio.sleep(0.01)
@@ -161,7 +161,7 @@ async def test_error_callback(app, init_app, client, m_reader, m_writer):
     service_status.set_enabled(app, True)
     conn = connection.fget(app)
     m_data_cb = AsyncMock(side_effect=RuntimeError)
-    conn.data_callbacks.add(m_data_cb)
+    conn.response_callbacks.add(m_data_cb)
 
     m_reader.feed_data('<!connected:sensor>bunnies<fluffy>\n'.encode())
     await asyncio.sleep(0.01)

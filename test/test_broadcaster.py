@@ -8,7 +8,7 @@ import pytest
 from brewblox_service import repeater, scheduler
 
 from brewblox_devcon_spark import (block_store, broadcaster, codec, commander,
-                                   connection_sim, controller, exceptions,
+                                   connection, controller, exceptions,
                                    global_store, service_status, service_store,
                                    synchronization)
 from brewblox_devcon_spark.models import ErrorCode
@@ -40,7 +40,7 @@ def app(app):
     block_store.setup(app)
     global_store.setup(app)
     service_store.setup(app)
-    connection_sim.setup(app)
+    connection.setup(app)
     commander.setup(app)
     synchronization.setup(app)
     controller.setup(app)
@@ -112,7 +112,7 @@ async def test_error(app, m_publish, client, synchronized):
     b = broadcaster.Broadcaster(app)
     await b.prepare()
 
-    connection_sim.fget(app).next_error.append(ErrorCode.UNKNOWN_ERROR)
+    connection.fget(app).next_error.append(ErrorCode.UNKNOWN_ERROR)
     with pytest.raises(exceptions.CommandException):
         await b.run()
 

@@ -10,9 +10,9 @@ from brewblox_service import scheduler
 from brewblox_service.testing import response
 
 from brewblox_devcon_spark import (backup_storage, block_store, codec,
-                                   commander, connection_sim, const,
-                                   controller, global_store, service_status,
-                                   service_store, synchronization, ymodem)
+                                   commander, connection, const, controller,
+                                   global_store, service_status, service_store,
+                                   synchronization, ymodem)
 from brewblox_devcon_spark.api import (backup_api, blocks_api, debug_api,
                                        error_response, settings_api,
                                        system_api)
@@ -67,7 +67,7 @@ async def app(app, event_loop):
     service_status.setup(app)
     scheduler.setup(app)
     codec.setup(app)
-    connection_sim.setup(app)
+    connection.setup(app)
     commander.setup(app)
     block_store.setup(app)
     global_store.setup(app)

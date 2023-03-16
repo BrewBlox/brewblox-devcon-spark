@@ -8,7 +8,7 @@ import pytest
 from brewblox_service import repeater, scheduler
 
 from brewblox_devcon_spark import (backup_storage, block_store, codec,
-                                   commander, connection_sim, controller,
+                                   commander, connection, controller,
                                    global_store, service_status, service_store,
                                    synchronization)
 from brewblox_devcon_spark.models import Backup, BackupIdentity
@@ -31,7 +31,7 @@ def app(app):
     block_store.setup(app)
     global_store.setup(app)
     service_store.setup(app)
-    connection_sim.setup(app)
+    connection.setup(app)
     commander.setup(app)
     synchronization.setup(app)
     controller.setup(app)

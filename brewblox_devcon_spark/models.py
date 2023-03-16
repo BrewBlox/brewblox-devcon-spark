@@ -340,9 +340,11 @@ class ServiceStatusDescription(BaseModel):
     address: Optional[str]
 
     connection_kind: Optional[Literal[
-        'SIMULATION',
+        'MOCK',
+        'SIM',
         'USB',
         'TCP',
+        'MQTT',
     ]]
     connection_status: Literal[
         'DISCONNECTED',
