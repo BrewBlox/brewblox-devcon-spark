@@ -10,7 +10,7 @@ from contextlib import suppress
 from functools import partial
 from pathlib import Path
 from subprocess import Popen
-from typing import Awaitable, Optional, Union
+from typing import Optional, Union
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, strex
@@ -18,8 +18,8 @@ from serial.tools import list_ports
 
 from brewblox_devcon_spark import exceptions, mdns
 
-from .base_connection import BaseConnection, ConnKind_
 from .cbox_parser import ControlboxParser
+from .connection_impl import ConnectionCallbacks, ConnectionImpl, ConnKind_
 
 LOGGER = brewblox_logger(__name__)
 
@@ -47,27 +47,21 @@ SPARK_HWIDS = [
 SPARK_DEVICE_REGEX = f'(?:{"|".join([dev for dev in SPARK_HWIDS])})'
 
 
-class StreamConnection(BaseConnection):
-    def __init__(self, kind: ConnKind_,  address: str) -> None:
-        super().__init__(kind, address)
+class StreamConnection(ConnectionImpl):
+    def __init__(self,
+                 kind: ConnKind_,
+                 address: str,
+                 callbacks: ConnectionCallbacks
+                 ) -> None:
+        super().__init__(kind, address, callbacks)
 
         self._transport: asyncio.Transport = None
-        self._connected = asyncio.Event()
-        self._disconnected = asyncio.Event()
         self._active = asyncio.Event()
         self._parser = ControlboxParser()
 
-    @property
-    def connected(self) -> Awaitable[bool]:
-        return self._connected.wait()
-
-    @property
-    def disconnected(self) -> Awaitable[bool]:
-        return self._disconnected.wait()
-
     def connection_made(self, transport: asyncio.Transport):
         self._transport = transport
-        self._connected.set()
+        self.connected.set()
         self._active.set()
 
     def data_received(self, recv: bytes):
@@ -88,7 +82,7 @@ class StreamConnection(BaseConnection):
     def connection_lost(self, ex: Optional[Exception]):
         if ex:
             LOGGER.error(f'Connection closed with error: {strex(ex)}')
-        self._disconnected.set()
+        self.disconnected.set()
 
     async def send_request(self, msg: Union[str, bytes]):
         if isinstance(msg, str):
@@ -103,60 +97,14 @@ class StreamConnection(BaseConnection):
             self._transport.close()
 
 
-# class StreamConnection(BaseConnection):
-
-#     def __init__(self,
-#                  kind: ConnKind_,
-#                  address: str,
-#                  reader: asyncio.StreamReader,
-#                  writer: asyncio.StreamWriter,
-#                  ) -> None:
-#         super().__init__(kind, address)
-
-#         self._reader = reader
-#         self._writer = writer
-#         self._parser = ControlboxParser()
-
-#     @property
-#     def connected(self) -> bool:
-#         return bool(self._writer and not self._writer.is_closing())
-
-#     async def send_request(self, msg: Union[str, bytes]):
-#         if isinstance(msg, str):
-#             msg = msg.encode()
-
-#         self._writer.write(msg + b'\n')
-#         await self._writer.drain()
-
-#     async def drain(self):
-#         while self.connected:
-#             # read() does not raise an exception when connection is closed
-#             # connected status must be checked explicitly later
-#             recv = await self._reader.read(100)
-
-#             # read() returns empty if EOF received
-#             if not recv:  # pragma: no cover
-#                 raise ConnectionError('EOF received')
-
-#             # Send to parser
-#             self._parser.push(recv.decode())
-
-#             # Drain parsed messages
-#             for msg in self._parser.event_messages():
-#                 await self.on_event(msg)
-#             for msg in self._parser.data_messages():
-#                 await self.on_response(msg)
-
-#     async def close(self):
-#         with suppress(Exception):
-#             self._writer.close()
-#             LOGGER.info(f'{self} closed stream writer')
-
-
 class SubprocessConnection(StreamConnection):
 
-    def __init__(self, kind: ConnKind_, address: str, proc: Popen) -> None:
-        super().__init__(kind, address)
+    def __init__(self,
+                 kind: ConnKind_,
+                 address: str,
+                 callbacks: ConnectionCallbacks,
+                 proc: Popen) -> None:
+        super().__init__(kind, address, callbacks)
         self._proc = proc
 
     async def close(self):
@@ -166,15 +114,19 @@ class SubprocessConnection(StreamConnection):
             LOGGER.info(f'{self} terminated subprocess')
 
 
-async def connect_tcp(host: str, port: int) -> BaseConnection:
+async def connect_tcp(host: str, port: int, callbacks: ConnectionCallbacks) -> ConnectionImpl:
     # reader, writer = await asyncio.open_connection(host, port)
     # return StreamConnection('TCP', f'{host}:{port}', reader, writer)
-    factory = partial(StreamConnection, 'TCP', f'{host}:{port}')
+    factory = partial(StreamConnection, 'TCP', f'{host}:{port}', callbacks)
     _, protocol = asyncio.get_event_loop().create_connection(factory, host, port)
     return protocol
 
 
-async def connect_subprocess(proc: Popen, kind: ConnKind_, address: str) -> BaseConnection:
+async def connect_subprocess(proc: Popen,
+                             kind: ConnKind_,
+                             address: str,
+                             callbacks: ConnectionCallbacks,
+                             ) -> ConnectionImpl:
     host = SUBPROCESS_HOST
     port = SUBPROCESS_PORT
     message = None
@@ -182,21 +134,20 @@ async def connect_subprocess(proc: Popen, kind: ConnKind_, address: str) -> Base
     # We just started a subprocess
     # Give it some time to get started and respond to the port
     for _ in range(SUBPROCESS_CONNECT_RETRY_COUNT):
-        await asyncio.sleep(SUBPROCESS_CONNECT_INTERVAL_S)
-
         if proc.poll() is not None:
             raise ChildProcessError(f'Subprocess exited with return code {proc.returncode}')
 
         try:
             # reader, writer = await asyncio.open_connection(host, port)
             # return SubprocessConnection(kind, address, proc, reader, writer)
-            factory = partial(SubprocessConnection, kind, address, proc)
+            factory = partial(SubprocessConnection, kind, address, callbacks, proc)
             _, protocol = asyncio.get_event_loop().create_connection(factory, host, port)
             return protocol
 
         except OSError as ex:
             message = strex(ex)
             LOGGER.debug(f'Subprocess connection error: {message}')
+            await asyncio.sleep(SUBPROCESS_CONNECT_INTERVAL_S)
 
     # Kill off leftovers
     with suppress(Exception):
@@ -205,7 +156,7 @@ async def connect_subprocess(proc: Popen, kind: ConnKind_, address: str) -> Base
     raise ConnectionError(message)
 
 
-async def connect_simulation(app: web.Application) -> BaseConnection:
+async def connect_simulation(app: web.Application, callbacks: ConnectionCallbacks) -> ConnectionImpl:
     arch = platform.machine()
     binary = SIM_BINARIES.get(arch)
     device_id = app['config']['device_id']
@@ -220,35 +171,35 @@ async def connect_simulation(app: web.Application) -> BaseConnection:
     proc = Popen(
         [f'../firmware/{binary}', '--device_id', device_id],
         cwd=workdir)
-    return await connect_subprocess(proc, 'SIM', binary)
+    return await connect_subprocess(proc, 'SIM', binary, callbacks)
 
 
-async def connect_serial(devfile: str) -> BaseConnection:
+async def connect_serial(devfile: str, callbacks: ConnectionCallbacks) -> ConnectionImpl:
     proc = Popen([
         '/usr/bin/socat',
         f'tcp-listen:{SUBPROCESS_PORT},reuseaddr,fork',
         f'file:{devfile},raw,echo=0,b{USB_BAUD_RATE}'
     ])
-    return await connect_subprocess(proc, 'USB', devfile)
+    return await connect_subprocess(proc, 'USB', devfile, callbacks)
 
 
-async def discover_tcp(app: web.Application) -> Optional[BaseConnection]:
+async def discover_tcp(app: web.Application, callbacks: ConnectionCallbacks) -> Optional[ConnectionImpl]:
     try:
         device_id = app['config']['device_id']
         resp = await mdns.discover_one(device_id,
                                        BREWBLOX_DNS_TYPE,
                                        DISCOVERY_DNS_TIMEOUT_S)
-        return await connect_tcp(resp.address, resp.port)
+        return await connect_tcp(resp.address, resp.port, callbacks)
     except asyncio.TimeoutError:
         return None
 
 
-async def discover_serial(app: web.Application) -> Optional[BaseConnection]:
+async def discover_serial(app: web.Application, callbacks: ConnectionCallbacks) -> Optional[ConnectionImpl]:
     device_id = app['config']['device_id']
     for port in list_ports.grep(SPARK_DEVICE_REGEX):
         if device_id is None or device_id.lower() == port.serial_number.lower():
             LOGGER.info(f'Discovered {[v for v in port]}')
-            return await connect_serial(port.device)
+            return await connect_serial(port.device, callbacks)
         else:
             LOGGER.info(f'Discarding {[v for v in port]}')
     return None

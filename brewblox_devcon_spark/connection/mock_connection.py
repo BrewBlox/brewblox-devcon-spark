@@ -7,8 +7,6 @@ MockConnection is an alternative to StreamConnection or MqttConnection.
 This prevents having to spin up a simulator in a separate process for tests.
 """
 
-
-import asyncio
 from datetime import datetime
 from itertools import count
 from typing import Optional, Union
@@ -24,7 +22,7 @@ from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
                                           IntermediateResponse, Opcode,
                                           ResetData, ResetReason)
 
-from .base_connection import BaseConnection
+from .connection_impl import ConnectionCallbacks, ConnectionImpl
 
 LOGGER = brewblox_logger(__name__)
 
@@ -78,26 +76,22 @@ def default_blocks() -> dict[int, FirmwareBlock]:
         ]}
 
 
-class MockConnection(BaseConnection):
-    def __init__(self, app: web.Application, device_id: str) -> None:
-        super().__init__('MOCK', device_id)
+class MockConnection(ConnectionImpl):
+    def __init__(self,
+                 app: web.Application,
+                 device_id: str,
+                 callbacks: ConnectionCallbacks,
+                 ) -> None:
+        super().__init__('MOCK', device_id, callbacks)
 
         # an ErrorCode will be returned
         # a None value will cause no response to be returned
         self.next_error: list[Union[ErrorCode, None]] = []
 
-        self._close_evt: asyncio.Event = None
         self._start_time = datetime.now()
         self._codec = codec.Codec(app, strip_readonly=False)
         self._id_counter = count(start=const.USER_NID_START)
         self._blocks: dict[int, FirmwareBlock] = default_blocks()
-
-    async def async_init(self):
-        self._close_evt = asyncio.Event()
-
-    @property
-    def connected(self) -> bool:
-        return True
 
     def _to_payload(self, block: FirmwareBlock) -> EncodedPayload:
         (blockType, subtype) = codec.split_type(block.type)
@@ -284,15 +278,15 @@ class MockConnection(BaseConnection):
             LOGGER.error(strex(ex))
             raise ex
 
-    async def start(self):
-        pass
+    async def connect(self):
+        self.connected.set()
 
     async def close(self):
-        self._close_evt.set()
+        self.disconnected.set()
 
 
-async def connect_mock(app: web.Application) -> BaseConnection:
+async def connect_mock(app: web.Application, callbacks: ConnectionCallbacks) -> ConnectionImpl:
     device_id = app['config']['device_id']
     conn = MockConnection(app, device_id)
-    await conn.async_init()
+    await conn.connect()
     return conn

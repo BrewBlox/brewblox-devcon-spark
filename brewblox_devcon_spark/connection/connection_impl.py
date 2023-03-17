@@ -1,11 +1,8 @@
-from abc import abstractmethod, abstractproperty
-from typing import Awaitable, Callable, Literal, Union
+import asyncio
+from abc import abstractmethod
+from typing import Literal, Union
 
 ConnKind_ = Literal['MOCK', 'SIM', 'USB', 'TCP', 'MQTT']
-
-
-async def _dummy_cb(*args):
-    pass
 
 
 class ConnectionCallbacks:
@@ -19,15 +16,18 @@ class ConnectionCallbacks:
         pass
 
 
-class BaseConnection(ConnectionCallbacks):
+class ConnectionImpl(ConnectionCallbacks):
 
-    def __init__(self, kind: ConnKind_, address: str, callbacks: ConnectionCallbacks) -> None:
+    def __init__(self,
+                 kind: ConnKind_,
+                 address: str,
+                 callbacks: ConnectionCallbacks,
+                 ) -> None:
         self._kind = kind
         self._address = address
         self._callbacks = callbacks
-        self._response_cb: Callable[[str], Awaitable[None]] = None
-        self._event_cb: Callable[[str], Awaitable[None]] = None
-        self._disconnect_cb: Callable[[], Awaitable[None]] = None
+        self._connected = asyncio.Event()
+        self._disconnected = asyncio.Event()
 
     def __str__(self):
         return f'<{type(self).__name__} for {self._kind} {self._address}>'
@@ -40,19 +40,19 @@ class BaseConnection(ConnectionCallbacks):
     def address(self) -> str:
         return self._address
 
+    @property
+    def connected(self) -> asyncio.Event:
+        return self._connected
+
+    @property
+    def disconnected(self) -> asyncio.Event:
+        return self._disconnected
+
     async def on_response(self, msg: str):
         await self._callbacks.on_response(msg)
 
     async def on_event(self, msg: str):
         await self._callbacks.on_event(msg)
-
-    @abstractproperty
-    def connected(self) -> Awaitable[bool]:
-        pass
-
-    @abstractproperty
-    def disconnected(self) -> Awaitable[bool]:
-        pass
 
     @abstractmethod
     async def send_request(self, msg: Union[str, bytes]):

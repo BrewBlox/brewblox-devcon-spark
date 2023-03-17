@@ -11,7 +11,7 @@ from brewblox_devcon_spark.models import (ControllerDescription,
                                           FirmwareDescription,
                                           HandshakeMessage, ServiceConfig)
 
-from .base_connection import BaseConnection, ConnectionCallbacks
+from .connection_impl import ConnectionCallbacks, ConnectionImpl
 from .mock_connection import connect_mock
 from .mqtt_connection import MqttDeviceTracker
 from .stream_connection import (connect_serial, connect_simulation,
@@ -36,7 +36,7 @@ class DiscoveryAbortedError(Exception):
         self.reboot_required = reboot_required
 
 
-async def discover(app: web.Application, callbacks: ConnectionCallbacks) -> BaseConnection:
+async def discover(app: web.Application, callbacks: ConnectionCallbacks) -> ConnectionImpl:
     config: ServiceConfig = app['config']
 
     discovery_type = config['discovery']
@@ -68,7 +68,7 @@ async def discover(app: web.Application, callbacks: ConnectionCallbacks) -> Base
     raise DiscoveryAbortedError(reboot_required)
 
 
-async def connect(app: web.Application, callbacks: ConnectionCallbacks) -> BaseConnection:
+async def connect(app: web.Application, callbacks: ConnectionCallbacks) -> ConnectionImpl:
     config: ServiceConfig = app['config']
 
     mock = config['mock']
@@ -82,7 +82,7 @@ async def connect(app: web.Application, callbacks: ConnectionCallbacks) -> BaseC
     elif simulation:
         return await connect_simulation(app, callbacks)
     elif device_serial:
-        return await connect_serial(device_serial)
+        return await connect_serial(device_serial, callbacks)
     elif device_host:
         return await connect_tcp(device_host, device_port, callbacks)
     else:
@@ -95,7 +95,7 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
 
         self._retry_count: int = 0
         self._retry_interval: float = 0
-        self._connection: BaseConnection = None
+        self._connection: ConnectionImpl = None
 
         self._response_callbacks: set[MessageCallback_] = set()
 
@@ -104,7 +104,8 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
 
     @property
     def connected(self) -> bool:
-        return self._connection is not None and self._connection.connected
+        return self._connection is not None \
+            and self._connection.connected.is_set()
 
     @property
     def response_callbacks(self) -> set[MessageCallback_]:
@@ -175,7 +176,7 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
             await service_status.wait_enabled(self.app)
             self._connection = await connect(self.app, self)
 
-            await self._connection.connected
+            await self._connection.connected.wait()
             service_status.set_connected(self.app,
                                          self._connection.kind,
                                          self._connection.address)
@@ -183,7 +184,7 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
             self._retry_count = 0
             self.reset_retry_interval()
 
-            await self._connection.disconnected
+            await self._connection.disconnected.wait()
 
         except ConnectionAbortedError:
             LOGGER.error('Connection aborted. Exiting now.')

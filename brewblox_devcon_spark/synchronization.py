@@ -73,9 +73,10 @@ class SparkSynchronization(repeater.RepeaterFeature):
             - Get the 'autoconnecting' value from the service store
             - Set the autoconnecting event in state.py
         - Connect to controller
-            - Wait until the 'connected' event is set by the connection
-            - Wait until the 'acknowledged' event is set by the connection, or timeout
+            - Wait for 'connected' event to be set by connection.py
         - Synchronize handshake
+            - Keep sending a Version command until 'acknowledged' event is set
+            - Check firmware info in handshake for compatibility
             - Abort synchronization if firmware/ID is not compatible
         - Synchronize block store
             - Read controller-specific data in datastore
@@ -95,7 +96,9 @@ class SparkSynchronization(repeater.RepeaterFeature):
             await self._sync_handshake()
             await self._sync_block_store()
             await self._sync_sysinfo()
+
             service_status.set_synchronized(self.app)
+            LOGGER.info('Service synchronized!')
 
         except exceptions.IncompatibleFirmware:
             LOGGER.error('Incompatible firmware version detected')
@@ -148,7 +151,9 @@ class SparkSynchronization(repeater.RepeaterFeature):
     @subroutine('sync handshake')
     async def _sync_handshake(self):
         """
-        Wait for the controller to acknowledge the connection with a handshake.
+        Wait for the controller to acknowledge the connection with a handshake,
+        while sending prompts by using the Noop command.
+
         If no handshake is received after `HANDSHAKE_TIMEOUT_S`,
         an asyncio.TimeoutError is raised.
 
@@ -156,7 +161,31 @@ class SparkSynchronization(repeater.RepeaterFeature):
         if the device ID or firmware version are incompatible.
         """
 
-        await asyncio.wait_for(service_status.wait_acknowledged(self.app), HANDSHAKE_TIMEOUT_S)
+        async def prompt_handshake():
+            while True:
+                try:
+                    await asyncio.sleep(PING_INTERVAL_S)
+                    LOGGER.info('prompting handshake...')
+                    await self.commander.version()
+                except Exception as ex:
+                    LOGGER.error(strex(ex))
+                    pass
+
+        ack_wait_task = asyncio.create_task(service_status.wait_acknowledged(self.app))
+        prompt_task = asyncio.create_task(prompt_handshake())
+
+        await asyncio.wait([ack_wait_task, prompt_task],
+                           return_when=asyncio.FIRST_COMPLETED,
+                           timeout=HANDSHAKE_TIMEOUT_S)
+
+        # asyncio.wait() does not cancel tasks
+        # cancel() can be safely called if the task is already done
+        ack_wait_task.cancel()
+        prompt_task.cancel()
+
+        if not await service_status.wait_acknowledged(self.app, wait=False):
+            raise asyncio.TimeoutError()
+
         desc = service_status.desc(self.app)
 
         if desc.firmware_error == 'INCOMPATIBLE':

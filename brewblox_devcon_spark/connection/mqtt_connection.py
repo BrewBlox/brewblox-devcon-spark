@@ -10,7 +10,7 @@ from typing import Optional, Union
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, mqtt
 
-from .base_connection import BaseConnection
+from .connection_impl import ConnectionCallbacks, ConnectionImpl
 
 LOGGER = brewblox_logger(__name__)
 
@@ -19,31 +19,24 @@ LOG_TOPIC = 'brewcast/cbox/log/'
 REQUEST_TOPIC = 'brewcast/cbox/req/'
 RESPONSE_TOPIC = 'brewcast/cbox/resp/'
 
+DISCOVERY_DELAY_S = 0.5
 
-class MqttConnection(BaseConnection):
+
+class MqttConnection(ConnectionImpl):
 
     def __init__(self,
                  app: web.Application,
-                 device_id: str) -> None:
-        super().__init__('MQTT', device_id)
+                 device_id: str,
+                 callbacks: ConnectionCallbacks,
+                 ) -> None:
+        super().__init__('MQTT', device_id, callbacks)
 
         self.app = app
         self._device_id = device_id
-        self._subscribed = False
-        self._close_evt: asyncio.Event = None
-
-    async def async_init(self):
-        self._close_evt = asyncio.Event()
-
-    @property
-    def connected(self) -> bool:
-        return not self._close_evt.is_set()
 
     async def _on_handshake_message(self, topic: str, msg: str):
-        if msg:
-            self._close_evt.clear()
-        else:
-            self._close_evt.set()
+        if not msg:
+            self.disconnected.set()
 
     async def _on_resp_message(self, topic: str, msg: str):
         await self.on_response(msg)
@@ -56,7 +49,7 @@ class MqttConnection(BaseConnection):
             msg = msg.decode()
         await mqtt.publish(self.app, REQUEST_TOPIC + self._device_id, msg)
 
-    async def drain(self):
+    async def connect(self):
         await mqtt.listen(self.app,
                           HANDSHAKE_TOPIC + self._device_id,
                           self._on_handshake_message)
@@ -71,7 +64,7 @@ class MqttConnection(BaseConnection):
         await mqtt.subscribe(self.app, RESPONSE_TOPIC + self._device_id)
         await mqtt.subscribe(self.app, LOG_TOPIC + self._device_id)
 
-        await self._close_evt.wait()
+        self.connected.set()
 
     async def close(self):
         await mqtt.unsubscribe(self.app, HANDSHAKE_TOPIC + self._device_id)
@@ -88,7 +81,7 @@ class MqttConnection(BaseConnection):
                             LOG_TOPIC + self._device_id,
                             self._on_log_message)
 
-        self._close_evt.set()
+        self.disconnected.set()
 
 
 class MqttDeviceTracker(features.ServiceFeature):
@@ -120,11 +113,13 @@ class MqttDeviceTracker(features.ServiceFeature):
                                 HANDSHAKE_TOPIC + '+',
                                 self._on_handshake_message)
 
-    async def discover(self) -> Optional[BaseConnection]:
+    async def discover(self, callbacks: ConnectionCallbacks) -> Optional[ConnectionImpl]:
+        await asyncio.sleep(DISCOVERY_DELAY_S)
+
         device_id = self.app['config']['device_id']
         if device_id in self._devices:
-            conn = MqttConnection(self.app, device_id)
-            await conn.async_init()
+            conn = MqttConnection(self.app, device_id, callbacks)
+            await conn.connect()
             return conn
 
         return None
