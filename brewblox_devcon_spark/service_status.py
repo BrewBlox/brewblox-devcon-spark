@@ -94,7 +94,7 @@ class ServiceStatus(features.ServiceFeature):
         self.acknowledged_ev.clear()
         self.synchronized_ev.clear()
         self.disconnected_ev.clear()
-        LOGGER.info('Service connected')
+        LOGGER.info('>>> CONNECTED')
 
     def set_acknowledged(self, controller: ControllerDescription):
         config: ServiceConfig = self.app['config']
@@ -134,18 +134,18 @@ class ServiceStatus(features.ServiceFeature):
         # there must have been a disconnect/connect first.
         if not self.synchronized_ev.is_set():
             self.status_desc.connection_status = 'ACKNOWLEDGED'
+            LOGGER.info('>>> ACKNOWLEDGED')
 
         self.status_desc.controller = controller
         self.status_desc.firmware_error = firmware_error
         self.status_desc.identity_error = identity_error
 
         self.acknowledged_ev.set()
-        LOGGER.info('Service acknowledged')
 
     def set_synchronized(self):
         self.status_desc.connection_status = 'SYNCHRONIZED'
         self.synchronized_ev.set()
-        LOGGER.info('Service synchronized')
+        LOGGER.info('>>> SYNCHRONIZED')
 
     def set_disconnected(self):
         self.status_desc.controller = None
@@ -159,12 +159,12 @@ class ServiceStatus(features.ServiceFeature):
         self.acknowledged_ev.clear()
         self.synchronized_ev.clear()
         self.disconnected_ev.set()
-        LOGGER.info('Service disconnected')
+        LOGGER.info('>>> DISCONNECTED')
 
     def set_updating(self):
         self.status_desc.connection_status = 'UPDATING'
         self.updating_ev.set()
-        LOGGER.info('Service updating')
+        LOGGER.info('>>> UPDATING')
 
     async def _wait_ev(self, ev_name: str, wait: bool = True) -> bool:
         ev: asyncio.Event = getattr(self, ev_name)

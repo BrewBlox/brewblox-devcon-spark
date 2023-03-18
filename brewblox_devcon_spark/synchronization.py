@@ -213,10 +213,10 @@ class SparkSynchronization(repeater.RepeaterFeature):
             ))
 
         uptime = sysinfo.data['uptime']['value']
-        LOGGER.info(f'System uptime: {serialize_duration(uptime)}')
+        LOGGER.info(f'Spark uptime: {serialize_duration(uptime)}')
 
         update_freq = sysinfo.data['updatesPerSecond']
-        LOGGER.info(f'System updates per second: {update_freq}')
+        LOGGER.info(f'Spark updates per second: {update_freq}')
 
 
 def setup(app: web.Application):

@@ -261,13 +261,13 @@ files = [
 
 [[package]]
 name = "brewblox-service"
-version = "2.0.0"
+version = "2.0.1"
 description = "Scaffolding for Brewblox backend services"
 category = "main"
 optional = false
 python-versions = ">=3.9,<4"
 files = [
-    {file = "brewblox_service-2.0.0.tar.gz", hash = "sha256:f4ff4fe87c1ebab4ebbea45e15990a0f8d997fe72c3ab737022348bec00f7727"},
+    {file = "brewblox_service-2.0.1.tar.gz", hash = "sha256:965f9a4bad0a321c710cc8f9b33a7502980c30b626e216ddfd22b8ec1a2ca01a"},
 ]
 
 [package.dependencies]
@@ -1541,4 +1541,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4"
-content-hash = "d25a9a2ee4dd933dbb3a7071fea5e961ede4864ccfc9a335e0d5a2a9d5ce9633"
+content-hash = "ec978f1fce2dafc71f1c60b576463b70d40f409fd6a71054cbb02e8e2c9eb496"
