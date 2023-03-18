@@ -25,7 +25,7 @@ class Broadcaster(repeater.RepeaterFeature):
         config: ServiceConfig = app['config']
         self.name = config['name']
         self.interval = config['broadcast_interval']
-        self.volatile = self.interval <= 0 or config['volatile']
+        self.isolated = self.interval <= 0 or config['isolated']
         self.state_topic = config['state_topic'] + f'/{self.name}'
         self.history_topic = config['history_topic'] + f'/{self.name}'
 
@@ -41,7 +41,7 @@ class Broadcaster(repeater.RepeaterFeature):
                              self._will_message)
 
     async def prepare(self):
-        if self.volatile:
+        if self.isolated:
             raise repeater.RepeaterCancelled()
 
     async def before_shutdown(self, app: web.Application):

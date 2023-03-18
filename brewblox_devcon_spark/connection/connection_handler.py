@@ -3,7 +3,8 @@ from contextlib import suppress
 from typing import Callable, Union
 
 from aiohttp import web
-from brewblox_service import brewblox_logger, features, repeater
+from async_timeout import timeout
+from brewblox_service import brewblox_logger, features, repeater, strex
 
 from brewblox_devcon_spark import exceptions, service_status, service_store
 from brewblox_devcon_spark.models import (ControllerDescription,
@@ -23,17 +24,18 @@ LOGGER = brewblox_logger(__name__)
 
 BASE_RETRY_INTERVAL_S = 2
 MAX_RETRY_INTERVAL_S = 30
-CONNECT_RETRY_COUNT = 20
+MAX_RETRY_COUNT = 20
 
-WELCOME_PREFIX = 'BREWBLOX'
-DISCOVERY_INTERVAL_S = 10
-DISCOVERY_RETRY_COUNT = 5
+WELCOME_PREFIX = '!BREWBLOX'
+DISCOVERY_INTERVAL_S = 5
+DISCOVERY_TIMEOUT_S = 120
 
 
-class DiscoveryAbortedError(Exception):
-    def __init__(self, reboot_required: bool, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.reboot_required = reboot_required
+def increased_interval(value: float) -> float:
+    if value:
+        return min(MAX_RETRY_INTERVAL_S, round(1.5 * value))
+    else:
+        return BASE_RETRY_INTERVAL_S
 
 
 async def discover(app: web.Application, callbacks: ConnectionCallbacks) -> ConnectionImpl:
@@ -42,30 +44,28 @@ async def discover(app: web.Application, callbacks: ConnectionCallbacks) -> Conn
     discovery_type = config['discovery']
     LOGGER.info(f'Discovering devices... ({discovery_type})')
 
-    for _ in range(DISCOVERY_RETRY_COUNT):
-        if discovery_type in ['all', 'usb']:
-            result = await discover_serial(app, callbacks)
-            if result:
-                return result
+    try:
+        async with timeout(DISCOVERY_TIMEOUT_S):
+            if discovery_type in ['all', 'usb']:
+                result = await discover_serial(app, callbacks)
+                if result:
+                    return result
 
-        if discovery_type in ['all', 'wifi', 'lan']:
-            result = await discover_tcp(app, callbacks)
-            if result:
-                return result
+            if discovery_type in ['all', 'wifi', 'lan']:
+                result = await discover_tcp(app, callbacks)
+                if result:
+                    return result
 
-        if discovery_type in ['all', 'mqtt']:
-            tracker: MqttDeviceTracker = features.get(app, MqttDeviceTracker)
-            result = await tracker.discover(callbacks)
-            if result:
-                return result
+            if discovery_type in ['all', 'mqtt']:
+                tracker: MqttDeviceTracker = features.get(app, MqttDeviceTracker)
+                result = await tracker.discover(callbacks)
+                if result:
+                    return result
 
-        await asyncio.sleep(DISCOVERY_INTERVAL_S)
+            await asyncio.sleep(DISCOVERY_INTERVAL_S)
 
-    # Newly connected USB devices are only detected after a container restart.
-    # This restriction does not apply to TCP or MQTT connection types.
-    # We only have to periodically restart the service if USB is a valid type.
-    reboot_required = discovery_type in ['all', 'usb']
-    raise DiscoveryAbortedError(reboot_required)
+    except TimeoutError:
+        raise ConnectionAbortedError()
 
 
 async def connect(app: web.Application, callbacks: ConnectionCallbacks) -> ConnectionImpl:
@@ -94,7 +94,6 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
         super().__init__(app)
 
         self._retry_count: int = 0
-        self._retry_interval: float = 0
         self._connection: ConnectionImpl = None
 
         self._response_callbacks: set[MessageCallback_] = set()
@@ -112,29 +111,16 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
         return self._response_callbacks
 
     @property
-    def retry_interval(self) -> float:
-        if not self._retry_interval:
-            with service_store.fget(self.app).open() as config:
-                self._retry_interval = config.get('retry_interval', BASE_RETRY_INTERVAL_S)
-        return self._retry_interval
+    def _reconnect_interval(self) -> float:
+        return service_store.get_reconnect_interval(self.app)
 
-    @retry_interval.setter
-    def retry_interval(self, value: float):
-        with service_store.fget(self.app).open() as config:
-            config['retry_interval'] = value
-        self._retry_interval = value
-
-    def reset_retry_interval(self):
-        self.retry_interval = BASE_RETRY_INTERVAL_S
-
-    def increase_retry_interval(self):
-        self.retry_interval = min(MAX_RETRY_INTERVAL_S, round(1.5 * self.retry_interval))
+    @_reconnect_interval.setter
+    def _reconnect_interval(self, value: float):
+        service_store.set_reconnect_interval(self.app, value)
 
     async def on_event(self, msg: str):
-        msg = msg.removeprefix('!')
-
         if msg.startswith(WELCOME_PREFIX):
-            handshake = HandshakeMessage(*msg.split(','))
+            handshake = HandshakeMessage(*msg[1:].split(','))
             LOGGER.info(handshake)
 
             desc = ControllerDescription(
@@ -166,38 +152,33 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
     async def run(self):
         """Implements RepeaterFeature.run"""
         try:
-            if self._retry_count >= CONNECT_RETRY_COUNT:
+            if self._retry_count >= MAX_RETRY_COUNT:
                 raise ConnectionAbortedError()
-            if self._retry_count == 1:
-                LOGGER.info('Retrying connection...')
-            if self._retry_count > 0:
-                await asyncio.sleep(self.retry_interval)
 
+            await asyncio.sleep(self._reconnect_interval)
             await service_status.wait_enabled(self.app)
-            self._connection = await connect(self.app, self)
 
+            self._connection = await connect(self.app, self)
             await self._connection.connected.wait()
+
             service_status.set_connected(self.app,
                                          self._connection.kind,
                                          self._connection.address)
 
             self._retry_count = 0
-            self.reset_retry_interval()
+            self._reconnect_interval = 0
 
             await self._connection.disconnected.wait()
 
         except ConnectionAbortedError:
-            LOGGER.error('Connection aborted. Exiting now.')
-            self.increase_retry_interval()
+            LOGGER.error('Connection aborted. Shutting down...')
+            self._reconnect_interval = increased_interval(self._reconnect_interval)
+
+            # New USB devices require a container restart to be detected
             raise web.GracefulExit()
 
-        except DiscoveryAbortedError as ex:
-            LOGGER.error('Device discovery failed.')
-            if ex.reboot_required:
-                self._retry_count += 1
-            raise ex
-
-        except Exception:
+        except Exception as ex:
+            LOGGER.debug(f'Connection error: {strex(ex)}')
             self._retry_count += 1
             raise
 

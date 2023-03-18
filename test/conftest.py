@@ -65,7 +65,7 @@ def app_config() -> ServiceConfig:
         'mock': True,
         'command_timeout': 10,
         'broadcast_interval': 5,
-        'volatile': True,
+        'isolated': True,
         'backup_interval': 3600,
         'backup_retry_interval': 300,
         'time_sync_interval': 900,
@@ -87,7 +87,7 @@ def sys_args(app_config) -> list:
         '--broadcast-interval', app_config['broadcast_interval'],
         '--backup-interval', app_config['backup_interval'],
         '--backup-retry-interval', app_config['backup_retry_interval'],
-        '--volatile',
+        '--isolated',
         '--mock',
     ]]
 

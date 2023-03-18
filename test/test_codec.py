@@ -3,7 +3,7 @@ Tests brewblox codec
 """
 
 import pytest
-from brewblox_service import features, scheduler
+from brewblox_service import scheduler
 
 from brewblox_devcon_spark import (codec, connection, exceptions,
                                    service_status, service_store)
@@ -28,11 +28,6 @@ def app(app):
 @pytest.fixture
 def cdc(app) -> Codec:
     return codec.fget(app)
-
-
-@pytest.fixture
-def sim_cdc(app) -> Codec:
-    return features.get(app, key='sim_codec')
 
 
 async def test_type_conversion():
@@ -190,8 +185,9 @@ async def test_transcode_interfaces(app, client, cdc: Codec):
         assert payload.blockType == type
 
 
-async def test_exclusive_mask(app, client, cdc: Codec, sim_cdc: Codec):
-    enc_payload = sim_cdc.encode_payload(DecodedPayload(
+async def test_exclusive_mask(app, client, cdc: Codec):
+    rw_cdc = Codec(app, strip_readonly=False)
+    enc_payload = rw_cdc.encode_payload(DecodedPayload(
         blockId=1,
         blockType='EdgeCase',
         content={

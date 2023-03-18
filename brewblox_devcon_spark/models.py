@@ -35,7 +35,7 @@ class ServiceConfig(TypedDict):
     mock: bool
     command_timeout: float
     broadcast_interval: float
-    volatile: bool
+    isolated: bool
     backup_interval: float
     backup_retry_interval: float
     time_sync_interval: float

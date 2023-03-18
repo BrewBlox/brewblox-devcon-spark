@@ -69,7 +69,7 @@ def create_parser(default_name='spark'):
                        'Set to a value <= 0 to disable broadcasting. [%(default)s]',
                        type=float,
                        default=5)
-    group.add_argument('--volatile',
+    group.add_argument('--isolated',
                        action='store_true',
                        help='Disable all outgoing network calls. [%(default)s]')
     group.add_argument('--datastore-topic',

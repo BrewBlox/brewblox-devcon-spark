@@ -9,8 +9,8 @@ import pytest
 from brewblox_service import brewblox_logger, scheduler
 
 from brewblox_devcon_spark import (block_store, codec, commander, connection,
-                                   global_store, service_status, service_store,
-                                   synchronization)
+                                   exceptions, global_store, service_status,
+                                   service_store, synchronization)
 from brewblox_devcon_spark.models import ServiceStatusDescription
 
 TESTED = synchronization.__name__
@@ -22,30 +22,29 @@ def states(app):
     return [
         status.disconnected_ev.is_set(),
         status.connected_ev.is_set(),
+        status.acknowledged_ev.is_set(),
         status.synchronized_ev.is_set(),
     ]
 
 
-async def connect(app, syncher):
-    service_status.set_connected(app, 'synchronization test')
-    await syncher.run()
-    await asyncio.sleep(0.01)
+async def connect(app) -> synchronization.SparkSynchronization:
+    service_status.set_enabled(app, True)
+    await service_status.wait_connected(app)
+    s = synchronization.SparkSynchronization(app)
+    await s.synchronize()
+    await service_status.wait_synchronized(app)
+    return s
 
 
 async def disconnect(app):
-    service_status.set_disconnected(app)
+    service_status.set_enabled(app, False)
+    await connection.fget(app).start_reconnect()
     await service_status.wait_disconnected(app)
-    await asyncio.sleep(0.01)
-
-
-@pytest.fixture(autouse=True)
-def ping_interval_mock(mocker):
-    mocker.patch(TESTED + '.PING_INTERVAL_S', 0.0001)
 
 
 @pytest.fixture
 async def app(app, event_loop):
-    app['config']['volatile'] = True
+    app['config']['isolated'] = True
     scheduler.setup(app)
     service_status.setup(app)
     codec.setup(app)
@@ -57,101 +56,78 @@ async def app(app, event_loop):
     return app
 
 
-@pytest.fixture
-async def syncher(app, client, mocker):
-    mocker.patch(TESTED + '.service_status.wait_disconnected', autospec=True)
-    s = synchronization.SparkSynchronization(app)
-    await s.prepare()
-    return s
-
-
-async def test_sync_status(app, client, syncher):
-    await syncher.run()
-    assert states(app) == [False, True, True]
+async def test_sync_status(app, client):
+    await connect(app)
+    assert states(app) == [False, True, True, True]
 
     await disconnect(app)
-    assert states(app) == [True, False, False]
+    assert states(app) == [True, False, False, False]
 
-    await connect(app, syncher)
-    assert states(app) == [False, True, True]
+    await connect(app)
+    assert states(app) == [False, True, True, True]
 
 
-async def test_sync_errors(app, client, syncher, mocker):
+async def test_sync_errors(app, client, mocker):
     mocker.patch(TESTED + '.datastore.check_remote', autospec=True, side_effect=RuntimeError)
 
-    await disconnect(app)
     with pytest.raises(RuntimeError):
-        await connect(app, syncher)
+        await connect(app)
 
-    assert states(app) == [False, True, False]
+    assert states(app) == [False, True, True, False]
 
 
-async def test_write_error(app, client, syncher, mocker):
+async def test_write_error(app, client, mocker):
     mocker.patch.object(commander.fget(app), 'patch_block', autospec=True, side_effect=RuntimeError)
-    await disconnect(app)
+
     with pytest.raises(RuntimeError):
-        await connect(app, syncher)
+        await connect(app)
 
-    assert states(app) == [False, True, False]
+    assert states(app) == [False, True, True, False]
 
 
-async def test_timeout(app, client, syncher, mocker):
-    async def m_wait_ack(app, wait=True):
-        if wait:
-            await asyncio.sleep(1)
-        return False
-    await disconnect(app)
-    await syncher.end()
+async def test_timeout(app, client, mocker):
     mocker.patch(TESTED + '.HANDSHAKE_TIMEOUT_S', 0.1)
-    mocker.patch(TESTED + '.PING_INTERVAL_S', 0.0001)
-    mocker.patch(TESTED + '.service_status.wait_acknowledged', autospec=True, side_effect=m_wait_ack)
     mocker.patch.object(commander.fget(app), 'version', AsyncMock(side_effect=RuntimeError))
 
-    service_status.set_connected(app, 'timeout test')
     with pytest.raises(asyncio.TimeoutError):
-        await syncher.run()
+        await connect(app)
 
 
-async def test_device_name(app, client, syncher):
-    await syncher.run()
-    assert syncher.device_name == app['config']['device_id']
+async def test_device_name(app, client):
+    s = await connect(app)
+    assert s.device_name == app['config']['device_id']
 
     app['config']['simulation'] = True
-    assert syncher.device_name.startswith('simulator__')
+    assert s.device_name.startswith('simulator__')
 
 
-async def test_autoconnecting(app, client, syncher):
-    await syncher.run()
-    assert syncher.get_autoconnecting() is True
-    assert await syncher.set_autoconnecting(False) is False
-    assert syncher.get_autoconnecting() is False
-    assert await service_status.wait_enabled(app, False) is False
-
-
-async def test_on_global_store_change(app, client, syncher):
+async def test_on_global_store_change(app, client):
     # Update during runtime
-    await syncher.run()
+    s = await connect(app)
     global_store.fget(app).units['temperature'] = 'degF'
     global_store.fget(app).time_zone['posixValue'] = 'Africa/Casablanca'
-    await syncher.on_global_store_change()
+    await s.on_global_store_change()
 
     # Should safely handle disconnected state
     await disconnect(app)
-    await syncher.on_global_store_change()
+    await s.on_global_store_change()
 
 
-async def test_errors(app, client, syncher, mocker):
+async def test_incompatible_error(app, client, mocker):
     m_desc: ServiceStatusDescription = mocker.patch(TESTED + '.service_status.desc').return_value
-    await syncher.run()
-
     m_desc.firmware_error = 'INCOMPATIBLE'
     m_desc.identity_error = None
-    await disconnect(app)
-    await connect(app, syncher)
-    assert states(app) == [False, True, False]
 
+    with pytest.raises(exceptions.IncompatibleFirmware):
+        await connect(app)
+    assert states(app) == [False, True, True, False]
+
+
+async def test_invalid_error(app, client, mocker):
+    m_desc: ServiceStatusDescription = mocker.patch(TESTED + '.service_status.desc').return_value
     m_desc.firmware_error = None
     m_desc.identity_error = 'INVALID'
-    await disconnect(app)
-    await connect(app, syncher)
-    assert states(app) == [False, True, False]
+
+    with pytest.raises(exceptions.InvalidDeviceId):
+        await connect(app)
+    assert states(app) == [False, True, True, False]

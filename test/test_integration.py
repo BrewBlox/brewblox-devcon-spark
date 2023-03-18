@@ -30,7 +30,7 @@ def simulator_file_cleanup():
 def app(app):
     app['ini'] = parse_ini(app)
     app['config']['simulation'] = True
-    app['config']['volatile'] = True
+    app['config']['isolated'] = True
     app['config']['device_id'] = '123456789012345678901234'
 
     service_status.setup(app)

@@ -3,6 +3,7 @@ Tests brewblox_devcon_spark.global_store
 """
 
 
+import json
 from unittest.mock import AsyncMock
 
 import pytest
@@ -40,7 +41,7 @@ def m_mqtt(mocker):
 
 @pytest.fixture
 def app(app):
-    app['config']['volatile'] = False
+    app['config']['isolated'] = False
     http.setup(app)
     scheduler.setup(app)
     global_store.setup(app)
@@ -73,45 +74,49 @@ async def test_on_event(app, client, store: GlobalConfigStore):
     store.listeners.add(cb)
 
     # Empty
-    await store._on_event('topic', {})
+    await store._on_event('topic', '{}')
     assert store.units['temperature'] == 'degC'
     cb.assert_not_awaited()
 
     # Unrelated
-    await store._on_event('topic', {'changed': [{
-        'id': 'imperialist_units',
-        'namespace': const.GLOBAL_NAMESPACE,
-        'temperature': 'degF',
-    }]})
+    await store._on_event('topic',
+                          json.dumps({'changed': [{
+                              'id': 'imperialist_units',
+                              'namespace': const.GLOBAL_NAMESPACE,
+                              'temperature': 'degF',
+                          }]}))
     assert store.units['temperature'] == 'degC'
     cb.assert_not_awaited()
 
     # Same
-    await store._on_event('topic', {'changed': [{
-        'id': const.GLOBAL_UNITS_ID,
-        'namespace': const.GLOBAL_NAMESPACE,
-        'temperature': 'degC',
-    }]})
+    await store._on_event('topic',
+                          json.dumps({'changed': [{
+                              'id': const.GLOBAL_UNITS_ID,
+                              'namespace': const.GLOBAL_NAMESPACE,
+                              'temperature': 'degC',
+                          }]}))
     assert store.units['temperature'] == 'degC'
     cb.assert_not_awaited()
 
     # Units changed
     cb.reset_mock()
-    await store._on_event('topic', {'changed': [{
-        'id': const.GLOBAL_UNITS_ID,
-        'namespace': const.GLOBAL_NAMESPACE,
-        'temperature': 'degF',
-    }]})
+    await store._on_event('topic',
+                          json.dumps({'changed': [{
+                              'id': const.GLOBAL_UNITS_ID,
+                              'namespace': const.GLOBAL_NAMESPACE,
+                              'temperature': 'degF',
+                          }]}))
     assert store.units['temperature'] == 'degF'
     cb.assert_awaited_with()
 
     # Timezone changed
     cb.reset_mock()
-    await store._on_event('topic', {'changed': [{
-        'id': const.GLOBAL_TIME_ZONE_ID,
-        'namespace': const.GLOBAL_NAMESPACE,
-        'name': 'Europe/Amsterdam',
-        'posixValue': 'CET-1CEST,M3.5.0,M10.5.0/3',
-    }]})
+    await store._on_event('topic',
+                          json.dumps({'changed': [{
+                              'id': const.GLOBAL_TIME_ZONE_ID,
+                              'namespace': const.GLOBAL_NAMESPACE,
+                              'name': 'Europe/Amsterdam',
+                              'posixValue': 'CET-1CEST,M3.5.0,M10.5.0/3',
+                          }]}))
     assert store.time_zone['name'] == 'Europe/Amsterdam'
     cb.assert_awaited_with()

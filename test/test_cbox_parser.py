@@ -22,11 +22,16 @@ def serial_data():
 
 def expected_events():
     return [
+        'add',
+        'id',
         '!connected:sensor',
-        'spaced message',
-        'interrupt',
-        'connected:message',
-        '!interrupted! message'
+        '!spaced message',
+        'OneWireTempSensor',
+        'address',
+        '!interrupt',
+        '!connected:message',
+        '!interrupted! message',
+        'invalid! event!',
     ]
 
 
@@ -57,7 +62,7 @@ def test_parser_partial():
     chunks = serial_data()
 
     parser.push(chunks[0])
-    assert [msg for msg in parser.event_messages()] == []
+    assert [msg for msg in parser.event_messages()] == ['add', 'id']
     assert [msg for msg in parser.data_messages()] == []
 
     parser.push(chunks[1])

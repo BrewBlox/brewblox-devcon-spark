@@ -6,7 +6,8 @@ import pytest
 from brewblox_service import scheduler
 from brewblox_service.testing import matching
 
-from brewblox_devcon_spark import codec, commander, connection, service_status
+from brewblox_devcon_spark import (codec, commander, connection,
+                                   service_status, service_store)
 from brewblox_devcon_spark.models import ErrorCode, IntermediateResponse
 
 TESTED = commander.__name__
@@ -17,6 +18,7 @@ def app(app, mocker):
     app['config']['command_timeout'] = 1
     service_status.setup(app)
     scheduler.setup(app)
+    service_store.setup(app)
     codec.setup(app)
     connection.setup(app)
     commander.setup(app)

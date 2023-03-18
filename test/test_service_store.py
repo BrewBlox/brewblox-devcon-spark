@@ -44,7 +44,7 @@ def add_write_resp(aresponses: ResponsesMockServer, count, status=200):
 def app(app, mocker):
     mocker.patch(DATASTORE + '.FLUSH_DELAY_S', 0.01)
     mocker.patch(DATASTORE + '.RETRY_INTERVAL_S', 0.01)
-    app['config']['volatile'] = False
+    app['config']['isolated'] = False
     http.setup(app)
     scheduler.setup(app)
     service_store.setup(app)
@@ -58,7 +58,7 @@ def store(app):
 
 async def test_config_read(app, client, store, aresponses):
     assert store.active
-    assert not store.volatile
+    assert not store.isolated
 
     add_config_read_resp(aresponses, 1)
     await store.read()
@@ -69,7 +69,7 @@ async def test_config_read(app, client, store, aresponses):
 
 async def test_config_read_error(app, client, store, aresponses):
     assert store.active
-    assert not store.volatile
+    assert not store.isolated
 
     add_config_read_resp(aresponses, 1, 405)
     with pytest.warns(UserWarning, match='read error'):
@@ -84,7 +84,7 @@ async def test_config_read_error(app, client, store, aresponses):
 
 async def test_config_read_empty(app, client, store, aresponses):
     assert store.active
-    assert not store.volatile
+    assert not store.isolated
 
     aresponses.add(path_pattern='/history/datastore/get',
                    method_pattern='POST',

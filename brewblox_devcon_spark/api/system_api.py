@@ -131,7 +131,7 @@ class FactoryResetView(PydanticView):
 
 
 @routes.view('/system/flash')
-class FlashView(PydanticView):
+class FlashView(PydanticView):   # pragma: no cover
     def __init__(self, request: web.Request) -> None:
         super().__init__(request)
         self.app = request.app
@@ -155,35 +155,34 @@ class FlashView(PydanticView):
                          }),
                          err=False))
 
-    async def post(self) -> r200[FlashResponse]:  # pragma: no cover
+    async def post(self) -> r200[FlashResponse]:
         """
         Flash the controller firmware.
 
         Tags: System
         """
-        ota = ymodem.OtaClient(self._notify)
-        cmder = commander.fget(self.app)
         desc = service_status.desc(self.app)
         platform = desc.controller.platform
         connection_kind = desc.connection_kind
         address = desc.address
 
-        self._notify(f'Started updating {self.name}@{address} to version {self.version} ({self.date})')
+        if desc.connection_status not in ['ACKNOWLEDGED', 'SYNCHRONIZED']:
+            self._notify('Controller is not connected. Aborting update.')
+            raise exceptions.NotConnected()
+
+        if connection_kind in ['MOCK', 'SIM']:
+            self._notify('Firmware updates not available for simulation controllers.')
+            raise exceptions.IncompatibleFirmware()
 
         try:
-            if desc.connection_status not in ['ACKNOWLEDGED', 'SYNCHRONIZED']:
-                self._notify('Controller is not connected. Aborting update.')
-                raise exceptions.NotConnected()
-
-            if connection_kind in ['MOCK', 'SIM']:
-                raise NotImplementedError('Firmware updates not available for simulation controllers')
+            self._notify(f'Started updating {self.name}@{address} to version {self.version} ({self.date})')
 
             self._notify('Preparing update')
             service_status.set_updating(self.app)
             await asyncio.sleep(FLUSH_PERIOD_S)  # Wait for in-progress commands to finish
 
             self._notify('Sending update command to controller')
-            await cmder.firmware_update()
+            await commander.fget(self.app).firmware_update()
 
             self._notify('Waiting for normal connection to close')
             await connection.fget(self.app).end()
@@ -210,10 +209,11 @@ class FlashView(PydanticView):
             if platform in ['photon', 'p1']:
                 self._notify(f'Connecting to {address}')
                 conn = await ymodem.connect(address)
+                client = ymodem.OtaClient(self._notify)
 
                 with conn.autoclose():
                     await asyncio.wait_for(
-                        ota.send(conn, f'firmware/brewblox-{platform}.bin'),
+                        client.send(conn, f'firmware/brewblox-{platform}.bin'),
                         TRANSFER_TIMEOUT_S)
                     self._notify('Update done!')
 

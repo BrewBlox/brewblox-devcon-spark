@@ -35,10 +35,13 @@ def test_main(mocker, app):
     ]
 
 
-@pytest.mark.parametrize('simulation', [True, False])
-def test_simulation(simulation, mocker, app):
-    app['config']['simulation'] = simulation
+@pytest.mark.parametrize('auto_id', [True, False])
+def test_simulation(auto_id, mocker, app):
+    app['config']['device_id'] = None
+    app['config']['mock'] = auto_id
+    app['config']['simulation'] = auto_id
     mocker.patch(TESTED + '.service.run')
     mocker.patch(TESTED + '.service.create_app').return_value = app
 
     main.main()
+    assert bool(app['config']['device_id']) is auto_id

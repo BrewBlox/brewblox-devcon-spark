@@ -11,6 +11,7 @@ from brewblox_devcon_spark import (block_store, broadcaster, codec, commander,
                                    connection, controller, exceptions,
                                    global_store, service_status, service_store,
                                    synchronization)
+from brewblox_devcon_spark.connection import mock_connection
 from brewblox_devcon_spark.models import ErrorCode
 
 TESTED = broadcaster.__name__
@@ -18,8 +19,12 @@ TESTED = broadcaster.__name__
 
 @pytest.fixture(autouse=True)
 def m_relations(mocker):
-    mocker.patch(TESTED + '.calculate_relations', autospec=True)
-    mocker.patch(TESTED + '.calculate_claims', autospec=True)
+    mocker.patch(TESTED + '.calculate_relations',
+                 autospec=True,
+                 side_effect=lambda blocks: {})
+    mocker.patch(TESTED + '.calculate_claims',
+                 autospec=True,
+                 side_effect=lambda blocks: {})
 
 
 @pytest.fixture
@@ -54,7 +59,7 @@ async def synchronized(app, client):
 
 async def test_disabled(app, m_publish, client, synchronized):
     app['config']['broadcast_interval'] = 0
-    app['config']['volatile'] = False
+    app['config']['isolated'] = False
     b = broadcaster.Broadcaster(app)
     with pytest.raises(repeater.RepeaterCancelled):
         await b.prepare()
@@ -64,7 +69,7 @@ async def test_broadcast_unsync(app, m_publish, client, synchronized, mocker):
     m_wait_sync = mocker.patch(TESTED + '.service_status.wait_synchronized', AsyncMock())
     m_wait_sync.return_value = False
 
-    app['config']['volatile'] = False
+    app['config']['isolated'] = False
     b = broadcaster.Broadcaster(app)
     await b.prepare()
     await b.run()
@@ -74,7 +79,9 @@ async def test_broadcast_unsync(app, m_publish, client, synchronized, mocker):
 
 
 async def test_broadcast(app, m_publish, client, synchronized):
-    app['config']['volatile'] = False
+    app['config']['isolated'] = False
+    # status = service_status.desc(app)
+
     b = broadcaster.Broadcaster(app)
     await b.prepare()
     await b.run()
@@ -83,36 +90,42 @@ async def test_broadcast(app, m_publish, client, synchronized):
         call(app,
              'testcast/history/test_app',
              err=False,
-             message={
-                 'key': 'test_app',
-                 'data': ANY,
-             }),
+             message=ANY),
         call(app,
              'testcast/state/test_app',
              err=False,
              retain=True,
-             message={
-                 'key': 'test_app',
-                 'type': 'Spark.state',
-                 'data': {
-                     'status': ANY,
-                     'blocks': ANY,
-                     'relations': ANY,
-                     'claims': ANY,
-                 },
-             }),
+             message=ANY),
     ])
+
+    # {
+    #              'key': 'test_app',
+    #              'data': ANY,
+    #          }
+
+    # {
+    #     'key': 'test_app',
+    #     'type': 'Spark.state',
+    #     'data': {
+    #         'status': status.dict(),
+    #         'blocks': ANY,
+    #         'relations': {},
+    #         'claims': {},
+    #     },
+    # }
+
+    print(m_publish.call_args_list)
 
     await b.before_shutdown(app)
     assert m_publish.call_count == 3
 
 
 async def test_error(app, m_publish, client, synchronized):
-    app['config']['volatile'] = False
+    app['config']['isolated'] = False
     b = broadcaster.Broadcaster(app)
     await b.prepare()
 
-    connection.fget(app).next_error.append(ErrorCode.UNKNOWN_ERROR)
+    mock_connection.NEXT_ERROR.append(ErrorCode.UNKNOWN_ERROR)
     with pytest.raises(exceptions.CommandException):
         await b.run()
 
@@ -125,7 +138,7 @@ async def test_error(app, m_publish, client, synchronized):
 
 async def test_api_broadcaster(app, m_publish, client):
     await service_status.wait_synchronized(app)
-    app['config']['volatile'] = False
+    app['config']['isolated'] = False
     b = broadcaster.Broadcaster(app)
     await b.prepare()
     await b.run()

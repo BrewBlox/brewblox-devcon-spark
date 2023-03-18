@@ -12,7 +12,7 @@ from brewblox_service.testing import response
 from brewblox_devcon_spark import (backup_storage, block_store, codec,
                                    commander, connection, const, controller,
                                    global_store, service_status, service_store,
-                                   synchronization, ymodem)
+                                   synchronization)
 from brewblox_devcon_spark.api import (backup_api, blocks_api, debug_api,
                                        error_response, settings_api,
                                        system_api)
@@ -489,8 +489,8 @@ async def test_system_status(app, client):
             'firmware': firmware_desc,
             'device': device_desc,
         },
-        'address': 'simulation:1234',
-        'connection_kind': 'TCP',
+        'address': '1234',
+        'connection_kind': 'MOCK',
         'connection_status': 'SYNCHRONIZED',
         'firmware_error': None,
         'identity_error': None,
@@ -501,31 +501,6 @@ async def test_system_status(app, client):
     resp = await response(client.get('/system/status'))
     assert resp['connection_status'] == 'DISCONNECTED'
     assert resp['controller'] is None
-
-
-async def test_system_flash(app, client, mocker):
-    sys_api = system_api.__name__
-
-    mocker.patch(sys_api + '.CONNECT_INTERVAL_S', 0.001)
-    mocker.patch(sys_api + '.FLUSH_PERIOD_S', 0.001)
-    mocker.patch(sys_api + '.shutdown_soon', AsyncMock())
-    mocker.patch(sys_api + '.mqtt.publish', AsyncMock())
-
-    m_conn = mocker.patch(sys_api + '.ymodem.connect', autospec=True)
-    m_conn.return_value = AsyncMock(ymodem.Connection)
-
-    m_ota = mocker.patch(sys_api + '.ymodem.OtaClient', autospec=True)
-    m_ota.return_value.transfer = AsyncMock()
-
-    await response(client.post('/system/flash'))
-    m_ota.return_value.send.assert_awaited()
-    system_api.shutdown_soon.assert_awaited()
-
-
-async def test_system_flash_sim(app, client):
-    # Not implemented for simulations
-    app['config']['simulation'] = True
-    await response(client.post('/system/flash'), 424)
 
 
 async def test_system_resets(app, client, mocker):

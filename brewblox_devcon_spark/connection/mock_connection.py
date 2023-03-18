@@ -26,6 +26,10 @@ from .connection_impl import ConnectionCallbacks, ConnectionImpl
 
 LOGGER = brewblox_logger(__name__)
 
+# an ErrorCode will be returned
+# a None value will cause no response to be returned
+NEXT_ERROR: list[Union[ErrorCode, None]] = []
+
 
 def default_blocks() -> dict[int, FirmwareBlock]:
     return {
@@ -83,10 +87,7 @@ class MockConnection(ConnectionImpl):
                  callbacks: ConnectionCallbacks,
                  ) -> None:
         super().__init__('MOCK', device_id, callbacks)
-
-        # an ErrorCode will be returned
-        # a None value will cause no response to be returned
-        self.next_error: list[Union[ErrorCode, None]] = []
+        self.app = app
 
         self._start_time = datetime.now()
         self._codec = codec.Codec(app, strip_readonly=False)
@@ -159,8 +160,8 @@ class MockConnection(ConnectionImpl):
             payload=[]
         )
 
-        if self.next_error:
-            error = self.next_error.pop(0)
+        if NEXT_ERROR:
+            error = NEXT_ERROR.pop(0)
             if error is None:
                 return None  # No response at all
             else:
@@ -263,7 +264,7 @@ class MockConnection(ConnectionImpl):
         return response
 
     async def send_request(self, request_b64: Union[str, bytes]):
-        if not isinstance(request_b64, str):
+        if isinstance(request_b64, bytes):
             request_b64 = request_b64.decode()
 
         try:
@@ -287,6 +288,6 @@ class MockConnection(ConnectionImpl):
 
 async def connect_mock(app: web.Application, callbacks: ConnectionCallbacks) -> ConnectionImpl:
     device_id = app['config']['device_id']
-    conn = MockConnection(app, device_id)
+    conn = MockConnection(app, device_id, callbacks)
     await conn.connect()
     return conn
