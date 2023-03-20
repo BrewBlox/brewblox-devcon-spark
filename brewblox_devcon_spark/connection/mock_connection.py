@@ -146,7 +146,7 @@ class MockConnection(ConnectionImpl):
             self.app['ini']['firmware_date'],
             self.app['ini']['proto_date'],
             self.app['ini']['system_version'],
-            self._address,
+            'mock',
             ResetReason.NONE.value,
             ResetData.NOT_SPECIFIED.value,
             self.app['config']['device_id'],

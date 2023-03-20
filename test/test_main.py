@@ -3,11 +3,13 @@ Tests brewblox_devcon_spark.__main__.py
 """
 
 import pytest
-from brewblox_service import mqtt
+from brewblox_service import http, mqtt, scheduler
 
 from brewblox_devcon_spark import __main__ as main
-from brewblox_devcon_spark import (block_store, broadcaster, commander,
-                                   controller, service_store)
+from brewblox_devcon_spark import (backup_storage, block_store, broadcaster,
+                                   codec, commander, connection, controller,
+                                   global_store, service_status, service_store,
+                                   synchronization, time_sync)
 
 TESTED = main.__name__
 
@@ -26,12 +28,24 @@ def test_main(mocker, app):
     main.main()
 
     assert None not in [
-        commander.fget(app),
+        scheduler.fget(app),
+        mqtt.handler(app),
+        http.fget(app),
+
+        global_store.fget(app),
         service_store.fget(app),
         block_store.fget(app),
+
+        service_status.fget(app),
+        codec.fget(app),
+        connection.fget(app),
+        commander.fget(app),
+        synchronization.fget(app),
         controller.fget(app),
-        mqtt.handler(app),
-        broadcaster.fget(app)
+
+        backup_storage.fget(app),
+        broadcaster.fget(app),
+        time_sync.fget(app),
     ]
 
 

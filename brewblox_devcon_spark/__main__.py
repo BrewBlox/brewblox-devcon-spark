@@ -11,7 +11,7 @@ from brewblox_service import brewblox_logger, http, mqtt, scheduler, service
 from brewblox_devcon_spark import (backup_storage, block_store, broadcaster,
                                    codec, commander, connection, controller,
                                    global_store, service_status, service_store,
-                                   synchronization)
+                                   synchronization, time_sync)
 from brewblox_devcon_spark.api import (backup_api, blocks_api, debug_api,
                                        error_response, mqtt_api, settings_api,
                                        sim_api, system_api)
@@ -142,10 +142,11 @@ def main():
     connection.setup(app)
     commander.setup(app)
     synchronization.setup(app)
-
     controller.setup(app)
+
     backup_storage.setup(app)
     broadcaster.setup(app)
+    time_sync.setup(app)
 
     error_response.setup(app)
     blocks_api.setup(app)

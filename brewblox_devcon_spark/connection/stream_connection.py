@@ -19,7 +19,8 @@ from serial.tools import list_ports
 from brewblox_devcon_spark import exceptions, mdns
 
 from .cbox_parser import ControlboxParser
-from .connection_impl import ConnectionCallbacks, ConnectionImpl, ConnKind_
+from .connection_impl import (ConnectionCallbacks, ConnectionImpl,
+                              ConnectionKind_)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -49,20 +50,18 @@ SPARK_DEVICE_REGEX = f'(?:{"|".join([dev for dev in SPARK_HWIDS])})'
 
 class StreamConnection(ConnectionImpl):
     def __init__(self,
-                 kind: ConnKind_,
+                 kind: ConnectionKind_,
                  address: str,
                  callbacks: ConnectionCallbacks
                  ) -> None:
         super().__init__(kind, address, callbacks)
 
         self._transport: asyncio.Transport = None
-        self._active = asyncio.Event()
         self._parser = ControlboxParser()
 
     def connection_made(self, transport: asyncio.Transport):
         self._transport = transport
         self.connected.set()
-        self._active.set()
 
     def data_received(self, recv: bytes):
         self._parser.push(recv.decode())
@@ -74,10 +73,10 @@ class StreamConnection(ConnectionImpl):
             asyncio.create_task(self.on_response(msg))
 
     def pause_writing(self):
-        self._active.clear()
+        LOGGER.debug(f'{self} pause_writing')
 
     def resume_writing(self):
-        self._active.set()
+        LOGGER.debug(f'{self} resume_writing')
 
     def connection_lost(self, ex: Optional[Exception]):
         if ex:
@@ -87,9 +86,6 @@ class StreamConnection(ConnectionImpl):
     async def send_request(self, msg: Union[str, bytes]):
         if isinstance(msg, str):
             msg = msg.encode()
-
-        # Maybe?
-        # await self._active.wait()
         self._transport.write(msg + b'\n')
 
     async def close(self):
@@ -100,7 +96,7 @@ class StreamConnection(ConnectionImpl):
 class SubprocessConnection(StreamConnection):
 
     def __init__(self,
-                 kind: ConnKind_,
+                 kind: ConnectionKind_,
                  address: str,
                  callbacks: ConnectionCallbacks,
                  proc: Popen) -> None:
@@ -123,7 +119,7 @@ async def connect_tcp(host: str, port: int, callbacks: ConnectionCallbacks) -> C
 
 
 async def connect_subprocess(proc: Popen,
-                             kind: ConnKind_,
+                             kind: ConnectionKind_,
                              address: str,
                              callbacks: ConnectionCallbacks,
                              ) -> ConnectionImpl:

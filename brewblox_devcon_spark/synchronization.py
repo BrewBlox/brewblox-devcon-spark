@@ -83,6 +83,7 @@ class SparkSynchronization(repeater.RepeaterFeature):
 
     def __init__(self, app: web.Application):
         super().__init__(app)
+        self.unit_converter = codec.unit_conversion.fget(self.app)
         self.codec = codec.fget(app)
         self.commander = commander.fget(app)
         self.service_store = service_store.fget(self.app)
@@ -109,8 +110,7 @@ class SparkSynchronization(repeater.RepeaterFeature):
 
         except Exception as ex:
             LOGGER.error(f'Failed to sync: {strex(ex)}')
-            await commander.fget(self.app).start_reconnect()
-            raise ex
+            await self.commander.start_reconnect()
 
         await service_status.wait_disconnected(self.app)
 
@@ -183,13 +183,12 @@ class SparkSynchronization(repeater.RepeaterFeature):
         """Callback invoked by global_store"""
         await self.set_converter_units()
 
-        if await service_status.wait_synchronized(self.app, wait=False):
+        if service_status.is_synchronized(self.app):
             await self.set_sysinfo_settings()
 
     async def set_converter_units(self):
-        converter = codec.unit_conversion.fget(self.app)
-        converter.temperature = self.global_store.units['temperature']
-        LOGGER.info(f'Service temperature unit set to {converter.temperature}')
+        self.unit_converter.temperature = self.global_store.units['temperature']
+        LOGGER.info(f'Service temperature unit set to {self.unit_converter.temperature}')
 
     async def set_sysinfo_settings(self):
         # Get time zone

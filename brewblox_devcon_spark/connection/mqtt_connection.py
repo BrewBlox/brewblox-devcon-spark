@@ -115,3 +115,17 @@ class MqttDeviceTracker(features.ServiceFeature):
 
         except asyncio.TimeoutError:
             return None
+
+
+def setup(app: web.Application):
+    features.add(app, MqttDeviceTracker(app))
+
+
+def fget(app: web.Application) -> MqttDeviceTracker:
+    return features.get(app, MqttDeviceTracker)
+
+
+async def discover_mqtt(app: web.Application,
+                        callbacks: ConnectionCallbacks,
+                        ) -> Optional[MqttConnection]:
+    return await fget(app).discover(callbacks)

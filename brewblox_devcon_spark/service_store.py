@@ -18,7 +18,7 @@ SERVICE_STORE_KEY = '{name}-service-db'
 READY_TIMEOUT_S = 60
 
 # Known fields
-RECONNECT_INTERVAL_KEY = 'reconnect_interval'
+RECONNECT_DELAY_KEY = 'reconnect_delay'
 AUTOCONNECTING_KEY = 'autoconnecting'
 
 SYS_OBJECTS = [
@@ -118,12 +118,12 @@ def set_autoconnecting(app: web.Application, enabled: bool) -> bool:
     return enabled
 
 
-def get_reconnect_interval(app: web.Application) -> float:
-    return float(fget(app)._config.get(RECONNECT_INTERVAL_KEY, 0))
+def get_reconnect_delay(app: web.Application) -> float:
+    return float(fget(app)._config.get(RECONNECT_DELAY_KEY, 0))
 
 
-def set_reconnect_interval(app: web.Application, interval: float) -> float:
-    interval = float(interval)
+def set_reconnect_delay(app: web.Application, value: float) -> float:
+    value = float(value)
     with fget(app).open() as config:
-        config[RECONNECT_INTERVAL_KEY] = interval
-    return interval
+        config[RECONNECT_DELAY_KEY] = value
+    return value

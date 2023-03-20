@@ -2,7 +2,7 @@
 Tests brewblox_devcon_spark.broadcaster
 """
 
-from unittest.mock import ANY, AsyncMock, call
+from unittest.mock import ANY, call
 
 import pytest
 from brewblox_service import repeater, scheduler
@@ -66,15 +66,12 @@ async def test_disabled(app, m_publish, client, synchronized):
 
 
 async def test_broadcast_unsync(app, m_publish, client, synchronized, mocker):
-    m_wait_sync = mocker.patch(TESTED + '.service_status.wait_synchronized', AsyncMock())
-    m_wait_sync.return_value = False
+    service_status.fget(app).synchronized_ev.clear()
 
     app['config']['isolated'] = False
     b = broadcaster.Broadcaster(app)
     await b.prepare()
     await b.run()
-
-    assert m_wait_sync.call_count == 1
     assert m_publish.call_count == 1
 
 

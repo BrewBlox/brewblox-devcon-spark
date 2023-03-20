@@ -56,13 +56,10 @@ class Broadcaster(repeater.RepeaterFeature):
     async def run(self):
         try:
             await asyncio.sleep(self.interval)
-            synched = await service_status.wait_synchronized(self.app, wait=False)
-
-            status_data = service_status.desc(self.app)
             blocks = []
 
             try:
-                if synched:
+                if service_status.is_synchronized(self.app):
                     blocks, logged_blocks = await controller.fget(self.app).read_all_broadcast_blocks()
 
                     # Convert list to key/value format suitable for history
@@ -90,7 +87,7 @@ class Broadcaster(repeater.RepeaterFeature):
                                        'key': self.name,
                                        'type': 'Spark.state',
                                        'data': {
-                                           'status': status_data.dict(),
+                                           'status': service_status.desc(self.app).dict(),
                                            'blocks': [v.dict() for v in blocks],
                                            'relations': calculate_relations(blocks),
                                            'claims': calculate_claims(blocks),

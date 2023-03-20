@@ -1,25 +1,31 @@
 import asyncio
 from abc import abstractmethod
-from typing import Literal, Union
+from typing import Union
 
-ConnKind_ = Literal['MOCK', 'SIM', 'USB', 'TCP', 'MQTT']
+from brewblox_devcon_spark.models import ConnectionKind_
 
 
 class ConnectionCallbacks:
 
     @abstractmethod
     async def on_response(self, msg: str):
-        pass
+        """
+        Should handle calls that contain proto+B64 encoded Response objects.
+        This will only be called once per response.
+        If the message was chunked, B64 chunks will be separated by commas.
+        """
 
     @abstractmethod
     async def on_event(self, msg: str):
-        pass
+        """
+        Should handle calls that contain plaintext messages or cbox events.
+        """
 
 
 class ConnectionImpl(ConnectionCallbacks):
 
     def __init__(self,
-                 kind: ConnKind_,
+                 kind: ConnectionKind_,
                  address: str,
                  callbacks: ConnectionCallbacks,
                  ) -> None:
@@ -33,7 +39,7 @@ class ConnectionImpl(ConnectionCallbacks):
         return f'<{type(self).__name__} for {self._kind} {self._address}>'
 
     @property
-    def kind(self) -> ConnKind_:
+    def kind(self) -> ConnectionKind_:
         return self._kind
 
     @property
@@ -56,8 +62,14 @@ class ConnectionImpl(ConnectionCallbacks):
 
     @abstractmethod
     async def send_request(self, msg: Union[str, bytes]):
-        pass
+        """
+        Connection-specific implementation for
+        writing the encoded request to the transport layer.
+        """
 
     @abstractmethod
     async def close(self):
-        pass
+        """
+        Connection-specific implementation for closing the connection.
+        It is not required that the `disconnected` event is set during this function.
+        """
