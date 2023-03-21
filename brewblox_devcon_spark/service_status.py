@@ -51,6 +51,14 @@ class ServiceStatus(features.ServiceFeature):
             identity_error=None,
         )
 
+        self.enabled_ev: asyncio.Event = None
+        self.connected_ev: asyncio.Event = None
+        self.acknowledged_ev: asyncio.Event = None
+        self.synchronized_ev: asyncio.Event = None
+        self.disconnected_ev: asyncio.Event = None
+        self.updating_ev: asyncio.Event = None
+
+    async def startup(self, _):
         self.enabled_ev = asyncio.Event()
         self.connected_ev = asyncio.Event()
         self.acknowledged_ev = asyncio.Event()

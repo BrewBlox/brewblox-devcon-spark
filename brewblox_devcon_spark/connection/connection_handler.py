@@ -1,6 +1,5 @@
 import asyncio
 from contextlib import suppress
-from typing import Union
 
 from aiohttp import web
 from async_timeout import timeout
@@ -96,6 +95,7 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
 
         mock = config['mock']
         simulation = config['simulation']
+        device_id = config['device_id']
         device_serial = config['device_serial']
         device_host = config['device_host']
         device_port = config['device_port']
@@ -103,7 +103,7 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
         if mock:
             return await connect_mock(self.app, self)
         elif simulation:
-            return await connect_simulation(self.app, self)
+            return await connect_simulation(device_id, self)
         elif device_serial:
             return await connect_serial(device_serial, self)
         elif device_host:
@@ -153,11 +153,10 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
                 await self._impl.close()
             service_status.set_disconnected(self.app)
 
-    async def send_request(self, msg: Union[str, bytes]):
+    async def send_request(self, msg: str):
         if not self.connected:
             raise exceptions.NotConnected(f'{self} not connected')
 
-        LOGGER.debug(f'{self} sending: {msg}')
         await self._impl.send_request(msg)
 
     async def start_reconnect(self):

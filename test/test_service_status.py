@@ -129,7 +129,7 @@ async def test_state_machine(app, client):
     assert await service_status.wait_disconnected(app)
 
 
-async def test_wildcard_error(app):
+async def test_wildcard_error(app, client):
     service_status.fget(app).status_desc.service.device.device_id = ''
 
     # Wildcard ID in service is not a hard error

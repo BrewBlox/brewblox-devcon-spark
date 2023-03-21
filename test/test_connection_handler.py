@@ -158,6 +158,7 @@ async def test_handler_connect_order(app, client, mocker):
     config['device_serial'] = None
     config['device_host'] = None
     config['discovery'] = 'all'
+    config['device_id'] = '01ab23ce'
 
     await handler.connect()
 
@@ -195,7 +196,7 @@ async def test_handler_connect_order(app, client, mocker):
 
     await handler.connect()
 
-    m_funcs['connect_simulation'].assert_awaited_once_with(app, handler)
+    m_funcs['connect_simulation'].assert_awaited_once_with('01ab23ce', handler)
     for f in without('connect_simulation'):
         f.assert_not_awaited()
 

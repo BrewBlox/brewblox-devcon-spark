@@ -1,6 +1,5 @@
 import asyncio
 from abc import abstractmethod
-from typing import Union
 
 from brewblox_devcon_spark.models import ConnectionKind_
 
@@ -61,7 +60,7 @@ class ConnectionImpl(ConnectionCallbacks):
         await self._callbacks.on_event(msg)
 
     @abstractmethod
-    async def send_request(self, msg: Union[str, bytes]):
+    async def send_request(self, msg: str):
         """
         Connection-specific implementation for
         writing the encoded request to the transport layer.

@@ -12,7 +12,7 @@ from itertools import count
 from typing import Optional, Union
 
 from aiohttp import web
-from brewblox_service import brewblox_logger, strex
+from brewblox_service import brewblox_logger
 
 from brewblox_devcon_spark import codec, const
 from brewblox_devcon_spark.codec import bloxfield
@@ -263,21 +263,13 @@ class MockConnection(ConnectionImpl):
 
         return response
 
-    async def send_request(self, request_b64: Union[str, bytes]):
-        if isinstance(request_b64, bytes):
-            request_b64 = request_b64.decode()
+    async def send_request(self, request_b64: str):
+        self.update_systime()
+        request = self._codec.decode_request(request_b64)
+        response = await self.handle_command(request)
 
-        try:
-            self.update_systime()
-            request = self._codec.decode_request(request_b64)
-            response = await self.handle_command(request)
-
-            if response:
-                await self.on_response(self._codec.encode_response(response))
-
-        except Exception as ex:
-            LOGGER.error(strex(ex))
-            raise ex
+        if response:
+            await self.on_response(self._codec.encode_response(response))
 
     async def connect(self):
         self.connected.set()

@@ -9,7 +9,6 @@ import pytest
 from aiozeroconf import ServiceInfo, ServiceStateChange
 
 from brewblox_devcon_spark import mdns
-from brewblox_devcon_spark.connection import stream_connection
 
 TESTED = mdns.__name__
 DNS_TYPE = '_brewblox._tcp.local.'

@@ -111,6 +111,7 @@ class SparkCommander(features.ServiceFeature):
 
     async def _on_response(self, msg: str):
         try:
+            # LOGGER.debug(f'response: {msg}')
             response = self._codec.decode_response(msg)
 
             # Get the Future object awaiting this request
@@ -135,12 +136,13 @@ class SparkCommander(features.ServiceFeature):
             payload=payload
         )
 
-        request_msg = self._codec.encode_request(request)
+        msg = self._codec.encode_request(request)
         fut: asyncio.Future[IntermediateResponse] = asyncio.get_running_loop().create_future()
         self._active_messages[msg_id] = fut
 
         try:
-            await self._conn.send_request(request_msg)
+            # LOGGER.debug(f'request: {msg}')
+            await self._conn.send_request(msg)
             response = await asyncio.wait_for(fut, timeout=self._timeout)
 
             if response.error != ErrorCode.OK:

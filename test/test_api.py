@@ -3,6 +3,7 @@ Tests brewblox_devcon_spark.api
 """
 
 import asyncio
+from shutil import rmtree
 from unittest.mock import ANY, AsyncMock
 
 import pytest
@@ -13,12 +14,15 @@ from brewblox_devcon_spark import (backup_storage, block_store, codec,
                                    commander, connection, const, controller,
                                    global_store, service_status, service_store,
                                    synchronization)
+from brewblox_devcon_spark.__main__ import parse_ini
 from brewblox_devcon_spark.api import (backup_api, blocks_api, debug_api,
                                        error_response, settings_api,
                                        system_api)
+from brewblox_devcon_spark.connection import stream_connection
 from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
                                           ErrorCode, IntermediateRequest,
-                                          IntermediateResponse, Opcode)
+                                          IntermediateResponse, Opcode,
+                                          ServiceConfig)
 
 
 class DummmyError(BaseException):
@@ -27,6 +31,12 @@ class DummmyError(BaseException):
 
 def ret_ids(objects):
     return {obj['id'] for obj in objects}
+
+
+@pytest.fixture(scope='module', autouse=True)
+def simulator_file_cleanup():
+    yield
+    rmtree('simulator/', ignore_errors=True)
 
 
 @pytest.fixture
@@ -50,7 +60,12 @@ def m_publish(mocker):
 
 @pytest.fixture(autouse=True)
 def m_backup_dir(mocker, tmp_path):
-    mocker.patch(backup_storage.__name__ + '.BASE_BACKUP_DIR', tmp_path)
+    mocker.patch(backup_storage.__name__ + '.BASE_BACKUP_DIR', tmp_path / 'backup')
+
+
+@pytest.fixture(autouse=True)
+def m_simulator_dir(mocker, tmp_path):
+    mocker.patch(stream_connection.__name__ + '.SIMULATION_CWD', tmp_path / 'simulator')
 
 
 def repeated_blocks(ids, args):
@@ -64,6 +79,13 @@ def repeated_blocks(ids, args):
 @pytest.fixture
 async def app(app, event_loop):
     """App + controller routes"""
+    config: ServiceConfig = app['config']
+    app['ini'] = parse_ini(app)
+    config['mock'] = False
+    config['simulation'] = True
+    config['isolated'] = True
+    config['device_id'] = '123456789012345678901234'
+
     service_status.setup(app)
     scheduler.setup(app)
     codec.setup(app)
@@ -307,7 +329,7 @@ async def test_settings_api(app, client, block_args):
 
 async def test_discover(app, client):
     resp = await response(client.post('/blocks/discover'))
-    assert resp[0]['id'] == 'SparkPins'
+    assert resp == []
 
 
 async def test_validate(app, client, block_args):
@@ -369,7 +391,7 @@ async def test_backup_load(app, client, spark_blocks):
     data['store'].append({'keys': ['TROLOLOL', 9999], 'data': dict()})
 
     # Add renamed type to store data
-    data['store'].append({'keys': ['renamed_wifi', const.WIFI_SETTINGS_NID], 'data': dict()})
+    data['store'].append({'keys': ['renamed_display_settings', const.DISPLAY_SETTINGS_NID], 'data': dict()})
 
     # Add a Block that will fail to be created, and should be skipped
     data['blocks'].append({
@@ -387,7 +409,7 @@ async def test_backup_load(app, client, spark_blocks):
 
     resp = await response(client.post('/blocks/all/read'))
     resp_ids = ret_ids(resp)
-    assert 'renamed_wifi' in resp_ids
+    assert 'renamed_display_settings' in resp_ids
     assert 'derpface' not in resp_ids
 
 
@@ -431,11 +453,11 @@ async def test_backup_stored(app, client, block_args):
 
 async def test_read_all_logged(app, client):
     args = {
-        'id': 'edgey',
-        'type': 'EdgeCase',
+        'id': 'pwm',
+        'type': 'ActuatorPwm',
         'data': {
-            'logged': 12345,
-            'unLogged': 54321,
+            'storedSetting': 80,  # logged
+            'period': 2,  # not logged
         }
     }
 
@@ -448,16 +470,16 @@ async def test_read_all_logged(app, client):
     assert args['id'] == obj['id']
     obj_data = obj['data']
     assert obj_data is not None
-    assert 'logged' in obj_data
-    assert 'unLogged' in obj_data
+    assert 'storedSetting' in obj_data
+    assert 'period' in obj_data
 
     # log_objects strips all keys that are not explicitly marked as logged
     obj = logged[-1]
     assert args['id'] == obj['id']
     obj_data = obj['data']
     assert obj_data is not None
-    assert 'logged' in obj_data
-    assert 'unLogged' not in obj_data
+    assert 'storedSetting' in obj_data
+    assert 'period' not in obj_data
 
 
 async def test_system_status(app, client):
@@ -489,8 +511,8 @@ async def test_system_status(app, client):
             'firmware': firmware_desc,
             'device': device_desc,
         },
-        'address': '1234',
-        'connection_kind': 'MOCK',
+        'address': 'brewblox-amd64.sim',
+        'connection_kind': 'SIM',
         'connection_status': 'SYNCHRONIZED',
         'firmware_error': None,
         'identity_error': None,

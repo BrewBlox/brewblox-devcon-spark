@@ -5,7 +5,7 @@ Messages are published to and read from the relevant topics on the eventbus.
 
 
 import asyncio
-from typing import Optional, Union
+from typing import Optional
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, mqtt
@@ -49,7 +49,7 @@ class MqttConnection(ConnectionImpl):
     async def _log_cb(self, topic: str, msg: str):
         await self.on_event(msg)
 
-    async def send_request(self, msg: Union[str, bytes]):
+    async def send_request(self, msg: str):
         await mqtt.publish(self.app, self._request_topic, msg)
 
     async def connect(self):
@@ -102,11 +102,12 @@ class MqttDeviceTracker(features.ServiceFeature):
             await mqtt.unlisten(app, self._handshake_topic, self._handshake_cb)
 
     async def discover(self, callbacks: ConnectionCallbacks) -> Optional[ConnectionImpl]:
-        if self._isolated:
+        device_id = self.app['config']['device_id']
+
+        if self._isolated or not device_id:
             return None
 
         try:
-            device_id = self.app['config']['device_id']
             evt = self._devices.setdefault(device_id, asyncio.Event())
             await asyncio.wait_for(evt.wait(), timeout=DISCOVERY_TIMEOUT_S)
             conn = MqttConnection(self.app, device_id, callbacks)

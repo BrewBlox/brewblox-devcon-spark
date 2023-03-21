@@ -122,6 +122,11 @@ async def test_incompatible_error(app, client, mocker):
         await connect(app)
     assert states(app) == [False, True, True, False]
 
+    # run() catches IncompatibleFirmware
+    with pytest.raises(asyncio.TimeoutError):
+        s = synchronization.SparkSynchronization(app)
+        await asyncio.wait_for(s.run(), timeout=0.2)
+
 
 async def test_invalid_error(app, client, mocker):
     m_desc: ServiceStatusDescription = mocker.patch(TESTED + '.service_status.desc').return_value
@@ -131,3 +136,8 @@ async def test_invalid_error(app, client, mocker):
     with pytest.raises(exceptions.InvalidDeviceId):
         await connect(app)
     assert states(app) == [False, True, True, False]
+
+    # run() catches InvalidDeviceId
+    with pytest.raises(asyncio.TimeoutError):
+        s = synchronization.SparkSynchronization(app)
+        await asyncio.wait_for(s.run(), timeout=0.2)
