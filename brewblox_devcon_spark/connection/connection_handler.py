@@ -8,7 +8,7 @@ from brewblox_service import brewblox_logger, features, repeater, strex
 from brewblox_devcon_spark import exceptions, service_status, service_store
 from brewblox_devcon_spark.models import ServiceConfig
 
-from .connection_impl import ConnectionCallbacks, ConnectionImpl
+from .connection_impl import ConnectionCallbacks, ConnectionImplBase
 from .mock_connection import connect_mock
 from .mqtt_connection import discover_mqtt
 from .stream_connection import (connect_serial, connect_simulation,
@@ -36,7 +36,7 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
         super().__init__(app)
 
         self._retry_count: int = 0
-        self._impl: ConnectionImpl = None
+        self._impl: ConnectionImplBase = None
 
     def __str__(self):
         return f'<{type(self).__name__} for {self._impl}>'
@@ -61,7 +61,7 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
         the actual response.
         """
 
-    async def discover(self) -> ConnectionImpl:
+    async def discover(self) -> ConnectionImplBase:
         config: ServiceConfig = self.app['config']
 
         discovery_type = config['discovery']
@@ -88,9 +88,9 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
                     await asyncio.sleep(DISCOVERY_INTERVAL_S)
 
         except asyncio.TimeoutError:
-            raise ConnectionAbortedError()
+            raise ConnectionAbortedError('Discovery timeout')
 
-    async def connect(self) -> ConnectionImpl:
+    async def connect(self) -> ConnectionImplBase:
         config: ServiceConfig = self.app['config']
 
         mock = config['mock']
@@ -112,11 +112,12 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
 
     async def run(self):
         """Implements RepeaterFeature.run"""
+        config: ServiceConfig = self.app['config']
         delay = service_store.get_reconnect_delay(self.app)
 
         try:
             if self._retry_count > MAX_RETRY_COUNT:
-                raise ConnectionAbortedError()
+                raise ConnectionAbortedError('Retry attempts exhausted')
 
             await asyncio.sleep(delay)
             await service_status.wait_enabled(self.app)
@@ -134,11 +135,16 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
             await self._impl.disconnected.wait()
             raise ConnectionError('Disconnected')
 
-        # New USB devices require a container restart to be detected
-        except ConnectionAbortedError:
-            LOGGER.error('Connection aborted. Shutting down...')
+        except ConnectionAbortedError as ex:
+            LOGGER.error(strex(ex))
             service_store.set_reconnect_delay(self.app, calc_backoff(delay))
-            raise web.GracefulExit()
+
+            # USB devices that were plugged in after container start are not visible
+            # If we are potentially connecting to a USB device, we need to restart
+            if config['device_serial'] or config['discovery'] in ['all', 'usb']:
+                raise web.GracefulExit()
+            else:
+                self._retry_count = 0
 
         except Exception as ex:
             if self._retry_count:

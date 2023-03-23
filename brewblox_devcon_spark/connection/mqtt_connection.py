@@ -10,7 +10,7 @@ from typing import Optional
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, mqtt
 
-from .connection_impl import ConnectionCallbacks, ConnectionImpl
+from .connection_impl import ConnectionCallbacks, ConnectionImplBase
 
 LOGGER = brewblox_logger(__name__)
 
@@ -22,7 +22,7 @@ RESPONSE_TOPIC = 'brewcast/cbox/resp/'
 DISCOVERY_TIMEOUT_S = 3
 
 
-class MqttConnection(ConnectionImpl):
+class MqttConnection(ConnectionImplBase):
 
     def __init__(self,
                  app: web.Application,
@@ -101,7 +101,7 @@ class MqttDeviceTracker(features.ServiceFeature):
             await mqtt.unsubscribe(app, self._handshake_topic)
             await mqtt.unlisten(app, self._handshake_topic, self._handshake_cb)
 
-    async def discover(self, callbacks: ConnectionCallbacks, device_id: str) -> Optional[ConnectionImpl]:
+    async def discover(self, callbacks: ConnectionCallbacks, device_id: str) -> Optional[ConnectionImplBase]:
         if self._isolated or not device_id:
             return None
 

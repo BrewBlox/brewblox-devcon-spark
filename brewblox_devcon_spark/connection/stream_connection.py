@@ -21,7 +21,7 @@ from brewblox_devcon_spark import exceptions, mdns
 from brewblox_devcon_spark.models import ServiceConfig
 
 from .cbox_parser import ControlboxParser
-from .connection_impl import (ConnectionCallbacks, ConnectionImpl,
+from .connection_impl import (ConnectionCallbacks, ConnectionImplBase,
                               ConnectionKind_)
 
 LOGGER = brewblox_logger(__name__)
@@ -49,7 +49,7 @@ SPARK_HWIDS = [
 SPARK_DEVICE_REGEX = f'(?:{"|".join([dev for dev in SPARK_HWIDS])})'
 
 
-class StreamConnection(ConnectionImpl):
+class StreamConnection(ConnectionImplBase):
     def __init__(self,
                  kind: ConnectionKind_,
                  address: str,
@@ -111,7 +111,7 @@ async def connect_tcp(app: web.Application,
                       callbacks: ConnectionCallbacks,
                       host: str,
                       port: int,
-                      ) -> ConnectionImpl:
+                      ) -> ConnectionImplBase:
     factory = partial(StreamConnection, 'TCP', f'{host}:{port}', callbacks)
     _, protocol = await asyncio.get_event_loop().create_connection(factory, host, port)
     return protocol
@@ -123,7 +123,7 @@ async def connect_subprocess(app: web.Application,
                              proc: Process,
                              kind: ConnectionKind_,
                              address: str,
-                             ) -> ConnectionImpl:  # pragma: no cover
+                             ) -> ConnectionImplBase:  # pragma: no cover
     factory = partial(SubprocessConnection, kind, address, callbacks, proc)
     message = None
 
@@ -152,7 +152,7 @@ async def connect_subprocess(app: web.Application,
 
 async def connect_simulation(app: web.Application,
                              callbacks: ConnectionCallbacks,
-                             ) -> ConnectionImpl:  # pragma: no cover
+                             ) -> ConnectionImplBase:  # pragma: no cover
     config: ServiceConfig = app['config']
     device_id = config['device_id']
     port = config['device_port']
@@ -180,7 +180,7 @@ async def connect_serial(app: web.Application,
                          callbacks: ConnectionCallbacks,
                          device_serial: Optional[str] = None,
                          port: Optional[int] = None,
-                         ) -> ConnectionImpl:  # pragma: no cover
+                         ) -> ConnectionImplBase:  # pragma: no cover
     config: ServiceConfig = app['config']
     device_serial = device_serial or config['device_serial']
     port = port or config['device_port']
@@ -193,7 +193,7 @@ async def connect_serial(app: web.Application,
 
 async def discover_tcp(app: web.Application,
                        callbacks: ConnectionCallbacks,
-                       ) -> Optional[ConnectionImpl]:
+                       ) -> Optional[ConnectionImplBase]:
     device_id = app['config']['device_id']
     try:
         resp = await mdns.discover_one(device_id,
@@ -206,7 +206,7 @@ async def discover_tcp(app: web.Application,
 
 async def discover_serial(app: web.Application,
                           callbacks: ConnectionCallbacks,
-                          ) -> Optional[ConnectionImpl]:  # pragma: no cover
+                          ) -> Optional[ConnectionImplBase]:  # pragma: no cover
     config: ServiceConfig = app['config']
     device_id = config['device_id']
     for usb_port in list_ports.grep(SPARK_DEVICE_REGEX):

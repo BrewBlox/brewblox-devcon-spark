@@ -293,3 +293,14 @@ async def test_handler_discovery_error(app, client, mocker):
     handler = connection_handler.ConnectionHandler(app)
     with pytest.raises(DummyExit):
         await handler.run()
+
+    assert service_store.get_reconnect_delay(app) > 0
+    service_store.set_reconnect_delay(app, 0)
+
+    # No reboot is required when discovery does not involve USB
+    m_discover_mqtt = mocker.patch(TESTED + '.discover_mqtt', autospec=True)
+    m_discover_mqtt.return_value = None
+    config['discovery'] = 'mqtt'
+
+    # No error, only a silent exit
+    await handler.run()

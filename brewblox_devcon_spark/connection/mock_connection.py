@@ -22,7 +22,7 @@ from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
                                           IntermediateResponse, Opcode,
                                           ResetData, ResetReason)
 
-from .connection_impl import ConnectionCallbacks, ConnectionImpl
+from .connection_impl import ConnectionCallbacks, ConnectionImplBase
 
 LOGGER = brewblox_logger(__name__)
 
@@ -80,7 +80,7 @@ def default_blocks() -> dict[int, FirmwareBlock]:
         ]}
 
 
-class MockConnection(ConnectionImpl):
+class MockConnection(ConnectionImplBase):
     def __init__(self,
                  app: web.Application,
                  device_id: str,
@@ -278,7 +278,7 @@ class MockConnection(ConnectionImpl):
         self.disconnected.set()
 
 
-async def connect_mock(app: web.Application, callbacks: ConnectionCallbacks) -> ConnectionImpl:
+async def connect_mock(app: web.Application, callbacks: ConnectionCallbacks) -> ConnectionImplBase:
     device_id = app['config']['device_id']
     conn = MockConnection(app, device_id, callbacks)
     await conn.connect()

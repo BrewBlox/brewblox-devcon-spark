@@ -21,7 +21,7 @@ class ConnectionCallbacks:
         """
 
 
-class ConnectionImpl(ConnectionCallbacks):
+class ConnectionImplBase(ConnectionCallbacks):
 
     def __init__(self,
                  kind: ConnectionKind_,
