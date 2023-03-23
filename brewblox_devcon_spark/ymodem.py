@@ -216,7 +216,7 @@ class OtaClient():
                 self._notify(f'Handshake received: {message}')
                 break
         else:
-            raise TimeoutError('Controller did not send handshake message')
+            raise asyncio.TimeoutError('Controller did not send handshake message')
 
         # Trigger YMODEM mode
         buffer = ''
@@ -227,7 +227,7 @@ class OtaClient():
                 self._notify('Controller is ready for firmware')
                 break
         else:
-            raise TimeoutError('Controller did not enter file transfer mode')
+            raise asyncio.TimeoutError('Controller did not enter file transfer mode')
 
         ack = 0
         while ack < 2:

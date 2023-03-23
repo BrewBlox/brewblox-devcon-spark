@@ -25,17 +25,12 @@ WORKDIR /app
 
 ARG service_info=UNKNOWN
 ENV SERVICE_INFO=${service_info}
-ENV BOOST_V=1.74
 
 RUN set -ex \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
         socat \
         usbutils \
-        libboost-system${BOOST_V} \
-        libboost-program-options${BOOST_V} \
-        libboost-random${BOOST_V} \
-        libboost-thread${BOOST_V} \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=base /wheeley /wheeley

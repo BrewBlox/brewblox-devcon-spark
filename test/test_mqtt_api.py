@@ -5,9 +5,9 @@ Tests brewblox_devcon_spark.api.mqtt_api
 import pytest
 from brewblox_service import scheduler
 
-from brewblox_devcon_spark import (block_store, codec, commander,
-                                   connection_sim, controller, exceptions,
-                                   global_store, service_status, service_store,
+from brewblox_devcon_spark import (block_store, codec, commander, connection,
+                                   controller, exceptions, global_store,
+                                   service_status, service_store,
                                    synchronization)
 from brewblox_devcon_spark.api import mqtt_api
 from brewblox_devcon_spark.models import Block, BlockIdentity
@@ -29,7 +29,7 @@ async def app(app, event_loop):
     global_store.setup(app)
     service_store.setup(app)
     codec.setup(app)
-    connection_sim.setup(app)
+    connection.setup(app)
     commander.setup(app)
     synchronization.setup(app)
     controller.setup(app)
@@ -58,34 +58,34 @@ async def read(app, args: BlockIdentity):
 
 async def test_create(app, client):
     api = mqtt_api.fget(app)
-    await api._create('topic', block_args(app).dict())
+    await api._create('topic', block_args(app).json())
 
     assert await read(app, BlockIdentity(id='testobj'))
 
 
 async def test_write(app, client):
     api = mqtt_api.fget(app)
-    await api._create('topic', block_args(app).dict())
-    await api._write('topic', block_args(app).dict())
+    await api._create('topic', block_args(app).json())
+    await api._write('topic', block_args(app).json())
 
     assert await read(app, BlockIdentity(id='testobj'))
 
 
 async def test_patch(app, client):
     api = mqtt_api.fget(app)
-    await api._create('topic', block_args(app).dict())
-    await api._patch('topic', block_args(app).dict())
+    await api._create('topic', block_args(app).json())
+    await api._patch('topic', block_args(app).json())
 
     assert await read(app, BlockIdentity(id='testobj'))
 
 
 async def test_delete(app, client):
     api = mqtt_api.fget(app)
-    await api._create('topic', block_args(app).dict())
+    await api._create('topic', block_args(app).json())
     await api._delete('topic', BlockIdentity(
         id='testobj',
         serviceId=app['config']['name'],
-    ).dict())
+    ).json())
 
     with pytest.raises(exceptions.UnknownId):
         await read(app, BlockIdentity(id='testobj'))
@@ -96,10 +96,10 @@ async def test_unknown_service_id(app, client):
 
     args = block_args(app)
     args.serviceId = ''
-    await api._create('topic', args.dict())
-    await api._write('topic', args.dict())
-    await api._patch('topic', args.dict())
-    await api._delete('topic', args.dict())
+    await api._create('topic', args.json())
+    await api._write('topic', args.json())
+    await api._patch('topic', args.json())
+    await api._delete('topic', args.json())
 
     with pytest.raises(exceptions.UnknownId):
         await read(app, BlockIdentity(id='testobj'))

@@ -19,8 +19,6 @@ variables:
   # DOCKER_USER
   # DOCKER_PASSWORD
   - group: brewblox
-  - name: BOOST_VERSION
-    value: "1.74.0"
 
 steps:
   - task: UsePythonVersion@0
@@ -55,14 +53,10 @@ steps:
       sudo apt update -y &&
       sudo apt install -y
       socat
-      libboost-system$(BOOST_VERSION)
-      libboost-program-options$(BOOST_VERSION)
-      libboost-random$(BOOST_VERSION)
-      libboost-thread$(BOOST_VERSION)
     displayName: Install test dependencies
 
   - bash: |
-      poetry run pytest --integration
+      poetry run pytest
       poetry run flake8
     displayName: Test
 

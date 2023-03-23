@@ -27,7 +27,7 @@ def add_check_resp(aresponses: ResponsesMockServer, count, status=200):
 def app(app, mocker):
     mocker.patch(TESTED + '.FLUSH_DELAY_S', 0.01)
     mocker.patch(TESTED + '.RETRY_INTERVAL_S', 0.01)
-    app['config']['volatile'] = False
+    app['config']['isolated'] = False
     http.setup(app)
     scheduler.setup(app)
     return app
@@ -48,14 +48,14 @@ async def test_cancel_check_remote(app, client, aresponses: ResponsesMockServer)
         await asyncio.wait_for(datastore.check_remote(app), timeout=0.001)
 
 
-async def test_non_volatile(app, event_loop):
-    class VolatileTester():
-        def __init__(self, volatile: bool):
-            self.volatile = volatile
+async def test_non_isolated(app, event_loop):
+    class IsolatedTester():
+        def __init__(self, isolated: bool):
+            self.isolated = isolated
 
-        @datastore.non_volatile
+        @datastore.non_isolated
         async def func(self, val):
             return val
 
-    assert await VolatileTester(True).func('testey') is None
-    assert await VolatileTester(False).func('testey') == 'testey'
+    assert await IsolatedTester(True).func('testey') is None
+    assert await IsolatedTester(False).func('testey') == 'testey'

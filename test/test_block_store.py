@@ -51,7 +51,7 @@ def add_write_resp(aresponses: ResponsesMockServer, count, status=200):
 def app(app, mocker):
     mocker.patch(DATASTORE + '.FLUSH_DELAY_S', 0.01)
     mocker.patch(DATASTORE + '.RETRY_INTERVAL_S', 0.01)
-    app['config']['volatile'] = False
+    app['config']['isolated'] = False
     http.setup(app)
     scheduler.setup(app)
     block_store.setup(app)
@@ -65,7 +65,7 @@ def store(app):
 
 async def test_block_read(app, client, store, aresponses):
     assert store.active
-    assert not store.volatile
+    assert not store.isolated
 
     default_length = len(block_store.SYS_OBJECTS)
     read_length = default_length + len(read_objects()) - 1  # overlapping item is merged

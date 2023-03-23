@@ -5,12 +5,12 @@ Awaitable events for tracking device and network status
 
 import asyncio
 import warnings
-from functools import partialmethod
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features
 
-from brewblox_devcon_spark.models import (ControllerDescription,
+from brewblox_devcon_spark.models import (ConnectionKind_,
+                                          ControllerDescription,
                                           DeviceDescription,
                                           FirmwareDescription, ServiceConfig,
                                           ServiceDescription,
@@ -66,14 +66,6 @@ class ServiceStatus(features.ServiceFeature):
         self.disconnected_ev = asyncio.Event()
         self.updating_ev = asyncio.Event()
 
-    async def shutdown(self, _):
-        self.enabled_ev.clear()
-        self.connected_ev.clear()
-        self.acknowledged_ev.clear()
-        self.synchronized_ev.clear()
-        self.disconnected_ev.clear()
-        self.updating_ev.clear()
-
     def desc(self) -> ServiceStatusDescription:
         return self.status_desc.copy()
 
@@ -85,26 +77,26 @@ class ServiceStatus(features.ServiceFeature):
         else:
             self.enabled_ev.clear()
 
-    def set_connected(self, address: str):
-        config: ServiceConfig = self.app['config']
-
-        if config['simulation']:
-            connection_kind = 'SIMULATION'
-        elif ':' in address:
-            connection_kind = 'TCP'
-        else:
-            connection_kind = 'USB'
-
+    def set_connected(self,
+                      connection_kind: ConnectionKind_,
+                      address: str):
         self.status_desc.address = address
         self.status_desc.connection_kind = connection_kind
         self.status_desc.connection_status = 'CONNECTED'
 
+        LOGGER.info('>>> CONNECTED')
         self.connected_ev.set()
         self.acknowledged_ev.clear()
         self.synchronized_ev.clear()
         self.disconnected_ev.clear()
 
     def set_acknowledged(self, controller: ControllerDescription):
+        if self.synchronized_ev.is_set():
+            # Do not revert to acknowledged if we're already synchronized.
+            # For there to be a meaningful change,
+            # there must have been a disconnect first.
+            return
+
         config: ServiceConfig = self.app['config']
         service = self.status_desc.service
 
@@ -137,21 +129,29 @@ class ServiceStatus(features.ServiceFeature):
         else:
             identity_error = None
 
-        # Do not revert to acknowledged if we're already synchronized.
-        # For there to be a meaningful change,
-        # there must have been a disconnect/connect first.
-        if not self.synchronized_ev.is_set():
-            self.status_desc.connection_status = 'ACKNOWLEDGED'
-
+        self.status_desc.connection_status = 'ACKNOWLEDGED'
         self.status_desc.controller = controller
         self.status_desc.firmware_error = firmware_error
         self.status_desc.identity_error = identity_error
 
+        LOGGER.info('>>> ACKNOWLEDGED')
         self.acknowledged_ev.set()
 
     def set_synchronized(self):
+        if not self.acknowledged_ev.is_set():
+            raise RuntimeError('Failed to set synchronized status: '
+                               'service is not acknowledged')
+
         self.status_desc.connection_status = 'SYNCHRONIZED'
+
+        LOGGER.info('>>> SYNCHRONIZED')
         self.synchronized_ev.set()
+
+    def set_updating(self):
+        self.status_desc.connection_status = 'UPDATING'
+
+        LOGGER.info('>>> UPDATING')
+        self.updating_ev.set()
 
     def set_disconnected(self):
         self.status_desc.controller = None
@@ -161,27 +161,12 @@ class ServiceStatus(features.ServiceFeature):
         self.status_desc.firmware_error = None
         self.status_desc.identity_error = None
 
+        LOGGER.info('>>> DISCONNECTED')
         self.connected_ev.clear()
         self.acknowledged_ev.clear()
         self.synchronized_ev.clear()
+        self.updating_ev.clear()
         self.disconnected_ev.set()
-
-    def set_updating(self):
-        self.status_desc.connection_status = 'UPDATING'
-        self.updating_ev.set()
-
-    async def _wait_ev(self, ev_name: str, wait: bool = True) -> bool:
-        ev: asyncio.Event = getattr(self, ev_name)
-        if not wait:
-            return ev.is_set()
-        return await ev.wait()
-
-    wait_enabled = partialmethod(_wait_ev, 'enabled_ev')
-    wait_connected = partialmethod(_wait_ev, 'connected_ev')
-    wait_acknowledged = partialmethod(_wait_ev, 'acknowledged_ev')
-    wait_synchronized = partialmethod(_wait_ev, 'synchronized_ev')
-    wait_disconnected = partialmethod(_wait_ev, 'disconnected_ev')
-    wait_updating = partialmethod(_wait_ev, 'updating_ev')
 
 
 def setup(app: web.Application):
@@ -192,17 +177,22 @@ def fget(app: web.Application) -> ServiceStatus:
     return features.get(app, ServiceStatus)
 
 
-# Convenience functions
+def desc(app: web.Application) -> ServiceStatusDescription:
+    return fget(app).desc()
+
 
 def set_enabled(app: web.Application, enabled: bool):
     fget(app).set_enabled(enabled)
 
 
-def set_connected(app: web.Application, address: str):
-    fget(app).set_connected(address)
+def set_connected(app: web.Application,
+                  kind: ConnectionKind_,
+                  address: str):
+    fget(app).set_connected(kind, address)
 
 
-def set_acknowledged(app: web.Application, controller: ControllerDescription):
+def set_acknowledged(app: web.Application,
+                     controller: ControllerDescription):
     fget(app).set_acknowledged(controller)
 
 
@@ -210,37 +200,57 @@ def set_synchronized(app: web.Application):
     fget(app).set_synchronized()
 
 
-def set_disconnected(app: web.Application):
-    fget(app).set_disconnected()
-
-
 def set_updating(app: web.Application):
     fget(app).set_updating()
 
 
-async def wait_enabled(app: web.Application, wait: bool = True) -> bool:
-    return await fget(app).wait_enabled(wait)
+def set_disconnected(app: web.Application):
+    fget(app).set_disconnected()
 
 
-async def wait_connected(app: web.Application, wait: bool = True) -> bool:
-    return await fget(app).wait_connected(wait)
+def is_enabled(app: web.Application) -> bool:
+    return fget(app).enabled_ev.is_set()
 
 
-async def wait_acknowledged(app: web.Application, wait: bool = True) -> bool:
-    return await fget(app).wait_acknowledged(wait)
+def is_connected(app: web.Application) -> bool:
+    return fget(app).connected_ev.is_set()
 
 
-async def wait_synchronized(app: web.Application, wait: bool = True) -> bool:
-    return await fget(app).wait_synchronized(wait)
+def is_acknowledged(app: web.Application) -> bool:
+    return fget(app).acknowledged_ev.is_set()
 
 
-async def wait_disconnected(app: web.Application, wait: bool = True) -> bool:
-    return await fget(app).wait_disconnected(wait)
+def is_synchronized(app: web.Application) -> bool:
+    return fget(app).synchronized_ev.is_set()
 
 
-async def wait_updating(app: web.Application, wait: bool = True) -> bool:
-    return await fget(app).wait_updating(wait)
+def is_disconnected(app: web.Application) -> bool:
+    return fget(app).disconnected_ev.is_set()
 
 
-def desc(app: web.Application) -> ServiceStatusDescription:
-    return fget(app).desc()
+def is_updating(app: web.Application) -> bool:
+    return fget(app).updating_ev.is_set()
+
+
+async def wait_enabled(app: web.Application) -> bool:
+    return await fget(app).enabled_ev.wait()
+
+
+async def wait_connected(app: web.Application) -> bool:
+    return await fget(app).connected_ev.wait()
+
+
+async def wait_acknowledged(app: web.Application) -> bool:
+    return await fget(app).acknowledged_ev.wait()
+
+
+async def wait_synchronized(app: web.Application) -> bool:
+    return await fget(app).synchronized_ev.wait()
+
+
+async def wait_updating(app: web.Application) -> bool:
+    return await fget(app).updating_ev.wait()
+
+
+async def wait_disconnected(app: web.Application) -> bool:
+    return await fget(app).disconnected_ev.wait()

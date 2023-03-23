@@ -14,13 +14,29 @@ class ServiceFirmwareIni(TypedDict):
     system_version: str
 
 
+MqttProtocolType_ = Literal[
+    'mqtt',
+    'mqtts',
+    'ws',
+    'wss',
+]
+
+DiscoveryType_ = Literal[
+    'all',
+    'usb',
+    'wifi',
+    'lan',
+    'mqtt',
+]
+
+
 class ServiceConfig(TypedDict):
     # brewblox_service
     name: str
     host: str
     port: int
     debug: bool
-    mqtt_protocol: Literal['mqtt', 'mqtts', 'ws', 'wss']
+    mqtt_protocol: MqttProtocolType_
     mqtt_host: str
     mqtt_port: int
     mqtt_path: str
@@ -28,15 +44,31 @@ class ServiceConfig(TypedDict):
     state_topic: str
 
     # brewblox_devcon_spark
+
+    # Device options
+    simulation: bool
+    mock: bool
+    device_host: Optional[str]
+    device_port: int
     device_serial: Optional[str]
     device_id: Optional[str]
-    discovery: Literal['all', 'usb', 'wifi', 'lan']
-    simulation: bool
+    discovery: DiscoveryType_
+    display_ws_port: int
+
+    # Network options
     command_timeout: float
     broadcast_interval: float
-    volatile: bool
+    isolated: bool
+    datastore_topic: str
+
+    # Firmware options
+    skip_version_check: bool
+
+    # Backup options
     backup_interval: float
     backup_retry_interval: float
+
+    # Time sync options
     time_sync_interval: float
 
 
@@ -332,32 +364,43 @@ class ControllerDescription(BaseModel):
     device: DeviceDescription
 
 
+ConnectionKind_ = Literal[
+    'MOCK',
+    'SIM',
+    'USB',
+    'TCP',
+    'MQTT'
+]
+
+ConnectionStatus_ = Literal[
+    'DISCONNECTED',
+    'CONNECTED',
+    'ACKNOWLEDGED',
+    'SYNCHRONIZED',
+    'UPDATING',
+]
+
+FirmwareError_ = Literal[
+    'INCOMPATIBLE',
+    'MISMATCHED',
+]
+
+IdentityError_ = Literal[
+    'INCOMPATIBLE',
+    'WILDCARD_ID',
+]
+
+
 class ServiceStatusDescription(BaseModel):
     enabled: bool
     service: ServiceDescription
     controller: Optional[ControllerDescription]
     address: Optional[str]
 
-    connection_kind: Optional[Literal[
-        'SIMULATION',
-        'USB',
-        'TCP',
-    ]]
-    connection_status: Literal[
-        'DISCONNECTED',
-        'CONNECTED',
-        'ACKNOWLEDGED',
-        'SYNCHRONIZED',
-        'UPDATING',
-    ]
-    firmware_error: Optional[Literal[
-        'INCOMPATIBLE',
-        'MISMATCHED',
-    ]]
-    identity_error: Optional[Literal[
-        'INCOMPATIBLE',
-        'WILDCARD_ID',
-    ]]
+    connection_kind: Optional[ConnectionKind_]
+    connection_status: ConnectionStatus_
+    firmware_error: Optional[FirmwareError_]
+    identity_error: Optional[IdentityError_]
 
 
 class BackupIdentity(BaseModel):

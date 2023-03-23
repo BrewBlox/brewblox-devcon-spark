@@ -2,6 +2,8 @@
 Keeps track of global config
 """
 
+import json
+
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, http, mqtt, strex
 
@@ -29,7 +31,7 @@ class GlobalConfigStore(features.ServiceFeature):
     def __init__(self, app: web.Application):
         super().__init__(app)
         config: ServiceConfig = app['config']
-        self._volatile = config['volatile']
+        self._isolated = config['isolated']
         self._datastore_topic = config['datastore_topic']
         self._global_topic = f'{self._datastore_topic}/{const.GLOBAL_NAMESPACE}'
 
@@ -38,7 +40,7 @@ class GlobalConfigStore(features.ServiceFeature):
         self.listeners = set()
 
     async def startup(self, app: web.Application):
-        if not self._volatile:
+        if not self._isolated:
             await mqtt.listen(app, self._global_topic, self._on_event)
             await mqtt.subscribe(app, self._global_topic)
 
@@ -46,11 +48,12 @@ class GlobalConfigStore(features.ServiceFeature):
         self.listeners.clear()
 
     async def shutdown(self, app: web.Application):
-        if not self._volatile:
+        if not self._isolated:
             await mqtt.unlisten(app, self._global_topic, self._on_event)
             await mqtt.unsubscribe(app, self._global_topic)
 
-    async def _on_event(self, topic: str, obj: dict):
+    async def _on_event(self, topic: str, payload: str):
+        obj = json.loads(payload)
         if self.update(obj.get('changed', [])):
             for cb in set(self.listeners):
                 await cb()
@@ -73,7 +76,7 @@ class GlobalConfigStore(features.ServiceFeature):
         return changed
 
     async def read(self):
-        if self._volatile:
+        if self._isolated:
             return
 
         try:

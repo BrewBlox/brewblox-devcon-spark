@@ -9,16 +9,22 @@ from typing import Optional
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, strex
 
-from brewblox_devcon_spark import codec, connection, exceptions
+from brewblox_devcon_spark import codec, connection, exceptions, service_status
 from brewblox_devcon_spark.codec.opts import DecodeOpts
-from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
-                                          ErrorCode, FirmwareBlock,
-                                          FirmwareBlockIdentity,
+from brewblox_devcon_spark.models import (ControllerDescription,
+                                          DecodedPayload, DeviceDescription,
+                                          EncodedPayload, ErrorCode,
+                                          FirmwareBlock, FirmwareBlockIdentity,
+                                          FirmwareDescription,
+                                          HandshakeMessage,
                                           IntermediateRequest,
                                           IntermediateResponse, MaskMode,
                                           Opcode, ServiceConfig)
 
 LOGGER = brewblox_logger(__name__)
+
+
+WELCOME_PREFIX = '!BREWBLOX'
 
 
 class SparkCommander(features.ServiceFeature):
@@ -45,10 +51,8 @@ class SparkCommander(features.ServiceFeature):
 
     async def startup(self, app: web.Application):
         self._active_messages.clear()
-        self._conn.data_callbacks.add(self._data_callback)
-
-    async def shutdown(self, app: web.Application):
-        self._conn.data_callbacks.discard(self._data_callback)
+        self._conn.on_event = self._on_event
+        self._conn.on_response = self._on_response
 
     def _next_id(self):
         self._msgid = (self._msgid + 1) % 0xFFFF
@@ -81,8 +85,33 @@ class SparkCommander(features.ServiceFeature):
             data=payload.content or {},
         )
 
-    async def _data_callback(self, msg: str):
+    async def _on_event(self, msg: str):
+        if msg.startswith(WELCOME_PREFIX):
+            handshake = HandshakeMessage(*msg.removeprefix('!').split(','))
+            LOGGER.info(handshake)
+
+            desc = ControllerDescription(
+                system_version=handshake.system_version,
+                platform=handshake.platform,
+                reset_reason=handshake.reset_reason,
+                firmware=FirmwareDescription(
+                    firmware_version=handshake.firmware_version,
+                    proto_version=handshake.proto_version,
+                    firmware_date=handshake.firmware_date,
+                    proto_date=handshake.proto_date,
+                ),
+                device=DeviceDescription(
+                    device_id=handshake.device_id,
+                ),
+            )
+            service_status.set_acknowledged(self.app, desc)
+
+        else:
+            LOGGER.info(f'Spark log: `{msg}`')
+
+    async def _on_response(self, msg: str):
         try:
+            # LOGGER.debug(f'response: {msg}')
             response = self._codec.decode_response(msg)
 
             # Get the Future object awaiting this request
@@ -107,12 +136,13 @@ class SparkCommander(features.ServiceFeature):
             payload=payload
         )
 
-        request_msg = self._codec.encode_request(request)
+        msg = self._codec.encode_request(request)
         fut: asyncio.Future[IntermediateResponse] = asyncio.get_running_loop().create_future()
         self._active_messages[msg_id] = fut
 
         try:
-            await self._conn.write(request_msg)
+            # LOGGER.debug(f'request: {msg}')
+            await self._conn.send_request(msg)
             response = await asyncio.wait_for(fut, timeout=self._timeout)
 
             if response.error != ErrorCode.OK:
