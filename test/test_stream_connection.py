@@ -5,6 +5,7 @@ Tests brewblox_devcon_spark.connection.stream_connection.py
 import asyncio
 
 import pytest
+from brewblox_service.testing import find_free_port
 
 from brewblox_devcon_spark.connection import stream_connection
 from brewblox_devcon_spark.mdns import ConnectInfo
@@ -30,7 +31,7 @@ class DummyCallbacks(stream_connection.ConnectionCallbacks):
 
 
 @pytest.fixture
-def test_port(find_free_port):
+def test_port():
     return find_free_port()
 
 
@@ -56,7 +57,7 @@ async def echo_server(test_port):
 
 async def test_tcp_connection(app, client, echo_server, test_port):
     callbacks = DummyCallbacks()
-    impl = await stream_connection.connect_tcp('localhost', test_port, callbacks)
+    impl = await stream_connection.connect_tcp(app, callbacks, 'localhost', test_port)
 
     await impl.send_request('hello')
     await callbacks.response_ev.wait()
@@ -76,7 +77,7 @@ async def test_tcp_connection(app, client, echo_server, test_port):
 
 async def test_tcp_connection_close(app, client, echo_server, test_port):
     callbacks = DummyCallbacks()
-    impl = await stream_connection.connect_tcp('localhost', test_port, callbacks)
+    impl = await stream_connection.connect_tcp(app, callbacks, 'localhost', test_port)
     await impl.close()
     await asyncio.wait_for(impl.disconnected.wait(), timeout=5)
     await impl.close()  # Can safely be called again
@@ -84,7 +85,7 @@ async def test_tcp_connection_close(app, client, echo_server, test_port):
 
 async def test_tcp_connection_error(app, client, echo_server, test_port):
     callbacks = DummyCallbacks()
-    impl = await stream_connection.connect_tcp('localhost', test_port, callbacks)
+    impl = await stream_connection.connect_tcp(app, callbacks, 'localhost', test_port)
     await impl.send_request('error')
     await asyncio.wait_for(impl.disconnected.wait(), timeout=5)
 

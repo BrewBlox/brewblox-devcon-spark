@@ -14,26 +14,6 @@ from brewblox_devcon_spark.models import ServiceConfig
 LOGGER = brewblox_logger(__name__)
 
 
-def pytest_addoption(parser):
-    parser.addoption(
-        '--integration', action='store_true', default=False, help='run integration tests'
-    )
-
-
-def pytest_configure(config):
-    config.addinivalue_line('markers', 'integration: mark test as (slow) integration test')
-
-
-def pytest_collection_modifyitems(config, items):
-    if config.getoption('--integration'):
-        # --integration given in cli: do not skip tests
-        return
-    skip_integration = pytest.mark.skip(reason='need --integration option to run')
-    for item in items:
-        if 'integration' in item.keywords:
-            item.add_marker(skip_integration)
-
-
 @pytest.fixture(scope='session', autouse=True)
 def log_enabled():
     """Sets log level to DEBUG for all test functions.
@@ -60,6 +40,7 @@ def app_config() -> ServiceConfig:
         # From brewblox_devcon_spark
         'device_serial': '/dev/TESTEH',
         'device_id': '1234',
+        'display_ws_port': 7377,
         'discovery': 'all',
         'simulation': False,
         'mock': True,

@@ -15,7 +15,7 @@ reportMissingImports = "information"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4"
-brewblox-service = "^2.0.1"
+brewblox-service = "^2.1.0"
 pyserial-asyncio = "^0.6"
 protobuf = "^3.19.1"
 aiofiles = "^0.8.0"

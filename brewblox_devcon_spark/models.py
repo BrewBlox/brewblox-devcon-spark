@@ -53,6 +53,7 @@ class ServiceConfig(TypedDict):
     device_serial: Optional[str]
     device_id: Optional[str]
     discovery: DiscoveryType_
+    display_ws_port: int
 
     # Network options
     command_timeout: float

@@ -18,6 +18,7 @@ from brewblox_service import brewblox_logger, strex
 from serial.tools import list_ports
 
 from brewblox_devcon_spark import exceptions, mdns
+from brewblox_devcon_spark.models import ServiceConfig
 
 from .cbox_parser import ControlboxParser
 from .connection_impl import (ConnectionCallbacks, ConnectionImpl,
@@ -27,8 +28,6 @@ LOGGER = brewblox_logger(__name__)
 
 DISCOVERY_DNS_TIMEOUT_S = 20
 BREWBLOX_DNS_TYPE = '_brewblox._tcp.local.'
-SUBPROCESS_HOST = 'localhost'
-SUBPROCESS_PORT = 8332
 SUBPROCESS_CONNECT_INTERVAL_S = 0.2
 SUBPROCESS_CONNECT_TIMEOUT_S = 10
 USB_BAUD_RATE = 115200
@@ -104,26 +103,27 @@ class SubprocessConnection(StreamConnection):  # pragma: no cover
     async def close(self):
         with suppress(Exception):
             await super().close()
+        with suppress(Exception):
             self._proc.terminate()
-            LOGGER.info(f'{self} terminated subprocess')
 
 
-async def connect_tcp(host: str,
-                      port: int,
+async def connect_tcp(app: web.Application,
                       callbacks: ConnectionCallbacks,
+                      host: str,
+                      port: int,
                       ) -> ConnectionImpl:
     factory = partial(StreamConnection, 'TCP', f'{host}:{port}', callbacks)
     _, protocol = await asyncio.get_event_loop().create_connection(factory, host, port)
     return protocol
 
 
-async def connect_subprocess(proc: Process,
+async def connect_subprocess(app: web.Application,
+                             callbacks: ConnectionCallbacks,
+                             port: int,
+                             proc: Process,
                              kind: ConnectionKind_,
                              address: str,
-                             callbacks: ConnectionCallbacks,
                              ) -> ConnectionImpl:  # pragma: no cover
-    host = SUBPROCESS_HOST
-    port = SUBPROCESS_PORT
     factory = partial(SubprocessConnection, kind, address, callbacks, proc)
     message = None
 
@@ -136,7 +136,7 @@ async def connect_subprocess(proc: Process,
                     raise ChildProcessError(f'Subprocess exited with return code {proc.returncode}')
 
                 try:
-                    _, protocol = await asyncio.get_event_loop().create_connection(factory, host, port)
+                    _, protocol = await asyncio.get_event_loop().create_connection(factory, 'localhost', port)
                     return protocol
 
                 except OSError as ex:
@@ -150,9 +150,13 @@ async def connect_subprocess(proc: Process,
         raise ConnectionError(message)
 
 
-async def connect_simulation(device_id: str,
+async def connect_simulation(app: web.Application,
                              callbacks: ConnectionCallbacks,
                              ) -> ConnectionImpl:  # pragma: no cover
+    config: ServiceConfig = app['config']
+    device_id = config['device_id']
+    port = config['device_port']
+    display_ws_port = config['display_ws_port']
     arch = platform.machine()
     binary = SIM_BINARIES.get(arch)
 
@@ -166,17 +170,25 @@ async def connect_simulation(device_id: str,
 
     proc = await asyncio.create_subprocess_exec(binary_path,
                                                 '--device_id', device_id,
+                                                '--port', str(port),
+                                                '--display_ws_port', str(display_ws_port),
                                                 cwd=workdir)
-    return await connect_subprocess(proc, 'SIM', binary, callbacks)
+    return await connect_subprocess(app, callbacks, port, proc, 'SIM', binary)
 
 
-async def connect_serial(device_serial: str,
-                         callbacks: ConnectionCallbacks) -> ConnectionImpl:  # pragma: no cover
+async def connect_serial(app: web.Application,
+                         callbacks: ConnectionCallbacks,
+                         device_serial: Optional[str] = None,
+                         port: Optional[int] = None,
+                         ) -> ConnectionImpl:  # pragma: no cover
+    config: ServiceConfig = app['config']
+    device_serial = device_serial or config['device_serial']
+    port = port or config['device_port']
     proc = await asyncio.create_subprocess_exec('/usr/bin/socat',
-                                                f'tcp-listen:{SUBPROCESS_PORT},reuseaddr,fork',
+                                                f'tcp-listen:{port},reuseaddr,fork',
                                                 f'file:{device_serial},raw,echo=0,b{USB_BAUD_RATE}')
 
-    return await connect_subprocess(proc, 'USB', device_serial, callbacks)
+    return await connect_subprocess(app, callbacks, port, proc, 'USB', device_serial)
 
 
 async def discover_tcp(app: web.Application,
@@ -187,7 +199,7 @@ async def discover_tcp(app: web.Application,
         resp = await mdns.discover_one(device_id,
                                        BREWBLOX_DNS_TYPE,
                                        DISCOVERY_DNS_TIMEOUT_S)
-        return await connect_tcp(resp.address, resp.port, callbacks)
+        return await connect_tcp(app, callbacks, resp.address, resp.port)
     except asyncio.TimeoutError:
         return None
 
@@ -195,11 +207,12 @@ async def discover_tcp(app: web.Application,
 async def discover_serial(app: web.Application,
                           callbacks: ConnectionCallbacks,
                           ) -> Optional[ConnectionImpl]:  # pragma: no cover
-    device_id = app['config']['device_id']
-    for port in list_ports.grep(SPARK_DEVICE_REGEX):
-        if device_id is None or device_id.lower() == port.serial_number.lower():
-            LOGGER.info(f'Discovered {[v for v in port]}')
-            return await connect_serial(port.device, callbacks)
+    config: ServiceConfig = app['config']
+    device_id = config['device_id']
+    for usb_port in list_ports.grep(SPARK_DEVICE_REGEX):
+        if device_id is None or device_id.lower() == usb_port.serial_number.lower():
+            LOGGER.info(f'Discovered {[v for v in usb_port]}')
+            return await connect_serial(app, callbacks, usb_port.device)
         else:
-            LOGGER.info(f'Discarding {[v for v in port]}')
+            LOGGER.info(f'Discarding {[v for v in usb_port]}')
     return None

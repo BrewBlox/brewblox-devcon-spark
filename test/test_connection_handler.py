@@ -174,7 +174,7 @@ async def test_handler_connect_order(app, client, mocker):
 
     await handler.connect()
 
-    m_funcs['connect_tcp'].assert_awaited_once_with('hostface', 1234, handler)
+    m_funcs['connect_tcp'].assert_awaited_once_with(app, handler, 'hostface', 1234)
     for f in without('connect_tcp'):
         f.assert_not_awaited()
 
@@ -185,7 +185,7 @@ async def test_handler_connect_order(app, client, mocker):
 
     await handler.connect()
 
-    m_funcs['connect_serial'].assert_awaited_once_with('serialface', handler)
+    m_funcs['connect_serial'].assert_awaited_once_with(app, handler, 'serialface')
     for f in without('connect_serial'):
         f.assert_not_awaited()
 
@@ -196,7 +196,7 @@ async def test_handler_connect_order(app, client, mocker):
 
     await handler.connect()
 
-    m_funcs['connect_simulation'].assert_awaited_once_with('01ab23ce', handler)
+    m_funcs['connect_simulation'].assert_awaited_once_with(app, handler)
     for f in without('connect_simulation'):
         f.assert_not_awaited()
 

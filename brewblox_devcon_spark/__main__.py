@@ -57,6 +57,10 @@ def create_parser(default_name='spark'):
                        '--device-id specifies which discovered device is valid. ',
                        choices=['all', 'usb', 'wifi', 'lan', 'mqtt'],
                        default='all')
+    group.add_argument('--display-ws-port',
+                       help='Websocket port for the Spark simulation virtual display stream. [$(default)s]',
+                       type=int,
+                       default=7377)
 
     # Service network options
     group = parser.add_argument_group('Service communication')

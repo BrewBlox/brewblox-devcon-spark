@@ -67,7 +67,8 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict[str, int, dict]):
                 })
                 self.key = key
                 content = await resp.json()
-                data = content.get('value', {}).get('data', [])
+                content_value = content.get('value') or {}
+                data = content_value.get('data') or []
                 LOGGER.info(f'{self} Read {len(data)} blocks')
 
         except asyncio.CancelledError:  # pragma: no cover

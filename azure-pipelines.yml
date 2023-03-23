@@ -56,7 +56,7 @@ steps:
     displayName: Install test dependencies
 
   - bash: |
-      poetry run pytest --integration
+      poetry run pytest
       poetry run flake8
     displayName: Test
 

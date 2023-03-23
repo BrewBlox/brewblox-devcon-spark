@@ -101,9 +101,7 @@ class MqttDeviceTracker(features.ServiceFeature):
             await mqtt.unsubscribe(app, self._handshake_topic)
             await mqtt.unlisten(app, self._handshake_topic, self._handshake_cb)
 
-    async def discover(self, callbacks: ConnectionCallbacks) -> Optional[ConnectionImpl]:
-        device_id = self.app['config']['device_id']
-
+    async def discover(self, callbacks: ConnectionCallbacks, device_id: str) -> Optional[ConnectionImpl]:
         if self._isolated or not device_id:
             return None
 
@@ -129,4 +127,5 @@ def fget(app: web.Application) -> MqttDeviceTracker:
 async def discover_mqtt(app: web.Application,
                         callbacks: ConnectionCallbacks,
                         ) -> Optional[MqttConnection]:
-    return await fget(app).discover(callbacks)
+    device_id = app['config']['device_id']
+    return await fget(app).discover(callbacks, device_id)

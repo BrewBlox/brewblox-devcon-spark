@@ -95,7 +95,6 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
 
         mock = config['mock']
         simulation = config['simulation']
-        device_id = config['device_id']
         device_serial = config['device_serial']
         device_host = config['device_host']
         device_port = config['device_port']
@@ -103,11 +102,11 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
         if mock:
             return await connect_mock(self.app, self)
         elif simulation:
-            return await connect_simulation(device_id, self)
+            return await connect_simulation(self.app, self)
         elif device_serial:
-            return await connect_serial(device_serial, self)
+            return await connect_serial(self.app, self, device_serial)
         elif device_host:
-            return await connect_tcp(device_host, device_port, self)
+            return await connect_tcp(self.app, self, device_host, device_port)
         else:
             return await self.discover()
 
