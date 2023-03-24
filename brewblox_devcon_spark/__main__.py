@@ -50,7 +50,8 @@ def create_parser(default_name='spark'):
                        help='Spark device serial port. Takes precedence over URL connections. '
                        'Will only connect if device ID matches advertised ID, or is not set. [%(default)s]')
     group.add_argument('--device-id',
-                       help='Spark serial number. Any spark is valid if not set. [%(default)s]')
+                       help='Spark serial number. Any spark is valid if not set. [%(default)s]',
+                       type=str.lower)
     group.add_argument('--discovery',
                        help='Enabled types of device discovery. '
                        '--device-serial and --device-host disable discovery. '
