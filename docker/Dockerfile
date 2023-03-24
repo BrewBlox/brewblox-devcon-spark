@@ -20,7 +20,6 @@ RUN set -ex \
     && rm /app/firmware/*.elf
 
 FROM python:3.9-slim
-LABEL org.opencontainers.image.source="https://github.com/BrewBlox/brewblox-devcon-spark"
 EXPOSE 5000
 WORKDIR /app
 
