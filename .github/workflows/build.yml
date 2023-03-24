@@ -57,10 +57,7 @@ jobs:
         id: service_meta
         uses: docker/metadata-action@v4
         with:
-          images: |
-            ghcr.io/brewblox/brewblox-devcon-spark
-          tags: |
-            type=ref,event=push
+          images: ghcr.io/brewblox/brewblox-devcon-spark
 
       - name: (Service) Build Docker image
         uses: docker/build-push-action@v4
@@ -79,10 +76,7 @@ jobs:
         id: flasher_meta
         uses: docker/metadata-action@v4
         with:
-          images: |
-            ghcr.io/brewblox/brewblox-firmware-flasher
-          tags: |
-            type=ref,event=push
+          images: ghcr.io/brewblox/brewblox-firmware-flasher
 
       - name: (Flasher) Build Docker image
         uses: docker/build-push-action@v4
