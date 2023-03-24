@@ -19,6 +19,10 @@ variables:
   # DOCKER_USER
   # DOCKER_PASSWORD
   - group: brewblox
+  - name: DOCKER_REPO
+    value: brewblox/brewblox-devcon-spark
+  - name: FLASHER_REPO
+    value: brewblox/firmware-flasher
 
 steps:
   - task: UsePythonVersion@0
@@ -26,12 +30,6 @@ steps:
       addToPath: true
       versionSpec: "3.9"
       architecture: "x64"
-
-  - bash: |
-      set -o allexport; source .env; set +o allexport
-      echo "##vso[task.setvariable variable=DOCKER_REPO]$DOCKER_REPO"
-      echo "##vso[task.setvariable variable=FLASHER_REPO]$FLASHER_REPO"
-    displayName: Export .env variables
 
   - bash: |
       BRANCH=$(echo $(Build.SourceBranch) | grep -oP "^refs/heads/\K.*")
@@ -82,7 +80,6 @@ steps:
   - bash: >-
       docker buildx build
       --tag $(DOCKER_REPO):$(TAG)
-      --tag $(DOCKER_REPO):rpi-$(TAG)
       --build-arg service_info="$(git describe) @ $(date)"
       --push
       --platform linux/amd64,linux/arm/v7,linux/arm64/v8
@@ -100,7 +97,6 @@ steps:
   - bash: >-
       docker buildx build
       --tag $(FLASHER_REPO):$(TAG)
-      --tag $(FLASHER_REPO):rpi-$(TAG)
       --push
       --platform linux/amd64,linux/arm/v7,linux/arm64/v8
       flasher
