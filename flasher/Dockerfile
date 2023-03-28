@@ -1,4 +1,4 @@
-FROM brewblox/firmware-particle:latest
+FROM ghcr.io/brewblox/firmware-particle:latest
 
 WORKDIR /app
 

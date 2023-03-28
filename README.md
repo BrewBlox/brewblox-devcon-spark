@@ -1,6 +1,6 @@
 # Spark Service
 
-[![Build Status](https://dev.azure.com/brewblox/brewblox/_apis/build/status/BrewBlox.brewblox-devcon-spark?branchName=develop)](https://dev.azure.com/brewblox/brewblox/_build/latest?definitionId=1&branchName=develop)
+[![CI build](https://github.com/BrewBlox/brewblox-devcon-spark/actions/workflows/build.yml/badge.svg)](https://github.com/BrewBlox/brewblox-devcon-spark/actions/workflows/build.yml)
 
 **For user documentation, see <https://www.brewblox.com>**
 
