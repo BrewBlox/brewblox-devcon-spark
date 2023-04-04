@@ -200,7 +200,7 @@ class SparkController(features.ServiceFeature):
         to avoid weird interactions when prompting for a handshake.
         """
         async with self._conn_check_lock:
-            if await service_status.wait_synchronized(self.app, wait=False):
+            if service_status.is_synchronized(self.app):
                 LOGGER.info('Checking connection...')
                 try:
                     await self._cmder.noop()
@@ -217,7 +217,7 @@ class SparkController(features.ServiceFeature):
             desc (str):
                 Human-readable function description, to be used in error messages.
         """
-        if await service_status.wait_updating(self.app, wait=False):
+        if service_status.is_updating(self.app):
             raise exceptions.UpdateInProgress('Update is in progress')
 
         await asyncio.wait_for(

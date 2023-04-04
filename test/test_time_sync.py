@@ -7,10 +7,9 @@ import asyncio
 import pytest
 from brewblox_service import repeater, scheduler
 
-from brewblox_devcon_spark import (block_store, codec, commander,
-                                   connection_sim, controller, global_store,
-                                   service_status, service_store,
-                                   synchronization, time_sync)
+from brewblox_devcon_spark import (block_store, codec, commander, connection,
+                                   controller, global_store, service_status,
+                                   service_store, synchronization, time_sync)
 
 TESTED = time_sync.__name__
 
@@ -35,7 +34,7 @@ def app(app):
     block_store.setup(app)
     global_store.setup(app)
     service_store.setup(app)
-    connection_sim.setup(app)
+    connection.setup(app)
     commander.setup(app)
     synchronization.setup(app)
     controller.setup(app)

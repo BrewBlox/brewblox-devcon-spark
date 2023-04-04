@@ -8,7 +8,7 @@ from aiohttp_pydantic.oas.typing import r200
 from brewblox_service import brewblox_logger
 from pydantic import BaseModel
 
-from brewblox_devcon_spark import synchronization
+from brewblox_devcon_spark import service_status, service_store
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -30,10 +30,8 @@ class AutoconnectingView(PydanticView):
 
         Tags: Settings
         """
-        syncher = synchronization.fget(self.request.app)
-        settings = AutoconnectSettings(
-            enabled=syncher.get_autoconnecting()
-        )
+        enabled = service_store.get_autoconnecting(self.request.app)
+        settings = AutoconnectSettings(enabled=enabled)
         return web.json_response(
             settings.dict()
         )
@@ -44,10 +42,10 @@ class AutoconnectingView(PydanticView):
 
         Tags: Settings
         """
-        syncher = synchronization.fget(self.request.app)
-        settings = AutoconnectSettings(
-            enabled=await syncher.set_autoconnecting(args.enabled)
-        )
+        enabled = service_store.set_autoconnecting(self.request.app,
+                                                   args.enabled)
+        service_status.set_enabled(self.request.app, enabled)
+        settings = AutoconnectSettings(enabled=enabled)
         return web.json_response(
             settings.dict()
         )

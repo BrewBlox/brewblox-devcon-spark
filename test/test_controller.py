@@ -7,10 +7,11 @@ import asyncio
 import pytest
 from brewblox_service import scheduler
 
-from brewblox_devcon_spark import (block_store, codec, commander,
-                                   connection_sim, const, controller,
-                                   exceptions, global_store, service_status,
-                                   service_store, synchronization)
+from brewblox_devcon_spark import (block_store, codec, commander, connection,
+                                   const, controller, exceptions, global_store,
+                                   service_status, service_store,
+                                   synchronization)
+from brewblox_devcon_spark.connection import mock_connection
 from brewblox_devcon_spark.models import (Block, BlockIdentity, ErrorCode,
                                           FirmwareBlock)
 
@@ -22,7 +23,7 @@ def app(app):
     service_status.setup(app)
     scheduler.setup(app)
     codec.setup(app)
-    connection_sim.setup(app)
+    connection.setup(app)
     commander.setup(app)
     block_store.setup(app)
     global_store.setup(app)
@@ -176,7 +177,7 @@ async def test_resolve_data_ids(app, client, store):
 
 
 async def test_check_connection(app, client, mocker):
-    sim = connection_sim.fget(app)
+    sim = connection.fget(app)
     ctrl = controller.fget(app)
     cmder = commander.fget(app)
 
@@ -190,14 +191,14 @@ async def test_check_connection(app, client, mocker):
 
     cmder._timeout = 0.1
     with pytest.raises(exceptions.CommandTimeout):
-        sim.next_error.append(None)
+        mock_connection.NEXT_ERROR = [None]
         await ctrl.noop()
 
     await asyncio.sleep(0.01)
     assert s_noop.await_count == 4
 
     with pytest.raises(exceptions.CommandTimeout):
-        sim.next_error += [None, ErrorCode.INSUFFICIENT_HEAP]
+        mock_connection.NEXT_ERROR = [None, ErrorCode.INSUFFICIENT_HEAP]
         await ctrl.noop()
 
     await asyncio.sleep(0.01)
