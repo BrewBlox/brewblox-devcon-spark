@@ -1,8 +1,8 @@
+# Spark Service
+
 [![Build Status](https://dev.azure.com/brewblox/brewblox/_apis/build/status/BrewBlox.brewblox-devcon-spark?branchName=develop)](https://dev.azure.com/brewblox/brewblox/_build/latest?definitionId=1&branchName=develop)
 
-For user documentation, see https://www.brewblox.com
-
-# Spark Service
+**For user documentation, see <https://www.brewblox.com>**
 
 The Spark service handles connectivity for the BrewPi Spark controller.
 
@@ -10,11 +10,11 @@ This includes USB/TCP communication with the controller, but also encoding, deco
 
 ## Installation
 
-To set up the development environment, follow the instructions at https://github.com/BrewBlox/brewblox-boilerplate#readme.
+To set up the development environment, follow the instructions at <https://github.com/BrewBlox/brewblox-boilerplate#readme>.
 
 When running integration tests (`pytest --integration`), additional system packages are required in order to run the firmware simulator:
 
-```
+```sh
 sudo apt install -y \
     socat \
     libboost-system1.67.0 \
@@ -25,7 +25,7 @@ sudo apt install -y \
 
 When updating firmware, the protobuf compiler is required:
 
-```
+```sh
 sudo apt install -y \
     protobuf-compiler
 ```
@@ -45,7 +45,7 @@ Firmware dependency management is handled by scripts in *dev/*:
 **[update-firmware.sh](./dev/update-firmware.sh)** fetches the latest firmware.ini file for a given firmware build (*develop* by default), checks out the associated brewblox-proto commit for the submodule, and calls both `compile-proto.sh` and `download-firmware.sh`.
 
 **[compile-proto.sh](./dev/compile-proto.sh)** compiles .proto files found in the proto submodule into _pb2.py python files.
-The _pb2.py files are committed into version control.
+The_pb2.py files are committed into version control.
 
 **[download-firmware.sh](./dev/download-firmware.sh)** reads the version information in firmware.ini,
 and downloads the associated binary files into `firmware/`.
@@ -53,6 +53,7 @@ The binary files are **not** committed into version control.
 Instead, they are re-downloaded during the CI build.
 
 **To update the service when making changes to firmware:**
+
 - Commit the firmware changes to the *develop* branch in the [Brewblox firmware](https://github.com/BrewBlox/brewblox-firmware) repository.
 - Wait until the firmware CI build is done.
 - Run `bash dev/update-firmware.sh`

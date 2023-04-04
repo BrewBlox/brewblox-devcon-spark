@@ -21,42 +21,42 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x11\x43onstraints.proto\x12\x10\x62lox.Constraints\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"d\n\x08\x42\x61lanced\x12\x1f\n\nbalancerId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x07\x92?\x02\x38\x10\x12\x1e\n\x07granted\x18\x02 \x01(\rB\r\x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02(\x01\x12\x17\n\x02id\x18Z \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03\"\x93\x01\n\x07Mutexed\x12\x1c\n\x07mutexId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x08\x92?\x02\x38\x10\x12)\n\rextraHoldTime\x18\x02 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 \x12\x17\n\x07hasLock\x18\x04 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12&\n\x11hasCustomHoldTime\x18Z \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03\"\xa4\x01\n\x10\x41nalogConstraint\x12\x1b\n\x03min\x18\x01 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 H\x00\x12\x1b\n\x03max\x18\x02 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 H\x00\x12.\n\x08\x62\x61lanced\x18\x03 \x01(\x0b\x32\x1a.blox.Constraints.BalancedH\x00\x12\x18\n\x08limiting\x18\x64 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x42\x0c\n\nconstraint\"S\n\x11\x41nalogConstraints\x12>\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32\".blox.Constraints.AnalogConstraintB\x05\x92?\x02\x10\x08\"\xd7\x02\n\x11\x44igitalConstraint\x12$\n\x06minOff\x18\x01 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12#\n\x05minOn\x18\x02 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12,\n\x07mutexed\x18\x04 \x01(\x0b\x32\x19.blox.Constraints.MutexedH\x00\x12(\n\ndelayedOff\x18\x05 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12\'\n\tdelayedOn\x18\x06 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12\x1c\n\x05mutex\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x08\x92?\x02\x38\x10H\x00\x12\x1d\n\x08limiting\x18\x64 \x01(\rB\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03\x12+\n\tremaining\x18\x65 \x01(\rB\x18\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x8a\xb5\x18\x02(\x01\x92?\x02\x38 B\x0c\n\nconstraint\"U\n\x12\x44igitalConstraints\x12?\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32#.blox.Constraints.DigitalConstraintB\x05\x92?\x02\x10\x08\x62\x06proto3'
+  serialized_pb=b'\n\x11\x43onstraints.proto\x12\x10\x62lox.Constraints\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"Y\n\x0fValueConstraint\x12\x1b\n\x05value\x18\x01 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x0f\n\x07\x65nabled\x18\x32 \x01(\x08\x12\x18\n\x08limiting\x18\x33 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\"\x99\x01\n\x12\x42\x61lancedConstraint\x12\x1f\n\nbalancerId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x07\x92?\x02\x38\x10\x12\x1e\n\x07granted\x18\x02 \x01(\rB\r\x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02(\x01\x12\x0f\n\x07\x65nabled\x18\x32 \x01(\x08\x12\x18\n\x08limiting\x18\x33 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12\x17\n\x02id\x18Z \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03\"\x92\x01\n\x12\x44urationConstraint\x12$\n\x08\x64uration\x18\x01 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 \x12\x0f\n\x07\x65nabled\x18\x32 \x01(\x08\x12\x18\n\x08limiting\x18\x33 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12+\n\tremaining\x18\x34 \x01(\rB\x18\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x8a\xb5\x18\x02(\x01\x92?\x02\x38 \"\xf5\x01\n\x11MutexedConstraint\x12\x1c\n\x07mutexId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x08\x92?\x02\x38\x10\x12)\n\rextraHoldTime\x18\x02 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 \x12\x17\n\x07hasLock\x18\x04 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12\x0f\n\x07\x65nabled\x18\x32 \x01(\x08\x12\x18\n\x08limiting\x18\x33 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12+\n\tremaining\x18\x34 \x01(\rB\x18\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x8a\xb5\x18\x02(\x01\x92?\x02\x38 \x12&\n\x11hasCustomHoldTime\x18Z \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03\"\xab\x01\n\x11\x41nalogConstraints\x12.\n\x03min\x18\x01 \x01(\x0b\x32!.blox.Constraints.ValueConstraint\x12.\n\x03max\x18\x02 \x01(\x0b\x32!.blox.Constraints.ValueConstraint\x12\x36\n\x08\x62\x61lanced\x18\x03 \x01(\x0b\x32$.blox.Constraints.BalancedConstraint\"\xa8\x02\n\x12\x44igitalConstraints\x12\x34\n\x06minOff\x18\x01 \x01(\x0b\x32$.blox.Constraints.DurationConstraint\x12\x33\n\x05minOn\x18\x02 \x01(\x0b\x32$.blox.Constraints.DurationConstraint\x12\x38\n\ndelayedOff\x18\x03 \x01(\x0b\x32$.blox.Constraints.DurationConstraint\x12\x37\n\tdelayedOn\x18\x04 \x01(\x0b\x32$.blox.Constraints.DurationConstraint\x12\x34\n\x07mutexed\x18\x05 \x01(\x0b\x32#.blox.Constraints.MutexedConstraint\"\xb8\x01\n\x1a\x44\x65precatedAnalogConstraint\x12\x1b\n\x03min\x18\x01 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 H\x00\x12\x1b\n\x03max\x18\x02 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 H\x00\x12\x38\n\x08\x62\x61lanced\x18\x03 \x01(\x0b\x32$.blox.Constraints.BalancedConstraintH\x00\x12\x18\n\x08limiting\x18\x64 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x42\x0c\n\nconstraint\"g\n\x1b\x44\x65precatedAnalogConstraints\x12H\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32,.blox.Constraints.DeprecatedAnalogConstraintB\x05\x92?\x02\x10\x08\"\xeb\x02\n\x1b\x44\x65precatedDigitalConstraint\x12$\n\x06minOff\x18\x01 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12#\n\x05minOn\x18\x02 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12\x36\n\x07mutexed\x18\x04 \x01(\x0b\x32#.blox.Constraints.MutexedConstraintH\x00\x12(\n\ndelayedOff\x18\x05 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12\'\n\tdelayedOn\x18\x06 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12\x1c\n\x05mutex\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x08\x92?\x02\x38\x10H\x00\x12\x1d\n\x08limiting\x18\x64 \x01(\rB\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03\x12+\n\tremaining\x18\x65 \x01(\rB\x18\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x8a\xb5\x18\x02(\x01\x92?\x02\x38 B\x0c\n\nconstraint\"i\n\x1c\x44\x65precatedDigitalConstraints\x12I\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32-.blox.Constraints.DeprecatedDigitalConstraintB\x05\x92?\x02\x10\x08\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
 
 
 
-_BALANCED = _descriptor.Descriptor(
-  name='Balanced',
-  full_name='blox.Constraints.Balanced',
+_VALUECONSTRAINT = _descriptor.Descriptor(
+  name='ValueConstraint',
+  full_name='blox.Constraints.ValueConstraint',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='balancerId', full_name='blox.Constraints.Balanced.balancerId', index=0,
-      number=1, type=13, cpp_type=3, label=1,
+      name='value', full_name='blox.Constraints.ValueConstraint.value', index=0,
+      number=1, type=17, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=b'\212\265\030\002\030\007\222?\0028\020', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+      serialized_options=b'\212\265\030\003\020\200 \222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='granted', full_name='blox.Constraints.Balanced.granted', index=1,
-      number=2, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=b'\212\265\030\003\020\200 \212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='id', full_name='blox.Constraints.Balanced.id', index=2,
-      number=90, type=8, cpp_type=7, label=1,
+      name='enabled', full_name='blox.Constraints.ValueConstraint.enabled', index=1,
+      number=50, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=b'\212\265\030\002H\001\222?\002\030\003', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='limiting', full_name='blox.Constraints.ValueConstraint.limiting', index=2,
+      number=51, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -70,41 +70,48 @@ _BALANCED = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=69,
-  serialized_end=169,
+  serialized_end=158,
 )
 
 
-_MUTEXED = _descriptor.Descriptor(
-  name='Mutexed',
-  full_name='blox.Constraints.Mutexed',
+_BALANCEDCONSTRAINT = _descriptor.Descriptor(
+  name='BalancedConstraint',
+  full_name='blox.Constraints.BalancedConstraint',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='mutexId', full_name='blox.Constraints.Mutexed.mutexId', index=0,
+      name='balancerId', full_name='blox.Constraints.BalancedConstraint.balancerId', index=0,
       number=1, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=b'\212\265\030\002\030\010\222?\0028\020', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+      serialized_options=b'\212\265\030\002\030\007\222?\0028\020', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='extraHoldTime', full_name='blox.Constraints.Mutexed.extraHoldTime', index=1,
+      name='granted', full_name='blox.Constraints.BalancedConstraint.granted', index=1,
       number=2, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=b'\212\265\030\002\010\003\212\265\030\003\020\350\007\222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+      serialized_options=b'\212\265\030\003\020\200 \212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='hasLock', full_name='blox.Constraints.Mutexed.hasLock', index=2,
-      number=4, type=8, cpp_type=7, label=1,
+      name='enabled', full_name='blox.Constraints.BalancedConstraint.enabled', index=2,
+      number=50, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='limiting', full_name='blox.Constraints.BalancedConstraint.limiting', index=3,
+      number=51, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='hasCustomHoldTime', full_name='blox.Constraints.Mutexed.hasCustomHoldTime', index=3,
+      name='id', full_name='blox.Constraints.BalancedConstraint.id', index=4,
       number=90, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -122,42 +129,275 @@ _MUTEXED = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=172,
-  serialized_end=319,
+  serialized_start=161,
+  serialized_end=314,
 )
 
 
-_ANALOGCONSTRAINT = _descriptor.Descriptor(
-  name='AnalogConstraint',
-  full_name='blox.Constraints.AnalogConstraint',
+_DURATIONCONSTRAINT = _descriptor.Descriptor(
+  name='DurationConstraint',
+  full_name='blox.Constraints.DurationConstraint',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='min', full_name='blox.Constraints.AnalogConstraint.min', index=0,
-      number=1, type=17, cpp_type=1, label=1,
+      name='duration', full_name='blox.Constraints.DurationConstraint.duration', index=0,
+      number=1, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=b'\212\265\030\003\020\200 \222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+      serialized_options=b'\212\265\030\002\010\003\212\265\030\003\020\350\007\222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='max', full_name='blox.Constraints.AnalogConstraint.max', index=1,
-      number=2, type=17, cpp_type=1, label=1,
+      name='enabled', full_name='blox.Constraints.DurationConstraint.enabled', index=1,
+      number=50, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='limiting', full_name='blox.Constraints.DurationConstraint.limiting', index=2,
+      number=51, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='remaining', full_name='blox.Constraints.DurationConstraint.remaining', index=3,
+      number=52, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=b'\212\265\030\003\020\200 \222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+      serialized_options=b'\212\265\030\002\010\003\212\265\030\003\020\350\007\212\265\030\002(\001\222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=317,
+  serialized_end=463,
+)
+
+
+_MUTEXEDCONSTRAINT = _descriptor.Descriptor(
+  name='MutexedConstraint',
+  full_name='blox.Constraints.MutexedConstraint',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
     _descriptor.FieldDescriptor(
-      name='balanced', full_name='blox.Constraints.AnalogConstraint.balanced', index=2,
+      name='mutexId', full_name='blox.Constraints.MutexedConstraint.mutexId', index=0,
+      number=1, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\002\030\010\222?\0028\020', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='extraHoldTime', full_name='blox.Constraints.MutexedConstraint.extraHoldTime', index=1,
+      number=2, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\002\010\003\212\265\030\003\020\350\007\222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='hasLock', full_name='blox.Constraints.MutexedConstraint.hasLock', index=2,
+      number=4, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='enabled', full_name='blox.Constraints.MutexedConstraint.enabled', index=3,
+      number=50, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='limiting', full_name='blox.Constraints.MutexedConstraint.limiting', index=4,
+      number=51, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='remaining', full_name='blox.Constraints.MutexedConstraint.remaining', index=5,
+      number=52, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\002\010\003\212\265\030\003\020\350\007\212\265\030\002(\001\222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='hasCustomHoldTime', full_name='blox.Constraints.MutexedConstraint.hasCustomHoldTime', index=6,
+      number=90, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\002H\001\222?\002\030\003', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=466,
+  serialized_end=711,
+)
+
+
+_ANALOGCONSTRAINTS = _descriptor.Descriptor(
+  name='AnalogConstraints',
+  full_name='blox.Constraints.AnalogConstraints',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='min', full_name='blox.Constraints.AnalogConstraints.min', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='max', full_name='blox.Constraints.AnalogConstraints.max', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='balanced', full_name='blox.Constraints.AnalogConstraints.balanced', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=714,
+  serialized_end=885,
+)
+
+
+_DIGITALCONSTRAINTS = _descriptor.Descriptor(
+  name='DigitalConstraints',
+  full_name='blox.Constraints.DigitalConstraints',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='minOff', full_name='blox.Constraints.DigitalConstraints.minOff', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='minOn', full_name='blox.Constraints.DigitalConstraints.minOn', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='delayedOff', full_name='blox.Constraints.DigitalConstraints.delayedOff', index=2,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='limiting', full_name='blox.Constraints.AnalogConstraint.limiting', index=3,
+      name='delayedOn', full_name='blox.Constraints.DigitalConstraints.delayedOn', index=3,
+      number=4, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='mutexed', full_name='blox.Constraints.DigitalConstraints.mutexed', index=4,
+      number=5, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=888,
+  serialized_end=1184,
+)
+
+
+_DEPRECATEDANALOGCONSTRAINT = _descriptor.Descriptor(
+  name='DeprecatedAnalogConstraint',
+  full_name='blox.Constraints.DeprecatedAnalogConstraint',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='min', full_name='blox.Constraints.DeprecatedAnalogConstraint.min', index=0,
+      number=1, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\003\020\200 \222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='max', full_name='blox.Constraints.DeprecatedAnalogConstraint.max', index=1,
+      number=2, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\003\020\200 \222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='balanced', full_name='blox.Constraints.DeprecatedAnalogConstraint.balanced', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='limiting', full_name='blox.Constraints.DeprecatedAnalogConstraint.limiting', index=3,
       number=100, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -175,26 +415,26 @@ _ANALOGCONSTRAINT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
     _descriptor.OneofDescriptor(
-      name='constraint', full_name='blox.Constraints.AnalogConstraint.constraint',
+      name='constraint', full_name='blox.Constraints.DeprecatedAnalogConstraint.constraint',
       index=0, containing_type=None,
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=322,
-  serialized_end=486,
+  serialized_start=1187,
+  serialized_end=1371,
 )
 
 
-_ANALOGCONSTRAINTS = _descriptor.Descriptor(
-  name='AnalogConstraints',
-  full_name='blox.Constraints.AnalogConstraints',
+_DEPRECATEDANALOGCONSTRAINTS = _descriptor.Descriptor(
+  name='DeprecatedAnalogConstraints',
+  full_name='blox.Constraints.DeprecatedAnalogConstraints',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='constraints', full_name='blox.Constraints.AnalogConstraints.constraints', index=0,
+      name='constraints', full_name='blox.Constraints.DeprecatedAnalogConstraints.constraints', index=0,
       number=1, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -212,70 +452,70 @@ _ANALOGCONSTRAINTS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=488,
-  serialized_end=571,
+  serialized_start=1373,
+  serialized_end=1476,
 )
 
 
-_DIGITALCONSTRAINT = _descriptor.Descriptor(
-  name='DigitalConstraint',
-  full_name='blox.Constraints.DigitalConstraint',
+_DEPRECATEDDIGITALCONSTRAINT = _descriptor.Descriptor(
+  name='DeprecatedDigitalConstraint',
+  full_name='blox.Constraints.DeprecatedDigitalConstraint',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='minOff', full_name='blox.Constraints.DigitalConstraint.minOff', index=0,
+      name='minOff', full_name='blox.Constraints.DeprecatedDigitalConstraint.minOff', index=0,
       number=1, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002\010\003\212\265\030\003\020\350\007\222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='minOn', full_name='blox.Constraints.DigitalConstraint.minOn', index=1,
+      name='minOn', full_name='blox.Constraints.DeprecatedDigitalConstraint.minOn', index=1,
       number=2, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002\010\003\212\265\030\003\020\350\007\222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='mutexed', full_name='blox.Constraints.DigitalConstraint.mutexed', index=2,
+      name='mutexed', full_name='blox.Constraints.DeprecatedDigitalConstraint.mutexed', index=2,
       number=4, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='delayedOff', full_name='blox.Constraints.DigitalConstraint.delayedOff', index=3,
+      name='delayedOff', full_name='blox.Constraints.DeprecatedDigitalConstraint.delayedOff', index=3,
       number=5, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002\010\003\212\265\030\003\020\350\007\222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='delayedOn', full_name='blox.Constraints.DigitalConstraint.delayedOn', index=4,
+      name='delayedOn', full_name='blox.Constraints.DeprecatedDigitalConstraint.delayedOn', index=4,
       number=6, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002\010\003\212\265\030\003\020\350\007\222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='mutex', full_name='blox.Constraints.DigitalConstraint.mutex', index=5,
+      name='mutex', full_name='blox.Constraints.DeprecatedDigitalConstraint.mutex', index=5,
       number=3, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002\030\010\222?\0028\020', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='limiting', full_name='blox.Constraints.DigitalConstraint.limiting', index=6,
+      name='limiting', full_name='blox.Constraints.DeprecatedDigitalConstraint.limiting', index=6,
       number=100, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002H\001\222?\002\030\003', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='remaining', full_name='blox.Constraints.DigitalConstraint.remaining', index=7,
+      name='remaining', full_name='blox.Constraints.DeprecatedDigitalConstraint.remaining', index=7,
       number=101, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -293,26 +533,26 @@ _DIGITALCONSTRAINT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
     _descriptor.OneofDescriptor(
-      name='constraint', full_name='blox.Constraints.DigitalConstraint.constraint',
+      name='constraint', full_name='blox.Constraints.DeprecatedDigitalConstraint.constraint',
       index=0, containing_type=None,
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=574,
-  serialized_end=917,
+  serialized_start=1479,
+  serialized_end=1842,
 )
 
 
-_DIGITALCONSTRAINTS = _descriptor.Descriptor(
-  name='DigitalConstraints',
-  full_name='blox.Constraints.DigitalConstraints',
+_DEPRECATEDDIGITALCONSTRAINTS = _descriptor.Descriptor(
+  name='DeprecatedDigitalConstraints',
+  full_name='blox.Constraints.DeprecatedDigitalConstraints',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='constraints', full_name='blox.Constraints.DigitalConstraints.constraints', index=0,
+      name='constraints', full_name='blox.Constraints.DeprecatedDigitalConstraints.constraints', index=0,
       number=1, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -330,69 +570,88 @@ _DIGITALCONSTRAINTS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=919,
-  serialized_end=1004,
+  serialized_start=1844,
+  serialized_end=1949,
 )
 
-_ANALOGCONSTRAINT.fields_by_name['balanced'].message_type = _BALANCED
-_ANALOGCONSTRAINT.oneofs_by_name['constraint'].fields.append(
-  _ANALOGCONSTRAINT.fields_by_name['min'])
-_ANALOGCONSTRAINT.fields_by_name['min'].containing_oneof = _ANALOGCONSTRAINT.oneofs_by_name['constraint']
-_ANALOGCONSTRAINT.oneofs_by_name['constraint'].fields.append(
-  _ANALOGCONSTRAINT.fields_by_name['max'])
-_ANALOGCONSTRAINT.fields_by_name['max'].containing_oneof = _ANALOGCONSTRAINT.oneofs_by_name['constraint']
-_ANALOGCONSTRAINT.oneofs_by_name['constraint'].fields.append(
-  _ANALOGCONSTRAINT.fields_by_name['balanced'])
-_ANALOGCONSTRAINT.fields_by_name['balanced'].containing_oneof = _ANALOGCONSTRAINT.oneofs_by_name['constraint']
-_ANALOGCONSTRAINTS.fields_by_name['constraints'].message_type = _ANALOGCONSTRAINT
-_DIGITALCONSTRAINT.fields_by_name['mutexed'].message_type = _MUTEXED
-_DIGITALCONSTRAINT.oneofs_by_name['constraint'].fields.append(
-  _DIGITALCONSTRAINT.fields_by_name['minOff'])
-_DIGITALCONSTRAINT.fields_by_name['minOff'].containing_oneof = _DIGITALCONSTRAINT.oneofs_by_name['constraint']
-_DIGITALCONSTRAINT.oneofs_by_name['constraint'].fields.append(
-  _DIGITALCONSTRAINT.fields_by_name['minOn'])
-_DIGITALCONSTRAINT.fields_by_name['minOn'].containing_oneof = _DIGITALCONSTRAINT.oneofs_by_name['constraint']
-_DIGITALCONSTRAINT.oneofs_by_name['constraint'].fields.append(
-  _DIGITALCONSTRAINT.fields_by_name['mutexed'])
-_DIGITALCONSTRAINT.fields_by_name['mutexed'].containing_oneof = _DIGITALCONSTRAINT.oneofs_by_name['constraint']
-_DIGITALCONSTRAINT.oneofs_by_name['constraint'].fields.append(
-  _DIGITALCONSTRAINT.fields_by_name['delayedOff'])
-_DIGITALCONSTRAINT.fields_by_name['delayedOff'].containing_oneof = _DIGITALCONSTRAINT.oneofs_by_name['constraint']
-_DIGITALCONSTRAINT.oneofs_by_name['constraint'].fields.append(
-  _DIGITALCONSTRAINT.fields_by_name['delayedOn'])
-_DIGITALCONSTRAINT.fields_by_name['delayedOn'].containing_oneof = _DIGITALCONSTRAINT.oneofs_by_name['constraint']
-_DIGITALCONSTRAINT.oneofs_by_name['constraint'].fields.append(
-  _DIGITALCONSTRAINT.fields_by_name['mutex'])
-_DIGITALCONSTRAINT.fields_by_name['mutex'].containing_oneof = _DIGITALCONSTRAINT.oneofs_by_name['constraint']
-_DIGITALCONSTRAINTS.fields_by_name['constraints'].message_type = _DIGITALCONSTRAINT
-DESCRIPTOR.message_types_by_name['Balanced'] = _BALANCED
-DESCRIPTOR.message_types_by_name['Mutexed'] = _MUTEXED
-DESCRIPTOR.message_types_by_name['AnalogConstraint'] = _ANALOGCONSTRAINT
+_ANALOGCONSTRAINTS.fields_by_name['min'].message_type = _VALUECONSTRAINT
+_ANALOGCONSTRAINTS.fields_by_name['max'].message_type = _VALUECONSTRAINT
+_ANALOGCONSTRAINTS.fields_by_name['balanced'].message_type = _BALANCEDCONSTRAINT
+_DIGITALCONSTRAINTS.fields_by_name['minOff'].message_type = _DURATIONCONSTRAINT
+_DIGITALCONSTRAINTS.fields_by_name['minOn'].message_type = _DURATIONCONSTRAINT
+_DIGITALCONSTRAINTS.fields_by_name['delayedOff'].message_type = _DURATIONCONSTRAINT
+_DIGITALCONSTRAINTS.fields_by_name['delayedOn'].message_type = _DURATIONCONSTRAINT
+_DIGITALCONSTRAINTS.fields_by_name['mutexed'].message_type = _MUTEXEDCONSTRAINT
+_DEPRECATEDANALOGCONSTRAINT.fields_by_name['balanced'].message_type = _BALANCEDCONSTRAINT
+_DEPRECATEDANALOGCONSTRAINT.oneofs_by_name['constraint'].fields.append(
+  _DEPRECATEDANALOGCONSTRAINT.fields_by_name['min'])
+_DEPRECATEDANALOGCONSTRAINT.fields_by_name['min'].containing_oneof = _DEPRECATEDANALOGCONSTRAINT.oneofs_by_name['constraint']
+_DEPRECATEDANALOGCONSTRAINT.oneofs_by_name['constraint'].fields.append(
+  _DEPRECATEDANALOGCONSTRAINT.fields_by_name['max'])
+_DEPRECATEDANALOGCONSTRAINT.fields_by_name['max'].containing_oneof = _DEPRECATEDANALOGCONSTRAINT.oneofs_by_name['constraint']
+_DEPRECATEDANALOGCONSTRAINT.oneofs_by_name['constraint'].fields.append(
+  _DEPRECATEDANALOGCONSTRAINT.fields_by_name['balanced'])
+_DEPRECATEDANALOGCONSTRAINT.fields_by_name['balanced'].containing_oneof = _DEPRECATEDANALOGCONSTRAINT.oneofs_by_name['constraint']
+_DEPRECATEDANALOGCONSTRAINTS.fields_by_name['constraints'].message_type = _DEPRECATEDANALOGCONSTRAINT
+_DEPRECATEDDIGITALCONSTRAINT.fields_by_name['mutexed'].message_type = _MUTEXEDCONSTRAINT
+_DEPRECATEDDIGITALCONSTRAINT.oneofs_by_name['constraint'].fields.append(
+  _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['minOff'])
+_DEPRECATEDDIGITALCONSTRAINT.fields_by_name['minOff'].containing_oneof = _DEPRECATEDDIGITALCONSTRAINT.oneofs_by_name['constraint']
+_DEPRECATEDDIGITALCONSTRAINT.oneofs_by_name['constraint'].fields.append(
+  _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['minOn'])
+_DEPRECATEDDIGITALCONSTRAINT.fields_by_name['minOn'].containing_oneof = _DEPRECATEDDIGITALCONSTRAINT.oneofs_by_name['constraint']
+_DEPRECATEDDIGITALCONSTRAINT.oneofs_by_name['constraint'].fields.append(
+  _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['mutexed'])
+_DEPRECATEDDIGITALCONSTRAINT.fields_by_name['mutexed'].containing_oneof = _DEPRECATEDDIGITALCONSTRAINT.oneofs_by_name['constraint']
+_DEPRECATEDDIGITALCONSTRAINT.oneofs_by_name['constraint'].fields.append(
+  _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['delayedOff'])
+_DEPRECATEDDIGITALCONSTRAINT.fields_by_name['delayedOff'].containing_oneof = _DEPRECATEDDIGITALCONSTRAINT.oneofs_by_name['constraint']
+_DEPRECATEDDIGITALCONSTRAINT.oneofs_by_name['constraint'].fields.append(
+  _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['delayedOn'])
+_DEPRECATEDDIGITALCONSTRAINT.fields_by_name['delayedOn'].containing_oneof = _DEPRECATEDDIGITALCONSTRAINT.oneofs_by_name['constraint']
+_DEPRECATEDDIGITALCONSTRAINT.oneofs_by_name['constraint'].fields.append(
+  _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['mutex'])
+_DEPRECATEDDIGITALCONSTRAINT.fields_by_name['mutex'].containing_oneof = _DEPRECATEDDIGITALCONSTRAINT.oneofs_by_name['constraint']
+_DEPRECATEDDIGITALCONSTRAINTS.fields_by_name['constraints'].message_type = _DEPRECATEDDIGITALCONSTRAINT
+DESCRIPTOR.message_types_by_name['ValueConstraint'] = _VALUECONSTRAINT
+DESCRIPTOR.message_types_by_name['BalancedConstraint'] = _BALANCEDCONSTRAINT
+DESCRIPTOR.message_types_by_name['DurationConstraint'] = _DURATIONCONSTRAINT
+DESCRIPTOR.message_types_by_name['MutexedConstraint'] = _MUTEXEDCONSTRAINT
 DESCRIPTOR.message_types_by_name['AnalogConstraints'] = _ANALOGCONSTRAINTS
-DESCRIPTOR.message_types_by_name['DigitalConstraint'] = _DIGITALCONSTRAINT
 DESCRIPTOR.message_types_by_name['DigitalConstraints'] = _DIGITALCONSTRAINTS
+DESCRIPTOR.message_types_by_name['DeprecatedAnalogConstraint'] = _DEPRECATEDANALOGCONSTRAINT
+DESCRIPTOR.message_types_by_name['DeprecatedAnalogConstraints'] = _DEPRECATEDANALOGCONSTRAINTS
+DESCRIPTOR.message_types_by_name['DeprecatedDigitalConstraint'] = _DEPRECATEDDIGITALCONSTRAINT
+DESCRIPTOR.message_types_by_name['DeprecatedDigitalConstraints'] = _DEPRECATEDDIGITALCONSTRAINTS
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-Balanced = _reflection.GeneratedProtocolMessageType('Balanced', (_message.Message,), {
-  'DESCRIPTOR' : _BALANCED,
+ValueConstraint = _reflection.GeneratedProtocolMessageType('ValueConstraint', (_message.Message,), {
+  'DESCRIPTOR' : _VALUECONSTRAINT,
   '__module__' : 'Constraints_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Constraints.Balanced)
+  # @@protoc_insertion_point(class_scope:blox.Constraints.ValueConstraint)
   })
-_sym_db.RegisterMessage(Balanced)
+_sym_db.RegisterMessage(ValueConstraint)
 
-Mutexed = _reflection.GeneratedProtocolMessageType('Mutexed', (_message.Message,), {
-  'DESCRIPTOR' : _MUTEXED,
+BalancedConstraint = _reflection.GeneratedProtocolMessageType('BalancedConstraint', (_message.Message,), {
+  'DESCRIPTOR' : _BALANCEDCONSTRAINT,
   '__module__' : 'Constraints_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Constraints.Mutexed)
+  # @@protoc_insertion_point(class_scope:blox.Constraints.BalancedConstraint)
   })
-_sym_db.RegisterMessage(Mutexed)
+_sym_db.RegisterMessage(BalancedConstraint)
 
-AnalogConstraint = _reflection.GeneratedProtocolMessageType('AnalogConstraint', (_message.Message,), {
-  'DESCRIPTOR' : _ANALOGCONSTRAINT,
+DurationConstraint = _reflection.GeneratedProtocolMessageType('DurationConstraint', (_message.Message,), {
+  'DESCRIPTOR' : _DURATIONCONSTRAINT,
   '__module__' : 'Constraints_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Constraints.AnalogConstraint)
+  # @@protoc_insertion_point(class_scope:blox.Constraints.DurationConstraint)
   })
-_sym_db.RegisterMessage(AnalogConstraint)
+_sym_db.RegisterMessage(DurationConstraint)
+
+MutexedConstraint = _reflection.GeneratedProtocolMessageType('MutexedConstraint', (_message.Message,), {
+  'DESCRIPTOR' : _MUTEXEDCONSTRAINT,
+  '__module__' : 'Constraints_pb2'
+  # @@protoc_insertion_point(class_scope:blox.Constraints.MutexedConstraint)
+  })
+_sym_db.RegisterMessage(MutexedConstraint)
 
 AnalogConstraints = _reflection.GeneratedProtocolMessageType('AnalogConstraints', (_message.Message,), {
   'DESCRIPTOR' : _ANALOGCONSTRAINTS,
@@ -401,13 +660,6 @@ AnalogConstraints = _reflection.GeneratedProtocolMessageType('AnalogConstraints'
   })
 _sym_db.RegisterMessage(AnalogConstraints)
 
-DigitalConstraint = _reflection.GeneratedProtocolMessageType('DigitalConstraint', (_message.Message,), {
-  'DESCRIPTOR' : _DIGITALCONSTRAINT,
-  '__module__' : 'Constraints_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Constraints.DigitalConstraint)
-  })
-_sym_db.RegisterMessage(DigitalConstraint)
-
 DigitalConstraints = _reflection.GeneratedProtocolMessageType('DigitalConstraints', (_message.Message,), {
   'DESCRIPTOR' : _DIGITALCONSTRAINTS,
   '__module__' : 'Constraints_pb2'
@@ -415,24 +667,60 @@ DigitalConstraints = _reflection.GeneratedProtocolMessageType('DigitalConstraint
   })
 _sym_db.RegisterMessage(DigitalConstraints)
 
+DeprecatedAnalogConstraint = _reflection.GeneratedProtocolMessageType('DeprecatedAnalogConstraint', (_message.Message,), {
+  'DESCRIPTOR' : _DEPRECATEDANALOGCONSTRAINT,
+  '__module__' : 'Constraints_pb2'
+  # @@protoc_insertion_point(class_scope:blox.Constraints.DeprecatedAnalogConstraint)
+  })
+_sym_db.RegisterMessage(DeprecatedAnalogConstraint)
 
-_BALANCED.fields_by_name['balancerId']._options = None
-_BALANCED.fields_by_name['granted']._options = None
-_BALANCED.fields_by_name['id']._options = None
-_MUTEXED.fields_by_name['mutexId']._options = None
-_MUTEXED.fields_by_name['extraHoldTime']._options = None
-_MUTEXED.fields_by_name['hasLock']._options = None
-_MUTEXED.fields_by_name['hasCustomHoldTime']._options = None
-_ANALOGCONSTRAINT.fields_by_name['min']._options = None
-_ANALOGCONSTRAINT.fields_by_name['max']._options = None
-_ANALOGCONSTRAINT.fields_by_name['limiting']._options = None
-_ANALOGCONSTRAINTS.fields_by_name['constraints']._options = None
-_DIGITALCONSTRAINT.fields_by_name['minOff']._options = None
-_DIGITALCONSTRAINT.fields_by_name['minOn']._options = None
-_DIGITALCONSTRAINT.fields_by_name['delayedOff']._options = None
-_DIGITALCONSTRAINT.fields_by_name['delayedOn']._options = None
-_DIGITALCONSTRAINT.fields_by_name['mutex']._options = None
-_DIGITALCONSTRAINT.fields_by_name['limiting']._options = None
-_DIGITALCONSTRAINT.fields_by_name['remaining']._options = None
-_DIGITALCONSTRAINTS.fields_by_name['constraints']._options = None
+DeprecatedAnalogConstraints = _reflection.GeneratedProtocolMessageType('DeprecatedAnalogConstraints', (_message.Message,), {
+  'DESCRIPTOR' : _DEPRECATEDANALOGCONSTRAINTS,
+  '__module__' : 'Constraints_pb2'
+  # @@protoc_insertion_point(class_scope:blox.Constraints.DeprecatedAnalogConstraints)
+  })
+_sym_db.RegisterMessage(DeprecatedAnalogConstraints)
+
+DeprecatedDigitalConstraint = _reflection.GeneratedProtocolMessageType('DeprecatedDigitalConstraint', (_message.Message,), {
+  'DESCRIPTOR' : _DEPRECATEDDIGITALCONSTRAINT,
+  '__module__' : 'Constraints_pb2'
+  # @@protoc_insertion_point(class_scope:blox.Constraints.DeprecatedDigitalConstraint)
+  })
+_sym_db.RegisterMessage(DeprecatedDigitalConstraint)
+
+DeprecatedDigitalConstraints = _reflection.GeneratedProtocolMessageType('DeprecatedDigitalConstraints', (_message.Message,), {
+  'DESCRIPTOR' : _DEPRECATEDDIGITALCONSTRAINTS,
+  '__module__' : 'Constraints_pb2'
+  # @@protoc_insertion_point(class_scope:blox.Constraints.DeprecatedDigitalConstraints)
+  })
+_sym_db.RegisterMessage(DeprecatedDigitalConstraints)
+
+
+_VALUECONSTRAINT.fields_by_name['value']._options = None
+_VALUECONSTRAINT.fields_by_name['limiting']._options = None
+_BALANCEDCONSTRAINT.fields_by_name['balancerId']._options = None
+_BALANCEDCONSTRAINT.fields_by_name['granted']._options = None
+_BALANCEDCONSTRAINT.fields_by_name['limiting']._options = None
+_BALANCEDCONSTRAINT.fields_by_name['id']._options = None
+_DURATIONCONSTRAINT.fields_by_name['duration']._options = None
+_DURATIONCONSTRAINT.fields_by_name['limiting']._options = None
+_DURATIONCONSTRAINT.fields_by_name['remaining']._options = None
+_MUTEXEDCONSTRAINT.fields_by_name['mutexId']._options = None
+_MUTEXEDCONSTRAINT.fields_by_name['extraHoldTime']._options = None
+_MUTEXEDCONSTRAINT.fields_by_name['hasLock']._options = None
+_MUTEXEDCONSTRAINT.fields_by_name['limiting']._options = None
+_MUTEXEDCONSTRAINT.fields_by_name['remaining']._options = None
+_MUTEXEDCONSTRAINT.fields_by_name['hasCustomHoldTime']._options = None
+_DEPRECATEDANALOGCONSTRAINT.fields_by_name['min']._options = None
+_DEPRECATEDANALOGCONSTRAINT.fields_by_name['max']._options = None
+_DEPRECATEDANALOGCONSTRAINT.fields_by_name['limiting']._options = None
+_DEPRECATEDANALOGCONSTRAINTS.fields_by_name['constraints']._options = None
+_DEPRECATEDDIGITALCONSTRAINT.fields_by_name['minOff']._options = None
+_DEPRECATEDDIGITALCONSTRAINT.fields_by_name['minOn']._options = None
+_DEPRECATEDDIGITALCONSTRAINT.fields_by_name['delayedOff']._options = None
+_DEPRECATEDDIGITALCONSTRAINT.fields_by_name['delayedOn']._options = None
+_DEPRECATEDDIGITALCONSTRAINT.fields_by_name['mutex']._options = None
+_DEPRECATEDDIGITALCONSTRAINT.fields_by_name['limiting']._options = None
+_DEPRECATEDDIGITALCONSTRAINT.fields_by_name['remaining']._options = None
+_DEPRECATEDDIGITALCONSTRAINTS.fields_by_name['constraints']._options = None
 # @@protoc_insertion_point(module_scope)
