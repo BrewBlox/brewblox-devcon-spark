@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\rSgProbe.proto\x12\x0c\x62lox.SgProbe\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xb9\n\n\x05\x42lock\x12\x19\n\tconnected\x18\x01 \x01(\x08\x42\x06\x8a\xb5\x18\x02\x30\x01\x12\x17\n\x08position\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12\x31\n\tpressure1\x18\x03 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\r\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x31\n\tpressure2\x18\x04 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\r\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x39\n\x11pressure1Filtered\x18\x05 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\r\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x39\n\x11pressure2Filtered\x18\x06 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\r\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x34\n\x0cpressureDiff\x18\x07 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\r\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12<\n\x14pressureDiffFiltered\x18\x08 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\r\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12*\n\x08tempRtd1\x18\t \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12*\n\x08tempRtd2\x18\n \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12*\n\x08tempAdc1\x18\x0b \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12*\n\x08tempAdc2\x18\x0c \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\'\n\x05gain1\x18\r \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\xc7\x06\x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\'\n\x05gain2\x18\x0e \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\xc7\x06\x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12)\n\x07\x62ridge1\x18\x0f \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\xc7\x06\x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12)\n\x07\x62ridge2\x18\x10 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\xc7\x06\x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12*\n\x06\x66ilter\x18\x11 \x01(\x0e\x32\x1a.blox.SgProbe.FilterChoice\x12&\n\x04raw1\x18\x12 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x92?\x02\x38 \x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02(\x01\x12&\n\x04raw2\x18\x13 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x92?\x02\x38 \x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02(\x01\x12.\n\x0craw1Filtered\x18\x14 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x92?\x02\x38 \x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02(\x01\x12.\n\x0craw2Filtered\x18\x15 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x92?\x02\x38 \x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02(\x01\x12\x1d\n\x07offset1\x18\x16 \x01(\x11\x42\x0c\x92?\x02\x38 \x8a\xb5\x18\x03\x10\x80 \x12\x1d\n\x07offset2\x18\x17 \x01(\x11\x42\x0c\x92?\x02\x38 \x8a\xb5\x18\x03\x10\x80 \x12\x1d\n\x06scale1\x18\x18 \x01(\x11\x42\r\x92?\x02\x38 \x8a\xb5\x18\x04\x10\x80\x80@\x12\x1d\n\x06scale2\x18\x19 \x01(\x11\x42\r\x92?\x02\x38 \x8a\xb5\x18\x04\x10\x80\x80@\x12#\n\rreferenceDiff\x18\x1a \x01(\x11\x42\x0c\x92?\x02\x38 \x8a\xb5\x18\x03\x10\x80 \x12#\n\x07\x64\x65nsity\x18\x1b \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02\x30\x01\x12\'\n\x0b\x64\x65nsityFilt\x18\x1c \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02\x30\x01\x12.\n\x08sgFilter\x18\x1d \x01(\x0e\x32\x1c.blox.SgProbe.SgFilterChoice\x12\'\n\x04ref1\x18\x1e \x01(\x11\x42\x19\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x04\x10\xdc\xd1\x01\x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\'\n\x04ref2\x18\x1f \x01(\x11\x42\x19\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x04\x10\xdc\xd1\x01\x92?\x02\x38 \x8a\xb5\x18\x02(\x01:\x07\x8a\xb5\x18\x03\x18\xca\x02*|\n\x0c\x46ilterChoice\x12\x0f\n\x0b\x46ILTER_NONE\x10\x00\x12\r\n\tFILTER_3s\x10\x01\x12\x0e\n\nFILTER_10s\x10\x02\x12\x0e\n\nFILTER_20s\x10\x03\x12\x0e\n\nFILTER_40s\x10\x04\x12\r\n\tFILTER_2m\x10\x05\x12\r\n\tFILTER_6m\x10\x06*\x93\x01\n\x0eSgFilterChoice\x12\x11\n\rSG_FILTER_20s\x10\x00\x12\x10\n\x0cSG_FILTER_2m\x10\x01\x12\x10\n\x0cSG_FILTER_7m\x10\x02\x12\x11\n\rSG_FILTER_15m\x10\x03\x12\x11\n\rSG_FILTER_45m\x10\x04\x12\x12\n\x0eSG_FILTER_1h30\x10\x05\x12\x10\n\x0cSG_FILTER_3h\x10\x06\x62\x06proto3'
+  serialized_pb=b'\n\rSgProbe.proto\x12\x0c\x62lox.SgProbe\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xdc\r\n\x05\x42lock\x12\x19\n\tconnected\x18\x01 \x01(\x08\x42\x06\x8a\xb5\x18\x02\x30\x01\x12\x17\n\x08position\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12\x31\n\tpressure1\x18\x03 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\r\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x31\n\tpressure2\x18\x04 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\r\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x39\n\x11pressure1Filtered\x18\x05 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\r\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x39\n\x11pressure2Filtered\x18\x06 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\r\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x34\n\x0cpressureDiff\x18\x07 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\r\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12<\n\x14pressureDiffFiltered\x18\x08 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\r\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12*\n\x08tempRtd1\x18\t \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12*\n\x08tempRtd2\x18\n \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12*\n\x08tempAdc1\x18\x0b \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12*\n\x08tempAdc2\x18\x0c \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\'\n\x05gain1\x18\r \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\'\n\x05gain2\x18\x0e \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12)\n\x07\x62ridge1\x18\x0f \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12)\n\x07\x62ridge2\x18\x10 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12*\n\x06\x66ilter\x18\x11 \x01(\x0e\x32\x1a.blox.SgProbe.FilterChoice\x12&\n\x04raw1\x18\x12 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x92?\x02\x38 \x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02(\x01\x12&\n\x04raw2\x18\x13 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x92?\x02\x38 \x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02(\x01\x12.\n\x0craw1Filtered\x18\x14 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x92?\x02\x38 \x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02(\x01\x12.\n\x0craw2Filtered\x18\x15 \x01(\x11\x42\x18\x8a\xb5\x18\x02\x30\x01\x92?\x02\x38 \x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02(\x01\x12\x1d\n\x07offset1\x18\x16 \x01(\x11\x42\x0c\x92?\x02\x38 \x8a\xb5\x18\x03\x10\x80 \x12\x1d\n\x07offset2\x18\x17 \x01(\x11\x42\x0c\x92?\x02\x38 \x8a\xb5\x18\x03\x10\x80 \x12\x1d\n\x06scale1\x18\x18 \x01(\x11\x42\r\x92?\x02\x38 \x8a\xb5\x18\x04\x10\x80\x80@\x12\x1d\n\x06scale2\x18\x19 \x01(\x11\x42\r\x92?\x02\x38 \x8a\xb5\x18\x04\x10\x80\x80@\x12#\n\rreferenceDiff\x18\x1a \x01(\x11\x42\x0c\x92?\x02\x38 \x8a\xb5\x18\x03\x10\x80 \x12#\n\x07\x64\x65nsity\x18\x1b \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02\x30\x01\x12\'\n\x0b\x64\x65nsityFilt\x18\x1c \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02\x30\x01\x12.\n\x08sgFilter\x18\x1d \x01(\x0e\x32\x1c.blox.SgProbe.SgFilterChoice\x12\'\n\x04ref1\x18\x1e \x01(\x11\x42\x19\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x04\x10\xdc\xd1\x01\x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\'\n\x04ref2\x18\x1f \x01(\x11\x42\x19\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x04\x10\xdc\xd1\x01\x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12.\n\x12\x63\x61librationBridge1\x18  \x01(\x11\x42\x12\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12.\n\x12\x63\x61librationBridge2\x18! \x01(\x11\x42\x12\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12(\n\x0c\x63\x61librateAir\x18\" \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\r\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12)\n\rcalibrateTemp\x18# \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12*\n\x0etempRtdOffset1\x18$ \x01(\x11\x42\x12\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12*\n\x0etempRtdOffset2\x18% \x01(\x11\x42\x12\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12*\n\x0etempAdcOffset1\x18& \x01(\x11\x42\x12\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12*\n\x0etempAdcOffset2\x18\' \x01(\x11\x42\x12\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x1d\n\x06\x64Temp1\x18( \x01(\x11\x42\r\x92?\x02\x38 \x8a\xb5\x18\x04\x10\x80\x80@\x12\x1d\n\x06\x64Temp2\x18) \x01(\x11\x42\r\x92?\x02\x38 \x8a\xb5\x18\x04\x10\x80\x80@:\x07\x8a\xb5\x18\x03\x18\xca\x02*|\n\x0c\x46ilterChoice\x12\x0f\n\x0b\x46ILTER_NONE\x10\x00\x12\r\n\tFILTER_3s\x10\x01\x12\x0e\n\nFILTER_10s\x10\x02\x12\x0e\n\nFILTER_20s\x10\x03\x12\x0e\n\nFILTER_40s\x10\x04\x12\r\n\tFILTER_2m\x10\x05\x12\r\n\tFILTER_6m\x10\x06*\x93\x01\n\x0eSgFilterChoice\x12\x11\n\rSG_FILTER_20s\x10\x00\x12\x10\n\x0cSG_FILTER_2m\x10\x01\x12\x10\n\x0cSG_FILTER_7m\x10\x02\x12\x11\n\rSG_FILTER_15m\x10\x03\x12\x11\n\rSG_FILTER_45m\x10\x04\x12\x12\n\x0eSG_FILTER_1h30\x10\x05\x12\x10\n\x0cSG_FILTER_3h\x10\x06\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -71,8 +71,8 @@ _FILTERCHOICE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1401,
-  serialized_end=1525,
+  serialized_start=1820,
+  serialized_end=1944,
 )
 _sym_db.RegisterEnumDescriptor(_FILTERCHOICE)
 
@@ -122,8 +122,8 @@ _SGFILTERCHOICE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1528,
-  serialized_end=1675,
+  serialized_start=1947,
+  serialized_end=2094,
 )
 _sym_db.RegisterEnumDescriptor(_SGFILTERCHOICE)
 
@@ -243,28 +243,28 @@ _BLOCK = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=b'\212\265\030\0020\001\212\265\030\003\020\307\006\222?\0028 \212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+      serialized_options=b'\212\265\030\0020\001\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
       name='gain2', full_name='blox.SgProbe.Block.gain2', index=13,
       number=14, type=17, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=b'\212\265\030\0020\001\212\265\030\003\020\307\006\222?\0028 \212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+      serialized_options=b'\212\265\030\0020\001\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
       name='bridge1', full_name='blox.SgProbe.Block.bridge1', index=14,
       number=15, type=17, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=b'\212\265\030\0020\001\212\265\030\003\020\307\006\222?\0028 \212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+      serialized_options=b'\212\265\030\0020\001\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
       name='bridge2', full_name='blox.SgProbe.Block.bridge2', index=15,
       number=16, type=17, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      serialized_options=b'\212\265\030\0020\001\212\265\030\003\020\307\006\222?\0028 \212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+      serialized_options=b'\212\265\030\0020\001\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
       name='filter', full_name='blox.SgProbe.Block.filter', index=16,
       number=17, type=14, cpp_type=8, label=1,
@@ -370,6 +370,76 @@ _BLOCK = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\0020\001\212\265\030\004\020\334\321\001\222?\0028 \212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='calibrationBridge1', full_name='blox.SgProbe.Block.calibrationBridge1', index=31,
+      number=32, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\0020\001\212\265\030\003\020\200 \222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='calibrationBridge2', full_name='blox.SgProbe.Block.calibrationBridge2', index=32,
+      number=33, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\0020\001\212\265\030\003\020\200 \222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='calibrateAir', full_name='blox.SgProbe.Block.calibrateAir', index=33,
+      number=34, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\002\010\r\212\265\030\003\020\200 \222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='calibrateTemp', full_name='blox.SgProbe.Block.calibrateTemp', index=34,
+      number=35, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\002\010\001\212\265\030\003\020\200 \222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='tempRtdOffset1', full_name='blox.SgProbe.Block.tempRtdOffset1', index=35,
+      number=36, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\0020\001\212\265\030\003\020\200 \222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='tempRtdOffset2', full_name='blox.SgProbe.Block.tempRtdOffset2', index=36,
+      number=37, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\0020\001\212\265\030\003\020\200 \222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='tempAdcOffset1', full_name='blox.SgProbe.Block.tempAdcOffset1', index=37,
+      number=38, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\0020\001\212\265\030\003\020\200 \222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='tempAdcOffset2', full_name='blox.SgProbe.Block.tempAdcOffset2', index=38,
+      number=39, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\0020\001\212\265\030\003\020\200 \222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='dTemp1', full_name='blox.SgProbe.Block.dTemp1', index=39,
+      number=40, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\222?\0028 \212\265\030\004\020\200\200@', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='dTemp2', full_name='blox.SgProbe.Block.dTemp2', index=40,
+      number=41, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\222?\0028 \212\265\030\004\020\200\200@', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -383,7 +453,7 @@ _BLOCK = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=62,
-  serialized_end=1399,
+  serialized_end=1818,
 )
 
 _BLOCK.fields_by_name['filter'].enum_type = _FILTERCHOICE
@@ -430,5 +500,15 @@ _BLOCK.fields_by_name['density']._options = None
 _BLOCK.fields_by_name['densityFilt']._options = None
 _BLOCK.fields_by_name['ref1']._options = None
 _BLOCK.fields_by_name['ref2']._options = None
+_BLOCK.fields_by_name['calibrationBridge1']._options = None
+_BLOCK.fields_by_name['calibrationBridge2']._options = None
+_BLOCK.fields_by_name['calibrateAir']._options = None
+_BLOCK.fields_by_name['calibrateTemp']._options = None
+_BLOCK.fields_by_name['tempRtdOffset1']._options = None
+_BLOCK.fields_by_name['tempRtdOffset2']._options = None
+_BLOCK.fields_by_name['tempAdcOffset1']._options = None
+_BLOCK.fields_by_name['tempAdcOffset2']._options = None
+_BLOCK.fields_by_name['dTemp1']._options = None
+_BLOCK.fields_by_name['dTemp2']._options = None
 _BLOCK._options = None
 # @@protoc_insertion_point(module_scope)

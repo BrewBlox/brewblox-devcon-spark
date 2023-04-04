@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x15\x44isplaySettings.proto\x12\x14\x62lox.DisplaySettings\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xf2\x01\n\x06Widget\x12\x12\n\x03pos\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08\x12\x1f\n\x05\x63olor\x18\x02 \x01(\x0c\x42\x10\x92?\x02\x08\x03\x92?\x02x\x01\x8a\xb5\x18\x02\x38\x01\x12\x13\n\x04name\x18\x03 \x01(\tB\x05\x92?\x02\x08\x10\x12!\n\ntempSensor\x18\n \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x02\x92?\x02\x38\x10H\x00\x12)\n\x12setpointSensorPair\x18\x0b \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x04\x92?\x02\x38\x10H\x00\x12%\n\x0e\x61\x63tuatorAnalog\x18\x0c \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x05\x92?\x02\x38\x10H\x00\x12\x1b\n\x03pid\x18\x0e \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xb0\x02\x92?\x02\x38\x10H\x00\x42\x0c\n\nWidgetType\"\xba\x01\n\x05\x42lock\x12\x34\n\x07widgets\x18\x01 \x03(\x0b\x32\x1c.blox.DisplaySettings.WidgetB\x05\x92?\x02\x10\x06\x12\x13\n\x04name\x18\x02 \x01(\tB\x05\x92?\x02\x08(\x12\x1f\n\nbrightness\x18Z \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03\x12\x1d\n\x08timeZone\x18[ \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03\x12\x1d\n\x08tempUnit\x18\\ \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03:\x07\x8a\xb5\x18\x03\x18\xba\x02\x62\x06proto3'
+  serialized_pb=b'\n\x15\x44isplaySettings.proto\x12\x14\x62lox.DisplaySettings\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xb2\x02\n\x06Widget\x12\x12\n\x03pos\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08\x12\x1f\n\x05\x63olor\x18\x02 \x01(\x0c\x42\x10\x92?\x02\x08\x03\x92?\x02x\x01\x8a\xb5\x18\x02\x38\x01\x12\x13\n\x04name\x18\x03 \x01(\tB\x05\x92?\x02\x08\x10\x12!\n\ntempSensor\x18\n \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x02\x92?\x02\x38\x10H\x00\x12)\n\x12setpointSensorPair\x18\x0b \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x04\x92?\x02\x38\x10H\x00\x12%\n\x0e\x61\x63tuatorAnalog\x18\x0c \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x05\x92?\x02\x38\x10H\x00\x12\x1b\n\x03pid\x18\x0e \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xb0\x02\x92?\x02\x38\x10H\x00\x12 \n\x08pressure\x18\x0f \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xca\x02\x92?\x02\x38\x10H\x00\x12\x1c\n\x04\x63hem\x18\x10 \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xca\x02\x92?\x02\x38\x10H\x00\x42\x0c\n\nWidgetType\"\xba\x01\n\x05\x42lock\x12\x34\n\x07widgets\x18\x01 \x03(\x0b\x32\x1c.blox.DisplaySettings.WidgetB\x05\x92?\x02\x10\x06\x12\x13\n\x04name\x18\x02 \x01(\tB\x05\x92?\x02\x08(\x12\x1f\n\nbrightness\x18Z \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03\x12\x1d\n\x08timeZone\x18[ \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03\x12\x1d\n\x08tempUnit\x18\\ \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03:\x07\x8a\xb5\x18\x03\x18\xba\x02\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -85,6 +85,20 @@ _WIDGET = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\003\030\260\002\222?\0028\020', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='pressure', full_name='blox.DisplaySettings.Widget.pressure', index=7,
+      number=15, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\003\030\312\002\222?\0028\020', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='chem', full_name='blox.DisplaySettings.Widget.chem', index=8,
+      number=16, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\003\030\312\002\222?\0028\020', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -103,7 +117,7 @@ _WIDGET = _descriptor.Descriptor(
     fields=[]),
   ],
   serialized_start=78,
-  serialized_end=320,
+  serialized_end=384,
 )
 
 
@@ -162,8 +176,8 @@ _BLOCK = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=323,
-  serialized_end=509,
+  serialized_start=387,
+  serialized_end=573,
 )
 
 _WIDGET.oneofs_by_name['WidgetType'].fields.append(
@@ -178,6 +192,12 @@ _WIDGET.fields_by_name['actuatorAnalog'].containing_oneof = _WIDGET.oneofs_by_na
 _WIDGET.oneofs_by_name['WidgetType'].fields.append(
   _WIDGET.fields_by_name['pid'])
 _WIDGET.fields_by_name['pid'].containing_oneof = _WIDGET.oneofs_by_name['WidgetType']
+_WIDGET.oneofs_by_name['WidgetType'].fields.append(
+  _WIDGET.fields_by_name['pressure'])
+_WIDGET.fields_by_name['pressure'].containing_oneof = _WIDGET.oneofs_by_name['WidgetType']
+_WIDGET.oneofs_by_name['WidgetType'].fields.append(
+  _WIDGET.fields_by_name['chem'])
+_WIDGET.fields_by_name['chem'].containing_oneof = _WIDGET.oneofs_by_name['WidgetType']
 _BLOCK.fields_by_name['widgets'].message_type = _WIDGET
 DESCRIPTOR.message_types_by_name['Widget'] = _WIDGET
 DESCRIPTOR.message_types_by_name['Block'] = _BLOCK
@@ -205,6 +225,8 @@ _WIDGET.fields_by_name['tempSensor']._options = None
 _WIDGET.fields_by_name['setpointSensorPair']._options = None
 _WIDGET.fields_by_name['actuatorAnalog']._options = None
 _WIDGET.fields_by_name['pid']._options = None
+_WIDGET.fields_by_name['pressure']._options = None
+_WIDGET.fields_by_name['chem']._options = None
 _BLOCK.fields_by_name['widgets']._options = None
 _BLOCK.fields_by_name['name']._options = None
 _BLOCK.fields_by_name['brightness']._options = None
