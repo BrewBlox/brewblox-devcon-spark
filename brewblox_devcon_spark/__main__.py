@@ -15,7 +15,8 @@ from brewblox_devcon_spark import (backup_storage, block_store, broadcaster,
 from brewblox_devcon_spark.api import (backup_api, blocks_api, debug_api,
                                        error_response, mqtt_api, settings_api,
                                        sim_api, system_api)
-from brewblox_devcon_spark.models import ServiceConfig, ServiceFirmwareIni
+from brewblox_devcon_spark.models import (DiscoveryType, ServiceConfig,
+                                          ServiceFirmwareIni)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -56,8 +57,9 @@ def create_parser(default_name='spark'):
                        help='Enabled types of device discovery. '
                        '--device-serial and --device-host disable discovery. '
                        '--device-id specifies which discovered device is valid. ',
-                       choices=['all', 'usb', 'wifi', 'lan', 'mqtt'],
-                       default='all')
+                       type=lambda s: DiscoveryType[s],
+                       choices=list(DiscoveryType),
+                       default=DiscoveryType.all)
     group.add_argument('--display-ws-port',
                        help='Websocket port for the Spark simulation virtual display stream. [$(default)s]',
                        type=int,
@@ -115,7 +117,7 @@ def create_parser(default_name='spark'):
 def parse_ini(app) -> ServiceFirmwareIni:  # pragma: no cover
     parser = ConfigParser()
     parser.read('firmware/firmware.ini')
-    config = dict(parser['FIRMWARE'].items())
+    config = ServiceFirmwareIni(parser['FIRMWARE'].items())
     LOGGER.info(f'firmware.ini: {config}')
     return config
 

@@ -6,13 +6,13 @@ from async_timeout import timeout
 from brewblox_service import brewblox_logger, features, repeater, strex
 
 from brewblox_devcon_spark import exceptions, service_status, service_store
-from brewblox_devcon_spark.models import ServiceConfig
+from brewblox_devcon_spark.models import DiscoveryType, ServiceConfig
 
 from .connection_impl import ConnectionCallbacks, ConnectionImplBase
 from .mock_connection import connect_mock
 from .mqtt_connection import discover_mqtt
-from .stream_connection import (connect_serial, connect_simulation,
-                                connect_tcp, discover_serial, discover_tcp)
+from .stream_connection import (connect_simulation, connect_tcp, connect_usb,
+                                discover_mdns, discover_usb)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -70,17 +70,17 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
         try:
             async with timeout(DISCOVERY_TIMEOUT_S):
                 while True:
-                    if discovery_type in ['all', 'usb']:
-                        result = await discover_serial(self.app, self)
+                    if discovery_type in [DiscoveryType.all, DiscoveryType.usb]:
+                        result = await discover_usb(self.app, self)
                         if result:
                             return result
 
-                    if discovery_type in ['all', 'wifi', 'lan']:
-                        result = await discover_tcp(self.app, self)
+                    if discovery_type in [DiscoveryType.all, DiscoveryType.mdns]:
+                        result = await discover_mdns(self.app, self)
                         if result:
                             return result
 
-                    if discovery_type in ['all', 'mqtt']:
+                    if discovery_type in [DiscoveryType.all, DiscoveryType.mqtt]:
                         result = await discover_mqtt(self.app, self)
                         if result:
                             return result
@@ -104,7 +104,7 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
         elif simulation:
             return await connect_simulation(self.app, self)
         elif device_serial:
-            return await connect_serial(self.app, self, device_serial)
+            return await connect_usb(self.app, self, device_serial)
         elif device_host:
             return await connect_tcp(self.app, self, device_host, device_port)
         else:
@@ -141,7 +141,7 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
 
             # USB devices that were plugged in after container start are not visible
             # If we are potentially connecting to a USB device, we need to restart
-            if config['device_serial'] or config['discovery'] in ['all', 'usb']:
+            if config['device_serial'] or config['discovery'] in [DiscoveryType.all, DiscoveryType.usb]:
                 raise web.GracefulExit()
             else:
                 self._retry_count = 0

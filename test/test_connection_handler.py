@@ -13,7 +13,7 @@ from brewblox_service import scheduler
 from brewblox_devcon_spark import exceptions, service_status, service_store
 from brewblox_devcon_spark.codec import unit_conversion
 from brewblox_devcon_spark.connection import connection_handler
-from brewblox_devcon_spark.models import ServiceConfig
+from brewblox_devcon_spark.models import DiscoveryType, ServiceConfig
 
 TESTED = connection_handler.__name__
 
@@ -59,58 +59,58 @@ async def test_handler_discovery(app, client, mocker):
     mocker.patch(TESTED + '.DISCOVERY_INTERVAL_S', 0)
 
     config: ServiceConfig = app['config']
-    m_discover_serial: AsyncMock = mocker.patch(TESTED + '.discover_serial', autospec=True)
-    m_discover_tcp: AsyncMock = mocker.patch(TESTED + '.discover_tcp', autospec=True)
+    m_discover_usb: AsyncMock = mocker.patch(TESTED + '.discover_usb', autospec=True)
+    m_discover_mdns: AsyncMock = mocker.patch(TESTED + '.discover_mdns', autospec=True)
     m_discover_mqtt: AsyncMock = mocker.patch(TESTED + '.discover_mqtt', autospec=True)
 
     def reset():
-        m_discover_serial.reset_mock()
-        m_discover_tcp.reset_mock()
+        m_discover_usb.reset_mock()
+        m_discover_mdns.reset_mock()
         m_discover_mqtt.reset_mock()
 
-        m_discover_serial.side_effect = None
-        m_discover_tcp.side_effect = None
+        m_discover_usb.side_effect = None
+        m_discover_mdns.side_effect = None
         m_discover_mqtt.side_effect = None
 
     handler = connection_handler.ConnectionHandler(app)
 
-    # Discovery order is serial -> TCP -> MQTT
-    config['discovery'] = 'all'
+    # Discovery order is USB -> mDNS -> MQTT
+    config['discovery'] = DiscoveryType.all
 
     await handler.discover()
-    m_discover_serial.assert_awaited_once_with(app, handler)
-    m_discover_tcp.assert_not_awaited()
+    m_discover_usb.assert_awaited_once_with(app, handler)
+    m_discover_mdns.assert_not_awaited()
     m_discover_mqtt.assert_not_awaited()
 
     reset()
 
-    # Only discover TCP
-    config['discovery'] = 'lan'
-    m_discover_tcp.return_value = 'tcp_result'
+    # Only discover mDNS
+    config['discovery'] = DiscoveryType.mdns
+    m_discover_mdns.return_value = 'tcp_result'
 
     assert await handler.discover() == 'tcp_result'
-    m_discover_serial.assert_not_awaited()
+    m_discover_usb.assert_not_awaited()
     m_discover_mqtt.assert_not_awaited()
 
     reset()
 
     # Only discover MQTT
-    config['discovery'] = 'mqtt'
+    config['discovery'] = DiscoveryType.mqtt
     m_discover_mqtt.return_value = 'mqtt_result'
 
     assert await handler.discover() == 'mqtt_result'
-    m_discover_serial.assert_not_awaited()
-    m_discover_tcp.assert_not_awaited()
+    m_discover_usb.assert_not_awaited()
+    m_discover_mdns.assert_not_awaited()
 
     reset()
 
     # Retry if discovery fails the first time
-    config['discovery'] = 'lan'
-    m_discover_tcp.side_effect = [None, None, 'tcp_result']
+    config['discovery'] = DiscoveryType.mdns
+    m_discover_mdns.side_effect = [None, None, 'tcp_result']
 
     assert await handler.discover() == 'tcp_result'
-    assert m_discover_tcp.await_count == 3
-    m_discover_serial.assert_not_awaited()
+    assert m_discover_mdns.await_count == 3
+    m_discover_usb.assert_not_awaited()
     m_discover_mqtt.assert_not_awaited()
 
     reset()
@@ -118,9 +118,9 @@ async def test_handler_discovery(app, client, mocker):
     # Throw a timeout error after a while
     mocker.patch(TESTED + '.DISCOVERY_TIMEOUT_S', 0.01)
 
-    config['discovery'] = 'all'
-    m_discover_serial.return_value = None
-    m_discover_tcp.return_value = None
+    config['discovery'] = DiscoveryType.all
+    m_discover_usb.return_value = None
+    m_discover_mdns.return_value = None
     m_discover_mqtt.return_value = None
 
     with pytest.raises(ConnectionAbortedError):
@@ -134,10 +134,10 @@ async def test_handler_connect_order(app, client, mocker):
         for k in [
             'connect_mock',
             'connect_simulation',
-            'connect_serial',
+            'connect_usb',
             'connect_tcp',
-            'discover_serial',
-            'discover_tcp',
+            'discover_usb',
+            'discover_mdns',
             'discover_mqtt'
         ]
     }
@@ -157,13 +157,13 @@ async def test_handler_connect_order(app, client, mocker):
     config['simulation'] = False
     config['device_serial'] = None
     config['device_host'] = None
-    config['discovery'] = 'all'
+    config['discovery'] = DiscoveryType.all
     config['device_id'] = '01ab23ce'
 
     await handler.connect()
 
-    m_funcs['discover_serial'].assert_awaited_once_with(app, handler)
-    for f in without('discover_serial'):
+    m_funcs['discover_usb'].assert_awaited_once_with(app, handler)
+    for f in without('discover_usb'):
         f.assert_not_awaited()
 
     reset()
@@ -185,8 +185,8 @@ async def test_handler_connect_order(app, client, mocker):
 
     await handler.connect()
 
-    m_funcs['connect_serial'].assert_awaited_once_with(app, handler, 'serialface')
-    for f in without('connect_serial'):
+    m_funcs['connect_usb'].assert_awaited_once_with(app, handler, 'serialface')
+    for f in without('connect_usb'):
         f.assert_not_awaited()
 
     reset()
@@ -278,15 +278,15 @@ async def test_handler_discovery_error(app, client, mocker):
     mocker.patch(TESTED + '.DISCOVERY_INTERVAL_S', 0.001)
     mocker.patch(TESTED + '.DISCOVERY_TIMEOUT_S', 0.01)
 
-    m_discover_serial = mocker.patch(TESTED + '.discover_serial', autospec=True)
-    m_discover_serial.return_value = None
+    m_discover_usb = mocker.patch(TESTED + '.discover_usb', autospec=True)
+    m_discover_usb.return_value = None
 
     config: ServiceConfig = app['config']
     config['mock'] = False
     config['simulation'] = False
     config['device_serial'] = None
     config['device_host'] = None
-    config['discovery'] = 'usb'
+    config['discovery'] = DiscoveryType.usb
 
     service_status.set_enabled(app, True)
 
@@ -300,7 +300,7 @@ async def test_handler_discovery_error(app, client, mocker):
     # No reboot is required when discovery does not involve USB
     m_discover_mqtt = mocker.patch(TESTED + '.discover_mqtt', autospec=True)
     m_discover_mqtt.return_value = None
-    config['discovery'] = 'mqtt'
+    config['discovery'] = DiscoveryType.mqtt
 
     # No error, only a silent exit
     await handler.run()
