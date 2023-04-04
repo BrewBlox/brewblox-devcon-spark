@@ -141,7 +141,7 @@ async def connect_tcp(address, proc: subprocess.Popen = None) -> Connection:
     return conn
 
 
-async def connect_serial(address) -> Connection:
+async def connect_usb(address) -> Connection:
     LOGGER.info(f'Creating bridge for {address}')
 
     proc = subprocess.Popen([
@@ -166,7 +166,7 @@ async def connect(address: str) -> Connection:
     if is_tcp(address):
         connect_func = connect_tcp
     else:
-        connect_func = connect_serial
+        connect_func = connect_usb
 
     for _ in range(CONNECT_ATTEMPTS):
         try:

@@ -21,13 +21,19 @@ MqttProtocolType_ = Literal[
     'wss',
 ]
 
-DiscoveryType_ = Literal[
-    'all',
-    'usb',
-    'wifi',
-    'lan',
-    'mqtt',
-]
+
+class DiscoveryType(enum.Enum):
+    all = 1
+    usb = 2
+    mdns = 3
+    mqtt = 4
+
+    # Aliases for backwards compatibility
+    wifi = 3
+    lan = 3
+
+    def __str__(self):
+        return self.name
 
 
 class ServiceConfig(TypedDict):
@@ -52,7 +58,7 @@ class ServiceConfig(TypedDict):
     device_port: int
     device_serial: Optional[str]
     device_id: Optional[str]
-    discovery: DiscoveryType_
+    discovery: DiscoveryType
     display_ws_port: int
 
     # Network options

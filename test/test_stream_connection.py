@@ -90,11 +90,11 @@ async def test_tcp_connection_error(app, client, echo_server, test_port):
     await asyncio.wait_for(impl.disconnected.wait(), timeout=5)
 
 
-async def test_discover_tcp(app, client, echo_server, mocker, test_port):
+async def test_discover_mdns(app, client, echo_server, mocker, test_port):
     m_mdns_discover = mocker.patch(TESTED + '.mdns.discover_one', autospec=True)
     m_mdns_discover.return_value = ConnectInfo('localhost', test_port, app['config']['device_id'])
     callbacks = DummyCallbacks()
-    impl = await stream_connection.discover_tcp(app, callbacks)
+    impl = await stream_connection.discover_mdns(app, callbacks)
 
     await impl.send_request('mdns')
     await callbacks.response_ev.wait()
@@ -103,8 +103,8 @@ async def test_discover_tcp(app, client, echo_server, mocker, test_port):
     assert callbacks.event_msg == 'event'
 
 
-async def test_discover_tcp_none(app, client, mocker):
+async def test_discover_mdns_none(app, client, mocker):
     m_mdns_discover = mocker.patch(TESTED + '.mdns.discover_one', autospec=True)
     m_mdns_discover.side_effect = asyncio.TimeoutError
     callbacks = DummyCallbacks()
-    assert await stream_connection.discover_tcp(app, callbacks) is None
+    assert await stream_connection.discover_mdns(app, callbacks) is None

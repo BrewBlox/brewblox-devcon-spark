@@ -9,7 +9,7 @@ import pytest
 from brewblox_service import brewblox_logger, features, service
 
 from brewblox_devcon_spark.__main__ import create_parser
-from brewblox_devcon_spark.models import ServiceConfig
+from brewblox_devcon_spark.models import DiscoveryType, ServiceConfig
 
 LOGGER = brewblox_logger(__name__)
 
@@ -41,7 +41,7 @@ def app_config() -> ServiceConfig:
         'device_serial': '/dev/TESTEH',
         'device_id': '1234',
         'display_ws_port': 7377,
-        'discovery': 'all',
+        'discovery': DiscoveryType.all,
         'simulation': False,
         'mock': True,
         'command_timeout': 10,

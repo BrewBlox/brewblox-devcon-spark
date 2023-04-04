@@ -176,11 +176,11 @@ async def connect_simulation(app: web.Application,
     return await connect_subprocess(app, callbacks, port, proc, 'SIM', binary)
 
 
-async def connect_serial(app: web.Application,
-                         callbacks: ConnectionCallbacks,
-                         device_serial: Optional[str] = None,
-                         port: Optional[int] = None,
-                         ) -> ConnectionImplBase:  # pragma: no cover
+async def connect_usb(app: web.Application,
+                      callbacks: ConnectionCallbacks,
+                      device_serial: Optional[str] = None,
+                      port: Optional[int] = None,
+                      ) -> ConnectionImplBase:  # pragma: no cover
     config: ServiceConfig = app['config']
     device_serial = device_serial or config['device_serial']
     port = port or config['device_port']
@@ -191,9 +191,9 @@ async def connect_serial(app: web.Application,
     return await connect_subprocess(app, callbacks, port, proc, 'USB', device_serial)
 
 
-async def discover_tcp(app: web.Application,
-                       callbacks: ConnectionCallbacks,
-                       ) -> Optional[ConnectionImplBase]:
+async def discover_mdns(app: web.Application,
+                        callbacks: ConnectionCallbacks,
+                        ) -> Optional[ConnectionImplBase]:
     device_id = app['config']['device_id']
     try:
         resp = await mdns.discover_one(device_id,
@@ -204,15 +204,15 @@ async def discover_tcp(app: web.Application,
         return None
 
 
-async def discover_serial(app: web.Application,
-                          callbacks: ConnectionCallbacks,
-                          ) -> Optional[ConnectionImplBase]:  # pragma: no cover
+async def discover_usb(app: web.Application,
+                       callbacks: ConnectionCallbacks,
+                       ) -> Optional[ConnectionImplBase]:  # pragma: no cover
     config: ServiceConfig = app['config']
     device_id = config['device_id']
     for usb_port in list_ports.grep(SPARK_DEVICE_REGEX):
         if device_id is None or device_id.lower() == usb_port.serial_number.lower():
             LOGGER.info(f'Discovered {[v for v in usb_port]}')
-            return await connect_serial(app, callbacks, usb_port.device)
+            return await connect_usb(app, callbacks, usb_port.device)
         else:
             LOGGER.info(f'Discarding {[v for v in usb_port]}')
     return None
