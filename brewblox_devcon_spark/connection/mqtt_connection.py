@@ -85,7 +85,7 @@ class MqttDeviceTracker(features.ServiceFeature):
     async def _handshake_cb(self, topic: str, msg: str):
         device = topic.removeprefix(HANDSHAKE_TOPIC)
         if msg:
-            LOGGER.info(f'MQTT device published: {device}')
+            LOGGER.debug(f'MQTT device published: {device}')
             self._devices.setdefault(device, asyncio.Event()).set()
         else:
             LOGGER.debug(f'MQTT device removed: {device}')

@@ -84,7 +84,7 @@ class ServiceStatus(features.ServiceFeature):
         self.status_desc.connection_kind = connection_kind
         self.status_desc.connection_status = 'CONNECTED'
 
-        LOGGER.info('>>> CONNECTED')
+        LOGGER.info(f'>>> CONNECTED ({connection_kind})')
         self.connected_ev.set()
         self.acknowledged_ev.clear()
         self.synchronized_ev.clear()
