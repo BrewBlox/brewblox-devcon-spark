@@ -1,6 +1,6 @@
 # Spark Service
 
-[![Build Status](https://dev.azure.com/brewblox/brewblox/_apis/build/status/BrewBlox.brewblox-devcon-spark?branchName=develop)](https://dev.azure.com/brewblox/brewblox/_build/latest?definitionId=1&branchName=develop)
+[![CI build](https://github.com/BrewBlox/brewblox-devcon-spark/actions/workflows/build.yml/badge.svg)](https://github.com/BrewBlox/brewblox-devcon-spark/actions/workflows/build.yml)
 
 **For user documentation, see <https://www.brewblox.com>**
 
@@ -12,15 +12,13 @@ This includes USB/TCP communication with the controller, but also encoding, deco
 
 To set up the development environment, follow the instructions at <https://github.com/BrewBlox/brewblox-boilerplate#readme>.
 
-When running integration tests (`pytest --integration`), additional system packages are required in order to run the firmware simulator:
+Integration tests run against the firmware simulator.
+
+**If you run Ubuntu 22.04, and your tests fail, you may need to manually install libssl 1.1**.
 
 ```sh
-sudo apt install -y \
-    socat \
-    libboost-system1.67.0 \
-    libboost-program-options1.67.0 \
-    libboost-random1.67.0 \
-    libboost-thread1.67.0
+wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2_amd64.deb
 ```
 
 When updating firmware, the protobuf compiler is required:
@@ -57,5 +55,5 @@ Instead, they are re-downloaded during the CI build.
 - Commit the firmware changes to the *develop* branch in the [Brewblox firmware](https://github.com/BrewBlox/brewblox-firmware) repository.
 - Wait until the firmware CI build is done.
 - Run `bash dev/update-firmware.sh`
-- Run `pytest --integration` to verify that no code changes are required.
+- Run `pytest` to verify that no code changes are required.
 - Commit the changed files (firmware.ini, the proto submodule, and compiled _pb2.py files).

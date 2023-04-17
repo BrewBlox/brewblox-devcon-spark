@@ -12,10 +12,14 @@ from brewblox_service import brewblox_logger, features, http, strex
 
 from brewblox_devcon_spark import const
 from brewblox_devcon_spark.datastore import (STORE_URL, FlushedStore,
-                                             non_volatile)
+                                             non_isolated)
 
 SERVICE_STORE_KEY = '{name}-service-db'
 READY_TIMEOUT_S = 60
+
+# Known fields
+RECONNECT_DELAY_KEY = 'reconnect_delay'
+AUTOCONNECTING_KEY = 'autoconnecting'
 
 SYS_OBJECTS = [
     {'keys': keys, 'data': {}}
@@ -60,7 +64,7 @@ class ServiceConfigStore(FlushedStore):
 
         try:
             self._ready_event.clear()
-            if not self.volatile:
+            if not self.isolated:
                 resp = await http.session(self.app).post(f'{STORE_URL}/get', json={
                     'id': self.key,
                     'namespace': const.SPARK_NAMESPACE,
@@ -80,7 +84,7 @@ class ServiceConfigStore(FlushedStore):
             self._config = data
             self._ready_event.set()
 
-    @non_volatile
+    @non_isolated
     async def write(self):
         await asyncio.wait_for(self._ready_event.wait(), READY_TIMEOUT_S)
         await http.session(self.app).post(f'{STORE_URL}/set', json={
@@ -99,3 +103,27 @@ def setup(app: web.Application):
 
 def fget(app: web.Application) -> ServiceConfigStore:
     return features.get(app, ServiceConfigStore)
+
+# Convenience functions for know configuration
+
+
+def get_autoconnecting(app: web.Application) -> bool:
+    return bool(fget(app)._config.get(AUTOCONNECTING_KEY, True))
+
+
+def set_autoconnecting(app: web.Application, enabled: bool) -> bool:
+    enabled = bool(enabled)
+    with fget(app).open() as config:
+        config[AUTOCONNECTING_KEY] = enabled
+    return enabled
+
+
+def get_reconnect_delay(app: web.Application) -> float:
+    return float(fget(app)._config.get(RECONNECT_DELAY_KEY, 0))
+
+
+def set_reconnect_delay(app: web.Application, value: float) -> float:
+    value = float(value)
+    with fget(app).open() as config:
+        config[RECONNECT_DELAY_KEY] = value
+    return value

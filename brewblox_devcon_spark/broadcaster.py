@@ -4,6 +4,7 @@ Intermittently broadcasts status and blocks to the eventbus
 
 
 import asyncio
+import json
 
 from aiohttp import web
 from brewblox_service import brewblox_logger, features, mqtt, repeater, strex
@@ -24,15 +25,15 @@ class Broadcaster(repeater.RepeaterFeature):
         config: ServiceConfig = app['config']
         self.name = config['name']
         self.interval = config['broadcast_interval']
-        self.volatile = self.interval <= 0 or config['volatile']
+        self.isolated = self.interval <= 0 or config['isolated']
         self.state_topic = config['state_topic'] + f'/{self.name}'
         self.history_topic = config['history_topic'] + f'/{self.name}'
 
-        self._will_message = {
+        self._will_message = json.dumps({
             'key': self.name,
             'type': 'Spark.state',
             'data': None,
-        }
+        })
 
         # A will is published if the client connection is broken
         mqtt.set_client_will(app,
@@ -40,7 +41,7 @@ class Broadcaster(repeater.RepeaterFeature):
                              self._will_message)
 
     async def prepare(self):
-        if self.volatile:
+        if self.isolated:
             raise repeater.RepeaterCancelled()
 
     async def before_shutdown(self, app: web.Application):
@@ -55,13 +56,10 @@ class Broadcaster(repeater.RepeaterFeature):
     async def run(self):
         try:
             await asyncio.sleep(self.interval)
-            synched = await service_status.wait_synchronized(self.app, wait=False)
-
-            status_data = service_status.desc(self.app)
             blocks = []
 
             try:
-                if synched:
+                if service_status.is_synchronized(self.app):
                     blocks, logged_blocks = await controller.fget(self.app).read_all_broadcast_blocks()
 
                     # Convert list to key/value format suitable for history
@@ -74,10 +72,10 @@ class Broadcaster(repeater.RepeaterFeature):
                     await mqtt.publish(self.app,
                                        self.history_topic,
                                        err=False,
-                                       message={
+                                       message=json.dumps({
                                            'key': self.name,
                                            'data': history_data,
-                                       })
+                                       }))
 
             finally:
                 # State event is always published
@@ -85,16 +83,16 @@ class Broadcaster(repeater.RepeaterFeature):
                                    self.state_topic,
                                    err=False,
                                    retain=True,
-                                   message={
+                                   message=json.dumps({
                                        'key': self.name,
                                        'type': 'Spark.state',
                                        'data': {
-                                           'status': status_data.dict(),
+                                           'status': service_status.desc(self.app).dict(),
                                            'blocks': [v.dict() for v in blocks],
                                            'relations': calculate_relations(blocks),
                                            'claims': calculate_claims(blocks),
                                        },
-                                   })
+                                   }))
 
         except Exception as ex:
             LOGGER.debug(f'{self} exception: {strex(ex)}')

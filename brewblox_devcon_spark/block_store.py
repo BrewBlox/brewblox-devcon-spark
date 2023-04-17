@@ -11,7 +11,7 @@ from brewblox_service import brewblox_logger, features, http, strex
 
 from brewblox_devcon_spark import const
 from brewblox_devcon_spark.datastore import (STORE_URL, FlushedStore,
-                                             non_volatile)
+                                             non_isolated)
 from brewblox_devcon_spark.models import StoreEntry
 from brewblox_devcon_spark.twinkeydict import TwinKeyDict, TwinKeyError
 
@@ -60,14 +60,15 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict[str, int, dict]):
         try:
             self.key = None
             self._ready_event.clear()
-            if not self.volatile:
+            if not self.isolated:
                 resp = await http.session(self.app).post(f'{STORE_URL}/get', json={
                     'id': key,
                     'namespace': const.SPARK_NAMESPACE,
                 })
                 self.key = key
                 content = await resp.json()
-                data = content.get('value', {}).get('data', [])
+                content_value = content.get('value') or {}
+                data = content_value.get('data') or []
                 LOGGER.info(f'{self} Read {len(data)} blocks')
 
         except asyncio.CancelledError:  # pragma: no cover
@@ -88,7 +89,7 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict[str, int, dict]):
 
             self._ready_event.set()
 
-    @non_volatile
+    @non_isolated
     async def write(self):
         await asyncio.wait_for(self._ready_event.wait(), READY_TIMEOUT_S)
         if self.key is None:

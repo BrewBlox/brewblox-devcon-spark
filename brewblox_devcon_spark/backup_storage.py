@@ -47,9 +47,7 @@ class BackupStorage(repeater.RepeaterFeature):
             interval = self.interval_s if self.last_ok else self.retry_interval_s
             await asyncio.sleep(interval)
 
-            synched = await service_status.wait_synchronized(self.app, wait=False)
-
-            if synched:
+            if service_status.is_synchronized(self.app):
                 name = f'autosave_blocks_{self.name}_' + datetime.today().strftime('%Y-%m-%d')
                 await self.save(BackupIdentity(name=name))
                 self.last_ok = True

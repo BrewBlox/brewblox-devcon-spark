@@ -19,17 +19,17 @@ FLUSH_DELAY_S = 5
 SHUTDOWN_WRITE_TIMEOUT_S = 2
 
 
-def non_volatile(func):
+def non_isolated(func):
     @wraps(func)
     async def wrapper(self, *args, **kwargs):
-        if self.volatile:
+        if self.isolated:
             return
         return await func(self, *args, **kwargs)
     return wrapper
 
 
 async def check_remote(app: web.Application):
-    if app['config']['volatile']:
+    if app['config']['isolated']:
         return
     num_attempts = 0
     while True:
@@ -48,12 +48,12 @@ class FlushedStore(repeater.RepeaterFeature):
 
     def __init__(self, app: web.Application):
         super().__init__(app)
-        self._volatile = app['config']['volatile']
+        self._isolated = app['config']['isolated']
         self._changed_event: asyncio.Event = None
 
     @property
-    def volatile(self):
-        return self._volatile
+    def isolated(self):
+        return self._isolated
 
     def set_changed(self):
         if self._changed_event:
@@ -70,8 +70,8 @@ class FlushedStore(repeater.RepeaterFeature):
 
     async def prepare(self):
         self._changed_event = asyncio.Event()
-        if self._volatile:
-            LOGGER.info(f'{self} is volatile (will not read/write datastore)')
+        if self._isolated:
+            LOGGER.info(f'{self} is isolated (will not read/write datastore)')
             raise repeater.RepeaterCancelled()
 
     async def run(self):

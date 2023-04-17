@@ -8,9 +8,10 @@ from socket import inet_aton
 import pytest
 from aiozeroconf import ServiceInfo, ServiceStateChange
 
-from brewblox_devcon_spark import connect_funcs, mdns
+from brewblox_devcon_spark import mdns
 
 TESTED = mdns.__name__
+DNS_TYPE = '_brewblox._tcp.local.'
 
 
 class ServiceBrowserMock():
@@ -30,18 +31,17 @@ class ServiceBrowserMock():
 def conf_mock(mocker):
 
     async def get_service_info(service_type, name):
-        dns_type = connect_funcs.BREWBLOX_DNS_TYPE
         if name == 'id0':
             return ServiceInfo(
                 service_type,
-                f'{name}.{dns_type}',
+                f'{name}.{DNS_TYPE}',
                 address=inet_aton('0.0.0.0'),
                 properties={b'ID': name.encode()},
             )
         if name == 'id1':
             return ServiceInfo(
                 service_type,
-                f'{name}.{dns_type}',
+                f'{name}.{DNS_TYPE}',
                 server=f'{name}.local.',
                 address=inet_aton('1.2.3.4'),
                 port=1234,
@@ -50,7 +50,7 @@ def conf_mock(mocker):
         if name == 'id2':
             return ServiceInfo(
                 service_type,
-                f'{name}.{dns_type}',
+                f'{name}.{DNS_TYPE}',
                 server=f'{name}.local.',
                 address=inet_aton('4.3.2.1'),
                 port=4321,
@@ -59,7 +59,7 @@ def conf_mock(mocker):
         if name == 'id3':
             return ServiceInfo(
                 service_type,
-                f'{name}.{dns_type}',
+                f'{name}.{DNS_TYPE}',
                 server=f'{name}.local.',
                 address=inet_aton('4.3.2.1'),
                 port=4321,
@@ -81,20 +81,18 @@ def browser_mock(mocker):
 
 
 async def test_discover_one(app, client, event_loop, browser_mock, conf_mock):
-    dns_type = connect_funcs.BREWBLOX_DNS_TYPE
-    assert await mdns.discover_one(None, dns_type) == ('1.2.3.4', 1234, 'id1')
-    assert await mdns.discover_one('id2', dns_type) == ('4.3.2.1', 4321, 'id2')
+    assert await mdns.discover_one(None, DNS_TYPE) == ('1.2.3.4', 1234, 'id1')
+    assert await mdns.discover_one('id2', DNS_TYPE) == ('4.3.2.1', 4321, 'id2')
 
-    assert await mdns.discover_one(None, dns_type, 1) == ('1.2.3.4', 1234, 'id1')
-    assert await mdns.discover_one('id2', dns_type, 1) == ('4.3.2.1', 4321, 'id2')
+    assert await mdns.discover_one(None, DNS_TYPE, 1) == ('1.2.3.4', 1234, 'id1')
+    assert await mdns.discover_one('id2', DNS_TYPE, 1) == ('4.3.2.1', 4321, 'id2')
 
     with pytest.raises(asyncio.TimeoutError):
-        await mdns.discover_one('leprechauns', dns_type, 0.1)
+        await mdns.discover_one('leprechauns', DNS_TYPE, 0.1)
 
 
 async def test_discover_all(app, client, event_loop, browser_mock, conf_mock):
-    dns_type = connect_funcs.BREWBLOX_DNS_TYPE
     retv = []
-    async for res in mdns.discover_all(None, dns_type, 0.01):
+    async for res in mdns.discover_all(None, DNS_TYPE, 0.01):
         retv.append(res)
     assert len(retv) == 2

@@ -9,29 +9,9 @@ import pytest
 from brewblox_service import brewblox_logger, features, service
 
 from brewblox_devcon_spark.__main__ import create_parser
-from brewblox_devcon_spark.models import ServiceConfig
+from brewblox_devcon_spark.models import DiscoveryType, ServiceConfig
 
 LOGGER = brewblox_logger(__name__)
-
-
-def pytest_addoption(parser):
-    parser.addoption(
-        '--integration', action='store_true', default=False, help='run integration tests'
-    )
-
-
-def pytest_configure(config):
-    config.addinivalue_line('markers', 'integration: mark test as (slow) integration test')
-
-
-def pytest_collection_modifyitems(config, items):
-    if config.getoption('--integration'):
-        # --integration given in cli: do not skip tests
-        return
-    skip_integration = pytest.mark.skip(reason='need --integration option to run')
-    for item in items:
-        if 'integration' in item.keywords:
-            item.add_marker(skip_integration)
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -60,13 +40,16 @@ def app_config() -> ServiceConfig:
         # From brewblox_devcon_spark
         'device_serial': '/dev/TESTEH',
         'device_id': '1234',
-        'discovery': 'all',
+        'display_ws_port': 7377,
+        'discovery': DiscoveryType.all,
         'simulation': False,
+        'mock': True,
         'command_timeout': 10,
         'broadcast_interval': 5,
-        'volatile': True,
+        'isolated': True,
         'backup_interval': 3600,
         'backup_retry_interval': 300,
+        'time_sync_interval': 900,
     }
 
 
@@ -85,7 +68,8 @@ def sys_args(app_config) -> list:
         '--broadcast-interval', app_config['broadcast_interval'],
         '--backup-interval', app_config['backup_interval'],
         '--backup-retry-interval', app_config['backup_retry_interval'],
-        '--volatile',
+        '--isolated',
+        '--mock',
     ]]
 
 
@@ -120,6 +104,35 @@ async def client(app, aiohttp_client, aiohttp_server):
     LOGGER.debug(app.on_startup)
 
     return await aiohttp_client(await aiohttp_server(app))
+
+
+@pytest.fixture(scope='session')
+def find_free_port():
+    """
+    Returns a factory that finds the next free port that is available on the OS
+    This is a bit of a hack, it does this by creating a new socket, and calling
+    bind with the 0 port. The operating system will assign a brand new port,
+    which we can find out using getsockname(). Once we have the new port
+    information we close the socket thereby returning it to the free pool.
+    This means it is technically possible for this function to return the same
+    port twice (for example if run in very quick succession), however operating
+    systems return a random port number in the default range (1024 - 65535),
+    and it is highly unlikely for two processes to get the same port number.
+    In other words, it is possible to flake, but incredibly unlikely.
+    """
+
+    def _find_free_port():
+        import socket
+
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(('0.0.0.0', 0))
+        portnum = s.getsockname()[1]
+        s.close()
+
+        return portnum
+
+    return _find_free_port
 
 
 @pytest.fixture
