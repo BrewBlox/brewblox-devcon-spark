@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x15SetpointProfile.proto\x12\x14\x62lox.SetpointProfile\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"b\n\x05Point\x12\x19\n\x04time\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x08\x03\x92?\x02\x38 \x12)\n\x0btemperature\x18\x02 \x01(\x05\x42\x12\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 H\x00\x42\x13\n\x11temperature_oneof\"\xb5\x01\n\x05\x42lock\x12+\n\x06points\x18\x01 \x03(\x0b\x32\x1b.blox.SetpointProfile.Point\x12\x0f\n\x07\x65nabled\x18\x03 \x01(\x08\x12\x1e\n\x08targetId\x18\x04 \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xaf\x02\x92?\x02\x38\x10\x12\x1a\n\x05start\x18\x06 \x01(\rB\x0b\x8a\xb5\x18\x02X\x01\x92?\x02\x38 \x12#\n\x0e\x64rivenTargetId\x18Z \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03:\r\x8a\xb5\x18\x03\x18\xb7\x02\x8a\xb5\x18\x02H\x0f\x62\x06proto3'
+  serialized_pb=b'\n\x15SetpointProfile.proto\x12\x14\x62lox.SetpointProfile\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"b\n\x05Point\x12\x19\n\x04time\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x08\x03\x92?\x02\x38 \x12)\n\x0btemperature\x18\x02 \x01(\x05\x42\x12\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 H\x00\x42\x13\n\x11temperature_oneof\"\xe6\x01\n\x05\x42lock\x12+\n\x06points\x18\x01 \x03(\x0b\x32\x1b.blox.SetpointProfile.Point\x12\x0f\n\x07\x65nabled\x18\x03 \x01(\x08\x12\x1e\n\x08targetId\x18\x04 \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xaf\x02\x92?\x02\x38\x10\x12/\n\x07setting\x18\x05 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x1a\n\x05start\x18\x06 \x01(\rB\x0b\x8a\xb5\x18\x02X\x01\x92?\x02\x38 \x12#\n\x0e\x64rivenTargetId\x18Z \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03:\r\x8a\xb5\x18\x03\x18\xb7\x02\x8a\xb5\x18\x02H\x0f\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,])
 
@@ -102,14 +102,21 @@ _BLOCK = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\003\030\257\002\222?\0028\020', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='start', full_name='blox.SetpointProfile.Block.start', index=3,
+      name='setting', full_name='blox.SetpointProfile.Block.setting', index=3,
+      number=5, type=17, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\0020\001\212\265\030\002\010\001\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='start', full_name='blox.SetpointProfile.Block.start', index=4,
       number=6, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002X\001\222?\0028 ', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='drivenTargetId', full_name='blox.SetpointProfile.Block.drivenTargetId', index=4,
+      name='drivenTargetId', full_name='blox.SetpointProfile.Block.drivenTargetId', index=5,
       number=90, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -128,7 +135,7 @@ _BLOCK = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=178,
-  serialized_end=359,
+  serialized_end=408,
 )
 
 _POINT.oneofs_by_name['temperature_oneof'].fields.append(
@@ -157,6 +164,7 @@ _sym_db.RegisterMessage(Block)
 _POINT.fields_by_name['time']._options = None
 _POINT.fields_by_name['temperature']._options = None
 _BLOCK.fields_by_name['targetId']._options = None
+_BLOCK.fields_by_name['setting']._options = None
 _BLOCK.fields_by_name['start']._options = None
 _BLOCK.fields_by_name['drivenTargetId']._options = None
 _BLOCK._options = None
