@@ -5,6 +5,7 @@ on:
     branches: ["**"]
   pull_request:
     branches: [develop, edge]
+  workflow_dispatch: {}
 
 jobs:
   build:
