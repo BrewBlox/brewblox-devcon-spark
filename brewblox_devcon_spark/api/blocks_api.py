@@ -11,7 +11,8 @@ from aiohttp_pydantic.oas.typing import r200, r201
 from brewblox_service import brewblox_logger, mqtt
 
 from brewblox_devcon_spark import controller
-from brewblox_devcon_spark.models import Block, BlockIdentity, BlockNameChange
+from brewblox_devcon_spark.models import (Block, BlockIdentity, BlockList,
+                                          BlockNameChange)
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -132,6 +133,21 @@ class PatchView(BlocksView):
         return web.json_response(
             block.dict()
         )
+
+
+@routes.view('/blocks/multipatch')
+class MultiPatchView(BlocksView):
+    async def post(self, args: BlockList) -> r200[list[Block]]:
+        """
+        Patch multiple existing blocks.
+
+        Tags: Blocks
+        """
+        blocks = await self.controller.multipatch_block(args.__root__)
+        await self.publish(changed=blocks)
+        return web.json_response([
+            block.dict() for block in blocks
+        ])
 
 
 @routes.view('/blocks/delete')

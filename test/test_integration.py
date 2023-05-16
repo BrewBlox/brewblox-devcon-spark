@@ -219,6 +219,12 @@ async def test_patch(app, client, block_args, m_publish):
     assert m_publish.call_count == 2
 
 
+async def test_multipatch(app, client, block_args, m_publish):
+    await response(client.post('/blocks/create', json=block_args), 201)
+    assert await response(client.post('/blocks/multipatch', json=[block_args, block_args, block_args]))
+    assert m_publish.call_count == 2
+
+
 async def test_delete(app, client, block_args):
     await response(client.post('/blocks/create', json=block_args), 201)
 

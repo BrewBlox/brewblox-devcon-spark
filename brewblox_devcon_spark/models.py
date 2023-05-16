@@ -93,6 +93,10 @@ class Block(BaseModel):
     data: dict[str, Any]
 
 
+class BlockList(BaseModel):
+    __root__: list[Block]
+
+
 class FirmwareBlockIdentity(BaseModel):
     nid: int
     type: Optional[str]
