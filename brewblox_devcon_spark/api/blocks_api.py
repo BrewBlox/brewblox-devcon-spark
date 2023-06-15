@@ -11,7 +11,8 @@ from aiohttp_pydantic.oas.typing import r200, r201
 from brewblox_service import brewblox_logger, mqtt
 
 from brewblox_devcon_spark import controller
-from brewblox_devcon_spark.models import (Block, BlockIdentity, BlockList,
+from brewblox_devcon_spark.models import (Block, BlockIdentity,
+                                          BlockIdentityList, BlockList,
                                           BlockNameChange)
 
 LOGGER = brewblox_logger(__name__)
@@ -135,21 +136,6 @@ class PatchView(BlocksView):
         )
 
 
-@routes.view('/blocks/multipatch')
-class MultiPatchView(BlocksView):
-    async def post(self, args: BlockList) -> r200[list[Block]]:
-        """
-        Patch multiple existing blocks.
-
-        Tags: Blocks
-        """
-        blocks = await self.controller.multipatch_block(args.__root__)
-        await self.publish(changed=blocks)
-        return web.json_response([
-            block.dict() for block in blocks
-        ])
-
-
 @routes.view('/blocks/delete')
 class DeleteView(BlocksView):
     async def post(self, args: BlockIdentity) -> r200[BlockIdentity]:
@@ -163,6 +149,96 @@ class DeleteView(BlocksView):
         return web.json_response(
             ident.dict()
         )
+
+
+@routes.view('/blocks/batch/create')
+class BatchCreateView(BlocksView):
+    async def post(self, args: BlockList) -> r200[list[Block]]:
+        """
+        Create multiple blocks.
+
+        Tags: Blocks
+        """
+        blocks_in = args.__root__
+        blocks_out = []
+        for block in blocks_in:
+            blocks_out.append(await self.controller.create_block(block))
+        await self.publish(changed=blocks_out)
+        return web.json_response([
+            block.dict() for block in blocks_out
+        ],
+            status=201)
+
+
+@routes.view('/blocks/batch/read')
+class BatchReadView(BlocksView):
+    async def post(self, args: BlockIdentityList) -> r200[list[Block]]:
+        """
+        Read multiple existing blocks.
+
+        Tags: Blocks
+        """
+        blocks_in = args.__root__
+        blocks_out = []
+        for block in blocks_in:
+            blocks_out.append(await self.controller.read_block(block))
+        return web.json_response([
+            block.dict() for block in blocks_out
+        ])
+
+
+@routes.view('/blocks/batch/write')
+class BatchWriteView(BlocksView):
+    async def post(self, args: BlockList) -> r200[list[Block]]:
+        """
+        Write multiple existing blocks.
+
+        Tags: Blocks
+        """
+        blocks_in = args.__root__
+        blocks_out = []
+        for block in blocks_in:
+            blocks_out.append(await self.controller.write_block(block))
+        await self.publish(changed=blocks_out)
+        return web.json_response([
+            block.dict() for block in blocks_out
+        ])
+
+
+@routes.view('/blocks/batch/patch')
+class BatchPatchView(BlocksView):
+    async def post(self, args: BlockList) -> r200[list[Block]]:
+        """
+        Patch multiple existing blocks.
+
+        Tags: Blocks
+        """
+        blocks_in = args.__root__
+        blocks_out = []
+        for block in blocks_in:
+            blocks_out.append(await self.controller.patch_block(block))
+        await self.publish(changed=blocks_out)
+        return web.json_response([
+            block.dict() for block in blocks_out
+        ])
+
+
+@routes.view('/blocks/batch/delete')
+class BatchDeleteView(BlocksView):
+    async def post(self, args: BlockIdentityList) -> r200[list[Block]]:
+        """
+        Delete multiple existing blocks.
+
+        Tags: Blocks
+        """
+        idents_in = args.__root__
+        idents_out = []
+        for ident in idents_in:
+            idents_out.append(await self.controller.delete_block(ident))
+        await self.publish(deleted=idents_out)
+        return web.json_response([
+            ident.dict() for ident in idents_out
+        ])
 
 
 @routes.view('/blocks/all/read')

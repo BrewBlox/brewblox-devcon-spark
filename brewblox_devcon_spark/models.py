@@ -97,6 +97,10 @@ class BlockList(BaseModel):
     __root__: list[Block]
 
 
+class BlockIdentityList(BaseModel):
+    __root__: list[BlockIdentity]
+
+
 class FirmwareBlockIdentity(BaseModel):
     nid: int
     type: Optional[str]

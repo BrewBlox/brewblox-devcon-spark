@@ -351,28 +351,6 @@ class SparkController(features.ServiceFeature):
             block = self._to_block(block)
             return block
 
-    async def multipatch_block(self, blocks: list[Block]) -> list[Block]:
-        """
-        Write to pre-existing blocks on the controller.
-        Existing values will be used for all fields not present in `block.data`.
-
-        The behavior is the same as patch_block(), but calls are batched.
-
-        Args:
-            blocks (list[Block]):
-                A list of complete blocks. Either sid or nid may be omitted,
-                and existing data will be used for all fields not set in block data.
-
-        Returns:
-            Block:
-                The desired blocks, as present on the controller after writing.
-        """
-        async with self._execute('Multipatch blocks'):
-            blocks = [self._to_firmware_block(v) for v in blocks]
-            blocks = await asyncio.gather(*[self._cmder.patch_block(v) for v in blocks])
-            blocks = [self._to_block(v) for v in blocks]
-            return blocks
-
     async def create_block(self, block: Block) -> Block:
         """
         Create a new block on the controller.
