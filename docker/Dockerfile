@@ -1,4 +1,4 @@
-FROM python:3.9 as base
+FROM python:3.9-bullseye as base
 
 ENV PIP_EXTRA_INDEX_URL=https://www.piwheels.org/simple
 ENV PIP_FIND_LINKS=/wheeley
@@ -19,7 +19,7 @@ RUN set -ex \
     && bash -c "rm /app/firmware/${OTHER_SIM}" \
     && rm /app/firmware/*.elf
 
-FROM python:3.9-slim
+FROM python:3.9-slim-bullseye
 EXPOSE 5000
 WORKDIR /app
 
