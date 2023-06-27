@@ -23,44 +23,38 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x12\x44igitalInput.proto\x12\x11\x62lox.DigitalInput\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\xf4\x01\n\x05\x42lock\x12\x1d\n\x08hwDevice\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\n\x92?\x02\x38\x10\x12\x16\n\x07\x63hannel\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12\x37\n\x05state\x18\x03 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x0c\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x12\x0e\n\x06invert\x18\x04 \x01(\x08\x12\x36\n\nswitchType\x18\x05 \x01(\x0e\x32\".blox.DigitalInput.InputSwitchType\x12$\n\rpulseDuration\x18\x06 \x01(\rB\r\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07:\r\x8a\xb5\x18\x03\x18\xca\x02\x8a\xb5\x18\x02H\x1b*[\n\x0fInputSwitchType\x12\x19\n\x15SWITCH_TYPE_MOMENTARY\x10\x00\x12\x15\n\x11SWITCH_TYPE_PULSE\x10\x01\x12\x16\n\x12SWITCH_TYPE_TOGGLE\x10\x02\x62\x06proto3'
+  serialized_pb=b'\n\x12\x44igitalInput.proto\x12\x11\x62lox.DigitalInput\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\xa6\x02\n\x05\x42lock\x12\x1d\n\x08hwDevice\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\n\x92?\x02\x38\x10\x12\x16\n\x07\x63hannel\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12\x37\n\x05state\x18\x03 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x0c\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x12\x0e\n\x06invert\x18\x04 \x01(\x08\x12\x33\n\x08\x62\x65havior\x18\x05 \x01(\x0e\x32!.blox.DigitalInput.ToggleBehavior\x12$\n\rminActiveTime\x18\x06 \x01(\rB\r\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x12\x33\n\x07hwState\x18\x07 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x06\x8a\xb5\x18\x02(\x01:\r\x8a\xb5\x18\x03\x18\xca\x02\x8a\xb5\x18\x02H\x1b*-\n\x0eToggleBehavior\x12\n\n\x06\x44IRECT\x10\x00\x12\x0f\n\x0b\x41LTERNATING\x10\x01\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,IoArray__pb2.DESCRIPTOR,])
 
-_INPUTSWITCHTYPE = _descriptor.EnumDescriptor(
-  name='InputSwitchType',
-  full_name='blox.DigitalInput.InputSwitchType',
+_TOGGLEBEHAVIOR = _descriptor.EnumDescriptor(
+  name='ToggleBehavior',
+  full_name='blox.DigitalInput.ToggleBehavior',
   filename=None,
   file=DESCRIPTOR,
   create_key=_descriptor._internal_create_key,
   values=[
     _descriptor.EnumValueDescriptor(
-      name='SWITCH_TYPE_MOMENTARY', index=0, number=0,
+      name='DIRECT', index=0, number=0,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='SWITCH_TYPE_PULSE', index=1, number=1,
-      serialized_options=None,
-      type=None,
-      create_key=_descriptor._internal_create_key),
-    _descriptor.EnumValueDescriptor(
-      name='SWITCH_TYPE_TOGGLE', index=2, number=2,
+      name='ALTERNATING', index=1, number=1,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=333,
-  serialized_end=424,
+  serialized_start=383,
+  serialized_end=428,
 )
-_sym_db.RegisterEnumDescriptor(_INPUTSWITCHTYPE)
+_sym_db.RegisterEnumDescriptor(_TOGGLEBEHAVIOR)
 
-InputSwitchType = enum_type_wrapper.EnumTypeWrapper(_INPUTSWITCHTYPE)
-SWITCH_TYPE_MOMENTARY = 0
-SWITCH_TYPE_PULSE = 1
-SWITCH_TYPE_TOGGLE = 2
+ToggleBehavior = enum_type_wrapper.EnumTypeWrapper(_TOGGLEBEHAVIOR)
+DIRECT = 0
+ALTERNATING = 1
 
 
 
@@ -101,19 +95,26 @@ _BLOCK = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='switchType', full_name='blox.DigitalInput.Block.switchType', index=4,
+      name='behavior', full_name='blox.DigitalInput.Block.behavior', index=4,
       number=5, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='pulseDuration', full_name='blox.DigitalInput.Block.pulseDuration', index=5,
+      name='minActiveTime', full_name='blox.DigitalInput.Block.minActiveTime', index=5,
       number=6, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=b'\212\265\030\002\010\003\212\265\030\003\020\350\007', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='hwState', full_name='blox.DigitalInput.Block.hwState', index=6,
+      number=7, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=b'\212\265\030\002(\001', file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -127,13 +128,14 @@ _BLOCK = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=87,
-  serialized_end=331,
+  serialized_end=381,
 )
 
 _BLOCK.fields_by_name['state'].enum_type = IoArray__pb2._DIGITALSTATE
-_BLOCK.fields_by_name['switchType'].enum_type = _INPUTSWITCHTYPE
+_BLOCK.fields_by_name['behavior'].enum_type = _TOGGLEBEHAVIOR
+_BLOCK.fields_by_name['hwState'].enum_type = IoArray__pb2._DIGITALSTATE
 DESCRIPTOR.message_types_by_name['Block'] = _BLOCK
-DESCRIPTOR.enum_types_by_name['InputSwitchType'] = _INPUTSWITCHTYPE
+DESCRIPTOR.enum_types_by_name['ToggleBehavior'] = _TOGGLEBEHAVIOR
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 Block = _reflection.GeneratedProtocolMessageType('Block', (_message.Message,), {
@@ -147,6 +149,7 @@ _sym_db.RegisterMessage(Block)
 _BLOCK.fields_by_name['hwDevice']._options = None
 _BLOCK.fields_by_name['channel']._options = None
 _BLOCK.fields_by_name['state']._options = None
-_BLOCK.fields_by_name['pulseDuration']._options = None
+_BLOCK.fields_by_name['minActiveTime']._options = None
+_BLOCK.fields_by_name['hwState']._options = None
 _BLOCK._options = None
 # @@protoc_insertion_point(module_scope)
