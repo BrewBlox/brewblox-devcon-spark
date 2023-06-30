@@ -23,7 +23,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x12\x44igitalInput.proto\x12\x11\x62lox.DigitalInput\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\xa6\x02\n\x05\x42lock\x12\x1d\n\x08hwDevice\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\n\x92?\x02\x38\x10\x12\x16\n\x07\x63hannel\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12\x37\n\x05state\x18\x03 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x0c\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x12\x0e\n\x06invert\x18\x04 \x01(\x08\x12\x33\n\x08\x62\x65havior\x18\x05 \x01(\x0e\x32!.blox.DigitalInput.ToggleBehavior\x12$\n\rminActiveTime\x18\x06 \x01(\rB\r\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x12\x33\n\x07hwState\x18\x07 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x06\x8a\xb5\x18\x02(\x01:\r\x8a\xb5\x18\x03\x18\xca\x02\x8a\xb5\x18\x02H\x1b*-\n\x0eToggleBehavior\x12\n\n\x06\x44IRECT\x10\x00\x12\x0f\n\x0b\x41LTERNATING\x10\x01\x62\x06proto3'
+  serialized_pb=b'\n\x12\x44igitalInput.proto\x12\x11\x62lox.DigitalInput\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\xac\x02\n\x05\x42lock\x12\x1d\n\x08hwDevice\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\n\x92?\x02\x38\x10\x12\x16\n\x07\x63hannel\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12\x37\n\x05state\x18\x03 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x0c\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02(\x01\x12\x0e\n\x06invert\x18\x04 \x01(\x08\x12\x33\n\x08\x62\x65havior\x18\x05 \x01(\x0e\x32!.blox.DigitalInput.ToggleBehavior\x12$\n\rminActiveTime\x18\x06 \x01(\rB\r\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x12\x33\n\x07hwState\x18\x07 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x06\x8a\xb5\x18\x02(\x01:\x13\x8a\xb5\x18\x03\x18\xca\x02\x8a\xb5\x18\x02H\x1b\x8a\xb5\x18\x02H\x11*-\n\x0eToggleBehavior\x12\n\n\x06\x44IRECT\x10\x00\x12\x0f\n\x0b\x41LTERNATING\x10\x01\x62\x06proto3'
   ,
   dependencies=[brewblox__pb2.DESCRIPTOR,nanopb__pb2.DESCRIPTOR,IoArray__pb2.DESCRIPTOR,])
 
@@ -47,8 +47,8 @@ _TOGGLEBEHAVIOR = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=383,
-  serialized_end=428,
+  serialized_start=389,
+  serialized_end=434,
 )
 _sym_db.RegisterEnumDescriptor(_TOGGLEBEHAVIOR)
 
@@ -121,14 +121,14 @@ _BLOCK = _descriptor.Descriptor(
   nested_types=[],
   enum_types=[
   ],
-  serialized_options=b'\212\265\030\003\030\312\002\212\265\030\002H\033',
+  serialized_options=b'\212\265\030\003\030\312\002\212\265\030\002H\033\212\265\030\002H\021',
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
   serialized_start=87,
-  serialized_end=381,
+  serialized_end=387,
 )
 
 _BLOCK.fields_by_name['state'].enum_type = IoArray__pb2._DIGITALSTATE
