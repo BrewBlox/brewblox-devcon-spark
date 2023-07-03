@@ -48,7 +48,7 @@ jobs:
 
       - name: Download firmware
         run: |
-          bash dev/download-firmware.sh
+          invoke download-firmware
 
       - name: Test
         run: |

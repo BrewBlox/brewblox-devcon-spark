@@ -21,13 +21,6 @@ wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubun
 sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2_amd64.deb
 ```
 
-When updating firmware, the protobuf compiler is required:
-
-```sh
-sudo apt install -y \
-    protobuf-compiler
-```
-
 ## Firmware
 
 The Spark service is coupled to a specific Spark firmware version.
@@ -38,14 +31,14 @@ The firmware.ini file contains a sha for the relevant brewblox-proto commit.
 
 The brewblox-proto repository only contains .proto files. The associated pb2.py files are compiled here and committed into version control.
 
-Firmware dependency management is handled by scripts in *dev/*:
+Firmware dependency management is handled by [invoke](https://docs.pyinvoke.org/en/stable/index.html) commands, defined in `tasks.py`:
 
-**[update-firmware.sh](./dev/update-firmware.sh)** fetches the latest firmware.ini file for a given firmware build (*develop* by default), checks out the associated brewblox-proto commit for the submodule, and calls both `compile-proto.sh` and `download-firmware.sh`.
+`invoke update-firmware` fetches the latest firmware.ini file for a given firmware build (*develop* by default), checks out the associated brewblox-proto commit for the submodule, and calls both `compile-proto.sh` and `download-firmware.sh`.
 
-**[compile-proto.sh](./dev/compile-proto.sh)** compiles .proto files found in the proto submodule into _pb2.py python files.
+`invoke compile-proto` compiles .proto files found in the proto submodule into _pb2.py python files.
 The_pb2.py files are committed into version control.
 
-**[download-firmware.sh](./dev/download-firmware.sh)** reads the version information in firmware.ini,
+`invoke download-firmware` reads the version information in firmware.ini,
 and downloads the associated binary files into `firmware/`.
 The binary files are **not** committed into version control.
 Instead, they are re-downloaded during the CI build.
