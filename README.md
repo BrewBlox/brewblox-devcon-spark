@@ -47,6 +47,6 @@ Instead, they are re-downloaded during the CI build.
 
 - Commit the firmware changes to the *develop* branch in the [Brewblox firmware](https://github.com/BrewBlox/brewblox-firmware) repository.
 - Wait until the firmware CI build is done.
-- Run `bash dev/update-firmware.sh`
+- Run `invoke update-firmware`
 - Run `pytest` to verify that no code changes are required.
 - Commit the changed files (firmware.ini, the proto submodule, and compiled _pb2.py files).

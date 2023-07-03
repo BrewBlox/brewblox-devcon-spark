@@ -72,3 +72,11 @@ def update_firmware(ctx: Context, release='develop'):
     with ctx.cd(ROOT / 'brewblox-proto'):
         ctx.run('git fetch')
         ctx.run(f'git checkout --quiet "{proto_version}"')
+
+
+@task
+def build(ctx: Context):
+    with ctx.cd(ROOT):
+        ctx.run('rm -rf dist')
+        ctx.run('poetry build --format sdist')
+        ctx.run('poetry export --without-hashes -f requirements.txt -o dist/requirements.txt')
