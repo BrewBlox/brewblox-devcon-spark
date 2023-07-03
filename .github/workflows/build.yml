@@ -48,7 +48,7 @@ jobs:
 
       - name: Download firmware
         run: |
-          invoke download-firmware
+          poetry run invoke download-firmware
 
       - name: Test
         run: |
