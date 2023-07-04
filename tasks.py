@@ -80,3 +80,9 @@ def build(ctx: Context):
         ctx.run('rm -rf dist')
         ctx.run('poetry build --format sdist')
         ctx.run('poetry export --without-hashes -f requirements.txt -o dist/requirements.txt')
+
+
+@task(pre=[build])
+def local_docker(ctx: Context, tag='local'):
+    with ctx.cd(ROOT):
+        ctx.run(f'docker build -t ghcr.io/brewblox/brewblox-devcon-spark:{tag} -f Dockerfile.service .')
