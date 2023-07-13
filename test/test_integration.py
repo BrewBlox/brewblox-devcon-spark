@@ -335,6 +335,7 @@ async def test_sequence(app, client):
         'data': {
             'enabled': True,
             'instructions': [
+                '   # This is a comment    ',
                 'SET_SETPOINT target=setpoint, setting=40C',
                 'WAIT_SETPOINT target=setpoint, precision=1dC',
                 'RESTART',
@@ -346,6 +347,7 @@ async def test_sequence(app, client):
     retd = await response(client.post('/blocks/create', json=sequence_block), 201)
 
     assert retd['data']['instructions'] == [
+        '# This is a comment',
         'SET_SETPOINT target=setpoint, setting=40.0C',
         'WAIT_SETPOINT target=setpoint, precision=1.0dC',
         'RESTART',
