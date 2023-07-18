@@ -99,6 +99,20 @@ def test_sequence_from_line():
         }
     }
 
+    assert sequence.from_line(
+        '   # Hello, this is "comment"    ',
+        1
+    ) == {
+        'COMMENT': {'text': ' Hello, this is "comment"'},
+    }
+
+    assert sequence.from_line(
+        '#',
+        1
+    ) == {
+        'COMMENT': {'text': ''},
+    }
+
     with pytest.raises(ValueError, match=r'line 1: Missing argument separator: `target=Kettle Setpoint setting=40C`'):
         sequence.from_line('SET_SETPOINT target=Kettle Setpoint setting=40C', 1)
 
@@ -169,6 +183,14 @@ def test_sequence_to_line():
             'setting': 23.4567
         }
     }) == 'SET_PWM target=actuator, setting=23.46'
+
+    assert sequence.to_line({
+        'COMMENT': {'text': '    =)'},
+    }) == '#    =)'
+
+    assert sequence.to_line({
+        'COMMENT': {},
+    }) == '#'
 
 
 def test_partial():

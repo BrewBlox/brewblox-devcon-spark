@@ -19,6 +19,9 @@ def from_line(line: str, line_num: int) -> dict:
 
     Links in the output will only include the SID, not the NID.
     """
+    if line.lstrip().startswith('#'):
+        return {'COMMENT': {'text': line.strip()[1:]}}
+
     if ' ' in line:
         opcode, args = line.split(' ', 1)
     else:
@@ -120,6 +123,10 @@ def to_line(args: dict) -> str:
 
     opcode, argdict = list(args.items())[0]
     args: list[str] = []
+
+    if opcode == 'COMMENT':
+        text = argdict.get('text', '')
+        return f'#{text}'
 
     if not argdict:
         return opcode
