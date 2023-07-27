@@ -1,17 +1,16 @@
-FROM python:3.9 as base
+FROM python:3.9-bullseye as base
 
 ENV PIP_EXTRA_INDEX_URL=https://www.piwheels.org/simple
 ENV PIP_FIND_LINKS=/wheeley
 
 COPY ./dist /app/dist
-COPY ./requirements.txt /app/requirements.txt
 COPY ./firmware /app/firmware
 
 RUN set -ex \
     && mkdir /wheeley \
     && pip3 install --upgrade pip wheel setuptools \
-    && pip3 wheel --wheel-dir=/wheeley -r /app/requirements.txt \
-    && pip3 wheel --wheel-dir=/wheeley /app/dist/* \
+    && pip3 wheel --wheel-dir=/wheeley -r /app/dist/requirements.txt \
+    && pip3 wheel --wheel-dir=/wheeley /app/dist/*.tar.gz \
     && ARCH="$(dpkg --print-architecture)" \
     && if [ "${ARCH}" = "amd64" ]; then OTHER_SIM='brewblox-{arm32,arm64}.sim'; fi \
     && if [ "${ARCH}" = "armhf" ]; then OTHER_SIM='brewblox-{amd64,arm64}.sim'; fi \
@@ -19,7 +18,7 @@ RUN set -ex \
     && bash -c "rm /app/firmware/${OTHER_SIM}" \
     && rm /app/firmware/*.elf
 
-FROM python:3.9-slim
+FROM python:3.9-slim-bullseye
 EXPOSE 5000
 WORKDIR /app
 

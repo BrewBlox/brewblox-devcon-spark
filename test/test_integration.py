@@ -186,6 +186,28 @@ async def test_create_performance(app, client, block_args):
     assert set(ids).issubset(ret_ids(retd))
 
 
+async def test_batch_create_read_delete(app, client, block_args):
+    num_items = 50
+    ids = [f'id{num}' for num in range(num_items)]
+    blocks = repeated_blocks(ids, block_args)
+
+    retv = await response(client.post('/blocks/batch/create', json=blocks), 201)
+    assert len(retv) == num_items
+
+    ident_args = [{'id': block['id']} for block in blocks]
+    retv = await response(client.post('/blocks/batch/read', json=ident_args))
+    assert len(retv) == num_items
+
+    retv = await response(client.post('/blocks/all/read'))
+    assert set(ids).issubset(ret_ids(retv))
+
+    retv = await response(client.post('/blocks/batch/delete', json=ident_args))
+    assert len(retv) == num_items
+
+    retv = await response(client.post('/blocks/all/read'))
+    assert set(ids).isdisjoint(ret_ids(retv))
+
+
 async def test_read(app, client, block_args):
     await response(client.post('/blocks/read', json={'id': 'testobj'}), 400)  # Object does not exist
     await response(client.post('/blocks/create', json=block_args), 201)
@@ -213,9 +235,21 @@ async def test_write(app, client, block_args, m_publish):
     assert m_publish.call_count == 2
 
 
+async def test_batch_write(app, client, block_args, m_publish):
+    await response(client.post('/blocks/create', json=block_args), 201)
+    assert await response(client.post('/blocks/batch/write', json=[block_args, block_args, block_args]))
+    assert m_publish.call_count == 2
+
+
 async def test_patch(app, client, block_args, m_publish):
     await response(client.post('/blocks/create', json=block_args), 201)
     assert await response(client.post('/blocks/patch', json=block_args))
+    assert m_publish.call_count == 2
+
+
+async def test_batch_patch(app, client, block_args, m_publish):
+    await response(client.post('/blocks/create', json=block_args), 201)
+    assert await response(client.post('/blocks/batch/patch', json=[block_args, block_args, block_args]))
     assert m_publish.call_count == 2
 
 
@@ -301,6 +335,7 @@ async def test_sequence(app, client):
         'data': {
             'enabled': True,
             'instructions': [
+                '   # This is a comment    ',
                 'SET_SETPOINT target=setpoint, setting=40C',
                 'WAIT_SETPOINT target=setpoint, precision=1dC',
                 'RESTART',
@@ -312,6 +347,7 @@ async def test_sequence(app, client):
     retd = await response(client.post('/blocks/create', json=sequence_block), 201)
 
     assert retd['data']['instructions'] == [
+        '# This is a comment',
         'SET_SETPOINT target=setpoint, setting=40.0C',
         'WAIT_SETPOINT target=setpoint, precision=1.0dC',
         'RESTART',

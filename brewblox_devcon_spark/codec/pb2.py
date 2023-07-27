@@ -19,6 +19,7 @@ if 'brewblox_pb2' not in sys.modules:  # pragma: no cover
     import brewblox_pb2
     import command_pb2
     import DigitalActuator_pb2
+    import DigitalInput_pb2
     import DisplaySettings_pb2
     import DS2408_pb2
     import DS2413_pb2
@@ -53,6 +54,7 @@ __all__ = [
     'brewblox_pb2',
     'command_pb2',
     'DigitalActuator_pb2',
+    'DigitalInput_pb2',
     'DisplaySettings_pb2',
     'DS2408_pb2',
     'DS2413_pb2',
