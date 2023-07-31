@@ -2,6 +2,7 @@ import enum
 from dataclasses import dataclass
 from typing import Any, Literal, Optional, TypedDict, Union
 
+from brewblox_service.models import BaseServiceConfig
 from pydantic import BaseModel, Field, validator
 
 
@@ -12,14 +13,6 @@ class ServiceFirmwareIni(TypedDict):
     proto_version: str
     proto_date: str
     system_version: str
-
-
-MqttProtocolType_ = Literal[
-    'mqtt',
-    'mqtts',
-    'ws',
-    'wss',
-]
 
 
 class DiscoveryType(enum.Enum):
@@ -36,21 +29,7 @@ class DiscoveryType(enum.Enum):
         return self.name
 
 
-class ServiceConfig(TypedDict):
-    # brewblox_service
-    name: str
-    host: str
-    port: int
-    debug: bool
-    mqtt_protocol: MqttProtocolType_
-    mqtt_host: str
-    mqtt_port: int
-    mqtt_path: str
-    history_topic: str
-    state_topic: str
-
-    # brewblox_devcon_spark
-
+class ServiceConfig(BaseServiceConfig):
     # Device options
     simulation: bool
     mock: bool

@@ -31,8 +31,8 @@ class GlobalConfigStore(features.ServiceFeature):
     def __init__(self, app: web.Application):
         super().__init__(app)
         config: ServiceConfig = app['config']
-        self._isolated = config['isolated']
-        self._datastore_topic = config['datastore_topic']
+        self._isolated = config.isolated
+        self._datastore_topic = config.datastore_topic
         self._global_topic = f'{self._datastore_topic}/{const.GLOBAL_NAMESPACE}'
 
         self.units = default_units()

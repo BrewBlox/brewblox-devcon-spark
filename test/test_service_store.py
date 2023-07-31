@@ -41,14 +41,13 @@ def add_write_resp(aresponses: ResponsesMockServer, count, status=200):
 
 
 @pytest.fixture
-def app(app, mocker):
+async def setup(app, mocker):
     mocker.patch(DATASTORE + '.FLUSH_DELAY_S', 0.01)
     mocker.patch(DATASTORE + '.RETRY_INTERVAL_S', 0.01)
-    app['config']['isolated'] = False
+    app['config'].isolated = False
     http.setup(app)
     scheduler.setup(app)
     service_store.setup(app)
-    return app
 
 
 @pytest.fixture

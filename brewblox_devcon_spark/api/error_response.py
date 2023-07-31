@@ -28,7 +28,7 @@ async def controller_error_middleware(request: web.Request, handler) -> web.Resp
     except Exception as ex:
         app = request.app
         message = strex(ex)
-        debug = app['config']['debug']
+        debug = app['config'].debug
         LOGGER.error(f'[{request.url}] => {message}', exc_info=debug)
 
         response = {'error': message}

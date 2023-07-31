@@ -19,7 +19,7 @@ class MqttApi(features.ServiceFeature):
 
     def __init__(self, app: web.Application):
         super().__init__(app)
-        self.name = app['config']['name']
+        self.name = app['config'].name
         self.controller = controller.fget(app)
         self.listeners = {
             '/create': self._create,

@@ -3,27 +3,27 @@ Tests brewblox_devcon_spark.api.mqtt_api
 """
 
 import pytest
-from brewblox_service import scheduler
+from brewblox_service import mqtt, scheduler
 
 from brewblox_devcon_spark import (block_store, codec, commander, connection,
                                    controller, exceptions, global_store,
                                    service_status, service_store,
                                    synchronization)
 from brewblox_devcon_spark.api import mqtt_api
-from brewblox_devcon_spark.models import Block, BlockIdentity
+from brewblox_devcon_spark.models import Block, BlockIdentity, ServiceConfig
 
 TESTED = mqtt_api.__name__
 
 
-@pytest.fixture(autouse=True)
-def m_mqtt(mocker):
-    mocker.patch(TESTED + '.mqtt', autospec=True)
-
-
 @pytest.fixture
-async def app(app, event_loop):
-    """App + controller routes"""
+async def setup(app, broker):
+    config: ServiceConfig = app['config']
+    config.mqtt_host = 'localhost'
+    config.mqtt_port = broker['mqtt']
+    config.state_topic = 'test_mqtt/state'
+
     scheduler.setup(app)
+    mqtt.setup(app)
     service_status.setup(app)
     block_store.setup(app)
     global_store.setup(app)
@@ -36,13 +36,11 @@ async def app(app, event_loop):
 
     mqtt_api.setup(app)
 
-    return app
-
 
 def block_args(app):
     return Block(
         id='testobj',
-        serviceId=app['config']['name'],
+        serviceId=app['config'].name,
         type='TempSensorOneWire',
         data={
             'value': 12345,
@@ -84,7 +82,7 @@ async def test_delete(app, client):
     await api._create('topic', block_args(app).json())
     await api._delete('topic', BlockIdentity(
         id='testobj',
-        serviceId=app['config']['name'],
+        serviceId=app['config'].name,
     ).json())
 
     with pytest.raises(exceptions.UnknownId):

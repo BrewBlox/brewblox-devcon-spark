@@ -28,7 +28,7 @@ class ServiceStatus(features.ServiceFeature):
         config: ServiceConfig = app['config']
 
         service_desc = ServiceDescription(
-            name=config['name'],
+            name=config.name,
             firmware=FirmwareDescription(
                 firmware_version=ini['firmware_version'],
                 proto_version=ini['proto_version'],
@@ -36,7 +36,7 @@ class ServiceStatus(features.ServiceFeature):
                 proto_date=ini['proto_date'],
             ),
             device=DeviceDescription(
-                device_id=config['device_id'] or '',
+                device_id=config.device_id or '',
             ),
         )
 
@@ -102,7 +102,7 @@ class ServiceStatus(features.ServiceFeature):
 
         wildcard_id = not service.device.device_id
         compatible_firmware = service.firmware.proto_version == controller.firmware.proto_version \
-            or bool(config['skip_version_check'])
+            or bool(config.skip_version_check)
         matching_firmware = service.firmware.firmware_version == controller.firmware.firmware_version
         compatible_identity = service.device.device_id == controller.device.device_id \
             or wildcard_id

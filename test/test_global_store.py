@@ -13,6 +13,7 @@ from brewblox_service import http, scheduler
 
 from brewblox_devcon_spark import const, global_store
 from brewblox_devcon_spark.global_store import GlobalConfigStore
+from brewblox_devcon_spark.models import ServiceConfig
 
 TESTED = global_store.__name__
 
@@ -40,12 +41,12 @@ def m_mqtt(mocker):
 
 
 @pytest.fixture
-def app(app):
-    app['config']['isolated'] = False
+async def setup(app):
+    config: ServiceConfig = app['config']
+    config.isolated = False
     http.setup(app)
     scheduler.setup(app)
     global_store.setup(app)
-    return app
 
 
 @pytest.fixture

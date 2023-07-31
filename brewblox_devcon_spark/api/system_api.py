@@ -135,9 +135,9 @@ class FlashView(PydanticView):   # pragma: no cover
     def __init__(self, request: web.Request) -> None:
         super().__init__(request)
         self.app = request.app
-        self.name: str = self.app['config']['name']
-        self.simulation: bool = self.app['config']['simulation']
-        self.topic: str = self.app['config']['state_topic'] + f'/{self.name}/update'
+        self.name: str = self.app['config'].name
+        self.simulation: bool = self.app['config'].simulation
+        self.topic: str = self.app['config'].state_topic + f'/{self.name}/update'
         self.version: str = self.app['ini']['firmware_version'][:8]
         self.date: str = self.app['ini']['firmware_date']
 

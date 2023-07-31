@@ -23,22 +23,11 @@ class Broadcaster(repeater.RepeaterFeature):
         super().__init__(app)
 
         config: ServiceConfig = app['config']
-        self.name = config['name']
-        self.interval = config['broadcast_interval']
-        self.isolated = self.interval <= 0 or config['isolated']
-        self.state_topic = config['state_topic'] + f'/{self.name}'
-        self.history_topic = config['history_topic'] + f'/{self.name}'
-
-        self._will_message = json.dumps({
-            'key': self.name,
-            'type': 'Spark.state',
-            'data': None,
-        })
-
-        # A will is published if the client connection is broken
-        mqtt.set_client_will(app,
-                             self.state_topic,
-                             self._will_message)
+        self.name = config.name
+        self.interval = config.broadcast_interval
+        self.isolated = self.interval <= 0 or config.isolated
+        self.state_topic = f'{config.state_topic}/{config.name}'
+        self.history_topic = f'{config.history_topic}/{config.name}'
 
     async def prepare(self):
         if self.isolated:
@@ -46,12 +35,6 @@ class Broadcaster(repeater.RepeaterFeature):
 
     async def before_shutdown(self, app: web.Application):
         await self.end()
-        # This is an orderly shutdown - MQTT will won't be published
-        await mqtt.publish(self.app,
-                           self.state_topic,
-                           err=False,
-                           retain=True,
-                           message=self._will_message)
 
     async def run(self):
         try:
@@ -70,20 +53,19 @@ class Broadcaster(repeater.RepeaterFeature):
                     }
 
                     await mqtt.publish(self.app,
-                                       self.history_topic,
-                                       err=False,
-                                       message=json.dumps({
+                                       topic=self.history_topic,
+                                       payload=json.dumps({
                                            'key': self.name,
                                            'data': history_data,
-                                       }))
+                                       }),
+                                       err=False,
+                                       )
 
             finally:
                 # State event is always published
                 await mqtt.publish(self.app,
-                                   self.state_topic,
-                                   err=False,
-                                   retain=True,
-                                   message=json.dumps({
+                                   topic=self.state_topic,
+                                   payload=json.dumps({
                                        'key': self.name,
                                        'type': 'Spark.state',
                                        'data': {
@@ -92,7 +74,10 @@ class Broadcaster(repeater.RepeaterFeature):
                                            'relations': calculate_relations(blocks),
                                            'claims': calculate_claims(blocks),
                                        },
-                                   }))
+                                   }),
+                                   retain=True,
+                                   err=False,
+                                   )
 
         except Exception as ex:
             LOGGER.debug(f'{self} exception: {strex(ex)}')

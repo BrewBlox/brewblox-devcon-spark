@@ -2,17 +2,18 @@
 Tests brewblox_devcon_spark.broadcaster
 """
 
-from unittest.mock import ANY, call
+from unittest.mock import ANY, Mock, call
 
 import pytest
-from brewblox_service import repeater, scheduler
+from brewblox_service import mqtt, repeater, scheduler
+from pytest_mock import MockerFixture
 
 from brewblox_devcon_spark import (block_store, broadcaster, codec, commander,
                                    connection, controller, exceptions,
                                    global_store, service_status, service_store,
                                    synchronization)
 from brewblox_devcon_spark.connection import mock_connection
-from brewblox_devcon_spark.models import ErrorCode
+from brewblox_devcon_spark.models import ErrorCode, ServiceConfig
 
 TESTED = broadcaster.__name__
 
@@ -28,19 +29,17 @@ def m_relations(mocker):
 
 
 @pytest.fixture
-def m_publish(mocker):
-    mocker.patch(TESTED + '.mqtt.handler', autospec=True)
-    m = mocker.patch(TESTED + '.mqtt.publish', autospec=True)
-    return m
+async def setup(app, broker):
+    config: ServiceConfig = app['config']
+    config.broadcast_interval = 0.01
+    config.mqtt_host = 'localhost'
+    config.mqtt_port = broker['mqtt']
+    config.history_topic = 'testcast/history'
+    config.state_topic = 'testcast/state'
 
-
-@pytest.fixture
-def app(app):
-    app['config']['broadcast_interval'] = 0.01
-    app['config']['history_topic'] = 'testcast/history'
-    app['config']['state_topic'] = 'testcast/state'
     service_status.setup(app)
     scheduler.setup(app)
+    mqtt.setup(app)
     codec.setup(app)
     block_store.setup(app)
     global_store.setup(app)
@@ -49,7 +48,6 @@ def app(app):
     commander.setup(app)
     synchronization.setup(app)
     controller.setup(app)
-    return app
 
 
 @pytest.fixture
@@ -57,27 +55,32 @@ async def synchronized(app, client):
     await service_status.wait_synchronized(app)
 
 
-async def test_disabled(app, m_publish, client, synchronized):
-    app['config']['broadcast_interval'] = 0
-    app['config']['isolated'] = False
+@pytest.fixture
+def m_publish(app, mocker: MockerFixture):
+    m = mocker.spy(mqtt, 'publish')
+    return m
+
+
+async def test_disabled(app, client, synchronized):
+    app['config'].broadcast_interval = 0
+    app['config'].isolated = False
     b = broadcaster.Broadcaster(app)
     with pytest.raises(repeater.RepeaterCancelled):
         await b.prepare()
 
 
-async def test_broadcast_unsync(app, m_publish, client, synchronized, mocker):
+async def test_broadcast_unsync(app, client, synchronized, m_publish: Mock):
     service_status.fget(app).synchronized_ev.clear()
 
-    app['config']['isolated'] = False
+    app['config'].isolated = False
     b = broadcaster.Broadcaster(app)
     await b.prepare()
     await b.run()
     assert m_publish.call_count == 1
 
 
-async def test_broadcast(app, m_publish, client, synchronized):
-    app['config']['isolated'] = False
-    # status = service_status.desc(app)
+async def test_broadcast(app, client, synchronized, m_publish: Mock):
+    app['config'].isolated = False
 
     b = broadcaster.Broadcaster(app)
     await b.prepare()
@@ -85,40 +88,23 @@ async def test_broadcast(app, m_publish, client, synchronized):
 
     m_publish.assert_has_calls([
         call(app,
-             'testcast/history/test_app',
+             topic='testcast/history/test_app',
+             payload=ANY,
              err=False,
-             message=ANY),
+             ),
         call(app,
-             'testcast/state/test_app',
-             err=False,
+             topic='testcast/state/test_app',
+             payload=ANY,
              retain=True,
-             message=ANY),
+             err=False,
+             ),
     ])
 
-    # {
-    #              'key': 'test_app',
-    #              'data': ANY,
-    #          }
-
-    # {
-    #     'key': 'test_app',
-    #     'type': 'Spark.state',
-    #     'data': {
-    #         'status': status.dict(),
-    #         'blocks': ANY,
-    #         'relations': {},
-    #         'claims': {},
-    #     },
-    # }
-
-    print(m_publish.call_args_list)
-
     await b.before_shutdown(app)
-    assert m_publish.call_count == 3
 
 
-async def test_error(app, m_publish, client, synchronized):
-    app['config']['isolated'] = False
+async def test_error(app, client, synchronized, m_publish: Mock):
+    app['config'].isolated = False
     b = broadcaster.Broadcaster(app)
     await b.prepare()
 
@@ -133,9 +119,9 @@ async def test_error(app, m_publish, client, synchronized):
     assert m_publish.call_count == 3
 
 
-async def test_api_broadcaster(app, m_publish, client):
+async def test_api_broadcaster(app, client, m_publish: Mock):
     await service_status.wait_synchronized(app)
-    app['config']['isolated'] = False
+    app['config'].isolated = False
     b = broadcaster.Broadcaster(app)
     await b.prepare()
     await b.run()

@@ -13,7 +13,7 @@ from brewblox_service import brewblox_logger, mqtt
 from brewblox_devcon_spark import controller
 from brewblox_devcon_spark.models import (Block, BlockIdentity,
                                           BlockIdentityList, BlockList,
-                                          BlockNameChange)
+                                          BlockNameChange, ServiceConfig)
 
 LOGGER = brewblox_logger(__name__)
 routes = web.RouteTableDef()
@@ -27,25 +27,26 @@ class BlocksView(PydanticView):
     def __init__(self, request: web.Request) -> None:
         super().__init__(request)
         self.app = request.app
-        self.controller = controller.fget(request.app)
+        self.config: ServiceConfig = self.app['config']
+        self.controller = controller.fget(self.app)
 
     async def publish(self, changed: list[Block] = None, deleted: list[BlockIdentity] = None):
         changed = [v.dict() for v in changed] if changed else []
         deleted = [v.id for v in deleted] if deleted else []
-        name = self.app['config']['name']
-        topic = self.app['config']['state_topic'] + f'/{name}/patch'
+        name = self.config.name
         await mqtt.publish(self.app,
-                           topic,
-                           err=False,
-                           message=json.dumps({
+                           topic=f'{self.config.state_topic}/{name}/patch',
+                           payload=json.dumps({
                                'key': name,
                                'type': 'Spark.patch',
                                'ttl': '1d',
                                'data': {
                                    'changed': changed,
                                    'deleted': deleted,
-                               }
-                           }))
+                               },
+                           }),
+                           err=False,
+                           )
 
 
 @routes.view('/blocks/create')

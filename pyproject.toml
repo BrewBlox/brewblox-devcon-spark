@@ -15,7 +15,7 @@ reportMissingImports = "information"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4"
-brewblox-service = "^2.1.1"
+brewblox-service = {git = "https://github.com/brewblox/brewblox-service.git", rev = "develop"}
 pyserial-asyncio = "^0.6"
 protobuf = "<4.0dev"
 aiofiles = "^0.8.0"
@@ -26,7 +26,6 @@ esptool = "^4.0"
 pytimeparse = "^1.1.8"
 ciso8601 = "^2.2.0"
 cryptography = "40.0.1"
-pydantic = "==1.*"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"

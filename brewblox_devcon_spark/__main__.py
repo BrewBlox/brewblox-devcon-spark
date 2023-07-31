@@ -2,7 +2,7 @@
 Example of how to import and use the brewblox service
 """
 
-import logging
+import json
 from configparser import ConfigParser
 from os import getenv
 
@@ -18,11 +18,12 @@ from brewblox_devcon_spark.api import (backup_api, blocks_api, debug_api,
 from brewblox_devcon_spark.models import (DiscoveryType, ServiceConfig,
                                           ServiceFirmwareIni)
 
+FIRMWARE_INI = 'firmware/firmware.ini'
 LOGGER = brewblox_logger(__name__)
 
 
-def create_parser(default_name='spark'):
-    parser = service.create_parser(default_name=default_name)
+def create_parser():
+    parser = service.create_parser('spark')
 
     # Device options
     group = parser.add_argument_group('Device communication')
@@ -114,18 +115,18 @@ def create_parser(default_name='spark'):
     return parser
 
 
-def parse_ini(app) -> ServiceFirmwareIni:  # pragma: no cover
+def parse_ini(app) -> ServiceFirmwareIni:
     parser = ConfigParser()
-    parser.read('firmware/firmware.ini')
+    parser.read(FIRMWARE_INI)
     config = ServiceFirmwareIni(parser['FIRMWARE'].items())
     LOGGER.info(f'firmware.ini: {config}')
     return config
 
 
 def main():
-    app = service.create_app(parser=create_parser())
-    logging.captureWarnings(True)
-    config: ServiceConfig = app['config']
+    parser = create_parser()
+    config = service.create_config(parser, model=ServiceConfig)
+    app = service.create_app(config)
     app['ini'] = parse_ini(app)
 
     if getenv('ENABLE_DEBUGGER', False):  # pragma: no cover
@@ -133,39 +134,47 @@ def main():
         debugpy.listen(('0.0.0.0', 5678))
         LOGGER.info('Debugger is enabled and listening on 5678')
 
-    if config['simulation'] or config['mock']:
-        config['device_id'] = config['device_id'] or '123456789012345678901234'
+    if config.device_id is None and (config.simulation or config.mock):
+        config.device_id = '123456789012345678901234'
 
-    scheduler.setup(app)
-    mqtt.setup(app)
-    http.setup(app)
+    async def setup():
+        scheduler.setup(app)
+        http.setup(app)
+        mqtt.setup(app,
+                   client_will=mqtt.Will(
+                       topic=f'{config.state_topic}/{config.name}',
+                       payload=json.dumps({
+                           'key': config.name,
+                           'type': 'Spark.state',
+                           'data': None,
+                       })
+                   ))
 
-    global_store.setup(app)
-    service_store.setup(app)
-    block_store.setup(app)
+        global_store.setup(app)
+        service_store.setup(app)
+        block_store.setup(app)
 
-    service_status.setup(app)
-    codec.setup(app)
-    connection.setup(app)
-    commander.setup(app)
-    synchronization.setup(app)
-    controller.setup(app)
+        service_status.setup(app)
+        codec.setup(app)
+        connection.setup(app)
+        commander.setup(app)
+        synchronization.setup(app)
+        controller.setup(app)
 
-    backup_storage.setup(app)
-    broadcaster.setup(app)
-    time_sync.setup(app)
+        backup_storage.setup(app)
+        broadcaster.setup(app)
+        time_sync.setup(app)
 
-    error_response.setup(app)
-    blocks_api.setup(app)
-    system_api.setup(app)
-    settings_api.setup(app)
-    mqtt_api.setup(app)
-    sim_api.setup(app)
-    backup_api.setup(app)
-    debug_api.setup(app)
+        error_response.setup(app)
+        blocks_api.setup(app)
+        system_api.setup(app)
+        settings_api.setup(app)
+        mqtt_api.setup(app)
+        sim_api.setup(app)
+        backup_api.setup(app)
+        debug_api.setup(app)
 
-    service.furnish(app)
-    service.run(app)
+    service.run_app(app, setup())
 
 
 if __name__ == '__main__':

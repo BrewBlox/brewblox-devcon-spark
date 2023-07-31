@@ -154,9 +154,9 @@ async def connect_simulation(app: web.Application,
                              callbacks: ConnectionCallbacks,
                              ) -> ConnectionImplBase:  # pragma: no cover
     config: ServiceConfig = app['config']
-    device_id = config['device_id']
-    port = config['device_port']
-    display_ws_port = config['display_ws_port']
+    device_id = config.device_id
+    port = config.device_port
+    display_ws_port = config.display_ws_port
     arch = platform.machine()
     binary = SIM_BINARIES.get(arch)
 
@@ -182,8 +182,8 @@ async def connect_usb(app: web.Application,
                       port: Optional[int] = None,
                       ) -> ConnectionImplBase:  # pragma: no cover
     config: ServiceConfig = app['config']
-    device_serial = device_serial or config['device_serial']
-    port = port or config['device_port']
+    device_serial = device_serial or config.device_serial
+    port = port or config.device_port
     proc = await asyncio.create_subprocess_exec('/usr/bin/socat',
                                                 f'tcp-listen:{port},reuseaddr,fork',
                                                 f'file:{device_serial},raw,echo=0,b{USB_BAUD_RATE}')
@@ -194,7 +194,7 @@ async def connect_usb(app: web.Application,
 async def discover_mdns(app: web.Application,
                         callbacks: ConnectionCallbacks,
                         ) -> Optional[ConnectionImplBase]:
-    device_id = app['config']['device_id']
+    device_id = app['config'].device_id
     try:
         resp = await mdns.discover_one(device_id,
                                        BREWBLOX_DNS_TYPE,
@@ -208,7 +208,7 @@ async def discover_usb(app: web.Application,
                        callbacks: ConnectionCallbacks,
                        ) -> Optional[ConnectionImplBase]:  # pragma: no cover
     config: ServiceConfig = app['config']
-    device_id = config['device_id']
+    device_id = config.device_id
     for usb_port in list_ports.grep(SPARK_DEVICE_REGEX):
         if device_id is None or device_id.lower() == usb_port.serial_number.lower():
             LOGGER.info(f'Discovered {[v for v in usb_port]}')
