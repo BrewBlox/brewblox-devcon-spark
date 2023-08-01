@@ -10,21 +10,23 @@ from brewblox_service.testing import matching
 
 from brewblox_devcon_spark import (codec, commander, connection,
                                    service_status, service_store)
-from brewblox_devcon_spark.models import ErrorCode, IntermediateResponse
+from brewblox_devcon_spark.models import (ErrorCode, IntermediateResponse,
+                                          ServiceConfig)
 
 TESTED = commander.__name__
 
 
 @pytest.fixture
-def app(app):
-    app['config']['command_timeout'] = 1
+async def setup(app):
+    config: ServiceConfig = app['config']
+    config.command_timeout = 1
+
     service_status.setup(app)
     scheduler.setup(app)
     service_store.setup(app)
     codec.setup(app)
     connection.setup(app)
     commander.setup(app)
-    return app
 
 
 async def test_acknowledge(app, client):

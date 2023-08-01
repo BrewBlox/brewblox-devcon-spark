@@ -28,15 +28,14 @@ def make_desc(app) -> ControllerDescription:
             proto_date=ini['proto_date'],
         ),
         device=DeviceDescription(
-            device_id=config['device_id'],
+            device_id=config.device_id,
         ),
     )
 
 
 @pytest.fixture
-def app(app):
+async def setup(app):
     service_status.setup(app)
-    return app
 
 
 async def test_state_machine(app, client):

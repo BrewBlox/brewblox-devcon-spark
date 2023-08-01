@@ -10,6 +10,7 @@ from brewblox_service import repeater, scheduler
 from brewblox_devcon_spark import (block_store, codec, commander, connection,
                                    controller, global_store, service_status,
                                    service_store, synchronization, time_sync)
+from brewblox_devcon_spark.models import ServiceConfig
 
 TESTED = time_sync.__name__
 
@@ -26,8 +27,10 @@ def m_controller(mocker):
 
 
 @pytest.fixture
-def app(app):
-    app['config']['time_sync_interval'] = 0.01
+async def setup(app):
+    config: ServiceConfig = app['config']
+    config.time_sync_interval = 0.01
+
     service_status.setup(app)
     scheduler.setup(app)
     codec.setup(app)
@@ -39,7 +42,6 @@ def app(app):
     synchronization.setup(app)
     controller.setup(app)
     time_sync.setup(app)
-    return app
 
 
 @pytest.fixture
@@ -54,7 +56,7 @@ async def test_sync(app, client, synchronized, m_controller):
 
 
 async def test_disabled_sync(app, client, synchronized):
-    app['config']['time_sync_interval'] = 0
+    app['config'].time_sync_interval = 0
 
     sync = time_sync.TimeSync(app)
     with pytest.raises(repeater.RepeaterCancelled):

@@ -29,7 +29,7 @@ def non_isolated(func):
 
 
 async def check_remote(app: web.Application):
-    if app['config']['isolated']:
+    if app['config'].isolated:
         return
     num_attempts = 0
     while True:
@@ -48,7 +48,7 @@ class FlushedStore(repeater.RepeaterFeature):
 
     def __init__(self, app: web.Application):
         super().__init__(app)
-        self._isolated = app['config']['isolated']
+        self._isolated = app['config'].isolated
         self._changed_event: asyncio.Event = None
 
     @property

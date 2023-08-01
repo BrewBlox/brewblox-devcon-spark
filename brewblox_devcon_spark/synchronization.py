@@ -119,8 +119,8 @@ class SparkSynchronization(repeater.RepeaterFeature):
         # Simulation services are identified by service name.
         # This prevents data conflicts when a simulation service
         # is reconfigured to start interacting with a controller.
-        if self.app['config']['simulation']:
-            return 'simulator__' + self.app['config']['name']
+        if self.app['config'].simulation:
+            return 'simulator__' + self.app['config'].name
 
         return service_status.desc(self.app).controller.device.device_id
 

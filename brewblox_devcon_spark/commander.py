@@ -41,7 +41,7 @@ class SparkCommander(features.ServiceFeature):
         config: ServiceConfig = app['config']
 
         self._msgid = 0
-        self._timeout = config['command_timeout']
+        self._timeout = config.command_timeout
         self._active_messages: dict[int, asyncio.Future[IntermediateResponse]] = {}
         self._codec = codec.fget(app)
         self._conn = connection.fget(app)

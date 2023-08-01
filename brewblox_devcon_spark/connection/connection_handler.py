@@ -64,7 +64,7 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
     async def discover(self) -> ConnectionImplBase:
         config: ServiceConfig = self.app['config']
 
-        discovery_type = config['discovery']
+        discovery_type = config.discovery
         LOGGER.info(f'Discovering devices... ({discovery_type})')
 
         try:
@@ -93,11 +93,11 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
     async def connect(self) -> ConnectionImplBase:
         config: ServiceConfig = self.app['config']
 
-        mock = config['mock']
-        simulation = config['simulation']
-        device_serial = config['device_serial']
-        device_host = config['device_host']
-        device_port = config['device_port']
+        mock = config.mock
+        simulation = config.simulation
+        device_serial = config.device_serial
+        device_host = config.device_host
+        device_port = config.device_port
 
         if mock:
             return await connect_mock(self.app, self)
@@ -141,7 +141,7 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
 
             # USB devices that were plugged in after container start are not visible
             # If we are potentially connecting to a USB device, we need to restart
-            if config['device_serial'] or config['discovery'] in [DiscoveryType.all, DiscoveryType.usb]:
+            if config.device_serial or config.discovery in [DiscoveryType.all, DiscoveryType.usb]:
                 raise web.GracefulExit()
             else:
                 self._retry_count = 0

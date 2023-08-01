@@ -16,13 +16,12 @@ TEMP_SENSOR_TYPE_INT = 302
 
 
 @pytest.fixture
-def app(app):
+async def setup(app):
     service_status.setup(app)
     scheduler.setup(app)
     codec.setup(app)
     service_store.setup(app)
     connection.setup(app)
-    return app
 
 
 @pytest.fixture

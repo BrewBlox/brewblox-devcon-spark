@@ -78,7 +78,7 @@ class MqttConnection(ConnectionImplBase):
 class MqttDeviceTracker(features.ServiceFeature):
     def __init__(self, app: web.Application):
         super().__init__(app)
-        self._isolated = app['config']['isolated']
+        self._isolated = app['config'].isolated
         self._handshake_topic = HANDSHAKE_TOPIC + '+'
         self._devices: dict[str, asyncio.Event] = {}
 
@@ -127,5 +127,5 @@ def fget(app: web.Application) -> MqttDeviceTracker:
 async def discover_mqtt(app: web.Application,
                         callbacks: ConnectionCallbacks,
                         ) -> Optional[MqttConnection]:
-    device_id = app['config']['device_id']
+    device_id = app['config'].device_id
     return await fget(app).discover(callbacks, device_id)

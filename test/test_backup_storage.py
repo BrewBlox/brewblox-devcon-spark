@@ -11,7 +11,7 @@ from brewblox_devcon_spark import (backup_storage, block_store, codec,
                                    commander, connection, controller,
                                    global_store, service_status, service_store,
                                    synchronization)
-from brewblox_devcon_spark.models import Backup, BackupIdentity
+from brewblox_devcon_spark.models import Backup, BackupIdentity, ServiceConfig
 
 TESTED = backup_storage.__name__
 
@@ -22,9 +22,11 @@ def m_backup_dir(mocker, tmp_path):
 
 
 @pytest.fixture
-def app(app):
-    app['config']['backup_interval'] = 0.01
-    app['config']['backup_retry_interval'] = 0.01
+async def setup(app):
+    config: ServiceConfig = app['config']
+    config.backup_interval = 0.01
+    config.backup_retry_interval = 0.01
+
     service_status.setup(app)
     scheduler.setup(app)
     codec.setup(app)
@@ -38,7 +40,6 @@ def app(app):
     backup_storage.setup(app)
 
     backup_storage.fget(app)._autostart = False
-    return app
 
 
 @pytest.fixture
@@ -47,8 +48,9 @@ async def synchronized(app, client):
 
 
 async def test_inactive(app, client, synchronized):
-    app['config']['backup_interval'] = -2
-    app['config']['backup_retry_interval'] = -1
+    config: ServiceConfig = app['config']
+    config.backup_interval = -2
+    config.backup_retry_interval = -1
 
     storage = backup_storage.BackupStorage(app)
     with pytest.raises(repeater.RepeaterCancelled):

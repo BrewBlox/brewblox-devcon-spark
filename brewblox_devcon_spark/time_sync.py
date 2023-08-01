@@ -22,7 +22,7 @@ class TimeSync(repeater.RepeaterFeature):
         super().__init__(app)
 
         config: ServiceConfig = app['config']
-        self.interval_s = config['time_sync_interval']
+        self.interval_s = config.time_sync_interval
         self.enabled = self.interval_s > 0
 
     async def prepare(self):

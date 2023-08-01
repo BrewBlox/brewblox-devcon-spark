@@ -7,8 +7,10 @@ from shutil import rmtree
 from unittest.mock import ANY, AsyncMock
 
 import pytest
-from brewblox_service import scheduler
+from aiohttp.test_utils import TestClient
+from brewblox_service import mqtt, scheduler
 from brewblox_service.testing import find_free_port, response
+from pytest_mock import MockerFixture
 
 from brewblox_devcon_spark import (backup_storage, block_store, codec,
                                    commander, connection, const, controller,
@@ -53,18 +55,18 @@ def block_args():
 
 
 @pytest.fixture(autouse=True)
-def m_publish(mocker):
-    m = mocker.patch(blocks_api.__name__ + '.mqtt.publish', autospec=True)
+def m_publish(app, mocker: MockerFixture):
+    m = mocker.spy(mqtt, 'publish')
     return m
 
 
 @pytest.fixture(autouse=True)
-def m_backup_dir(mocker, tmp_path):
+def m_backup_dir(mocker: MockerFixture, tmp_path):
     mocker.patch(backup_storage.__name__ + '.BASE_BACKUP_DIR', tmp_path / 'backup')
 
 
 @pytest.fixture(autouse=True)
-def m_simulator_dir(mocker, tmp_path):
+def m_simulator_dir(mocker: MockerFixture, tmp_path):
     mocker.patch(stream_connection.__name__ + '.SIMULATION_CWD', tmp_path / 'simulator')
 
 
@@ -77,19 +79,24 @@ def repeated_blocks(ids, args):
 
 
 @pytest.fixture
-async def app(app):
+async def setup(app, broker):
     """App + controller routes"""
-    config: ServiceConfig = app['config']
     app['ini'] = parse_ini(app)
-    config['mock'] = False
-    config['simulation'] = True
-    config['isolated'] = True
-    config['device_id'] = '123456789012345678901234'
-    config['device_port'] = find_free_port()
-    config['display_ws_port'] = 0  # let firmware find its own free port
+
+    config: ServiceConfig = app['config']
+    config.mock = False
+    config.simulation = True
+    config.isolated = True
+    config.device_id = '123456789012345678901234'
+    config.device_port = find_free_port()
+    config.display_ws_port = 0  # let firmware find its own free port
+    config.mqtt_host = 'localhost'
+    config.mqtt_port = broker['mqtt']
+    config.state_topic = 'test_integration/state'
 
     service_status.setup(app)
     scheduler.setup(app)
+    mqtt.setup(app)
     codec.setup(app)
     connection.setup(app)
     commander.setup(app)
@@ -107,22 +114,25 @@ async def app(app):
     settings_api.setup(app)
     debug_api.setup(app)
 
-    return app
-
 
 @pytest.fixture
 async def production_app(app):
-    app['config']['debug'] = False
+    app['config'].debug = False
     return app
 
 
 @pytest.fixture(autouse=True)
-async def synchronized(app, client):
+async def synchronized(app, client: TestClient):
     # Prevents test hangups if the connection fails
-    await asyncio.wait_for(service_status.wait_synchronized(app), timeout=5)
+    await asyncio.wait_for(
+        asyncio.gather(
+            service_status.wait_synchronized(app),
+            mqtt.fget(app).ready.wait(),
+        ),
+        timeout=5)
 
 
-async def test_create(app, client, block_args):
+async def test_create(app, client: TestClient, block_args):
     # Create object
     retd = await response(client.post('/blocks/create', json=block_args), 201)
     assert retd['id'] == block_args['id']
@@ -135,7 +145,7 @@ async def test_create(app, client, block_args):
     assert retd['id'] == 'other_obj'
 
 
-async def test_invalid_input(app, client, block_args):
+async def test_invalid_input(app, client: TestClient, block_args):
     # 400 if input fails schema check
     del block_args['type']
     retv = await response(client.post('/blocks/create', json=block_args), 400)
@@ -154,7 +164,7 @@ async def test_invalid_input(app, client, block_args):
     assert 'traceback' in retv
 
 
-async def test_invalid_input_prod(production_app, client, block_args):
+async def test_invalid_input_prod(production_app, client: TestClient, block_args):
     # 400 if input fails schema check
     del block_args['type']
     retv = await response(client.post('/blocks/create', json=block_args), 400)
@@ -174,7 +184,7 @@ async def test_invalid_input_prod(production_app, client, block_args):
     assert 'traceback' not in retv
 
 
-async def test_create_performance(app, client, block_args):
+async def test_create_performance(app, client: TestClient, block_args):
     num_items = 50
     ids = [f'id{num}' for num in range(num_items)]
     blocks = repeated_blocks(ids, block_args)
@@ -186,7 +196,7 @@ async def test_create_performance(app, client, block_args):
     assert set(ids).issubset(ret_ids(retd))
 
 
-async def test_batch_create_read_delete(app, client, block_args):
+async def test_batch_create_read_delete(app, client: TestClient, block_args):
     num_items = 50
     ids = [f'id{num}' for num in range(num_items)]
     blocks = repeated_blocks(ids, block_args)
@@ -208,7 +218,7 @@ async def test_batch_create_read_delete(app, client, block_args):
     assert set(ids).isdisjoint(ret_ids(retv))
 
 
-async def test_read(app, client, block_args):
+async def test_read(app, client: TestClient, block_args):
     await response(client.post('/blocks/read', json={'id': 'testobj'}), 400)  # Object does not exist
     await response(client.post('/blocks/create', json=block_args), 201)
 
@@ -216,12 +226,12 @@ async def test_read(app, client, block_args):
     assert retd['id'] == 'testobj'
 
 
-async def test_read_performance(app, client, block_args):
+async def test_read_performance(app, client: TestClient, block_args):
     await response(client.post('/blocks/create', json=block_args), 201)
     await asyncio.gather(*(response(client.post('/blocks/read', json={'id': 'testobj'})) for _ in range(100)))
 
 
-async def test_read_logged(app, client, block_args):
+async def test_read_logged(app, client: TestClient, block_args):
     await response(client.post('/blocks/create', json=block_args), 201)
 
     retd = await response(client.post('/blocks/read/logged', json={'id': 'testobj'}))
@@ -229,31 +239,31 @@ async def test_read_logged(app, client, block_args):
     assert 'address' not in retd['data']  # address is not a logged field
 
 
-async def test_write(app, client, block_args, m_publish):
+async def test_write(app, client: TestClient, block_args, m_publish):
     await response(client.post('/blocks/create', json=block_args), 201)
     assert await response(client.post('/blocks/write', json=block_args))
     assert m_publish.call_count == 2
 
 
-async def test_batch_write(app, client, block_args, m_publish):
+async def test_batch_write(app, client: TestClient, block_args, m_publish):
     await response(client.post('/blocks/create', json=block_args), 201)
     assert await response(client.post('/blocks/batch/write', json=[block_args, block_args, block_args]))
     assert m_publish.call_count == 2
 
 
-async def test_patch(app, client, block_args, m_publish):
+async def test_patch(app, client: TestClient, block_args, m_publish):
     await response(client.post('/blocks/create', json=block_args), 201)
     assert await response(client.post('/blocks/patch', json=block_args))
     assert m_publish.call_count == 2
 
 
-async def test_batch_patch(app, client, block_args, m_publish):
+async def test_batch_patch(app, client: TestClient, block_args, m_publish):
     await response(client.post('/blocks/create', json=block_args), 201)
     assert await response(client.post('/blocks/batch/patch', json=[block_args, block_args, block_args]))
     assert m_publish.call_count == 2
 
 
-async def test_delete(app, client, block_args):
+async def test_delete(app, client: TestClient, block_args):
     await response(client.post('/blocks/create', json=block_args), 201)
 
     retd = await response(client.post('/blocks/delete', json={'id': 'testobj'}))
@@ -262,7 +272,7 @@ async def test_delete(app, client, block_args):
     await response(client.post('/blocks/read', json={'id': 'testobj'}), 400)
 
 
-async def test_nid_crud(app, client, block_args):
+async def test_nid_crud(app, client: TestClient, block_args):
     created = await response(client.post('/blocks/create', json=block_args), 201)
     nid = created['nid']
 
@@ -274,7 +284,7 @@ async def test_nid_crud(app, client, block_args):
     await response(client.post('/blocks/read', json={'nid': nid}), 500)
 
 
-async def test_stored_blocks(app, client, block_args):
+async def test_stored_blocks(app, client: TestClient, block_args):
     retd = await response(client.post('/blocks/all/read/stored'))
     base_num = len(retd)
 
@@ -288,7 +298,7 @@ async def test_stored_blocks(app, client, block_args):
     await response(client.post('/blocks/read/stored', json={'id': 'flappy'}), 400)
 
 
-async def test_delete_all(app, client, block_args):
+async def test_delete_all(app, client: TestClient, block_args):
     n_sys_obj = len(await response(client.post('/blocks/all/read')))
 
     for i in range(5):
@@ -300,7 +310,7 @@ async def test_delete_all(app, client, block_args):
     assert len(await response(client.post('/blocks/all/read'))) == n_sys_obj
 
 
-async def test_cleanup(app, client, block_args):
+async def test_cleanup(app, client: TestClient, block_args):
     store = block_store.fget(app)
     await response(client.post('/blocks/create', json=block_args), 201)
     store['unused', 456] = {}
@@ -309,7 +319,7 @@ async def test_cleanup(app, client, block_args):
     assert not [v for v in retv if v['id'] == 'testobj']
 
 
-async def test_rename(app, client, block_args):
+async def test_rename(app, client: TestClient, block_args):
     await response(client.post('/blocks/create', json=block_args), 201)
     existing = block_args['id']
     desired = 'newname'
@@ -322,7 +332,7 @@ async def test_rename(app, client, block_args):
     await response(client.post('/blocks/read', json={'id': desired}))
 
 
-async def test_sequence(app, client):
+async def test_sequence(app, client: TestClient):
     setpoint_block = {
         'id': 'setpoint',
         'type': 'SetpointSensorPair',
@@ -354,12 +364,12 @@ async def test_sequence(app, client):
     ]
 
 
-async def test_ping(app, client):
+async def test_ping(app, client: TestClient):
     await response(client.get('/system/ping'))
     await response(client.post('/system/ping'))
 
 
-async def test_settings_api(app, client, block_args):
+async def test_settings_api(app, client: TestClient, block_args):
     await response(client.post('/blocks/create', json=block_args), 201)
 
     retd = await response(client.get('/settings/autoconnecting'))
@@ -371,12 +381,12 @@ async def test_settings_api(app, client, block_args):
     assert retd == {'enabled': False}
 
 
-async def test_discover(app, client):
+async def test_discover(app, client: TestClient):
     resp = await response(client.post('/blocks/discover'))
     assert resp == []
 
 
-async def test_validate(app, client, block_args):
+async def test_validate(app, client: TestClient, block_args):
     validate_args = {
         'type': block_args['type'],
         'data': block_args['data'],
@@ -403,7 +413,7 @@ async def test_validate(app, client, block_args):
     await response(client.post('/blocks/validate', json=invalid_link_obj), 400)
 
 
-async def test_backup_save(app, client, block_args):
+async def test_backup_save(app, client: TestClient, block_args):
     retd = await response(client.post('/blocks/backup/save'))
     base_num = len(retd['blocks'])
 
@@ -412,7 +422,7 @@ async def test_backup_save(app, client, block_args):
     assert len(retd['blocks']) == 1 + base_num
 
 
-async def test_backup_load(app, client, spark_blocks):
+async def test_backup_load(app, client: TestClient, spark_blocks):
     # reverse the set, to ensure some blocks are written with invalid references
     data = {
         'store': [{'keys': [block['id'], block['nid']], 'data': dict()} for block in spark_blocks],
@@ -457,7 +467,7 @@ async def test_backup_load(app, client, spark_blocks):
     assert 'derpface' not in resp_ids
 
 
-async def test_backup_stored(app, client, block_args):
+async def test_backup_stored(app, client: TestClient, block_args):
     portable = await response(client.post('/blocks/backup/save'))
     saved_stored = await response(client.post('/blocks/backup/stored/save', json={
         'name': 'stored',
@@ -495,7 +505,7 @@ async def test_backup_stored(app, client, block_args):
     assert block_args['id'] not in ids
 
 
-async def test_read_all_logged(app, client):
+async def test_read_all_logged(app, client: TestClient):
     args = {
         'id': 'pwm',
         'type': 'ActuatorPwm',
@@ -526,7 +536,7 @@ async def test_read_all_logged(app, client):
     assert 'period' not in obj_data
 
 
-async def test_system_status(app, client):
+async def test_system_status(app, client: TestClient):
     await service_status.wait_synchronized(app)
     resp = await response(client.get('/system/status'))
 
@@ -569,7 +579,7 @@ async def test_system_status(app, client):
     assert resp['controller'] is None
 
 
-async def test_system_resets(app, client, mocker):
+async def test_system_resets(app, client: TestClient, mocker):
     sys_api = system_api.__name__
     mocker.patch(sys_api + '.shutdown_soon', AsyncMock())
 
@@ -581,7 +591,7 @@ async def test_system_resets(app, client, mocker):
     await response(client.post('/system/factory_reset'))
 
 
-async def test_debug_encode_request(app, client):
+async def test_debug_encode_request(app, client: TestClient):
     payload = DecodedPayload(
         blockId=123,
         blockType='TempSensorOneWire',
@@ -619,7 +629,7 @@ async def test_debug_encode_request(app, client):
     assert payload.content['offset']['value'] == 20
 
 
-async def test_debug_encode_response(app, client):
+async def test_debug_encode_response(app, client: TestClient):
     payload = DecodedPayload(
         blockId=123,
         blockType='TempSensorOneWire',

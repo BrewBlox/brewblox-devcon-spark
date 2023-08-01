@@ -22,9 +22,6 @@ FROM python:3.9-slim-bullseye
 EXPOSE 5000
 WORKDIR /app
 
-ARG service_info=UNKNOWN
-ENV SERVICE_INFO=${service_info}
-
 RUN set -ex \
     && apt-get update \
     && apt-get install -y --no-install-recommends \

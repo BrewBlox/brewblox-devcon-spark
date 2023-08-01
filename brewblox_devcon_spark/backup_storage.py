@@ -24,10 +24,10 @@ class BackupStorage(repeater.RepeaterFeature):
         super().__init__(app)
 
         config: ServiceConfig = app['config']
-        self.name = config['name']
+        self.name = config.name
         self.dir = BASE_BACKUP_DIR / self.name
-        self.interval_s = config['backup_interval']
-        self.retry_interval_s = config['backup_retry_interval']
+        self.interval_s = config.backup_interval
+        self.retry_interval_s = config.backup_retry_interval
 
         if self.retry_interval_s <= 0:
             self.retry_interval_s = self.interval_s
