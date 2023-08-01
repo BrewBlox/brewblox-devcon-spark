@@ -263,19 +263,21 @@ files = [
 
 [[package]]
 name = "brewblox-service"
-version = "3.1.0"
+version = "3.1.2"
 description = "Scaffolding for Brewblox backend services"
 category = "main"
 optional = false
 python-versions = ">=3.9,<4"
 files = [
-    {file = "brewblox_service-3.1.0.tar.gz", hash = "sha256:cb483dd85e8776c00f312de3dd2c1e6da02b414cd4256ed870e32f585c2e5f36"},
+    {file = "brewblox_service-3.1.2-py3-none-any.whl", hash = "sha256:4e72417824083d9745bb51df538a99a76aaf774d53623aaa570330df128dc6fe"},
+    {file = "brewblox_service-3.1.2.tar.gz", hash = "sha256:29bd803531b6be1309a880e5d8ad4eeecdbe2a5ca7ade6334635420a544ef9db"},
 ]
 
 [package.dependencies]
 aiohttp = ">=3.0.0,<4.0.0"
 aiohttp-pydantic = ">=1.0.0,<2.0.0"
 aiomqtt = ">=1.0.0,<2.0.0"
+cryptography = "40.0.1"
 pydantic = ">=1.0.0,<2.0.0"
 
 [[package]]
@@ -1722,4 +1724,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4"
-content-hash = "df2fb057d45f454ba21fb837b4788b0156a989284cca2705418334ec57b154ea"
+content-hash = "0cdbaeb0b9c0ed473fe16a657c1011778b94b5ec141c2ea895efb2a0d71d3ba1"
