@@ -4,9 +4,8 @@
 """Generated protocol buffer code."""
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -16,165 +15,86 @@ import brewblox_pb2 as brewblox__pb2
 import nanopb_pb2 as nanopb__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11\x43onstraints.proto\x12\x10\x62lox.Constraints\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"Y\n\x0fValueConstraint\x12\x1b\n\x05value\x18\x01 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x0f\n\x07\x65nabled\x18\x32 \x01(\x08\x12\x18\n\x08limiting\x18\x33 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\"\x99\x01\n\x12\x42\x61lancedConstraint\x12\x1f\n\nbalancerId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x07\x92?\x02\x38\x10\x12\x1e\n\x07granted\x18\x02 \x01(\rB\r\x8a\xb5\x18\x03\x10\x80 \x8a\xb5\x18\x02(\x01\x12\x0f\n\x07\x65nabled\x18\x32 \x01(\x08\x12\x18\n\x08limiting\x18\x33 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12\x17\n\x02id\x18Z \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03\"\x92\x01\n\x12\x44urationConstraint\x12$\n\x08\x64uration\x18\x01 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 \x12\x0f\n\x07\x65nabled\x18\x32 \x01(\x08\x12\x18\n\x08limiting\x18\x33 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12+\n\tremaining\x18\x34 \x01(\rB\x18\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x8a\xb5\x18\x02(\x01\x92?\x02\x38 \"\xf5\x01\n\x11MutexedConstraint\x12\x1c\n\x07mutexId\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x08\x92?\x02\x38\x10\x12)\n\rextraHoldTime\x18\x02 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 \x12\x17\n\x07hasLock\x18\x04 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12\x0f\n\x07\x65nabled\x18\x32 \x01(\x08\x12\x18\n\x08limiting\x18\x33 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12+\n\tremaining\x18\x34 \x01(\rB\x18\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x8a\xb5\x18\x02(\x01\x92?\x02\x38 \x12&\n\x11hasCustomHoldTime\x18Z \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03\"\xab\x01\n\x11\x41nalogConstraints\x12.\n\x03min\x18\x01 \x01(\x0b\x32!.blox.Constraints.ValueConstraint\x12.\n\x03max\x18\x02 \x01(\x0b\x32!.blox.Constraints.ValueConstraint\x12\x36\n\x08\x62\x61lanced\x18\x03 \x01(\x0b\x32$.blox.Constraints.BalancedConstraint\"\xa8\x02\n\x12\x44igitalConstraints\x12\x34\n\x06minOff\x18\x01 \x01(\x0b\x32$.blox.Constraints.DurationConstraint\x12\x33\n\x05minOn\x18\x02 \x01(\x0b\x32$.blox.Constraints.DurationConstraint\x12\x38\n\ndelayedOff\x18\x03 \x01(\x0b\x32$.blox.Constraints.DurationConstraint\x12\x37\n\tdelayedOn\x18\x04 \x01(\x0b\x32$.blox.Constraints.DurationConstraint\x12\x34\n\x07mutexed\x18\x05 \x01(\x0b\x32#.blox.Constraints.MutexedConstraint\"\xb8\x01\n\x1a\x44\x65precatedAnalogConstraint\x12\x1b\n\x03min\x18\x01 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 H\x00\x12\x1b\n\x03max\x18\x02 \x01(\x11\x42\x0c\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 H\x00\x12\x38\n\x08\x62\x61lanced\x18\x03 \x01(\x0b\x32$.blox.Constraints.BalancedConstraintH\x00\x12\x18\n\x08limiting\x18\x64 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x42\x0c\n\nconstraint\"g\n\x1b\x44\x65precatedAnalogConstraints\x12H\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32,.blox.Constraints.DeprecatedAnalogConstraintB\x05\x92?\x02\x10\x08\"\xeb\x02\n\x1b\x44\x65precatedDigitalConstraint\x12$\n\x06minOff\x18\x01 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12#\n\x05minOn\x18\x02 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12\x36\n\x07mutexed\x18\x04 \x01(\x0b\x32#.blox.Constraints.MutexedConstraintH\x00\x12(\n\ndelayedOff\x18\x05 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12\'\n\tdelayedOn\x18\x06 \x01(\rB\x12\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 H\x00\x12\x1c\n\x05mutex\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x02\x18\x08\x92?\x02\x38\x10H\x00\x12\x1d\n\x08limiting\x18\x64 \x01(\rB\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03\x12+\n\tremaining\x18\x65 \x01(\rB\x18\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x8a\xb5\x18\x02(\x01\x92?\x02\x38 B\x0c\n\nconstraint\"i\n\x1c\x44\x65precatedDigitalConstraints\x12I\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32-.blox.Constraints.DeprecatedDigitalConstraintB\x05\x92?\x02\x10\x08\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11\x43onstraints.proto\x12\x10\x62lox.Constraints\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"Y\n\x0fValueConstraint\x12\x1b\n\x05value\x18\x01 \x01(\x11\x42\x0c\x92?\x02\x38 \x8a\xb5\x18\x03\x10\x80 \x12\x0f\n\x07\x65nabled\x18\x32 \x01(\x08\x12\x18\n\x08limiting\x18\x33 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\"\x95\x01\n\x12\x42\x61lancedConstraint\x12\x1f\n\nbalancerId\x18\x01 \x01(\rB\x0b\x92?\x02\x38\x10\x8a\xb5\x18\x02\x18\x07\x12\x1a\n\x07granted\x18\x02 \x01(\rB\t\x8a\xb5\x18\x05\x10\x80 (\x01\x12\x0f\n\x07\x65nabled\x18\x32 \x01(\x08\x12\x18\n\x08limiting\x18\x33 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12\x17\n\x02id\x18Z \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\"\x86\x01\n\x12\x44urationConstraint\x12 \n\x08\x64uration\x18\x01 \x01(\rB\x0e\x92?\x02\x38 \x8a\xb5\x18\x05\x08\x03\x10\xe8\x07\x12\x0f\n\x07\x65nabled\x18\x32 \x01(\x08\x12\x18\n\x08limiting\x18\x33 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12#\n\tremaining\x18\x34 \x01(\rB\x10\x92?\x02\x38 \x8a\xb5\x18\x07\x08\x03\x10\xe8\x07(\x01\"\xe9\x01\n\x11MutexedConstraint\x12\x1c\n\x07mutexId\x18\x01 \x01(\rB\x0b\x92?\x02\x38\x10\x8a\xb5\x18\x02\x18\x08\x12%\n\rextraHoldTime\x18\x02 \x01(\rB\x0e\x92?\x02\x38 \x8a\xb5\x18\x05\x08\x03\x10\xe8\x07\x12\x17\n\x07hasLock\x18\x04 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12\x0f\n\x07\x65nabled\x18\x32 \x01(\x08\x12\x18\n\x08limiting\x18\x33 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x12#\n\tremaining\x18\x34 \x01(\rB\x10\x92?\x02\x38 \x8a\xb5\x18\x07\x08\x03\x10\xe8\x07(\x01\x12&\n\x11hasCustomHoldTime\x18Z \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\"\xab\x01\n\x11\x41nalogConstraints\x12.\n\x03min\x18\x01 \x01(\x0b\x32!.blox.Constraints.ValueConstraint\x12.\n\x03max\x18\x02 \x01(\x0b\x32!.blox.Constraints.ValueConstraint\x12\x36\n\x08\x62\x61lanced\x18\x03 \x01(\x0b\x32$.blox.Constraints.BalancedConstraint\"\xa8\x02\n\x12\x44igitalConstraints\x12\x34\n\x06minOff\x18\x01 \x01(\x0b\x32$.blox.Constraints.DurationConstraint\x12\x33\n\x05minOn\x18\x02 \x01(\x0b\x32$.blox.Constraints.DurationConstraint\x12\x38\n\ndelayedOff\x18\x03 \x01(\x0b\x32$.blox.Constraints.DurationConstraint\x12\x37\n\tdelayedOn\x18\x04 \x01(\x0b\x32$.blox.Constraints.DurationConstraint\x12\x34\n\x07mutexed\x18\x05 \x01(\x0b\x32#.blox.Constraints.MutexedConstraint\"\xb8\x01\n\x1a\x44\x65precatedAnalogConstraint\x12\x1b\n\x03min\x18\x01 \x01(\x11\x42\x0c\x92?\x02\x38 \x8a\xb5\x18\x03\x10\x80 H\x00\x12\x1b\n\x03max\x18\x02 \x01(\x11\x42\x0c\x92?\x02\x38 \x8a\xb5\x18\x03\x10\x80 H\x00\x12\x38\n\x08\x62\x61lanced\x18\x03 \x01(\x0b\x32$.blox.Constraints.BalancedConstraintH\x00\x12\x18\n\x08limiting\x18\x64 \x01(\x08\x42\x06\x8a\xb5\x18\x02(\x01\x42\x0c\n\nconstraint\"g\n\x1b\x44\x65precatedAnalogConstraints\x12H\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32,.blox.Constraints.DeprecatedAnalogConstraintB\x05\x92?\x02\x10\x08\"\xd3\x02\n\x1b\x44\x65precatedDigitalConstraint\x12 \n\x06minOff\x18\x01 \x01(\rB\x0e\x92?\x02\x38 \x8a\xb5\x18\x05\x08\x03\x10\xe8\x07H\x00\x12\x1f\n\x05minOn\x18\x02 \x01(\rB\x0e\x92?\x02\x38 \x8a\xb5\x18\x05\x08\x03\x10\xe8\x07H\x00\x12\x36\n\x07mutexed\x18\x04 \x01(\x0b\x32#.blox.Constraints.MutexedConstraintH\x00\x12$\n\ndelayedOff\x18\x05 \x01(\rB\x0e\x92?\x02\x38 \x8a\xb5\x18\x05\x08\x03\x10\xe8\x07H\x00\x12#\n\tdelayedOn\x18\x06 \x01(\rB\x0e\x92?\x02\x38 \x8a\xb5\x18\x05\x08\x03\x10\xe8\x07H\x00\x12\x1c\n\x05mutex\x18\x03 \x01(\rB\x0b\x92?\x02\x38\x10\x8a\xb5\x18\x02\x18\x08H\x00\x12\x1d\n\x08limiting\x18\x64 \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12#\n\tremaining\x18\x65 \x01(\rB\x10\x92?\x02\x38 \x8a\xb5\x18\x07\x08\x03\x10\xe8\x07(\x01\x42\x0c\n\nconstraint\"i\n\x1c\x44\x65precatedDigitalConstraints\x12I\n\x0b\x63onstraints\x18\x01 \x03(\x0b\x32-.blox.Constraints.DeprecatedDigitalConstraintB\x05\x92?\x02\x10\x08\x62\x06proto3')
 
-
-
-_VALUECONSTRAINT = DESCRIPTOR.message_types_by_name['ValueConstraint']
-_BALANCEDCONSTRAINT = DESCRIPTOR.message_types_by_name['BalancedConstraint']
-_DURATIONCONSTRAINT = DESCRIPTOR.message_types_by_name['DurationConstraint']
-_MUTEXEDCONSTRAINT = DESCRIPTOR.message_types_by_name['MutexedConstraint']
-_ANALOGCONSTRAINTS = DESCRIPTOR.message_types_by_name['AnalogConstraints']
-_DIGITALCONSTRAINTS = DESCRIPTOR.message_types_by_name['DigitalConstraints']
-_DEPRECATEDANALOGCONSTRAINT = DESCRIPTOR.message_types_by_name['DeprecatedAnalogConstraint']
-_DEPRECATEDANALOGCONSTRAINTS = DESCRIPTOR.message_types_by_name['DeprecatedAnalogConstraints']
-_DEPRECATEDDIGITALCONSTRAINT = DESCRIPTOR.message_types_by_name['DeprecatedDigitalConstraint']
-_DEPRECATEDDIGITALCONSTRAINTS = DESCRIPTOR.message_types_by_name['DeprecatedDigitalConstraints']
-ValueConstraint = _reflection.GeneratedProtocolMessageType('ValueConstraint', (_message.Message,), {
-  'DESCRIPTOR' : _VALUECONSTRAINT,
-  '__module__' : 'Constraints_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Constraints.ValueConstraint)
-  })
-_sym_db.RegisterMessage(ValueConstraint)
-
-BalancedConstraint = _reflection.GeneratedProtocolMessageType('BalancedConstraint', (_message.Message,), {
-  'DESCRIPTOR' : _BALANCEDCONSTRAINT,
-  '__module__' : 'Constraints_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Constraints.BalancedConstraint)
-  })
-_sym_db.RegisterMessage(BalancedConstraint)
-
-DurationConstraint = _reflection.GeneratedProtocolMessageType('DurationConstraint', (_message.Message,), {
-  'DESCRIPTOR' : _DURATIONCONSTRAINT,
-  '__module__' : 'Constraints_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Constraints.DurationConstraint)
-  })
-_sym_db.RegisterMessage(DurationConstraint)
-
-MutexedConstraint = _reflection.GeneratedProtocolMessageType('MutexedConstraint', (_message.Message,), {
-  'DESCRIPTOR' : _MUTEXEDCONSTRAINT,
-  '__module__' : 'Constraints_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Constraints.MutexedConstraint)
-  })
-_sym_db.RegisterMessage(MutexedConstraint)
-
-AnalogConstraints = _reflection.GeneratedProtocolMessageType('AnalogConstraints', (_message.Message,), {
-  'DESCRIPTOR' : _ANALOGCONSTRAINTS,
-  '__module__' : 'Constraints_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Constraints.AnalogConstraints)
-  })
-_sym_db.RegisterMessage(AnalogConstraints)
-
-DigitalConstraints = _reflection.GeneratedProtocolMessageType('DigitalConstraints', (_message.Message,), {
-  'DESCRIPTOR' : _DIGITALCONSTRAINTS,
-  '__module__' : 'Constraints_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Constraints.DigitalConstraints)
-  })
-_sym_db.RegisterMessage(DigitalConstraints)
-
-DeprecatedAnalogConstraint = _reflection.GeneratedProtocolMessageType('DeprecatedAnalogConstraint', (_message.Message,), {
-  'DESCRIPTOR' : _DEPRECATEDANALOGCONSTRAINT,
-  '__module__' : 'Constraints_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Constraints.DeprecatedAnalogConstraint)
-  })
-_sym_db.RegisterMessage(DeprecatedAnalogConstraint)
-
-DeprecatedAnalogConstraints = _reflection.GeneratedProtocolMessageType('DeprecatedAnalogConstraints', (_message.Message,), {
-  'DESCRIPTOR' : _DEPRECATEDANALOGCONSTRAINTS,
-  '__module__' : 'Constraints_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Constraints.DeprecatedAnalogConstraints)
-  })
-_sym_db.RegisterMessage(DeprecatedAnalogConstraints)
-
-DeprecatedDigitalConstraint = _reflection.GeneratedProtocolMessageType('DeprecatedDigitalConstraint', (_message.Message,), {
-  'DESCRIPTOR' : _DEPRECATEDDIGITALCONSTRAINT,
-  '__module__' : 'Constraints_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Constraints.DeprecatedDigitalConstraint)
-  })
-_sym_db.RegisterMessage(DeprecatedDigitalConstraint)
-
-DeprecatedDigitalConstraints = _reflection.GeneratedProtocolMessageType('DeprecatedDigitalConstraints', (_message.Message,), {
-  'DESCRIPTOR' : _DEPRECATEDDIGITALCONSTRAINTS,
-  '__module__' : 'Constraints_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Constraints.DeprecatedDigitalConstraints)
-  })
-_sym_db.RegisterMessage(DeprecatedDigitalConstraints)
-
+_globals = globals()
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'Constraints_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
   _VALUECONSTRAINT.fields_by_name['value']._options = None
-  _VALUECONSTRAINT.fields_by_name['value']._serialized_options = b'\212\265\030\003\020\200 \222?\0028 '
+  _VALUECONSTRAINT.fields_by_name['value']._serialized_options = b'\222?\0028 \212\265\030\003\020\200 '
   _VALUECONSTRAINT.fields_by_name['limiting']._options = None
   _VALUECONSTRAINT.fields_by_name['limiting']._serialized_options = b'\212\265\030\002(\001'
   _BALANCEDCONSTRAINT.fields_by_name['balancerId']._options = None
-  _BALANCEDCONSTRAINT.fields_by_name['balancerId']._serialized_options = b'\212\265\030\002\030\007\222?\0028\020'
+  _BALANCEDCONSTRAINT.fields_by_name['balancerId']._serialized_options = b'\222?\0028\020\212\265\030\002\030\007'
   _BALANCEDCONSTRAINT.fields_by_name['granted']._options = None
-  _BALANCEDCONSTRAINT.fields_by_name['granted']._serialized_options = b'\212\265\030\003\020\200 \212\265\030\002(\001'
+  _BALANCEDCONSTRAINT.fields_by_name['granted']._serialized_options = b'\212\265\030\005\020\200 (\001'
   _BALANCEDCONSTRAINT.fields_by_name['limiting']._options = None
   _BALANCEDCONSTRAINT.fields_by_name['limiting']._serialized_options = b'\212\265\030\002(\001'
   _BALANCEDCONSTRAINT.fields_by_name['id']._options = None
-  _BALANCEDCONSTRAINT.fields_by_name['id']._serialized_options = b'\212\265\030\002H\001\222?\002\030\003'
+  _BALANCEDCONSTRAINT.fields_by_name['id']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
   _DURATIONCONSTRAINT.fields_by_name['duration']._options = None
-  _DURATIONCONSTRAINT.fields_by_name['duration']._serialized_options = b'\212\265\030\002\010\003\212\265\030\003\020\350\007\222?\0028 '
+  _DURATIONCONSTRAINT.fields_by_name['duration']._serialized_options = b'\222?\0028 \212\265\030\005\010\003\020\350\007'
   _DURATIONCONSTRAINT.fields_by_name['limiting']._options = None
   _DURATIONCONSTRAINT.fields_by_name['limiting']._serialized_options = b'\212\265\030\002(\001'
   _DURATIONCONSTRAINT.fields_by_name['remaining']._options = None
-  _DURATIONCONSTRAINT.fields_by_name['remaining']._serialized_options = b'\212\265\030\002\010\003\212\265\030\003\020\350\007\212\265\030\002(\001\222?\0028 '
+  _DURATIONCONSTRAINT.fields_by_name['remaining']._serialized_options = b'\222?\0028 \212\265\030\007\010\003\020\350\007(\001'
   _MUTEXEDCONSTRAINT.fields_by_name['mutexId']._options = None
-  _MUTEXEDCONSTRAINT.fields_by_name['mutexId']._serialized_options = b'\212\265\030\002\030\010\222?\0028\020'
+  _MUTEXEDCONSTRAINT.fields_by_name['mutexId']._serialized_options = b'\222?\0028\020\212\265\030\002\030\010'
   _MUTEXEDCONSTRAINT.fields_by_name['extraHoldTime']._options = None
-  _MUTEXEDCONSTRAINT.fields_by_name['extraHoldTime']._serialized_options = b'\212\265\030\002\010\003\212\265\030\003\020\350\007\222?\0028 '
+  _MUTEXEDCONSTRAINT.fields_by_name['extraHoldTime']._serialized_options = b'\222?\0028 \212\265\030\005\010\003\020\350\007'
   _MUTEXEDCONSTRAINT.fields_by_name['hasLock']._options = None
   _MUTEXEDCONSTRAINT.fields_by_name['hasLock']._serialized_options = b'\212\265\030\002(\001'
   _MUTEXEDCONSTRAINT.fields_by_name['limiting']._options = None
   _MUTEXEDCONSTRAINT.fields_by_name['limiting']._serialized_options = b'\212\265\030\002(\001'
   _MUTEXEDCONSTRAINT.fields_by_name['remaining']._options = None
-  _MUTEXEDCONSTRAINT.fields_by_name['remaining']._serialized_options = b'\212\265\030\002\010\003\212\265\030\003\020\350\007\212\265\030\002(\001\222?\0028 '
+  _MUTEXEDCONSTRAINT.fields_by_name['remaining']._serialized_options = b'\222?\0028 \212\265\030\007\010\003\020\350\007(\001'
   _MUTEXEDCONSTRAINT.fields_by_name['hasCustomHoldTime']._options = None
-  _MUTEXEDCONSTRAINT.fields_by_name['hasCustomHoldTime']._serialized_options = b'\212\265\030\002H\001\222?\002\030\003'
+  _MUTEXEDCONSTRAINT.fields_by_name['hasCustomHoldTime']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
   _DEPRECATEDANALOGCONSTRAINT.fields_by_name['min']._options = None
-  _DEPRECATEDANALOGCONSTRAINT.fields_by_name['min']._serialized_options = b'\212\265\030\003\020\200 \222?\0028 '
+  _DEPRECATEDANALOGCONSTRAINT.fields_by_name['min']._serialized_options = b'\222?\0028 \212\265\030\003\020\200 '
   _DEPRECATEDANALOGCONSTRAINT.fields_by_name['max']._options = None
-  _DEPRECATEDANALOGCONSTRAINT.fields_by_name['max']._serialized_options = b'\212\265\030\003\020\200 \222?\0028 '
+  _DEPRECATEDANALOGCONSTRAINT.fields_by_name['max']._serialized_options = b'\222?\0028 \212\265\030\003\020\200 '
   _DEPRECATEDANALOGCONSTRAINT.fields_by_name['limiting']._options = None
   _DEPRECATEDANALOGCONSTRAINT.fields_by_name['limiting']._serialized_options = b'\212\265\030\002(\001'
   _DEPRECATEDANALOGCONSTRAINTS.fields_by_name['constraints']._options = None
   _DEPRECATEDANALOGCONSTRAINTS.fields_by_name['constraints']._serialized_options = b'\222?\002\020\010'
   _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['minOff']._options = None
-  _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['minOff']._serialized_options = b'\212\265\030\002\010\003\212\265\030\003\020\350\007\222?\0028 '
+  _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['minOff']._serialized_options = b'\222?\0028 \212\265\030\005\010\003\020\350\007'
   _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['minOn']._options = None
-  _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['minOn']._serialized_options = b'\212\265\030\002\010\003\212\265\030\003\020\350\007\222?\0028 '
+  _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['minOn']._serialized_options = b'\222?\0028 \212\265\030\005\010\003\020\350\007'
   _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['delayedOff']._options = None
-  _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['delayedOff']._serialized_options = b'\212\265\030\002\010\003\212\265\030\003\020\350\007\222?\0028 '
+  _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['delayedOff']._serialized_options = b'\222?\0028 \212\265\030\005\010\003\020\350\007'
   _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['delayedOn']._options = None
-  _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['delayedOn']._serialized_options = b'\212\265\030\002\010\003\212\265\030\003\020\350\007\222?\0028 '
+  _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['delayedOn']._serialized_options = b'\222?\0028 \212\265\030\005\010\003\020\350\007'
   _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['mutex']._options = None
-  _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['mutex']._serialized_options = b'\212\265\030\002\030\010\222?\0028\020'
+  _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['mutex']._serialized_options = b'\222?\0028\020\212\265\030\002\030\010'
   _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['limiting']._options = None
-  _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['limiting']._serialized_options = b'\212\265\030\002H\001\222?\002\030\003'
+  _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['limiting']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
   _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['remaining']._options = None
-  _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['remaining']._serialized_options = b'\212\265\030\002\010\003\212\265\030\003\020\350\007\212\265\030\002(\001\222?\0028 '
+  _DEPRECATEDDIGITALCONSTRAINT.fields_by_name['remaining']._serialized_options = b'\222?\0028 \212\265\030\007\010\003\020\350\007(\001'
   _DEPRECATEDDIGITALCONSTRAINTS.fields_by_name['constraints']._options = None
   _DEPRECATEDDIGITALCONSTRAINTS.fields_by_name['constraints']._serialized_options = b'\222?\002\020\010'
-  _VALUECONSTRAINT._serialized_start=69
-  _VALUECONSTRAINT._serialized_end=158
-  _BALANCEDCONSTRAINT._serialized_start=161
-  _BALANCEDCONSTRAINT._serialized_end=314
-  _DURATIONCONSTRAINT._serialized_start=317
-  _DURATIONCONSTRAINT._serialized_end=463
-  _MUTEXEDCONSTRAINT._serialized_start=466
-  _MUTEXEDCONSTRAINT._serialized_end=711
-  _ANALOGCONSTRAINTS._serialized_start=714
-  _ANALOGCONSTRAINTS._serialized_end=885
-  _DIGITALCONSTRAINTS._serialized_start=888
-  _DIGITALCONSTRAINTS._serialized_end=1184
-  _DEPRECATEDANALOGCONSTRAINT._serialized_start=1187
-  _DEPRECATEDANALOGCONSTRAINT._serialized_end=1371
-  _DEPRECATEDANALOGCONSTRAINTS._serialized_start=1373
-  _DEPRECATEDANALOGCONSTRAINTS._serialized_end=1476
-  _DEPRECATEDDIGITALCONSTRAINT._serialized_start=1479
-  _DEPRECATEDDIGITALCONSTRAINT._serialized_end=1842
-  _DEPRECATEDDIGITALCONSTRAINTS._serialized_start=1844
-  _DEPRECATEDDIGITALCONSTRAINTS._serialized_end=1949
+  _globals['_VALUECONSTRAINT']._serialized_start=69
+  _globals['_VALUECONSTRAINT']._serialized_end=158
+  _globals['_BALANCEDCONSTRAINT']._serialized_start=161
+  _globals['_BALANCEDCONSTRAINT']._serialized_end=310
+  _globals['_DURATIONCONSTRAINT']._serialized_start=313
+  _globals['_DURATIONCONSTRAINT']._serialized_end=447
+  _globals['_MUTEXEDCONSTRAINT']._serialized_start=450
+  _globals['_MUTEXEDCONSTRAINT']._serialized_end=683
+  _globals['_ANALOGCONSTRAINTS']._serialized_start=686
+  _globals['_ANALOGCONSTRAINTS']._serialized_end=857
+  _globals['_DIGITALCONSTRAINTS']._serialized_start=860
+  _globals['_DIGITALCONSTRAINTS']._serialized_end=1156
+  _globals['_DEPRECATEDANALOGCONSTRAINT']._serialized_start=1159
+  _globals['_DEPRECATEDANALOGCONSTRAINT']._serialized_end=1343
+  _globals['_DEPRECATEDANALOGCONSTRAINTS']._serialized_start=1345
+  _globals['_DEPRECATEDANALOGCONSTRAINTS']._serialized_end=1448
+  _globals['_DEPRECATEDDIGITALCONSTRAINT']._serialized_start=1451
+  _globals['_DEPRECATEDDIGITALCONSTRAINT']._serialized_end=1790
+  _globals['_DEPRECATEDDIGITALCONSTRAINTS']._serialized_start=1792
+  _globals['_DEPRECATEDDIGITALCONSTRAINTS']._serialized_end=1897
 # @@protoc_insertion_point(module_scope)

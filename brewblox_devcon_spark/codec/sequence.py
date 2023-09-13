@@ -8,9 +8,13 @@ import re
 from datetime import timedelta
 from typing import Any
 
+from google.protobuf.descriptor import Descriptor, FieldDescriptor
+
 from brewblox_devcon_spark.codec import bloxfield, time_utils
 from brewblox_devcon_spark.codec.pb2 import Sequence_pb2, brewblox_pb2
 from brewblox_devcon_spark.models import Block
+
+INSTRUCTION_MSG_DESC: Descriptor = Sequence_pb2.Instruction.DESCRIPTOR
 
 
 def from_line(line: str, line_num: int) -> dict:
@@ -29,13 +33,40 @@ def from_line(line: str, line_num: int) -> dict:
         args = ''
 
     try:
-        instruction_field = getattr(Sequence_pb2.Instruction, opcode)
-        arg_fields_by_name = instruction_field.DESCRIPTOR.message_type.fields_by_name
-    except AttributeError:
+        # The generic `Instruction` is a big oneof in proto, with all opcodes mapped to fields
+        # `fields_by_name[opcode]` yields the descriptor of a opcode field in the Instruction message
+        #
+        #     Message Instruction {
+        #       oneof instruction_oneof {
+        #         ...
+        #         WaitDuration WAIT_DURATION = 4;  # <-- `opcode_field_desc` for opcode 'WAIT_DURATION'
+        #         ...
+        #       }
+        #     }
+        #
+        opcode_field_desc: FieldDescriptor = INSTRUCTION_MSG_DESC.fields_by_name[opcode]
+
+        # The descriptor for the specific instruction message
+        #
+        #     message WaitDuration {  # <-- `opcode_msg_desc` for opcode 'WAIT_DURATION'
+        #       uint32 duration = 1
+        #         [ (brewblox.field).unit = Second, (nanopb).int_size = IS_32 ];
+        #     }
+        opcode_msg_desc: Descriptor = opcode_field_desc.message_type
+
+        # The fields in the specific instruction message
+        # Here, the arguments for the specific instruction are declared
+        #
+        #     message WaitDuration {
+        #       uint32 duration = 1  # <-- `opcode_arg_field_descs['duration']` for opcode 'WAIT_DURATION'
+        #         [ (brewblox.field).unit = Second, (nanopb).int_size = IS_32 ];
+        #     }
+        opcode_arg_field_descs: dict[str, FieldDescriptor] = opcode_msg_desc.fields_by_name
+    except KeyError:
         raise ValueError(f'line {line_num}: Invalid instruction name: `{opcode}`')
 
     def parse_arg_value(key: str, value: str) -> Any:
-        field_desc = arg_fields_by_name.get(key)
+        field_desc = opcode_arg_field_descs.get(key)
 
         if '=' in value:
             raise ValueError(f'line {line_num}: Missing argument separator: `{key}={value}`')
@@ -108,7 +139,7 @@ def from_line(line: str, line_num: int) -> dict:
         for key, value in argdict.items()
     }
 
-    if missing := set(arg_fields_by_name.keys()) - set(parsed.keys()):
+    if missing := set(opcode_arg_field_descs.keys()) - set(parsed.keys()):
         raise ValueError(f'line {line_num}: Missing arguments: `{", ".join(missing)}`')
 
     return {opcode: parsed}
