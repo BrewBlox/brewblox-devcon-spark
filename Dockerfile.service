@@ -6,35 +6,48 @@ ENV PIP_FIND_LINKS=/wheeley
 COPY ./dist /app/dist
 COPY ./firmware /app/firmware
 
-RUN set -ex \
-    && mkdir /wheeley \
-    && pip3 install --upgrade pip wheel setuptools \
-    && pip3 wheel --wheel-dir=/wheeley -r /app/dist/requirements.txt \
-    && pip3 wheel --wheel-dir=/wheeley /app/dist/*.tar.gz \
-    && ARCH="$(dpkg --print-architecture)" \
-    && if [ "${ARCH}" = "amd64" ]; then OTHER_SIM='brewblox-{arm32,arm64}.sim'; fi \
-    && if [ "${ARCH}" = "armhf" ]; then OTHER_SIM='brewblox-{amd64,arm64}.sim'; fi \
-    && if [ "${ARCH}" = "arm64" ]; then OTHER_SIM='brewblox-{amd64,arm32}.sim'; fi \
-    && bash -c "rm /app/firmware/${OTHER_SIM}" \
-    && rm /app/firmware/*.elf
+RUN <<EOF bash
+    set -ex
+
+    mkdir /wheeley
+    pip3 install --upgrade pip wheel setuptools
+    pip3 wheel --wheel-dir=/wheeley -r /app/dist/requirements.txt
+    pip3 wheel --wheel-dir=/wheeley /app/dist/*.tar.gz
+
+    cd /app/firmware
+    ARCH="$(dpkg --print-architecture)"
+    if [ "\${ARCH}" = "amd64" ]; then
+        rm ./*.elf ./brewblox-{arm32,arm64}.sim
+    elif [ "\${ARCH}" = "armhf" ]; then
+        rm ./*.elf ./brewblox-{amd64,arm64}.sim
+    elif [ "\${ARCH}" = "arm64" ]; then
+        rm ./*.elf ./brewblox-{amd64,arm32}.sim
+    fi
+EOF
 
 FROM python:3.11-slim-bookworm
 EXPOSE 5000
 WORKDIR /app
 
-RUN set -ex \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
+RUN <<EOF
+    set -ex
+
+    apt-get update
+    apt-get install -y --no-install-recommends \
         socat \
-        usbutils \
-    && rm -rf /var/lib/apt/lists/*
+        usbutils
+    rm -rf /var/lib/apt/lists/*
+EOF
 
 COPY --from=base /wheeley /wheeley
 COPY --from=base /app/firmware /app/firmware
 
-RUN set -ex \
-    && pip3 install --no-index --find-links=/wheeley brewblox-devcon-spark \
-    && pip3 freeze \
-    && rm -rf /wheeley
+RUN <<EOF
+    set -ex
+
+    pip3 install --no-index --find-links=/wheeley brewblox-devcon-spark
+    pip3 freeze
+    rm -rf /wheeley
+EOF
 
 ENTRYPOINT ["python3", "-m", "brewblox_devcon_spark"]
