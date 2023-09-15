@@ -2,17 +2,24 @@ FROM python:3.11-bookworm as base
 
 ENV PIP_EXTRA_INDEX_URL=https://www.piwheels.org/simple
 ENV PIP_FIND_LINKS=/wheeley
+ENV VENV=/app/.venv
+ENV PATH="$VENV/bin:$PATH"
 
 COPY ./dist /app/dist
 COPY ./firmware /app/firmware
 
-RUN <<EOF bash
+RUN <<EOF
     set -ex
 
     mkdir /wheeley
+    python3 -m venv $VENV
     pip3 install --upgrade pip wheel setuptools
     pip3 wheel --wheel-dir=/wheeley -r /app/dist/requirements.txt
     pip3 wheel --wheel-dir=/wheeley /app/dist/*.tar.gz
+EOF
+
+RUN <<EOF bash
+    set -ex
 
     cd /app/firmware
     ARCH="$(dpkg --print-architecture)"
@@ -29,15 +36,9 @@ FROM python:3.11-slim-bookworm
 EXPOSE 5000
 WORKDIR /app
 
-RUN <<EOF
-    set -ex
-
-    apt-get update
-    apt-get install -y --no-install-recommends \
-        socat \
-        usbutils
-    rm -rf /var/lib/apt/lists/*
-EOF
+ENV PIP_FIND_LINKS=/wheeley
+ENV VENV=/app/.venv
+ENV PATH="$VENV/bin:$PATH"
 
 COPY --from=base /wheeley /wheeley
 COPY --from=base /app/firmware /app/firmware
@@ -45,7 +46,14 @@ COPY --from=base /app/firmware /app/firmware
 RUN <<EOF
     set -ex
 
-    pip3 install --no-index --find-links=/wheeley brewblox-devcon-spark
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        socat \
+        usbutils
+    rm -rf /var/cache/apt/archives /var/lib/apt/lists
+
+    python3 -m venv $VENV
+    pip3 install --no-index brewblox_devcon_spark
     pip3 freeze
     rm -rf /wheeley
 EOF
