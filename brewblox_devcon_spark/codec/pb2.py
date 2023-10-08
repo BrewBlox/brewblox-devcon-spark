@@ -31,6 +31,7 @@ if 'brewblox_pb2' not in sys.modules:  # pragma: no cover
     import OneWireBus_pb2
     import OneWireGpioModule_pb2
     import Pid_pb2
+    import PrecisionAnalogModule_pb2
     import Screen_pb2
     import Sequence_pb2
     import SetpointProfile_pb2
@@ -66,6 +67,7 @@ __all__ = [
     'OneWireBus_pb2',
     'OneWireGpioModule_pb2',
     'Pid_pb2',
+    'PrecisionAnalogModule_pb2',
     'Screen_pb2',
     'Sequence_pb2',
     'SetpointProfile_pb2',
