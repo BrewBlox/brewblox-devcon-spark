@@ -14,13 +14,6 @@ To set up the development environment, follow the instructions at <https://githu
 
 Integration tests run against the firmware simulator.
 
-**If you run Ubuntu 22.04, and your tests fail, you may need to manually install libssl 1.1**.
-
-```sh
-wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb
-sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2_amd64.deb
-```
-
 ## Firmware
 
 The Spark service is coupled to a specific Spark firmware version.
@@ -33,7 +26,8 @@ The brewblox-proto repository only contains .proto files. The associated pb2.py 
 
 Firmware dependency management is handled by [invoke](https://docs.pyinvoke.org/en/stable/index.html) commands, defined in `tasks.py`:
 
-`invoke update-firmware` fetches the latest firmware.ini file for a given firmware build (*develop* by default), checks out the associated brewblox-proto commit for the submodule, and calls both `compile-proto.sh` and `download-firmware.sh`.
+`invoke update-firmware` fetches the latest firmware.ini file for a given firmware build (*develop* by default),
+checks out the associated brewblox-proto commit for the submodule, and then calls `compile-proto` and `download-firmware`.
 
 `invoke compile-proto` compiles .proto files found in the proto submodule into _pb2.py python files.
 The_pb2.py files are committed into version control.
