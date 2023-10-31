@@ -35,7 +35,7 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
     def __init__(self, app: web.Application):
         super().__init__(app)
 
-        self._retry_count: int = 0
+        self._attempts: int = 0
         self._impl: ConnectionImplBase = None
 
     def __str__(self):
@@ -48,6 +48,37 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
     def connected(self) -> bool:
         return self._impl is not None \
             and self._impl.connected.is_set()
+
+    @property
+    def usb_compatible(self) -> bool:
+        config: ServiceConfig = self.app['config']
+
+        # Simulations (internal or external) do not use USB
+        if config.mock or config.simulation:
+            return False
+
+        # Hardcoded addresses take precedence over device discovery
+        if config.device_serial or config.device_host:
+            return config.device_serial is not None
+
+        # USB is explicitly enabled
+        if config.discovery == DiscoveryType.usb:
+            return True
+
+        # TCP is explicitly enabled
+        if config.discovery != DiscoveryType.all:
+            return False
+
+        # Spark models can be identified by device ID
+        # Spark 2/3 use 12 bytes / 24 characters
+        # Spark 4 uses 6 bytes / 12 characters
+        # Spark simulations can have variable length IDs
+        # USB should only be disabled if we're sure it is not supported
+        if config.device_id and len(config.device_id) == 12:
+            return False
+
+        # We're not sure
+        return True
 
     async def on_event(self, msg: str):
         """
@@ -112,11 +143,10 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
 
     async def run(self):
         """Implements RepeaterFeature.run"""
-        config: ServiceConfig = self.app['config']
         delay = service_store.get_reconnect_delay(self.app)
 
         try:
-            if self._retry_count > MAX_RETRY_COUNT:
+            if self._attempts > MAX_RETRY_COUNT:
                 raise ConnectionAbortedError('Retry attempts exhausted')
 
             await asyncio.sleep(delay)
@@ -129,7 +159,7 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
                                          self._impl.kind,
                                          self._impl.address)
 
-            self._retry_count = 0
+            self._attempts = 0
             self._reconnect_interval = 0
 
             await self._impl.disconnected.wait()
@@ -141,17 +171,17 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
 
             # USB devices that were plugged in after container start are not visible
             # If we are potentially connecting to a USB device, we need to restart
-            if config.device_serial or config.discovery in [DiscoveryType.all, DiscoveryType.usb]:
+            if self.usb_compatible:
                 raise web.GracefulExit()
             else:
-                self._retry_count = 0
+                self._attempts = 0
 
         except Exception as ex:
-            if self._retry_count:
-                LOGGER.debug(strex(ex))
-            else:
+            self._attempts += 1
+            if self._attempts == 1:
                 LOGGER.error(strex(ex))
-            self._retry_count += 1
+            else:
+                LOGGER.debug(strex(ex))
 
         finally:
             with suppress(Exception):

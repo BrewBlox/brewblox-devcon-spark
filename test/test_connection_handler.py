@@ -54,6 +54,46 @@ async def test_calc_backoff():
     assert connection_handler.calc_backoff(60) == connection_handler.MAX_RECONNECT_DELAY_S
 
 
+async def test_usb_compatible(app, client, mocker):
+    config: ServiceConfig = app['config']
+    handler = connection_handler.ConnectionHandler(app)
+
+    # Set all relevant settings to default
+    def reset():
+        config.discovery = DiscoveryType.all
+        config.device_serial = None
+        config.device_host = None
+        config.device_id = None
+        config.simulation = False
+        config.mock = False
+
+    # The default is to enable USB
+    reset()
+    assert handler.usb_compatible
+
+    reset()
+    config.mock = True
+    assert not handler.usb_compatible
+
+    reset()
+    config.device_host = 'localhost'
+    assert not handler.usb_compatible
+
+    reset()
+    config.discovery = DiscoveryType.lan
+    assert not handler.usb_compatible
+
+    reset()
+    config.discovery = DiscoveryType.usb
+    assert handler.usb_compatible
+
+    # Positive identification of Spark 4 ID
+    reset()
+    config.discovery = DiscoveryType.all
+    config.device_id = 'x'*12
+    assert not handler.usb_compatible
+
+
 async def test_handler_discovery(app, client, mocker):
     mocker.patch(TESTED + '.DISCOVERY_INTERVAL_S', 0)
 
@@ -256,6 +296,7 @@ async def test_handler_disconnect(app, client, mocker):
 
 async def test_handler_connect_error(app, client, mocker):
     mocker.patch(TESTED + '.web.GracefulExit', DummyExit)
+    mocker.patch(TESTED + '.calc_backoff').return_value = 0.0001
     m_connect_mock: AsyncMock = mocker.patch(TESTED + '.connect_mock', autospec=True)
     m_connect_mock.side_effect = ConnectionRefusedError
 
@@ -264,12 +305,12 @@ async def test_handler_connect_error(app, client, mocker):
     handler = connection_handler.ConnectionHandler(app)
 
     # Retry until attempts exhausted
-    with pytest.raises(DummyExit):
-        async with timeout(5):
-            while True:
-                await handler.run()
+    # This is a mock - it will not attempt to restart the service
+    for _ in range(connection_handler.MAX_RETRY_COUNT * 2):
+        await handler.run()
 
-    assert m_connect_mock.await_count == 1 + connection_handler.MAX_RETRY_COUNT
+    # It immediately threw a connection abort once the retry count was exceeded
+    assert m_connect_mock.await_count == connection_handler.MAX_RETRY_COUNT * 2 - 1
 
 
 async def test_handler_discovery_error(app, client, mocker):
