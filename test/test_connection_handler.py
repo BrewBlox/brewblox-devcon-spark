@@ -7,7 +7,6 @@ import asyncio
 from unittest.mock import AsyncMock
 
 import pytest
-from async_timeout import timeout
 from brewblox_service import scheduler
 
 from brewblox_devcon_spark import exceptions, service_status, service_store

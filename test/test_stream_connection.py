@@ -38,17 +38,19 @@ def test_port():
 @pytest.fixture
 async def echo_server(test_port):
     async def echo_handler(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-        while True:
-            data = await reader.read(100)
-            if not data:
-                break
-            if data == b'error\n':
-                writer.write_eof()
-                break
-            writer.write(data+b'<event>')
-            await writer.drain()
-        writer.close()
-        await writer.wait_closed()
+        try:
+            while True:
+                data = await reader.read(100)
+                if not data:
+                    break
+                if data == b'error\n':
+                    writer.write_eof()
+                    break
+                writer.write(data+b'<event>')
+                await writer.drain()
+        finally:
+            writer.close()
+            await writer.wait_closed()
     server = await asyncio.start_server(echo_handler, 'localhost', test_port)
     task = asyncio.create_task(server.serve_forever())
     yield server
