@@ -32,9 +32,7 @@ if 'brewblox_pb2' not in sys.modules:  # pragma: no cover
     import OneWireGpioModule_pb2
     import Pid_pb2
     import PrecisionAnalogModule_pb2
-    import ProbeConnector_pb2
     import Screen_pb2
-    import SgProbe_pb2
     import Sequence_pb2
     import SetpointProfile_pb2
     import SetpointSensorPair_pb2
@@ -47,6 +45,7 @@ if 'brewblox_pb2' not in sys.modules:  # pragma: no cover
     import TempSensorOneWire_pb2
     import TouchSettings_pb2
     import WiFiSettings_pb2
+    import BioSense_pb2
 
 __all__ = [
     'ActuatorAnalogMock_pb2',
@@ -70,12 +69,10 @@ __all__ = [
     'OneWireGpioModule_pb2',
     'Pid_pb2',
     'PrecisionAnalogModule_pb2',
-    'ProbeConnector_pb2',
     'Screen_pb2',
     'Sequence_pb2',
     'SetpointProfile_pb2',
     'SetpointSensorPair_pb2',
-    'SgProbe_pb2',
     'Spark2Pins_pb2',
     'Spark3Pins_pb2',
     'SysInfo_pb2',
@@ -85,4 +82,5 @@ __all__ = [
     'TempSensorOneWire_pb2',
     'TouchSettings_pb2',
     'WiFiSettings_pb2',
+    'BioSense_pb2',
 ]
