@@ -44,6 +44,7 @@ The synchronization process consists of:
 
 import asyncio
 from functools import wraps
+from pprint import pformat
 
 from aiohttp import web
 from async_timeout import timeout
@@ -210,6 +211,7 @@ class SparkSynchronization(repeater.RepeaterFeature):
                     'tempUnit': temp_unit_enum,
                 },
             ))
+        LOGGER.info(pformat(sysinfo.dict()))
 
         uptime = sysinfo.data['uptime']['value']
         LOGGER.info(f'Spark uptime: {serialize_duration(uptime)}')
