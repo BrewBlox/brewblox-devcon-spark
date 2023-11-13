@@ -78,14 +78,14 @@ class MqttConnection(ConnectionImplBase):
 class MqttDeviceTracker(features.ServiceFeature):
     def __init__(self, app: web.Application):
         super().__init__(app)
-        self._isolated = app['config']['isolated']
+        self._isolated = app['config'].isolated
         self._handshake_topic = HANDSHAKE_TOPIC + '+'
         self._devices: dict[str, asyncio.Event] = {}
 
     async def _handshake_cb(self, topic: str, msg: str):
         device = topic.removeprefix(HANDSHAKE_TOPIC)
         if msg:
-            LOGGER.info(f'MQTT device published: {device}')
+            LOGGER.debug(f'MQTT device published: {device}')
             self._devices.setdefault(device, asyncio.Event()).set()
         else:
             LOGGER.debug(f'MQTT device removed: {device}')
@@ -127,5 +127,5 @@ def fget(app: web.Application) -> MqttDeviceTracker:
 async def discover_mqtt(app: web.Application,
                         callbacks: ConnectionCallbacks,
                         ) -> Optional[MqttConnection]:
-    device_id = app['config']['device_id']
+    device_id = app['config'].device_id
     return await fget(app).discover(callbacks, device_id)

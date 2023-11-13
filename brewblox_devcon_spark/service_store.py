@@ -38,7 +38,7 @@ class ServiceConfigStore(FlushedStore):
         super().__init__(app)
         self._config: dict = {}
         self._ready_event: asyncio.Event = None
-        self.key: str = SERVICE_STORE_KEY.format(name=self.app['config']['name'])
+        self.key: str = SERVICE_STORE_KEY.format(name=self.app['config'].name)
 
     def __str__(self):
         return f'<{type(self).__name__}>'

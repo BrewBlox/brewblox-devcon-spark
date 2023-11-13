@@ -10,6 +10,7 @@ from aresponses import ResponsesMockServer
 from brewblox_service import http, scheduler
 
 from brewblox_devcon_spark import datastore
+from brewblox_devcon_spark.models import ServiceConfig
 
 TESTED = datastore.__name__
 
@@ -24,13 +25,15 @@ def add_check_resp(aresponses: ResponsesMockServer, count, status=200):
 
 
 @pytest.fixture
-def app(app, mocker):
+async def setup(app, mocker):
     mocker.patch(TESTED + '.FLUSH_DELAY_S', 0.01)
     mocker.patch(TESTED + '.RETRY_INTERVAL_S', 0.01)
-    app['config']['isolated'] = False
+
+    config: ServiceConfig = app['config']
+    config.isolated = False
+
     http.setup(app)
     scheduler.setup(app)
-    return app
 
 
 async def test_check_remote(app, client, aresponses: ResponsesMockServer):

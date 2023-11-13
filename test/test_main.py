@@ -3,33 +3,45 @@ Tests brewblox_devcon_spark.__main__.py
 """
 
 import pytest
-from brewblox_service import http, mqtt, scheduler
+from brewblox_service import http, mqtt, scheduler, service
 
 from brewblox_devcon_spark import __main__ as main
 from brewblox_devcon_spark import (backup_storage, block_store, broadcaster,
                                    codec, commander, connection, controller,
                                    global_store, service_status, service_store,
                                    synchronization, time_sync)
+from brewblox_devcon_spark.models import ServiceConfig
 
 TESTED = main.__name__
 
 
 @pytest.fixture(autouse=True)
-def mocked_parse(mocker, app_ini):
-    m = mocker.patch(TESTED + '.parse_ini')
-    m.return_value = app_ini
-    return m
+def m_firmware_ini(mocker):
+    mocker.patch(TESTED + '.FIRMWARE_INI', 'firmware.ini')
 
 
-def test_main(mocker, app):
-    mocker.patch(TESTED + '.service.run')
-    mocker.patch(TESTED + '.service.create_app').return_value = app
+@pytest.fixture
+def m_service_funcs(app, mocker, event_loop):
+    def dummy_run(app, setup):
+        event_loop.run_until_complete(setup)
 
+    mocker.patch(TESTED + '.service.create_config', autospec=True).return_value = app['config']
+    mocker.patch(TESTED + '.service.create_app', autospec=True).return_value = app
+    mocker.patch(TESTED + '.service.run_app', dummy_run)
+
+
+def test_parse(app, sys_args):
+    parser = main.create_parser()
+    config = service.create_config(parser, model=ServiceConfig, raw_args=sys_args[1:])
+    assert isinstance(config, ServiceConfig)
+
+
+def test_main(app, m_service_funcs):
     main.main()
 
     assert None not in [
         scheduler.fget(app),
-        mqtt.handler(app),
+        mqtt.fget(app),
         http.fget(app),
 
         global_store.fget(app),
@@ -50,12 +62,11 @@ def test_main(mocker, app):
 
 
 @pytest.mark.parametrize('auto_id', [True, False])
-def test_simulation(auto_id, mocker, app):
-    app['config']['device_id'] = None
-    app['config']['mock'] = auto_id
-    app['config']['simulation'] = auto_id
-    mocker.patch(TESTED + '.service.run')
-    mocker.patch(TESTED + '.service.create_app').return_value = app
+def test_simulation(auto_id, app, m_service_funcs):
+    config: ServiceConfig = app['config']
+    config.device_id = None
+    config.mock = auto_id
+    config.simulation = auto_id
 
     main.main()
-    assert bool(app['config']['device_id']) is auto_id
+    assert bool(config.device_id) is auto_id

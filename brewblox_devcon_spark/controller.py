@@ -69,7 +69,7 @@ class SparkController(features.ServiceFeature):
 
     def __init__(self, app: web.Application):
         super().__init__(app)
-        self._name = app['config']['name']
+        self._name = app['config'].name
         self._cmder = commander.fget(app)
         self._store = block_store.fget(app)
         self._discovery_lock: asyncio.Lock = None

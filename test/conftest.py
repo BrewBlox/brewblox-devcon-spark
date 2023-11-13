@@ -6,10 +6,11 @@ Any fixtures declared here are available to all test functions in this directory
 import logging
 
 import pytest
-from brewblox_service import brewblox_logger, features, service
+from aiohttp import test_utils
+from brewblox_service import brewblox_logger, features, service, testing
 
-from brewblox_devcon_spark.__main__ import create_parser
-from brewblox_devcon_spark.models import DiscoveryType, ServiceConfig
+from brewblox_devcon_spark.models import (DiscoveryType, ServiceConfig,
+                                          ServiceFirmwareIni)
 
 LOGGER = brewblox_logger(__name__)
 
@@ -24,33 +25,36 @@ def log_enabled():
 
 @pytest.fixture
 def app_config() -> ServiceConfig:
-    return {
+    return ServiceConfig(
         # From brewblox_service
-        'name': 'test_app',
-        'host': 'localhost',
-        'port': 1234,
-        'debug': True,
-        'mqtt_protocol': 'mqtt',
-        'mqtt_host': 'eventbus',
-        'mqtt_port': 1883,
-        'mqtt_path': '/eventbus',
-        'history_topic': '/brewcast/history',
-        'state_topic': '/brewcast/state',
+        name='test_app',
+        host='localhost',
+        port=1234,
+        debug=True,
+        mqtt_protocol='mqtt',
+        mqtt_host='eventbus',
+        mqtt_port=1883,
+        mqtt_path='/eventbus',
+        history_topic='brewcast/history',
+        state_topic='brewcast/state',
 
         # From brewblox_devcon_spark
-        'device_serial': '/dev/TESTEH',
-        'device_id': '1234',
-        'display_ws_port': 7377,
-        'discovery': DiscoveryType.all,
-        'simulation': False,
-        'mock': True,
-        'command_timeout': 10,
-        'broadcast_interval': 5,
-        'isolated': True,
-        'backup_interval': 3600,
-        'backup_retry_interval': 300,
-        'time_sync_interval': 900,
-    }
+        device_serial='/dev/TESTEH',
+        device_id='1234',
+        device_port=8332,
+        display_ws_port=7377,
+        discovery=DiscoveryType.all,
+        simulation=False,
+        mock=True,
+        command_timeout=10,
+        broadcast_interval=5,
+        isolated=True,
+        backup_interval=3600,
+        backup_retry_interval=300,
+        time_sync_interval=900,
+        skip_version_check=False,
+        datastore_topic='brewcast/datastore',
+    )
 
 
 @pytest.fixture
@@ -58,23 +62,23 @@ def sys_args(app_config) -> list:
     return [str(v) for v in [
         'app_name',
         '--debug',
-        '--name', app_config['name'],
-        '--host', app_config['host'],
-        '--port', app_config['port'],
-        '--device-serial', app_config['device_serial'],
-        '--device-id', app_config['device_id'],
-        '--discovery', app_config['discovery'],
-        '--command-timeout', app_config['command_timeout'],
-        '--broadcast-interval', app_config['broadcast_interval'],
-        '--backup-interval', app_config['backup_interval'],
-        '--backup-retry-interval', app_config['backup_retry_interval'],
+        '--name', app_config.name,
+        '--host', app_config.host,
+        '--port', app_config.port,
+        '--device-serial', app_config.device_serial,
+        '--device-id', app_config.device_id,
+        '--discovery', app_config.discovery,
+        '--command-timeout', app_config.command_timeout,
+        '--broadcast-interval', app_config.broadcast_interval,
+        '--backup-interval', app_config.backup_interval,
+        '--backup-retry-interval', app_config.backup_retry_interval,
         '--isolated',
         '--mock',
     ]]
 
 
 @pytest.fixture
-def app_ini() -> dict:
+def app_ini() -> ServiceFirmwareIni:
     return {
         'proto_version': '3f2243a',
         'proto_date': '2019-06-06',
@@ -85,15 +89,19 @@ def app_ini() -> dict:
 
 
 @pytest.fixture
-def app(sys_args, app_ini):
-    parser = create_parser('default')
-    app = service.create_app(parser=parser, raw_args=sys_args[1:])
+def app(app_config, app_ini):
+    app = service.create_app(app_config)
     app['ini'] = app_ini
     return app
 
 
 @pytest.fixture
-async def client(app, aiohttp_client, aiohttp_server):
+async def setup(app):
+    pass
+
+
+@pytest.fixture
+async def client(app, setup, aiohttp_client, aiohttp_server):
     """Allows patching the app or aiohttp_client before yielding it.
 
     Any tests wishing to add custom behavior to app can override the fixture
@@ -103,36 +111,19 @@ async def client(app, aiohttp_client, aiohttp_server):
         LOGGER.debug(f'Feature "{name}" = {impl}')
     LOGGER.debug(app.on_startup)
 
-    return await aiohttp_client(await aiohttp_server(app))
+    test_server: test_utils.TestServer = await aiohttp_server(app)
+    test_client: test_utils.TestClient = await aiohttp_client(test_server)
+    return test_client
 
 
 @pytest.fixture(scope='session')
-def find_free_port():
-    """
-    Returns a factory that finds the next free port that is available on the OS
-    This is a bit of a hack, it does this by creating a new socket, and calling
-    bind with the 0 port. The operating system will assign a brand new port,
-    which we can find out using getsockname(). Once we have the new port
-    information we close the socket thereby returning it to the free pool.
-    This means it is technically possible for this function to return the same
-    port twice (for example if run in very quick succession), however operating
-    systems return a random port number in the default range (1024 - 65535),
-    and it is highly unlikely for two processes to get the same port number.
-    In other words, it is possible to flake, but incredibly unlikely.
-    """
-
-    def _find_free_port():
-        import socket
-
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.bind(('0.0.0.0', 0))
-        portnum = s.getsockname()[1]
-        s.close()
-
-        return portnum
-
-    return _find_free_port
+def broker():
+    with testing.docker_container(
+        name='mqtt-test-container',
+        ports={'mqtt': 1883, 'ws': 15675},
+        args=['ghcr.io/brewblox/mosquitto:develop'],
+    ) as ports:
+        yield ports
 
 
 @pytest.fixture

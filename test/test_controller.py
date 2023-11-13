@@ -19,7 +19,7 @@ TESTED = controller.__name__
 
 
 @pytest.fixture
-def app(app):
+async def setup(app):
     service_status.setup(app)
     scheduler.setup(app)
     codec.setup(app)
@@ -30,7 +30,6 @@ def app(app):
     service_store.setup(app)
     synchronization.setup(app)
     controller.setup(app)
-    return app
 
 
 @pytest.fixture

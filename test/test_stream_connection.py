@@ -92,7 +92,7 @@ async def test_tcp_connection_error(app, client, echo_server, test_port):
 
 async def test_discover_mdns(app, client, echo_server, mocker, test_port):
     m_mdns_discover = mocker.patch(TESTED + '.mdns.discover_one', autospec=True)
-    m_mdns_discover.return_value = ConnectInfo('localhost', test_port, app['config']['device_id'])
+    m_mdns_discover.return_value = ConnectInfo('localhost', test_port, app['config'].device_id)
     callbacks = DummyCallbacks()
     impl = await stream_connection.discover_mdns(app, callbacks)
 

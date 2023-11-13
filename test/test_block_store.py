@@ -11,6 +11,7 @@ from aresponses import ResponsesMockServer
 from brewblox_service import http, scheduler
 
 from brewblox_devcon_spark import block_store, const, datastore
+from brewblox_devcon_spark.models import ServiceConfig
 
 TESTED = block_store.__name__
 DATASTORE = datastore.__name__
@@ -48,14 +49,15 @@ def add_write_resp(aresponses: ResponsesMockServer, count, status=200):
 
 
 @pytest.fixture
-def app(app, mocker):
+async def setup(app, mocker):
     mocker.patch(DATASTORE + '.FLUSH_DELAY_S', 0.01)
     mocker.patch(DATASTORE + '.RETRY_INTERVAL_S', 0.01)
-    app['config']['isolated'] = False
+
+    config: ServiceConfig = app['config']
+    config.isolated = False
     http.setup(app)
     scheduler.setup(app)
     block_store.setup(app)
-    return app
 
 
 @pytest.fixture

@@ -149,7 +149,7 @@ class MockConnection(ConnectionImplBase):
             'mock',
             ResetReason.NONE.value,
             ResetData.NOT_SPECIFIED.value,
-            self.app['config']['device_id'],
+            self.app['config'].device_id,
         ]
         await self.on_event(','.join(welcome))
 
@@ -279,7 +279,7 @@ class MockConnection(ConnectionImplBase):
 
 
 async def connect_mock(app: web.Application, callbacks: ConnectionCallbacks) -> ConnectionImplBase:
-    device_id = app['config']['device_id']
+    device_id = app['config'].device_id
     conn = MockConnection(app, device_id, callbacks)
     await conn.connect()
     return conn

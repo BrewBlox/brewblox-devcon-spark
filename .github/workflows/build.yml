@@ -5,6 +5,7 @@ on:
     branches: ["**"]
   pull_request:
     branches: [develop, edge]
+  workflow_dispatch: {}
 
 jobs:
   build:
@@ -17,7 +18,7 @@ jobs:
       - uses: docker/setup-buildx-action@v2
       - uses: actions/setup-python@v4
         with:
-          python-version: "3.9"
+          python-version: "3.11"
 
       - name: (Service) Image metadata
         id: service_meta
@@ -47,16 +48,16 @@ jobs:
 
       - name: Download firmware
         run: |
-          bash dev/download-firmware.sh
+          poetry run invoke download-firmware
 
       - name: Test
         run: |
           poetry run pytest
           poetry run flake8
 
-      - name: (Service) Run setup script
+      - name: Build
         run: |
-          bash docker/before_build.sh
+          poetry run invoke build
 
       - name: (Service) Build Docker image
         uses: docker/build-push-action@v4
@@ -65,11 +66,8 @@ jobs:
           tags: ${{ steps.service_meta.outputs.tags }}
           labels: ${{ steps.service_meta.outputs.labels }}
           platforms: linux/amd64,linux/arm/v7,linux/arm64/v8
-          context: docker
-
-      - name: (Flasher) Run setup script
-        run: |
-          bash flasher/before_build.sh
+          file: Dockerfile.service
+          context: .
 
       - name: (Flasher) Build Docker image
         uses: docker/build-push-action@v4
@@ -78,4 +76,5 @@ jobs:
           tags: ${{ steps.flasher_meta.outputs.tags }}
           labels: ${{ steps.flasher_meta.outputs.labels }}
           platforms: linux/amd64,linux/arm/v7,linux/arm64/v8
-          context: flasher
+          file: Dockerfile.flasher
+          context: .

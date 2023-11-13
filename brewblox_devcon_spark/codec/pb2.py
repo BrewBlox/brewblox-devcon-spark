@@ -18,8 +18,8 @@ if 'brewblox_pb2' not in sys.modules:  # pragma: no cover
     import Balancer_pb2
     import brewblox_pb2
     import command_pb2
-    import ChemProbe_pb2
     import DigitalActuator_pb2
+    import DigitalInput_pb2
     import DisplaySettings_pb2
     import DS2408_pb2
     import DS2413_pb2
@@ -32,6 +32,7 @@ if 'brewblox_pb2' not in sys.modules:  # pragma: no cover
     import OneWireGpioModule_pb2
     import Pid_pb2
     import ProbeConnector_pb2
+    import PrecisionAnalogModule_pb2
     import Screen_pb2
     import Sequence_pb2
     import SetpointProfile_pb2
@@ -57,6 +58,7 @@ __all__ = [
     'ChemProbe_pb2',
     'command_pb2',
     'DigitalActuator_pb2',
+    'DigitalInput_pb2',
     'DisplaySettings_pb2',
     'DS2408_pb2',
     'DS2413_pb2',
@@ -69,6 +71,7 @@ __all__ = [
     'OneWireGpioModule_pb2',
     'Pid_pb2',
     'ProbeConnector_pb2',
+    'PrecisionAnalogModule_pb2',
     'Screen_pb2',
     'Sequence_pb2',
     'SetpointProfile_pb2',

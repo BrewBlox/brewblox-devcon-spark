@@ -43,8 +43,8 @@ async def disconnect(app):
 
 
 @pytest.fixture
-async def app(app, event_loop):
-    app['config']['isolated'] = True
+async def setup(app):
+    app['config'].isolated = True
     scheduler.setup(app)
     service_status.setup(app)
     codec.setup(app)
@@ -53,7 +53,6 @@ async def app(app, event_loop):
     global_store.setup(app)
     service_store.setup(app)
     block_store.setup(app)
-    return app
 
 
 async def test_sync_status(app, client):
@@ -95,9 +94,9 @@ async def test_timeout(app, client, mocker):
 
 async def test_device_name(app, client):
     s = await connect(app)
-    assert s.device_name == app['config']['device_id']
+    assert s.device_name == app['config'].device_id
 
-    app['config']['simulation'] = True
+    app['config'].simulation = True
     assert s.device_name.startswith('simulator__')
 
 
