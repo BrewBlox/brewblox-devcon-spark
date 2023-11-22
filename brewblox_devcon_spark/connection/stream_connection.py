@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import Optional
 
 from aiohttp import web
-from async_timeout import timeout
 from brewblox_service import brewblox_logger, strex
 from serial.tools import list_ports
 
@@ -130,7 +129,7 @@ async def connect_subprocess(app: web.Application,
     # We just started a subprocess
     # Give it some time to get started and respond to the port
     try:
-        async with timeout(SUBPROCESS_CONNECT_TIMEOUT_S):
+        async with asyncio.timeout(SUBPROCESS_CONNECT_TIMEOUT_S):
             while True:
                 if proc.returncode is not None:
                     raise ChildProcessError(f'Subprocess exited with return code {proc.returncode}')

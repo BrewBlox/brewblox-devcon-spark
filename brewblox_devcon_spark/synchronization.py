@@ -46,7 +46,6 @@ import asyncio
 from functools import wraps
 
 from aiohttp import web
-from async_timeout import timeout
 from brewblox_service import brewblox_logger, features, repeater, strex
 
 from brewblox_devcon_spark import (block_store, codec, commander, const,
@@ -154,7 +153,7 @@ class SparkSynchronization(repeater.RepeaterFeature):
         # Simultaneously prompt a handshake, and wait for it to be received
         ack_task = asyncio.create_task(service_status.wait_acknowledged(self.app))
         try:
-            async with timeout(HANDSHAKE_TIMEOUT_S):
+            async with asyncio.timeout(HANDSHAKE_TIMEOUT_S):
                 while not ack_task.done():
                     await self._prompt_handshake()
                     await asyncio.wait([ack_task], timeout=PING_INTERVAL_S)

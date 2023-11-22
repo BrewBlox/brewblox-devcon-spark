@@ -2,7 +2,6 @@ import asyncio
 from contextlib import suppress
 
 from aiohttp import web
-from async_timeout import timeout
 from brewblox_service import brewblox_logger, features, repeater, strex
 
 from brewblox_devcon_spark import exceptions, service_status, service_store
@@ -99,7 +98,7 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
         LOGGER.info(f'Discovering devices... ({discovery_type})')
 
         try:
-            async with timeout(DISCOVERY_TIMEOUT_S):
+            async with asyncio.timeout(DISCOVERY_TIMEOUT_S):
                 while True:
                     if discovery_type in [DiscoveryType.all, DiscoveryType.usb]:
                         result = await discover_usb(self.app, self)
