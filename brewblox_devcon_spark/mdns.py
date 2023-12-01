@@ -10,7 +10,6 @@ from typing import Generator, Optional
 
 from aiozeroconf import ServiceBrowser, ServiceStateChange, Zeroconf
 from aiozeroconf.aiozeroconf import ServiceInfo
-from async_timeout import timeout
 from brewblox_service import brewblox_logger
 
 DEFAULT_TIMEOUT_S = 5
@@ -65,7 +64,7 @@ async def discover_all(
     timeout_v: float,
 ) -> Generator[ConnectInfo, None, None]:
     with suppress(asyncio.TimeoutError):
-        async with timeout(timeout_v):
+        async with asyncio.timeout(timeout_v):
             async for res in _discover(desired_id, dns_type):  # pragma: no branch
                 yield res
 
@@ -75,6 +74,6 @@ async def discover_one(
     dns_type: str,
     timeout_v: Optional[float] = None,
 ) -> ConnectInfo:
-    async with timeout(timeout_v):
+    async with asyncio.timeout(timeout_v):
         async for res in _discover(desired_id, dns_type):  # pragma: no branch
             return res

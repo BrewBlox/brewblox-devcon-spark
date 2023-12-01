@@ -15,7 +15,7 @@ from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
                                           IntermediateResponse)
 
 from . import pb2, time_utils, unit_conversion
-from .lookup import INTERFACE_LOOKUPS, OBJECT_LOOKUPS
+from .lookup import COMBINED_LOOKUPS, INTERFACE_LOOKUPS, OBJECT_LOOKUPS
 from .opts import (DateFormatOpt, DecodeOpts, FilterOpt, MetadataOpt,
                    ProtoEnumOpt)
 from .processor import ProtobufProcessor
@@ -128,7 +128,7 @@ class Codec(features.ServiceFeature):
 
             # Interface-only payload
             if payload.content is None:
-                lookup = next((v for v in INTERFACE_LOOKUPS
+                lookup = next((v for v in COMBINED_LOOKUPS
                                if v.type_str == payload.blockType))
                 return EncodedPayload(
                     blockId=payload.blockId,

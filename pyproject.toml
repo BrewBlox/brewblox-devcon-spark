@@ -14,7 +14,7 @@ useLibraryCodeForTypes = true
 reportMissingImports = "information"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<4"
+python = ">=3.11,<4"
 brewblox-service = "^3.3.2"
 pyserial-asyncio = "^0.6"
 protobuf = "^4.24.3"
