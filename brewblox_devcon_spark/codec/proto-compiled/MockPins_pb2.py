@@ -22,7 +22,6 @@ _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'MockPins_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
-
   DESCRIPTOR._options = None
   _BLOCK.fields_by_name['channels']._options = None
   _BLOCK.fields_by_name['channels']._serialized_options = b'\222?\004\020\010x\001\212\265\030\002(\001'

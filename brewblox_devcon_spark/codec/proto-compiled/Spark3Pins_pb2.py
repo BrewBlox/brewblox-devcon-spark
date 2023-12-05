@@ -22,7 +22,6 @@ _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'Spark3Pins_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
-
   DESCRIPTOR._options = None
   _BLOCK.fields_by_name['voltage5']._options = None
   _BLOCK.fields_by_name['voltage5']._serialized_options = b'\222?\0028\020\212\265\030\005\020\350\007(\001'

@@ -290,3 +290,19 @@ async def test_enum_decoding(app, client, cdc: Codec):
 
     payload = cdc.decode_payload(encoded_payload, opts=DecodeOpts(enums=ProtoEnumOpt.INT))
     assert payload.content['storedState'] == 1
+
+
+async def test_invalid_if_decoding(app, client, cdc: Codec):
+    encoded_payload = cdc.encode_payload(DecodedPayload(
+        blockId=1,
+        blockType='EdgeCase',
+        content={
+            'listValues': [10, -1 / 256],  # scaled
+            'deltaV': 1 / 256,
+        },
+    ))
+
+    payload = cdc.decode_payload(encoded_payload)
+    assert payload.content['listValues'][0]['value'] == pytest.approx(10)
+    assert payload.content['listValues'][1]['value'] is None
+    assert payload.content['deltaV']['value'] is None

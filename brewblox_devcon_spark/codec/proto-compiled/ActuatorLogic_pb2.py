@@ -22,7 +22,6 @@ _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'ActuatorLogic_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
-
   DESCRIPTOR._options = None
   _DIGITALCOMPARE.fields_by_name['result']._options = None
   _DIGITALCOMPARE.fields_by_name['result']._serialized_options = b'\212\265\030\002(\001'
