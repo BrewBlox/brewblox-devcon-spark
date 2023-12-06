@@ -348,14 +348,13 @@ class ProtobufProcessor():
             qty_user_unit = self._converter.to_user_unit(qty_system_unit)
 
             def _convert_value(value: float | int | str) -> float | int | str | None:
-                invalid = value in [options.uint_invalid_if or None,
-                                    options.sint_invalid_if or None]
+                null_value = options.null_if_zero and value == 0
 
                 if options.scale:
                     value /= options.scale
 
                 if options.unit:
-                    if excluded or invalid:
+                    if excluded or null_value:
                         value = None
                     else:
                         value = self._converter.to_user_value(value, qty_system_unit)
@@ -373,7 +372,7 @@ class ProtobufProcessor():
                     return value
 
                 if options.objtype:
-                    if excluded or invalid:
+                    if excluded or null_value:
                         value = None
 
                     if opts.metadata == MetadataOpt.TYPED:
@@ -385,7 +384,7 @@ class ProtobufProcessor():
 
                     return value
 
-                if excluded or invalid:
+                if excluded or null_value:
                     return None
 
                 if options.hexed:
@@ -411,6 +410,14 @@ class ProtobufProcessor():
                     new_key = f'{element.key}<{link_type}>'
                 if options.unit:
                     new_key = f'{element.key}[{qty_user_unit}]'
+
+            # Filter values that should be omitted entirely
+            if options.omit_if_zero:
+                if isinstance(new_value, (list, set)):
+                    new_value = [v for v in new_value if v != 0]
+                elif new_value == 0:
+                    del element.obj[element.key]
+                    continue
 
             # Convert value
             if isinstance(new_value, (list, set)):
