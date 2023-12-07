@@ -29,7 +29,7 @@ async def setup(app, mocker):
     mocker.patch(TESTED + '.FLUSH_DELAY_S', 0.01)
     mocker.patch(TESTED + '.RETRY_INTERVAL_S', 0.01)
 
-    config: ServiceConfig = app['config']
+    config = utils.get_config()
     config.isolated = False
 
     http.setup(app)

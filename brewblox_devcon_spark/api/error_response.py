@@ -10,7 +10,7 @@ from brewblox_service import brewblox_logger, strex
 
 from brewblox_devcon_spark.exceptions import BrewbloxException
 
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def setup(app: web.Application):

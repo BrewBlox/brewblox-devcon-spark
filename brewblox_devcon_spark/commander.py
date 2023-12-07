@@ -4,30 +4,24 @@ Requests are matched with responses here.
 """
 
 import asyncio
-from typing import Optional
+import logging
+from contextvars import ContextVar
 
-from aiohttp import web
-from brewblox_service import brewblox_logger, features, strex
-
-from brewblox_devcon_spark import codec, connection, exceptions, service_status
-from brewblox_devcon_spark.codec.opts import DecodeOpts
-from brewblox_devcon_spark.models import (ControllerDescription,
-                                          DecodedPayload, DeviceDescription,
-                                          EncodedPayload, ErrorCode,
-                                          FirmwareBlock, FirmwareBlockIdentity,
-                                          FirmwareDescription,
-                                          HandshakeMessage,
-                                          IntermediateRequest,
-                                          IntermediateResponse, MaskMode,
-                                          Opcode, ServiceConfig)
-
-LOGGER = brewblox_logger(__name__)
-
+from . import codec, connection, exceptions, service_status, utils
+from .codec.opts import DecodeOpts
+from .models import (ControllerDescription, DecodedPayload, DeviceDescription,
+                     EncodedPayload, ErrorCode, FirmwareBlock,
+                     FirmwareBlockIdentity, FirmwareDescription,
+                     HandshakeMessage, IntermediateRequest,
+                     IntermediateResponse, MaskMode, Opcode)
 
 WELCOME_PREFIX = '!BREWBLOX'
 
+LOGGER = logging.getLogger(__name__)
+CV: ContextVar['SparkCommander'] = ContextVar('commander.SparkCommander')
 
-class SparkCommander(features.ServiceFeature):
+
+class SparkCommander:
 
     default_decode_opts = codec.DecodeOpts()
     stored_decode_opts = codec.DecodeOpts(enums=codec.ProtoEnumOpt.INT)
@@ -36,23 +30,19 @@ class SparkCommander(features.ServiceFeature):
                                           metadata=codec.MetadataOpt.POSTFIX,
                                           dates=codec.DateFormatOpt.SECONDS)
 
-    def __init__(self, app: web.Application):
-        super().__init__(app)
-        config: ServiceConfig = app['config']
+    def __init__(self):
+        config = utils.get_config()
 
         self._msgid = 0
         self._timeout = config.command_timeout
         self._active_messages: dict[int, asyncio.Future[IntermediateResponse]] = {}
-        self._codec = codec.fget(app)
-        self._conn = connection.fget(app)
+        self._codec = codec.CV.get()
+        self._conn = connection.CV.get()
+        self._conn.on_event = self._on_event
+        self._conn.on_response = self._on_response
 
     def __str__(self):
         return f'<{type(self).__name__} for {self._conn}>'
-
-    async def startup(self, app: web.Application):
-        self._active_messages.clear()
-        self._conn.on_event = self._on_event
-        self._conn.on_response = self._on_response
 
     def _next_id(self):
         self._msgid = (self._msgid + 1) % 0xFFFF
@@ -122,11 +112,11 @@ class SparkCommander(features.ServiceFeature):
             fut.set_result(response)
 
         except Exception as ex:
-            LOGGER.error(f'Error parsing message `{msg}` : {strex(ex)}')
+            LOGGER.error(f'Error parsing message `{msg}` : {utils.strex(ex)}')
 
     async def _execute(self,
                        opcode: Opcode,
-                       payload: Optional[EncodedPayload],
+                       payload: EncodedPayload | None,
                        ) -> list[EncodedPayload]:
         msg_id = self._next_id()
 
@@ -298,9 +288,5 @@ class SparkCommander(features.ServiceFeature):
         )
 
 
-def setup(app: web.Application):
-    features.add(app, SparkCommander(app))
-
-
-def fget(app: web.Application) -> SparkCommander:
-    return features.get(app, SparkCommander)
+def setup():
+    CV.set(SparkCommander())

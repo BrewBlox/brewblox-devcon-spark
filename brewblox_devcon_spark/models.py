@@ -1,18 +1,11 @@
 import enum
 from dataclasses import dataclass
-from typing import Any, Literal, Optional, TypedDict, Union
+from datetime import timedelta
+from typing import Any, Literal, Self, TypedDict
 
-from brewblox_service.models import BaseServiceConfig
-from pydantic import BaseModel, Field, validator
-
-
-class ServiceFirmwareIni(TypedDict):
-    firmware_version: str
-    firmware_date: str
-    firmware_sha: str
-    proto_version: str
-    proto_date: str
-    system_version: str
+from pydantic import (BaseModel, Field, ValidationInfo, field_validator,
+                      model_validator)
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class DiscoveryType(enum.Enum):
@@ -29,46 +22,82 @@ class DiscoveryType(enum.Enum):
         return self.name
 
 
-class ServiceConfig(BaseServiceConfig):
+class ServiceConfig(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file='.appenv',
+        env_prefix='brewblox_',
+        case_sensitive=False,
+        json_schema_extra='ignore',
+    )
+
+    # Generic options
+    name: str  # Required
+    debug: bool = False
+    debugger: bool = False
+
+    mqtt_protocol: Literal['mqtt', 'mqtts'] = 'mqtt'
+    mqtt_host: str = 'eventbus'
+    mqtt_port: int = 1883
+
+    redis_host: str = 'redis'
+    redis_port: int = 6379
+
+    state_topic: str = 'brewcast/state'
+    history_topic: str = 'brewcast/history'
+    datastore_topic: str = 'brewcast/datastore'
+
     # Device options
-    simulation: bool
-    mock: bool
-    device_host: Optional[str]
-    device_port: int
-    device_serial: Optional[str]
-    device_id: Optional[str]
-    discovery: DiscoveryType
-    display_ws_port: int
+    simulation: bool = False
+    mock: bool = False
+    device_host: str | None = None
+    device_port: int = 8332
+    device_serial: str | None = None
+    device_id: str | None = None
+    discovery: DiscoveryType = DiscoveryType.all
+    display_ws_port: int = 7377
 
     # Network options
-    command_timeout: float
-    broadcast_interval: float
-    isolated: bool
-    datastore_topic: str
+    command_timeout: timedelta = timedelta(seconds=20)
+    broadcast_interval: timedelta = timedelta(seconds=5)
 
     # Firmware options
-    skip_version_check: bool
+    skip_version_check: bool = False
 
     # Backup options
-    backup_interval: float
-    backup_retry_interval: float
+    backup_interval: timedelta = timedelta(hours=1)
+    backup_retry_interval: timedelta = timedelta(minutes=5)
 
     # Time sync options
-    time_sync_interval: float
+    time_sync_interval: timedelta = timedelta(minutes=15)
+
+    @model_validator(mode='after')
+    def default_device_id(self) -> Self:
+        if self.device_id is None and (self.simulation or self.mock):
+            self.device_id = '123456789012345678901234'
+        return self
+
+
+class FirmwareConfig(BaseModel):
+    firmware_version: str
+    firmware_date: str
+    firmware_sha: str
+    proto_version: str
+    proto_date: str
+    system_version: str
 
 
 class BlockIdentity(BaseModel):
-    id: Optional[str]
-    nid: Optional[int]
-    type: Optional[str]
-    serviceId: Optional[str]
+    id: str | None = None
+    nid: int | None = None
+    type: str | None = None
+    serviceId: str | None = None
 
 
 class Block(BaseModel):
-    id: Optional[str]
-    nid: Optional[int]
+    id: str | None = None
+    nid: int | None = None
     type: str
-    serviceId: Optional[str]
+    serviceId: str | None = None
     data: dict[str, Any]
 
 
@@ -82,8 +111,8 @@ class BlockIdentityList(BaseModel):
 
 class FirmwareBlockIdentity(BaseModel):
     nid: int
-    type: Optional[str]
-    data: Optional[dict[str, Any]]
+    type: str | None = None
+    data: dict[str, Any] | None = None
 
 
 class FirmwareBlock(BaseModel):
@@ -211,25 +240,25 @@ class MaskMode(enum.Enum):
 class BasePayload(BaseModel):
     blockId: int
     mask: list[int] = Field(default_factory=list)
-    maskMode: MaskMode = Field(default=MaskMode.NO_MASK)
+    maskMode: MaskMode = MaskMode.NO_MASK
 
-    @validator('maskMode', pre=True)
-    def from_raw_mask_mode(cls, v):
-        if isinstance(v, str):
-            return MaskMode[v]
-        return MaskMode(v)
+    # @validator('maskMode', pre=True)
+    # def from_raw_mask_mode(cls, v):
+    #     if isinstance(v, str):
+    #         return MaskMode[v]
+    #     return MaskMode(v)
 
-    def clean_dict(self):
-        return {
-            **self.dict(),
-            'maskMode': self.maskMode.name,
-        }
+    # def clean_dict(self):
+    #     return {
+    #         **self.dict(),
+    #         'maskMode': self.maskMode.name,
+    #     }
 
 
 class EncodedPayload(BasePayload):
-    blockType: Optional[Union[int, str]]
-    subtype: Optional[Union[int, str]]
-    content: str = Field(default='')
+    blockType:  int | str | None = None
+    subtype:  int | str | None = None
+    content: str = ''
 
     class Config:
         # ensures integers in Union[int, str] are parsed correctly
@@ -237,36 +266,38 @@ class EncodedPayload(BasePayload):
 
 
 class DecodedPayload(BasePayload):
-    blockType: Optional[str]
-    subtype: Optional[str]
-    content: Optional[dict]
+    blockType: str | None = None
+    subtype: str | None = None
+    content: dict | None = None
 
 
 class BaseRequest(BaseModel):
     msgId: int
     opcode: Opcode
-    payload: Optional[BasePayload]
+    payload: BasePayload | None = None
 
-    @validator('opcode', pre=True)
-    def from_raw_opcode(cls, v):
-        if isinstance(v, str):
-            return Opcode[v]
-        return Opcode(v)
+    # Maybe
+    # @field_validator('opcode', mode='before')
+    # @classmethod
+    # def from_raw_opcode(cls, v):
+    #     if isinstance(v, str):
+    #         return Opcode[v]
+    #     return Opcode(v)
 
-    def clean_dict(self):
-        return {
-            **self.dict(),
-            'opcode': self.opcode.name,
-            'payload': self.payload.clean_dict() if self.payload else None,
-        }
+    # def clean_dict(self):
+    #     return {
+    #         **self.dict(),
+    #         'opcode': self.opcode.name,
+    #         'payload': self.payload.clean_dict() if self.payload else None,
+    #     }
 
 
 class IntermediateRequest(BaseRequest):
-    payload: Optional[EncodedPayload]
+    payload: EncodedPayload | None
 
 
 class DecodedRequest(BaseRequest):
-    payload: Optional[DecodedPayload]
+    payload: DecodedPayload | None
 
 
 class BaseResponse(BaseModel):
@@ -274,18 +305,13 @@ class BaseResponse(BaseModel):
     error: ErrorCode
     payload: list[BasePayload]
 
-    @validator('error', pre=True)
-    def from_raw_error(cls, v):
-        if isinstance(v, str):
-            return ErrorCode[v]
-        return ErrorCode(v)
-
-    def clean_dict(self):
-        return {
-            **self.dict(),
-            'error': self.error.name,
-            'payload': [v.clean_dict() for v in self.payload]
-        }
+    # # Maybe???
+    # @field_validator('error', mode='before')
+    # @classmethod
+    # def from_raw_error(cls, v):
+    #     if isinstance(v, str):
+    #         return ErrorCode[v]
+    #     return ErrorCode(v)
 
 
 class IntermediateResponse(BaseResponse):
@@ -329,8 +355,9 @@ class FirmwareDescription(BaseModel):
     firmware_date: str
     proto_date: str
 
-    @validator('firmware_version', 'proto_version')
-    def truncate_version(cls, v: str):
+    @field_validator('firmware_version', 'proto_version')
+    @classmethod
+    def truncate_version(cls, v: str, info: ValidationInfo):
         # We only compare the first 8 characters of git hashes
         return v[:8]
 
@@ -338,9 +365,10 @@ class FirmwareDescription(BaseModel):
 class DeviceDescription(BaseModel):
     device_id: str
 
-    @validator('device_id')
-    def lower_device_id(cls, v: str):
-        return v.lower()
+    @model_validator(mode='after')
+    def lower_device_id(self) -> Self:
+        self.device_id = self.device_id.lower()
+        return self
 
 
 class ServiceDescription(BaseModel):
@@ -387,13 +415,13 @@ IdentityError_ = Literal[
 class ServiceStatusDescription(BaseModel):
     enabled: bool
     service: ServiceDescription
-    controller: Optional[ControllerDescription]
-    address: Optional[str]
+    controller: ControllerDescription | None = None
+    address: str | None = None
 
-    connection_kind: Optional[ConnectionKind_]
+    connection_kind: ConnectionKind_ | None = None
     connection_status: ConnectionStatus_
-    firmware_error: Optional[FirmwareError_]
-    identity_error: Optional[IdentityError_]
+    firmware_error: FirmwareError_ | None = None
+    identity_error: IdentityError_ | None = None
 
 
 class BackupIdentity(BaseModel):
@@ -403,10 +431,10 @@ class BackupIdentity(BaseModel):
 class Backup(BaseModel):
     # Older backups won't have these fields
     # They will not be used when loading backups
-    name: Optional[str]
-    timestamp: Optional[str]
-    firmware: Optional[FirmwareDescription]
-    device: Optional[DeviceDescription]
+    name: str | None = None
+    timestamp: str | None = None
+    firmware: FirmwareDescription | None = None
+    device: DeviceDescription | None = None
 
     blocks: list[Block]
     store: list[StoreEntry]
@@ -414,3 +442,8 @@ class Backup(BaseModel):
 
 class BackupApplyResult(BaseModel):
     messages: list[str]
+
+
+class ErrorResponse(BaseModel):
+    error: str
+    details: str

@@ -83,7 +83,7 @@ async def setup(app, broker):
     """App + controller routes"""
     app['ini'] = parse_ini(app)
 
-    config: ServiceConfig = app['config']
+    config = utils.get_config()
     config.mock = False
     config.simulation = True
     config.isolated = True

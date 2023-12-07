@@ -5,14 +5,11 @@ Messages are published to and read from the relevant topics on the eventbus.
 
 
 import asyncio
-from typing import Optional
+import logging
+from contextvars import ContextVar
 
-from aiohttp import web
-from brewblox_service import brewblox_logger, features, mqtt
-
+from .. import mqtt, utils
 from .connection_impl import ConnectionCallbacks, ConnectionImplBase
-
-LOGGER = brewblox_logger(__name__)
 
 HANDSHAKE_TOPIC = 'brewcast/cbox/handshake/'
 LOG_TOPIC = 'brewcast/cbox/log/'
@@ -21,17 +18,18 @@ RESPONSE_TOPIC = 'brewcast/cbox/resp/'
 
 DISCOVERY_TIMEOUT_S = 3
 
+_DEVICES: ContextVar[dict[str, asyncio.Event]] = ContextVar('mqtt_connection.devices')
+LOGGER = logging.getLogger(__name__)
+
 
 class MqttConnection(ConnectionImplBase):
 
     def __init__(self,
-                 app: web.Application,
                  device_id: str,
                  callbacks: ConnectionCallbacks,
                  ) -> None:
         super().__init__('MQTT', device_id, callbacks)
-
-        self.app = app
+        self._mqtt_client = mqtt.CV.get()
         self._device_id = device_id
 
         self._request_topic = REQUEST_TOPIC + device_id
@@ -39,93 +37,62 @@ class MqttConnection(ConnectionImplBase):
         self._handshake_topic = HANDSHAKE_TOPIC + device_id
         self._log_topic = LOG_TOPIC + device_id
 
-    async def _handshake_cb(self, topic: str, msg: str):
-        if not msg:
+    async def _handshake_cb(self, client, topic, payload, qos, properties):
+        if not payload:
             self.disconnected.set()
 
-    async def _resp_cb(self, topic: str, msg: str):
-        await self.on_response(msg)
+    async def _resp_cb(self, client, topic, payload, qos, properties):
+        await self.on_response(payload)
 
-    async def _log_cb(self, topic: str, msg: str):
-        await self.on_event(msg)
+    async def _log_cb(self, client, topic, payload, qos, properties):
+        await self.on_event(payload)
 
     async def send_request(self, msg: str):
-        await mqtt.publish(self.app, self._request_topic, msg)
+        self._mqtt_client.publish(self._request_topic, msg)
 
     async def connect(self):
-        await mqtt.listen(self.app, self._handshake_topic, self._handshake_cb)
-        await mqtt.listen(self.app, self._response_topic, self._resp_cb)
-        await mqtt.listen(self.app, self._log_topic, self._log_cb)
-
-        await mqtt.subscribe(self.app, self._handshake_topic)
-        await mqtt.subscribe(self.app, self._response_topic)
-        await mqtt.subscribe(self.app, self._log_topic)
-
+        self._mqtt_client.subscribe(self._handshake_topic)(self._handshake_cb)
+        self._mqtt_client.subscribe(self._response_topic)(self._resp_cb)
+        self._mqtt_client.subscribe(self._log_topic)(self._log_cb)
         self.connected.set()
 
     async def close(self):
-        await mqtt.unsubscribe(self.app, self._handshake_topic)
-        await mqtt.unsubscribe(self.app, self._response_topic)
-        await mqtt.unsubscribe(self.app, self._log_topic)
-
-        await mqtt.unlisten(self.app, self._handshake_topic, self._handshake_cb)
-        await mqtt.unlisten(self.app, self._response_topic, self._resp_cb)
-        await mqtt.unlisten(self.app, self._log_topic, self._log_cb)
-
+        self._mqtt_client.unsubscribe(self._handshake_topic)
+        self._mqtt_client.unsubscribe(self._response_topic)
+        self._mqtt_client.unsubscribe(self._log_topic)
         self.disconnected.set()
 
 
-class MqttDeviceTracker(features.ServiceFeature):
-    def __init__(self, app: web.Application):
-        super().__init__(app)
-        self._isolated = app['config'].isolated
-        self._handshake_topic = HANDSHAKE_TOPIC + '+'
-        self._devices: dict[str, asyncio.Event] = {}
-
-    async def _handshake_cb(self, topic: str, msg: str):
-        device = topic.removeprefix(HANDSHAKE_TOPIC)
-        if msg:
-            LOGGER.debug(f'MQTT device published: {device}')
-            self._devices.setdefault(device, asyncio.Event()).set()
-        else:
-            LOGGER.debug(f'MQTT device removed: {device}')
-            self._devices.setdefault(device, asyncio.Event()).clear()
-
-    async def startup(self, app: web.Application):
-        if not self._isolated:
-            await mqtt.listen(app, self._handshake_topic, self._handshake_cb)
-            await mqtt.subscribe(app, self._handshake_topic)
-
-    async def before_shutdown(self, app: web.Application):
-        if not self._isolated:
-            await mqtt.unsubscribe(app, self._handshake_topic)
-            await mqtt.unlisten(app, self._handshake_topic, self._handshake_cb)
-
-    async def discover(self, callbacks: ConnectionCallbacks, device_id: str) -> Optional[ConnectionImplBase]:
-        if self._isolated or not device_id:
-            return None
-
-        try:
-            evt = self._devices.setdefault(device_id, asyncio.Event())
-            await asyncio.wait_for(evt.wait(), timeout=DISCOVERY_TIMEOUT_S)
-            conn = MqttConnection(self.app, device_id, callbacks)
-            await conn.connect()
-            return conn
-
-        except asyncio.TimeoutError:
-            return None
+async def _firmware_handshake_cb(client, topic: str, payload: str, qos, properties):
+    devices = _DEVICES.get()
+    device = topic.removeprefix(HANDSHAKE_TOPIC)
+    if payload:
+        LOGGER.debug(f'MQTT device published: {device}')
+        devices.setdefault(device, asyncio.Event()).set()
+    else:
+        LOGGER.debug(f'MQTT device removed: {device}')
+        devices.setdefault(device, asyncio.Event()).clear()
 
 
-def setup(app: web.Application):
-    features.add(app, MqttDeviceTracker(app))
+async def discover_mqtt(callbacks: ConnectionCallbacks) -> ConnectionImplBase | None:
+    config = utils.get_config()
+    if not config.device_id:
+        return None
+
+    try:
+        devices = _DEVICES.get()
+        evt = devices.setdefault(config.device_id, asyncio.Event())
+        await asyncio.wait_for(evt.wait(), timeout=DISCOVERY_TIMEOUT_S)
+        conn = MqttConnection(config.device_id, callbacks)
+        await conn.connect()
+        return conn
+
+    except asyncio.TimeoutError:
+        return None
 
 
-def fget(app: web.Application) -> MqttDeviceTracker:
-    return features.get(app, MqttDeviceTracker)
+def setup():
+    mqtt_client = mqtt.CV.get()
+    _DEVICES.set({})
 
-
-async def discover_mqtt(app: web.Application,
-                        callbacks: ConnectionCallbacks,
-                        ) -> Optional[MqttConnection]:
-    device_id = app['config'].device_id
-    return await fget(app).discover(callbacks, device_id)
+    mqtt_client.subscribe(HANDSHAKE_TOPIC + '+')(_firmware_handshake_cb)

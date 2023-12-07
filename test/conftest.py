@@ -12,7 +12,7 @@ from brewblox_service import brewblox_logger, features, service, testing
 from brewblox_devcon_spark.models import (DiscoveryType, ServiceConfig,
                                           ServiceFirmwareIni)
 
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope='session', autouse=True)

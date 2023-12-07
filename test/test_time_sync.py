@@ -28,7 +28,7 @@ def m_controller(mocker):
 
 @pytest.fixture
 async def setup(app):
-    config: ServiceConfig = app['config']
+    config = utils.get_config()
     config.time_sync_interval = 0.01
 
     service_status.setup(app)

@@ -63,7 +63,7 @@ def test_main(app, m_service_funcs):
 
 @pytest.mark.parametrize('auto_id', [True, False])
 def test_simulation(auto_id, app, m_service_funcs):
-    config: ServiceConfig = app['config']
+    config = utils.get_config()
     config.device_id = None
     config.mock = auto_id
     config.simulation = auto_id

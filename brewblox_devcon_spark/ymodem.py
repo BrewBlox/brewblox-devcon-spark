@@ -59,7 +59,7 @@ YMODEM_TRANSFER_BAUD_RATE = 115200
 CONNECT_INTERVAL_S = 3
 CONNECT_ATTEMPTS = 5
 
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 class Control(IntEnum):

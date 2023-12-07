@@ -14,7 +14,7 @@ from brewblox_devcon_spark import (block_store, codec, commander, connection,
 from brewblox_devcon_spark.models import ServiceStatusDescription
 
 TESTED = synchronization.__name__
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def states(app):

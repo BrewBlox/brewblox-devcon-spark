@@ -54,7 +54,7 @@ async def test_calc_backoff():
 
 
 async def test_usb_compatible(app, client, mocker):
-    config: ServiceConfig = app['config']
+    config = utils.get_config()
     handler = connection_handler.ConnectionHandler(app)
 
     # Set all relevant settings to default
@@ -96,7 +96,7 @@ async def test_usb_compatible(app, client, mocker):
 async def test_handler_discovery(app, client, mocker):
     mocker.patch(TESTED + '.DISCOVERY_INTERVAL_S', 0)
 
-    config: ServiceConfig = app['config']
+    config = utils.get_config()
     m_discover_usb: AsyncMock = mocker.patch(TESTED + '.discover_usb', autospec=True)
     m_discover_mdns: AsyncMock = mocker.patch(TESTED + '.discover_mdns', autospec=True)
     m_discover_mqtt: AsyncMock = mocker.patch(TESTED + '.discover_mqtt', autospec=True)
@@ -166,7 +166,7 @@ async def test_handler_discovery(app, client, mocker):
 
 
 async def test_handler_connect_order(app, client, mocker):
-    config: ServiceConfig = app['config']
+    config = utils.get_config()
     m_funcs: dict[str, AsyncMock] = {
         k: mocker.patch(f'{TESTED}.{k}', autospec=True)
         for k in [
@@ -320,7 +320,7 @@ async def test_handler_discovery_error(app, client, mocker):
     m_discover_usb = mocker.patch(TESTED + '.discover_usb', autospec=True)
     m_discover_usb.return_value = None
 
-    config: ServiceConfig = app['config']
+    config = utils.get_config()
     config.mock = False
     config.simulation = False
     config.device_serial = None

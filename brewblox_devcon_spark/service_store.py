@@ -4,11 +4,10 @@ Stores persistent service-specific configuration
 
 import asyncio
 import json
+import logging
 import warnings
 from contextlib import contextmanager
-
-from aiohttp import web
-from brewblox_service import brewblox_logger, features, http, strex
+from contextvars import ContextVar
 
 from brewblox_devcon_spark import const
 from brewblox_devcon_spark.datastore import (STORE_URL, FlushedStore,
@@ -26,7 +25,8 @@ SYS_OBJECTS = [
     for keys in const.SYS_OBJECT_KEYS
 ]
 
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
+CV: ContextVar['ServiceConfigStore'] = ContextVar('service_store.ServiceConfigStore')
 
 
 class ServiceConfigStore(FlushedStore):
@@ -34,22 +34,21 @@ class ServiceConfigStore(FlushedStore):
     Database-backed configuration
     """
 
-    def __init__(self, app: web.Application):
-        super().__init__(app)
+    def __init__(self):
         self._config: dict = {}
-        self._ready_event: asyncio.Event = None
+        self._ready_event = asyncio.Event()
         self.key: str = SERVICE_STORE_KEY.format(name=self.app['config'].name)
 
     def __str__(self):
         return f'<{type(self).__name__}>'
 
-    async def startup(self, app: web.Application):
-        await FlushedStore.startup(self, app)
-        self._ready_event = asyncio.Event()
+    # async def startup(self, app: web.Application):
+    #     await FlushedStore.startup(self, app)
+    #     self._ready_event = asyncio.Event()
 
-    async def shutdown(self, app: web.Application):
-        await FlushedStore.shutdown(self, app)
-        self._ready_event = None
+    # async def shutdown(self, app: web.Application):
+    #     await FlushedStore.shutdown(self, app)
+    #     self._ready_event = None
 
     @contextmanager
     def open(self):

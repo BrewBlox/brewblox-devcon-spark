@@ -14,7 +14,7 @@ TESTED = service_status.__name__
 
 
 def make_desc(app) -> ControllerDescription:
-    config: ServiceConfig = app['config']
+    config = utils.get_config()
     ini: ServiceFirmwareIni = app['ini']
 
     return ControllerDescription(

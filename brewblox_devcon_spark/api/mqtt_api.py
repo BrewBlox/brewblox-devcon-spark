@@ -10,12 +10,12 @@ from brewblox_service import brewblox_logger, features, mqtt
 from brewblox_devcon_spark import controller
 from brewblox_devcon_spark.models import Block, BlockIdentity
 
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 BLOCKS_TOPIC = 'brewcast/spark/blocks'
 
 
-class MqttApi(features.ServiceFeature):
+class MqttApi:
 
     def __init__(self, app: web.Application):
         super().__init__(app)

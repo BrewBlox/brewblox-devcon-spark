@@ -7,24 +7,19 @@ MockConnection is an alternative to StreamConnection or MqttConnection.
 This prevents having to spin up a simulator in a separate process for tests.
 """
 
+import logging
 from datetime import datetime
 from itertools import count
 from typing import Optional, Union
 
-from aiohttp import web
-from brewblox_service import brewblox_logger
-
-from brewblox_devcon_spark import codec, const
-from brewblox_devcon_spark.codec import bloxfield
-from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
-                                          ErrorCode, FirmwareBlock,
-                                          IntermediateRequest,
-                                          IntermediateResponse, Opcode,
-                                          ResetData, ResetReason)
-
+from .. import codec, const, utils
+from ..codec import bloxfield
+from ..models import (DecodedPayload, EncodedPayload, ErrorCode, FirmwareBlock,
+                      IntermediateRequest, IntermediateResponse, Opcode,
+                      ResetData, ResetReason)
 from .connection_impl import ConnectionCallbacks, ConnectionImplBase
 
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 # an ErrorCode will be returned
 # a None value will cause no response to be returned
@@ -82,15 +77,13 @@ def default_blocks() -> dict[int, FirmwareBlock]:
 
 class MockConnection(ConnectionImplBase):
     def __init__(self,
-                 app: web.Application,
                  device_id: str,
                  callbacks: ConnectionCallbacks,
                  ) -> None:
         super().__init__('MOCK', device_id, callbacks)
-        self.app = app
 
         self._start_time = datetime.now()
-        self._codec = codec.Codec(app, strip_readonly=False)
+        self._codec = codec.Codec(strip_readonly=False)
         self._id_counter = count(start=const.USER_NID_START)
         self._blocks: dict[int, FirmwareBlock] = default_blocks()
 
@@ -278,8 +271,8 @@ class MockConnection(ConnectionImplBase):
         self.disconnected.set()
 
 
-async def connect_mock(app: web.Application, callbacks: ConnectionCallbacks) -> ConnectionImplBase:
-    device_id = app['config'].device_id
-    conn = MockConnection(app, device_id, callbacks)
+async def connect_mock(callbacks: ConnectionCallbacks) -> ConnectionImplBase:
+    config = utils.get_config()
+    conn = MockConnection(config.device_id, callbacks)
     await conn.connect()
     return conn

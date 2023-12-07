@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from brewblox_devcon_spark import service_status, service_store
 
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 routes = web.RouteTableDef()
 
 

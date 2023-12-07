@@ -15,7 +15,7 @@ from brewblox_devcon_spark.models import (Block, BlockIdentity,
                                           BlockIdentityList, BlockList,
                                           BlockNameChange, ServiceConfig)
 
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 routes = web.RouteTableDef()
 
 
@@ -27,7 +27,7 @@ class BlocksView(PydanticView):
     def __init__(self, request: web.Request) -> None:
         super().__init__(request)
         self.app = request.app
-        self.config: ServiceConfig = self.app['config']
+        self.config = utils.get_config()
         self.controller = controller.fget(self.app)
 
     async def publish(self, changed: list[Block] = None, deleted: list[BlockIdentity] = None):

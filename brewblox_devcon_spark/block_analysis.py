@@ -2,10 +2,10 @@
 Calculate block metadata
 """
 
-from typing import Any, Optional, TypedDict
+from typing import Any, TypedDict
 
-from brewblox_devcon_spark.codec import bloxfield
-from brewblox_devcon_spark.models import Block
+from .codec import bloxfield
+from .models import Block
 
 # Relations to these blocks should be ignored,
 # as they have no impact on control logic
@@ -34,7 +34,7 @@ INVERTED_RELATION_FIELDS = [
 class BlockRelation(TypedDict):
     source: str
     target: str
-    claimed: Optional[bool]
+    claimed: bool | None
     relation: list[str]
 
 

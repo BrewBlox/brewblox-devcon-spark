@@ -3,6 +3,7 @@ mDNS discovery of Spark devices
 """
 
 import asyncio
+import logging
 from collections import namedtuple
 from contextlib import suppress
 from socket import AF_INET, inet_aton, inet_ntoa
@@ -10,12 +11,11 @@ from typing import Generator, Optional
 
 from aiozeroconf import ServiceBrowser, ServiceStateChange, Zeroconf
 from aiozeroconf.aiozeroconf import ServiceInfo
-from brewblox_service import brewblox_logger
 
 DEFAULT_TIMEOUT_S = 5
 SIM_ADDR = inet_aton('0.0.0.0')
 
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 ConnectInfo = namedtuple('ConnectInfo', ['address', 'port', 'id'])
 

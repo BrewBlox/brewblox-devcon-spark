@@ -4,89 +4,77 @@ Intermittently broadcasts status and blocks to the eventbus
 
 
 import asyncio
-import json
+import logging
+from contextlib import asynccontextmanager, suppress
 
-from aiohttp import web
-from brewblox_service import brewblox_logger, features, mqtt, repeater, strex
+from . import const, controller, mqtt, service_status, utils
+from .block_analysis import calculate_claims, calculate_relations
 
-from brewblox_devcon_spark import const, controller, service_status
-from brewblox_devcon_spark.block_analysis import (calculate_claims,
-                                                  calculate_relations)
-from brewblox_devcon_spark.models import ServiceConfig
-
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
-class Broadcaster(repeater.RepeaterFeature):
+class Broadcaster:
 
-    def __init__(self, app: web.Application):
-        super().__init__(app)
-
-        config: ServiceConfig = app['config']
+    def __init__(self):
+        config = utils.get_config()
         self.name = config.name
         self.interval = config.broadcast_interval
-        self.isolated = self.interval <= 0 or config.isolated
+        self.isolated = self.interval.total_seconds() <= 0
         self.state_topic = f'{config.state_topic}/{config.name}'
         self.history_topic = f'{config.history_topic}/{config.name}'
 
-    async def prepare(self):
-        if self.isolated:
-            raise repeater.RepeaterCancelled()
-
-    async def before_shutdown(self, app: web.Application):
-        await self.end()
-
     async def run(self):
+        mqtt_client = mqtt.CV.get()
+        status = service_status.CV.get()
+        blocks = []
+
         try:
-            await asyncio.sleep(self.interval)
-            blocks = []
+            if status.synchronized_ev.is_set():
+                blocks, logged_blocks = await controller.fget(self.app).read_all_broadcast_blocks()
 
+                # Convert list to key/value format suitable for history
+                history_data = {
+                    block.id: block.data
+                    for block in logged_blocks
+                    if not block.id.startswith(const.GENERATED_ID_PREFIX)
+                }
+
+                mqtt_client.publish(self.history_topic,
+                                    {
+                                        'key': self.name,
+                                        'data': history_data,
+                                    })
+
+        finally:
+            # State event is always published
+            mqtt_client.publish(self.state_topic,
+                                {
+                                    'key': self.name,
+                                    'type': 'Spark.state',
+                                    'data': {
+                                        'status': status.desc().model_dump(mode='json'),
+                                        'blocks': [v.model_dump(mode='json') for v in blocks],
+                                        'relations': calculate_relations(blocks),
+                                        'claims': calculate_claims(blocks),
+                                    },
+                                },
+                                retain=True)
+
+    async def repeat(self):
+        config = utils.get_config()
+        while True:
+            await asyncio.sleep(self.interval.total_seconds())
             try:
-                if service_status.is_synchronized(self.app):
-                    blocks, logged_blocks = await controller.fget(self.app).read_all_broadcast_blocks()
-
-                    # Convert list to key/value format suitable for history
-                    history_data = {
-                        block.id: block.data
-                        for block in logged_blocks
-                        if not block.id.startswith(const.GENERATED_ID_PREFIX)
-                    }
-
-                    await mqtt.publish(self.app,
-                                       topic=self.history_topic,
-                                       payload=json.dumps({
-                                           'key': self.name,
-                                           'data': history_data,
-                                       }),
-                                       err=False,
-                                       )
-
-            finally:
-                # State event is always published
-                await mqtt.publish(self.app,
-                                   topic=self.state_topic,
-                                   payload=json.dumps({
-                                       'key': self.name,
-                                       'type': 'Spark.state',
-                                       'data': {
-                                           'status': service_status.desc(self.app).dict(),
-                                           'blocks': [v.dict() for v in blocks],
-                                           'relations': calculate_relations(blocks),
-                                           'claims': calculate_claims(blocks),
-                                       },
-                                   }),
-                                   retain=True,
-                                   err=False,
-                                   )
-
-        except Exception as ex:
-            LOGGER.debug(f'{self} exception: {strex(ex)}')
-            raise ex
+                await self.run()
+            except Exception as ex:
+                LOGGER.error(utils.strex(ex), exc_info=config.debug)
 
 
-def setup(app: web.Application):
-    features.add(app, Broadcaster(app))
-
-
-def fget(app: web.Application) -> Broadcaster:
-    return features.get(app, Broadcaster)
+@asynccontextmanager
+async def lifespan():
+    bc = Broadcaster()
+    task = asyncio.create_task(bc.repeat())
+    yield
+    task.cancel()
+    with suppress(asyncio.CancelledError):
+        await task

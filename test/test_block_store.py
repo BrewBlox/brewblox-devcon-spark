@@ -53,7 +53,7 @@ async def setup(app, mocker):
     mocker.patch(DATASTORE + '.FLUSH_DELAY_S', 0.01)
     mocker.patch(DATASTORE + '.RETRY_INTERVAL_S', 0.01)
 
-    config: ServiceConfig = app['config']
+    config = utils.get_config()
     config.isolated = False
     http.setup(app)
     scheduler.setup(app)

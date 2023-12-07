@@ -12,16 +12,16 @@ from brewblox_service import brewblox_logger, features, repeater, strex
 from brewblox_devcon_spark import const, controller, service_status
 from brewblox_devcon_spark.models import Block, ServiceConfig
 
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 ERROR_INTERVAL_S = 10
 
 
-class TimeSync(repeater.RepeaterFeature):
+class TimeSync:
 
     def __init__(self, app: web.Application):
         super().__init__(app)
 
-        config: ServiceConfig = app['config']
+        config = utils.get_config()
         self.interval_s = config.time_sync_interval
         self.enabled = self.interval_s > 0
 

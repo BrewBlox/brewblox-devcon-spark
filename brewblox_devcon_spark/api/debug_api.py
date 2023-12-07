@@ -12,7 +12,7 @@ from brewblox_devcon_spark.models import (DecodedPayload, EncodedMessage,
                                           EncodedPayload, IntermediateRequest,
                                           IntermediateResponse)
 
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 routes = web.RouteTableDef()
 
 

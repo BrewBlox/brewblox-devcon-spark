@@ -4,57 +4,56 @@ Store regular backups of blocks on disk
 
 import asyncio
 import json
+import logging
+from contextlib import asynccontextmanager, suppress
+from contextvars import ContextVar
 from datetime import datetime
 from pathlib import Path
 
-from aiohttp import web
-from brewblox_service import brewblox_logger, features, repeater, strex
+from . import controller, exceptions, service_status, utils
+from .models import Backup, BackupApplyResult, BackupIdentity
 
-from brewblox_devcon_spark import controller, exceptions, service_status
-from brewblox_devcon_spark.models import (Backup, BackupApplyResult,
-                                          BackupIdentity, ServiceConfig)
-
-LOGGER = brewblox_logger(__name__)
 BASE_BACKUP_DIR = Path('./backup')
+LOGGER = logging.getLogger(__name__)
+CV: ContextVar['BackupStorage'] = ContextVar('backup_storage.BackupStorage')
 
 
-class BackupStorage(repeater.RepeaterFeature):
+class BackupStorage:
 
-    def __init__(self, app: web.Application):
-        super().__init__(app)
-
-        config: ServiceConfig = app['config']
+    def __init__(self):
+        config = utils.get_config()
         self.name = config.name
         self.dir = BASE_BACKUP_DIR / self.name
-        self.interval_s = config.backup_interval
-        self.retry_interval_s = config.backup_retry_interval
-
-        if self.retry_interval_s <= 0:
-            self.retry_interval_s = self.interval_s
-
-        self.last_ok = False
-        self.enabled = self.interval_s > 0
-
-    async def prepare(self):
         self.dir.mkdir(mode=0o777, parents=True, exist_ok=True)
 
-        if not self.enabled:
-            raise repeater.RepeaterCancelled()
-
     async def run(self):
-        try:
-            self.last_ok = False
-            interval = self.interval_s if self.last_ok else self.retry_interval_s
-            await asyncio.sleep(interval)
+        if service_status.is_synchronized():
+            name = f'autosave_blocks_{self.name}_' + datetime.today().strftime('%Y-%m-%d')
+            await self.save(BackupIdentity(name=name))
 
-            if service_status.is_synchronized(self.app):
-                name = f'autosave_blocks_{self.name}_' + datetime.today().strftime('%Y-%m-%d')
-                await self.save(BackupIdentity(name=name))
-                self.last_ok = True
+    async def repeat(self):
+        config = utils.get_config()
 
-        except Exception as ex:
-            LOGGER.debug(f'{self} exception: {strex(ex)}')
-            raise ex
+        normal_interval = config.backup_interval
+        retry_interval = config.backup_retry_interval
+
+        if normal_interval.total_seconds() <= 0:
+            LOGGER.info('Backup storage is disabled')
+            return
+
+        if retry_interval.total_seconds() <= 0:
+            retry_interval = normal_interval
+
+        last_ok = False
+        while True:
+            interval = normal_interval if last_ok else retry_interval
+            await asyncio.sleep(interval.total_seconds())
+            try:
+                await self.run()
+                last_ok = True
+            except Exception as ex:
+                last_ok = False
+                LOGGER.error(ex, exc_info=config.debug)
 
     async def save_portable(self) -> Backup:
         return await controller.fget(self.app).make_backup()
@@ -96,9 +95,15 @@ class BackupStorage(repeater.RepeaterFeature):
         return await controller.fget(self.app).apply_backup(data)
 
 
-def setup(app: web.Application):
-    features.add(app, BackupStorage(app))
+@asynccontextmanager
+async def lifespan():
+    storage = CV.get()
+    task = asyncio.create_task(storage.repeat())
+    yield
+    task.cancel()
+    with suppress(asyncio.CancelledError):
+        await task
 
 
-def fget(app: web.Application) -> BackupStorage:
-    return features.get(app, BackupStorage)
+def setup():
+    CV.set(BackupStorage())

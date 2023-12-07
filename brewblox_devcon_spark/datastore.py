@@ -3,76 +3,54 @@ Base class for persistent data stores
 """
 
 import asyncio
+import logging
 import warnings
 from abc import abstractmethod
 from contextlib import suppress
-from functools import wraps
 
-from aiohttp import web
-from brewblox_service import brewblox_logger, http, repeater, strex
+import httpx
 
-LOGGER = brewblox_logger(__name__)
+from . import utils
 
 STORE_URL = 'http://history:5000/history/datastore'
 RETRY_INTERVAL_S = 1
 FLUSH_DELAY_S = 5
 SHUTDOWN_WRITE_TIMEOUT_S = 2
 
-
-def non_isolated(func):
-    @wraps(func)
-    async def wrapper(self, *args, **kwargs):
-        if self.isolated:
-            return
-        return await func(self, *args, **kwargs)
-    return wrapper
+LOGGER = logging.getLogger(__name__)
 
 
-async def check_remote(app: web.Application):
-    if app['config'].isolated:
-        return
+async def check_remote():
     num_attempts = 0
-    while True:
-        try:
-            await http.session(app).get(f'{STORE_URL}/ping')
-            return
-        except Exception as ex:
-            LOGGER.error(strex(ex))
-            num_attempts += 1
-            if num_attempts % 10 == 0:
-                LOGGER.info(f'Waiting for datastore... ({strex(ex)})')
-            await asyncio.sleep(RETRY_INTERVAL_S)
+    async with httpx.AsyncClient(base_url=STORE_URL) as client:
+        while True:
+            try:
+                resp = await client.get('/ping')
+                if resp.status_code == 200:
+                    return
+            except Exception as ex:
+                LOGGER.error(utils.strex(ex))
+                num_attempts += 1
+                if num_attempts % 10 == 0:
+                    LOGGER.info(f'Waiting for datastore... ({utils.strex(ex)})')
+                await asyncio.sleep(RETRY_INTERVAL_S)
 
 
-class FlushedStore(repeater.RepeaterFeature):
+class FlushedStore:
 
-    def __init__(self, app: web.Application):
-        super().__init__(app)
-        self._isolated = app['config'].isolated
-        self._changed_event: asyncio.Event = None
-
-    @property
-    def isolated(self):
-        return self._isolated
+    def __init__(self):
+        self._changed_event = asyncio.Event()
 
     def set_changed(self):
         if self._changed_event:
             self._changed_event.set()
 
-    async def before_shutdown(self, app: web.Application):
-        await super().before_shutdown(app)
-        await self.end()
+    async def before_shutdown(self):
         with suppress(Exception):
             if self._changed_event.is_set():
                 LOGGER.info(f'Writing data while closing {self}')
                 await asyncio.wait_for(self.write(), timeout=SHUTDOWN_WRITE_TIMEOUT_S)
         self._changed_event = None
-
-    async def prepare(self):
-        self._changed_event = asyncio.Event()
-        if self._isolated:
-            LOGGER.info(f'{self} is isolated (will not read/write datastore)')
-            raise repeater.RepeaterCancelled()
 
     async def run(self):
         try:
@@ -82,7 +60,7 @@ class FlushedStore(repeater.RepeaterFeature):
             self._changed_event.clear()
 
         except Exception as ex:
-            warnings.warn(f'{self} flush error {strex(ex)}')
+            warnings.warn(f'{self} flush error {utils.strex(ex)}')
 
     @abstractmethod
     async def write(self):

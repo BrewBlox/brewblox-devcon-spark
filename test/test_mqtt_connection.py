@@ -17,7 +17,7 @@ TESTED = mqtt_connection.__name__
 
 @pytest.fixture
 async def setup(app, broker):
-    config: ServiceConfig = app['config']
+    config = utils.get_config()
     config.isolated = False
     config.mqtt_host = 'localhost'
     config.mqtt_port = broker['mqtt']
@@ -35,7 +35,7 @@ async def synchronized(app, client):
 async def test_mqtt_discovery(app, client, mocker):
     mocker.patch(TESTED + '.DISCOVERY_TIMEOUT_S', 0.001)
     recv = asyncio.Event()
-    config: ServiceConfig = app['config']
+    config = utils.get_config()
     device_id = config.device_id
 
     async def recv_cb(topic: str, payload: str):
@@ -73,7 +73,7 @@ async def test_mqtt_discovery(app, client, mocker):
 
 async def test_mqtt_impl(app, client, mocker):
     callbacks = AsyncMock(spec=connection_handler.ConnectionHandler(app))
-    config: ServiceConfig = app['config']
+    config = utils.get_config()
     device_id = config.device_id
     recv_handshake = asyncio.Event()
     recv_req = asyncio.Event()

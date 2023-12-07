@@ -42,7 +42,7 @@ def m_mqtt(mocker):
 
 @pytest.fixture
 async def setup(app):
-    config: ServiceConfig = app['config']
+    config = utils.get_config()
     config.isolated = False
     http.setup(app)
     scheduler.setup(app)

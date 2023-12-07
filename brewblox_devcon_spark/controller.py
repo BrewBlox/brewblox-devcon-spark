@@ -4,22 +4,18 @@ Offers a functional interface to the device functionality
 
 import asyncio
 import itertools
+import logging
 import re
 from contextlib import asynccontextmanager, suppress
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from typing import Callable, Union
 
-from aiohttp import web
-from brewblox_service import brewblox_logger, features, strex
-
-from brewblox_devcon_spark import (block_store, commander, const, exceptions,
-                                   service_status, twinkeydict)
-from brewblox_devcon_spark.codec import bloxfield, sequence
-from brewblox_devcon_spark.models import (Backup, BackupApplyResult, Block,
-                                          BlockIdentity, BlockNameChange,
-                                          FirmwareBlock, FirmwareBlockIdentity)
-
-LOGGER = brewblox_logger(__name__)
+from . import (block_store, commander, const, exceptions, service_status,
+               twinkeydict, utils)
+from .codec import bloxfield, sequence
+from .models import (Backup, BackupApplyResult, Block, BlockIdentity,
+                     BlockNameChange, FirmwareBlock, FirmwareBlockIdentity)
 
 SYNC_WAIT_TIMEOUT_S = 20
 SID_PATTERN = re.compile(r'^[a-zA-Z]{1}[a-zA-Z0-9 _\-\(\)\|]{0,199}$')
@@ -29,6 +25,9 @@ An object ID must adhere to the following rules:
 - May only contain alphanumeric characters, space, and _-()|
 - At most 200 characters
 """
+
+LOGGER = logging.getLogger(__name__)
+CV: ContextVar['SparkController'] = ContextVar('controller.SparkController')
 
 
 def merge(a: dict, b: dict):
@@ -65,17 +64,14 @@ def resolve_data_ids(data: Union[dict, list, tuple],
             resolve_data_ids(v, replacer)
 
 
-class SparkController(features.ServiceFeature):
+class SparkController:
 
-    def __init__(self, app: web.Application):
-        super().__init__(app)
-        self._name = app['config'].name
-        self._cmder = commander.fget(app)
-        self._store = block_store.fget(app)
-        self._discovery_lock: asyncio.Lock = None
-        self._conn_check_lock: asyncio.Lock = None
-
-    async def startup(self, app: web.Application):
+    def __init__(self):
+        config = utils.get_config()
+        self._name = config.name
+        self._status = service_status.CV.get()
+        self._cmder = commander.CV.get()
+        self._store = block_store.CV.get()
         self._discovery_lock = asyncio.Lock()
         self._conn_check_lock = asyncio.Lock()
 
@@ -200,7 +196,7 @@ class SparkController(features.ServiceFeature):
         to avoid weird interactions when prompting for a handshake.
         """
         async with self._conn_check_lock:
-            if service_status.is_synchronized(self.app):
+            if self._status.synchronized_ev.is_set():
                 LOGGER.info('Checking connection...')
                 try:
                     await self._cmder.noop()
@@ -217,11 +213,11 @@ class SparkController(features.ServiceFeature):
             desc (str):
                 Human-readable function description, to be used in error messages.
         """
-        if service_status.is_updating(self.app):
+        if self._status.updating_ev.is_set():
             raise exceptions.UpdateInProgress('Update is in progress')
 
         await asyncio.wait_for(
-            service_status.wait_synchronized(self.app),
+            self._status.synchronized_ev.wait(),
             SYNC_WAIT_TIMEOUT_S)
 
         try:
@@ -233,7 +229,7 @@ class SparkController(features.ServiceFeature):
             raise ex
 
         except Exception as ex:
-            LOGGER.debug(f'Failed to execute {desc}: {strex(ex)}')
+            LOGGER.debug(f'Failed to execute {desc}: {utils.strex(ex)}')
             raise ex
 
     async def noop(self) -> None:
@@ -581,7 +577,7 @@ class SparkController(features.ServiceFeature):
             .now(tz=timezone.utc)\
             .isoformat(timespec='seconds')\
             .replace('+00:00', 'Z')
-        controller_info = service_status.desc(self.app).controller
+        controller_info = self._status.desc().controller
 
         return Backup(
             blocks=[block for block in blocks_data],
@@ -634,7 +630,7 @@ class SparkController(features.ServiceFeature):
             # Now either create or write the objects, depending on whether they are system objects
             for block in exported.blocks:
                 try:
-                    block = block.copy(deep=True)
+                    block = block.model_copy(deep=True)
                     if block.nid is not None and block.nid < const.USER_NID_START:
                         if block.nid in sys_nids:  # Ignore deprecated system blocks
                             await self.write_block(block)
@@ -643,7 +639,7 @@ class SparkController(features.ServiceFeature):
                         await self._cmder.create_block(self._to_firmware_block(block))
 
                 except Exception as ex:
-                    message = f'failed to import block. Error={strex(ex)}, block={block}'
+                    message = f'failed to import block. Error={utils.strex(ex)}, block={block}'
                     error_log.append(message)
                     LOGGER.error(message)
 
@@ -701,9 +697,5 @@ class SparkController(features.ServiceFeature):
             return block
 
 
-def setup(app: web.Application):
-    features.add(app, SparkController(app))
-
-
-def fget(app: web.Application) -> SparkController:
-    return features.get(app, SparkController)
+def setup():
+    CV.set(SparkController())

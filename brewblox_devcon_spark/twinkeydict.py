@@ -4,15 +4,14 @@ Supports lookups where either left or right value is unknown.
 When looking up objects with both left and right key, asserts that keys point to the same object.
 """
 
+import logging
 from collections.abc import MutableMapping
 from contextlib import suppress
 from dataclasses import dataclass
 from typing import (TYPE_CHECKING, Any, Generic, Hashable, Iterator, Optional,
                     TypeVar)
 
-from brewblox_service import brewblox_logger
-
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 LT = TypeVar('LT', bound=Hashable)
 RT = TypeVar('RT', bound=Hashable)

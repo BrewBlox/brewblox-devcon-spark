@@ -23,7 +23,7 @@ def m_backup_dir(mocker, tmp_path):
 
 @pytest.fixture
 async def setup(app):
-    config: ServiceConfig = app['config']
+    config = utils.get_config()
     config.backup_interval = 0.01
     config.backup_retry_interval = 0.01
 
@@ -48,7 +48,7 @@ async def synchronized(app, client):
 
 
 async def test_inactive(app, client, synchronized):
-    config: ServiceConfig = app['config']
+    config = utils.get_config()
     config.backup_interval = -2
     config.backup_retry_interval = -1
 

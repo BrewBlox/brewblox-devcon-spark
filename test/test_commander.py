@@ -18,7 +18,7 @@ TESTED = commander.__name__
 
 @pytest.fixture
 async def setup(app):
-    config: ServiceConfig = app['config']
+    config = utils.get_config()
     config.command_timeout = 1
 
     service_status.setup(app)

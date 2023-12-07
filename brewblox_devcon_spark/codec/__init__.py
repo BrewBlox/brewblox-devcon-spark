@@ -2,18 +2,16 @@
 Default exports for codec module
 """
 
+import logging
 from base64 import b64decode, b64encode
+from contextvars import ContextVar
 from typing import Optional
 
-from aiohttp import web
-from brewblox_service import brewblox_logger, features, strex
 from google.protobuf import json_format
 
-from brewblox_devcon_spark import exceptions
-from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
-                                          IntermediateRequest,
-                                          IntermediateResponse)
-
+from .. import exceptions, utils
+from ..models import (DecodedPayload, EncodedPayload, IntermediateRequest,
+                      IntermediateResponse)
 from . import pb2, time_utils, unit_conversion
 from .lookup import COMBINED_LOOKUPS, INTERFACE_LOOKUPS, OBJECT_LOOKUPS
 from .opts import (DateFormatOpt, DecodeOpts, FilterOpt, MetadataOpt,
@@ -24,7 +22,9 @@ DEPRECATED_TYPE_INT = 65533
 DEPRECATED_TYPE_STR = 'DeprecatedObject'
 UNKNOWN_TYPE_STR = 'UnknownType'
 ERROR_TYPE_STR = 'ErrorObject'
-LOGGER = brewblox_logger(__name__)
+
+LOGGER = logging.getLogger(__name__)
+CV: ContextVar['Codec'] = ContextVar('codec.Codec')
 
 
 def split_type(type_str: str) -> tuple[str, Optional[str]]:
@@ -41,20 +41,18 @@ def join_type(blockType: str, subtype: Optional[str]) -> str:
         return blockType
 
 
-class Codec(features.ServiceFeature):
-    def __init__(self, app: web.Application, strip_readonly=True):
-        super().__init__(app)
-        self._processor = ProtobufProcessor(unit_conversion.fget(app),
-                                            strip_readonly)
+class Codec:
+    def __init__(self, strip_readonly=True):
+        self._processor = ProtobufProcessor(strip_readonly)
 
     def encode_request(self, request: IntermediateRequest) -> str:
         try:
             message = pb2.command_pb2.Request()
-            json_format.ParseDict(request.clean_dict(), message)
+            json_format.ParseDict(request.model_dump(mode='json'), message)
             return b64encode(message.SerializeToString()).decode()
 
         except Exception as ex:
-            msg = strex(ex)
+            msg = utils.strex(ex)
             LOGGER.debug(msg, exc_info=True)
             raise exceptions.EncodeException(msg)
 
@@ -74,18 +72,18 @@ class Codec(features.ServiceFeature):
             return IntermediateRequest(**decoded)
 
         except Exception as ex:
-            msg = strex(ex)
+            msg = utils.strex(ex)
             LOGGER.debug(msg, exc_info=True)
             raise exceptions.DecodeException(msg)
 
     def encode_response(self, response: IntermediateResponse) -> str:
         try:
             message = pb2.command_pb2.Response()
-            json_format.ParseDict(response.clean_dict(), message)
+            json_format.ParseDict(response.model_dump(mode='json'), message)
             return b64encode(message.SerializeToString()).decode()
 
         except Exception as ex:
-            msg = strex(ex)
+            msg = utils.strex(ex)
             LOGGER.debug(msg, exc_info=True)
             raise exceptions.EncodeException(msg)
 
@@ -105,7 +103,7 @@ class Codec(features.ServiceFeature):
             return IntermediateResponse(**decoded)
 
         except Exception as ex:
-            msg = strex(ex)
+            msg = utils.strex(ex)
             LOGGER.debug(msg, exc_info=True)
             raise exceptions.DecodeException(msg)
 
@@ -161,7 +159,7 @@ class Codec(features.ServiceFeature):
             raise exceptions.EncodeException(msg)
 
         except Exception as ex:
-            msg = strex(ex)
+            msg = utils.strex(ex)
             LOGGER.debug(msg, exc_info=True)
             raise exceptions.EncodeException(msg)
 
@@ -228,7 +226,7 @@ class Codec(features.ServiceFeature):
             )
 
         except Exception as ex:
-            msg = strex(ex)
+            msg = utils.strex(ex)
             LOGGER.debug(msg, exc_info=True)
             return DecodedPayload(
                 blockId=payload.blockId,
@@ -241,13 +239,9 @@ class Codec(features.ServiceFeature):
             )
 
 
-def setup(app: web.Application):
-    unit_conversion.setup(app)
-    features.add(app, Codec(app))
-
-
-def fget(app: web.Application) -> Codec:
-    return features.get(app, Codec)
+def setup():
+    unit_conversion.setup()
+    CV.set(Codec())
 
 
 __all__ = [
@@ -256,7 +250,7 @@ __all__ = [
 
     'Codec',
     'setup',
-    'fget',
+    'CV',
 
     'DecodeOpts',
     'ProtoEnumOpt',

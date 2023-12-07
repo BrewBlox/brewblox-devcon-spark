@@ -3,15 +3,17 @@ Keeps track of global config
 """
 
 import json
+import logging
+from contextlib import asynccontextmanager
+from contextvars import ContextVar
 
-from aiohttp import web
-from brewblox_service import brewblox_logger, features, http, mqtt, strex
+from httpx import AsyncClient
 
-from brewblox_devcon_spark import const
-from brewblox_devcon_spark.datastore import STORE_URL
-from brewblox_devcon_spark.models import ServiceConfig
+from . import const, mqtt, utils
+from .datastore import STORE_URL
 
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
+CV: ContextVar['GlobalConfigStore'] = ContextVar('global_store.GlobalConfigStore')
 
 
 def default_units():
@@ -27,33 +29,15 @@ def default_time_zone():
     }
 
 
-class GlobalConfigStore(features.ServiceFeature):
-    def __init__(self, app: web.Application):
-        super().__init__(app)
-        config: ServiceConfig = app['config']
-        self._isolated = config.isolated
-        self._datastore_topic = config.datastore_topic
-        self._global_topic = f'{self._datastore_topic}/{const.GLOBAL_NAMESPACE}'
+class GlobalConfigStore:
+    def __init__(self):
+        self._client = AsyncClient(base_url=STORE_URL)
 
         self.units = default_units()
         self.time_zone = default_time_zone()
         self.listeners = set()
 
-    async def startup(self, app: web.Application):
-        if not self._isolated:
-            await mqtt.listen(app, self._global_topic, self._on_event)
-            await mqtt.subscribe(app, self._global_topic)
-
-    async def before_shutdown(self, app: web.Application):
-        self.listeners.clear()
-
-    async def shutdown(self, app: web.Application):
-        if not self._isolated:
-            await mqtt.unlisten(app, self._global_topic, self._on_event)
-            await mqtt.unsubscribe(app, self._global_topic)
-
-    async def _on_event(self, topic: str, payload: str):
-        obj = json.loads(payload)
+    async def on_event(self, obj: dict):
         if self.update(obj.get('changed', [])):
             for cb in set(self.listeners):
                 await cb()
@@ -76,23 +60,28 @@ class GlobalConfigStore(features.ServiceFeature):
         return changed
 
     async def read(self):
-        if self._isolated:
-            return
-
         try:
-            resp = await http.session(self.app).post(f'{STORE_URL}/mget', json={
+            resp = await self._client.post('/mget', json={
                 'namespace': const.GLOBAL_NAMESPACE,
                 'ids': [const.GLOBAL_UNITS_ID, const.GLOBAL_TIME_ZONE_ID],
             })
-            self.update((await resp.json())['values'])
+            self.update(resp.json()['values'])
 
         except Exception as ex:
-            LOGGER.error(f'{self} read error {strex(ex)}')
+            LOGGER.error(f'{self} read error {utils.strex(ex)}')
 
 
-def setup(app: web.Application):
-    features.add(app, GlobalConfigStore(app))
+@asynccontextmanager
+async def lifespan():
+    yield
+    CV.get().listeners.clear()
 
 
-def fget(app: web.Application) -> GlobalConfigStore:
-    return features.get(app, GlobalConfigStore)
+def setup():
+    config = utils.get_config()
+    mqtt_client = mqtt.CV.get()
+    CV.set(GlobalConfigStore())
+
+    @mqtt_client.subscribe(f'{config.datastore_topic}/{const.GLOBAL_NAMESPACE}')
+    async def on_datastore_message(client, topic, payload, qos, properties):
+        CV.get().on_event(json.loads(payload))

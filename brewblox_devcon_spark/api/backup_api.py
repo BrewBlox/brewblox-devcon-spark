@@ -12,7 +12,7 @@ from brewblox_devcon_spark import backup_storage
 from brewblox_devcon_spark.models import (Backup, BackupApplyResult,
                                           BackupIdentity)
 
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 routes = web.RouteTableDef()
 
 

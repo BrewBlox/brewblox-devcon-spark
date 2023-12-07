@@ -57,7 +57,7 @@ from brewblox_devcon_spark.models import FirmwareBlock
 HANDSHAKE_TIMEOUT_S = 120
 PING_INTERVAL_S = 2
 
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def subroutine(desc: str):
@@ -78,7 +78,7 @@ def subroutine(desc: str):
     return wrapper
 
 
-class SparkSynchronization(repeater.RepeaterFeature):
+class SparkSynchronization:
 
     def __init__(self, app: web.Application):
         super().__init__(app)
