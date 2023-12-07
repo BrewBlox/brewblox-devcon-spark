@@ -21,7 +21,6 @@ _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'Mutex_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
-
   DESCRIPTOR._options = None
   _BLOCK.fields_by_name['waitRemaining']._options = None
   _BLOCK.fields_by_name['waitRemaining']._serialized_options = b'\222?\0028 \212\265\030\007\010\003\020\350\007(\001'

@@ -24,7 +24,6 @@ _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'FastPwm_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
-
   DESCRIPTOR._options = None
   _BLOCK.fields_by_name['hwDevice']._options = None
   _BLOCK.fields_by_name['hwDevice']._serialized_options = b'\222?\0028\020\212\265\030\002\030\n'

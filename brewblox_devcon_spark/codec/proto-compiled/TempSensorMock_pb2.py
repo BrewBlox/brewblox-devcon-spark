@@ -21,7 +21,6 @@ _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'TempSensorMock_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
-
   DESCRIPTOR._options = None
   _FLUCTUATION.fields_by_name['amplitude']._options = None
   _FLUCTUATION.fields_by_name['amplitude']._serialized_options = b'\222?\0028 \212\265\030\007\010\006\020\200 0\001'
