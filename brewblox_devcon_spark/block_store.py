@@ -12,14 +12,14 @@ from httpx import AsyncClient
 
 from . import const, utils
 from .datastore import STORE_URL, FlushedStore
-from .models import StoreEntry
+from .models import DatastoreEntries, DatastoreEntriesBox, StoreEntry
 from .twinkeydict import TwinKeyDict, TwinKeyError
 
 BLOCK_STORE_KEY = '{id}-blocks-db'
 READY_TIMEOUT_S = 60
 
-SYS_OBJECTS = [
-    {'keys': keys, 'data': {}}
+SYS_OBJECTS: list[StoreEntry] = [
+    StoreEntry(keys=keys, data={})
     for keys in const.SYS_OBJECT_KEYS
 ]
 
@@ -59,8 +59,11 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict[str, int, dict]):
                 'namespace': const.SPARK_NAMESPACE,
             })
             self.key = key
-            content_value = resp.json().get('value') or {}
-            data = content_value.get('data') or []
+            try:
+                content = DatastoreEntriesBox.model_validate_json(resp.text)
+                data = content.value.data
+            except (KeyError, ValueError):
+                data = []
             LOGGER.info(f'{self} Read {len(data)} blocks')
 
         except asyncio.CancelledError:  # pragma: no cover
@@ -73,11 +76,11 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict[str, int, dict]):
             # Clear -> load from database -> merge defaults
             TwinKeyDict.clear(self)
             for obj in data:
-                TwinKeyDict.__setitem__(self, obj['keys'], obj['data'])
+                TwinKeyDict.__setitem__(self, obj.keys, obj.data)
             for obj in self._defaults:
                 with suppress(TwinKeyError):
-                    if obj['keys'] not in self:
-                        self.__setitem__(obj['keys'], obj['data'])
+                    if obj.keys not in self:
+                        self.__setitem__(obj.keys, obj.data)
 
             self._ready_event.set()
 
@@ -85,17 +88,18 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict[str, int, dict]):
         await asyncio.wait_for(self._ready_event.wait(), READY_TIMEOUT_S)
         if self.key is None:
             raise RuntimeError('Document key not set - did read() fail?')
-        data: list[StoreEntry] = [
-            {'keys': keys, 'data': content}
-            for keys, content in self.items()
-        ]
-        await self._client.post('/set', json={
-            'value': {
-                'id': self.key,
-                'namespace': const.SPARK_NAMESPACE,
-                'data': data,
-            },
-        })
+
+        data = [StoreEntry(keys=k, data=v)
+                for k, v in self.items()]
+        content = DatastoreEntriesBox(
+            value=DatastoreEntries(
+                id=self.key,
+                namespace=const.SPARK_NAMESPACE,
+                data=data
+            )
+        )
+        await self._client.post('/set',
+                                json=content.model_dump(mode='json'))
         LOGGER.info(f'{self} Saved {len(data)} block(s)')
 
     def __setitem__(self, keys, item):
@@ -109,7 +113,7 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict[str, int, dict]):
     def clear(self):
         TwinKeyDict.clear(self)
         for obj in self._defaults:
-            self.__setitem__(obj['keys'], obj['data'])
+            self.__setitem__(obj.keys, obj.data)
 
 
 def setup():

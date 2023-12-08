@@ -1,10 +1,10 @@
 import enum
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Any, Literal, Self, TypedDict
+from typing import Any, Literal, Self
 
-from pydantic import (BaseModel, Field, ValidationInfo, field_validator,
-                      model_validator)
+from pydantic import (BaseModel, ConfigDict, Field, ValidationInfo,
+                      field_validator, model_validator)
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -101,14 +101,6 @@ class Block(BaseModel):
     data: dict[str, Any]
 
 
-class BlockList(BaseModel):
-    __root__: list[Block]
-
-
-class BlockIdentityList(BaseModel):
-    __root__: list[BlockIdentity]
-
-
 class FirmwareBlockIdentity(BaseModel):
     nid: int
     type: str | None = None
@@ -121,7 +113,7 @@ class FirmwareBlock(BaseModel):
     data: dict[str, Any]
 
 
-class StoreEntry(TypedDict):
+class StoreEntry(BaseModel):
     keys: tuple[str, int]
     data: dict
 
@@ -447,3 +439,41 @@ class BackupApplyResult(BaseModel):
 class ErrorResponse(BaseModel):
     error: str
     details: str
+
+
+class DatastoreValue(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+
+    namespace: str
+    id: str
+
+
+class DatastoreSingleQuery(BaseModel):
+    namespace: str
+    id: str
+
+
+class DatastoreMultiQuery(BaseModel):
+    namespace: str
+    ids: list[str] | None = None
+    filter: str | None = None
+
+
+class DatastoreSingleValueBox(BaseModel):
+    value: DatastoreValue | None
+
+
+class DatastoreMultiValueBox(BaseModel):
+    values: list[DatastoreValue]
+
+
+class DatastoreEntries(DatastoreValue):
+    id: str
+    namespace: str
+    data: list[StoreEntry]
+
+
+class DatastoreEntriesBox(BaseModel):
+    value: DatastoreEntries | None

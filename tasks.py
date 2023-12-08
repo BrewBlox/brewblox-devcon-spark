@@ -1,19 +1,11 @@
-from configparser import ConfigParser
 from pathlib import Path
 
 from invoke import Context, task
 
-from brewblox_devcon_spark.models import ServiceFirmwareIni
+from brewblox_devcon_spark import utils
 
 ROOT = Path(__file__).parent.resolve()
 FW_BASE_URL = 'https://brewblox.blob.core.windows.net/firmware'
-
-
-def parse_ini() -> ServiceFirmwareIni:
-    parser = ConfigParser()
-    parser.read((ROOT / 'firmware.ini').resolve())
-    config = ServiceFirmwareIni(parser['FIRMWARE'].items())
-    return config
 
 
 @task
@@ -33,10 +25,10 @@ def compile_proto(ctx: Context):
 @task
 def download_firmware(ctx: Context):
     fw_dir = ROOT / 'firmware'
-    ini = parse_ini()
+    fw_config = utils.get_fw_config()
 
-    fw_date = ini['firmware_date']
-    fw_version = ini['firmware_version']
+    fw_date = fw_config.firmware_date
+    fw_version = fw_config.firmware_version
     fw_file = 'brewblox-release.tar.gz'
     url = f'{FW_BASE_URL}/{fw_date}-{fw_version}/{fw_file}'
     print(f'Downloading firmware release {fw_date}-{fw_version}')
@@ -62,10 +54,10 @@ def update_firmware(ctx: Context, release='develop'):
     with ctx.cd(ROOT):
         ctx.run(f'curl -sSf -o firmware.ini "{url}"')
 
-    ini = parse_ini()
-    fw_date = ini['firmware_date']
-    fw_version = ini['firmware_version']
-    proto_version = ini['proto_version']
+    fw_config = utils.get_fw_config()
+    fw_date = fw_config.firmware_date
+    fw_version = fw_config.firmware_version
+    proto_version = fw_config.proto_version
 
     print(f'Updating to firmware release {fw_date}-{fw_version}')
 
