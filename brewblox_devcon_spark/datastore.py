@@ -4,9 +4,8 @@ Base class for persistent data stores
 
 import asyncio
 import logging
-import warnings
 from abc import abstractmethod
-from contextlib import suppress
+from contextlib import asynccontextmanager, suppress
 
 import httpx
 
@@ -39,28 +38,43 @@ async def check_remote():
 class FlushedStore:
 
     def __init__(self):
-        self._changed_event = asyncio.Event()
+        self._changed_ev = asyncio.Event()
 
     def set_changed(self):
-        if self._changed_event:
-            self._changed_event.set()
+        self._changed_ev.set()
 
-    async def before_shutdown(self):
-        with suppress(Exception):
-            if self._changed_event.is_set():
-                LOGGER.info(f'Writing data while closing {self}')
-                await asyncio.wait_for(self.write(), timeout=SHUTDOWN_WRITE_TIMEOUT_S)
-        self._changed_event = None
-
-    async def run(self):
-        try:
-            await self._changed_event.wait()
+    async def _run(self, delayed: bool):
+        if delayed:
+            await self._changed_ev.wait()
             await asyncio.sleep(FLUSH_DELAY_S)
-            await self.write()
-            self._changed_event.clear()
+        elif not self._changed_ev.is_set():
+            return
 
-        except Exception as ex:
-            warnings.warn(f'{self} flush error {utils.strex(ex)}')
+        LOGGER.debug(f'Flushing {self} ...')
+        await self.write()
+        self._changed_ev.clear()
+
+    async def _repeat(self):
+        config = utils.get_config()
+        while True:
+            try:
+                await self._run(True)
+            except Exception as ex:
+                LOGGER.error(f'{self} {utils.strex(ex)}', exc_info=config.debug)
+            except asyncio.CancelledError as cancel_ex:
+                try:
+                    await asyncio.wait_for(self._run(False), timeout=SHUTDOWN_WRITE_TIMEOUT_S)
+                except Exception as ex:
+                    LOGGER.error(f'{self} {utils.strex(ex)}', exc_info=config.debug)
+                raise cancel_ex
+
+    @asynccontextmanager
+    async def lifespan(self):
+        task = asyncio.create_task(self._repeat())
+        yield
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
 
     @abstractmethod
     async def write(self):

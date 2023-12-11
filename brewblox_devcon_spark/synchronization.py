@@ -43,16 +43,14 @@ The synchronization process consists of:
 
 
 import asyncio
+import logging
+from contextlib import asynccontextmanager, suppress
 from functools import wraps
 
-from aiohttp import web
-from brewblox_service import brewblox_logger, features, repeater, strex
-
-from brewblox_devcon_spark import (block_store, codec, commander, const,
-                                   datastore, exceptions, global_store,
-                                   service_status, service_store)
-from brewblox_devcon_spark.codec.time_utils import serialize_duration
-from brewblox_devcon_spark.models import FirmwareBlock
+from . import (block_store, codec, commander, const, datastore, exceptions,
+               global_store, service_status, service_store, utils)
+from .codec.time_utils import serialize_duration
+from .models import FirmwareBlock
 
 HANDSHAKE_TIMEOUT_S = 120
 PING_INTERVAL_S = 2
@@ -72,7 +70,7 @@ def subroutine(desc: str):
             try:
                 return await func(*args, **kwargs)
             except Exception as ex:
-                LOGGER.error(f'Sync subroutine failed: {desc} - {strex(ex)}')
+                LOGGER.error(f'Sync subroutine failed: {desc} - {utils.strex(ex)}')
                 raise ex
         return wrapped
     return wrapper
@@ -80,54 +78,31 @@ def subroutine(desc: str):
 
 class SparkSynchronization:
 
-    def __init__(self, app: web.Application):
-        super().__init__(app)
-        self.unit_converter = codec.unit_conversion.fget(self.app)
-        self.codec = codec.fget(app)
-        self.commander = commander.fget(app)
-        self.service_store = service_store.fget(self.app)
-        self.global_store = global_store.fget(self.app)
-        self.block_store = block_store.fget(self.app)
-
-    async def before_shutdown(self, app: web.Application):
-        await self.end()
-
-    async def prepare(self):
-        # One-time datastore synchronization
-        await self._sync_datastore()
-
-    async def run(self):
-        try:
-            await service_status.wait_connected(self.app)
-            await self.synchronize()
-
-        except exceptions.IncompatibleFirmware:
-            LOGGER.error('Incompatible firmware version detected')
-
-        except exceptions.InvalidDeviceId:
-            LOGGER.error('Invalid device ID detected')
-
-        except Exception as ex:
-            LOGGER.error(f'Failed to sync: {strex(ex)}')
-            await self.commander.start_reconnect()
-
-        await service_status.wait_disconnected(self.app)
+    def __init__(self):
+        self.status = service_status.CV.get()
+        self.unit_converter = codec.unit_conversion.CV.get()
+        self.codec = codec.CV.get()
+        self.commander = commander.CV.get()
+        self.service_store = service_store.CV.get()
+        self.global_store = global_store.CV.get()
+        self.block_store = block_store.CV.get()
 
     @property
     def device_name(self) -> str:
         # Simulation services are identified by service name.
         # This prevents data conflicts when a simulation service
         # is reconfigured to start interacting with a controller.
-        if self.app['config'].simulation:
-            return 'simulator__' + self.app['config'].name
+        config = utils.get_config()
+        if config.simulation:
+            return f'simulator__{config.name}'
 
-        return service_status.desc(self.app).controller.device.device_id
+        return self.status.desc().controller.device.device_id
 
     async def synchronize(self):
         await self._sync_handshake()
         await self._sync_block_store()
         await self._sync_sysinfo()
-        service_status.set_synchronized(self.app)
+        self.status.set_synchronized()
 
     @subroutine('sync datastore')
     async def _sync_datastore(self):
@@ -139,14 +114,14 @@ class SparkSynchronization:
         await self.set_converter_units()
 
         autoconnecting = service_store.get_autoconnecting(self.app)
-        service_status.set_enabled(self.app, autoconnecting)
+        self.status.set_enabled(autoconnecting)
 
     async def _prompt_handshake(self):
         try:
             LOGGER.info('prompting handshake...')
             await self.commander.version()
         except Exception as ex:
-            LOGGER.debug(f'Handshake prompt error: {strex(ex)}')
+            LOGGER.debug(f'Handshake prompt error: {utils.strex(ex)}')
 
     @subroutine('sync handshake')
     async def _sync_handshake(self):
@@ -216,10 +191,35 @@ class SparkSynchronization:
         update_freq = sysinfo.data['updatesPerSecond']
         LOGGER.info(f'Spark updates per second: {update_freq}')
 
+    async def run(self):
+        try:
+            await self.status.connected_ev.wait()
+            await self.synchronize()
 
-def setup(app: web.Application):
-    features.add(app, SparkSynchronization(app))
+        except exceptions.IncompatibleFirmware:
+            LOGGER.error('Incompatible firmware version detected')
+
+        except exceptions.InvalidDeviceId:
+            LOGGER.error('Invalid device ID detected')
+
+        except Exception as ex:
+            LOGGER.error(f'Failed to sync: {utils.strex(ex)}')
+            await self.commander.start_reconnect()
+
+        await self.status.disconnected_ev.wait()
+
+    async def repeat(self):
+        # One-time datastore synchronization
+        await self._sync_datastore()
+        while True:
+            await self.run()
 
 
-def fget(app: web.Application) -> SparkSynchronization:
-    return features.get(app, SparkSynchronization)
+@asynccontextmanager
+async def lifespan():
+    sync = SparkSynchronization()
+    task = asyncio.create_task(sync.repeat())
+    yield
+    task.cancel()
+    with suppress(asyncio.CancelledError):
+        await task

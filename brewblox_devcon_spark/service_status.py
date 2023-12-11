@@ -65,6 +65,9 @@ class ServiceStatus:
         else:
             self.enabled_ev.clear()
 
+    async def wait_enabled(self):
+        await self.enabled_ev.wait()
+
     def set_connected(self,
                       connection_kind: ConnectionKind_,
                       address: str):
@@ -77,6 +80,9 @@ class ServiceStatus:
         self.acknowledged_ev.clear()
         self.synchronized_ev.clear()
         self.disconnected_ev.clear()
+
+    async def wait_connected(self):
+        await self.connected_ev.wait()
 
     def set_acknowledged(self, controller: ControllerDescription):
         if self.synchronized_ev.is_set():
@@ -125,6 +131,9 @@ class ServiceStatus:
         LOGGER.info('>>> ACKNOWLEDGED')
         self.acknowledged_ev.set()
 
+    async def wait_acknowledged(self):
+        await self.acknowledged_ev.wait()
+
     def set_synchronized(self):
         if not self.acknowledged_ev.is_set():
             raise RuntimeError('Failed to set synchronized status: '
@@ -135,11 +144,17 @@ class ServiceStatus:
         LOGGER.info('>>> SYNCHRONIZED')
         self.synchronized_ev.set()
 
+    async def wait_synchronized(self):
+        await self.synchronized_ev.wait()
+
     def set_updating(self):
         self.status_desc.connection_status = 'UPDATING'
 
         LOGGER.info('>>> UPDATING')
         self.updating_ev.set()
+
+    async def wait_updating(self):
+        await self.updating_ev.wait()
 
     def set_disconnected(self):
         self.status_desc.controller = None
@@ -155,6 +170,9 @@ class ServiceStatus:
         self.synchronized_ev.clear()
         self.updating_ev.clear()
         self.disconnected_ev.set()
+
+    async def wait_disconnected(self):
+        await self.disconnected_ev.wait()
 
 
 def setup():

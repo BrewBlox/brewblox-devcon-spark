@@ -11,6 +11,7 @@ from httpx import AsyncClient
 
 from . import const, mqtt, utils
 from .datastore import STORE_URL
+from .models import DatastoreMultiQuery, DatastoreMultiValueBox
 
 LOGGER = logging.getLogger(__name__)
 CV: ContextVar['GlobalConfigStore'] = ContextVar('global_store.GlobalConfigStore')
@@ -61,11 +62,17 @@ class GlobalConfigStore:
 
     async def read(self):
         try:
-            resp = await self._client.post('/mget', json={
-                'namespace': const.GLOBAL_NAMESPACE,
-                'ids': [const.GLOBAL_UNITS_ID, const.GLOBAL_TIME_ZONE_ID],
-            })
-            self.update(resp.json()['values'])
+            query = DatastoreMultiQuery(
+                namespace=const.GLOBAL_NAMESPACE,
+                ids=[
+                    const.GLOBAL_UNITS_ID,
+                    const.GLOBAL_TIME_ZONE_ID,
+                ],
+            )
+            resp = await self._client.post('/mget',
+                                           json=query.model_dump(mode='json'))
+            resp_content = DatastoreMultiValueBox.model_validate_json(resp.text)
+            self.update(resp_content.values)
 
         except Exception as ex:
             LOGGER.error(f'{self} read error {utils.strex(ex)}')

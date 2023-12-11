@@ -9,9 +9,10 @@ import warnings
 from contextlib import contextmanager
 from contextvars import ContextVar
 
-from brewblox_devcon_spark import const
-from brewblox_devcon_spark.datastore import (STORE_URL, FlushedStore,
-                                             non_isolated)
+from httpx import AsyncClient
+
+from . import const, utils
+from .datastore import STORE_URL, FlushedStore
 
 SERVICE_STORE_KEY = '{name}-service-db'
 READY_TIMEOUT_S = 60
@@ -35,26 +36,21 @@ class ServiceConfigStore(FlushedStore):
     """
 
     def __init__(self):
-        self._config: dict = {}
+        config = utils.get_config()
+
+        self.key = SERVICE_STORE_KEY.format(name=config.name)
+        self._stored_config: dict = {}
+        self._client = AsyncClient(base_url=STORE_URL)
         self._ready_event = asyncio.Event()
-        self.key: str = SERVICE_STORE_KEY.format(name=self.app['config'].name)
 
     def __str__(self):
         return f'<{type(self).__name__}>'
 
-    # async def startup(self, app: web.Application):
-    #     await FlushedStore.startup(self, app)
-    #     self._ready_event = asyncio.Event()
-
-    # async def shutdown(self, app: web.Application):
-    #     await FlushedStore.shutdown(self, app)
-    #     self._ready_event = None
-
     @contextmanager
     def open(self):
-        before = json.dumps(self._config)
-        yield self._config
-        after = json.dumps(self._config)
+        before = json.dumps(self._stored_config)
+        yield self._stored_config
+        after = json.dumps(self._stored_config)
         if before != after:
             self.set_changed()
 
@@ -63,24 +59,23 @@ class ServiceConfigStore(FlushedStore):
 
         try:
             self._ready_event.clear()
-            if not self.isolated:
-                resp = await http.session(self.app).post(f'{STORE_URL}/get', json={
-                    'id': self.key,
-                    'namespace': const.SPARK_NAMESPACE,
-                })
-                # `value` is None if no document is found.
-                resp_value = (await resp.json())['value']
-                if resp_value:
-                    LOGGER.info(f'{self} read {resp_value}')
-                    data = resp_value.get('data', {})
-                else:
-                    warnings.warn(f'{self} found no config. Defaults will be used.')
+            resp = await http.session(self.app).post(f'{STORE_URL}/get', json={
+                'id': self.key,
+                'namespace': const.SPARK_NAMESPACE,
+            })
+            # `value` is None if no document is found.
+            resp_value = (await resp.json())['value']
+            if resp_value:
+                LOGGER.info(f'{self} read {resp_value}')
+                data = resp_value.get('data', {})
+            else:
+                warnings.warn(f'{self} found no config. Defaults will be used.')
 
         except Exception as ex:
             warnings.warn(f'{self} read error {strex(ex)}')
 
         finally:
-            self._config = data
+            self._stored_config = data
             self._ready_event.set()
 
     @non_isolated
@@ -90,10 +85,10 @@ class ServiceConfigStore(FlushedStore):
             'value': {
                 'id': self.key,
                 'namespace': const.SPARK_NAMESPACE,
-                'data': self._config,
+                'data': self._stored_config,
             },
         })
-        LOGGER.info(f'{self} saved config: {self._config}')
+        LOGGER.info(f'{self} saved config: {self._stored_config}')
 
 
 def setup(app: web.Application):
@@ -107,7 +102,7 @@ def fget(app: web.Application) -> ServiceConfigStore:
 
 
 def get_autoconnecting(app: web.Application) -> bool:
-    return bool(fget(app)._config.get(AUTOCONNECTING_KEY, True))
+    return bool(fget(app)._stored_config.get(AUTOCONNECTING_KEY, True))
 
 
 def set_autoconnecting(app: web.Application, enabled: bool) -> bool:
@@ -118,7 +113,7 @@ def set_autoconnecting(app: web.Application, enabled: bool) -> bool:
 
 
 def get_reconnect_delay(app: web.Application) -> float:
-    return float(fget(app)._config.get(RECONNECT_DELAY_KEY, 0))
+    return float(fget(app)._stored_config.get(RECONNECT_DELAY_KEY, 0))
 
 
 def set_reconnect_delay(app: web.Application, value: float) -> float:
