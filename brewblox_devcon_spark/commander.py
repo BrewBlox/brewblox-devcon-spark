@@ -36,6 +36,7 @@ class SparkCommander:
         self._msgid = 0
         self._timeout = config.command_timeout
         self._active_messages: dict[int, asyncio.Future[IntermediateResponse]] = {}
+        self._status = service_status.CV.get()
         self._codec = codec.CV.get()
         self._conn = connection.CV.get()
         self._conn.on_event = self._on_event
@@ -94,7 +95,7 @@ class SparkCommander:
                     device_id=handshake.device_id,
                 ),
             )
-            service_status.set_acknowledged(self.app, desc)
+            self._status.set_acknowledged(desc)
 
         else:
             LOGGER.info(f'Spark log: `{msg}`')

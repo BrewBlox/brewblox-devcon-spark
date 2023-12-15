@@ -45,6 +45,7 @@ class ServiceConfig(BaseSettings):
     state_topic: str = 'brewcast/state'
     history_topic: str = 'brewcast/history'
     datastore_topic: str = 'brewcast/datastore'
+    blocks_topic: str = 'brewcast/spark/blocks'
 
     # Device options
     simulation: bool = False
@@ -113,7 +114,7 @@ class FirmwareBlock(BaseModel):
     data: dict[str, Any]
 
 
-class StoreEntry(BaseModel):
+class TwinkeyEntry(BaseModel):
     keys: tuple[str, int]
     data: dict
 
@@ -429,16 +430,29 @@ class Backup(BaseModel):
     device: DeviceDescription | None = None
 
     blocks: list[Block]
-    store: list[StoreEntry]
+    store: list[TwinkeyEntry]
 
 
 class BackupApplyResult(BaseModel):
     messages: list[str]
 
 
+class AutoconnectSettings(BaseModel):
+    enabled: bool
+
+
 class ErrorResponse(BaseModel):
     error: str
     details: str
+
+
+class FirmwareFlashResponse(BaseModel):
+    address: str
+    version: str
+
+
+class PingResponse(BaseModel):
+    ping: Literal['pong'] = 'pong'
 
 
 class DatastoreValue(BaseModel):
@@ -469,11 +483,26 @@ class DatastoreMultiValueBox(BaseModel):
     values: list[DatastoreValue]
 
 
-class DatastoreEntries(DatastoreValue):
-    id: str
-    namespace: str
-    data: list[StoreEntry]
+class TwinkeyEntriesValue(DatastoreValue):
+    data: list[TwinkeyEntry]
 
 
-class DatastoreEntriesBox(BaseModel):
-    value: DatastoreEntries | None
+class TwinkeyEntriesBox(BaseModel):
+    value: TwinkeyEntriesValue | None
+
+
+class ServiceConfigData(BaseModel):
+    model_config = ConfigDict(
+        extra='ignore',
+    )
+
+    reconnect_delay: float = 0
+    autoconnecting: bool = True
+
+
+class ServiceConfigValue(DatastoreValue):
+    data: ServiceConfigData = Field(default_factory=ServiceConfigData)
+
+
+class ServiceConfigBox(BaseModel):
+    value: ServiceConfigValue | None

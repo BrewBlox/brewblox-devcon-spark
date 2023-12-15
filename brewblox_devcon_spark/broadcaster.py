@@ -29,8 +29,8 @@ class Broadcaster:
         blocks = []
 
         try:
-            if status.synchronized_ev.is_set():
-                blocks, logged_blocks = await controller.fget(self.app).read_all_broadcast_blocks()
+            if status._synchronized_ev.is_set():
+                blocks, logged_blocks = await controller.CV.get().read_all_broadcast_blocks()
 
                 # Convert list to key/value format suitable for history
                 history_data = {

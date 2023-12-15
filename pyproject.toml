@@ -23,6 +23,7 @@ httpx = "^0.25.2"
 fastapi-mqtt = "^2.0.0"
 pydantic-settings = "^2.1.0"
 websockets = "^12.0"
+httpx-ws = "^0.4.3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"

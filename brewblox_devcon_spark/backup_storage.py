@@ -3,7 +3,6 @@ Store regular backups of blocks on disk
 """
 
 import asyncio
-import json
 import logging
 from contextlib import asynccontextmanager, suppress
 from contextvars import ContextVar
@@ -26,8 +25,11 @@ class BackupStorage:
         self.dir = BASE_BACKUP_DIR / self.name
         self.dir.mkdir(mode=0o777, parents=True, exist_ok=True)
 
+        self.status = service_status.CV.get()
+        self.ctlr = controller.CV.get()
+
     async def run(self):
-        if service_status.is_synchronized():
+        if self.status.is_synchronized():
             name = f'autosave_blocks_{self.name}_' + datetime.today().strftime('%Y-%m-%d')
             await self.save(BackupIdentity(name=name))
 
@@ -56,10 +58,10 @@ class BackupStorage:
                 LOGGER.error(ex, exc_info=config.debug)
 
     async def save_portable(self) -> Backup:
-        return await controller.fget(self.app).make_backup()
+        return await self.ctlr.make_backup()
 
     async def load_portable(self, data: Backup) -> BackupApplyResult:
-        return await controller.fget(self.app).apply_backup(data)
+        return await self.ctlr.apply_backup(data)
 
     async def all(self) -> list[BackupIdentity]:
         return [BackupIdentity(name=f.stem)
@@ -72,7 +74,7 @@ class BackupStorage:
         LOGGER.debug(f'Reading backup from {infile.resolve()}')
 
         with infile.open('r') as f:
-            return Backup(**json.load(f))
+            return Backup.model_validate_json(f.read())
 
     async def write(self, data: Backup) -> Backup:
         if not data.name:
@@ -81,18 +83,18 @@ class BackupStorage:
         LOGGER.debug(f'Writing backup to {outfile.resolve()}')
 
         with outfile.open('w') as f:
-            json.dump(data.dict(), f)
+            f.write(data.model_dump_json())
         return data
 
     async def save(self, ident: BackupIdentity):
-        data = await controller.fget(self.app).make_backup()
+        data = await self.ctlr.make_backup()
         data.name = ident.name
         await self.write(data)
         return data
 
     async def load(self, ident: BackupIdentity) -> BackupApplyResult:
         data = await self.read(ident)
-        return await controller.fget(self.app).apply_backup(data)
+        return await self.ctlr.apply_backup(data)
 
 
 @asynccontextmanager

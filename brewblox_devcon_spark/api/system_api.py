@@ -3,17 +3,15 @@ Specific endpoints for using system objects
 """
 
 import asyncio
-import json
+import logging
 
-from aiohttp import web
-from aiohttp_pydantic import PydanticView
-from aiohttp_pydantic.oas.typing import r200
-from brewblox_service import brewblox_logger, http, mqtt, scheduler, strex
-from pydantic import BaseModel
+from fastapi import APIRouter, BackgroundTasks
+from httpx import AsyncClient
 
-from brewblox_devcon_spark import (commander, connection, controller,
-                                   exceptions, service_status, ymodem)
-from brewblox_devcon_spark.models import ServiceStatusDescription
+from .. import (commander, connection, controller, exceptions, mqtt,
+                service_status, utils, ymodem)
+from ..models import (FirmwareFlashResponse, PingResponse,
+                      ServiceStatusDescription)
 
 TRANSFER_TIMEOUT_S = 30
 STATE_TIMEOUT_S = 20
@@ -24,144 +22,114 @@ FLUSH_PERIOD_S = 3
 SHUTDOWN_DELAY_S = 1
 UPDATE_SHUTDOWN_DELAY_S = 5
 
-ESP_URL_FMT = 'http://brewblox.blob.core.windows.net/firmware/{firmware_date}-{firmware_version}/brewblox-esp32.bin'
+ESP_URL_FMT = 'http://brewblox.blob.core.windows.net/firmware/{date}-{version}/brewblox-esp32.bin'
 
 LOGGER = logging.getLogger(__name__)
-routes = web.RouteTableDef()
+
+router = APIRouter(prefix='/system', tags=['System'])
 
 
-class FlashResponse(BaseModel):
-    address: str
-    version: str
+async def delayed_shutdown(delay: float):
+    await asyncio.sleep(delay)
+    utils.graceful_shutdown()
 
 
-def setup(app: web.Application):
-    app.router.add_routes(routes)
+@router.get('/status')
+async def system_status() -> ServiceStatusDescription:
+    """
+    Get service status.
+    """
+    desc = service_status.CV.get().desc()
+    return desc
 
 
-async def shutdown_soon(app: web.Application, wait: float):  # pragma: no cover
-    async def delayed_shutdown():
-        await asyncio.sleep(wait)
-        raise web.GracefulExit()
-    await scheduler.create(app, delayed_shutdown())
+@router.get('/ping')
+async def system_ping_get() -> PingResponse:
+    """
+    Ping the controller.
+    """
+    await controller.CV.get().noop()
+    return PingResponse()
 
 
-@routes.view('/system/status')
-class StatusView(PydanticView):
-    async def get(self) -> r200[ServiceStatusDescription]:
-        """
-        Get service status
-
-        Tags: System
-        """
-        desc = service_status.desc(self.request.app)
-        return web.json_response(
-            desc.dict()
-        )
+@router.post('/ping')
+async def system_ping_post() -> PingResponse:
+    """
+    Ping the controller.
+    """
+    await controller.CV.get().noop()
+    return PingResponse()
 
 
-@routes.view('/system/ping')
-class PingView(PydanticView):
-    async def get(self):
-        """
-        Ping the controller.
-
-        Tags: System
-        """
-        await controller.fget(self.request.app).noop()
-        return web.Response()
-
-    async def post(self):
-        """
-        Ping the controller.
-
-        Tags: System
-        """
-        await controller.fget(self.request.app).noop()
-        return web.Response()
+@router.post('/reboot/controller')
+async def system_reboot_controller():
+    """
+    Reboot the controller.
+    """
+    await controller.CV.get().reboot()
+    return {}
 
 
-@routes.view('/system/reboot/controller')
-class RebootControllerView(PydanticView):
-    async def post(self):
-        """
-        Reboot the controller.
-
-        Tags: System
-        """
-        await controller.fget(self.request.app).reboot()
-        return web.Response()
+@router.post('/reboot/service')
+async def system_reboot_service(background_tasks: BackgroundTasks):
+    """
+    Reboot the service.
+    """
+    background_tasks.add_task(delayed_shutdown, SHUTDOWN_DELAY_S)
+    return {}
 
 
-@routes.view('/system/reboot/service')
-class RebootServiceView(PydanticView):
-    async def post(self):
-        """
-        Reboot the service.
-
-        Tags: System
-        """
-        await shutdown_soon(self.request.app, SHUTDOWN_DELAY_S)
-        return web.Response()
+@router.post('/clear_wifi')
+async def system_clear_wifi():
+    """
+    Clear Wifi settings on the controller.
+    The controller may reboot or lose connection.
+    """
+    await controller.CV.get().clear_wifi()
+    return {}
 
 
-@routes.view('/system/clear_wifi')
-class ClearWifiView(PydanticView):
-    async def post(self):
-        """
-        Clear Wifi settings on the controller.
-        The controller may reboot or lose connection.
-
-        Tags: System
-        """
-        await controller.fget(self.request.app).clear_wifi()
-        return web.Response()
+@router.post('/factory_reset')
+async def system_factory_reset():
+    """
+    Factory reset the controller.
+    This does not include firmware.
+    """
+    await controller.CV.get().factory_reset()
+    return {}
 
 
-@routes.view('/system/factory_reset')
-class FactoryResetView(PydanticView):
-    async def post(self):
-        """
-        Factory reset the controller.
+class Flasher:
 
-        Tags: System
-        """
-        await controller.fget(self.request.app).factory_reset()
-        return web.Response()
+    def __init__(self) -> None:
+        config = utils.get_config()
+        fw_config = utils.get_fw_config()
 
+        self.status = service_status.CV.get()
+        self.mqtt_client = mqtt.CV.get()
+        self.client = AsyncClient()
 
-@routes.view('/system/flash')
-class FlashView(PydanticView):   # pragma: no cover
-    def __init__(self, request: web.Request) -> None:
-        super().__init__(request)
-        self.app = request.app
-        self.name: str = self.app['config'].name
-        self.simulation: bool = self.app['config'].simulation
-        self.topic: str = self.app['config'].state_topic + f'/{self.name}/update'
-        self.version: str = self.app['ini']['firmware_version'][:8]
-        self.date: str = self.app['ini']['firmware_date']
+        self.name = config.name
+        self.simulation = config.simulation
+        self.topic = f'{config.state_topic}/{config.name}/update'
+        self.version = fw_config.firmware_version[:8]
+        self.date = fw_config.firmware_date
+        self.fw_url = ESP_URL_FMT.format(date=fw_config.firmware_date,
+                                         version=fw_config.firmware_version)
 
     def _notify(self, msg: str):
         LOGGER.info(msg)
-        asyncio.create_task(
-            mqtt.publish(self.app,
-                         self.topic,
-                         json.dumps({
-                             'key': self.name,
-                             'type': 'Spark.update',
-                             'data': {
-                                 'log': [msg],
-                             },
-                         }),
-                         err=False))
+        self.mqtt_client.publish(self.topic,
+                                 {
+                                     'key': self.name,
+                                     'type': 'Spark.update',
+                                     'data': {
+                                         'log': [msg],
+                                     },
+                                 })
 
-    async def post(self) -> r200[FlashResponse]:
-        """
-        Flash the controller firmware.
-
-        Tags: System
-        """
-        desc = service_status.desc(self.app)
+    async def run(self) -> FirmwareFlashResponse:
+        desc = self.status.desc()
         platform = desc.controller.platform
         connection_kind = desc.connection_kind
         address = desc.address
@@ -178,54 +146,58 @@ class FlashView(PydanticView):   # pragma: no cover
             self._notify(f'Started updating {self.name}@{address} to version {self.version} ({self.date})')
 
             self._notify('Preparing update')
-            service_status.set_updating(self.app)
+            self.status.set_updating()
             await asyncio.sleep(FLUSH_PERIOD_S)  # Wait for in-progress commands to finish
 
             self._notify('Sending update command to controller')
-            await commander.fget(self.app).firmware_update()
+            await commander.CV.get().firmware_update()
 
             self._notify('Waiting for normal connection to close')
-            await connection.fget(self.app).end()
+            await connection.CV.get().end()  # TODO
             await asyncio.wait_for(
-                service_status.wait_disconnected(self.app), STATE_TIMEOUT_S)
+                self.status.wait_disconnected(),
+                STATE_TIMEOUT_S)
 
             if platform == 'esp32':  # pragma: no cover
-                fw_url = ESP_URL_FMT.format(**self.app['ini'])
-
                 if connection_kind == 'TCP':
                     host, _ = address.split(':')
                     self._notify(f'Sending update prompt to {host}')
                     self._notify('The Spark will now download and apply the new firmware')
                     self._notify('The update is done when the service reconnects')
-                    await http.session(self.app).post(f'http://{host}:80/firmware_update', data=fw_url)
+                    await self.client.post(f'http://{host}:80/firmware_update', content=self.fw_url)
 
                 if connection_kind == 'MQTT':
                     topic = f'brewcast/cbox/fw/{address}'
                     self._notify(f'Sending update prompt to {topic}')
                     self._notify('The Spark will now download and apply the new firmware')
                     self._notify('The update is done when the service reconnects')
-                    await mqtt.publish(self.app, topic, fw_url)
+                    self.mqtt_client.publish(topic, self.fw_url)
 
             if platform in ['photon', 'p1']:
                 self._notify(f'Connecting to {address}')
                 conn = await ymodem.connect(address)
-                client = ymodem.OtaClient(self._notify)
+                ota_client = ymodem.OtaClient(self._notify)
 
                 with conn.autoclose():
                     await asyncio.wait_for(
-                        client.send(conn, f'firmware/brewblox-{platform}.bin'),
+                        ota_client.send(conn, f'firmware/brewblox-{platform}.bin'),
                         TRANSFER_TIMEOUT_S)
                     self._notify('Update done!')
 
         except Exception as ex:
-            self._notify(f'Failed to update firmware: {strex(ex)}')
-            raise exceptions.FirmwareUpdateFailed(strex(ex))
+            self._notify(f'Failed to update firmware: {utils.strex(ex)}')
+            raise exceptions.FirmwareUpdateFailed(utils.strex(ex))
 
         finally:
             self._notify('Restarting service...')
-            await shutdown_soon(self.app, UPDATE_SHUTDOWN_DELAY_S)
 
-        response = FlashResponse(address=address, version=self.version)
-        return web.json_response(
-            response.dict()
-        )
+        response = FirmwareFlashResponse(address=address, version=self.version)
+        return response
+
+
+@router.post('/flash')
+async def system_flash(background_tasks: BackgroundTasks) -> FirmwareFlashResponse:
+    background_tasks.add_task(delayed_shutdown, UPDATE_SHUTDOWN_DELAY_S)
+    flasher = Flasher()
+    response = await flasher.run()
+    return response

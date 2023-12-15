@@ -41,6 +41,7 @@ Notes:
 """
 
 import asyncio
+import logging
 import math
 import os
 import re
@@ -49,10 +50,11 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import IntEnum
 from pathlib import Path
-from typing import Any, Awaitable, ByteString, Optional
+from typing import Awaitable, ByteString
 
 import aiofiles
-from brewblox_service import brewblox_logger, strex
+
+from . import utils
 
 YMODEM_TRIGGER_BAUD_RATE = 28800
 YMODEM_TRANSFER_BAUD_RATE = 115200
@@ -75,8 +77,8 @@ class Control(IntEnum):
 
 @dataclass
 class Connection:
-    address: Any
-    process: Optional[subprocess.Popen]
+    address: str
+    process: subprocess.Popen | None
     transport: asyncio.Transport
     protocol: asyncio.Protocol
 
@@ -127,11 +129,11 @@ class FileSenderProtocol(asyncio.Protocol):
             self._queue.get_nowait()
 
 
-def is_tcp(address) -> str:
+def is_tcp(address: str) -> str:
     return ':' in address
 
 
-async def connect_tcp(address, proc: subprocess.Popen = None) -> Connection:
+async def connect_tcp(address: str, proc: subprocess.Popen = None) -> Connection:
     LOGGER.info(f'Connecting to {address}...')
     host, port = address.split(':')
     loop = asyncio.get_event_loop()
@@ -141,7 +143,7 @@ async def connect_tcp(address, proc: subprocess.Popen = None) -> Connection:
     return conn
 
 
-async def connect_usb(address) -> Connection:
+async def connect_usb(address: str) -> Connection:
     LOGGER.info(f'Creating bridge for {address}')
 
     proc = subprocess.Popen([
@@ -156,7 +158,7 @@ async def connect_usb(address) -> Connection:
             await asyncio.sleep(1)
             return await connect_tcp('localhost:8332', proc)
         except OSError as ex:
-            last_err = strex(ex)
+            last_err = utils.strex(ex)
             LOGGER.debug(f'Subprocess connection error: {last_err}')
 
     raise ConnectionError(last_err)

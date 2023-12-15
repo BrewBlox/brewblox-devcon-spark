@@ -36,7 +36,7 @@ class ServiceStatus:
             ),
         )
 
-        self.status_desc = ServiceStatusDescription(
+        self._status_desc = ServiceStatusDescription(
             enabled=False,
             service=service_desc,
             controller=None,
@@ -47,52 +47,58 @@ class ServiceStatus:
             identity_error=None,
         )
 
-        self.enabled_ev = asyncio.Event()
-        self.connected_ev = asyncio.Event()
-        self.acknowledged_ev = asyncio.Event()
-        self.synchronized_ev = asyncio.Event()
-        self.disconnected_ev = asyncio.Event()
-        self.updating_ev = asyncio.Event()
+        self._enabled_ev = asyncio.Event()
+        self._connected_ev = asyncio.Event()
+        self._acknowledged_ev = asyncio.Event()
+        self._synchronized_ev = asyncio.Event()
+        self._disconnected_ev = asyncio.Event()
+        self._updating_ev = asyncio.Event()
 
     def desc(self) -> ServiceStatusDescription:
-        return self.status_desc.model_copy()
+        return self._status_desc.model_copy()
 
     def set_enabled(self, enabled: bool):
-        self.status_desc.enabled = enabled
+        self._status_desc.enabled = enabled
 
         if enabled:
-            self.enabled_ev.set()
+            self._enabled_ev.set()
         else:
-            self.enabled_ev.clear()
+            self._enabled_ev.clear()
+
+    def is_enabled(self) -> bool:
+        return self._enabled_ev.is_set()
 
     async def wait_enabled(self):
-        await self.enabled_ev.wait()
+        await self._enabled_ev.wait()
 
     def set_connected(self,
                       connection_kind: ConnectionKind_,
                       address: str):
-        self.status_desc.address = address
-        self.status_desc.connection_kind = connection_kind
-        self.status_desc.connection_status = 'CONNECTED'
+        self._status_desc.address = address
+        self._status_desc.connection_kind = connection_kind
+        self._status_desc.connection_status = 'CONNECTED'
 
         LOGGER.info(f'>>> CONNECTED ({connection_kind})')
-        self.connected_ev.set()
-        self.acknowledged_ev.clear()
-        self.synchronized_ev.clear()
-        self.disconnected_ev.clear()
+        self._connected_ev.set()
+        self._acknowledged_ev.clear()
+        self._synchronized_ev.clear()
+        self._disconnected_ev.clear()
+
+    def is_connected(self) -> bool:
+        return self._connected_ev.is_set()
 
     async def wait_connected(self):
-        await self.connected_ev.wait()
+        await self._connected_ev.wait()
 
     def set_acknowledged(self, controller: ControllerDescription):
-        if self.synchronized_ev.is_set():
+        if self._synchronized_ev.is_set():
             # Do not revert to acknowledged if we're already synchronized.
             # For there to be a meaningful change,
             # there must have been a disconnect first.
             return
 
         config = utils.get_config()
-        service = self.status_desc.service
+        service = self._status_desc.service
 
         wildcard_id = not service.device.device_id
         compatible_firmware = service.firmware.proto_version == controller.firmware.proto_version \
@@ -123,56 +129,68 @@ class ServiceStatus:
         else:
             identity_error = None
 
-        self.status_desc.connection_status = 'ACKNOWLEDGED'
-        self.status_desc.controller = controller
-        self.status_desc.firmware_error = firmware_error
-        self.status_desc.identity_error = identity_error
+        self._status_desc.connection_status = 'ACKNOWLEDGED'
+        self._status_desc.controller = controller
+        self._status_desc.firmware_error = firmware_error
+        self._status_desc.identity_error = identity_error
 
         LOGGER.info('>>> ACKNOWLEDGED')
-        self.acknowledged_ev.set()
+        self._acknowledged_ev.set()
+
+    def is_acknowledged(self) -> bool:
+        return self._acknowledged_ev.is_set()
 
     async def wait_acknowledged(self):
-        await self.acknowledged_ev.wait()
+        await self._acknowledged_ev.wait()
 
     def set_synchronized(self):
-        if not self.acknowledged_ev.is_set():
+        if not self._acknowledged_ev.is_set():
             raise RuntimeError('Failed to set synchronized status: '
                                'service is not acknowledged')
 
-        self.status_desc.connection_status = 'SYNCHRONIZED'
+        self._status_desc.connection_status = 'SYNCHRONIZED'
 
         LOGGER.info('>>> SYNCHRONIZED')
-        self.synchronized_ev.set()
+        self._synchronized_ev.set()
+
+    def is_synchronized(self) -> bool:
+        return self._synchronized_ev.is_set()
 
     async def wait_synchronized(self):
-        await self.synchronized_ev.wait()
+        await self._synchronized_ev.wait()
 
     def set_updating(self):
-        self.status_desc.connection_status = 'UPDATING'
+        self._status_desc.connection_status = 'UPDATING'
 
         LOGGER.info('>>> UPDATING')
-        self.updating_ev.set()
+        self._updating_ev.set()
+
+    def is_updating(self) -> bool:
+        return self._updating_ev.is_set()
 
     async def wait_updating(self):
-        await self.updating_ev.wait()
+        await self._updating_ev.wait()
 
     def set_disconnected(self):
-        self.status_desc.controller = None
-        self.status_desc.address = None
-        self.status_desc.connection_kind = None
-        self.status_desc.connection_status = 'DISCONNECTED'
-        self.status_desc.firmware_error = None
-        self.status_desc.identity_error = None
+        self._status_desc.controller = None
+        self._status_desc.address = None
+        self._status_desc.connection_kind = None
+        self._status_desc.connection_status = 'DISCONNECTED'
+        self._status_desc.firmware_error = None
+        self._status_desc.identity_error = None
 
         LOGGER.info('>>> DISCONNECTED')
-        self.connected_ev.clear()
-        self.acknowledged_ev.clear()
-        self.synchronized_ev.clear()
-        self.updating_ev.clear()
-        self.disconnected_ev.set()
+        self._connected_ev.clear()
+        self._acknowledged_ev.clear()
+        self._synchronized_ev.clear()
+        self._updating_ev.clear()
+        self._disconnected_ev.set()
+
+    def is_disconnected(self) -> bool:
+        return self._disconnected_ev.is_set()
 
     async def wait_disconnected(self):
-        await self.disconnected_ev.wait()
+        await self._disconnected_ev.wait()
 
 
 def setup():

@@ -196,7 +196,7 @@ class SparkController:
         to avoid weird interactions when prompting for a handshake.
         """
         async with self._conn_check_lock:
-            if self._status.synchronized_ev.is_set():
+            if self._status.is_synchronized():
                 LOGGER.info('Checking connection...')
                 try:
                     await self._cmder.noop()
@@ -213,11 +213,11 @@ class SparkController:
             desc (str):
                 Human-readable function description, to be used in error messages.
         """
-        if self._status.updating_ev.is_set():
+        if self._status._updating_ev.is_set():
             raise exceptions.UpdateInProgress('Update is in progress')
 
         await asyncio.wait_for(
-            self._status.synchronized_ev.wait(),
+            self._status.wait_synchronized(),
             SYNC_WAIT_TIMEOUT_S)
 
         try:

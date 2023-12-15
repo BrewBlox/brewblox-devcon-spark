@@ -5,21 +5,21 @@ Stores sid/nid relations for blocks
 import asyncio
 import logging
 import warnings
-from contextlib import suppress
+from contextlib import asynccontextmanager, suppress
 from contextvars import ContextVar
 
 from httpx import AsyncClient
 
 from . import const, utils
 from .datastore import STORE_URL, FlushedStore
-from .models import DatastoreEntries, DatastoreEntriesBox, StoreEntry
+from .models import TwinkeyEntriesBox, TwinkeyEntriesValue, TwinkeyEntry
 from .twinkeydict import TwinKeyDict, TwinKeyError
 
 BLOCK_STORE_KEY = '{id}-blocks-db'
 READY_TIMEOUT_S = 60
 
-SYS_OBJECTS: list[StoreEntry] = [
-    StoreEntry(keys=keys, data={})
+SYS_OBJECTS: list[TwinkeyEntry] = [
+    TwinkeyEntry(keys=keys, data={})
     for keys in const.SYS_OBJECT_KEYS
 ]
 
@@ -32,7 +32,7 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict[str, int, dict]):
     TwinKeyDict subclass to periodically flush contained objects to Redis.
     """
 
-    def __init__(self, defaults: list[StoreEntry]):
+    def __init__(self, defaults: list[TwinkeyEntry]):
         self: TwinKeyDict[str, int, dict]
         FlushedStore.__init__(self)
         TwinKeyDict.__init__(self)
@@ -60,7 +60,7 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict[str, int, dict]):
             })
             self.key = key
             try:
-                content = DatastoreEntriesBox.model_validate_json(resp.text)
+                content = TwinkeyEntriesBox.model_validate_json(resp.text)
                 data = content.value.data
             except (KeyError, ValueError):
                 data = []
@@ -89,10 +89,10 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict[str, int, dict]):
         if self.key is None:
             raise RuntimeError('Document key not set - did read() fail?')
 
-        data = [StoreEntry(keys=k, data=v)
+        data = [TwinkeyEntry(keys=k, data=v)
                 for k, v in self.items()]
-        content = DatastoreEntriesBox(
-            value=DatastoreEntries(
+        content = TwinkeyEntriesBox(
+            value=TwinkeyEntriesValue(
                 id=self.key,
                 namespace=const.SPARK_NAMESPACE,
                 data=data
@@ -114,6 +114,12 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict[str, int, dict]):
         TwinKeyDict.clear(self)
         for obj in self._defaults:
             self.__setitem__(obj.keys, obj.data)
+
+
+@asynccontextmanager
+async def lifespan():
+    async with CV.get().lifespan():
+        yield
 
 
 def setup():

@@ -2,10 +2,14 @@ import logging
 from contextlib import AsyncExitStack, asynccontextmanager
 from pprint import pformat
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 
-from . import mqtt, utils
+from . import (backup_storage, block_store, broadcaster, codec, commander,
+               connection, controller, global_store, mqtt, service_status,
+               service_store, synchronization, time_sync, utils)
+from .api import (backup_api, blocks_api, blocks_mqtt_api, debug_api,
+                  settings_api, sim_api, system_api)
 from .models import ErrorResponse
 
 LOGGER = logging.getLogger(__name__)
@@ -38,9 +42,14 @@ def add_exception_handlers(app: FastAPI):
         content = ErrorResponse(error=str(exc),
                                 details=details)
 
+        if isinstance(exc, HTTPException):
+            status_code = exc.status_code
+        else:
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+
         logger.error(f'[{request.url}] => {short}')
         logger.debug(details)
-        return JSONResponse(content.model_dump(), status_code=500)
+        return JSONResponse(content.model_dump(), status_code=status_code)
 
 
 @asynccontextmanager
@@ -51,6 +60,14 @@ async def lifespan(app: FastAPI):
 
     async with AsyncExitStack() as stack:
         await stack.enter_async_context(mqtt.lifespan())
+        await stack.enter_async_context(global_store.lifespan())
+        await stack.enter_async_context(service_store.lifespan())
+        await stack.enter_async_context(block_store.lifespan())
+        await stack.enter_async_context(connection.lifespan())
+        await stack.enter_async_context(synchronization.lifespan())
+        await stack.enter_async_context(backup_storage.lifespan())
+        await stack.enter_async_context(broadcaster.lifespan())
+        await stack.enter_async_context(time_sync.lifespan())
         yield
 
 
@@ -65,6 +82,16 @@ def create_app() -> FastAPI:
 
     # Call setup functions for modules
     mqtt.setup()
+    service_status.setup()
+    global_store.setup()
+    service_store.setup()
+    block_store.setup()
+    codec.setup()
+    connection.setup()
+    commander.setup()
+    controller.setup()
+    backup_storage.setup()
+    blocks_mqtt_api.setup()
 
     # Create app
     # OpenApi endpoints are set to /api/doc for backwards compatibility
@@ -78,7 +105,11 @@ def create_app() -> FastAPI:
     add_exception_handlers(app)
 
     # Include all endpoints declared by modules
-    # app.include_router(datastore_api.router, prefix=prefix)
-    # app.include_router(timeseries_api.router, prefix=prefix)
+    app.include_router(blocks_api.router, prefix=prefix)
+    app.include_router(system_api.router, prefix=prefix)
+    app.include_router(settings_api.router, prefix=prefix)
+    app.include_router(sim_api.router, prefix=prefix)
+    app.include_router(backup_api.router, prefix=prefix)
+    app.include_router(debug_api.router, prefix=prefix)
 
     return app

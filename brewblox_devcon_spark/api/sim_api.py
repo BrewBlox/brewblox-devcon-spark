@@ -3,69 +3,49 @@ Simulator-specific endpoints
 """
 
 import asyncio
-from weakref import WeakSet
+import logging
+from contextlib import suppress
 
-from aiohttp import ClientSession, WSCloseCode, web
-from aiohttp.http_websocket import WSMsgType
-from brewblox_service import brewblox_logger, features
+from fastapi import APIRouter, WebSocket
+from httpx_ws import aconnect_ws
 
-from brewblox_devcon_spark import service_status
+from .. import service_status, utils
 
 SPARK_WS_ADDR = 'ws://localhost:7377/'
 
 LOGGER = logging.getLogger(__name__)
-routes = web.RouteTableDef()
+
+router = APIRouter(prefix='/sim', tags=['Sim'])
 
 
-class SocketCloser:
-
-    def __init__(self, app: web.Application) -> None:
-        super().__init__(app)
-        app['websockets'] = WeakSet()
-
-    async def before_shutdown(self, app: web.Application):
-        for ws in set(app['websockets']):
-            await ws.close(code=WSCloseCode.GOING_AWAY,
-                           message='Server shutdown')
-
-
-@routes.get('/sim/display')
-async def stream_display(request: web.Request) -> web.Response:
-    ws = web.WebSocketResponse()
-    listen_task: asyncio.Task = None
+@router.websocket('/display')
+async def sim_display_websocket(ws: WebSocket):
+    """
+    Open a WebSocket to stream display buffer updates.
+    The full buffer will be sent in the initial push,
+    and subsequent updates will only include changed areas.
+    """
 
     async def listen():
-        async for msg in ws:  # pragma: no cover
-            pass
+        while True:
+            await ws.receive_text()
+
+    config = utils.get_config()
+    await ws.accept()
+    listen_task = asyncio.create_task(listen())
 
     try:
-        await ws.prepare(request)
-        request.app['websockets'].add(ws)
-        listen_task = asyncio.create_task(listen())
+        await service_status.CV.get().wait_synchronized()
 
-        await service_status.wait_synchronized(request.app)
+        async with aconnect_ws(SPARK_WS_ADDR) as client_ws:
+            while True:
+                msg = await client_ws.receive_bytes()
+                await ws.send_bytes(msg)
 
-        async with ClientSession() as session:
-            # `Connection: keep-alive` is required by server
-            async with session.ws_connect(
-                SPARK_WS_ADDR,
-                headers={'Connection': 'keep-alive, Upgrade'},
-            ) as spark_ws:
-                request.app['websockets'].add(spark_ws)
-                try:
-                    async for msg in spark_ws:
-                        if msg.type == WSMsgType.BINARY:
-                            await ws.send_bytes(msg.data)
-                finally:  # pragma: no cover
-                    request.app['websockets'].discard(spark_ws)
+    except Exception as ex:
+        LOGGER.error(utils.strex(ex), exc_info=config.debug)
 
     finally:
-        request.app['websockets'].discard(ws)
-        listen_task and listen_task.cancel()
-
-    return ws  # pragma: no cover
-
-
-def setup(app: web.Application):
-    app.router.add_routes(routes)
-    features.add(app, SocketCloser(app))
+        listen_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await listen_task

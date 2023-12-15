@@ -132,17 +132,19 @@ class MockConnection(ConnectionImplBase):
         sysinfo_block.data['systemTime'] = self._start_time.timestamp() + elapsed.total_seconds()
 
     async def welcome(self):
+        config = utils.get_config()
+        fw_config = utils.get_fw_config()
         welcome = [
             '!BREWBLOX',
-            self.app['ini']['firmware_version'],
-            self.app['ini']['proto_version'],
-            self.app['ini']['firmware_date'],
-            self.app['ini']['proto_date'],
-            self.app['ini']['system_version'],
+            fw_config.firmware_version,
+            fw_config.proto_version,
+            fw_config.firmware_date,
+            fw_config.proto_date,
+            fw_config.system_version,
             'mock',
             ResetReason.NONE.value,
             ResetData.NOT_SPECIFIED.value,
-            self.app['config'].device_id,
+            config.device_id,
         ]
         await self.on_event(','.join(welcome))
 

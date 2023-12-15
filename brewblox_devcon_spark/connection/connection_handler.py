@@ -124,26 +124,29 @@ class ConnectionHandler(ConnectionCallbacks):
         device_port = config.device_port
 
         if mock:
-            return await connect_mock(self.app, self)
+            return await connect_mock(self)
         elif simulation:
-            return await connect_simulation(self.app, self)
+            return await connect_simulation(self)
         elif device_serial:
-            return await connect_usb(self.app, self, device_serial)
+            return await connect_usb(self, device_serial)
         elif device_host:
-            return await connect_tcp(self.app, self, device_host, device_port)
+            return await connect_tcp(self, device_host, device_port)
         else:
             return await self.discover()
 
     async def run(self):
         status = service_status.CV.get()
-        delay = service_store.get_reconnect_delay(self.app)
+        store = service_store.CV.get()
+
+        with store.open() as data:
+            delay = data.reconnect_delay
 
         try:
             if self._attempts > MAX_RETRY_COUNT:
                 raise ConnectionAbortedError('Retry attempts exhausted')
 
             await asyncio.sleep(delay)
-            await status.enabled_ev.wait()
+            await status.wait_enabled()
 
             self._impl = await self.connect()
             await self._impl.connected.wait()
@@ -159,13 +162,13 @@ class ConnectionHandler(ConnectionCallbacks):
 
         except ConnectionAbortedError as ex:
             LOGGER.error(utils.strex(ex))
-            service_store.set_reconnect_delay(calc_backoff(delay))
+            with store.open() as data:
+                data.reconnect_delay = calc_backoff(delay)
 
             # USB devices that were plugged in after container start are not visible
             # If we are potentially connecting to a USB device, we need to restart
             if self.usb_compatible:
-                # raise web.GracefulExit()
-                raise RuntimeError()  # TODO(Bob)
+                utils.graceful_shutdown()
             else:
                 self._attempts = 0
 

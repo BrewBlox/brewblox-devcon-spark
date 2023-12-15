@@ -107,14 +107,14 @@ class SparkSynchronization:
     @subroutine('sync datastore')
     async def _sync_datastore(self):
         self.global_store.listeners.add(self.on_global_store_change)
-        await datastore.check_remote(self.app)
+        await datastore.check_remote()
         await self.service_store.read()
         await self.global_store.read()
 
         await self.set_converter_units()
 
-        autoconnecting = service_store.get_autoconnecting(self.app)
-        self.status.set_enabled(autoconnecting)
+        with self.service_store.open() as data:
+            self.status.set_enabled(data.autoconnecting)
 
     async def _prompt_handshake(self):
         try:
@@ -126,7 +126,7 @@ class SparkSynchronization:
     @subroutine('sync handshake')
     async def _sync_handshake(self):
         # Simultaneously prompt a handshake, and wait for it to be received
-        ack_task = asyncio.create_task(service_status.wait_acknowledged(self.app))
+        ack_task = asyncio.create_task(self.status.wait_acknowledged())
         try:
             async with asyncio.timeout(HANDSHAKE_TIMEOUT_S):
                 while not ack_task.done():
@@ -136,7 +136,7 @@ class SparkSynchronization:
             ack_task.cancel()
 
         ack_task.result()
-        desc = service_status.desc(self.app)
+        desc = self.status.desc()
 
         if desc.firmware_error == 'INCOMPATIBLE':
             raise exceptions.IncompatibleFirmware()
@@ -146,7 +146,7 @@ class SparkSynchronization:
 
     @subroutine('sync block store')
     async def _sync_block_store(self):
-        await datastore.check_remote(self.app)
+        await datastore.check_remote()
         await self.block_store.read(self.device_name)
 
     @subroutine('sync controller settings')
@@ -157,7 +157,7 @@ class SparkSynchronization:
         """Callback invoked by global_store"""
         await self.set_converter_units()
 
-        if service_status.is_synchronized(self.app):
+        if self.status.is_synchronized():
             await self.set_sysinfo_settings()
 
     async def set_converter_units(self):
@@ -193,7 +193,7 @@ class SparkSynchronization:
 
     async def run(self):
         try:
-            await self.status.connected_ev.wait()
+            await self.status.wait_connected()
             await self.synchronize()
 
         except exceptions.IncompatibleFirmware:
@@ -206,7 +206,7 @@ class SparkSynchronization:
             LOGGER.error(f'Failed to sync: {utils.strex(ex)}')
             await self.commander.start_reconnect()
 
-        await self.status.disconnected_ev.wait()
+        await self.status.wait_disconnected()
 
     async def repeat(self):
         # One-time datastore synchronization

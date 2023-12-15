@@ -1,3 +1,5 @@
+import os
+import signal
 import traceback
 from configparser import ConfigParser
 from functools import lru_cache
@@ -30,3 +32,7 @@ def strex(ex: Exception, tb=False):
         return f'{msg}\n\n{trace}'
     else:
         return msg
+
+
+def graceful_shutdown():  # pragma: no cover
+    os.kill(os.getpid(), signal.SIGINT)

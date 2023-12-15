@@ -2,50 +2,36 @@
 REST API for persistent settings
 """
 
-from aiohttp import web
-from aiohttp_pydantic import PydanticView
-from aiohttp_pydantic.oas.typing import r200
-from brewblox_service import brewblox_logger
-from pydantic import BaseModel
 
-from brewblox_devcon_spark import service_status, service_store
+import logging
+
+from fastapi import APIRouter
+
+from .. import service_status, service_store
+from ..models import AutoconnectSettings
 
 LOGGER = logging.getLogger(__name__)
-routes = web.RouteTableDef()
 
 
-def setup(app: web.Application):
-    app.router.add_routes(routes)
+router = APIRouter(prefix='/settings', tags=['Settings'])
 
 
-class AutoconnectSettings(BaseModel):
-    enabled: bool
+@router.get('/autoconnecting')
+async def settings_autoconnecting_get() -> AutoconnectSettings:
+    """
+    Get autoconnecting flag.
+    """
+    with service_store.CV.get().open() as data:
+        enabled = data.autoconnecting
+    return AutoconnectSettings(enabled=enabled)
 
 
-@routes.view('/settings/autoconnecting')
-class AutoconnectingView(PydanticView):
-    async def get(self) -> r200[AutoconnectSettings]:
-        """
-        Get autoconnecting flag.
-
-        Tags: Settings
-        """
-        enabled = service_store.get_autoconnecting(self.request.app)
-        settings = AutoconnectSettings(enabled=enabled)
-        return web.json_response(
-            settings.dict()
-        )
-
-    async def put(self, args: AutoconnectSettings) -> r200[AutoconnectSettings]:
-        """
-        Set autoconnecting flag.
-
-        Tags: Settings
-        """
-        enabled = service_store.set_autoconnecting(self.request.app,
-                                                   args.enabled)
-        service_status.set_enabled(self.request.app, enabled)
-        settings = AutoconnectSettings(enabled=enabled)
-        return web.json_response(
-            settings.dict()
-        )
+@router.put('/autoconnecting')
+async def settings_autoconnecting_put(args: AutoconnectSettings) -> AutoconnectSettings:
+    """
+    Set autoconnecting flag.
+    """
+    service_status.CV.get().set_enabled(args.enabled)
+    with service_store.CV.get().open() as data:
+        data.autoconnecting = args.enabled
+    return AutoconnectSettings(enabled=args.enabled)
