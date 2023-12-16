@@ -147,7 +147,7 @@ async def connect_subprocess(callbacks: ConnectionCallbacks,
 async def connect_simulation(callbacks: ConnectionCallbacks) -> ConnectionImplBase:  # pragma: no cover
     config = utils.get_config()
     device_id = config.device_id
-    port = config.device_port
+    port = utils.get_free_port()
     display_ws_port = config.display_ws_port
     arch = platform.machine()
     binary = SIM_BINARIES.get(arch)

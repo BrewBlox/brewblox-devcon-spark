@@ -30,7 +30,7 @@ async def stream_handler(request: web.Request) -> web.Response:
 
 
 @pytest.fixture
-async def setup(app):
+def setup(app):
     """App + controller routes"""
     scheduler.setup(app)
     sim_api.setup(app)

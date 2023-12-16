@@ -5,7 +5,7 @@ Intermittently broadcasts status and blocks to the eventbus
 
 import asyncio
 import logging
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager
 
 from . import const, controller, mqtt, service_status, utils
 from .block_analysis import calculate_claims, calculate_relations
@@ -73,8 +73,5 @@ class Broadcaster:
 @asynccontextmanager
 async def lifespan():
     bc = Broadcaster()
-    task = asyncio.create_task(bc.repeat())
-    yield
-    task.cancel()
-    with suppress(asyncio.CancelledError):
-        await task
+    async with utils.task_context(bc.repeat()):
+        yield

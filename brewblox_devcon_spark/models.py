@@ -274,11 +274,11 @@ class BaseRequest(BaseModel):
 
 
 class IntermediateRequest(BaseRequest):
-    payload: EncodedPayload | None
+    payload: EncodedPayload | None = None
 
 
 class DecodedRequest(BaseRequest):
-    payload: DecodedPayload | None
+    payload: DecodedPayload | None = None
 
 
 class BaseResponse(BaseModel):

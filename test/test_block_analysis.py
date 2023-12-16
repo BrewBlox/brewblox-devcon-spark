@@ -2,13 +2,11 @@
 Tests brewblox_devcon_spark.block_analysis
 """
 
-from typing import Optional
-
 from brewblox_devcon_spark import block_analysis
 from brewblox_devcon_spark.models import Block
 
 
-def blox_link(id: Optional[str], blockType: Optional[str] = None):
+def blox_link(id: str | None, blockType: str | None = None):
     return {
         '__bloxtype': 'Link',
         'id': id,
@@ -16,7 +14,7 @@ def blox_link(id: Optional[str], blockType: Optional[str] = None):
     }
 
 
-def blox_qty(value: Optional[float], unit: str = None):
+def blox_qty(value: float | None, unit: str = None):
     return {
         '__bloxtype': 'Quantity',
         'value': value,
@@ -24,11 +22,11 @@ def blox_qty(value: Optional[float], unit: str = None):
     }
 
 
-def temp_qty(value: Optional[float]):
+def temp_qty(value: float | None):
     return blox_qty(value, 'degC')
 
 
-def delta_temp_qty(value: Optional[float]):
+def delta_temp_qty(value: float | None):
     return blox_qty(value, 'delta_degC')
 
 

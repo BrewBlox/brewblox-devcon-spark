@@ -44,7 +44,7 @@ The synchronization process consists of:
 
 import asyncio
 import logging
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager
 from datetime import timedelta
 from functools import wraps
 
@@ -126,17 +126,14 @@ class SparkSynchronization:
 
     @subroutine('sync handshake')
     async def _sync_handshake(self):
-        # Simultaneously prompt a handshake, and wait for it to be received
-        ack_task = asyncio.create_task(self.status.wait_acknowledged())
-        try:
+        # Periodically prompt a handshake until acknowledged by the controller
+        async with utils.task_context(self.status.wait_acknowledged()) as ack_task:
             async with asyncio.timeout(HANDSHAKE_TIMEOUT.total_seconds()):
                 while not ack_task.done():
                     await self._prompt_handshake()
+                    # Returns early if acknowledged before timeout elapsed
                     await asyncio.wait([ack_task], timeout=PING_INTERVAL.total_seconds())
-        finally:
-            ack_task.cancel()
 
-        ack_task.result()
         desc = self.status.desc()
 
         if desc.firmware_error == 'INCOMPATIBLE':
@@ -219,8 +216,5 @@ class SparkSynchronization:
 @asynccontextmanager
 async def lifespan():
     sync = SparkSynchronization()
-    task = asyncio.create_task(sync.repeat())
-    yield
-    task.cancel()
-    with suppress(asyncio.CancelledError):
-        await task
+    async with utils.task_context(sync.repeat()):
+        yield

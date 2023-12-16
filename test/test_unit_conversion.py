@@ -20,8 +20,8 @@ def unit_ids():
     ]
 
 
-def test_convert_default(app, unit_ids):
-    cv = unit_conversion.UnitConverter(app)
+def test_convert_default(unit_ids):
+    cv = unit_conversion.UnitConverter()
     for tup in unit_ids:
         id, unit = tup
         assert cv.to_sys_value(10, id) == 10
@@ -29,8 +29,8 @@ def test_convert_default(app, unit_ids):
         assert unit == cv.to_user_unit(id)
 
 
-def test_convert_sys(app):
-    cv = unit_conversion.UnitConverter(app)
+def test_convert_sys():
+    cv = unit_conversion.UnitConverter()
     assert cv.to_sys_value(10, 'Second', 'mins') == 600
     assert cv.to_sys_value(10, 'Second', 'minutes') == 600
     assert cv.to_sys_value(10, 'Second', 'min') == 600
@@ -39,8 +39,8 @@ def test_convert_sys(app):
         cv.to_sys_value(10, 'Second', 'm')
 
 
-def test_update_config(app, unit_ids):
-    cv = unit_conversion.UnitConverter(app)
+def test_update_config(unit_ids):
+    cv = unit_conversion.UnitConverter()
     cv.temperature = 'degF'
     assert cv.to_user_value(10, 'Celsius') == pytest.approx((10 * 9 / 5) + 32)
     assert cv.temperature == 'degF'

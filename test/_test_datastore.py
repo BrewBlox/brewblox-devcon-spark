@@ -25,7 +25,7 @@ def add_check_resp(aresponses: ResponsesMockServer, count, status=200):
 
 
 @pytest.fixture
-async def setup(app, mocker):
+def setup(app, mocker):
     mocker.patch(TESTED + '.FLUSH_DELAY_S', 0.01)
     mocker.patch(TESTED + '.RETRY_INTERVAL_S', 0.01)
 

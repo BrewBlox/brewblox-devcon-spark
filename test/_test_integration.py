@@ -79,7 +79,7 @@ def repeated_blocks(ids, args):
 
 
 @pytest.fixture
-async def setup(app, broker):
+def setup(app, broker):
     """App + controller routes"""
     app['ini'] = parse_ini(app)
 

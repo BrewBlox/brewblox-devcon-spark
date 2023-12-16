@@ -16,7 +16,7 @@ TESTED = mqtt_connection.__name__
 
 
 @pytest.fixture
-async def setup(app, broker):
+def setup(app, broker):
     config = utils.get_config()
     config.isolated = False
     config.mqtt_host = 'localhost'

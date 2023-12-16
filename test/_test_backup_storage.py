@@ -22,7 +22,7 @@ def m_backup_dir(mocker, tmp_path):
 
 
 @pytest.fixture
-async def setup(app):
+def setup(app):
     config = utils.get_config()
     config.backup_interval = 0.01
     config.backup_retry_interval = 0.01

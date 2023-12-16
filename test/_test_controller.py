@@ -19,7 +19,7 @@ TESTED = controller.__name__
 
 
 @pytest.fixture
-async def setup(app):
+def setup(app):
     service_status.setup(app)
     scheduler.setup(app)
     codec.setup(app)

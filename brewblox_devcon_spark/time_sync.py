@@ -5,7 +5,7 @@ This is a backup mechanism to NTP, used if the controller has no internet access
 
 import asyncio
 import logging
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 
 from . import const, controller, service_status, utils
@@ -47,8 +47,5 @@ class TimeSync:
 @asynccontextmanager
 async def lifespan():
     sync = TimeSync()
-    task = asyncio.create_task(sync.repeat())
-    yield
-    task.cancel()
-    with suppress(asyncio.CancelledError):
-        await task
+    async with utils.task_context(sync.repeat()):
+        yield

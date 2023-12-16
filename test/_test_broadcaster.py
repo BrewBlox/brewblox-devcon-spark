@@ -29,7 +29,7 @@ def m_relations(mocker):
 
 
 @pytest.fixture
-async def setup(app, broker):
+def setup(app, broker):
     config = utils.get_config()
     config.broadcast_interval = 0.01
     config.mqtt_host = 'localhost'

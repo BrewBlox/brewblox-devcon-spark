@@ -24,7 +24,7 @@ LOGGER = logging.getLogger(__name__)
 CV: ContextVar['ConnectionHandler'] = ContextVar('connection_handler.ConnectionHandler')
 
 
-def calc_backoff(value: timedelta) -> timedelta:
+def calc_backoff(value: timedelta | None) -> timedelta:
     if value:
         return min(MAX_RECONNECT_DELAY, value * 1.5)
     else:

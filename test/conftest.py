@@ -6,6 +6,7 @@ Any fixtures declared here are available to all test functions in this directory
 import logging
 from pathlib import Path
 from typing import Generator
+from unittest.mock import Mock
 
 import pytest
 from asgi_lifespan import LifespanManager
@@ -82,6 +83,13 @@ def fw_config(monkeypatch: pytest.MonkeyPatch,
 @pytest.fixture(autouse=True)
 def setup_logging(config: ServiceConfig):
     app_factory.setup_logging(True)
+
+
+@pytest.fixture(autouse=True)
+def m_graceful_shutdown(monkeypatch: pytest.MonkeyPatch) -> Mock:
+    m = Mock(spec=utils.graceful_shutdown)
+    monkeypatch.setattr(utils, 'graceful_shutdown', m)
+    yield m
 
 
 @pytest.fixture

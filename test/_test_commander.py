@@ -17,7 +17,7 @@ TESTED = commander.__name__
 
 
 @pytest.fixture
-async def setup(app):
+def setup(app):
     config = utils.get_config()
     config.command_timeout = 1
 

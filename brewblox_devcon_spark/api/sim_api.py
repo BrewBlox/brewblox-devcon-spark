@@ -2,16 +2,12 @@
 Simulator-specific endpoints
 """
 
-import asyncio
 import logging
-from contextlib import suppress
 
 from fastapi import APIRouter, WebSocket
 from httpx_ws import aconnect_ws
 
 from .. import service_status, utils
-
-SPARK_WS_ADDR = 'ws://localhost:7377/'
 
 LOGGER = logging.getLogger(__name__)
 
@@ -32,20 +28,15 @@ async def sim_display_websocket(ws: WebSocket):
 
     config = utils.get_config()
     await ws.accept()
-    listen_task = asyncio.create_task(listen())
 
-    try:
-        await service_status.CV.get().wait_synchronized()
+    async with utils.task_context(listen()):
+        try:
+            await service_status.CV.get().wait_synchronized()
 
-        async with aconnect_ws(SPARK_WS_ADDR) as client_ws:
-            while True:
-                msg = await client_ws.receive_bytes()
-                await ws.send_bytes(msg)
+            async with aconnect_ws(f'ws://localhost:{config.display_ws_port}') as client_ws:
+                while True:
+                    msg = await client_ws.receive_bytes()
+                    await ws.send_bytes(msg)
 
-    except Exception as ex:
-        LOGGER.error(utils.strex(ex), exc_info=config.debug)
-
-    finally:
-        listen_task.cancel()
-        with suppress(asyncio.CancelledError):
-            await listen_task
+        except Exception as ex:
+            LOGGER.error(utils.strex(ex), exc_info=config.debug)

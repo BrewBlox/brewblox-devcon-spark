@@ -5,7 +5,7 @@ Base class for persistent data stores
 import asyncio
 import logging
 from abc import abstractmethod
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager
 from datetime import timedelta
 
 import httpx
@@ -72,11 +72,8 @@ class FlushedStore:
 
     @asynccontextmanager
     async def lifespan(self):
-        task = asyncio.create_task(self._repeat())
-        yield
-        task.cancel()
-        with suppress(asyncio.CancelledError):
-            await task
+        async with utils.task_context(self._repeat()):
+            yield
 
     @abstractmethod
     async def write(self):

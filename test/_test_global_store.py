@@ -41,7 +41,7 @@ def m_mqtt(mocker):
 
 
 @pytest.fixture
-async def setup(app):
+def setup(app):
     config = utils.get_config()
     config.isolated = False
     http.setup(app)

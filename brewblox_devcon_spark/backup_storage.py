@@ -4,7 +4,7 @@ Store regular backups of blocks on disk
 
 import asyncio
 import logging
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager
 from contextvars import ContextVar
 from datetime import datetime
 from pathlib import Path
@@ -101,11 +101,8 @@ class BackupStorage:
 @asynccontextmanager
 async def lifespan():
     storage = CV.get()
-    task = asyncio.create_task(storage.repeat())
-    yield
-    task.cancel()
-    with suppress(asyncio.CancelledError):
-        await task
+    async with utils.task_context(storage.repeat()):
+        yield
 
 
 def setup():

@@ -16,7 +16,7 @@ TESTED = mqtt_api.__name__
 
 
 @pytest.fixture
-async def setup(app, broker):
+def setup(app, broker):
     config = utils.get_config()
     config.mqtt_host = 'localhost'
     config.mqtt_port = broker['mqtt']

@@ -43,7 +43,7 @@ async def disconnect(app):
 
 
 @pytest.fixture
-async def setup(app):
+def setup(app):
     app['config'].isolated = True
     scheduler.setup(app)
     service_status.setup(app)

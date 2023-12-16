@@ -7,6 +7,7 @@ import asyncio
 import logging
 import warnings
 from contextvars import ContextVar
+from typing import Literal
 
 from . import utils
 from .models import (ConnectionKind_, ControllerDescription, DeviceDescription,
@@ -87,8 +88,8 @@ class ServiceStatus:
     def is_connected(self) -> bool:
         return self._connected_ev.is_set()
 
-    async def wait_connected(self):
-        await self._connected_ev.wait()
+    async def wait_connected(self) -> Literal[True]:
+        return await self._connected_ev.wait()
 
     def set_acknowledged(self, controller: ControllerDescription):
         if self._synchronized_ev.is_set():
@@ -140,8 +141,8 @@ class ServiceStatus:
     def is_acknowledged(self) -> bool:
         return self._acknowledged_ev.is_set()
 
-    async def wait_acknowledged(self):
-        await self._acknowledged_ev.wait()
+    async def wait_acknowledged(self) -> Literal[True]:
+        return await self._acknowledged_ev.wait()
 
     def set_synchronized(self):
         if not self._acknowledged_ev.is_set():
@@ -156,8 +157,8 @@ class ServiceStatus:
     def is_synchronized(self) -> bool:
         return self._synchronized_ev.is_set()
 
-    async def wait_synchronized(self):
-        await self._synchronized_ev.wait()
+    async def wait_synchronized(self) -> Literal[True]:
+        return await self._synchronized_ev.wait()
 
     def set_updating(self):
         self._status_desc.connection_status = 'UPDATING'
@@ -168,8 +169,8 @@ class ServiceStatus:
     def is_updating(self) -> bool:
         return self._updating_ev.is_set()
 
-    async def wait_updating(self):
-        await self._updating_ev.wait()
+    async def wait_updating(self) -> Literal[True]:
+        return await self._updating_ev.wait()
 
     def set_disconnected(self):
         self._status_desc.controller = None
@@ -189,8 +190,8 @@ class ServiceStatus:
     def is_disconnected(self) -> bool:
         return self._disconnected_ev.is_set()
 
-    async def wait_disconnected(self):
-        await self._disconnected_ev.wait()
+    async def wait_disconnected(self) -> Literal[True]:
+        return await self._disconnected_ev.wait()
 
 
 def setup():
