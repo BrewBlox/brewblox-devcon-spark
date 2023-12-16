@@ -48,6 +48,7 @@ import re
 import subprocess
 from contextlib import contextmanager
 from dataclasses import dataclass
+from datetime import timedelta
 from enum import IntEnum
 from pathlib import Path
 from typing import Awaitable, ByteString
@@ -58,7 +59,9 @@ from . import utils
 
 YMODEM_TRIGGER_BAUD_RATE = 28800
 YMODEM_TRANSFER_BAUD_RATE = 115200
-CONNECT_INTERVAL_S = 3
+USB_CONNECT_INTERVAL = timedelta(seconds=1)
+TCP_CONNECT_INTERVAL = timedelta(seconds=3)
+NAK_RETRY_DELAY = timedelta(milliseconds=100)
 CONNECT_ATTEMPTS = 5
 
 LOGGER = logging.getLogger(__name__)
@@ -155,7 +158,7 @@ async def connect_usb(address: str) -> Connection:
     last_err = None
     for _ in range(5):
         try:
-            await asyncio.sleep(1)
+            await asyncio.sleep(USB_CONNECT_INTERVAL.total_seconds())
             return await connect_tcp('localhost:8332', proc)
         except OSError as ex:
             last_err = utils.strex(ex)
@@ -172,7 +175,7 @@ async def connect(address: str) -> Connection:
 
     for _ in range(CONNECT_ATTEMPTS):
         try:
-            await asyncio.sleep(CONNECT_INTERVAL_S)
+            await asyncio.sleep(TCP_CONNECT_INTERVAL.total_seconds())
             return await connect_func(address)
         except ConnectionRefusedError:
             LOGGER.debug('Connection refused, retrying...')
@@ -291,7 +294,7 @@ class OtaClient():
 
         if response == Control.NAK:
             LOGGER.debug('Retrying packet...')
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(NAK_RETRY_DELAY.total_seconds())
             response = await self._send_packet(conn, packet)
 
         return response

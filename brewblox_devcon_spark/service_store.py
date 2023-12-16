@@ -6,6 +6,7 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager, contextmanager
 from contextvars import ContextVar
+from datetime import timedelta
 from typing import Generator
 
 from httpx import AsyncClient
@@ -16,7 +17,7 @@ from .models import (DatastoreSingleQuery, ServiceConfigBox, ServiceConfigData,
                      ServiceConfigValue)
 
 SERVICE_STORE_KEY = '{name}-service-db'
-READY_TIMEOUT_S = 60
+READY_TIMEOUT = timedelta(minutes=1)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -29,12 +30,13 @@ class ServiceConfigStore(FlushedStore):
     """
 
     def __init__(self):
+        super().__init__()
         config = utils.get_config()
 
         self._key = SERVICE_STORE_KEY.format(name=config.name)
         self._data = ServiceConfigData()
         self._client = AsyncClient(base_url=STORE_URL)
-        self._ready_event = asyncio.Event()
+        self._ready_ev = asyncio.Event()
 
     def __str__(self):
         return f'<{type(self).__name__}>'
@@ -50,7 +52,7 @@ class ServiceConfigStore(FlushedStore):
 
     async def read(self):
         try:
-            self._ready_event.clear()
+            self._ready_ev.clear()
             query = DatastoreSingleQuery(
                 id=self._key,
                 namespace=const.SPARK_NAMESPACE
@@ -68,10 +70,10 @@ class ServiceConfigStore(FlushedStore):
             LOGGER.warn(f'{self} read error {utils.strex(ex)}')
 
         finally:
-            self._ready_event.set()
+            self._ready_ev.set()
 
     async def write(self):
-        await asyncio.wait_for(self._ready_event.wait(), READY_TIMEOUT_S)
+        await asyncio.wait_for(self._ready_ev.wait(), READY_TIMEOUT.total_seconds())
         box = ServiceConfigBox(
             value=ServiceConfigValue(
                 id=self._key,

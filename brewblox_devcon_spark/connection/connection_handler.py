@@ -2,6 +2,7 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager, suppress
 from contextvars import ContextVar
+from datetime import timedelta
 
 from .. import exceptions, service_status, service_store, utils
 from ..models import DiscoveryType
@@ -11,22 +12,23 @@ from .mqtt_connection import discover_mqtt
 from .stream_connection import (connect_simulation, connect_tcp, connect_usb,
                                 discover_mdns, discover_usb)
 
-BASE_RECONNECT_DELAY_S = 2
-MAX_RECONNECT_DELAY_S = 30
+BASE_RECONNECT_DELAY = timedelta(seconds=2)
+MAX_RECONNECT_DELAY = timedelta(seconds=30)
 MAX_RETRY_COUNT = 20
 
-DISCOVERY_INTERVAL_S = 5
-DISCOVERY_TIMEOUT_S = 120
+DISCOVERY_INTERVAL = timedelta(seconds=5)
+DISCOVERY_TIMEOUT = timedelta(seconds=120)
+
 
 LOGGER = logging.getLogger(__name__)
 CV: ContextVar['ConnectionHandler'] = ContextVar('connection_handler.ConnectionHandler')
 
 
-def calc_backoff(value: float) -> float:
+def calc_backoff(value: timedelta) -> timedelta:
     if value:
-        return min(MAX_RECONNECT_DELAY_S, round(1.5 * value))
+        return min(MAX_RECONNECT_DELAY, value * 1.5)
     else:
-        return BASE_RECONNECT_DELAY_S
+        return BASE_RECONNECT_DELAY
 
 
 class ConnectionHandler(ConnectionCallbacks):
@@ -92,7 +94,7 @@ class ConnectionHandler(ConnectionCallbacks):
         LOGGER.info(f'Discovering devices... ({discovery_type})')
 
         try:
-            async with asyncio.timeout(DISCOVERY_TIMEOUT_S):
+            async with asyncio.timeout(DISCOVERY_TIMEOUT.total_seconds()):
                 while True:
                     if discovery_type in [DiscoveryType.all, DiscoveryType.usb]:
                         result = await discover_usb(self)
@@ -109,7 +111,7 @@ class ConnectionHandler(ConnectionCallbacks):
                         if result:
                             return result
 
-                    await asyncio.sleep(DISCOVERY_INTERVAL_S)
+                    await asyncio.sleep(DISCOVERY_INTERVAL.total_seconds())
 
         except asyncio.TimeoutError:
             raise ConnectionAbortedError('Discovery timeout')
@@ -145,7 +147,7 @@ class ConnectionHandler(ConnectionCallbacks):
             if self._attempts > MAX_RETRY_COUNT:
                 raise ConnectionAbortedError('Retry attempts exhausted')
 
-            await asyncio.sleep(delay)
+            await asyncio.sleep(delay.total_seconds())
             await status.wait_enabled()
 
             self._impl = await self.connect()

@@ -12,7 +12,6 @@ from ..models import AutoconnectSettings
 
 LOGGER = logging.getLogger(__name__)
 
-
 router = APIRouter(prefix='/settings', tags=['Settings'])
 
 

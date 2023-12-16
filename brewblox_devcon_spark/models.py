@@ -235,27 +235,18 @@ class BasePayload(BaseModel):
     mask: list[int] = Field(default_factory=list)
     maskMode: MaskMode = MaskMode.NO_MASK
 
-    # @validator('maskMode', pre=True)
-    # def from_raw_mask_mode(cls, v):
-    #     if isinstance(v, str):
-    #         return MaskMode[v]
-    #     return MaskMode(v)
-
-    # def clean_dict(self):
-    #     return {
-    #         **self.dict(),
-    #         'maskMode': self.maskMode.name,
-    #     }
+    @field_validator('maskMode', mode='before')
+    @classmethod
+    def from_raw_mask_mode(cls, v):
+        if isinstance(v, str):
+            return MaskMode[v]
+        return MaskMode(v)
 
 
 class EncodedPayload(BasePayload):
-    blockType:  int | str | None = None
-    subtype:  int | str | None = None
+    blockType: int | str | None = None
+    subtype: int | str | None = None
     content: str = ''
-
-    class Config:
-        # ensures integers in Union[int, str] are parsed correctly
-        smart_union = True
 
 
 class DecodedPayload(BasePayload):
@@ -269,20 +260,12 @@ class BaseRequest(BaseModel):
     opcode: Opcode
     payload: BasePayload | None = None
 
-    # Maybe
-    # @field_validator('opcode', mode='before')
-    # @classmethod
-    # def from_raw_opcode(cls, v):
-    #     if isinstance(v, str):
-    #         return Opcode[v]
-    #     return Opcode(v)
-
-    # def clean_dict(self):
-    #     return {
-    #         **self.dict(),
-    #         'opcode': self.opcode.name,
-    #         'payload': self.payload.clean_dict() if self.payload else None,
-    #     }
+    @field_validator('opcode', mode='before')
+    @classmethod
+    def from_raw_opcode(cls, v):
+        if isinstance(v, str):
+            return Opcode[v]
+        return Opcode(v)
 
 
 class IntermediateRequest(BaseRequest):
@@ -298,13 +281,12 @@ class BaseResponse(BaseModel):
     error: ErrorCode
     payload: list[BasePayload]
 
-    # # Maybe???
-    # @field_validator('error', mode='before')
-    # @classmethod
-    # def from_raw_error(cls, v):
-    #     if isinstance(v, str):
-    #         return ErrorCode[v]
-    #     return ErrorCode(v)
+    @field_validator('error', mode='before')
+    @classmethod
+    def from_raw_error(cls, v):
+        if isinstance(v, str):
+            return ErrorCode[v]
+        return ErrorCode(v)
 
 
 class IntermediateResponse(BaseResponse):
@@ -496,7 +478,7 @@ class ServiceConfigData(BaseModel):
         extra='ignore',
     )
 
-    reconnect_delay: float = 0
+    reconnect_delay: timedelta = timedelta()
     autoconnecting: bool = True
 
 

@@ -6,13 +6,14 @@ This is a backup mechanism to NTP, used if the controller has no internet access
 import asyncio
 import logging
 from contextlib import asynccontextmanager, suppress
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from . import const, controller, service_status, utils
 from .models import Block
 
+ERROR_INTERVAL = timedelta(seconds=10)
+
 LOGGER = logging.getLogger(__name__)
-ERROR_INTERVAL_S = 10
 
 
 class TimeSync:
@@ -27,9 +28,9 @@ class TimeSync:
 
     async def repeat(self):
         config = utils.get_config()
-        interval_s = config.time_sync_interval.total_seconds()
+        interval = config.time_sync_interval
 
-        if interval_s <= 0:
+        if interval <= timedelta():
             LOGGER.warn('Time sync disabled')
             return
 
@@ -37,10 +38,10 @@ class TimeSync:
             try:
                 await self.run()
                 LOGGER.debug('Time synched')
-                await asyncio.sleep(interval_s)
+                await asyncio.sleep(interval.total_seconds())
             except Exception as ex:
                 LOGGER.error(utils.strex(ex), exc_info=config.debug)
-                await asyncio.sleep(ERROR_INTERVAL_S)
+                await asyncio.sleep(ERROR_INTERVAL.total_seconds())
 
 
 @asynccontextmanager

@@ -11,6 +11,7 @@ from ..models import (DecodedPayload, EncodedMessage, EncodedPayload,
                       IntermediateRequest, IntermediateResponse)
 
 LOGGER = logging.getLogger(__name__)
+
 router = APIRouter(prefix='/_debug', tags=['Debug'])
 
 

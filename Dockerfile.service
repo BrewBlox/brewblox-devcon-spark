@@ -42,6 +42,8 @@ ENV PATH="$VENV/bin:$PATH"
 
 COPY --from=base /wheeley /wheeley
 COPY --from=base /app/firmware /app/firmware
+COPY ./parse_appenv.py ./parse_appenv.py
+COPY ./entrypoint.sh ./entrypoint.sh
 
 RUN <<EOF
     set -ex
@@ -58,4 +60,4 @@ RUN <<EOF
     rm -rf /wheeley
 EOF
 
-ENTRYPOINT ["python3", "-m", "brewblox_devcon_spark"]
+ENTRYPOINT ["bash", "./entrypoint.sh"]

@@ -45,6 +45,7 @@ The synchronization process consists of:
 import asyncio
 import logging
 from contextlib import asynccontextmanager, suppress
+from datetime import timedelta
 from functools import wraps
 
 from . import (block_store, codec, commander, const, datastore, exceptions,
@@ -52,8 +53,8 @@ from . import (block_store, codec, commander, const, datastore, exceptions,
 from .codec.time_utils import serialize_duration
 from .models import FirmwareBlock
 
-HANDSHAKE_TIMEOUT_S = 120
-PING_INTERVAL_S = 2
+HANDSHAKE_TIMEOUT = timedelta(minutes=2)
+PING_INTERVAL = timedelta(seconds=2)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -121,17 +122,17 @@ class SparkSynchronization:
             LOGGER.info('prompting handshake...')
             await self.commander.version()
         except Exception as ex:
-            LOGGER.debug(f'Handshake prompt error: {utils.strex(ex)}')
+            LOGGER.debug(f'Handshake prompt error: {utils.strex(ex)}', exc_info=True)
 
     @subroutine('sync handshake')
     async def _sync_handshake(self):
         # Simultaneously prompt a handshake, and wait for it to be received
         ack_task = asyncio.create_task(self.status.wait_acknowledged())
         try:
-            async with asyncio.timeout(HANDSHAKE_TIMEOUT_S):
+            async with asyncio.timeout(HANDSHAKE_TIMEOUT.total_seconds()):
                 while not ack_task.done():
                     await self._prompt_handshake()
-                    await asyncio.wait([ack_task], timeout=PING_INTERVAL_S)
+                    await asyncio.wait([ack_task], timeout=PING_INTERVAL.total_seconds())
         finally:
             ack_task.cancel()
 

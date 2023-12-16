@@ -7,6 +7,7 @@ import logging
 import warnings
 from contextlib import asynccontextmanager, suppress
 from contextvars import ContextVar
+from datetime import timedelta
 
 from httpx import AsyncClient
 
@@ -16,7 +17,7 @@ from .models import TwinkeyEntriesBox, TwinkeyEntriesValue, TwinkeyEntry
 from .twinkeydict import TwinKeyDict, TwinKeyError
 
 BLOCK_STORE_KEY = '{id}-blocks-db'
-READY_TIMEOUT_S = 60
+READY_TIMEOUT = timedelta(minutes=1)
 
 SYS_OBJECTS: list[TwinkeyEntry] = [
     TwinkeyEntry(keys=keys, data={})
@@ -85,7 +86,7 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict[str, int, dict]):
             self._ready_event.set()
 
     async def write(self):
-        await asyncio.wait_for(self._ready_event.wait(), READY_TIMEOUT_S)
+        await asyncio.wait_for(self._ready_event.wait(), READY_TIMEOUT.total_seconds())
         if self.key is None:
             raise RuntimeError('Document key not set - did read() fail?')
 

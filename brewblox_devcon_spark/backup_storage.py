@@ -13,6 +13,7 @@ from . import controller, exceptions, service_status, utils
 from .models import Backup, BackupApplyResult, BackupIdentity
 
 BASE_BACKUP_DIR = Path('./backup')
+
 LOGGER = logging.getLogger(__name__)
 CV: ContextVar['BackupStorage'] = ContextVar('backup_storage.BackupStorage')
 

@@ -7,6 +7,7 @@ Messages are published to and read from the relevant topics on the eventbus.
 import asyncio
 import logging
 from contextvars import ContextVar
+from datetime import timedelta
 
 from .. import mqtt, utils
 from .connection_impl import ConnectionCallbacks, ConnectionImplBase
@@ -16,7 +17,7 @@ LOG_TOPIC = 'brewcast/cbox/log/'
 REQUEST_TOPIC = 'brewcast/cbox/req/'
 RESPONSE_TOPIC = 'brewcast/cbox/resp/'
 
-DISCOVERY_TIMEOUT_S = 3
+DISCOVERY_TIMEOUT = timedelta(seconds=3)
 
 _DEVICES: ContextVar[dict[str, asyncio.Event]] = ContextVar('mqtt_connection.devices')
 LOGGER = logging.getLogger(__name__)
@@ -82,7 +83,7 @@ async def discover_mqtt(callbacks: ConnectionCallbacks) -> ConnectionImplBase | 
     try:
         devices = _DEVICES.get()
         evt = devices.setdefault(config.device_id, asyncio.Event())
-        await asyncio.wait_for(evt.wait(), timeout=DISCOVERY_TIMEOUT_S)
+        await asyncio.wait_for(evt.wait(), timeout=DISCOVERY_TIMEOUT.total_seconds())
         conn = MqttConnection(config.device_id, callbacks)
         await conn.connect()
         return conn

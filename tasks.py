@@ -75,6 +75,6 @@ def build(ctx: Context):
 
 
 @task(pre=[build])
-def local_docker(ctx: Context, tag='local'):
+def image(ctx: Context, tag='local'):
     with ctx.cd(ROOT):
         ctx.run(f'docker build -t ghcr.io/brewblox/brewblox-devcon-spark:{tag} -f Dockerfile.service .')

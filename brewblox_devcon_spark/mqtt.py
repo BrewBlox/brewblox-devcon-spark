@@ -1,3 +1,4 @@
+import json
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
 
@@ -16,11 +17,11 @@ def setup():
                              ssl=(config.mqtt_protocol == 'mqtts'),
                              reconnect_retries=-1,
                              will_message_topic=f'{config.state_topic}/{config.name}',
-                             will_message_payload={
+                             will_message_payload=json.dumps({
                                  'key': config.name,
                                  'type': 'Spark.state',
                                  'data': None,
-                             })
+                             }))
     fmqtt = FastMQTT(config=mqtt_config)
     CV.set(fmqtt)
 

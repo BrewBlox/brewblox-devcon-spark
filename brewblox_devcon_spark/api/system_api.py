@@ -4,6 +4,7 @@ Specific endpoints for using system objects
 
 import asyncio
 import logging
+from datetime import timedelta
 
 from fastapi import APIRouter, BackgroundTasks
 from httpx import AsyncClient
@@ -13,14 +14,14 @@ from .. import (commander, connection, controller, exceptions, mqtt,
 from ..models import (FirmwareFlashResponse, PingResponse,
                       ServiceStatusDescription)
 
-TRANSFER_TIMEOUT_S = 30
-STATE_TIMEOUT_S = 20
-CONNECT_INTERVAL_S = 3
+TRANSFER_TIMEOUT = timedelta(seconds=30)
+STATE_TIMEOUT = timedelta(seconds=20)
+CONNECT_INTERVAL = timedelta(seconds=3)
 CONNECT_ATTEMPTS = 5
 
-FLUSH_PERIOD_S = 3
-SHUTDOWN_DELAY_S = 1
-UPDATE_SHUTDOWN_DELAY_S = 5
+FLUSH_PERIOD = timedelta(seconds=3)
+SHUTDOWN_DELAY = timedelta(seconds=1)
+UPDATE_SHUTDOWN_DELAY = timedelta(seconds=5)
 
 ESP_URL_FMT = 'http://brewblox.blob.core.windows.net/firmware/{date}-{version}/brewblox-esp32.bin'
 
@@ -29,8 +30,8 @@ LOGGER = logging.getLogger(__name__)
 router = APIRouter(prefix='/system', tags=['System'])
 
 
-async def delayed_shutdown(delay: float):
-    await asyncio.sleep(delay)
+async def delayed_shutdown(delay: timedelta):
+    await asyncio.sleep(delay.total_seconds())
     utils.graceful_shutdown()
 
 
@@ -75,7 +76,7 @@ async def system_reboot_service(background_tasks: BackgroundTasks):
     """
     Reboot the service.
     """
-    background_tasks.add_task(delayed_shutdown, SHUTDOWN_DELAY_S)
+    background_tasks.add_task(delayed_shutdown, SHUTDOWN_DELAY)
     return {}
 
 
@@ -147,7 +148,7 @@ class Flasher:
 
             self._notify('Preparing update')
             self.status.set_updating()
-            await asyncio.sleep(FLUSH_PERIOD_S)  # Wait for in-progress commands to finish
+            await asyncio.sleep(FLUSH_PERIOD.total_seconds())  # Wait for in-progress commands to finish
 
             self._notify('Sending update command to controller')
             await commander.CV.get().firmware_update()
@@ -156,7 +157,7 @@ class Flasher:
             await connection.CV.get().end()  # TODO
             await asyncio.wait_for(
                 self.status.wait_disconnected(),
-                STATE_TIMEOUT_S)
+                STATE_TIMEOUT.total_seconds())
 
             if platform == 'esp32':  # pragma: no cover
                 if connection_kind == 'TCP':
@@ -181,7 +182,7 @@ class Flasher:
                 with conn.autoclose():
                     await asyncio.wait_for(
                         ota_client.send(conn, f'firmware/brewblox-{platform}.bin'),
-                        TRANSFER_TIMEOUT_S)
+                        TRANSFER_TIMEOUT.total_seconds())
                     self._notify('Update done!')
 
         except Exception as ex:
@@ -197,7 +198,7 @@ class Flasher:
 
 @router.post('/flash')
 async def system_flash(background_tasks: BackgroundTasks) -> FirmwareFlashResponse:
-    background_tasks.add_task(delayed_shutdown, UPDATE_SHUTDOWN_DELAY_S)
+    background_tasks.add_task(delayed_shutdown, UPDATE_SHUTDOWN_DELAY)
     flasher = Flasher()
     response = await flasher.run()
     return response

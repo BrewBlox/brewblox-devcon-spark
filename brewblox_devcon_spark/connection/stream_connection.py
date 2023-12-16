@@ -9,6 +9,7 @@ import logging
 import platform
 from asyncio.subprocess import Process
 from contextlib import suppress
+from datetime import timedelta
 from functools import partial
 from pathlib import Path
 
@@ -19,10 +20,10 @@ from .cbox_parser import ControlboxParser
 from .connection_impl import (ConnectionCallbacks, ConnectionImplBase,
                               ConnectionKind_)
 
-DISCOVERY_DNS_TIMEOUT_S = 20
+DISCOVERY_DNS_TIMEOUT = timedelta(seconds=20)
 BREWBLOX_DNS_TYPE = '_brewblox._tcp.local.'
-SUBPROCESS_CONNECT_INTERVAL_S = 0.2
-SUBPROCESS_CONNECT_TIMEOUT_S = 10
+SUBPROCESS_CONNECT_INTERVAL = timedelta(milliseconds=200)
+SUBPROCESS_CONNECT_TIMEOUT = timedelta(seconds=10)
 USB_BAUD_RATE = 115200
 SIMULATION_CWD = 'simulator/'
 
@@ -123,7 +124,7 @@ async def connect_subprocess(callbacks: ConnectionCallbacks,
     # We just started a subprocess
     # Give it some time to get started and respond to the port
     try:
-        async with asyncio.timeout(SUBPROCESS_CONNECT_TIMEOUT_S):
+        async with asyncio.timeout(SUBPROCESS_CONNECT_TIMEOUT.total_seconds()):
             while True:
                 if proc.returncode is not None:
                     raise ChildProcessError(f'Subprocess exited with return code {proc.returncode}')
@@ -135,7 +136,7 @@ async def connect_subprocess(callbacks: ConnectionCallbacks,
                 except OSError as ex:
                     message = utils.strex(ex)
                     LOGGER.debug(f'Subprocess connection error: {message}')
-                    await asyncio.sleep(SUBPROCESS_CONNECT_INTERVAL_S)
+                    await asyncio.sleep(SUBPROCESS_CONNECT_INTERVAL.total_seconds())
 
     except asyncio.TimeoutError:
         with suppress(Exception):
@@ -186,7 +187,7 @@ async def discover_mdns(callbacks: ConnectionCallbacks) -> ConnectionImplBase | 
     try:
         resp = await mdns.discover_one(config.device_id,
                                        BREWBLOX_DNS_TYPE,
-                                       DISCOVERY_DNS_TIMEOUT_S)
+                                       DISCOVERY_DNS_TIMEOUT)
         return await connect_tcp(callbacks, resp.address, resp.port)
     except asyncio.TimeoutError:
         return None

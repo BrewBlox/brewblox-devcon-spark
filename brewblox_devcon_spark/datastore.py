@@ -6,15 +6,16 @@ import asyncio
 import logging
 from abc import abstractmethod
 from contextlib import asynccontextmanager, suppress
+from datetime import timedelta
 
 import httpx
 
 from . import utils
 
 STORE_URL = 'http://history:5000/history/datastore'
-RETRY_INTERVAL_S = 1
-FLUSH_DELAY_S = 5
-SHUTDOWN_WRITE_TIMEOUT_S = 2
+RETRY_INTERVAL = timedelta(seconds=1)
+FLUSH_DELAY = timedelta(seconds=5)
+SHUTDOWN_WRITE_TIMEOUT = timedelta(seconds=2)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ async def check_remote():
                 num_attempts += 1
                 if num_attempts % 10 == 0:
                     LOGGER.info(f'Waiting for datastore... ({utils.strex(ex)})')
-                await asyncio.sleep(RETRY_INTERVAL_S)
+                await asyncio.sleep(RETRY_INTERVAL.total_seconds())
 
 
 class FlushedStore:
@@ -46,7 +47,7 @@ class FlushedStore:
     async def _run(self, delayed: bool):
         if delayed:
             await self._changed_ev.wait()
-            await asyncio.sleep(FLUSH_DELAY_S)
+            await asyncio.sleep(FLUSH_DELAY.total_seconds())
         elif not self._changed_ev.is_set():
             return
 
@@ -63,7 +64,8 @@ class FlushedStore:
                 LOGGER.error(f'{self} {utils.strex(ex)}', exc_info=config.debug)
             except asyncio.CancelledError as cancel_ex:
                 try:
-                    await asyncio.wait_for(self._run(False), timeout=SHUTDOWN_WRITE_TIMEOUT_S)
+                    await asyncio.wait_for(self._run(False),
+                                           timeout=SHUTDOWN_WRITE_TIMEOUT.total_seconds())
                 except Exception as ex:
                     LOGGER.error(f'{self} {utils.strex(ex)}', exc_info=config.debug)
                 raise cancel_ex

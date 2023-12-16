@@ -8,7 +8,7 @@ import logging
 import re
 from contextlib import asynccontextmanager, suppress
 from contextvars import ContextVar
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Callable, Union
 
 from . import (block_store, commander, const, exceptions, service_status,
@@ -17,7 +17,7 @@ from .codec import bloxfield, sequence
 from .models import (Backup, BackupApplyResult, Block, BlockIdentity,
                      BlockNameChange, FirmwareBlock, FirmwareBlockIdentity)
 
-SYNC_WAIT_TIMEOUT_S = 20
+SYNC_WAIT_TIMEOUT = timedelta(seconds=20)
 SID_PATTERN = re.compile(r'^[a-zA-Z]{1}[a-zA-Z0-9 _\-\(\)\|]{0,199}$')
 SID_RULES = """
 An object ID must adhere to the following rules:
@@ -213,12 +213,12 @@ class SparkController:
             desc (str):
                 Human-readable function description, to be used in error messages.
         """
-        if self._status._updating_ev.is_set():
+        if self._status.is_updating():
             raise exceptions.UpdateInProgress('Update is in progress')
 
         await asyncio.wait_for(
             self._status.wait_synchronized(),
-            SYNC_WAIT_TIMEOUT_S)
+            SYNC_WAIT_TIMEOUT.total_seconds())
 
         try:
             yield

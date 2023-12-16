@@ -10,7 +10,6 @@ This prevents having to spin up a simulator in a separate process for tests.
 import logging
 from datetime import datetime
 from itertools import count
-from typing import Optional, Union
 
 from .. import codec, const, utils
 from ..codec import bloxfield
@@ -23,7 +22,7 @@ LOGGER = logging.getLogger(__name__)
 
 # an ErrorCode will be returned
 # a None value will cause no response to be returned
-NEXT_ERROR: list[Union[ErrorCode, None]] = []
+NEXT_ERROR: list[ErrorCode | None] = []
 
 
 def default_blocks() -> dict[int, FirmwareBlock]:
@@ -148,7 +147,7 @@ class MockConnection(ConnectionImplBase):
         ]
         await self.on_event(','.join(welcome))
 
-    async def handle_command(self, request: IntermediateRequest) -> Optional[IntermediateResponse]:  # pragma: no cover
+    async def handle_command(self, request: IntermediateRequest) -> IntermediateResponse | None:  # pragma: no cover
         response = IntermediateResponse(
             msgId=request.msgId,
             error=ErrorCode.OK,

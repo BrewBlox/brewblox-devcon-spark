@@ -134,7 +134,7 @@ class SparkCommander:
         try:
             # LOGGER.debug(f'request: {msg}')
             await self._conn.send_request(msg)
-            response = await asyncio.wait_for(fut, timeout=self._timeout)
+            response = await asyncio.wait_for(fut, timeout=self._timeout.total_seconds())
 
             if response.error != ErrorCode.OK:
                 raise exceptions.CommandException(f'{opcode.name}, {response.error.name}')
