@@ -16,6 +16,18 @@ from .models import (ControllerDescription, DecodedPayload, DeviceDescription,
                      IntermediateResponse, MaskMode, Opcode)
 
 WELCOME_PREFIX = '!BREWBLOX'
+HANDSHAKE_KEYS = [
+    'name',
+    'firmware_version',
+    'proto_version',
+    'firmware_date',
+    'proto_date',
+    'system_version',
+    'platform',
+    'reset_reason_hex',
+    'reset_data_hex',
+    'device_id',
+]
 
 LOGGER = logging.getLogger(__name__)
 CV: ContextVar['SparkCommander'] = ContextVar('commander.SparkCommander')
@@ -78,7 +90,8 @@ class SparkCommander:
 
     async def _on_event(self, msg: str):
         if msg.startswith(WELCOME_PREFIX):
-            handshake = HandshakeMessage(*msg.removeprefix('!').split(','))
+            handshake_values = msg.removeprefix('!').split(',')
+            handshake = HandshakeMessage(**dict(zip(HANDSHAKE_KEYS, handshake_values)))
             LOGGER.info(handshake)
 
             desc = ControllerDescription(

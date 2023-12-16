@@ -13,14 +13,14 @@ from httpx import AsyncClient
 
 from . import const, utils
 from .datastore import FlushedStore
-from .models import TwinkeyEntriesBox, TwinkeyEntriesValue, TwinkeyEntry
+from .models import TwinKeyEntriesBox, TwinKeyEntriesValue, TwinKeyEntry
 from .twinkeydict import TwinKeyDict, TwinKeyError
 
 BLOCK_STORE_KEY = '{id}-blocks-db'
 READY_TIMEOUT = timedelta(minutes=1)
 
-SYS_OBJECTS: list[TwinkeyEntry] = [
-    TwinkeyEntry(keys=keys, data={})
+SYS_OBJECTS: list[TwinKeyEntry] = [
+    TwinKeyEntry(keys=keys, data={})
     for keys in const.SYS_OBJECT_KEYS
 ]
 
@@ -33,7 +33,7 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict[str, int, dict]):
     TwinKeyDict subclass to periodically flush contained objects to Redis.
     """
 
-    def __init__(self, defaults: list[TwinkeyEntry]):
+    def __init__(self, defaults: list[TwinKeyEntry]):
         self: TwinKeyDict[str, int, dict]
         FlushedStore.__init__(self)
         TwinKeyDict.__init__(self)
@@ -62,7 +62,7 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict[str, int, dict]):
             })
             self.key = key
             try:
-                content = TwinkeyEntriesBox.model_validate_json(resp.text)
+                content = TwinKeyEntriesBox.model_validate_json(resp.text)
                 data = content.value.data
             except (KeyError, ValueError):
                 data = []
@@ -91,10 +91,10 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict[str, int, dict]):
         if self.key is None:
             raise RuntimeError('Document key not set - did read() fail?')
 
-        data = [TwinkeyEntry(keys=k, data=v)
+        data = [TwinKeyEntry(keys=k, data=v)
                 for k, v in self.items()]
-        content = TwinkeyEntriesBox(
-            value=TwinkeyEntriesValue(
+        content = TwinKeyEntriesBox(
+            value=TwinKeyEntriesValue(
                 id=self.key,
                 namespace=const.SPARK_NAMESPACE,
                 data=data

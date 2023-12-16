@@ -67,6 +67,19 @@ def update_firmware(ctx: Context, release='develop'):
 
 
 @task
+def testclean(ctx: Context):
+    """
+    Cleans up leftover test containers.
+    Container cleanup is normally done in test fixtures.
+    This is skipped if debugged tests are stopped halfway.
+    """
+    result = ctx.run('docker ps -aq --filter "name=pytest"', hide='stdout')
+    containers = result.stdout.strip().replace('\n', ' ')
+    if containers:
+        ctx.run(f'docker rm -f {containers}')
+
+
+@task
 def build(ctx: Context):
     with ctx.cd(ROOT):
         ctx.run('rm -rf dist')

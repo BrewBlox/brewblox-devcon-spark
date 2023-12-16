@@ -51,6 +51,7 @@ def config(monkeypatch: pytest.MonkeyPatch,
            docker_services: DockerServices,
            ) -> Generator[ServiceConfig, None, None]:
     cfg = TestConfig(
+        name='spark',
         debug=True,
         mqtt_host='localhost',
         mqtt_port=docker_services.port_for('mqtt', 1883),
@@ -67,11 +68,12 @@ def config(monkeypatch: pytest.MonkeyPatch,
 def fw_config(monkeypatch: pytest.MonkeyPatch,
               ) -> Generator[FirmwareConfig, None, None]:
     cfg = FirmwareConfig(
-        proto_version='3f2243a',
-        proto_date='2019-06-06',
-        firmware_version='d264dc6c',
-        firmware_date='2019-07-03',
-        system_version='3.1.0',
+        firmware_version='f27f141c',
+        firmware_date='2023-12-06',
+        firmware_sha='f27f141cb66c348afb6735ed08a60d1814791b71',
+        proto_version='0fa3f6b2',
+        proto_date='2023-12-06',
+        system_version='3.2.0',
     )
     monkeypatch.setattr(utils, 'get_fw_config', lambda: cfg)
     yield cfg

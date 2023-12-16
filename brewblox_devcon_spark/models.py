@@ -1,5 +1,4 @@
 import enum
-from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any, Literal, Self
 
@@ -120,7 +119,7 @@ class FirmwareBlock(BaseModel):
     data: dict[str, Any]
 
 
-class TwinkeyEntry(BaseModel):
+class TwinKeyEntry(BaseModel):
     keys: tuple[str, int]
     data: dict
 
@@ -307,8 +306,7 @@ class EncodedMessage(BaseModel):
     message: str
 
 
-@dataclass
-class HandshakeMessage:
+class HandshakeMessage(BaseModel):
     name: str
     firmware_version: str
     proto_version: str
@@ -318,16 +316,18 @@ class HandshakeMessage:
     platform: str
     reset_reason_hex: str
     reset_data_hex: str
-    device_id: str = Field(default='')
-    reset_reason: str = Field(init=False)
-    reset_data: str = Field(init=False)
+    device_id: str
+    reset_reason: ResetReason = ResetReason.NONE
+    reset_data: ResetData = ResetData.NOT_SPECIFIED
 
-    def __post_init__(self):
-        self.reset_reason = ResetReason(self.reset_reason_hex.upper()).name
+    @model_validator(mode='after')
+    def lower_device_id(self) -> Self:
+        self.reset_reason = ResetReason(self.reset_reason_hex.upper())
         try:
-            self.reset_data = ResetData(self.reset_data_hex.upper()).name
+            self.reset_data = ResetData(self.reset_data_hex.upper())
         except Exception:
-            self.reset_data = self.reset_data_hex.upper()
+            self.reset_data = ResetData.NOT_SPECIFIED
+        return self
 
 
 class FirmwareDescription(BaseModel):
@@ -418,7 +418,7 @@ class Backup(BaseModel):
     device: DeviceDescription | None = None
 
     blocks: list[Block]
-    store: list[TwinkeyEntry]
+    store: list[TwinKeyEntry]
 
 
 class BackupApplyResult(BaseModel):
@@ -471,12 +471,12 @@ class DatastoreMultiValueBox(BaseModel):
     values: list[DatastoreValue]
 
 
-class TwinkeyEntriesValue(DatastoreValue):
-    data: list[TwinkeyEntry]
+class TwinKeyEntriesValue(DatastoreValue):
+    data: list[TwinKeyEntry]
 
 
-class TwinkeyEntriesBox(BaseModel):
-    value: TwinkeyEntriesValue | None
+class TwinKeyEntriesBox(BaseModel):
+    value: TwinKeyEntriesValue | None
 
 
 class ServiceConfigData(BaseModel):
