@@ -10,7 +10,6 @@ from contextvars import ContextVar
 from httpx import AsyncClient
 
 from . import const, mqtt, utils
-from .datastore import STORE_URL
 from .models import DatastoreMultiQuery, DatastoreMultiValueBox
 
 LOGGER = logging.getLogger(__name__)
@@ -32,11 +31,13 @@ def default_time_zone():
 
 class GlobalConfigStore:
     def __init__(self):
-        self._client = AsyncClient(base_url=STORE_URL)
+        config = utils.get_config()
 
         self.units = default_units()
         self.time_zone = default_time_zone()
         self.listeners = set()
+
+        self._client = AsyncClient(base_url=config.datastore_url)
 
     async def on_event(self, obj: dict):
         if self.update(obj.get('changed', [])):

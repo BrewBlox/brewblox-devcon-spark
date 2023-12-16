@@ -4,150 +4,134 @@ Any fixtures declared here are available to all test functions in this directory
 """
 
 import logging
+from pathlib import Path
+from typing import Generator
 
 import pytest
-from aiohttp import test_utils
-from brewblox_service import brewblox_logger, features, service, testing
+from asgi_lifespan import LifespanManager
+from fastapi import FastAPI
+from httpx import AsyncClient
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
+from pytest_docker.plugin import Services as DockerServices
 
-from brewblox_devcon_spark.models import (DiscoveryType, ServiceConfig,
-                                          ServiceFirmwareIni)
+from brewblox_devcon_spark import app_factory, utils
+from brewblox_devcon_spark.models import Block, FirmwareConfig, ServiceConfig
 
 LOGGER = logging.getLogger(__name__)
 
 
-@pytest.fixture(scope='session', autouse=True)
-def log_enabled():
-    """Sets log level to DEBUG for all test functions.
-    Allows all logged messages to be captured during pytest runs"""
-    logging.getLogger().setLevel(logging.DEBUG)
-    logging.captureWarnings(True)
+class TestConfig(ServiceConfig):
+    """
+    An override for ServiceConfig that only uses
+    settings provided to __init__()
+
+    This makes tests independent from env values
+    and the content of .appenv
+    """
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        return (init_settings,)
 
 
-@pytest.fixture
-def app_config() -> ServiceConfig:
-    return ServiceConfig(
-        # From brewblox_service
-        name='test_app',
-        host='localhost',
-        port=1234,
+@pytest.fixture(scope='session')
+def docker_compose_file():
+    return Path('./test/docker-compose.yml').resolve()
+
+
+@pytest.fixture(autouse=True)
+def config(monkeypatch: pytest.MonkeyPatch,
+           docker_services: DockerServices,
+           ) -> Generator[ServiceConfig, None, None]:
+    cfg = TestConfig(
         debug=True,
-        mqtt_protocol='mqtt',
-        mqtt_host='eventbus',
-        mqtt_port=1883,
-        mqtt_path='/eventbus',
-        history_topic='brewcast/history',
-        state_topic='brewcast/state',
-
-        # From brewblox_devcon_spark
-        device_serial='/dev/TESTEH',
-        device_id='1234',
-        device_port=8332,
-        display_ws_port=7377,
-        discovery=DiscoveryType.all,
-        simulation=False,
-        mock=True,
-        command_timeout=10,
-        broadcast_interval=5,
-        isolated=True,
-        backup_interval=3600,
-        backup_retry_interval=300,
-        time_sync_interval=900,
-        skip_version_check=False,
-        datastore_topic='brewcast/datastore',
+        mqtt_host='localhost',
+        mqtt_port=docker_services.port_for('mqtt', 1883),
+        datastore_host='localhost',
+        datastore_port=docker_services.port_for('history', 5000),
+        simulation=True,
+        device_id='1234'
     )
+    monkeypatch.setattr(utils, 'get_config', lambda: cfg)
+    yield cfg
+
+
+@pytest.fixture(autouse=True)
+def fw_config(monkeypatch: pytest.MonkeyPatch,
+              ) -> Generator[FirmwareConfig, None, None]:
+    cfg = FirmwareConfig(
+        proto_version='3f2243a',
+        proto_date='2019-06-06',
+        firmware_version='d264dc6c',
+        firmware_date='2019-07-03',
+        system_version='3.1.0',
+    )
+    monkeypatch.setattr(utils, 'get_fw_config', lambda: cfg)
+    yield cfg
+
+
+@pytest.fixture(autouse=True)
+def setup_logging(config: ServiceConfig):
+    app_factory.setup_logging(True)
 
 
 @pytest.fixture
-def sys_args(app_config) -> list:
-    return [str(v) for v in [
-        'app_name',
-        '--debug',
-        '--name', app_config.name,
-        '--host', app_config.host,
-        '--port', app_config.port,
-        '--device-serial', app_config.device_serial,
-        '--device-id', app_config.device_id,
-        '--discovery', app_config.discovery,
-        '--command-timeout', app_config.command_timeout,
-        '--broadcast-interval', app_config.broadcast_interval,
-        '--backup-interval', app_config.backup_interval,
-        '--backup-retry-interval', app_config.backup_retry_interval,
-        '--isolated',
-        '--mock',
-    ]]
+def app() -> FastAPI:
+    """
+    Override this in test modules to bootstrap required dependencies.
 
-
-@pytest.fixture
-def app_ini() -> ServiceFirmwareIni:
-    return {
-        'proto_version': '3f2243a',
-        'proto_date': '2019-06-06',
-        'firmware_version': 'd264dc6c',
-        'firmware_date': '2019-07-03',
-        'system_version': '3.1.0',
-    }
-
-
-@pytest.fixture
-def app(app_config, app_ini):
-    app = service.create_app(app_config)
-    app['ini'] = app_ini
+    IMPORTANT: This must NOT be an async fixture.
+    Contextvars assigned in async fixtures are invisible to test functions.
+    """
+    app = FastAPI()
     return app
 
 
 @pytest.fixture
-async def setup(app):
-    pass
-
-
-@pytest.fixture
-async def client(app, setup, aiohttp_client, aiohttp_server):
-    """Allows patching the app or aiohttp_client before yielding it.
-
-    Any tests wishing to add custom behavior to app can override the fixture
+async def client(app: FastAPI) -> Generator[AsyncClient, None, None]:
     """
-    LOGGER.debug('Available features:')
-    for name, impl in app.get(features.FEATURES_KEY, {}).items():
-        LOGGER.debug(f'Feature "{name}" = {impl}')
-    LOGGER.debug(app.on_startup)
+    The default test client for making REST API calls.
+    Using this fixture will also guarantee that lifespan startup has happened.
 
-    test_server: test_utils.TestServer = await aiohttp_server(app)
-    test_client: test_utils.TestClient = await aiohttp_client(test_server)
-    return test_client
-
-
-@pytest.fixture(scope='session')
-def broker():
-    with testing.docker_container(
-        name='mqtt-test-container',
-        ports={'mqtt': 1883, 'ws': 15675},
-        args=['ghcr.io/brewblox/mosquitto:develop'],
-    ) as ports:
-        yield ports
+    Do not use `client` and `ws_client` at the same time.
+    """
+    # AsyncClient does not automatically send ASGI lifespan events to the app
+    # https://asgi.readthedocs.io/en/latest/specs/lifespan.html
+    async with LifespanManager(app):
+        async with AsyncClient(app=app,
+                               base_url='http://test') as ac:
+            yield ac
 
 
 @pytest.fixture
-def spark_blocks():
+def spark_blocks() -> list[Block]:
     return [
-        {
-            'id': 'balancer-1',
-            'nid': 200,
-            'type': 'Balancer',
-            'data': {}
-        },
-        {
-            'id': 'mutex-1',
-            'nid': 300,
-            'type': 'Mutex',
-            'data': {
+        Block(
+            id='balancer-1',
+            nid=200,
+            type='Balancer',
+            data={}
+        ),
+        Block(
+            id='mutex-1',
+            nid=300,
+            type='Mutex',
+            data={
                 'differentActuatorWait': 43
             }
-        },
-        {
-            'id': 'profile-1',
-            'nid': 201,
-            'type': 'SetpointProfile',
-            'data': {
+        ),
+        Block(
+            id='profile-1',
+            nid=201,
+            type='SetpointProfile',
+            data={
                 'points': [
                     {
                         'time': 1540376829,
@@ -164,31 +148,31 @@ def spark_blocks():
                 ],
                 'targetId<>': 'setpoint-sensor-pair-2'
             }
-        },
-        {
-            'id': 'sensor-1',
-            'nid': 202,
-            'type': 'TempSensorMock',
-            'data': {
+        ),
+        Block(
+            id='sensor-1',
+            nid=202,
+            type='TempSensorMock',
+            data={
                 'value[celsius]': 20.89789201,
                 'connected': True
             }
-        },
-        {
-            'id': 'sensor-onewire-1',
-            'nid': 203,
-            'type': 'TempSensorOneWire',
-            'data': {
+        ),
+        Block(
+            id='sensor-onewire-1',
+            nid=203,
+            type='TempSensorOneWire',
+            data={
                 'value[celsius]': 20.89789201,
                 'offset[delta_degC]': 9,
                 'address': 'DEADBEEF'
             }
-        },
-        {
-            'id': 'setpoint-sensor-pair-1',
-            'nid': 204,
-            'type': 'SetpointSensorPair',
-            'data': {
+        ),
+        Block(
+            id='setpoint-sensor-pair-1',
+            nid=204,
+            type='SetpointSensorPair',
+            data={
                 'sensorId<>': 'sensor-1',
                 'setting': 0,
                 'value': 0,
@@ -196,23 +180,23 @@ def spark_blocks():
                 'filter': 1,  # FILTER_15s
                 'filterThreshold': 2
             }
-        },
-        {
-            'id': 'setpoint-sensor-pair-2',
-            'nid': 205,
-            'type': 'SetpointSensorPair',
-            'data': {
+        ),
+        Block(
+            id='setpoint-sensor-pair-2',
+            nid=205,
+            type='SetpointSensorPair',
+            data={
                 'sensorId<>': 0,
                 'setting': 0,
                 'value': 0,
                 'enabled': True
             }
-        },
-        {
-            'id': 'actuator-1',
-            'nid': 206,
-            'type': 'ActuatorAnalogMock',
-            'data': {
+        ),
+        Block(
+            id='actuator-1',
+            nid=206,
+            type='ActuatorAnalogMock',
+            data={
                 'setting': 20,
                 'minSetting': 10,
                 'maxSetting': 30,
@@ -220,12 +204,12 @@ def spark_blocks():
                 'minValue': 40,
                 'maxValue': 60
             }
-        },
-        {
-            'id': 'actuator-pwm-1',
-            'nid': 207,
-            'type': 'ActuatorPwm',
-            'data': {
+        ),
+        Block(
+            id='actuator-pwm-1',
+            nid=207,
+            type='ActuatorPwm',
+            data={
                 'constrainedBy': {
                     'constraints': [
                         {
@@ -244,12 +228,12 @@ def spark_blocks():
                 'period': 4000,
                 'actuatorId<>': 'actuator-digital-1'
             }
-        },
-        {
-            'id': 'actuator-digital-1',
-            'nid': 208,
-            'type': 'DigitalActuator',
-            'data': {
+        ),
+        Block(
+            id='actuator-digital-1',
+            nid=208,
+            type='DigitalActuator',
+            data={
                 'channel': 1,
                 'constrainedBy': {
                     'constraints': [
@@ -267,21 +251,21 @@ def spark_blocks():
                     ]
                 }
             }
-        },
-        {
-            'id': 'offset-1',
-            'nid': 209,
-            'type': 'ActuatorOffset',
-            'data': {
+        ),
+        Block(
+            id='offset-1',
+            nid=209,
+            type='ActuatorOffset',
+            data={
                 'targetId<>': 'setpoint-sensor-pair-1',
                 'referenceId<>': 'setpoint-sensor-pair-1'
             }
-        },
-        {
-            'id': 'pid-1',
-            'nid': 210,
-            'type': 'Pid',
-            'data': {
+        ),
+        Block(
+            id='pid-1',
+            nid=210,
+            type='Pid',
+            data={
                 'inputId<>': 'setpoint-sensor-pair-1',
                 'outputId<>': 'actuator-pwm-1',
                 'enabled': True,
@@ -290,12 +274,12 @@ def spark_blocks():
                 'ti': 3600,
                 'td': 60
             }
-        },
-        {
-            'id': 'DisplaySettings',
-            'nid': 7,
-            'type': 'DisplaySettings',
-            'data': {
+        ),
+        Block(
+            id='DisplaySettings',
+            nid=7,
+            type='DisplaySettings',
+            data={
                 'widgets': [
                     {
                         'pos': 1,
@@ -324,23 +308,23 @@ def spark_blocks():
                 ],
                 'name': 'test'
             }
-        },
-        {
-            'id': 'ds2413-hw-1',
-            'nid': 211,
-            'type': 'DS2413',
-            'data': {
+        ),
+        Block(
+            id='ds2413-hw-1',
+            nid=211,
+            type='DS2413',
+            data={
                 'address': '4444444444444444'
             }
-        },
-        {
-            'id': 'ow-act',
-            'nid': 212,
-            'type': 'DigitalActuator',
-            'data': {
+        ),
+        Block(
+            id='ow-act',
+            nid=212,
+            type='DigitalActuator',
+            data={
                 'channel': 1,
                 'invert': True,
                 'hwDevice<DS2413>': 'ds2413-hw-1'
             }
-        }
+        )
     ]

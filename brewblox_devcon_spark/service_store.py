@@ -11,8 +11,7 @@ from typing import Generator
 
 from httpx import AsyncClient
 
-from . import const, utils
-from .datastore import STORE_URL, FlushedStore
+from . import const, datastore, utils
 from .models import (DatastoreSingleQuery, ServiceConfigBox, ServiceConfigData,
                      ServiceConfigValue)
 
@@ -24,7 +23,7 @@ LOGGER = logging.getLogger(__name__)
 CV: ContextVar['ServiceConfigStore'] = ContextVar('service_store.ServiceConfigStore')
 
 
-class ServiceConfigStore(FlushedStore):
+class ServiceConfigStore(datastore.FlushedStore):
     """
     Database-backed configuration
     """
@@ -35,7 +34,7 @@ class ServiceConfigStore(FlushedStore):
 
         self._key = SERVICE_STORE_KEY.format(name=config.name)
         self._data = ServiceConfigData()
-        self._client = AsyncClient(base_url=STORE_URL)
+        self._client = AsyncClient(base_url=config.datastore_url)
         self._ready_ev = asyncio.Event()
 
     def __str__(self):

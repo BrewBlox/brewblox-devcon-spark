@@ -12,7 +12,7 @@ from datetime import timedelta
 from httpx import AsyncClient
 
 from . import const, utils
-from .datastore import STORE_URL, FlushedStore
+from .datastore import FlushedStore
 from .models import TwinkeyEntriesBox, TwinkeyEntriesValue, TwinkeyEntry
 from .twinkeydict import TwinKeyDict, TwinKeyError
 
@@ -38,10 +38,11 @@ class ServiceBlockStore(FlushedStore, TwinKeyDict[str, int, dict]):
         FlushedStore.__init__(self)
         TwinKeyDict.__init__(self)
 
+        config = utils.get_config()
         self.key: str = None
         self._defaults = defaults
         self._ready_event = asyncio.Event()
-        self._client = AsyncClient(base_url=STORE_URL)
+        self._client = AsyncClient(base_url=config.datastore_url)
 
         self.clear()  # inserts defaults
 

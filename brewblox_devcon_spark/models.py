@@ -4,7 +4,7 @@ from datetime import timedelta
 from typing import Any, Literal, Self
 
 from pydantic import (BaseModel, ConfigDict, Field, ValidationInfo,
-                      field_validator, model_validator)
+                      computed_field, field_validator, model_validator)
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -39,8 +39,9 @@ class ServiceConfig(BaseSettings):
     mqtt_host: str = 'eventbus'
     mqtt_port: int = 1883
 
-    redis_host: str = 'redis'
-    redis_port: int = 6379
+    datastore_host: str = 'history'
+    datastore_port: int = 5000
+    datastore_path: str = '/history/datastore'
 
     state_topic: str = 'brewcast/state'
     history_topic: str = 'brewcast/history'
@@ -70,6 +71,11 @@ class ServiceConfig(BaseSettings):
 
     # Time sync options
     time_sync_interval: timedelta = timedelta(minutes=15)
+
+    @computed_field
+    @property
+    def datastore_url(self) -> str:
+        return f'http://{self.datastore_host}:{self.datastore_port}{self.datastore_path}'
 
     @model_validator(mode='after')
     def default_device_id(self) -> Self:

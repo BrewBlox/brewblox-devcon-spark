@@ -12,7 +12,6 @@ import httpx
 
 from . import utils
 
-STORE_URL = 'http://history:5000/history/datastore'
 RETRY_INTERVAL = timedelta(seconds=1)
 FLUSH_DELAY = timedelta(seconds=5)
 SHUTDOWN_WRITE_TIMEOUT = timedelta(seconds=2)
@@ -21,8 +20,9 @@ LOGGER = logging.getLogger(__name__)
 
 
 async def check_remote():
+    config = utils.get_config()
     num_attempts = 0
-    async with httpx.AsyncClient(base_url=STORE_URL) as client:
+    async with httpx.AsyncClient(base_url=config.datastore_url) as client:
         while True:
             try:
                 resp = await client.get('/ping')
