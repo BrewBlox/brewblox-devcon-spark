@@ -24,11 +24,11 @@ RUN <<EOF bash
     cd /app/firmware
     ARCH="$(dpkg --print-architecture)"
     if [ "\${ARCH}" = "amd64" ]; then
-        rm ./*.elf ./brewblox-{arm32,arm64}.sim
+        rm -rf ./*.elf ./brewblox-{arm32,arm64}.sim
     elif [ "\${ARCH}" = "armhf" ]; then
-        rm ./*.elf ./brewblox-{amd64,arm64}.sim
+        rm -rf ./*.elf ./brewblox-{amd64,arm64}.sim
     elif [ "\${ARCH}" = "arm64" ]; then
-        rm ./*.elf ./brewblox-{amd64,arm32}.sim
+        rm -rf ./*.elf ./brewblox-{amd64,arm32}.sim
     fi
 EOF
 
