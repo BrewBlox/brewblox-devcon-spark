@@ -21,7 +21,6 @@ _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'EdgeCase_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
-
   DESCRIPTOR._options = None
   _SETTINGS.fields_by_name['address']._options = None
   _SETTINGS.fields_by_name['address']._serialized_options = b'\212\265\030\002 \001'

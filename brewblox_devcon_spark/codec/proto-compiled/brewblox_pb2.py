@@ -21,9 +21,6 @@ _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'brewblox_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
-  google_dot_protobuf_dot_descriptor__pb2.FieldOptions.RegisterExtension(field)
-  google_dot_protobuf_dot_descriptor__pb2.MessageOptions.RegisterExtension(msg)
-
   DESCRIPTOR._options = None
   field._options = None
   field._serialized_options = b'\222?\002\030\003'

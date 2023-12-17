@@ -14,6 +14,10 @@ from . import pb2
 
 BlockType: EnumTypeWrapper = pb2.brewblox_pb2.BlockType
 
+# Block type values below this are reserved for interfaces
+# They will not be associated with actual messages
+BLOCK_INTERFACE_TYPE_END = 255
+
 
 @dataclass(frozen=True)
 class InterfaceLookup:
@@ -31,11 +35,12 @@ class ObjectLookup:
 
 
 def _interface_lookup_generator() -> Generator[InterfaceLookup, None, None]:
-    for blockType in BlockType.values():
-        yield InterfaceLookup(
-            type_str=BlockType.Name(blockType),
-            type_int=blockType,
-        )
+    for block_type in BlockType.values():
+        if block_type <= BLOCK_INTERFACE_TYPE_END:
+            yield InterfaceLookup(
+                type_str=BlockType.Name(block_type),
+                type_int=block_type,
+            )
 
 
 def _object_lookup_generator() -> Generator[ObjectLookup, None, None]:
@@ -85,4 +90,9 @@ INTERFACE_LOOKUPS: list[InterfaceLookup] = [
         type_str='EdgeCase',
         type_int=9001,
     ),
+]
+
+COMBINED_LOOKUPS: list[InterfaceLookup] = [
+    *OBJECT_LOOKUPS,
+    *INTERFACE_LOOKUPS,
 ]
