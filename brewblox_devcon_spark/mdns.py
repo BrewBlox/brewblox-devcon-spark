@@ -44,7 +44,7 @@ async def _discover(
                 continue  # discard unknown addresses and simulators
 
             addr = inet_ntoa(info.address)
-            id = info.properties.get(b'ID', bytes()).decode().lower()
+            id = info.properties.get(b'ID', b'').decode().lower()
 
             if not id:
                 LOGGER.error(f'Invalid device: {info.name} @ {addr}:{info.port} has no ID TXT property')

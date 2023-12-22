@@ -4,7 +4,8 @@ from contextlib import asynccontextmanager, suppress
 from contextvars import ContextVar
 from datetime import timedelta
 
-from .. import exceptions, service_status, service_store, utils
+from .. import exceptions, service_status, utils
+from ..datastore import settings_store
 from ..models import DiscoveryType
 from .connection_impl import ConnectionCallbacks, ConnectionImplBase
 from .mock_connection import connect_mock
@@ -19,20 +20,21 @@ MAX_RETRY_COUNT = 20
 DISCOVERY_INTERVAL = timedelta(seconds=5)
 DISCOVERY_TIMEOUT = timedelta(seconds=120)
 
-
 LOGGER = logging.getLogger(__name__)
+
 CV: ContextVar['ConnectionHandler'] = ContextVar('connection_handler.ConnectionHandler')
 
 
 def calc_backoff(value: timedelta | None) -> timedelta:
     if value:
-        return min(MAX_RECONNECT_DELAY, value * 1.5)
+        return min(value * 1.5, MAX_RECONNECT_DELAY)
     else:
         return BASE_RECONNECT_DELAY
 
 
 class ConnectionHandler(ConnectionCallbacks):
     def __init__(self):
+        self._delay: timedelta = BASE_RECONNECT_DELAY
         self._attempts: int = 0
         self._impl: ConnectionImplBase = None
 
@@ -138,16 +140,13 @@ class ConnectionHandler(ConnectionCallbacks):
 
     async def run(self):
         status = service_status.CV.get()
-        store = service_store.CV.get()
-
-        with store.open() as data:
-            delay = data.reconnect_delay
+        store = settings_store.CV.get()
 
         try:
             if self._attempts > MAX_RETRY_COUNT:
                 raise ConnectionAbortedError('Retry attempts exhausted')
 
-            await asyncio.sleep(delay.total_seconds())
+            await asyncio.sleep(self._delay.total_seconds())
             await status.wait_enabled()
 
             self._impl = await self.connect()
@@ -157,19 +156,19 @@ class ConnectionHandler(ConnectionCallbacks):
                                  self._impl.address)
 
             self._attempts = 0
-            self._reconnect_interval = 0
+            self._delay = BASE_RECONNECT_DELAY
 
             await self._impl.disconnected.wait()
             raise ConnectionError('Disconnected')
 
         except ConnectionAbortedError as ex:
             LOGGER.error(utils.strex(ex))
-            with store.open() as data:
-                data.reconnect_delay = calc_backoff(delay)
+            self._delay = calc_backoff(self._delay)
 
             # USB devices that were plugged in after container start are not visible
             # If we are potentially connecting to a USB device, we need to restart
             if self.usb_compatible:
+                await store.commit_service_settings()
                 utils.graceful_shutdown()
             else:
                 self._attempts = 0
@@ -179,7 +178,7 @@ class ConnectionHandler(ConnectionCallbacks):
             if self._attempts == 1:
                 LOGGER.error(utils.strex(ex))
             else:
-                LOGGER.debug(utils.strex(ex))
+                LOGGER.debug(utils.strex(ex), exc_info=True)
 
         finally:
             with suppress(Exception):

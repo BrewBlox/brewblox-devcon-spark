@@ -32,3 +32,4 @@ SYS_OBJECT_KEYS: list[tuple[str, int]] = [
 
 # Relevant block types
 SEQUENCE_BLOCK_TYPE = 'Sequence'
+SYSINFO_BLOCK_TYPE = 'SysInfo'

@@ -2,14 +2,12 @@
 This feature continuously manages synchronization between
 the spark service, the spark controller, and the datastore.
 
-At startup, configuration is fetched from the datastore.
-For the global datastore, change callbacks are in place.
-This service will be the only one to change any of the other settings,
-and does not need to be notified of external changes.
-
 After startup, `connection` and `synchronization` cooperate to
 advance a state machine. The state machine will progress linearly,
 but may revert to DISCONNECTED at any time.
+
+This state machine is disabled if `autoconnecting` is False in service settings.
+`connection` will wait until enabled before it attempts to discover and connect.
 
 - DISCONNECTED: The service is not connected at a transport level.
 - CONNECTED: The service is connected at a transport level,
@@ -25,6 +23,7 @@ but may revert to DISCONNECTED at any time.
 
 The synchronization process consists of:
 
+- Set enabled flag to `service_settings.autoconnecting` value.
 - Wait for CONNECTED status.
 - Synchronize handshake:
     - Repeatedly prompt the controller to send a handshake,
@@ -48,9 +47,9 @@ from contextlib import asynccontextmanager
 from datetime import timedelta
 from functools import wraps
 
-from . import (block_store, codec, commander, const, datastore, exceptions,
-               global_store, service_status, service_store, utils)
+from . import codec, commander, const, exceptions, service_status, utils
 from .codec.time_utils import serialize_duration
+from .datastore import block_store, settings_store
 from .models import FirmwareBlock
 
 HANDSHAKE_TIMEOUT = timedelta(minutes=2)
@@ -84,9 +83,15 @@ class SparkSynchronization:
         self.unit_converter = codec.unit_conversion.CV.get()
         self.codec = codec.CV.get()
         self.commander = commander.CV.get()
-        self.service_store = service_store.CV.get()
-        self.global_store = global_store.CV.get()
+        self.store = settings_store.CV.get()
         self.block_store = block_store.CV.get()
+
+        self.store.service_settings_listeners.add(self._apply_service_settings)
+        self.store.global_settings_listeners.add(self._apply_global_settings)
+
+    def __del__(self):
+        self.store.service_settings_listeners.remove(self._apply_service_settings)
+        self.store.global_settings_listeners.remove(self._apply_global_settings)
 
     @property
     def device_name(self) -> str:
@@ -99,23 +104,19 @@ class SparkSynchronization:
 
         return self.status.desc().controller.device.device_id
 
-    async def synchronize(self):
-        await self._sync_handshake()
-        await self._sync_block_store()
-        await self._sync_sysinfo()
-        self.status.set_synchronized()
-
-    @subroutine('sync datastore')
-    async def _sync_datastore(self):
-        self.global_store.listeners.add(self.on_global_store_change)
-        await datastore.check_remote()
-        await self.service_store.read()
-        await self.global_store.read()
-
+    @subroutine('apply global settings')
+    async def _apply_global_settings(self):
         await self.set_converter_units()
 
-        with self.service_store.open() as data:
-            self.status.set_enabled(data.autoconnecting)
+        # This function may be invoked as a callback by datastore
+        # Here, we don't know if we're synchronized
+        if self.status.is_synchronized():
+            await self.set_sysinfo_settings()
+
+    @subroutine('apply service settings')
+    async def _apply_service_settings(self):
+        enabled = self.store.service_settings.autoconnecting
+        self.status.set_enabled(enabled)
 
     async def _prompt_handshake(self):
         try:
@@ -144,44 +145,39 @@ class SparkSynchronization:
 
     @subroutine('sync block store')
     async def _sync_block_store(self):
-        await datastore.check_remote()
-        await self.block_store.read(self.device_name)
+        await self.block_store.load(self.device_name)
 
     @subroutine('sync controller settings')
     async def _sync_sysinfo(self):
         await self.set_sysinfo_settings()
 
-    async def on_global_store_change(self):
-        """Callback invoked by global_store"""
-        await self.set_converter_units()
-
-        if self.status.is_synchronized():
-            await self.set_sysinfo_settings()
-
     async def set_converter_units(self):
-        self.unit_converter.temperature = self.global_store.units['temperature']
+        self.unit_converter.temperature = self.store.unit_settings.temperature
         LOGGER.info(f'Service temperature unit set to {self.unit_converter.temperature}')
 
     async def set_sysinfo_settings(self):
         # Get time zone
-        tz_name = self.global_store.time_zone['name']
-        tz_posix = self.global_store.time_zone['posixValue']
+        tz_name = self.store.timezone_settings.name
+        tz_posix = self.store.timezone_settings.posixValue
         LOGGER.info(f'Spark time zone: {tz_posix} ({tz_name})')
 
         # Get temp unit
-        temp_unit_name = self.global_store.units['temperature']
+        temp_unit_name = self.store.unit_settings.temperature
         temp_unit_enum = 'TEMP_FAHRENHEIT' if temp_unit_name == 'degF' else 'TEMP_CELSIUS'
         LOGGER.info(f'Spark temp unit: {temp_unit_enum}')
 
         sysinfo = await self.commander.patch_block(
             FirmwareBlock(
                 nid=const.SYSINFO_NID,
-                type='SysInfo',
+                type=const.SYSINFO_BLOCK_TYPE,
                 data={
                     'timeZone': tz_posix,
                     'tempUnit': temp_unit_enum,
                 },
             ))
+
+        if sysinfo.type != const.SYSINFO_BLOCK_TYPE:
+            raise exceptions.CommandException(f'Unexpected SysInfo block: {sysinfo}')
 
         uptime = sysinfo.data['uptime']['value']
         LOGGER.info(f'Spark uptime: {serialize_duration(uptime)}')
@@ -191,8 +187,13 @@ class SparkSynchronization:
 
     async def run(self):
         try:
+            await self._apply_global_settings()
+            await self._apply_service_settings()
             await self.status.wait_connected()
-            await self.synchronize()
+            await self._sync_handshake()
+            await self._sync_block_store()
+            await self._sync_sysinfo()
+            self.status.set_synchronized()
 
         except exceptions.IncompatibleFirmware:
             LOGGER.error('Incompatible firmware version detected')
@@ -207,8 +208,6 @@ class SparkSynchronization:
         await self.status.wait_disconnected()
 
     async def repeat(self):
-        # One-time datastore synchronization
-        await self._sync_datastore()
         while True:
             await self.run()
 

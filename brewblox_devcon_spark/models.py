@@ -6,6 +6,8 @@ from pydantic import (BaseModel, ConfigDict, Field, ValidationInfo,
                       computed_field, field_validator, model_validator)
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from . import const
+
 
 class DiscoveryType(enum.Enum):
     all = 1
@@ -32,6 +34,7 @@ class ServiceConfig(BaseSettings):
     # Generic options
     name: str  # Required
     debug: bool = False
+    trace: bool = False
     debugger: bool = False
 
     mqtt_protocol: Literal['mqtt', 'mqtts'] = 'mqtt'
@@ -443,15 +446,6 @@ class PingResponse(BaseModel):
     ping: Literal['pong'] = 'pong'
 
 
-class DatastoreValue(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-
-    namespace: str
-    id: str
-
-
 class DatastoreSingleQuery(BaseModel):
     namespace: str
     id: str
@@ -463,6 +457,15 @@ class DatastoreMultiQuery(BaseModel):
     filter: str | None = None
 
 
+class DatastoreValue(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+
+    namespace: str
+    id: str
+
+
 class DatastoreSingleValueBox(BaseModel):
     value: DatastoreValue | None
 
@@ -472,25 +475,48 @@ class DatastoreMultiValueBox(BaseModel):
 
 
 class TwinKeyEntriesValue(DatastoreValue):
+    namespace: str = const.SPARK_NAMESPACE
+
     data: list[TwinKeyEntry]
 
 
-class TwinKeyEntriesBox(BaseModel):
-    value: TwinKeyEntriesValue | None
+class StoredServiceSettingsValue(DatastoreValue):
+    namespace: str = const.SPARK_NAMESPACE
 
-
-class ServiceConfigData(BaseModel):
-    model_config = ConfigDict(
-        extra='ignore',
-    )
-
-    reconnect_delay: timedelta = timedelta()
     autoconnecting: bool = True
 
 
-class ServiceConfigValue(DatastoreValue):
-    data: ServiceConfigData = Field(default_factory=ServiceConfigData)
+class StoredUnitSettingsValue(DatastoreValue):
+    namespace: str = const.GLOBAL_NAMESPACE
+    id: str = const.GLOBAL_UNITS_ID
+
+    temperature: Literal['degC', 'degF'] = 'degC'
 
 
-class ServiceConfigBox(BaseModel):
-    value: ServiceConfigValue | None
+class StoredTimezoneSettingsValue(DatastoreValue):
+    namespace: str = const.GLOBAL_NAMESPACE
+    id: str = const.GLOBAL_TIME_ZONE_ID
+
+    name: str = 'Etc/UTC'
+    posixValue: str = 'UTC0'
+
+
+class TwinKeyEntriesBox(DatastoreSingleValueBox):
+    value: TwinKeyEntriesValue | None
+
+
+class StoredServiceSettingsBox(DatastoreSingleValueBox):
+    value: StoredServiceSettingsValue | None
+
+
+class StoredUnitSettingsBox(DatastoreSingleValueBox):
+    value: StoredUnitSettingsValue | None
+
+
+class StoredTimezoneSettingsBox(DatastoreSingleValueBox):
+    value: StoredTimezoneSettingsValue | None
+
+
+class DatastoreEvent(BaseModel):
+    changed: list[DatastoreValue] = Field(default_factory=list)
+    deleted: list[DatastoreValue] = Field(default_factory=list)

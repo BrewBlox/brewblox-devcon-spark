@@ -118,8 +118,9 @@ async def connect_subprocess(callbacks: ConnectionCallbacks,
                              kind: ConnectionKind_,
                              address: str,
                              ) -> ConnectionImplBase:  # pragma: no cover
+    loop = asyncio.get_running_loop()
     factory = partial(SubprocessConnection, kind, address, callbacks, proc)
-    message = None
+    errors: set[str] = set()
 
     # We just started a subprocess
     # Give it some time to get started and respond to the port
@@ -130,25 +131,21 @@ async def connect_subprocess(callbacks: ConnectionCallbacks,
                     raise ChildProcessError(f'Subprocess exited with return code {proc.returncode}')
 
                 try:
-                    _, protocol = await asyncio.get_event_loop().create_connection(factory, 'localhost', port)
+                    _, protocol = await loop.create_connection(factory, 'localhost', port)
                     return protocol
 
                 except OSError as ex:
-                    message = utils.strex(ex)
-                    LOGGER.debug(f'Subprocess connection error: {message}')
+                    errors.add(utils.strex(ex))
                     await asyncio.sleep(SUBPROCESS_CONNECT_INTERVAL.total_seconds())
 
     except asyncio.TimeoutError:
         with suppress(Exception):
             proc.terminate()
-        raise ConnectionError(message)
+        raise ConnectionError(str(errors))
 
 
 async def connect_simulation(callbacks: ConnectionCallbacks) -> ConnectionImplBase:  # pragma: no cover
     config = utils.get_config()
-    device_id = config.device_id
-    port = utils.get_free_port()
-    display_ws_port = config.display_ws_port
     arch = platform.machine()
     binary = SIM_BINARIES.get(arch)
 
@@ -161,25 +158,23 @@ async def connect_simulation(callbacks: ConnectionCallbacks) -> ConnectionImplBa
     workdir.mkdir(mode=0o777, exist_ok=True)
 
     proc = await asyncio.create_subprocess_exec(binary_path,
-                                                '--device_id', device_id,
-                                                '--port', str(port),
-                                                '--display_ws_port', str(display_ws_port),
+                                                '--device_id', config.device_id,
+                                                '--port', str(config.device_port),
+                                                '--display_ws_port', str(config.display_ws_port),
                                                 cwd=workdir)
-    return await connect_subprocess(callbacks, port, proc, 'SIM', binary)
+    return await connect_subprocess(callbacks, config.device_port, proc, 'SIM', binary)
 
 
 async def connect_usb(callbacks: ConnectionCallbacks,
                       device_serial: str | None = None,
-                      port: int | None = None,
                       ) -> ConnectionImplBase:  # pragma: no cover
     config = utils.get_config()
     device_serial = device_serial or config.device_serial
-    port = port or config.device_port
     proc = await asyncio.create_subprocess_exec('/usr/bin/socat',
-                                                f'tcp-listen:{port},reuseaddr,fork',
+                                                f'tcp-listen:{config.device_port},reuseaddr,fork',
                                                 f'file:{device_serial},raw,echo=0,b{USB_BAUD_RATE}')
 
-    return await connect_subprocess(callbacks, port, proc, 'USB', device_serial)
+    return await connect_subprocess(callbacks, config.device_port, proc, 'USB', device_serial)
 
 
 async def discover_mdns(callbacks: ConnectionCallbacks) -> ConnectionImplBase | None:

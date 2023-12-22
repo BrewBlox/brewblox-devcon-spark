@@ -5,9 +5,9 @@ from pprint import pformat
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 
-from . import (backup_storage, block_store, broadcaster, codec, commander,
-               connection, controller, global_store, mqtt, service_status,
-               service_store, synchronization, time_sync, utils)
+from . import (backup_storage, broadcaster, codec, commander, connection,
+               controller, datastore, mqtt, service_status, synchronization,
+               time_sync, utils)
 from .api import (backup_api, blocks_api, blocks_mqtt_api, debug_api,
                   settings_api, sim_api, system_api)
 from .models import ErrorResponse
@@ -15,7 +15,7 @@ from .models import ErrorResponse
 LOGGER = logging.getLogger(__name__)
 
 
-def setup_logging(debug: bool):
+def setup_logging(debug: bool, trace: bool):
     level = logging.DEBUG if debug else logging.INFO
     unimportant_level = logging.INFO if debug else logging.WARN
     format = '%(asctime)s.%(msecs)03d [%(levelname).1s:%(name)s:%(lineno)d] %(message)s'
@@ -23,6 +23,11 @@ def setup_logging(debug: bool):
 
     logging.basicConfig(level=level, format=format, datefmt=datefmt)
     logging.captureWarnings(True)
+
+    # Enables LOGGER.trace(msg) calls
+    # Trace logs are independent from debug logs
+    # You can enable either, neither, or both
+    utils.add_logging_level('TRACE', level + 5 if trace else level - 5)
 
     logging.getLogger('gmqtt').setLevel(unimportant_level)
     logging.getLogger('httpx').setLevel(unimportant_level)
@@ -60,9 +65,7 @@ async def lifespan(app: FastAPI):
 
     async with AsyncExitStack() as stack:
         await stack.enter_async_context(mqtt.lifespan())
-        await stack.enter_async_context(global_store.lifespan())
-        await stack.enter_async_context(service_store.lifespan())
-        await stack.enter_async_context(block_store.lifespan())
+        await stack.enter_async_context(datastore.lifespan())
         await stack.enter_async_context(connection.lifespan())
         await stack.enter_async_context(synchronization.lifespan())
         await stack.enter_async_context(backup_storage.lifespan())
@@ -73,7 +76,7 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     config = utils.get_config()
-    setup_logging(config.debug)
+    setup_logging(config.debug, config.trace)
 
     if config.debugger:  # pragma: no cover
         import debugpy
@@ -83,9 +86,7 @@ def create_app() -> FastAPI:
     # Call setup functions for modules
     mqtt.setup()
     service_status.setup()
-    global_store.setup()
-    service_store.setup()
-    block_store.setup()
+    datastore.setup()
     codec.setup()
     connection.setup()
     commander.setup()

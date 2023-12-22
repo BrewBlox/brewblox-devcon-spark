@@ -14,8 +14,7 @@ from brewblox_devcon_spark.models import DecodedPayload, MaskMode
 def degf_processor():
     unit_conversion.setup()
     unit_conversion.CV.get().temperature = 'degF'
-    m = ProtobufProcessor(strip_readonly=False)
-    return m
+    return ProtobufProcessor(strip_readonly=False)
 
 
 @pytest.fixture

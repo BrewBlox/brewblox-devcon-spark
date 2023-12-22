@@ -3,11 +3,13 @@ Tests brewblox_devcon_spark.datastore
 """
 
 import asyncio
+from contextlib import asynccontextmanager
+from datetime import timedelta
 
 import pytest
-from aiohttp import web
-from aresponses import ResponsesMockServer
-from brewblox_service import http, scheduler
+from fastapi import FastAPI
+from pytest_httpx import HTTPXMock
+from pytest_mock import MockerFixture
 
 from brewblox_devcon_spark import datastore
 from brewblox_devcon_spark.models import ServiceConfig
@@ -24,6 +26,17 @@ def add_check_resp(aresponses: ResponsesMockServer, count, status=200):
                    repeat=count)
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+
+
+@pytest.fixture
+def app(mocker: MockerFixture) -> FastAPI:
+    mocker.patch(TESTED + '.FLUSH_DELAY', timedelta(milliseconds=1))
+    mocker.patch(TESTED + '.RETRY_INTERVAL', timedelta(milliseconds=1))
+
+
 @pytest.fixture
 def setup(app, mocker):
     mocker.patch(TESTED + '.FLUSH_DELAY_S', 0.01)
@@ -36,19 +49,19 @@ def setup(app, mocker):
     scheduler.setup(app)
 
 
-async def test_check_remote(app, client, aresponses: ResponsesMockServer):
+async def test_wait_datastore_ready(app, client, aresponses: ResponsesMockServer):
     add_check_resp(aresponses, 10, 405)
     add_check_resp(aresponses, 1)
-    await asyncio.wait_for(datastore.check_remote(app), timeout=1)
+    await asyncio.wait_for(datastore.wait_datastore_ready(app), timeout=1)
     aresponses.assert_all_requests_matched()
 
 
-async def test_cancel_check_remote(app, client, aresponses: ResponsesMockServer):
+async def test_cancel_wait_datastore_ready(app, client, aresponses: ResponsesMockServer):
     add_check_resp(aresponses, 100, 405)
     # The function should respond to the CancelledError raised by wait_for() timeout
     # Sadly, if this test fails, it will completely block test execution
     with pytest.raises(asyncio.TimeoutError):
-        await asyncio.wait_for(datastore.check_remote(app), timeout=0.001)
+        await asyncio.wait_for(datastore.wait_datastore_ready(app), timeout=0.001)
 
 
 async def test_non_isolated(app, event_loop):

@@ -19,7 +19,7 @@ services:
   history:
     image: ghcr.io/brewblox/brewblox-history:develop
 
-  spark-one:
+  sparkey:
     build:
       context: .
       dockerfile: ./Dockerfile.service
@@ -36,7 +36,8 @@ services:
     environment:
       - UVICORN_RELOAD=True
       - BREWBLOX_DEBUG=True
-      - BREWBLOX_NAME=spark-one
+      - BREWBLOX_TRACE=False
+      - BREWBLOX_NAME=sparkey
       - BREWBLOX_SIMULATION=True
     ports:
       - "5000:5000"

@@ -67,7 +67,7 @@ async def test_sync_status(app, client):
 
 
 async def test_sync_errors(app, client, mocker):
-    mocker.patch(TESTED + '.datastore.check_remote', autospec=True, side_effect=RuntimeError)
+    mocker.patch(TESTED + '.datastore.wait_datastore_ready', autospec=True, side_effect=RuntimeError)
 
     with pytest.raises(RuntimeError):
         await connect(app)

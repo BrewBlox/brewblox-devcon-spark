@@ -115,7 +115,7 @@ class SparkCommander:
 
     async def _on_response(self, msg: str):
         try:
-            # LOGGER.debug(f'response: {msg}')
+            LOGGER.trace(f'response: {msg}')
             response = self._codec.decode_response(msg)
 
             # Get the Future object awaiting this request
@@ -145,7 +145,7 @@ class SparkCommander:
         self._active_messages[msg_id] = fut
 
         try:
-            # LOGGER.debug(f'request: {msg}')
+            LOGGER.trace(f'request: {msg}')
             await self._conn.send_request(msg)
             response = await asyncio.wait_for(fut, timeout=self._timeout.total_seconds())
 
