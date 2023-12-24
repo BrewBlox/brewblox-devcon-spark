@@ -8,8 +8,8 @@ import pytest
 from brewblox_service import scheduler
 from brewblox_service.testing import matching
 
-from brewblox_devcon_spark import (codec, commander, connection,
-                                   service_status, service_store)
+from brewblox_devcon_spark import (codec, commander, connection, service_store,
+                                   state_machine)
 from brewblox_devcon_spark.models import (ErrorCode, IntermediateResponse,
                                           ServiceConfig)
 
@@ -21,7 +21,7 @@ def setup(app):
     config = utils.get_config()
     config.command_timeout = 1
 
-    service_status.setup(app)
+    state_machine.setup(app)
     scheduler.setup(app)
     service_store.setup(app)
     codec.setup(app)
@@ -42,15 +42,15 @@ async def test_acknowledge(app, client):
         '0A',
         '1234567F0CASE'
     ])
-    service_status.set_enabled(app, True)
-    await asyncio.wait_for(service_status.wait_connected(app), timeout=5)
-    assert not service_status.is_acknowledged(app)
+    state_machine.set_enabled(app, True)
+    await asyncio.wait_for(state_machine.wait_connected(app), timeout=5)
+    assert not state_machine.is_acknowledged(app)
 
     with pytest.warns(UserWarning, match='incompatible device ID'):
         await connection.fget(app).on_event(welcome)
 
-    assert service_status.is_acknowledged(app)
-    assert service_status.desc(app).controller.device.device_id == '1234567f0case'
+    assert state_machine.is_acknowledged(app)
+    assert state_machine.desc(app).controller.device.device_id == '1234567f0case'
 
 
 async def test_unexpected_event(app, client, mocker):
@@ -75,6 +75,6 @@ async def test_firmware_update_call(app, client, mocker):
     # We don't unit test OTA update logic because it makes very in-depth assumptions
     # about how particle devices respond to YMODEM calls
     # We'll check now whether the basic call works
-    service_status.set_enabled(app, True)
-    await asyncio.wait_for(service_status.wait_connected(app), timeout=5)
+    state_machine.set_enabled(app, True)
+    await asyncio.wait_for(state_machine.wait_connected(app), timeout=5)
     await commander.fget(app).firmware_update()

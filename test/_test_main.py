@@ -8,7 +8,7 @@ from brewblox_service import http, mqtt, scheduler, service
 from brewblox_devcon_spark import __main__ as main
 from brewblox_devcon_spark import (backup_storage, block_store, broadcaster,
                                    codec, commander, connection, controller,
-                                   global_store, service_status, service_store,
+                                   global_store, service_store, state_machine,
                                    synchronization, time_sync)
 from brewblox_devcon_spark.models import ServiceConfig
 
@@ -48,7 +48,7 @@ def test_main(app, m_service_funcs):
         service_store.fget(app),
         block_store.fget(app),
 
-        service_status.fget(app),
+        state_machine.fget(app),
         codec.fget(app),
         connection.fget(app),
         commander.fget(app),

@@ -8,7 +8,7 @@ import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 
-from . import const, controller, service_status, utils
+from . import const, controller, state_machine, utils
 from .models import Block
 
 ERROR_INTERVAL = timedelta(seconds=10)
@@ -19,10 +19,10 @@ LOGGER = logging.getLogger(__name__)
 class TimeSync:
 
     async def run(self):
-        await service_status.CV.get().wait_synchronized()
+        await state_machine.CV.get().wait_synchronized()
         await controller.CV.get().patch_block(Block(
             nid=const.SYSINFO_NID,
-            type='SysInfo',
+            type=const.SYSINFO_BLOCK_TYPE,
             data={'systemTime': datetime.now()},
         ))
 

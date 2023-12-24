@@ -5,7 +5,6 @@ Awaitable events for tracking device and network status
 
 import asyncio
 import logging
-import warnings
 from contextvars import ContextVar
 from typing import Literal
 
@@ -15,10 +14,10 @@ from .models import (ConnectionKind_, ControllerDescription, DeviceDescription,
                      ServiceStatusDescription)
 
 LOGGER = logging.getLogger(__name__)
-CV: ContextVar['ServiceStatus'] = ContextVar('service_status.ServiceStatus')
+CV: ContextVar['ServiceState'] = ContextVar('state_machine.ServiceState')
 
 
-class ServiceStatus:
+class ServiceState:
 
     def __init__(self):
         config = utils.get_config()
@@ -109,10 +108,10 @@ class ServiceStatus:
             or wildcard_id
 
         if not compatible_firmware:
-            warnings.warn('Handshake error: incompatible firmware')
+            LOGGER.warn('Handshake error: incompatible firmware')
 
         if not compatible_identity:
-            warnings.warn('Handshake error: incompatible device ID')
+            LOGGER.warn('Handshake error: incompatible device ID')
 
         # determine firmware_error
         if not compatible_firmware:
@@ -195,4 +194,4 @@ class ServiceStatus:
 
 
 def setup():
-    CV.set(ServiceStatus())
+    CV.set(ServiceState())

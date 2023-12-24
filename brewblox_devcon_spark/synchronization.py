@@ -6,7 +6,7 @@ After startup, `connection` and `synchronization` cooperate to
 advance a state machine. The state machine will progress linearly,
 but may revert to DISCONNECTED at any time.
 
-This state machine is disabled if `autoconnecting` is False in service settings.
+This state machine is disabled if `enabled` is False in service settings.
 `connection` will wait until enabled before it attempts to discover and connect.
 
 - DISCONNECTED: The service is not connected at a transport level.
@@ -23,7 +23,7 @@ This state machine is disabled if `autoconnecting` is False in service settings.
 
 The synchronization process consists of:
 
-- Set enabled flag to `service_settings.autoconnecting` value.
+- Set enabled flag to `service_settings.enabled` value.
 - Wait for CONNECTED status.
 - Synchronize handshake:
     - Repeatedly prompt the controller to send a handshake,
@@ -47,7 +47,7 @@ from contextlib import asynccontextmanager
 from datetime import timedelta
 from functools import wraps
 
-from . import codec, commander, const, exceptions, service_status, utils
+from . import codec, commander, const, exceptions, state_machine, utils
 from .codec.time_utils import serialize_duration
 from .datastore import block_store, settings_store
 from .models import FirmwareBlock
@@ -79,7 +79,7 @@ def subroutine(desc: str):
 class SparkSynchronization:
 
     def __init__(self):
-        self.status = service_status.CV.get()
+        self.status = state_machine.CV.get()
         self.unit_converter = codec.unit_conversion.CV.get()
         self.codec = codec.CV.get()
         self.commander = commander.CV.get()
@@ -115,7 +115,7 @@ class SparkSynchronization:
 
     @subroutine('apply service settings')
     async def _apply_service_settings(self):
-        enabled = self.store.service_settings.autoconnecting
+        enabled = self.store.service_settings.enabled
         self.status.set_enabled(enabled)
 
     async def _prompt_handshake(self):
@@ -128,8 +128,8 @@ class SparkSynchronization:
     @subroutine('sync handshake')
     async def _sync_handshake(self):
         # Periodically prompt a handshake until acknowledged by the controller
-        async with utils.task_context(self.status.wait_acknowledged()) as ack_task:
-            async with asyncio.timeout(HANDSHAKE_TIMEOUT.total_seconds()):
+        async with asyncio.timeout(HANDSHAKE_TIMEOUT.total_seconds()):
+            async with utils.task_context(self.status.wait_acknowledged()) as ack_task:
                 while not ack_task.done():
                     await self._prompt_handshake()
                     # Returns early if acknowledged before timeout elapsed

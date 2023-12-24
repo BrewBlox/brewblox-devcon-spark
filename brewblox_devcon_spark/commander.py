@@ -7,7 +7,7 @@ import asyncio
 import logging
 from contextvars import ContextVar
 
-from . import codec, connection, exceptions, service_status, utils
+from . import codec, connection, exceptions, state_machine, utils
 from .codec.opts import DecodeOpts
 from .models import (ControllerDescription, DecodedPayload, DeviceDescription,
                      EncodedPayload, ErrorCode, FirmwareBlock,
@@ -48,7 +48,7 @@ class SparkCommander:
         self._msgid = 0
         self._timeout = config.command_timeout
         self._active_messages: dict[int, asyncio.Future[IntermediateResponse]] = {}
-        self._status = service_status.CV.get()
+        self._status = state_machine.CV.get()
         self._codec = codec.CV.get()
         self._conn = connection.CV.get()
         self._conn.on_event = self._on_event

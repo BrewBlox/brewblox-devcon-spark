@@ -10,7 +10,7 @@ from pytest_mock import MockerFixture
 
 from brewblox_devcon_spark import (block_store, broadcaster, codec, commander,
                                    connection, controller, exceptions,
-                                   global_store, service_status, service_store,
+                                   global_store, service_store, state_machine,
                                    synchronization)
 from brewblox_devcon_spark.connection import mock_connection
 from brewblox_devcon_spark.models import ErrorCode, ServiceConfig
@@ -37,7 +37,7 @@ def setup(app, broker):
     config.history_topic = 'testcast/history'
     config.state_topic = 'testcast/state'
 
-    service_status.setup(app)
+    state_machine.setup(app)
     scheduler.setup(app)
     mqtt.setup(app)
     codec.setup(app)
@@ -52,7 +52,7 @@ def setup(app, broker):
 
 @pytest.fixture
 async def synchronized(app, client):
-    await service_status.wait_synchronized(app)
+    await state_machine.wait_synchronized(app)
 
 
 @pytest.fixture
@@ -70,7 +70,7 @@ async def test_disabled(app, client, synchronized):
 
 
 async def test_broadcast_unsync(app, client, synchronized, m_publish: Mock):
-    service_status.fget(app).synchronized_ev.clear()
+    state_machine.fget(app).synchronized_ev.clear()
 
     app['config'].isolated = False
     b = broadcaster.Broadcaster(app)
@@ -120,7 +120,7 @@ async def test_error(app, client, synchronized, m_publish: Mock):
 
 
 async def test_api_broadcaster(app, client, m_publish: Mock):
-    await service_status.wait_synchronized(app)
+    await state_machine.wait_synchronized(app)
     app['config'].isolated = False
     b = broadcaster.Broadcaster(app)
     await b.prepare()

@@ -4,8 +4,7 @@ from contextlib import asynccontextmanager, suppress
 from contextvars import ContextVar
 from datetime import timedelta
 
-from .. import exceptions, service_status, utils
-from ..datastore import settings_store
+from .. import exceptions, state_machine, utils
 from ..models import DiscoveryType
 from .connection_impl import ConnectionCallbacks, ConnectionImplBase
 from .mock_connection import connect_mock
@@ -139,8 +138,7 @@ class ConnectionHandler(ConnectionCallbacks):
             return await self.discover()
 
     async def run(self):
-        status = service_status.CV.get()
-        store = settings_store.CV.get()
+        status = state_machine.CV.get()
 
         try:
             if self._attempts > MAX_RETRY_COUNT:
@@ -168,7 +166,6 @@ class ConnectionHandler(ConnectionCallbacks):
             # USB devices that were plugged in after container start are not visible
             # If we are potentially connecting to a USB device, we need to restart
             if self.usb_compatible:
-                await store.commit_service_settings()
                 utils.graceful_shutdown()
             else:
                 self._attempts = 0

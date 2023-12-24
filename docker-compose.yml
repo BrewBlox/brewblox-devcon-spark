@@ -37,7 +37,6 @@ services:
       - UVICORN_RELOAD=True
       - BREWBLOX_DEBUG=True
       - BREWBLOX_TRACE=False
-      - BREWBLOX_NAME=sparkey
       - BREWBLOX_SIMULATION=True
     ports:
       - "5000:5000"

@@ -139,7 +139,7 @@ class Codec:
 
             message = impl.message_cls()
             payload = self._processor.pre_encode(message.DESCRIPTOR,
-                                                 payload.copy(deep=True))
+                                                 payload.model_copy(deep=True))
             json_format.ParseDict(payload.content, message)
             content: str = b64encode(message.SerializeToString()).decode()
 

@@ -9,13 +9,13 @@ from contextvars import ContextVar
 from datetime import datetime
 from pathlib import Path
 
-from . import controller, exceptions, service_status, utils
+from . import controller, exceptions, state_machine, utils
 from .models import Backup, BackupApplyResult, BackupIdentity
 
 BASE_BACKUP_DIR = Path('./backup')
 
 LOGGER = logging.getLogger(__name__)
-CV: ContextVar['BackupStorage'] = ContextVar('backup_storage.BackupStorage')
+CV: ContextVar['BackupStorage'] = ContextVar('block_backup.BackupStorage')
 
 
 class BackupStorage:
@@ -26,7 +26,7 @@ class BackupStorage:
         self.dir = BASE_BACKUP_DIR / self.name
         self.dir.mkdir(mode=0o777, parents=True, exist_ok=True)
 
-        self.status = service_status.CV.get()
+        self.status = state_machine.CV.get()
         self.ctlr = controller.CV.get()
 
     async def run(self):

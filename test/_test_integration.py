@@ -14,7 +14,7 @@ from pytest_mock import MockerFixture
 
 from brewblox_devcon_spark import (backup_storage, block_store, codec,
                                    commander, connection, const, controller,
-                                   global_store, service_status, service_store,
+                                   global_store, service_store, state_machine,
                                    synchronization)
 from brewblox_devcon_spark.__main__ import parse_ini
 from brewblox_devcon_spark.api import (backup_api, blocks_api, debug_api,
@@ -94,7 +94,7 @@ def setup(app, broker):
     config.mqtt_port = broker['mqtt']
     config.state_topic = 'test_integration/state'
 
-    service_status.setup(app)
+    state_machine.setup(app)
     scheduler.setup(app)
     mqtt.setup(app)
     codec.setup(app)
@@ -126,7 +126,7 @@ async def synchronized(app, client: TestClient):
     # Prevents test hangups if the connection fails
     await asyncio.wait_for(
         asyncio.gather(
-            service_status.wait_synchronized(app),
+            state_machine.wait_synchronized(app),
             mqtt.fget(app).ready.wait(),
         ),
         timeout=5)
@@ -372,12 +372,12 @@ async def test_ping(app, client: TestClient):
 async def test_settings_api(app, client: TestClient, block_args):
     await response(client.post('/blocks/create', json=block_args), 201)
 
-    retd = await response(client.get('/settings/autoconnecting'))
+    retd = await response(client.get('/settings/enabled'))
     assert retd == {'enabled': True}
 
-    retd = await response(client.put('/settings/autoconnecting', json={'enabled': False}))
+    retd = await response(client.put('/settings/enabled', json={'enabled': False}))
     assert retd == {'enabled': False}
-    retd = await response(client.get('/settings/autoconnecting'))
+    retd = await response(client.get('/settings/enabled'))
     assert retd == {'enabled': False}
 
 
@@ -537,7 +537,7 @@ async def test_read_all_logged(app, client: TestClient):
 
 
 async def test_system_status(app, client: TestClient):
-    await service_status.wait_synchronized(app)
+    await state_machine.wait_synchronized(app)
     resp = await response(client.get('/system/status'))
 
     firmware_desc = {
@@ -572,7 +572,7 @@ async def test_system_status(app, client: TestClient):
         'identity_error': None,
     }
 
-    service_status.set_disconnected(app)
+    state_machine.set_disconnected(app)
     await asyncio.sleep(0.01)
     resp = await response(client.get('/system/status'))
     assert resp['connection_status'] == 'DISCONNECTED'

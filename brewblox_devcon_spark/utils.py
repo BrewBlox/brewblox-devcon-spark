@@ -1,13 +1,17 @@
 import asyncio
 import logging
+import re
 import socket
 import traceback
 from configparser import ConfigParser
 from contextlib import asynccontextmanager, suppress
 from datetime import timedelta
 from functools import lru_cache
+from ipaddress import ip_address
 from typing import Awaitable, Callable, Coroutine, Generator
 
+from dns.exception import DNSException
+from dns.resolver import Resolver as DNSResolver
 from httpx import Response
 
 from .models import FirmwareConfig, ServiceConfig
@@ -17,7 +21,15 @@ LOGGER = logging.getLogger(__name__)
 
 @lru_cache
 def get_config() -> ServiceConfig:  # pragma: no cover
-    return ServiceConfig()
+    config = ServiceConfig()
+
+    if not config.device_id and (config.simulation or config.mock):
+        config.device_id = '123456789012345678901234'
+
+    if not config.name:
+        config.name = autodetect_service_name()
+
+    return config
 
 
 @lru_cache
@@ -45,6 +57,56 @@ def strex(ex: Exception, tb=False):
 def graceful_shutdown():  # pragma: no cover
     # os.kill(os.getpid(), signal.SIGINT)
     asyncio.get_running_loop().stop()
+
+
+def autodetect_service_name() -> str:  # pragma: no cover
+    """
+    Automatically detects the Docker Compose service name of the running
+    container.
+
+    Compose bridge networks implement DNS resolution to resolve the service name
+    to the IP address of one of the containers for the service.
+    By default, the generated container names for Compose services include the
+    service name.
+    Typically, this is formatted as `{project_name}-{service_name}-{container_num}`.
+    If we resolve the container IP address to its container name,
+    we can extract the service name from this known format.
+    """
+    resolver = DNSResolver()
+    ip = str(ip_address(socket.gethostbyname(socket.gethostname())))
+    answer = resolver.resolve_address(ip)
+    host = str(answer[0]).split('.')[0]
+
+    # We can first apply a basic sanity check: does the hostname match the format?
+    match = re.fullmatch(r'.+[_-].+([_-])\d+', host)
+    if not match:
+        raise ValueError('Failed to autodetect service name. ' +
+                         f'"{host}" is not formatted as a Compose container name.')
+
+    # We need to identify the separactor character.
+    # Depending on the Compose version, the separator character is either _ or -.
+    # We know that the service name is always postfixed with a separator.
+    # The last found _ or - must then be the separator.
+    compose_name_sep = match[1]
+
+    # Separating project name and service name is harder.
+    # Both the service and the project may include the separator character.
+    # For example, if the container name is `first_second_third_1`,
+    # we don't know if this is service `third` in project `first_second`,
+    # or service `second_third` in project `first`.
+    #
+    # The solution is to query all options
+    # until we get a result matching the known IP address for this host.
+    sections = host.split(compose_name_sep)[1:-1]
+    candidates = [compose_name_sep.join(sections[i:]) for i in range(len(sections))]
+
+    for c in candidates:
+        with suppress(DNSException):
+            answer = resolver.resolve(c, 'A')
+            if ip in [str(r) for r in answer]:
+                return c
+
+    raise RuntimeError(f'No service name found for {host=}, {ip=}, {candidates=}')
 
 
 def get_free_port() -> int:
@@ -129,6 +191,10 @@ def add_logging_level(level_name: str, level_num: int, method_name: str | None =
     """
     if not method_name:
         method_name = level_name.lower()
+
+    if hasattr(logging, level_name) and getattr(logging, level_name) == level_num:
+        # Already set, no need to replicate
+        return
 
     if hasattr(logging, level_name):
         raise AttributeError(f'{level_name} already defined in logging module')

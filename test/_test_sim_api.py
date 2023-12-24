@@ -39,7 +39,7 @@ def setup(app):
 
 @pytest.fixture(autouse=True)
 async def m_wait_sync(mocker):
-    mocker.patch(TESTED + '.service_status.wait_synchronized', autospec=True)
+    mocker.patch(TESTED + '.state_machine.wait_synchronized', autospec=True)
 
 
 async def test_sim_display(app, client, mocker):

@@ -7,7 +7,7 @@ OBJECT_LINK_POSTFIX_START = '<'
 OBJECT_LINK_POSTFIX_END = '>'
 GENERATED_ID_PREFIX = 'New|'
 
-SPARK_NAMESPACE = 'spark-service'
+SERVICE_NAMESPACE = 'brewblox-devcon-spark'
 GLOBAL_NAMESPACE = 'brewblox-global'
 GLOBAL_UNITS_ID = 'units'
 GLOBAL_TIME_ZONE_ID = 'timeZone'

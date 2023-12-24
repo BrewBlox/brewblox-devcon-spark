@@ -11,8 +11,7 @@ import pytest
 from fastapi import FastAPI
 from pytest_mock import MockerFixture
 
-from brewblox_devcon_spark import (exceptions, service_status, service_store,
-                                   utils)
+from brewblox_devcon_spark import exceptions, state_machine, utils
 from brewblox_devcon_spark.codec import unit_conversion
 from brewblox_devcon_spark.connection import connection_handler
 from brewblox_devcon_spark.models import DiscoveryType
@@ -41,8 +40,7 @@ def welcome_message():
 
 @pytest.fixture(autouse=True)
 def app() -> FastAPI:
-    service_status.setup()
-    service_store.setup()
+    state_machine.setup()
     unit_conversion.setup()
     return FastAPI()
 
@@ -258,7 +256,7 @@ async def test_handler_connect_order(mocker: MockerFixture):
 
 async def test_handler_run():
     config = utils.get_config()
-    status = service_status.CV.get()
+    state = state_machine.CV.get()
     handler = connection_handler.ConnectionHandler()
 
     handler.on_response = AsyncMock()
@@ -269,8 +267,8 @@ async def test_handler_run():
 
     task = asyncio.create_task(handler.run())
 
-    status.set_enabled(True)
-    await asyncio.wait_for(status.wait_connected(),
+    state.set_enabled(True)
+    await asyncio.wait_for(state.wait_connected(),
                            timeout=5)
 
     # We're assuming here that mock_connection.send_request()
@@ -286,7 +284,7 @@ async def test_handler_run():
 
 async def test_handler_disconnect(mocker: MockerFixture):
     config = utils.get_config()
-    status = service_status.CV.get()
+    state = state_machine.CV.get()
     handler = connection_handler.ConnectionHandler()
 
     config.mock = True
@@ -294,32 +292,33 @@ async def test_handler_disconnect(mocker: MockerFixture):
     # can safely be called when not connected
     await handler.start_reconnect()
 
-    status.set_enabled(True)
+    state.set_enabled(True)
 
     task = asyncio.create_task(handler.run())
-    await asyncio.wait_for(status.wait_connected(),
+    await asyncio.wait_for(state.wait_connected(),
                            timeout=5)
 
     await handler.start_reconnect()
 
     # If connection signals closed, handler cleanly stops its run
-    # and calls status.set_disconnected()
+    # and calls state.set_disconnected()
     await asyncio.wait_for(task, timeout=5)
     assert task.exception() is None
-    assert status.is_disconnected()
+    assert state.is_disconnected()
 
 
 async def test_handler_connect_error(mocker: MockerFixture, m_graceful_shutdown: Mock):
-    config = utils.get_config()
-    status = service_status.CV.get()
-    handler = connection_handler.ConnectionHandler()
-
-    mocker.patch(TESTED + '.calc_backoff').return_value = timedelta()
+    mocker.patch(TESTED + '.BASE_RECONNECT_DELAY', timedelta(milliseconds=1))
+    mocker.patch(TESTED + '.MAX_RECONNECT_DELAY', timedelta(milliseconds=2))
     m_connect_mock: AsyncMock = mocker.patch(TESTED + '.connect_mock', autospec=True)
     m_connect_mock.side_effect = ConnectionRefusedError
 
+    config = utils.get_config()
+    state = state_machine.CV.get()
+    handler = connection_handler.ConnectionHandler()
+
     config.mock = True
-    status.set_enabled(True)
+    state.set_enabled(True)
 
     # Retry until attempts exhausted
     # This is a mock - it will not attempt to restart the service
@@ -333,6 +332,8 @@ async def test_handler_connect_error(mocker: MockerFixture, m_graceful_shutdown:
 
 
 async def test_handler_discovery_error(mocker: MockerFixture, m_graceful_shutdown: Mock):
+    mocker.patch(TESTED + '.BASE_RECONNECT_DELAY', timedelta(milliseconds=1))
+    mocker.patch(TESTED + '.MAX_RECONNECT_DELAY', timedelta(milliseconds=2))
     mocker.patch(TESTED + '.DISCOVERY_INTERVAL', timedelta(milliseconds=1))
     mocker.patch(TESTED + '.DISCOVERY_TIMEOUT', timedelta(milliseconds=1))
 
@@ -346,19 +347,14 @@ async def test_handler_discovery_error(mocker: MockerFixture, m_graceful_shutdow
     config.device_host = None
     config.discovery = DiscoveryType.usb
 
-    status = service_status.CV.get()
-    store = service_store.CV.get()
+    state = state_machine.CV.get()
 
-    status.set_enabled(True)
+    state.set_enabled(True)
 
     handler = connection_handler.ConnectionHandler()
     m_graceful_shutdown.side_effect = RuntimeError
     with pytest.raises(RuntimeError):
         await handler.run()
-
-    with store.open() as data:
-        assert data.reconnect_delay > timedelta()
-        data.reconnect_delay = timedelta()
 
     # No reboot is required when discovery does not involve USB
     m_discover_mqtt = mocker.patch(TESTED + '.discover_mqtt', autospec=True)

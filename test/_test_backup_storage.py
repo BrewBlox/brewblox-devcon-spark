@@ -9,7 +9,7 @@ from brewblox_service import repeater, scheduler
 
 from brewblox_devcon_spark import (backup_storage, block_store, codec,
                                    commander, connection, controller,
-                                   global_store, service_status, service_store,
+                                   global_store, service_store, state_machine,
                                    synchronization)
 from brewblox_devcon_spark.models import Backup, BackupIdentity, ServiceConfig
 
@@ -27,7 +27,7 @@ def setup(app):
     config.backup_interval = 0.01
     config.backup_retry_interval = 0.01
 
-    service_status.setup(app)
+    state_machine.setup(app)
     scheduler.setup(app)
     codec.setup(app)
     block_store.setup(app)
@@ -44,7 +44,7 @@ def setup(app):
 
 @pytest.fixture
 async def synchronized(app, client):
-    await service_status.wait_synchronized(app)
+    await state_machine.wait_synchronized(app)
 
 
 async def test_inactive(app, client, synchronized):
@@ -79,8 +79,8 @@ async def test_autosave(app, client, mocker, synchronized):
 
     # Synchronized is checked before controller call
     # run() exits before the RuntimeError is raised
-    service_status.set_disconnected(app)
-    await service_status.wait_disconnected(app)
+    state_machine.set_disconnected(app)
+    await state_machine.wait_disconnected(app)
     await storage.run()
 
     # No new entries were added

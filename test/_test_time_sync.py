@@ -8,8 +8,8 @@ import pytest
 from brewblox_service import repeater, scheduler
 
 from brewblox_devcon_spark import (block_store, codec, commander, connection,
-                                   controller, global_store, service_status,
-                                   service_store, synchronization, time_sync)
+                                   controller, global_store, service_store,
+                                   state_machine, synchronization, time_sync)
 from brewblox_devcon_spark.models import ServiceConfig
 
 TESTED = time_sync.__name__
@@ -31,7 +31,7 @@ def setup(app):
     config = utils.get_config()
     config.time_sync_interval = 0.01
 
-    service_status.setup(app)
+    state_machine.setup(app)
     scheduler.setup(app)
     codec.setup(app)
     block_store.setup(app)
@@ -46,7 +46,7 @@ def setup(app):
 
 @pytest.fixture
 async def synchronized(app, client):
-    await service_status.wait_synchronized(app)
+    await state_machine.wait_synchronized(app)
 
 
 async def test_sync(app, client, synchronized, m_controller):

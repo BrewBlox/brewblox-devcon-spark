@@ -7,7 +7,7 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-from . import const, controller, mqtt, service_status, utils
+from . import const, controller, mqtt, state_machine, utils
 from .block_analysis import calculate_claims, calculate_relations
 
 LOGGER = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ class Broadcaster:
 
     async def run(self):
         mqtt_client = mqtt.CV.get()
-        status = service_status.CV.get()
+        status = state_machine.CV.get()
         blocks = []
 
         try:

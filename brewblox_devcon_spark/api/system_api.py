@@ -10,7 +10,7 @@ from fastapi import APIRouter, BackgroundTasks
 from httpx import AsyncClient
 
 from .. import (commander, connection, controller, exceptions, mqtt,
-                service_status, utils, ymodem)
+                state_machine, utils, ymodem)
 from ..models import (FirmwareFlashResponse, PingResponse,
                       ServiceStatusDescription)
 
@@ -40,7 +40,7 @@ async def system_status() -> ServiceStatusDescription:
     """
     Get service status.
     """
-    desc = service_status.CV.get().desc()
+    desc = state_machine.CV.get().desc()
     return desc
 
 
@@ -106,7 +106,7 @@ class Flasher:
         config = utils.get_config()
         fw_config = utils.get_fw_config()
 
-        self.status = service_status.CV.get()
+        self.status = state_machine.CV.get()
         self.mqtt_client = mqtt.CV.get()
         self.client = AsyncClient()
 

@@ -54,7 +54,7 @@ class BlockStore(TwinKeyDict[str, int, dict]):
             self._doc_id = None
             self._ready_ev.clear()
             query = DatastoreSingleQuery(id=doc_id,
-                                         namespace=const.SPARK_NAMESPACE)
+                                         namespace=const.SERVICE_NAMESPACE)
             content = query.model_dump(mode='json')
             resp = await utils.httpx_retry(lambda: self._client.post('/get', json=content))
             self._doc_id = doc_id
@@ -87,15 +87,15 @@ class BlockStore(TwinKeyDict[str, int, dict]):
 
         data = [TwinKeyEntry(keys=k, data=v)
                 for k, v in self.items()]
-        content = TwinKeyEntriesBox(
+        box = TwinKeyEntriesBox(
             value=TwinKeyEntriesValue(
                 id=self._doc_id,
-                namespace=const.SPARK_NAMESPACE,
+                namespace=const.SERVICE_NAMESPACE,
                 data=data
             )
         )
         await self._client.post('/set',
-                                json=content.model_dump(mode='json'))
+                                json=box.model_dump(mode='json'))
         LOGGER.info(f'{self} Saved {len(data)} block(s)')
 
     async def run(self, delayed: bool):

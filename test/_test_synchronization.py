@@ -9,8 +9,8 @@ import pytest
 from brewblox_service import brewblox_logger, scheduler
 
 from brewblox_devcon_spark import (block_store, codec, commander, connection,
-                                   exceptions, global_store, service_status,
-                                   service_store, synchronization)
+                                   exceptions, global_store, service_store,
+                                   state_machine, synchronization)
 from brewblox_devcon_spark.models import ServiceStatusDescription
 
 TESTED = synchronization.__name__
@@ -18,7 +18,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def states(app):
-    status = service_status.fget(app)
+    status = state_machine.fget(app)
     return [
         status.disconnected_ev.is_set(),
         status.connected_ev.is_set(),
@@ -28,25 +28,25 @@ def states(app):
 
 
 async def connect(app) -> synchronization.SparkSynchronization:
-    service_status.set_enabled(app, True)
-    await service_status.wait_connected(app)
+    state_machine.set_enabled(app, True)
+    await state_machine.wait_connected(app)
     s = synchronization.SparkSynchronization(app)
     await s.synchronize()
-    await service_status.wait_synchronized(app)
+    await state_machine.wait_synchronized(app)
     return s
 
 
 async def disconnect(app):
-    service_status.set_enabled(app, False)
+    state_machine.set_enabled(app, False)
     await connection.fget(app).start_reconnect()
-    await service_status.wait_disconnected(app)
+    await state_machine.wait_disconnected(app)
 
 
 @pytest.fixture
 def setup(app):
     app['config'].isolated = True
     scheduler.setup(app)
-    service_status.setup(app)
+    state_machine.setup(app)
     codec.setup(app)
     connection.setup(app)
     commander.setup(app)
@@ -113,7 +113,7 @@ async def test_on_global_store_change(app, client):
 
 
 async def test_incompatible_error(app, client, mocker):
-    m_desc: ServiceStatusDescription = mocker.patch(TESTED + '.service_status.desc').return_value
+    m_desc: ServiceStatusDescription = mocker.patch(TESTED + '.state_machine.desc').return_value
     m_desc.firmware_error = 'INCOMPATIBLE'
     m_desc.identity_error = None
 
@@ -128,7 +128,7 @@ async def test_incompatible_error(app, client, mocker):
 
 
 async def test_invalid_error(app, client, mocker):
-    m_desc: ServiceStatusDescription = mocker.patch(TESTED + '.service_status.desc').return_value
+    m_desc: ServiceStatusDescription = mocker.patch(TESTED + '.state_machine.desc').return_value
     m_desc.firmware_error = None
     m_desc.identity_error = 'INVALID'
 

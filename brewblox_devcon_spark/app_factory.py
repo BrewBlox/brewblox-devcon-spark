@@ -5,8 +5,8 @@ from pprint import pformat
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 
-from . import (backup_storage, broadcaster, codec, commander, connection,
-               controller, datastore, mqtt, service_status, synchronization,
+from . import (block_backup, broadcaster, codec, commander, connection,
+               controller, datastore, mqtt, state_machine, synchronization,
                time_sync, utils)
 from .api import (backup_api, blocks_api, blocks_mqtt_api, debug_api,
                   settings_api, sim_api, system_api)
@@ -60,15 +60,15 @@ def add_exception_handlers(app: FastAPI):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     LOGGER.info(utils.get_config())
-    LOGGER.debug('ROUTES:\n' + pformat(app.routes))
-    LOGGER.debug('LOGGERS:\n' + pformat(logging.root.manager.loggerDict))
+    LOGGER.trace('ROUTES:\n' + pformat(app.routes))
+    LOGGER.trace('LOGGERS:\n' + pformat(logging.root.manager.loggerDict))
 
     async with AsyncExitStack() as stack:
         await stack.enter_async_context(mqtt.lifespan())
         await stack.enter_async_context(datastore.lifespan())
         await stack.enter_async_context(connection.lifespan())
         await stack.enter_async_context(synchronization.lifespan())
-        await stack.enter_async_context(backup_storage.lifespan())
+        await stack.enter_async_context(block_backup.lifespan())
         await stack.enter_async_context(broadcaster.lifespan())
         await stack.enter_async_context(time_sync.lifespan())
         yield
@@ -85,13 +85,13 @@ def create_app() -> FastAPI:
 
     # Call setup functions for modules
     mqtt.setup()
-    service_status.setup()
+    state_machine.setup()
     datastore.setup()
     codec.setup()
     connection.setup()
     commander.setup()
     controller.setup()
-    backup_storage.setup()
+    block_backup.setup()
     blocks_mqtt_api.setup()
 
     # Create app

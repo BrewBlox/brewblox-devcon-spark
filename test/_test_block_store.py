@@ -29,7 +29,7 @@ def add_block_read_resp(aresponses, count, status=200):
         return web.json_response({
             'value': {
                 'id': 'XXXX',
-                'namespace': const.SPARK_NAMESPACE,
+                'namespace': const.SERVICE_NAMESPACE,
                 'data': read_objects(),
             }},
             status=status)

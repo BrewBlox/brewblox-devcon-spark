@@ -52,7 +52,7 @@ def config(monkeypatch: pytest.MonkeyPatch,
            docker_services: DockerServices,
            ) -> Generator[ServiceConfig, None, None]:
     cfg = TestConfig(
-        name='spark',
+        name='sparkey',
         debug=True,
         mqtt_host='localhost',
         mqtt_port=docker_services.port_for('mqtt', 1883),
@@ -82,7 +82,7 @@ def fw_config(monkeypatch: pytest.MonkeyPatch,
 
 @pytest.fixture(autouse=True)
 def setup_logging(config: ServiceConfig):
-    app_factory.setup_logging(True)
+    app_factory.setup_logging(True, True)
 
 
 @pytest.fixture(autouse=True)

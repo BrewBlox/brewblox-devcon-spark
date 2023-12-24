@@ -7,7 +7,7 @@ from brewblox_service import mqtt, scheduler
 
 from brewblox_devcon_spark import (block_store, codec, commander, connection,
                                    controller, exceptions, global_store,
-                                   service_status, service_store,
+                                   service_store, state_machine,
                                    synchronization)
 from brewblox_devcon_spark.api import mqtt_api
 from brewblox_devcon_spark.models import Block, BlockIdentity, ServiceConfig
@@ -24,7 +24,7 @@ def setup(app, broker):
 
     scheduler.setup(app)
     mqtt.setup(app)
-    service_status.setup(app)
+    state_machine.setup(app)
     block_store.setup(app)
     global_store.setup(app)
     service_store.setup(app)

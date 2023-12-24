@@ -32,7 +32,7 @@ class ServiceConfig(BaseSettings):
     )
 
     # Generic options
-    name: str  # Required
+    name: str = ''  # autodetect if not set
     debug: bool = False
     trace: bool = False
     debugger: bool = False
@@ -475,15 +475,15 @@ class DatastoreMultiValueBox(BaseModel):
 
 
 class TwinKeyEntriesValue(DatastoreValue):
-    namespace: str = const.SPARK_NAMESPACE
+    namespace: str = const.SERVICE_NAMESPACE
 
     data: list[TwinKeyEntry]
 
 
 class StoredServiceSettingsValue(DatastoreValue):
-    namespace: str = const.SPARK_NAMESPACE
+    namespace: str = const.SERVICE_NAMESPACE
 
-    autoconnecting: bool = True
+    enabled: bool = True
 
 
 class StoredUnitSettingsValue(DatastoreValue):

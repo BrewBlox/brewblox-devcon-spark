@@ -7,7 +7,7 @@ import logging
 from fastapi import APIRouter, WebSocket
 from httpx_ws import aconnect_ws
 
-from .. import service_status, utils
+from .. import state_machine, utils
 
 LOGGER = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ async def sim_display_websocket(ws: WebSocket):
 
     async with utils.task_context(listen()):
         try:
-            await service_status.CV.get().wait_synchronized()
+            await state_machine.CV.get().wait_synchronized()
 
             async with aconnect_ws(f'ws://localhost:{config.display_ws_port}') as client_ws:
                 while True:

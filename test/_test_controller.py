@@ -9,7 +9,7 @@ from brewblox_service import scheduler
 
 from brewblox_devcon_spark import (block_store, codec, commander, connection,
                                    const, controller, exceptions, global_store,
-                                   service_status, service_store,
+                                   service_store, state_machine,
                                    synchronization)
 from brewblox_devcon_spark.connection import mock_connection
 from brewblox_devcon_spark.models import (Block, BlockIdentity, ErrorCode,
@@ -20,7 +20,7 @@ TESTED = controller.__name__
 
 @pytest.fixture
 def setup(app):
-    service_status.setup(app)
+    state_machine.setup(app)
     scheduler.setup(app)
     codec.setup(app)
     connection.setup(app)
@@ -210,8 +210,8 @@ async def test_check_connection(app, client, mocker):
 
 
 async def test_start_update(app, client):
-    await service_status.wait_synchronized(app)
-    service_status.fget(app).set_updating()
+    await state_machine.wait_synchronized(app)
+    state_machine.fget(app).set_updating()
 
     with pytest.raises(exceptions.UpdateInProgress):
         await controller.fget(app).read_all_blocks()
