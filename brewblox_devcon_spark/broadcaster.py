@@ -25,11 +25,11 @@ class Broadcaster:
 
     async def run(self):
         mqtt_client = mqtt.CV.get()
-        status = state_machine.CV.get()
+        state = state_machine.CV.get()
         blocks = []
 
         try:
-            if status.is_synchronized():
+            if state.is_synchronized():
                 blocks, logged_blocks = await controller.CV.get().read_all_broadcast_blocks()
 
                 # Convert list to key/value format suitable for history
@@ -52,7 +52,7 @@ class Broadcaster:
                                     'key': self.name,
                                     'type': 'Spark.state',
                                     'data': {
-                                        'status': status.desc().model_dump(mode='json'),
+                                        'status': state.desc().model_dump(mode='json'),
                                         'blocks': [v.model_dump(mode='json') for v in blocks],
                                         'relations': calculate_relations(blocks),
                                         'claims': calculate_claims(blocks),

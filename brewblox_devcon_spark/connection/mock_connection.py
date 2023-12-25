@@ -147,7 +147,9 @@ class MockConnection(ConnectionImplBase):
         ]
         await self.on_event(','.join(welcome))
 
-    async def handle_command(self, request: IntermediateRequest) -> IntermediateResponse | None:  # pragma: no cover
+    async def handle_command(self,
+                             request: IntermediateRequest
+                             ) -> IntermediateResponse | None:  # pragma: no cover
         response = IntermediateResponse(
             msgId=request.msgId,
             error=ErrorCode.OK,

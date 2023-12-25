@@ -15,7 +15,7 @@ from ..models import (FirmwareFlashResponse, PingResponse,
                       ServiceStatusDescription)
 
 TRANSFER_TIMEOUT = timedelta(seconds=30)
-STATE_TIMEOUT = timedelta(seconds=20)
+DISCONNECT_TIMEOUT = timedelta(seconds=20)
 CONNECT_INTERVAL = timedelta(seconds=3)
 CONNECT_ATTEMPTS = 5
 
@@ -106,8 +106,10 @@ class Flasher:
         config = utils.get_config()
         fw_config = utils.get_fw_config()
 
-        self.status = state_machine.CV.get()
+        self.state = state_machine.CV.get()
         self.mqtt_client = mqtt.CV.get()
+        self.connection = connection.CV.get()
+        self.commander = commander.CV.get()
         self.client = AsyncClient()
 
         self.name = config.name
@@ -130,7 +132,7 @@ class Flasher:
                                  })
 
     async def run(self) -> FirmwareFlashResponse:
-        desc = self.status.desc()
+        desc = self.state.desc()
         platform = desc.controller.platform
         connection_kind = desc.connection_kind
         address = desc.address
@@ -147,17 +149,16 @@ class Flasher:
             self._notify(f'Started updating {self.name}@{address} to version {self.version} ({self.date})')
 
             self._notify('Preparing update')
-            self.status.set_updating()
+            self.state.set_updating()
             await asyncio.sleep(FLUSH_PERIOD.total_seconds())  # Wait for in-progress commands to finish
 
             self._notify('Sending update command to controller')
-            await commander.CV.get().firmware_update()
+            await self.commander.firmware_update()
 
             self._notify('Waiting for normal connection to close')
-            await connection.CV.get().end()  # TODO
             await asyncio.wait_for(
-                self.status.wait_disconnected(),
-                STATE_TIMEOUT.total_seconds())
+                self.connection.end(),
+                DISCONNECT_TIMEOUT.total_seconds())
 
             if platform == 'esp32':  # pragma: no cover
                 if connection_kind == 'TCP':

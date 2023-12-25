@@ -48,7 +48,7 @@ class SparkCommander:
         self._msgid = 0
         self._timeout = config.command_timeout
         self._active_messages: dict[int, asyncio.Future[IntermediateResponse]] = {}
-        self._status = state_machine.CV.get()
+        self._state = state_machine.CV.get()
         self._codec = codec.CV.get()
         self._conn = connection.CV.get()
         self._conn.on_event = self._on_event
@@ -108,7 +108,7 @@ class SparkCommander:
                     device_id=handshake.device_id,
                 ),
             )
-            self._status.set_acknowledged(desc)
+            state_machine.CV.get().set_acknowledged(desc)
 
         else:
             LOGGER.info(f'Spark log: `{msg}`')
@@ -159,9 +159,6 @@ class SparkCommander:
 
         finally:
             del self._active_messages[msg_id]
-
-    async def start_reconnect(self):
-        await self._conn.start_reconnect()
 
     async def validate(self, block: FirmwareBlock) -> FirmwareBlock:
         request = IntermediateRequest(

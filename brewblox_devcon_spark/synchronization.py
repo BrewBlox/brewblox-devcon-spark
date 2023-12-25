@@ -47,7 +47,8 @@ from contextlib import asynccontextmanager
 from datetime import timedelta
 from functools import wraps
 
-from . import codec, commander, const, exceptions, state_machine, utils
+from . import (codec, commander, connection, const, exceptions, state_machine,
+               utils)
 from .codec.time_utils import serialize_duration
 from .datastore import block_store, settings_store
 from .models import FirmwareBlock
@@ -79,19 +80,12 @@ def subroutine(desc: str):
 class SparkSynchronization:
 
     def __init__(self):
-        self.status = state_machine.CV.get()
-        self.unit_converter = codec.unit_conversion.CV.get()
-        self.codec = codec.CV.get()
-        self.commander = commander.CV.get()
+        self.state = state_machine.CV.get()
         self.store = settings_store.CV.get()
         self.block_store = block_store.CV.get()
-
-        self.store.service_settings_listeners.add(self._apply_service_settings)
-        self.store.global_settings_listeners.add(self._apply_global_settings)
-
-    def __del__(self):
-        self.store.service_settings_listeners.remove(self._apply_service_settings)
-        self.store.global_settings_listeners.remove(self._apply_global_settings)
+        self.converter = codec.unit_conversion.CV.get()
+        self.connection = connection.CV.get()
+        self.commander = commander.CV.get()
 
     @property
     def device_name(self) -> str:
@@ -99,10 +93,12 @@ class SparkSynchronization:
         # This prevents data conflicts when a simulation service
         # is reconfigured to start interacting with a controller.
         config = utils.get_config()
-        if config.simulation:
+        desc = self.state.desc()
+
+        if desc.connection_kind == 'SIM':
             return f'simulator__{config.name}'
 
-        return self.status.desc().controller.device.device_id
+        return desc.controller.device.device_id
 
     @subroutine('apply global settings')
     async def _apply_global_settings(self):
@@ -110,13 +106,13 @@ class SparkSynchronization:
 
         # This function may be invoked as a callback by datastore
         # Here, we don't know if we're synchronized
-        if self.status.is_synchronized():
+        if self.state.is_synchronized():
             await self.set_sysinfo_settings()
 
     @subroutine('apply service settings')
     async def _apply_service_settings(self):
         enabled = self.store.service_settings.enabled
-        self.status.set_enabled(enabled)
+        self.state.set_enabled(enabled)
 
     async def _prompt_handshake(self):
         try:
@@ -129,18 +125,18 @@ class SparkSynchronization:
     async def _sync_handshake(self):
         # Periodically prompt a handshake until acknowledged by the controller
         async with asyncio.timeout(HANDSHAKE_TIMEOUT.total_seconds()):
-            async with utils.task_context(self.status.wait_acknowledged()) as ack_task:
+            async with utils.task_context(self.state.wait_acknowledged()) as ack_task:
                 while not ack_task.done():
                     await self._prompt_handshake()
                     # Returns early if acknowledged before timeout elapsed
                     await asyncio.wait([ack_task], timeout=PING_INTERVAL.total_seconds())
 
-        desc = self.status.desc()
+        desc = self.state.desc()
 
         if desc.firmware_error == 'INCOMPATIBLE':
             raise exceptions.IncompatibleFirmware()
 
-        if desc.identity_error == 'INVALID':
+        if desc.identity_error == 'INCOMPATIBLE':
             raise exceptions.InvalidDeviceId()
 
     @subroutine('sync block store')
@@ -152,8 +148,8 @@ class SparkSynchronization:
         await self.set_sysinfo_settings()
 
     async def set_converter_units(self):
-        self.unit_converter.temperature = self.store.unit_settings.temperature
-        LOGGER.info(f'Service temperature unit set to {self.unit_converter.temperature}')
+        self.converter.temperature = self.store.unit_settings.temperature
+        LOGGER.info(f'Service temperature unit set to {self.converter.temperature}')
 
     async def set_sysinfo_settings(self):
         # Get time zone
@@ -185,15 +181,18 @@ class SparkSynchronization:
         update_freq = sysinfo.data['updatesPerSecond']
         LOGGER.info(f'Spark updates per second: {update_freq}')
 
+    async def synchronize(self):
+        await self._apply_global_settings()
+        await self._apply_service_settings()
+        await self.state.wait_connected()
+        await self._sync_handshake()
+        await self._sync_block_store()
+        await self._sync_sysinfo()
+        self.state.set_synchronized()
+
     async def run(self):
         try:
-            await self._apply_global_settings()
-            await self._apply_service_settings()
-            await self.status.wait_connected()
-            await self._sync_handshake()
-            await self._sync_block_store()
-            await self._sync_sysinfo()
-            self.status.set_synchronized()
+            await self.synchronize()
 
         except exceptions.IncompatibleFirmware:
             LOGGER.error('Incompatible firmware version detected')
@@ -203,13 +202,19 @@ class SparkSynchronization:
 
         except Exception as ex:
             LOGGER.error(f'Failed to sync: {utils.strex(ex)}')
-            await self.commander.start_reconnect()
+            await self.connection.reset()
 
-        await self.status.wait_disconnected()
+        await self.state.wait_disconnected()
 
     async def repeat(self):
-        while True:
-            await self.run()
+        try:
+            self.store.service_settings_listeners.add(self._apply_service_settings)
+            self.store.global_settings_listeners.add(self._apply_global_settings)
+            while True:
+                await self.run()
+        finally:
+            self.store.service_settings_listeners.remove(self._apply_service_settings)
+            self.store.global_settings_listeners.remove(self._apply_global_settings)
 
 
 @asynccontextmanager

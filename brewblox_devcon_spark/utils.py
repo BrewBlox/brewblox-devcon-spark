@@ -137,8 +137,7 @@ async def task_context(coro: Coroutine) -> Generator[asyncio.Task, None, None]:
         yield task
     finally:
         task.cancel()
-        with suppress(asyncio.CancelledError):
-            await task
+        await asyncio.wait([task], timeout=5)
 
 
 async def httpx_retry(func: Callable[[], Awaitable[Response]],
@@ -156,7 +155,7 @@ async def httpx_retry(func: Callable[[], Awaitable[Response]],
             LOGGER.debug(strex(ex), exc_info=True)
 
         if interval.total_seconds() > 10:
-            LOGGER.warn(f'Retrying after failed request: {resp}')
+            LOGGER.warning(f'Retrying after failed request: {resp}')
 
         await asyncio.sleep(interval.total_seconds())
         interval = min(interval * backoff, max_interval)

@@ -131,7 +131,7 @@ class TwinKeyDict(DictBase, Generic[LT, RT, VT]):
 
     def __setitem__(self, keys: Keys_, item):
         if None in keys:
-            raise TwinKeyError('None keys not allowed')
+            raise TwinKeyError(f'None keys not allowed, {keys=}')
 
         with suppress(KeyError):
             # Checks whether key combo either matches, or does not exist

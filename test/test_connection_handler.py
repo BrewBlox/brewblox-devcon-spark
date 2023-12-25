@@ -265,21 +265,16 @@ async def test_handler_run():
     with pytest.raises(exceptions.NotConnected):
         await handler.send_request('')
 
-    task = asyncio.create_task(handler.run())
+    async with utils.task_context(handler.run()) as task:
+        state.set_enabled(True)
+        await asyncio.wait_for(state.wait_connected(),
+                               timeout=5)
 
-    state.set_enabled(True)
-    await asyncio.wait_for(state.wait_connected(),
-                           timeout=5)
-
-    # We're assuming here that mock_connection.send_request()
-    # immediately calls the on_response() callback
-    await handler.send_request('')
-    handler.on_response.assert_awaited_once()
-
-    assert not task.done()
-    task.cancel()
-    with pytest.raises(asyncio.CancelledError):
-        await task
+        # We're assuming here that mock_connection.send_request()
+        # immediately calls the on_response() callback
+        await handler.send_request('')
+        handler.on_response.assert_awaited_once()
+        assert not task.done()
 
 
 async def test_handler_disconnect(mocker: MockerFixture):
@@ -290,21 +285,21 @@ async def test_handler_disconnect(mocker: MockerFixture):
     config.mock = True
 
     # can safely be called when not connected
-    await handler.start_reconnect()
+    await handler.reset()
 
     state.set_enabled(True)
 
-    task = asyncio.create_task(handler.run())
-    await asyncio.wait_for(state.wait_connected(),
-                           timeout=5)
+    async with utils.task_context(handler.run()) as task:
+        await asyncio.wait_for(state.wait_connected(),
+                               timeout=5)
 
-    await handler.start_reconnect()
+        await handler.reset()
 
-    # If connection signals closed, handler cleanly stops its run
-    # and calls state.set_disconnected()
-    await asyncio.wait_for(task, timeout=5)
-    assert task.exception() is None
-    assert state.is_disconnected()
+        # If connection signals closed, handler cleanly stops its run
+        # and calls state.set_disconnected()
+        await asyncio.wait([task], timeout=5)
+        assert task.exception() is None
+        assert state.is_disconnected()
 
 
 async def test_handler_connect_error(mocker: MockerFixture, m_graceful_shutdown: Mock):

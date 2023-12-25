@@ -51,13 +51,14 @@ class BlockStore(TwinKeyDict[str, int, dict]):
         data: list[TwinKeyEntry] = []
 
         try:
-            self._doc_id = None
             self._ready_ev.clear()
+            self._doc_id = None
+
             query = DatastoreSingleQuery(id=doc_id,
                                          namespace=const.SERVICE_NAMESPACE)
             content = query.model_dump(mode='json')
             resp = await utils.httpx_retry(lambda: self._client.post('/get', json=content))
-            self._doc_id = doc_id
+
             try:
                 box = TwinKeyEntriesBox.model_validate_json(resp.text)
                 data = box.value.data
@@ -66,7 +67,7 @@ class BlockStore(TwinKeyDict[str, int, dict]):
             LOGGER.info(f'Loaded {len(data)} block(s)')
 
         except Exception as ex:
-            LOGGER.warn(f'Load error {utils.strex(ex)}', exc_info=config.debug)
+            LOGGER.warning(f'Load error {utils.strex(ex)}', exc_info=config.debug)
 
         finally:
             # Clear -> load from database -> merge defaults
@@ -78,12 +79,11 @@ class BlockStore(TwinKeyDict[str, int, dict]):
                     if obj.keys not in self:
                         self.__setitem__(obj.keys, obj.data)
 
+            self._doc_id = doc_id
             self._ready_ev.set()
 
-    async def write(self):
+    async def save(self):
         await asyncio.wait_for(self._ready_ev.wait(), READY_TIMEOUT.total_seconds())
-        if self._doc_id is None:
-            raise RuntimeError('Document id not set - did load() fail?')
 
         data = [TwinKeyEntry(keys=k, data=v)
                 for k, v in self.items()]
@@ -105,7 +105,7 @@ class BlockStore(TwinKeyDict[str, int, dict]):
         elif not self._changed_ev.is_set():
             return
 
-        await self.write()
+        await self.save()
         self._changed_ev.clear()
 
     async def repeat(self):
@@ -123,11 +123,11 @@ class BlockStore(TwinKeyDict[str, int, dict]):
                     LOGGER.error(f'{self} {utils.strex(ex)}', exc_info=config.debug)
                 raise cancel_ex
 
-    def __setitem__(self, keys, item):
+    def __setitem__(self, keys: tuple[str, int], item: dict):
         super().__setitem__(keys, item)
         self._changed_ev.set()
 
-    def __delitem__(self, keys):
+    def __delitem__(self, keys: tuple[str | None, int | None]):
         super().__delitem__(keys)
         self._changed_ev.set()
 

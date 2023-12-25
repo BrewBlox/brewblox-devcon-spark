@@ -29,7 +29,7 @@ class SettingsStore:
         config = utils.get_config()
         self._ready_ev = asyncio.Event()
         self._client = AsyncClient(base_url=config.datastore_url)
-        self._name = config.name
+        self._doc_id = f'{config.name}-service-db'
 
         self._service_settings = StoredServiceSettingsValue(id=config.name)
         self._unit_settings = StoredUnitSettingsValue()
@@ -56,7 +56,7 @@ class SettingsStore:
         async with asyncio.timeout(FETCH_TIMEOUT.total_seconds()):
             # Fetch service settings
             box = await self._get_box(
-                query=DatastoreSingleQuery(id=self._name,
+                query=DatastoreSingleQuery(id=self._doc_id,
                                            namespace=const.SERVICE_NAMESPACE),
                 model=StoredServiceSettingsBox)
             self._service_settings = box.value or StoredServiceSettingsValue(id=config.name)
@@ -72,14 +72,14 @@ class SettingsStore:
             box = await self._get_box(
                 query=DatastoreSingleQuery(id=const.GLOBAL_TIME_ZONE_ID,
                                            namespace=const.GLOBAL_NAMESPACE),
-                model=StoredUnitSettingsBox)
+                model=StoredTimezoneSettingsBox)
             self._timezone_settings = box.value or StoredTimezoneSettingsValue()
 
     async def on_service_store_event(self, evt: DatastoreEvent):
         dirty = False
 
         for value in evt.changed:
-            if value.id == self._name:
+            if value.id == self._doc_id:
                 settings = StoredServiceSettingsValue.model_validate(value.model_dump())
                 dirty = dirty or settings != self._service_settings
                 self._service_settings = settings

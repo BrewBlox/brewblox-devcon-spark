@@ -26,11 +26,10 @@ class BackupStorage:
         self.dir = BASE_BACKUP_DIR / self.name
         self.dir.mkdir(mode=0o777, parents=True, exist_ok=True)
 
-        self.status = state_machine.CV.get()
         self.ctlr = controller.CV.get()
 
     async def run(self):
-        if self.status.is_synchronized():
+        if state_machine.CV.get().is_synchronized():
             name = f'autosave_blocks_{self.name}_' + datetime.today().strftime('%Y-%m-%d')
             await self.save(BackupIdentity(name=name))
 

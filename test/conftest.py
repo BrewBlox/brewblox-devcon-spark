@@ -3,6 +3,7 @@ Master file for pytest fixtures.
 Any fixtures declared here are available to all test functions in this directory.
 """
 
+import asyncio
 import logging
 from pathlib import Path
 from typing import Generator
@@ -86,10 +87,25 @@ def setup_logging(config: ServiceConfig):
 
 
 @pytest.fixture(autouse=True)
-def m_graceful_shutdown(monkeypatch: pytest.MonkeyPatch) -> Mock:
+def m_graceful_shutdown(monkeypatch: pytest.MonkeyPatch) -> Generator[Mock, None, None]:
     m = Mock(spec=utils.graceful_shutdown)
     monkeypatch.setattr(utils, 'graceful_shutdown', m)
     yield m
+
+
+@pytest.fixture(autouse=True)
+def m_sleep(monkeypatch: pytest.MonkeyPatch):
+    """
+    Allows keeping track of calls to asyncio sleep.
+    For tests, we want to reduce all sleep durations.
+    Set a breakpoint in the wrapper to track all calls.
+    """
+    real_func = asyncio.sleep
+
+    async def wrapper(*args, **kwargs):
+        return await real_func(*args, **kwargs)
+    monkeypatch.setattr('asyncio.sleep', wrapper)
+    yield
 
 
 @pytest.fixture

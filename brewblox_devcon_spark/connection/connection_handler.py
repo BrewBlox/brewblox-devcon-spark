@@ -33,6 +33,10 @@ def calc_backoff(value: timedelta | None) -> timedelta:
 
 class ConnectionHandler(ConnectionCallbacks):
     def __init__(self):
+        self.config = utils.get_config()
+        self.state = state_machine.CV.get()
+
+        self._enabled: bool = True
         self._delay: timedelta = BASE_RECONNECT_DELAY
         self._attempts: int = 0
         self._impl: ConnectionImplBase = None
@@ -41,28 +45,30 @@ class ConnectionHandler(ConnectionCallbacks):
         return f'<{type(self).__name__} for {self._impl}>'
 
     @property
+    def enabled(self) -> bool:
+        return self._enabled
+
+    @property
     def connected(self) -> bool:
         return self._impl is not None \
             and self._impl.connected.is_set()
 
     @property
     def usb_compatible(self) -> bool:
-        config = utils.get_config()
-
         # Simulations (internal or external) do not use USB
-        if config.mock or config.simulation:
+        if self.config.mock or self.config.simulation:
             return False
 
         # Hardcoded addresses take precedence over device discovery
-        if config.device_serial or config.device_host:
-            return config.device_serial is not None
+        if self.config.device_serial or self.config.device_host:
+            return self.config.device_serial is not None
 
         # USB is explicitly enabled
-        if config.discovery == DiscoveryType.usb:
+        if self.config.discovery == DiscoveryType.usb:
             return True
 
         # TCP is explicitly enabled
-        if config.discovery != DiscoveryType.all:
+        if self.config.discovery != DiscoveryType.all:
             return False
 
         # Spark models can be identified by device ID
@@ -70,7 +76,7 @@ class ConnectionHandler(ConnectionCallbacks):
         # Spark 4 uses 6 bytes / 12 characters
         # Spark simulations can have variable length IDs
         # USB should only be disabled if we're sure it is not supported
-        if config.device_id and len(config.device_id) == 12:
+        if self.config.device_id and len(self.config.device_id) == 12:
             return False
 
         # We're not sure
@@ -89,9 +95,7 @@ class ConnectionHandler(ConnectionCallbacks):
         """
 
     async def discover(self) -> ConnectionImplBase:
-        config = utils.get_config()
-
-        discovery_type = config.discovery
+        discovery_type = self.config.discovery
         LOGGER.info(f'Discovering devices... ({discovery_type})')
 
         try:
@@ -118,13 +122,11 @@ class ConnectionHandler(ConnectionCallbacks):
             raise ConnectionAbortedError('Discovery timeout')
 
     async def connect(self) -> ConnectionImplBase:
-        config = utils.get_config()
-
-        mock = config.mock
-        simulation = config.simulation
-        device_serial = config.device_serial
-        device_host = config.device_host
-        device_port = config.device_port
+        mock = self.config.mock
+        simulation = self.config.simulation
+        device_serial = self.config.device_serial
+        device_host = self.config.device_host
+        device_port = self.config.device_port
 
         if mock:
             return await connect_mock(self)
@@ -138,20 +140,16 @@ class ConnectionHandler(ConnectionCallbacks):
             return await self.discover()
 
     async def run(self):
-        status = state_machine.CV.get()
-
         try:
             if self._attempts > MAX_RETRY_COUNT:
                 raise ConnectionAbortedError('Retry attempts exhausted')
 
-            await asyncio.sleep(self._delay.total_seconds())
-            await status.wait_enabled()
-
+            await self.state.wait_enabled()
             self._impl = await self.connect()
             await self._impl.connected.wait()
 
-            status.set_connected(self._impl.kind,
-                                 self._impl.address)
+            self.state.set_connected(self._impl.kind,
+                                     self._impl.address)
 
             self._attempts = 0
             self._delay = BASE_RECONNECT_DELAY
@@ -180,15 +178,16 @@ class ConnectionHandler(ConnectionCallbacks):
         finally:
             with suppress(Exception):
                 await self._impl.close()
-            status.set_disconnected()
+            self.state.set_disconnected()
 
     async def repeat(self):
-        config = utils.get_config()
-        while True:
+        while self._enabled:
             try:
                 await self.run()
             except Exception as ex:
-                LOGGER.error(utils.strex(ex), exc_info=config.debug)
+                LOGGER.error(utils.strex(ex), exc_info=self.config.debug)
+
+            await asyncio.sleep(self._delay.total_seconds())
 
     async def send_request(self, msg: str):
         if not self.connected:
@@ -196,20 +195,21 @@ class ConnectionHandler(ConnectionCallbacks):
 
         await self._impl.send_request(msg)
 
-    async def start_reconnect(self):
-        # The run() function will handle cleanup, and then reconnect
+    async def reset(self):
+        # The run() function will handle cleanup
         if self._impl:
             await self._impl.close()
+        await self.state.wait_disconnected()
+
+    async def end(self):
+        self._enabled = False
+        await self.reset()
 
 
 @asynccontextmanager
 async def lifespan():
-    handler = CV.get()
-    task = asyncio.create_task(handler.repeat())
-    yield
-    task.cancel()
-    with suppress(asyncio.CancelledError):
-        await task
+    async with utils.task_context(CV.get().repeat()):
+        yield
 
 
 def setup():

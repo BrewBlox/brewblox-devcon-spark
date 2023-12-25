@@ -10,7 +10,7 @@ from fastapi import HTTPException, status
 class BrewbloxException(HTTPException):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 
-    def __init__(self, msg: str) -> None:
+    def __init__(self, msg: str = '') -> None:
         super().__init__(status_code=self.__class__.status_code,
                          detail=msg)
 

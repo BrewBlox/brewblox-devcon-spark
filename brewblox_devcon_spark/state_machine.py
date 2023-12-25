@@ -54,6 +54,9 @@ class ServiceState:
         self._disconnected_ev = asyncio.Event()
         self._updating_ev = asyncio.Event()
 
+        # Initial state is disconnected
+        self._disconnected_ev.set()
+
     def desc(self) -> ServiceStatusDescription:
         return self._status_desc.model_copy()
 
@@ -108,10 +111,10 @@ class ServiceState:
             or wildcard_id
 
         if not compatible_firmware:
-            LOGGER.warn('Handshake error: incompatible firmware')
+            LOGGER.warning('Handshake error: incompatible firmware')
 
         if not compatible_identity:
-            LOGGER.warn('Handshake error: incompatible device ID')
+            LOGGER.warning('Handshake error: incompatible device ID')
 
         # determine firmware_error
         if not compatible_firmware:

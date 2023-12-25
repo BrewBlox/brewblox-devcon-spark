@@ -39,11 +39,11 @@ async def test_fetch_all(httpx_mock: HTTPXMock):
     config = utils.get_config()
 
     httpx_mock.add_response(url=f'{config.datastore_url}/get',
-                            match_json={'id': config.name,
+                            match_json={'id': f'{config.name}-service-db',
                                         'namespace': const.SERVICE_NAMESPACE},
                             json={
                                 'value': {
-                                    'id': config.name,
+                                    'id': f'{config.name}-service-db',
                                     'namespace': const.SERVICE_NAMESPACE,
                                     'enabled': False,
                                 },

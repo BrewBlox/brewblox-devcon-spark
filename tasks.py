@@ -69,7 +69,7 @@ def update_firmware(ctx: Context, release='develop'):
 @task
 def testclean(ctx: Context):
     """
-    Cleans up leftover test containers.
+    Cleans up leftover test containers and networks.
     Container cleanup is normally done in test fixtures.
     This is skipped if debugged tests are stopped halfway.
     """
@@ -77,6 +77,11 @@ def testclean(ctx: Context):
     containers = result.stdout.strip().replace('\n', ' ')
     if containers:
         ctx.run(f'docker rm -f {containers}')
+
+    result = ctx.run('docker network ls -q --filter "name=pytest"', hide='stdout')
+    networks = result.stdout.strip().replace('\n', ' ')
+    if networks:
+        ctx.run(f'docker network rm -f {networks}')
 
 
 @task

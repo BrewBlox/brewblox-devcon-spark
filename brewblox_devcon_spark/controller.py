@@ -69,7 +69,7 @@ class SparkController:
     def __init__(self):
         config = utils.get_config()
         self._name = config.name
-        self._status = state_machine.CV.get()
+        self._state = state_machine.CV.get()
         self._cmder = commander.CV.get()
         self._store = block_store.CV.get()
         self._discovery_lock = asyncio.Lock()
@@ -196,12 +196,12 @@ class SparkController:
         to avoid weird interactions when prompting for a handshake.
         """
         async with self._conn_check_lock:
-            if self._status.is_synchronized():
+            if self._state.is_synchronized():
                 LOGGER.info('Checking connection...')
                 try:
                     await self._cmder.noop()
                 except Exception:
-                    await self._cmder.start_reconnect()
+                    await self._cmder.reset()
 
     @asynccontextmanager
     async def _execute(self, desc: str):
@@ -213,11 +213,11 @@ class SparkController:
             desc (str):
                 Human-readable function description, to be used in error messages.
         """
-        if self._status.is_updating():
+        if self._state.is_updating():
             raise exceptions.UpdateInProgress('Update is in progress')
 
         await asyncio.wait_for(
-            self._status.wait_synchronized(),
+            self._state.wait_synchronized(),
             SYNC_WAIT_TIMEOUT.total_seconds())
 
         try:
@@ -577,7 +577,7 @@ class SparkController:
             .now(tz=timezone.utc)\
             .isoformat(timespec='seconds')\
             .replace('+00:00', 'Z')
-        controller_info = self._status.desc().controller
+        controller_info = self._state.desc().controller
 
         return Backup(
             blocks=[block for block in blocks_data],

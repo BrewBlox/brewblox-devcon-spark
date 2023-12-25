@@ -181,7 +181,7 @@ async def test_check_connection(app, client, mocker):
     cmder = commander.fget(app)
 
     s_noop = mocker.spy(cmder, 'noop')
-    s_reconnect = mocker.spy(cmder, 'start_reconnect')
+    s_reconnect = mocker.spy(cmder, 'reset')
 
     await ctrl.noop()
     await ctrl._check_connection()
