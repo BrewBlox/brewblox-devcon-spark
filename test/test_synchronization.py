@@ -8,8 +8,8 @@ from datetime import timedelta
 from unittest.mock import AsyncMock
 
 import pytest
+from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
-from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
 from brewblox_devcon_spark import (codec, commander, connection, const,
@@ -56,10 +56,7 @@ async def lifespan(app: FastAPI):
 
 
 @pytest.fixture
-def app(mocker: MockerFixture) -> FastAPI:
-    mocker.patch(connection.connection_handler.__name__ + '.BASE_RECONNECT_DELAY', timedelta())
-    mocker.patch(connection.connection_handler.__name__ + '.MAX_RECONNECT_DELAY', timedelta())
-
+def app() -> FastAPI:
     state_machine.setup()
     mqtt.setup()
     codec.setup()
@@ -77,8 +74,8 @@ def m_load_blocks(app: FastAPI, mocker: MockerFixture):
 
 
 @pytest.fixture(autouse=True)
-async def client(client: AsyncClient, m_load_blocks: AsyncMock):
-    yield client
+async def manager(manager: LifespanManager, m_load_blocks: AsyncMock):
+    yield manager
 
 
 async def test_sync_status(m_sleep):
@@ -116,7 +113,8 @@ async def test_write_error(mocker: MockerFixture):
 
 
 async def test_handshake_timeout(mocker: MockerFixture):
-    mocker.patch(TESTED + '.HANDSHAKE_TIMEOUT', timedelta(milliseconds=100))
+    config = utils.get_config()
+    config.handshake_timeout = timedelta(milliseconds=100)
     m_version = mocker.patch.object(commander.CV.get(), 'version', autospec=True)
     m_version.side_effect = RuntimeError
 

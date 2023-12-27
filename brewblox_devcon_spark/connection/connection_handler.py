@@ -12,23 +12,20 @@ from .mqtt_connection import discover_mqtt
 from .stream_connection import (connect_simulation, connect_tcp, connect_usb,
                                 discover_mdns, discover_usb)
 
-BASE_RECONNECT_DELAY = timedelta(seconds=2)
-MAX_RECONNECT_DELAY = timedelta(seconds=30)
 MAX_RETRY_COUNT = 20
-
-DISCOVERY_INTERVAL = timedelta(seconds=5)
-DISCOVERY_TIMEOUT = timedelta(seconds=120)
 
 LOGGER = logging.getLogger(__name__)
 
 CV: ContextVar['ConnectionHandler'] = ContextVar('connection_handler.ConnectionHandler')
 
 
-def calc_backoff(value: timedelta | None) -> timedelta:
+def calc_interval(value: timedelta | None) -> timedelta:
+    config = utils.get_config()
+
     if value:
-        return min(value * 1.5, MAX_RECONNECT_DELAY)
+        return min(value * config.connect_backoff, config.connect_interval_max)
     else:
-        return BASE_RECONNECT_DELAY
+        return config.connect_interval
 
 
 class ConnectionHandler(ConnectionCallbacks):
@@ -37,7 +34,7 @@ class ConnectionHandler(ConnectionCallbacks):
         self.state = state_machine.CV.get()
 
         self._enabled: bool = True
-        self._delay: timedelta = BASE_RECONNECT_DELAY
+        self._interval: timedelta = calc_interval(None)
         self._attempts: int = 0
         self._impl: ConnectionImplBase = None
 
@@ -99,7 +96,7 @@ class ConnectionHandler(ConnectionCallbacks):
         LOGGER.info(f'Discovering devices... ({discovery_type})')
 
         try:
-            async with asyncio.timeout(DISCOVERY_TIMEOUT.total_seconds()):
+            async with asyncio.timeout(self.config.discovery_timeout.total_seconds()):
                 while True:
                     if discovery_type in [DiscoveryType.all, DiscoveryType.usb]:
                         result = await discover_usb(self)
@@ -116,7 +113,7 @@ class ConnectionHandler(ConnectionCallbacks):
                         if result:
                             return result
 
-                    await asyncio.sleep(DISCOVERY_INTERVAL.total_seconds())
+                    await asyncio.sleep(self.config.discovery_interval.total_seconds())
 
         except asyncio.TimeoutError:
             raise ConnectionAbortedError('Discovery timeout')
@@ -152,19 +149,19 @@ class ConnectionHandler(ConnectionCallbacks):
                                      self._impl.address)
 
             self._attempts = 0
-            self._delay = BASE_RECONNECT_DELAY
+            self._interval = calc_interval(None)
 
             await self._impl.disconnected.wait()
             raise ConnectionError('Disconnected')
 
         except ConnectionAbortedError as ex:
             LOGGER.error(utils.strex(ex))
-            self._delay = calc_backoff(self._delay)
+            self._interval = calc_interval(self._interval)
 
             # USB devices that were plugged in after container start are not visible
             # If we are potentially connecting to a USB device, we need to restart
             if self.usb_compatible:
-                utils.graceful_shutdown()
+                utils.graceful_shutdown(utils.strex(ex))
             else:
                 self._attempts = 0
 
@@ -187,7 +184,7 @@ class ConnectionHandler(ConnectionCallbacks):
             except Exception as ex:
                 LOGGER.error(utils.strex(ex), exc_info=self.config.debug)
 
-            await asyncio.sleep(self._delay.total_seconds())
+            await asyncio.sleep(self._interval.total_seconds())
 
     async def send_request(self, msg: str):
         if not self.connected:

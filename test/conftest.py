@@ -5,6 +5,7 @@ Any fixtures declared here are available to all test functions in this directory
 
 import asyncio
 import logging
+from datetime import timedelta
 from pathlib import Path
 from typing import Generator
 from unittest.mock import Mock
@@ -56,11 +57,17 @@ def config(monkeypatch: pytest.MonkeyPatch,
         name='sparkey',
         debug=True,
         mqtt_host='localhost',
-        mqtt_port=docker_services.port_for('mqtt', 1883),
+        mqtt_port=docker_services.port_for('eventbus', 1883),
         datastore_host='localhost',
         datastore_port=docker_services.port_for('history', 5000),
         simulation=True,
-        device_id='1234'
+        device_id='1234',
+        connect_interval=timedelta(milliseconds=10),
+        connect_interval_max=timedelta(milliseconds=100),
+        discovery_interval=timedelta(milliseconds=10),
+        discovery_timeout=timedelta(seconds=10),
+        handshake_timeout=timedelta(seconds=20),
+        handshake_ping_interval=timedelta(milliseconds=100),
     )
     monkeypatch.setattr(utils, 'get_config', lambda: cfg)
     yield cfg
@@ -84,6 +91,14 @@ def fw_config(monkeypatch: pytest.MonkeyPatch,
 @pytest.fixture(autouse=True)
 def setup_logging(config: ServiceConfig):
     app_factory.setup_logging(True, True)
+
+
+@pytest.fixture
+def caplog(caplog: pytest.LogCaptureFixture) -> pytest.LogCaptureFixture:
+    # caplog must be explicitly set to the desired level
+    # https://stackoverflow.com/questions/59875983/why-is-caplog-text-empty-even-though-the-function-im-testing-is-logging
+    caplog.set_level(logging.DEBUG)
+    return caplog
 
 
 @pytest.fixture(autouse=True)
@@ -121,19 +136,23 @@ def app() -> FastAPI:
 
 
 @pytest.fixture
-async def client(app: FastAPI) -> Generator[AsyncClient, None, None]:
+async def manager(app: FastAPI) -> Generator[LifespanManager, None, None]:
     """
-    The default test client for making REST API calls.
-    Using this fixture will also guarantee that lifespan startup has happened.
+    AsyncClient does not automatically send ASGI lifespan events to the app
+    https://asgi.readthedocs.io/en/latest/specs/lifespan.html
 
-    Do not use `client` and `ws_client` at the same time.
+    For testing, this ensures that lifespan() functions are handled.
+    If you don't need to make HTTP requests, you can use the manager
+    without the `client` fixture.
     """
-    # AsyncClient does not automatically send ASGI lifespan events to the app
-    # https://asgi.readthedocs.io/en/latest/specs/lifespan.html
-    async with LifespanManager(app):
-        async with AsyncClient(app=app,
-                               base_url='http://test') as ac:
-            yield ac
+    async with LifespanManager(app) as mgr:
+        yield mgr
+
+
+@pytest.fixture
+async def client(manager: LifespanManager) -> Generator[AsyncClient, None, None]:
+    async with AsyncClient(app=manager.app, base_url='http://test') as ac:
+        yield ac
 
 
 @pytest.fixture

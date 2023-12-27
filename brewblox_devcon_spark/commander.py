@@ -43,19 +43,20 @@ class SparkCommander:
                                           dates=codec.DateFormatOpt.SECONDS)
 
     def __init__(self):
-        config = utils.get_config()
+        self.config = utils.get_config()
+        self.codec = codec.CV.get()
+        self.conn = connection.CV.get()
 
         self._msgid = 0
-        self._timeout = config.command_timeout
         self._active_messages: dict[int, asyncio.Future[IntermediateResponse]] = {}
-        self._state = state_machine.CV.get()
-        self._codec = codec.CV.get()
-        self._conn = connection.CV.get()
-        self._conn.on_event = self._on_event
-        self._conn.on_response = self._on_response
+        self._empty_ev = asyncio.Event()
+        self._empty_ev.set()
+
+        self.conn.on_event = self._on_event
+        self.conn.on_response = self._on_response
 
     def __str__(self):
-        return f'<{type(self).__name__} for {self._conn}>'
+        return f'<{type(self).__name__} for {self.conn}>'
 
     def _next_id(self):
         self._msgid = (self._msgid + 1) % 0xFFFF
@@ -78,10 +79,10 @@ class SparkCommander:
         else:
             payload = DecodedPayload(blockId=block.nid)
 
-        return self._codec.encode_payload(payload)
+        return self.codec.encode_payload(payload)
 
     def _to_block(self, payload: EncodedPayload, opts: DecodeOpts) -> FirmwareBlock:
-        payload = self._codec.decode_payload(payload, opts=opts)
+        payload = self.codec.decode_payload(payload, opts=opts)
         return FirmwareBlock(
             nid=payload.blockId,
             type=codec.join_type(payload.blockType, payload.subtype),
@@ -116,7 +117,7 @@ class SparkCommander:
     async def _on_response(self, msg: str):
         try:
             LOGGER.trace(f'response: {msg}')
-            response = self._codec.decode_response(msg)
+            response = self.codec.decode_response(msg)
 
             # Get the Future object awaiting this request
             # the msgid field is key
@@ -140,14 +141,16 @@ class SparkCommander:
             payload=payload
         )
 
-        msg = self._codec.encode_request(request)
+        msg = self.codec.encode_request(request)
         fut: asyncio.Future[IntermediateResponse] = asyncio.get_running_loop().create_future()
         self._active_messages[msg_id] = fut
+        self._empty_ev.clear()
 
         try:
             LOGGER.trace(f'request: {msg}')
-            await self._conn.send_request(msg)
-            response = await asyncio.wait_for(fut, timeout=self._timeout.total_seconds())
+            await self.conn.send_request(msg)
+            response = await asyncio.wait_for(fut,
+                                              timeout=self.config.command_timeout.total_seconds())
 
             if response.error != ErrorCode.OK:
                 raise exceptions.CommandException(f'{opcode.name}, {response.error.name}')
@@ -159,6 +162,8 @@ class SparkCommander:
 
         finally:
             del self._active_messages[msg_id]
+            if not self._active_messages:
+                self._empty_ev.set()
 
     async def validate(self, block: FirmwareBlock) -> FirmwareBlock:
         request = IntermediateRequest(
@@ -166,7 +171,7 @@ class SparkCommander:
             opcode=Opcode.NONE,
             payload=self._to_payload(block),
         )
-        self._codec.encode_request(request)
+        self.codec.encode_request(request)
         return block
 
     async def noop(self) -> None:
@@ -297,6 +302,15 @@ class SparkCommander:
             Opcode.FIRMWARE_UPDATE,
             None,
         )
+
+    async def reset_connection(self) -> None:
+        await self.conn.reset()
+
+    async def end_connection(self) -> None:
+        await self.conn.end()
+
+    async def wait_empty(self) -> None:
+        await self._empty_ev.wait()
 
 
 def setup():

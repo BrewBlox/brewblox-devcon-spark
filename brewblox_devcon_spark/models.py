@@ -37,18 +37,24 @@ class ServiceConfig(BaseSettings):
     trace: bool = False
     debugger: bool = False
 
+    # MQTT options
     mqtt_protocol: Literal['mqtt', 'mqtts'] = 'mqtt'
     mqtt_host: str = 'eventbus'
     mqtt_port: int = 1883
-
-    datastore_host: str = 'history'
-    datastore_port: int = 5000
-    datastore_path: str = '/history/datastore'
 
     state_topic: str = 'brewcast/state'
     history_topic: str = 'brewcast/history'
     datastore_topic: str = 'brewcast/datastore'
     blocks_topic: str = 'brewcast/spark/blocks'
+
+    # Datastore options
+    datastore_host: str = 'history'
+    datastore_port: int = 5000
+    datastore_path: str = '/history/datastore'
+
+    datastore_fetch_timeout: timedelta = timedelta(minutes=5)
+    datastore_flush_delay: timedelta = timedelta(seconds=5)
+    datastore_shutdown_timeout: timedelta = timedelta(seconds=2)
 
     # Device options
     simulation: bool = False
@@ -60,8 +66,26 @@ class ServiceConfig(BaseSettings):
     discovery: DiscoveryType = DiscoveryType.all
     display_ws_port: int = 7377
 
-    # Network options
+    # Connection options
+    connect_interval: timedelta = timedelta(seconds=2)
+    connect_interval_max: timedelta = timedelta(seconds=30)
+    connect_backoff: float = 1.5
+
+    discovery_interval: timedelta = timedelta(seconds=5)
+    discovery_timeout: timedelta = timedelta(minutes=2)
+    discovery_timeout_mqtt: timedelta = timedelta(seconds=3)
+    discovery_timeout_mdns: timedelta = timedelta(seconds=20)
+
+    subprocess_connect_interval: timedelta = timedelta(milliseconds=200)
+    subprocess_connect_timeout: timedelta = timedelta(seconds=10)
+
+    handshake_timeout: timedelta = timedelta(minutes=2)
+    handshake_ping_interval: timedelta = timedelta(seconds=2)
+
+    # Command options
     command_timeout: timedelta = timedelta(seconds=20)
+
+    # Broadcast options
     broadcast_interval: timedelta = timedelta(seconds=5)
 
     # Firmware options
@@ -74,16 +98,14 @@ class ServiceConfig(BaseSettings):
     # Time sync options
     time_sync_interval: timedelta = timedelta(minutes=15)
 
+    # Firmware flash options
+    flash_ymodem_timeout: timedelta = timedelta(seconds=30)
+    flash_disconnect_timeout: timedelta = timedelta(seconds=20)
+
     @computed_field
     @property
     def datastore_url(self) -> str:
         return f'http://{self.datastore_host}:{self.datastore_port}{self.datastore_path}'
-
-    @model_validator(mode='after')
-    def default_device_id(self) -> Self:
-        if self.device_id is None and (self.simulation or self.mock):
-            self.device_id = '123456789012345678901234'
-        return self
 
 
 class FirmwareConfig(BaseModel):

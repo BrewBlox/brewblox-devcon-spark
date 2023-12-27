@@ -20,6 +20,7 @@ services:
     image: ghcr.io/brewblox/brewblox-history:develop
 
   sparkey:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: ./Dockerfile.service

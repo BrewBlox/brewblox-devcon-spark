@@ -77,11 +77,7 @@ def testclean(ctx: Context):
     containers = result.stdout.strip().replace('\n', ' ')
     if containers:
         ctx.run(f'docker rm -f {containers}')
-
-    result = ctx.run('docker network ls -q --filter "name=pytest"', hide='stdout')
-    networks = result.stdout.strip().replace('\n', ' ')
-    if networks:
-        ctx.run(f'docker network rm -f {networks}')
+    ctx.run('docker network prune -f')
 
 
 @task

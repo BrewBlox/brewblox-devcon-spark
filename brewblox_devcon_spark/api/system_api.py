@@ -4,35 +4,20 @@ Specific endpoints for using system objects
 
 import asyncio
 import logging
-from datetime import timedelta
 
 from fastapi import APIRouter, BackgroundTasks
 from httpx import AsyncClient
 
-from .. import (commander, connection, controller, exceptions, mqtt,
-                state_machine, utils, ymodem)
+from .. import (commander, controller, exceptions, mqtt, state_machine, utils,
+                ymodem)
 from ..models import (FirmwareFlashResponse, PingResponse,
                       ServiceStatusDescription)
-
-TRANSFER_TIMEOUT = timedelta(seconds=30)
-DISCONNECT_TIMEOUT = timedelta(seconds=20)
-CONNECT_INTERVAL = timedelta(seconds=3)
-CONNECT_ATTEMPTS = 5
-
-FLUSH_PERIOD = timedelta(seconds=3)
-SHUTDOWN_DELAY = timedelta(seconds=1)
-UPDATE_SHUTDOWN_DELAY = timedelta(seconds=5)
 
 ESP_URL_FMT = 'http://brewblox.blob.core.windows.net/firmware/{date}-{version}/brewblox-esp32.bin'
 
 LOGGER = logging.getLogger(__name__)
 
 router = APIRouter(prefix='/system', tags=['System'])
-
-
-async def delayed_shutdown(delay: timedelta):
-    await asyncio.sleep(delay.total_seconds())
-    utils.graceful_shutdown()
 
 
 @router.get('/status')
@@ -76,7 +61,7 @@ async def system_reboot_service(background_tasks: BackgroundTasks):
     """
     Reboot the service.
     """
-    background_tasks.add_task(delayed_shutdown, SHUTDOWN_DELAY)
+    background_tasks.add_task(utils.graceful_shutdown, 'System API request')
     return {}
 
 
@@ -103,28 +88,25 @@ async def system_factory_reset():
 class Flasher:
 
     def __init__(self) -> None:
-        config = utils.get_config()
-        fw_config = utils.get_fw_config()
+        self.config = utils.get_config()
+        self.fw_config = utils.get_fw_config()
 
         self.state = state_machine.CV.get()
         self.mqtt_client = mqtt.CV.get()
-        self.connection = connection.CV.get()
         self.commander = commander.CV.get()
         self.client = AsyncClient()
 
-        self.name = config.name
-        self.simulation = config.simulation
-        self.topic = f'{config.state_topic}/{config.name}/update'
-        self.version = fw_config.firmware_version[:8]
-        self.date = fw_config.firmware_date
-        self.fw_url = ESP_URL_FMT.format(date=fw_config.firmware_date,
-                                         version=fw_config.firmware_version)
+        self.topic = f'{self.config.state_topic}/{self.config.name}/update'
+        self.fw_version = self.fw_config.firmware_version
+        self.fw_date = self.fw_config.firmware_date
+        self.fw_url = ESP_URL_FMT.format(date=self.fw_date,
+                                         version=self.fw_version)
 
     def _notify(self, msg: str):
         LOGGER.info(msg)
         self.mqtt_client.publish(self.topic,
                                  {
-                                     'key': self.name,
+                                     'key': self.config.name,
                                      'type': 'Spark.update',
                                      'data': {
                                          'log': [msg],
@@ -133,6 +115,7 @@ class Flasher:
 
     async def run(self) -> FirmwareFlashResponse:
         desc = self.state.desc()
+        device_id = desc.controller.device.device_id
         platform = desc.controller.platform
         connection_kind = desc.connection_kind
         address = desc.address
@@ -146,19 +129,19 @@ class Flasher:
             raise exceptions.IncompatibleFirmware()
 
         try:
-            self._notify(f'Started updating {self.name}@{address} to version {self.version} ({self.date})')
+            self._notify(f'Started updating {device_id}@{address} to version {self.fw_version} ({self.fw_date})')
 
             self._notify('Preparing update')
             self.state.set_updating()
-            await asyncio.sleep(FLUSH_PERIOD.total_seconds())  # Wait for in-progress commands to finish
+            await self.commander.wait_empty()  # Controller will send no new requests
 
             self._notify('Sending update command to controller')
             await self.commander.firmware_update()
 
             self._notify('Waiting for normal connection to close')
             await asyncio.wait_for(
-                self.connection.end(),
-                DISCONNECT_TIMEOUT.total_seconds())
+                self.commander.end_connection(),
+                self.config.flash_disconnect_timeout.total_seconds())
 
             if platform == 'esp32':  # pragma: no cover
                 if connection_kind == 'TCP':
@@ -183,7 +166,7 @@ class Flasher:
                 with conn.autoclose():
                     await asyncio.wait_for(
                         ota_client.send(conn, f'firmware/brewblox-{platform}.bin'),
-                        TRANSFER_TIMEOUT.total_seconds())
+                        self.config.flash_ymodem_timeout.total_seconds())
                     self._notify('Update done!')
 
         except Exception as ex:
@@ -193,13 +176,13 @@ class Flasher:
         finally:
             self._notify('Restarting service...')
 
-        response = FirmwareFlashResponse(address=address, version=self.version)
+        response = FirmwareFlashResponse(address=address, version=self.fw_version)
         return response
 
 
 @router.post('/flash')
 async def system_flash(background_tasks: BackgroundTasks) -> FirmwareFlashResponse:
-    background_tasks.add_task(delayed_shutdown, UPDATE_SHUTDOWN_DELAY)
+    background_tasks.add_task(utils.graceful_shutdown, 'Firmware flash')
     flasher = Flasher()
     response = await flasher.run()
     return response

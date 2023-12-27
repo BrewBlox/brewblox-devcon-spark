@@ -40,11 +40,10 @@ The synchronization process consists of:
 - Repeat
 """
 
-
 import asyncio
 import logging
+import traceback
 from contextlib import asynccontextmanager
-from datetime import timedelta
 from functools import wraps
 
 from . import (codec, commander, connection, const, exceptions, state_machine,
@@ -52,9 +51,6 @@ from . import (codec, commander, connection, const, exceptions, state_machine,
 from .codec.time_utils import serialize_duration
 from .datastore import block_store, settings_store
 from .models import FirmwareBlock
-
-HANDSHAKE_TIMEOUT = timedelta(minutes=2)
-PING_INTERVAL = timedelta(seconds=2)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -80,8 +76,9 @@ def subroutine(desc: str):
 class SparkSynchronization:
 
     def __init__(self):
+        self.config = utils.get_config()
         self.state = state_machine.CV.get()
-        self.store = settings_store.CV.get()
+        self.settings_store = settings_store.CV.get()
         self.block_store = block_store.CV.get()
         self.converter = codec.unit_conversion.CV.get()
         self.connection = connection.CV.get()
@@ -92,11 +89,10 @@ class SparkSynchronization:
         # Simulation services are identified by service name.
         # This prevents data conflicts when a simulation service
         # is reconfigured to start interacting with a controller.
-        config = utils.get_config()
         desc = self.state.desc()
 
         if desc.connection_kind == 'SIM':
-            return f'simulator__{config.name}'
+            return f'simulator__{self.config.name}'
 
         return desc.controller.device.device_id
 
@@ -111,7 +107,7 @@ class SparkSynchronization:
 
     @subroutine('apply service settings')
     async def _apply_service_settings(self):
-        enabled = self.store.service_settings.enabled
+        enabled = self.settings_store.service_settings.enabled
         self.state.set_enabled(enabled)
 
     async def _prompt_handshake(self):
@@ -124,12 +120,13 @@ class SparkSynchronization:
     @subroutine('sync handshake')
     async def _sync_handshake(self):
         # Periodically prompt a handshake until acknowledged by the controller
-        async with asyncio.timeout(HANDSHAKE_TIMEOUT.total_seconds()):
+        async with asyncio.timeout(self.config.handshake_timeout.total_seconds()):
             async with utils.task_context(self.state.wait_acknowledged()) as ack_task:
                 while not ack_task.done():
                     await self._prompt_handshake()
                     # Returns early if acknowledged before timeout elapsed
-                    await asyncio.wait([ack_task], timeout=PING_INTERVAL.total_seconds())
+                    await asyncio.wait([ack_task],
+                                       timeout=self.config.handshake_ping_interval.total_seconds())
 
         desc = self.state.desc()
 
@@ -148,17 +145,18 @@ class SparkSynchronization:
         await self.set_sysinfo_settings()
 
     async def set_converter_units(self):
-        self.converter.temperature = self.store.unit_settings.temperature
+        LOGGER.info('\n'.join(traceback.format_tb(None)))
+        self.converter.temperature = self.settings_store.unit_settings.temperature
         LOGGER.info(f'Service temperature unit set to {self.converter.temperature}')
 
     async def set_sysinfo_settings(self):
         # Get time zone
-        tz_name = self.store.timezone_settings.name
-        tz_posix = self.store.timezone_settings.posixValue
+        tz_name = self.settings_store.timezone_settings.name
+        tz_posix = self.settings_store.timezone_settings.posixValue
         LOGGER.info(f'Spark time zone: {tz_posix} ({tz_name})')
 
         # Get temp unit
-        temp_unit_name = self.store.unit_settings.temperature
+        temp_unit_name = self.settings_store.unit_settings.temperature
         temp_unit_enum = 'TEMP_FAHRENHEIT' if temp_unit_name == 'degF' else 'TEMP_CELSIUS'
         LOGGER.info(f'Spark temp unit: {temp_unit_enum}')
 
@@ -208,13 +206,13 @@ class SparkSynchronization:
 
     async def repeat(self):
         try:
-            self.store.service_settings_listeners.add(self._apply_service_settings)
-            self.store.global_settings_listeners.add(self._apply_global_settings)
+            self.settings_store.service_settings_listeners.add(self._apply_service_settings)
+            self.settings_store.global_settings_listeners.add(self._apply_global_settings)
             while True:
                 await self.run()
         finally:
-            self.store.service_settings_listeners.remove(self._apply_service_settings)
-            self.store.global_settings_listeners.remove(self._apply_global_settings)
+            self.settings_store.service_settings_listeners.remove(self._apply_service_settings)
+            self.settings_store.global_settings_listeners.remove(self._apply_global_settings)
 
 
 @asynccontextmanager

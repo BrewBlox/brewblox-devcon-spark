@@ -46,15 +46,19 @@ def app() -> FastAPI:
 
 
 @pytest.mark.parametrize('value,expected', [
-    (timedelta(), connection_handler.BASE_RECONNECT_DELAY),
-    (None, connection_handler.BASE_RECONNECT_DELAY),
+    (timedelta(), timedelta(seconds=2)),
+    (None, timedelta(seconds=2)),
     (timedelta(seconds=1), timedelta(seconds=1, milliseconds=500)),
     (timedelta(seconds=2), timedelta(seconds=3)),
     (timedelta(seconds=10), timedelta(seconds=15)),
-    (timedelta(minutes=1), connection_handler.MAX_RECONNECT_DELAY),
+    (timedelta(minutes=1), timedelta(seconds=30)),
 ])
-async def test_calc_backoff(value: timedelta | None, expected: timedelta):
-    assert connection_handler.calc_backoff(value) == expected
+async def test_calc_interval(value: timedelta | None, expected: timedelta):
+    config = utils.get_config()
+    config.connect_interval = timedelta(seconds=2)
+    config.connect_interval_max = timedelta(seconds=30)
+
+    assert connection_handler.calc_interval(value) == expected
 
 
 async def test_usb_compatible():
@@ -69,6 +73,7 @@ async def test_usb_compatible():
         config.device_id = None
         config.simulation = False
         config.mock = False
+        config.discovery_timeout = timedelta(seconds=10)
 
     # The default is to enable USB
     reset()
@@ -98,8 +103,6 @@ async def test_usb_compatible():
 
 
 async def test_handler_discovery(mocker: MockerFixture):
-    mocker.patch(TESTED + '.DISCOVERY_INTERVAL', timedelta())
-
     config = utils.get_config()
     m_discover_usb: AsyncMock = mocker.patch(TESTED + '.discover_usb', autospec=True)
     m_discover_mdns: AsyncMock = mocker.patch(TESTED + '.discover_mdns', autospec=True)
@@ -158,8 +161,7 @@ async def test_handler_discovery(mocker: MockerFixture):
     reset()
 
     # Throw a timeout error after a while
-    mocker.patch(TESTED + '.DISCOVERY_TIMEOUT', timedelta(milliseconds=1))
-
+    config.discovery_timeout = timedelta(milliseconds=1)
     config.discovery = DiscoveryType.all
     m_discover_usb.return_value = None
     m_discover_mdns.return_value = None
@@ -303,8 +305,6 @@ async def test_handler_disconnect(mocker: MockerFixture):
 
 
 async def test_handler_connect_error(mocker: MockerFixture, m_graceful_shutdown: Mock):
-    mocker.patch(TESTED + '.BASE_RECONNECT_DELAY', timedelta(milliseconds=1))
-    mocker.patch(TESTED + '.MAX_RECONNECT_DELAY', timedelta(milliseconds=2))
     m_connect_mock: AsyncMock = mocker.patch(TESTED + '.connect_mock', autospec=True)
     m_connect_mock.side_effect = ConnectionRefusedError
 
@@ -327,11 +327,6 @@ async def test_handler_connect_error(mocker: MockerFixture, m_graceful_shutdown:
 
 
 async def test_handler_discovery_error(mocker: MockerFixture, m_graceful_shutdown: Mock):
-    mocker.patch(TESTED + '.BASE_RECONNECT_DELAY', timedelta(milliseconds=1))
-    mocker.patch(TESTED + '.MAX_RECONNECT_DELAY', timedelta(milliseconds=2))
-    mocker.patch(TESTED + '.DISCOVERY_INTERVAL', timedelta(milliseconds=1))
-    mocker.patch(TESTED + '.DISCOVERY_TIMEOUT', timedelta(milliseconds=1))
-
     m_discover_usb = mocker.patch(TESTED + '.discover_usb', autospec=True)
     m_discover_usb.return_value = None
 
@@ -341,6 +336,8 @@ async def test_handler_discovery_error(mocker: MockerFixture, m_graceful_shutdow
     config.device_serial = None
     config.device_host = None
     config.discovery = DiscoveryType.usb
+    config.discovery_interval = timedelta()
+    config.discovery_timeout = timedelta(milliseconds=1)
 
     state = state_machine.CV.get()
 

@@ -2,7 +2,6 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
-from datetime import timedelta
 from typing import Awaitable, Callable
 
 from httpx import AsyncClient
@@ -16,8 +15,6 @@ from ..models import (DatastoreEvent, DatastoreSingleQuery,
 
 Callback_ = Callable[[], Awaitable]
 
-FETCH_TIMEOUT = timedelta(minutes=5)
-
 LOGGER = logging.getLogger(__name__)
 
 CV: ContextVar['SettingsStore'] = ContextVar('settings_store.SettingsStore')
@@ -26,12 +23,12 @@ CV: ContextVar['SettingsStore'] = ContextVar('settings_store.SettingsStore')
 class SettingsStore:
 
     def __init__(self) -> None:
-        config = utils.get_config()
-        self._ready_ev = asyncio.Event()
-        self._client = AsyncClient(base_url=config.datastore_url)
-        self._doc_id = f'{config.name}-service-db'
+        self.config = utils.get_config()
 
-        self._service_settings = StoredServiceSettingsValue(id=config.name)
+        self._ready_ev = asyncio.Event()
+        self._client = AsyncClient(base_url=self.config.datastore_url)
+
+        self._service_settings = StoredServiceSettingsValue(id=self.config.name)
         self._unit_settings = StoredUnitSettingsValue()
         self._timezone_settings = StoredTimezoneSettingsValue()
 
@@ -51,15 +48,13 @@ class SettingsStore:
         await self._client.post('/set', json=box.model_dump(mode='json'))
 
     async def fetch_all(self):
-        config = utils.get_config()
-
-        async with asyncio.timeout(FETCH_TIMEOUT.total_seconds()):
+        async with asyncio.timeout(self.config.datastore_fetch_timeout.total_seconds()):
             # Fetch service settings
             box = await self._get_box(
-                query=DatastoreSingleQuery(id=self._doc_id,
+                query=DatastoreSingleQuery(id=self.config.name,
                                            namespace=const.SERVICE_NAMESPACE),
                 model=StoredServiceSettingsBox)
-            self._service_settings = box.value or StoredServiceSettingsValue(id=config.name)
+            self._service_settings = box.value or StoredServiceSettingsValue(id=self.config.name)
 
             # Fetch unit settings
             box = await self._get_box(
@@ -79,10 +74,12 @@ class SettingsStore:
         dirty = False
 
         for value in evt.changed:
-            if value.id == self._doc_id:
+            if value.id == self.config.name:
                 settings = StoredServiceSettingsValue.model_validate(value.model_dump())
-                dirty = dirty or settings != self._service_settings
-                self._service_settings = settings
+                if settings != self._service_settings:
+                    LOGGER.info(f'Received service settings: {settings}')
+                    self._service_settings = settings
+                    dirty = True
 
         if dirty:
             for cb in set(self._service_listeners):
@@ -94,13 +91,17 @@ class SettingsStore:
         for value in evt.changed:
             if value.id == const.GLOBAL_UNITS_ID:
                 settings = StoredUnitSettingsValue.model_validate(value.model_dump())
-                dirty = dirty or settings != self._unit_settings
-                self._unit_settings = settings
+                if settings != self.unit_settings:
+                    LOGGER.info(f'Received unit settings: {settings}')
+                    self._unit_settings = settings
+                    dirty = True
 
             if value.id == const.GLOBAL_TIME_ZONE_ID:
                 settings = StoredTimezoneSettingsValue.model_validate(value.model_dump())
-                dirty = dirty or settings != self._timezone_settings
-                self._timezone_settings = settings
+                if settings != self._timezone_settings:
+                    LOGGER.info(f'Received timezone settings: {settings}')
+                    self._timezone_settings = settings
+                    dirty = True
 
         if dirty:
             for cb in set(self._global_listeners):

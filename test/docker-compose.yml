@@ -1,5 +1,6 @@
+name: brewblox-devcon-spark-test
 services:
-  mqtt:
+  eventbus:
     image: ghcr.io/brewblox/mosquitto:develop
     ports:
       - "1883"
@@ -18,3 +19,5 @@ services:
     image: ghcr.io/brewblox/brewblox-history:develop
     ports:
       - "5000"
+    environment:
+      - BREWBLOX_DEBUG=True

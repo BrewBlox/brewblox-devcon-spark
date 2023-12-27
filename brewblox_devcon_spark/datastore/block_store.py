@@ -6,7 +6,6 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager, suppress
 from contextvars import ContextVar
-from datetime import timedelta
 
 from httpx import AsyncClient
 
@@ -14,10 +13,6 @@ from .. import const, utils
 from ..models import (DatastoreSingleQuery, TwinKeyEntriesBox,
                       TwinKeyEntriesValue, TwinKeyEntry)
 from ..twinkeydict import TwinKeyDict, TwinKeyError
-
-FLUSH_DELAY = timedelta(seconds=5)
-SHUTDOWN_WRITE_TIMEOUT = timedelta(seconds=2)
-READY_TIMEOUT = timedelta(minutes=1)
 
 SYS_OBJECTS: list[TwinKeyEntry] = [
     TwinKeyEntry(keys=keys, data={})
@@ -33,12 +28,11 @@ class BlockStore(TwinKeyDict[str, int, dict]):
     def __init__(self, defaults: list[TwinKeyEntry]):
         super().__init__()
 
-        config = utils.get_config()
-        self._ready_ev = asyncio.Event()
+        self.config = utils.get_config()
         self._changed_ev = asyncio.Event()
         self._doc_id: str = None
         self._defaults = defaults
-        self._client = AsyncClient(base_url=config.datastore_url)
+        self._client = AsyncClient(base_url=self.config.datastore_url)
 
         self.clear()  # inserts defaults
 
@@ -46,12 +40,10 @@ class BlockStore(TwinKeyDict[str, int, dict]):
         return f'<{type(self).__name__}>'
 
     async def load(self, device_id: str):
-        config = utils.get_config()
         doc_id = f'{device_id}-blocks-db'
         data: list[TwinKeyEntry] = []
 
         try:
-            self._ready_ev.clear()
             self._doc_id = None
 
             query = DatastoreSingleQuery(id=doc_id,
@@ -67,7 +59,7 @@ class BlockStore(TwinKeyDict[str, int, dict]):
             LOGGER.info(f'Loaded {len(data)} block(s)')
 
         except Exception as ex:
-            LOGGER.warning(f'Load error {utils.strex(ex)}', exc_info=config.debug)
+            LOGGER.warning(f'Load error {utils.strex(ex)}', exc_info=self.config.debug)
 
         finally:
             # Clear -> load from database -> merge defaults
@@ -80,10 +72,10 @@ class BlockStore(TwinKeyDict[str, int, dict]):
                         self.__setitem__(obj.keys, obj.data)
 
             self._doc_id = doc_id
-            self._ready_ev.set()
 
     async def save(self):
-        await asyncio.wait_for(self._ready_ev.wait(), READY_TIMEOUT.total_seconds())
+        if not self._doc_id:
+            raise ValueError('Document ID not set - did you forget to call load()?')
 
         data = [TwinKeyEntry(keys=k, data=v)
                 for k, v in self.items()]
@@ -96,12 +88,12 @@ class BlockStore(TwinKeyDict[str, int, dict]):
         )
         await self._client.post('/set',
                                 json=box.model_dump(mode='json'))
-        LOGGER.info(f'{self} Saved {len(data)} block(s)')
+        LOGGER.info(f'Saved {len(data)} block(s)')
 
     async def run(self, delayed: bool):
         if delayed:
             await self._changed_ev.wait()
-            await asyncio.sleep(FLUSH_DELAY.total_seconds())
+            await asyncio.sleep(self.config.datastore_flush_delay.total_seconds())
         elif not self._changed_ev.is_set():
             return
 
@@ -109,18 +101,17 @@ class BlockStore(TwinKeyDict[str, int, dict]):
         self._changed_ev.clear()
 
     async def repeat(self):
-        config = utils.get_config()
         while True:
             try:
                 await self.run(True)
             except Exception as ex:
-                LOGGER.error(f'{self} {utils.strex(ex)}', exc_info=config.debug)
+                LOGGER.error(utils.strex(ex), exc_info=self.config.debug)
             except asyncio.CancelledError as cancel_ex:
                 try:
                     await asyncio.wait_for(self.run(False),
-                                           timeout=SHUTDOWN_WRITE_TIMEOUT.total_seconds())
+                                           timeout=self.config.datastore_shutdown_timeout.total_seconds())
                 except Exception as ex:
-                    LOGGER.error(f'{self} {utils.strex(ex)}', exc_info=config.debug)
+                    LOGGER.error(utils.strex(ex), exc_info=self.config.debug)
                 raise cancel_ex
 
     def __setitem__(self, keys: tuple[str, int], item: dict):

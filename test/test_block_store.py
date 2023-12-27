@@ -8,10 +8,9 @@ from datetime import timedelta
 from unittest.mock import ANY
 
 import pytest
+from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
-from httpx import AsyncClient
 from pytest_httpx import HTTPXMock
-from pytest_mock import MockerFixture
 
 from brewblox_devcon_spark import const, utils
 from brewblox_devcon_spark.datastore import block_store
@@ -28,14 +27,20 @@ def read_objects() -> list[TwinKeyEntry]:
 
 
 @pytest.fixture
-def app(mocker: MockerFixture) -> FastAPI:
-    mocker.patch(TESTED + '.FLUSH_DELAY', timedelta())
-    mocker.patch(TESTED + '.READY_TIMEOUT', timedelta(milliseconds=1))
+def app() -> FastAPI:
+    config = utils.get_config()
+    config.datastore_flush_delay = timedelta()
+
     block_store.setup()
     return FastAPI()
 
 
-async def test_load_save(client: AsyncClient, httpx_mock: HTTPXMock):
+@pytest.fixture(autouse=True)
+async def manager(manager: LifespanManager):
+    yield manager
+
+
+async def test_load_save(httpx_mock: HTTPXMock):
     config = utils.get_config()
     store = block_store.CV.get()
 
@@ -45,7 +50,7 @@ async def test_load_save(client: AsyncClient, httpx_mock: HTTPXMock):
     assert len(store.items()) == default_length
 
     # Can't save before loading
-    with pytest.raises(asyncio.TimeoutError):
+    with pytest.raises(ValueError):
         await store.save()
 
     httpx_mock.add_response(url=f'{config.datastore_url}/get',
@@ -85,7 +90,7 @@ async def test_load_save(client: AsyncClient, httpx_mock: HTTPXMock):
     await store.run(False)
 
 
-async def test_load_error(client: AsyncClient, httpx_mock: HTTPXMock, caplog: pytest.LogCaptureFixture):
+async def test_load_error(httpx_mock: HTTPXMock):
     config = utils.get_config()
     store = block_store.CV.get()
 

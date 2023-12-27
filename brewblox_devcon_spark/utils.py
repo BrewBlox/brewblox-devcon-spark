@@ -1,6 +1,8 @@
 import asyncio
 import logging
+import os
 import re
+import signal
 import socket
 import traceback
 from configparser import ConfigParser
@@ -15,6 +17,10 @@ from dns.resolver import Resolver as DNSResolver
 from httpx import Response
 
 from .models import FirmwareConfig, ServiceConfig
+
+HTTPX_RETRY_INTERVAL = timedelta(seconds=1)
+HTTPX_RETRY_MAX_INTERVAL = timedelta(minutes=1)
+HTTPX_RETRY_BACKOFF = 1.1
 
 LOGGER = logging.getLogger(__name__)
 
@@ -54,9 +60,9 @@ def strex(ex: Exception, tb=False):
         return msg
 
 
-def graceful_shutdown():  # pragma: no cover
-    # os.kill(os.getpid(), signal.SIGINT)
-    asyncio.get_running_loop().stop()
+def graceful_shutdown(reason: str):  # pragma: no cover
+    LOGGER.warn(f'Sending shutdown signal, {reason=}')
+    os.kill(os.getppid(), signal.SIGTERM)
 
 
 def autodetect_service_name() -> str:  # pragma: no cover
@@ -141,9 +147,9 @@ async def task_context(coro: Coroutine) -> Generator[asyncio.Task, None, None]:
 
 
 async def httpx_retry(func: Callable[[], Awaitable[Response]],
-                      interval: timedelta = timedelta(seconds=1),
-                      max_interval: timedelta = timedelta(minutes=1),
-                      backoff: float = 1.1) -> Response:
+                      interval: timedelta = HTTPX_RETRY_INTERVAL,
+                      max_interval: timedelta = HTTPX_RETRY_MAX_INTERVAL,
+                      backoff: float = HTTPX_RETRY_BACKOFF) -> Response:
     while True:
         resp = None
 

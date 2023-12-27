@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from datetime import timedelta
 
 import pytest
+from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 
 from brewblox_devcon_spark import (codec, commander, connection, state_machine,
@@ -35,7 +36,7 @@ def app() -> FastAPI:
     return FastAPI(lifespan=lifespan)
 
 
-async def test_acknowledge():
+async def test_acknowledge(manager: LifespanManager):
     welcome = ','.join([
         '!BREWBLOX',
         'ed70d66f0',
@@ -83,7 +84,7 @@ async def test_unexpected_response(caplog: pytest.LogCaptureFixture):
     assert 'Unexpected message' in record.message
 
 
-async def test_firmware_update_call(client, mocker):
+async def test_firmware_update_call(manager: LifespanManager):
     # We don't unit test OTA update logic because it makes very in-depth assumptions
     # about how particle devices respond to YMODEM calls
     # We'll check now whether the basic call works

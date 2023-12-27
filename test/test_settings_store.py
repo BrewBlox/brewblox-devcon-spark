@@ -7,8 +7,9 @@ from contextlib import asynccontextmanager
 from datetime import timedelta
 
 import pytest
+from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
-from httpx import AsyncClient, Request, Response
+from httpx import Request, Response
 from pytest_httpx import HTTPXMock
 from pytest_mock import MockerFixture
 
@@ -27,7 +28,8 @@ async def lifespan(app: FastAPI):
 
 @pytest.fixture(autouse=True)
 def app(mocker: MockerFixture) -> FastAPI:
-    mocker.patch(TESTED + '.FETCH_TIMEOUT', timedelta(seconds=1))
+    config = utils.get_config()
+    config.datastore_fetch_timeout = timedelta(seconds=1)
 
     mqtt.setup()
     settings_store.setup()
@@ -39,11 +41,11 @@ async def test_fetch_all(httpx_mock: HTTPXMock):
     config = utils.get_config()
 
     httpx_mock.add_response(url=f'{config.datastore_url}/get',
-                            match_json={'id': f'{config.name}-service-db',
+                            match_json={'id': config.name,
                                         'namespace': const.SERVICE_NAMESPACE},
                             json={
                                 'value': {
-                                    'id': f'{config.name}-service-db',
+                                    'id': config.name,
                                     'namespace': const.SERVICE_NAMESPACE,
                                     'enabled': False,
                                 },
@@ -101,7 +103,7 @@ async def test_commit(httpx_mock: HTTPXMock):
     assert request_received
 
 
-async def test_store_events(client: AsyncClient):
+async def test_store_events(manager: LifespanManager):
     config = utils.get_config()
     mqtt_client = mqtt.CV.get()
     store = settings_store.CV.get()
@@ -120,7 +122,7 @@ async def test_store_events(client: AsyncClient):
     store.service_settings_listeners.add(service_evt_callback)
     store.global_settings_listeners.add(global_evt_callback)
 
-    mqtt_client.publish('brewcast/datastore/brewblox-global',
+    mqtt_client.publish(f'brewcast/datastore/{const.GLOBAL_NAMESPACE}',
                         {
                             'changed': [
                                 {
@@ -137,7 +139,7 @@ async def test_store_events(client: AsyncClient):
                             ]
                         })
 
-    mqtt_client.publish('brewcast/datastore/brewblox-devcon-spark',
+    mqtt_client.publish(f'brewcast/datastore/{const.SERVICE_NAMESPACE}',
                         {
                             'changed': [
                                 {
