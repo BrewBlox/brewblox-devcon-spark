@@ -14,8 +14,8 @@ LOGGER = logging.getLogger(__name__)
 router = APIRouter(prefix='/blocks', tags=['Blocks'])
 
 
-async def publish(changed: list[Block] = None,
-                  deleted: list[BlockIdentity] = None):
+def publish(changed: list[Block] = None,
+            deleted: list[BlockIdentity] = None):
     config = utils.get_config()
     mqtt_client = mqtt.CV.get()
     changed = [v.model_dump(mode='json') for v in changed] if changed else []

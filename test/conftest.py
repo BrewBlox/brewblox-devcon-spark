@@ -52,23 +52,30 @@ def docker_compose_file():
 @pytest.fixture(autouse=True)
 def config(monkeypatch: pytest.MonkeyPatch,
            docker_services: DockerServices,
+           tmp_path: Path,
            ) -> Generator[ServiceConfig, None, None]:
     cfg = TestConfig(
         name='sparkey',
         debug=True,
         mqtt_host='localhost',
         mqtt_port=docker_services.port_for('eventbus', 1883),
+        http_client_interval=timedelta(milliseconds=100),
         datastore_host='localhost',
         datastore_port=docker_services.port_for('history', 5000),
         simulation=True,
+        simulation_workdir=tmp_path / 'simulator',
+        simulation_port=utils.get_free_port(),
+        simulation_display_port=utils.get_free_port(),
         device_id='1234',
         connect_interval=timedelta(milliseconds=10),
         connect_interval_max=timedelta(milliseconds=100),
         discovery_interval=timedelta(milliseconds=10),
         discovery_timeout=timedelta(seconds=10),
         handshake_timeout=timedelta(seconds=20),
-        handshake_ping_interval=timedelta(milliseconds=100),
+        handshake_ping_interval=timedelta(milliseconds=20),
+        backup_root_dir=tmp_path / 'backup',
     )
+    print(cfg)
     monkeypatch.setattr(utils, 'get_config', lambda: cfg)
     yield cfg
 
@@ -102,14 +109,14 @@ def caplog(caplog: pytest.LogCaptureFixture) -> pytest.LogCaptureFixture:
 
 
 @pytest.fixture(autouse=True)
-def m_graceful_shutdown(monkeypatch: pytest.MonkeyPatch) -> Generator[Mock, None, None]:
-    m = Mock(spec=utils.graceful_shutdown)
-    monkeypatch.setattr(utils, 'graceful_shutdown', m)
+def m_kill(monkeypatch: pytest.MonkeyPatch) -> Generator[Mock, None, None]:
+    m = Mock(spec=utils.os.kill)
+    monkeypatch.setattr(utils.os, 'kill', m)
     yield m
 
 
 @pytest.fixture(autouse=True)
-def m_sleep(monkeypatch: pytest.MonkeyPatch):
+def m_sleep(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest):
     """
     Allows keeping track of calls to asyncio sleep.
     For tests, we want to reduce all sleep durations.
@@ -117,8 +124,10 @@ def m_sleep(monkeypatch: pytest.MonkeyPatch):
     """
     real_func = asyncio.sleep
 
-    async def wrapper(*args, **kwargs):
-        return await real_func(*args, **kwargs)
+    async def wrapper(delay: float, *args, **kwargs):
+        if delay > 0:
+            print(f'asyncio.sleep({delay}) in {request.node.name}')
+        return await real_func(delay, *args, **kwargs)
     monkeypatch.setattr('asyncio.sleep', wrapper)
     yield
 

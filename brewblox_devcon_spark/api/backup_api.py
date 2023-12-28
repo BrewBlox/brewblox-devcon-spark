@@ -48,7 +48,7 @@ async def backup_stored_download(args: BackupIdentity) -> Backup:
     """
     Download stored backup without applying it.
     """
-    result = await block_backup.CV.get().read()
+    result = await block_backup.CV.get().read(args)
     return result
 
 
@@ -66,7 +66,7 @@ async def backup_stored_save(args: BackupIdentity) -> Backup:
     """
     Create new stored backup.
     """
-    result = await block_backup.CV.get().write(args)
+    result = await block_backup.CV.get().save(args)
     return result
 
 

@@ -32,6 +32,12 @@ def get_config() -> ServiceConfig:  # pragma: no cover
     if not config.device_id and (config.simulation or config.mock):
         config.device_id = '123456789012345678901234'
 
+    if not config.simulation_port:
+        config.simulation_port = get_free_port()
+
+    if not config.simulation_display_port:
+        config.simulation_display_port = get_free_port()
+
     if not config.name:
         config.name = autodetect_service_name()
 
@@ -60,8 +66,8 @@ def strex(ex: Exception, tb=False):
         return msg
 
 
-def graceful_shutdown(reason: str):  # pragma: no cover
-    LOGGER.warn(f'Sending shutdown signal, {reason=}')
+def graceful_shutdown(reason: str):
+    LOGGER.warning(f'Sending shutdown signal, {reason=}')
     os.kill(os.getppid(), signal.SIGTERM)
 
 
@@ -147,9 +153,17 @@ async def task_context(coro: Coroutine) -> Generator[asyncio.Task, None, None]:
 
 
 async def httpx_retry(func: Callable[[], Awaitable[Response]],
-                      interval: timedelta = HTTPX_RETRY_INTERVAL,
-                      max_interval: timedelta = HTTPX_RETRY_MAX_INTERVAL,
-                      backoff: float = HTTPX_RETRY_BACKOFF) -> Response:
+                      interval: timedelta = ...,
+                      max_interval: timedelta = ...,
+                      backoff: float = ...) -> Response:
+    config = get_config()
+    if interval is ...:
+        interval = config.http_client_interval
+    if max_interval is ...:
+        max_interval = config.http_client_interval_max
+    if backoff is ...:
+        backoff = config.http_client_backoff
+
     while True:
         resp = None
 

@@ -33,7 +33,7 @@ async def sim_display_websocket(ws: WebSocket):
         try:
             await state_machine.CV.get().wait_synchronized()
 
-            async with aconnect_ws(f'ws://localhost:{config.display_ws_port}') as client_ws:
+            async with aconnect_ws(f'ws://localhost:{config.simulation_display_port}') as client_ws:
                 while True:
                     msg = await client_ws.receive_bytes()
                     await ws.send_bytes(msg)

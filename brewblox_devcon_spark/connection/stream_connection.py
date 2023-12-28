@@ -21,7 +21,6 @@ from .connection_impl import (ConnectionCallbacks, ConnectionImplBase,
 
 BREWBLOX_DNS_TYPE = '_brewblox._tcp.local.'
 USB_BAUD_RATE = 115200
-SIMULATION_CWD = 'simulator/'
 
 SIM_BINARIES = {
     'x86_64': 'brewblox-amd64.sim',
@@ -151,15 +150,15 @@ async def connect_simulation(callbacks: ConnectionCallbacks) -> ConnectionImplBa
             f'No simulator available for architecture {arch}')
 
     binary_path = Path(f'firmware/{binary}').resolve()
-    workdir = Path(SIMULATION_CWD).resolve()
+    workdir = config.simulation_workdir.resolve()
     workdir.mkdir(mode=0o777, exist_ok=True)
 
     proc = await asyncio.create_subprocess_exec(binary_path,
                                                 '--device_id', config.device_id,
-                                                '--port', str(config.device_port),
-                                                '--display_ws_port', str(config.display_ws_port),
+                                                '--port', str(config.simulation_port),
+                                                '--display_ws_port', str(config.simulation_display_port),
                                                 cwd=workdir)
-    return await connect_subprocess(callbacks, config.device_port, proc, 'SIM', binary)
+    return await connect_subprocess(callbacks, config.simulation_port, proc, 'SIM', binary)
 
 
 async def connect_usb(callbacks: ConnectionCallbacks,

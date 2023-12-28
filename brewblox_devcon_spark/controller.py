@@ -616,15 +616,13 @@ class SparkController:
 
             # First populate the datastore, to avoid unknown links
             for entry in exported.store:
-                keys = entry['keys']
-                data = entry['data']
 
                 try:
-                    self.store[keys] = data
+                    self.store[entry.keys] = entry.data
                 except twinkeydict.TwinKeyError:
-                    sid, nid = keys
+                    sid, nid = entry.keys
                     self.store.rename((None, nid), (sid, None))
-                    self.store[keys] = data
+                    self.store[entry.keys] = entry.data
 
             # Now either create or write the objects, depending on whether they are system objects
             for block in exported.blocks:

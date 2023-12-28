@@ -304,7 +304,7 @@ async def test_handler_disconnect(mocker: MockerFixture):
         assert state.is_disconnected()
 
 
-async def test_handler_connect_error(mocker: MockerFixture, m_graceful_shutdown: Mock):
+async def test_handler_connect_error(mocker: MockerFixture, m_kill: Mock):
     m_connect_mock: AsyncMock = mocker.patch(TESTED + '.connect_mock', autospec=True)
     m_connect_mock.side_effect = ConnectionRefusedError
 
@@ -320,13 +320,13 @@ async def test_handler_connect_error(mocker: MockerFixture, m_graceful_shutdown:
     for _ in range(connection_handler.MAX_RETRY_COUNT * 2):
         await handler.run()
 
-    m_graceful_shutdown.assert_not_called()
+    m_kill.assert_not_called()
 
     # It immediately threw a connection abort once the retry count was exceeded
     assert m_connect_mock.await_count == connection_handler.MAX_RETRY_COUNT * 2 - 1
 
 
-async def test_handler_discovery_error(mocker: MockerFixture, m_graceful_shutdown: Mock):
+async def test_handler_discovery_error(mocker: MockerFixture, m_kill: Mock):
     m_discover_usb = mocker.patch(TESTED + '.discover_usb', autospec=True)
     m_discover_usb.return_value = None
 
@@ -344,7 +344,7 @@ async def test_handler_discovery_error(mocker: MockerFixture, m_graceful_shutdow
     state.set_enabled(True)
 
     handler = connection_handler.ConnectionHandler()
-    m_graceful_shutdown.side_effect = RuntimeError
+    m_kill.side_effect = RuntimeError
     with pytest.raises(RuntimeError):
         await handler.run()
 

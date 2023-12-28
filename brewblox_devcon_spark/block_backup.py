@@ -6,13 +6,10 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
-from datetime import datetime
-from pathlib import Path
+from datetime import datetime, timedelta
 
 from . import controller, exceptions, state_machine, utils
 from .models import Backup, BackupApplyResult, BackupIdentity
-
-BASE_BACKUP_DIR = Path('./backup')
 
 LOGGER = logging.getLogger(__name__)
 CV: ContextVar['BackupStorage'] = ContextVar('block_backup.BackupStorage')
@@ -21,29 +18,26 @@ CV: ContextVar['BackupStorage'] = ContextVar('block_backup.BackupStorage')
 class BackupStorage:
 
     def __init__(self):
-        config = utils.get_config()
-        self.name = config.name
-        self.dir = BASE_BACKUP_DIR / self.name
-        self.dir.mkdir(mode=0o777, parents=True, exist_ok=True)
-
+        self.config = utils.get_config()
         self.ctlr = controller.CV.get()
+
+        self.dir = self.config.backup_root_dir / self.config.name
+        self.dir.mkdir(mode=0o777, parents=True, exist_ok=True)
 
     async def run(self):
         if state_machine.CV.get().is_synchronized():
-            name = f'autosave_blocks_{self.name}_' + datetime.today().strftime('%Y-%m-%d')
+            name = f'autosave_blocks_{self.config.name}_' + datetime.today().strftime('%Y-%m-%d')
             await self.save(BackupIdentity(name=name))
 
     async def repeat(self):
-        config = utils.get_config()
+        normal_interval = self.config.backup_interval
+        retry_interval = self.config.backup_retry_interval
 
-        normal_interval = config.backup_interval
-        retry_interval = config.backup_retry_interval
-
-        if normal_interval.total_seconds() <= 0:
-            LOGGER.info('Backup storage is disabled')
+        if normal_interval <= timedelta():
+            LOGGER.warn(f'Backup storage is disabled, (interval={normal_interval})')
             return
 
-        if retry_interval.total_seconds() <= 0:
+        if retry_interval <= timedelta():
             retry_interval = normal_interval
 
         last_ok = False
@@ -55,7 +49,7 @@ class BackupStorage:
                 last_ok = True
             except Exception as ex:
                 last_ok = False
-                LOGGER.error(ex, exc_info=config.debug)
+                LOGGER.error(utils.strex(ex), exc_info=self.config.debug)
 
     async def save_portable(self) -> Backup:
         return await self.ctlr.make_backup()

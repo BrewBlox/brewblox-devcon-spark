@@ -44,6 +44,7 @@ class SparkCommander:
 
     def __init__(self):
         self.config = utils.get_config()
+        self.state = state_machine.CV.get()
         self.codec = codec.CV.get()
         self.conn = connection.CV.get()
 
@@ -109,7 +110,7 @@ class SparkCommander:
                     device_id=handshake.device_id,
                 ),
             )
-            state_machine.CV.get().set_acknowledged(desc)
+            self.state.set_acknowledged(desc)
 
         else:
             LOGGER.info(f'Spark log: `{msg}`')

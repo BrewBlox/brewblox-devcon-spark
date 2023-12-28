@@ -1,8 +1,10 @@
 import logging
+import traceback
 from contextlib import AsyncExitStack, asynccontextmanager
 from pprint import pformat
 
 from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from fastapi.responses import JSONResponse
 
 from . import (block_backup, broadcaster, codec, commander, connection,
@@ -40,21 +42,47 @@ def add_exception_handlers(app: FastAPI):
     config = utils.get_config()
     logger = logging.getLogger('devcon.error')
 
+    @app.exception_handler(HTTPException)
+    async def on_http_error(request: Request, ex: HTTPException) -> JSONResponse:
+        msg = str(ex)
+        content = ErrorResponse(error=msg)
+
+        if config.debug:
+            content.traceback = traceback.format_exception(None, ex, ex.__traceback__)
+
+        logger.error(f'[{request.url}] => {msg}', exc_info=config.debug)
+        return JSONResponse(content.model_dump(mode='json', exclude_none=True),
+                            status_code=ex.status_code)
+
+    @app.exception_handler(RequestValidationError)
+    async def on_request_error(request: Request, ex: RequestValidationError) -> JSONResponse:
+        msg = utils.strex(ex)
+        content = ErrorResponse(error=msg, validation=ex.errors())
+
+        logger.error(f'[{request.url}] => {msg}')
+        return JSONResponse(content.model_dump(mode='json', exclude_none=True),
+                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+    @app.exception_handler(ResponseValidationError)
+    async def on_response_error(request: Request, ex: ResponseValidationError) -> JSONResponse:
+        msg = utils.strex(ex)
+        content = ErrorResponse(error=msg, validation=ex.errors())
+
+        logger.error(f'[{request.url}] => {msg}')
+        return JSONResponse(content.model_dump(mode='json', exclude_none=True),
+                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     @app.exception_handler(Exception)
-    async def catchall_handler(request: Request, exc: Exception) -> JSONResponse:
-        short = utils.strex(exc)
-        details = utils.strex(exc, tb=config.debug)
-        content = ErrorResponse(error=str(exc),
-                                details=details)
+    async def on_generic_error(request: Request, ex: Exception) -> JSONResponse:
+        msg = utils.strex(ex)
+        content = ErrorResponse(error=msg)
 
-        if isinstance(exc, HTTPException):
-            status_code = exc.status_code
-        else:
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        if config.debug:
+            content.traceback = traceback.format_exception(None, ex, ex.__traceback__)
 
-        logger.error(f'[{request.url}] => {short}')
-        logger.debug(details)
-        return JSONResponse(content.model_dump(), status_code=status_code)
+        logger.error(f'[{request.url}] => {msg}', exc_info=config.debug)
+        return JSONResponse(content.model_dump(exclude_none=True),
+                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @asynccontextmanager

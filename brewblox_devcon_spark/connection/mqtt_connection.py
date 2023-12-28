@@ -27,9 +27,9 @@ class MqttConnection(ConnectionImplBase):
                  callbacks: ConnectionCallbacks,
                  ) -> None:
         super().__init__('MQTT', device_id, callbacks)
-        self._mqtt_client = mqtt.CV.get()
-        self._device_id = device_id
+        self.mqtt_client = mqtt.CV.get()
 
+        self._device_id = device_id
         self._request_topic = REQUEST_TOPIC + device_id
         self._response_topic = RESPONSE_TOPIC + device_id
         self._handshake_topic = HANDSHAKE_TOPIC + device_id
@@ -40,36 +40,25 @@ class MqttConnection(ConnectionImplBase):
             self.disconnected.set()
 
     async def _resp_cb(self, client, topic, payload, qos, properties):
-        await self.on_response(payload)
+        await self.on_response(payload.decode())
 
     async def _log_cb(self, client, topic, payload, qos, properties):
-        await self.on_event(payload)
+        await self.on_event(payload.decode())
 
     async def send_request(self, msg: str):
-        self._mqtt_client.publish(self._request_topic, msg)
+        self.mqtt_client.publish(self._request_topic, msg)
 
     async def connect(self):
-        self._mqtt_client.subscribe(self._handshake_topic)(self._handshake_cb)
-        self._mqtt_client.subscribe(self._response_topic)(self._resp_cb)
-        self._mqtt_client.subscribe(self._log_topic)(self._log_cb)
+        self.mqtt_client.subscribe(self._handshake_topic)(self._handshake_cb)
+        self.mqtt_client.subscribe(self._response_topic)(self._resp_cb)
+        self.mqtt_client.subscribe(self._log_topic)(self._log_cb)
         self.connected.set()
 
     async def close(self):
-        self._mqtt_client.unsubscribe(self._handshake_topic)
-        self._mqtt_client.unsubscribe(self._response_topic)
-        self._mqtt_client.unsubscribe(self._log_topic)
+        self.mqtt_client.unsubscribe(self._handshake_topic)
+        self.mqtt_client.unsubscribe(self._response_topic)
+        self.mqtt_client.unsubscribe(self._log_topic)
         self.disconnected.set()
-
-
-async def _firmware_handshake_cb(client, topic: str, payload: str, qos, properties):
-    devices = _DEVICES.get()
-    device = topic.removeprefix(HANDSHAKE_TOPIC)
-    if payload:
-        LOGGER.debug(f'MQTT device published: {device}')
-        devices.setdefault(device, asyncio.Event()).set()
-    else:
-        LOGGER.debug(f'MQTT device removed: {device}')
-        devices.setdefault(device, asyncio.Event()).clear()
 
 
 async def discover_mqtt(callbacks: ConnectionCallbacks) -> ConnectionImplBase | None:
@@ -92,6 +81,30 @@ async def discover_mqtt(callbacks: ConnectionCallbacks) -> ConnectionImplBase | 
 
 def setup():
     mqtt_client = mqtt.CV.get()
-    _DEVICES.set({})
+    devices: dict[str, asyncio.Event] = {}
+    _DEVICES.set(devices)
 
-    mqtt_client.subscribe(HANDSHAKE_TOPIC + '+')(_firmware_handshake_cb)
+    # We need to declare listened topics before connect
+    # If we subscribe to topic/+ here, we still receive messages for topic/id
+
+    @mqtt_client.subscribe(HANDSHAKE_TOPIC + '+')
+    async def on_handshake(client, topic: str, payload: bytes, qos, properties):
+        device = topic.removeprefix(HANDSHAKE_TOPIC)
+        if payload:
+            LOGGER.debug(f'MQTT device published: {device}')
+            devices.setdefault(device, asyncio.Event()).set()
+        else:
+            LOGGER.debug(f'MQTT device removed: {device}')
+            devices.setdefault(device, asyncio.Event()).clear()
+
+    @mqtt_client.subscribe(LOG_TOPIC + '+')
+    async def on_log(client, topic: str, payload: bytes, qos, properties):
+        pass
+
+    @mqtt_client.subscribe(REQUEST_TOPIC + '+')
+    async def on_request(client, topic: str, payload: bytes, qos, properties):
+        pass
+
+    @mqtt_client.subscribe(RESPONSE_TOPIC + '+')
+    async def on_response(client, topic: str, payload: bytes, qos, properties):
+        pass

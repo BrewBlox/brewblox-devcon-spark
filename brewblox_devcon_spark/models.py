@@ -1,5 +1,6 @@
 import enum
 from datetime import timedelta
+from pathlib import Path
 from typing import Any, Literal, Self
 
 from pydantic import (BaseModel, ConfigDict, Field, ValidationInfo,
@@ -47,6 +48,11 @@ class ServiceConfig(BaseSettings):
     datastore_topic: str = 'brewcast/datastore'
     blocks_topic: str = 'brewcast/spark/blocks'
 
+    # HTTP client options
+    http_client_interval: timedelta = timedelta(seconds=1)
+    http_client_interval_max: timedelta = timedelta(minutes=1)
+    http_client_backoff: float = 1.1
+
     # Datastore options
     datastore_host: str = 'history'
     datastore_port: int = 5000
@@ -57,14 +63,19 @@ class ServiceConfig(BaseSettings):
     datastore_shutdown_timeout: timedelta = timedelta(seconds=2)
 
     # Device options
-    simulation: bool = False
-    mock: bool = False
+    device_id: str | None = None
+    discovery: DiscoveryType = DiscoveryType.all
+
     device_host: str | None = None
     device_port: int = 8332
     device_serial: str | None = None
-    device_id: str | None = None
-    discovery: DiscoveryType = DiscoveryType.all
-    display_ws_port: int = 7377
+
+    mock: bool = False
+
+    simulation: bool = False
+    simulation_port: int = 0  # any free port
+    simulation_display_port: int = 0  # any free port
+    simulation_workdir: Path = Path('./simulator')
 
     # Connection options
     connect_interval: timedelta = timedelta(seconds=2)
@@ -94,6 +105,7 @@ class ServiceConfig(BaseSettings):
     # Backup options
     backup_interval: timedelta = timedelta(hours=1)
     backup_retry_interval: timedelta = timedelta(minutes=5)
+    backup_root_dir: Path = Path('./backup')
 
     # Time sync options
     time_sync_interval: timedelta = timedelta(minutes=15)
@@ -173,6 +185,9 @@ class ResetReason(enum.Enum):
     PANIC = '82'
     USER = '8C'
 
+    def __str__(self):
+        return self.name
+
 
 class ResetData(enum.Enum):
     NOT_SPECIFIED = '00'
@@ -183,6 +198,9 @@ class ResetData(enum.Enum):
     LISTENING_MODE_EXIT = '05'
     FIRMWARE_UPDATE_SUCCESS = '06'
     OUT_OF_MEMORY = '07'
+
+    def __str__(self):
+        return self.name
 
 
 class Opcode(enum.Enum):
@@ -342,16 +360,16 @@ class HandshakeMessage(BaseModel):
     reset_reason_hex: str
     reset_data_hex: str
     device_id: str
-    reset_reason: ResetReason = ResetReason.NONE
-    reset_data: ResetData = ResetData.NOT_SPECIFIED
+    reset_reason: str = str(ResetReason.NONE)
+    reset_data: str = str(ResetData.NOT_SPECIFIED)
 
     @model_validator(mode='after')
-    def lower_device_id(self) -> Self:
-        self.reset_reason = ResetReason(self.reset_reason_hex.upper())
+    def parse_reset_enums(self) -> Self:
+        self.reset_reason = str(ResetReason(self.reset_reason_hex.upper()))
         try:
-            self.reset_data = ResetData(self.reset_data_hex.upper())
+            self.reset_data = str(ResetData(self.reset_data_hex.upper()))
         except Exception:
-            self.reset_data = ResetData.NOT_SPECIFIED
+            self.reset_data = str(ResetData.NOT_SPECIFIED)
         return self
 
 
@@ -456,7 +474,8 @@ class AutoconnectSettings(BaseModel):
 
 class ErrorResponse(BaseModel):
     error: str
-    details: str
+    validation: list | None = None
+    traceback: list[str] | None = None
 
 
 class FirmwareFlashResponse(BaseModel):
