@@ -56,6 +56,12 @@ async def test_mqtt_discovery():
     conn = await mqtt_connection.discover_mqtt(AsyncMock())
     assert isinstance(conn, mqtt_connection.MqttConnection)
 
+    # If device ID is not set, we can't discover
+    device_id = config.device_id
+    config.device_id = None
+    assert await mqtt_connection.discover_mqtt(AsyncMock()) is None
+    config.device_id = device_id
+
     # Publish LWT -> controller disconnected
     recv.clear()
     mqtt_client.publish(f'brewcast/cbox/handshake/{config.device_id}', None)

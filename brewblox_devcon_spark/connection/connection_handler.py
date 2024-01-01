@@ -38,13 +38,6 @@ class ConnectionHandler(ConnectionCallbacks):
         self._attempts: int = 0
         self._impl: ConnectionImplBase = None
 
-    def __str__(self):
-        return f'<{type(self).__name__} for {self._impl}>'
-
-    @property
-    def enabled(self) -> bool:
-        return self._enabled
-
     @property
     def connected(self) -> bool:
         return self._impl is not None \
@@ -175,20 +168,21 @@ class ConnectionHandler(ConnectionCallbacks):
         finally:
             with suppress(Exception):
                 await self._impl.close()
+            self._impl = None
             self.state.set_disconnected()
 
     async def repeat(self):
         while self._enabled:
             try:
                 await self.run()
-            except Exception as ex:
+            except Exception as ex:  # pragma: no cover
                 LOGGER.error(utils.strex(ex), exc_info=self.config.debug)
 
             await asyncio.sleep(self._interval.total_seconds())
 
     async def send_request(self, msg: str):
         if not self.connected:
-            raise exceptions.NotConnected(f'{self} not connected')
+            raise exceptions.NotConnected()
 
         await self._impl.send_request(msg)
 

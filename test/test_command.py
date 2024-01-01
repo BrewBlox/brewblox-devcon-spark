@@ -1,5 +1,5 @@
 """
-Tests brewblox_devcon_spark.commander
+Tests brewblox_devcon_spark.command
 """
 
 import asyncio
@@ -10,12 +10,12 @@ import pytest
 from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 
-from brewblox_devcon_spark import (codec, commander, connection, state_machine,
+from brewblox_devcon_spark import (codec, command, connection, state_machine,
                                    utils)
 from brewblox_devcon_spark.connection import connection_handler
 from brewblox_devcon_spark.models import ErrorCode, IntermediateResponse
 
-TESTED = commander.__name__
+TESTED = command.__name__
 
 
 @asynccontextmanager
@@ -32,7 +32,7 @@ def app() -> FastAPI:
     state_machine.setup()
     codec.setup()
     connection_handler.setup()
-    commander.setup()
+    command.setup()
     return FastAPI(lifespan=lifespan)
 
 
@@ -89,8 +89,9 @@ async def test_firmware_update_call(manager: LifespanManager):
     # about how particle devices respond to YMODEM calls
     # We'll check now whether the basic call works
     state = state_machine.CV.get()
-    cmdr = commander.CV.get()
+    cmdr = command.CV.get()
 
     state.set_enabled(True)
     await asyncio.wait_for(state.wait_connected(), timeout=5)
     await cmdr.firmware_update()
+    await cmdr.wait_empty()

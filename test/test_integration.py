@@ -11,9 +11,9 @@ from fastapi import FastAPI
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
-from brewblox_devcon_spark import (app_factory, block_backup, codec, commander,
-                                   connection, const, controller, datastore,
-                                   mqtt, state_machine, synchronization, utils)
+from brewblox_devcon_spark import (app_factory, block_backup, codec, command,
+                                   connection, const, control, datastore, mqtt,
+                                   state_machine, synchronization, utils)
 from brewblox_devcon_spark.api import (backup_api, blocks_api, debug_api,
                                        settings_api, system_api)
 from brewblox_devcon_spark.datastore import block_store
@@ -78,13 +78,17 @@ async def lifespan(app: FastAPI):
 
 @pytest.fixture
 def app() -> FastAPI:
+    config = utils.get_config()
+    config.mock = False
+    config.simulation = True
+
     mqtt.setup()
     state_machine.setup()
     datastore.setup()
     codec.setup()
     connection.setup()
-    commander.setup()
-    controller.setup()
+    command.setup()
+    control.setup()
     block_backup.setup()
 
     app = FastAPI(lifespan=lifespan)
@@ -128,14 +132,16 @@ async def test_create(client: AsyncClient, block_args: Block):
     assert Block.model_validate_json(resp.text).id == block_args.id
 
 
-async def test_invalid_input(client: AsyncClient, block_args: Block):
+async def test_invalid_input(client: AsyncClient, block_args: Block, mocker: MockerFixture):
+    ctrl = control.CV.get()
+
     # 422 if input fails schema check
     raw = block_args.model_dump()
     del raw['type']
     resp = await client.post('/blocks/create', json=raw)
     assert resp.status_code == 422
     retv = resp.json()
-    assert 'error' in retv
+    assert 'RequestValidationError' in retv['error']
     assert 'traceback' not in retv
     assert 'validation' in retv
 
@@ -149,8 +155,23 @@ async def test_invalid_input(client: AsyncClient, block_args: Block):
     assert 'traceback' in retv
     assert 'validation' not in retv
 
+    # We need to simulate some bugs now
+    m = mocker.patch.object(ctrl, 'create_block', autospec=True)
 
-async def test_invalid_input_prod(client: AsyncClient, block_args: Block):
+    # 500 if output is invalid
+    # This is a programming error
+    m.side_effect = None
+    m.return_value = BlockIdentity()
+    resp = await client.post('/blocks/create', json=raw)
+    assert resp.status_code == 500
+    retv = resp.json()
+    assert 'ResponseValidationError' in retv['error']
+    assert 'traceback' not in retv
+    assert 'validation' in retv
+
+
+async def test_invalid_input_prod(client: AsyncClient, block_args: Block, mocker: MockerFixture):
+    ctrl = control.CV.get()
     config = utils.get_config()
     config.debug = False
 
@@ -160,7 +181,7 @@ async def test_invalid_input_prod(client: AsyncClient, block_args: Block):
     resp = await client.post('/blocks/create', json=raw)
     assert resp.status_code == 422
     retv = resp.json()
-    assert 'error' in retv
+    assert 'RequestValidationError' in retv['error']
     assert 'traceback' not in retv
     assert 'validation' in retv
 
@@ -173,6 +194,20 @@ async def test_invalid_input_prod(client: AsyncClient, block_args: Block):
     assert 'dummy' in retv['error']
     assert 'traceback' not in retv
     assert 'validation' not in retv
+
+    # We need to simulate some bugs now
+    m = mocker.patch.object(ctrl, 'create_block', autospec=True)
+
+    # 500 if output is invalid
+    # This is a programming error
+    m.side_effect = None
+    m.return_value = BlockIdentity()
+    resp = await client.post('/blocks/create', json=raw)
+    assert resp.status_code == 500
+    retv = resp.json()
+    assert 'ResponseValidationError' in retv['error']
+    assert 'traceback' not in retv
+    assert 'validation' in retv
 
 
 async def test_create_performance(client: AsyncClient, block_args: Block):
@@ -659,7 +694,7 @@ async def test_system_status(client: AsyncClient):
         'identity_error': None,
     }
 
-    await commander.CV.get().end_connection()
+    await command.CV.get().end_connection()
 
     resp = await client.get('/system/status')
     desc = resp.json()

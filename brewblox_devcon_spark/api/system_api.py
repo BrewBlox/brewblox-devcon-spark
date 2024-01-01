@@ -8,10 +8,8 @@ import logging
 from fastapi import APIRouter, BackgroundTasks
 from httpx import AsyncClient
 
-from .. import (commander, controller, exceptions, mqtt, state_machine, utils,
-                ymodem)
-from ..models import (FirmwareFlashResponse, PingResponse,
-                      ServiceStatusDescription)
+from .. import command, control, exceptions, mqtt, state_machine, utils, ymodem
+from ..models import FirmwareFlashResponse, PingResponse, StatusDescription
 
 ESP_URL_FMT = 'http://brewblox.blob.core.windows.net/firmware/{date}-{version}/brewblox-esp32.bin'
 
@@ -21,7 +19,7 @@ router = APIRouter(prefix='/system', tags=['System'])
 
 
 @router.get('/status')
-async def system_status() -> ServiceStatusDescription:
+async def system_status() -> StatusDescription:
     """
     Get service status.
     """
@@ -34,7 +32,7 @@ async def system_ping_get() -> PingResponse:
     """
     Ping the controller.
     """
-    await controller.CV.get().noop()
+    await control.CV.get().noop()
     return PingResponse()
 
 
@@ -43,7 +41,7 @@ async def system_ping_post() -> PingResponse:
     """
     Ping the controller.
     """
-    await controller.CV.get().noop()
+    await control.CV.get().noop()
     return PingResponse()
 
 
@@ -52,7 +50,7 @@ async def system_reboot_controller():
     """
     Reboot the controller.
     """
-    await controller.CV.get().reboot()
+    await control.CV.get().reboot()
     return {}
 
 
@@ -71,7 +69,7 @@ async def system_clear_wifi():
     Clear Wifi settings on the controller.
     The controller may reboot or lose connection.
     """
-    await controller.CV.get().clear_wifi()
+    await control.CV.get().clear_wifi()
     return {}
 
 
@@ -81,7 +79,7 @@ async def system_factory_reset():
     Factory reset the controller.
     This does not include firmware.
     """
-    await controller.CV.get().factory_reset()
+    await control.CV.get().factory_reset()
     return {}
 
 
@@ -93,7 +91,7 @@ class Flasher:
 
         self.state = state_machine.CV.get()
         self.mqtt_client = mqtt.CV.get()
-        self.commander = commander.CV.get()
+        self.commander = command.CV.get()
         self.client = AsyncClient()
 
         self.topic = f'{self.config.state_topic}/{self.config.name}/update'

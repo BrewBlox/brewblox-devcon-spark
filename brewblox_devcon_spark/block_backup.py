@@ -1,5 +1,5 @@
 """
-Store regular backups of blocks on disk
+Store regular backups of blocks locally
 """
 
 import asyncio
@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from contextvars import ContextVar
 from datetime import datetime, timedelta
 
-from . import controller, exceptions, state_machine, utils
+from . import control, exceptions, state_machine, utils
 from .models import Backup, BackupApplyResult, BackupIdentity
 
 LOGGER = logging.getLogger(__name__)
@@ -19,43 +19,17 @@ class BackupStorage:
 
     def __init__(self):
         self.config = utils.get_config()
-        self.ctlr = controller.CV.get()
+        self.state = state_machine.CV.get()
+        self.ctrl = control.CV.get()
 
         self.dir = self.config.backup_root_dir / self.config.name
         self.dir.mkdir(mode=0o777, parents=True, exist_ok=True)
 
-    async def run(self):
-        if state_machine.CV.get().is_synchronized():
-            name = f'autosave_blocks_{self.config.name}_' + datetime.today().strftime('%Y-%m-%d')
-            await self.save(BackupIdentity(name=name))
-
-    async def repeat(self):
-        normal_interval = self.config.backup_interval
-        retry_interval = self.config.backup_retry_interval
-
-        if normal_interval <= timedelta():
-            LOGGER.warn(f'Backup storage is disabled, (interval={normal_interval})')
-            return
-
-        if retry_interval <= timedelta():
-            retry_interval = normal_interval
-
-        last_ok = False
-        while True:
-            interval = normal_interval if last_ok else retry_interval
-            await asyncio.sleep(interval.total_seconds())
-            try:
-                await self.run()
-                last_ok = True
-            except Exception as ex:
-                last_ok = False
-                LOGGER.error(utils.strex(ex), exc_info=self.config.debug)
-
     async def save_portable(self) -> Backup:
-        return await self.ctlr.make_backup()
+        return await self.ctrl.make_backup()
 
     async def load_portable(self, data: Backup) -> BackupApplyResult:
-        return await self.ctlr.apply_backup(data)
+        return await self.ctrl.apply_backup(data)
 
     async def all(self) -> list[BackupIdentity]:
         return [BackupIdentity(name=f.stem)
@@ -81,14 +55,37 @@ class BackupStorage:
         return data
 
     async def save(self, ident: BackupIdentity):
-        data = await self.ctlr.make_backup()
+        data = await self.ctrl.make_backup()
         data.name = ident.name
         await self.write(data)
         return data
 
     async def load(self, ident: BackupIdentity) -> BackupApplyResult:
         data = await self.read(ident)
-        return await self.ctlr.apply_backup(data)
+        return await self.ctrl.apply_backup(data)
+
+    async def run(self):
+        if self.state.is_synchronized():
+            dt = datetime.today().strftime('%Y-%m-%d')
+            await self.save(BackupIdentity(name=f'autosave_blocks_{self.config.name}_{dt}'))
+
+    async def repeat(self):
+        normal_interval = self.config.backup_interval
+        retry_interval = self.config.backup_retry_interval
+        interval = normal_interval
+
+        if normal_interval < timedelta():
+            LOGGER.warning(f'Cancelling block backups (interval={normal_interval})')
+            return
+
+        while True:
+            try:
+                await asyncio.sleep(interval.total_seconds())
+                await self.run()
+                interval = normal_interval
+            except Exception as ex:
+                LOGGER.error(utils.strex(ex), exc_info=self.config.debug)
+                interval = retry_interval
 
 
 @asynccontextmanager

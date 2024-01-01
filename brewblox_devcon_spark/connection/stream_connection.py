@@ -3,10 +3,11 @@ Stream-based connections to the Spark.
 The connection itself is always TCP.
 For serial and simulation targets, the TCP server is a subprocess.
 """
-
 import asyncio
 import logging
+import os
 import platform
+import signal
 from asyncio.subprocess import Process
 from contextlib import suppress
 from functools import partial
@@ -15,7 +16,7 @@ from pathlib import Path
 from serial.tools import list_ports
 
 from .. import exceptions, mdns, utils
-from .cbox_parser import ControlboxParser
+from .cbox_parser import CboxParser
 from .connection_impl import (ConnectionCallbacks, ConnectionImplBase,
                               ConnectionKind_)
 
@@ -48,7 +49,7 @@ class StreamConnection(ConnectionImplBase):
         super().__init__(kind, address, callbacks)
 
         self._transport: asyncio.Transport = None
-        self._parser = ControlboxParser()
+        self._parser = CboxParser()
 
     def connection_made(self, transport: asyncio.Transport):
         self._transport = transport
@@ -95,7 +96,8 @@ class SubprocessConnection(StreamConnection):  # pragma: no cover
         with suppress(Exception):
             await super().close()
         with suppress(Exception):
-            self._proc.terminate()
+            os.killpg(os.getpgid(self._proc.pid), signal.SIGTERM)
+            await self._proc.wait()
 
 
 async def connect_tcp(callbacks: ConnectionCallbacks,
@@ -157,7 +159,9 @@ async def connect_simulation(callbacks: ConnectionCallbacks) -> ConnectionImplBa
                                                 '--device_id', config.device_id,
                                                 '--port', str(config.simulation_port),
                                                 '--display_ws_port', str(config.simulation_display_port),
-                                                cwd=workdir)
+                                                cwd=workdir,
+                                                preexec_fn=os.setsid,
+                                                shell=False)
     return await connect_subprocess(callbacks, config.simulation_port, proc, 'SIM', binary)
 
 
@@ -168,7 +172,9 @@ async def connect_usb(callbacks: ConnectionCallbacks,
     device_serial = device_serial or config.device_serial
     proc = await asyncio.create_subprocess_exec('/usr/bin/socat',
                                                 f'tcp-listen:{config.device_port},reuseaddr,fork',
-                                                f'file:{device_serial},raw,echo=0,b{USB_BAUD_RATE}')
+                                                f'file:{device_serial},raw,echo=0,b{USB_BAUD_RATE}',
+                                                preexec_fn=os.setsid,
+                                                shell=False)
 
     return await connect_subprocess(callbacks, config.device_port, proc, 'USB', device_serial)
 

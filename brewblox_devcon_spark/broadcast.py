@@ -8,8 +8,9 @@ import logging
 from contextlib import asynccontextmanager
 from datetime import timedelta
 
-from . import const, controller, mqtt, state_machine, utils
+from . import const, control, mqtt, state_machine, utils
 from .block_analysis import calculate_claims, calculate_relations
+from .models import HistoryEvent, ServiceStateEvent, ServiceStateEventData
 
 LOGGER = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ class Broadcaster:
 
     def __init__(self):
         self.config = utils.get_config()
-        self.controller = controller.CV.get()
+        self.controller = control.CV.get()
 
         self.state_topic = f'{self.config.state_topic}/{self.config.name}'
         self.history_topic = f'{self.config.history_topic}/{self.config.name}'
@@ -40,34 +41,35 @@ class Broadcaster:
                 }
 
                 mqtt_client.publish(self.history_topic,
-                                    {
-                                        'key': self.config.name,
-                                        'data': history_data,
-                                    })
+                                    HistoryEvent(
+                                        key=self.config.name,
+                                        data=history_data,
+                                    ).model_dump(mode='json'))
 
         finally:
             # State event is always published
             mqtt_client.publish(self.state_topic,
-                                {
-                                    'key': self.config.name,
-                                    'type': 'Spark.state',
-                                    'data': {
-                                        'status': state.desc().model_dump(mode='json'),
-                                        'blocks': [v.model_dump(mode='json') for v in blocks],
-                                        'relations': calculate_relations(blocks),
-                                        'claims': calculate_claims(blocks),
-                                    },
-                                },
+                                ServiceStateEvent(
+                                    key=self.config.name,
+                                    data=ServiceStateEventData(
+                                        status=state.desc(),
+                                        blocks=blocks,
+                                        relations=calculate_relations(blocks),
+                                        claims=calculate_claims(blocks)
+                                    )
+                                ).model_dump(mode='json'),
                                 retain=True)
 
     async def repeat(self):
-        if self.config.broadcast_interval <= timedelta():
-            LOGGER.warning(f'Cancelling broadcaster (interval={self.config.broadcast_interval})')
+        interval = self.config.broadcast_interval
+
+        if interval < timedelta():
+            LOGGER.warning(f'Cancelling broadcaster (interval={interval})')
             return
 
         while True:
-            await asyncio.sleep(self.config.broadcast_interval.total_seconds())
             try:
+                await asyncio.sleep(interval.total_seconds())
                 await self.run()
             except Exception as ex:
                 LOGGER.error(utils.strex(ex), exc_info=self.config.debug)

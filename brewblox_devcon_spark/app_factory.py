@@ -7,9 +7,9 @@ from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from fastapi.responses import JSONResponse
 
-from . import (block_backup, broadcaster, codec, commander, connection,
-               controller, datastore, mqtt, state_machine, synchronization,
-               time_sync, utils)
+from . import (block_backup, broadcast, codec, command, connection, control,
+               datastore, mqtt, state_machine, synchronization, time_sync,
+               utils)
 from .api import (backup_api, blocks_api, blocks_mqtt_api, debug_api,
                   settings_api, sim_api, system_api)
 from .models import ErrorResponse
@@ -73,7 +73,7 @@ def add_exception_handlers(app: FastAPI):
                             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @app.exception_handler(Exception)
-    async def on_generic_error(request: Request, ex: Exception) -> JSONResponse:
+    async def on_generic_error(request: Request, ex: Exception) -> JSONResponse:  # pragma: no cover
         msg = utils.strex(ex)
         content = ErrorResponse(error=msg)
 
@@ -96,9 +96,9 @@ async def lifespan(app: FastAPI):
         await stack.enter_async_context(datastore.lifespan())
         await stack.enter_async_context(connection.lifespan())
         await stack.enter_async_context(synchronization.lifespan())
-        await stack.enter_async_context(block_backup.lifespan())
-        await stack.enter_async_context(broadcaster.lifespan())
+        await stack.enter_async_context(broadcast.lifespan())
         await stack.enter_async_context(time_sync.lifespan())
+        await stack.enter_async_context(block_backup.lifespan())
         yield
 
 
@@ -117,8 +117,8 @@ def create_app() -> FastAPI:
     datastore.setup()
     codec.setup()
     connection.setup()
-    commander.setup()
-    controller.setup()
+    command.setup()
+    control.setup()
     block_backup.setup()
     blocks_mqtt_api.setup()
 

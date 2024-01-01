@@ -36,9 +36,6 @@ class BlockStore(TwinKeyDict[str, int, dict]):
 
         self.clear()  # inserts defaults
 
-    def __str__(self):
-        return f'<{type(self).__name__}>'
-
     async def load(self, device_id: str):
         doc_id = f'{device_id}-blocks-db'
         data: list[TwinKeyEntry] = []
@@ -89,30 +86,26 @@ class BlockStore(TwinKeyDict[str, int, dict]):
         await self._client.post('/set',
                                 json=box.model_dump(mode='json'))
         LOGGER.info(f'Saved {len(data)} block(s)')
-
-    async def run(self, delayed: bool):
-        if delayed:
-            await self._changed_ev.wait()
-            await asyncio.sleep(self.config.datastore_flush_delay.total_seconds())
-        elif not self._changed_ev.is_set():
-            return
-
-        await self.save()
         self._changed_ev.clear()
 
     async def repeat(self):
         while True:
             try:
-                await self.run(True)
+                await self._changed_ev.wait()
+                await asyncio.sleep(self.config.datastore_flush_delay.total_seconds())
+                await self.save()
             except Exception as ex:
                 LOGGER.error(utils.strex(ex), exc_info=self.config.debug)
-            except asyncio.CancelledError as cancel_ex:
-                try:
-                    await asyncio.wait_for(self.run(False),
-                                           timeout=self.config.datastore_shutdown_timeout.total_seconds())
-                except Exception as ex:
-                    LOGGER.error(utils.strex(ex), exc_info=self.config.debug)
-                raise cancel_ex
+
+    async def on_shutdown(self):
+        if not self._doc_id or not self._changed_ev.is_set():
+            return
+
+        try:
+            await asyncio.wait_for(self.save(),
+                                   timeout=self.config.datastore_shutdown_timeout.total_seconds())
+        except Exception as ex:
+            LOGGER.error(utils.strex(ex), exc_info=self.config.debug)
 
     def __setitem__(self, keys: tuple[str, int], item: dict):
         super().__setitem__(keys, item)
@@ -130,8 +123,10 @@ class BlockStore(TwinKeyDict[str, int, dict]):
 
 @asynccontextmanager
 async def lifespan():
-    async with utils.task_context(CV.get().repeat()):
+    store = CV.get()
+    async with utils.task_context(store.repeat()):
         yield
+    await store.on_shutdown()
 
 
 def setup():

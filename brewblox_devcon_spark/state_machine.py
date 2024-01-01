@@ -11,13 +11,13 @@ from typing import Literal
 from . import utils
 from .models import (ConnectionKind_, ControllerDescription, DeviceDescription,
                      FirmwareDescription, ServiceDescription,
-                     ServiceStatusDescription)
+                     StatusDescription)
 
 LOGGER = logging.getLogger(__name__)
-CV: ContextVar['ServiceState'] = ContextVar('state_machine.ServiceState')
+CV: ContextVar['StateMachine'] = ContextVar('state_machine.StateMachine')
 
 
-class ServiceState:
+class StateMachine:
 
     def __init__(self):
         config = utils.get_config()
@@ -36,7 +36,7 @@ class ServiceState:
             ),
         )
 
-        self._status_desc = ServiceStatusDescription(
+        self._status_desc = StatusDescription(
             enabled=False,
             service=service_desc,
             controller=None,
@@ -57,8 +57,8 @@ class ServiceState:
         # Initial state is disconnected
         self._disconnected_ev.set()
 
-    def desc(self) -> ServiceStatusDescription:
-        return self._status_desc.model_copy()
+    def desc(self) -> StatusDescription:
+        return self._status_desc
 
     def set_enabled(self, enabled: bool):
         self._status_desc.enabled = enabled
@@ -197,4 +197,4 @@ class ServiceState:
 
 
 def setup():
-    CV.set(ServiceState())
+    CV.set(StateMachine())

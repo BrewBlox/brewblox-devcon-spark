@@ -1,5 +1,5 @@
 """
-Tests brewblox_devcon_spark.controller
+Tests brewblox_devcon_spark.control
 """
 
 import asyncio
@@ -11,15 +11,15 @@ from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from pytest_mock import MockerFixture
 
-from brewblox_devcon_spark import (codec, commander, connection, const,
-                                   controller, datastore, exceptions, mqtt,
-                                   state_machine, synchronization, utils)
+from brewblox_devcon_spark import (codec, command, connection, const, control,
+                                   datastore, exceptions, mqtt, state_machine,
+                                   synchronization, utils)
 from brewblox_devcon_spark.connection import mock_connection
 from brewblox_devcon_spark.datastore import block_store
 from brewblox_devcon_spark.models import (Block, BlockIdentity, ErrorCode,
                                           FirmwareBlock)
 
-TESTED = controller.__name__
+TESTED = control.__name__
 
 
 @asynccontextmanager
@@ -41,8 +41,8 @@ def app() -> FastAPI:
     datastore.setup()
     codec.setup()
     connection.setup()
-    commander.setup()
-    controller.setup()
+    command.setup()
+    control.setup()
     return FastAPI(lifespan=lifespan)
 
 
@@ -52,19 +52,19 @@ async def manager(manager: LifespanManager):
 
 
 async def test_merge():
-    assert controller.merge(
+    assert control.merge(
         {},
         {'a': True}
     ) == {'a': True}
-    assert controller.merge(
+    assert control.merge(
         {'a': False},
         {'a': True}
     ) == {'a': True}
-    assert controller.merge(
+    assert control.merge(
         {'a': True},
         {'b': True}
     ) == {'a': True, 'b': True}
-    assert controller.merge(
+    assert control.merge(
         {'nested': {'a': False, 'b': True}, 'second': {}},
         {'nested': {'a': True}, 'second': 'empty'}
     ) == {'nested': {'a': True, 'b': True}, 'second': 'empty'}
@@ -78,7 +78,7 @@ async def test_merge():
     'word'*50,
 ])
 async def test_validate_sid(sid: str):
-    controller.CV.get()._validate_sid(sid)
+    control.CV.get()._validate_sid(sid)
 
 
 @pytest.mark.parametrize('sid', [
@@ -96,12 +96,12 @@ async def test_validate_sid(sid: str):
 ])
 async def test_validate_sid_error(sid: str):
     with pytest.raises(exceptions.InvalidId):
-        controller.CV.get()._validate_sid(sid)
+        control.CV.get()._validate_sid(sid)
 
 
 async def test_to_firmware_block():
     store = block_store.CV.get()
-    ctrl = controller.CV.get()
+    ctrl = control.CV.get()
 
     store['alias', 123] = dict()
     store['4-2', 24] = dict()
@@ -124,7 +124,7 @@ async def test_to_firmware_block():
 
 async def test_to_block():
     store = block_store.CV.get()
-    ctrl = controller.CV.get()
+    ctrl = control.CV.get()
 
     store['alias', 123] = dict()
     store['4-2', 24] = dict()
@@ -138,7 +138,7 @@ async def test_to_block():
 
 async def test_resolve_data_ids():
     store = block_store.CV.get()
-    ctrl = controller.CV.get()
+    ctrl = control.CV.get()
 
     store['eeney', 9001] = dict()
     store['miney', 9002] = dict()
@@ -164,7 +164,7 @@ async def test_resolve_data_ids():
         }
 
     data = create_data()
-    controller.resolve_data_ids(data, ctrl._find_nid)
+    control.resolve_data_ids(data, ctrl._find_nid)
 
     assert data == {
         'testval': 1,
@@ -184,20 +184,20 @@ async def test_resolve_data_ids():
         },
     }
 
-    controller.resolve_data_ids(data, ctrl._find_sid)
+    control.resolve_data_ids(data, ctrl._find_sid)
     assert data == create_data()
 
-    controller.resolve_data_ids(data, ctrl._find_nid)
+    control.resolve_data_ids(data, ctrl._find_nid)
     data['input<ProcessValueInterface>'] = 'eeney'
     with pytest.raises(exceptions.DecodeException):
-        controller.resolve_data_ids(data, ctrl._find_sid)
+        control.resolve_data_ids(data, ctrl._find_sid)
 
 
 async def test_check_connection(mocker: MockerFixture):
     config = utils.get_config()
     sim = connection.CV.get()
-    ctrl = controller.CV.get()
-    cmder = commander.CV.get()
+    ctrl = control.CV.get()
+    cmder = command.CV.get()
 
     s_noop = mocker.spy(cmder, 'noop')
     s_reset = mocker.spy(cmder, 'reset_connection')
@@ -230,7 +230,7 @@ async def test_check_connection(mocker: MockerFixture):
 
 async def test_start_update():
     state = state_machine.CV.get()
-    ctrl = controller.CV.get()
+    ctrl = control.CV.get()
 
     await state.wait_synchronized()
     state.set_updating()

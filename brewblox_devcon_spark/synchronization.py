@@ -46,7 +46,7 @@ import traceback
 from contextlib import asynccontextmanager
 from functools import wraps
 
-from . import (codec, commander, connection, const, exceptions, state_machine,
+from . import (codec, command, connection, const, exceptions, state_machine,
                utils)
 from .codec.time_utils import serialize_duration
 from .datastore import block_store, settings_store
@@ -73,7 +73,7 @@ def subroutine(desc: str):
     return wrapper
 
 
-class SparkSynchronization:
+class StateSynchronizer:
 
     def __init__(self):
         self.config = utils.get_config()
@@ -82,7 +82,7 @@ class SparkSynchronization:
         self.block_store = block_store.CV.get()
         self.converter = codec.unit_conversion.CV.get()
         self.connection = connection.CV.get()
-        self.commander = commander.CV.get()
+        self.commander = command.CV.get()
 
     @property
     def device_name(self) -> str:
@@ -217,6 +217,6 @@ class SparkSynchronization:
 
 @asynccontextmanager
 async def lifespan():
-    sync = SparkSynchronization()
+    sync = StateSynchronizer()
     async with utils.task_context(sync.repeat()):
         yield

@@ -4,13 +4,12 @@ import os
 import re
 import signal
 import socket
-import traceback
 from configparser import ConfigParser
 from contextlib import asynccontextmanager, suppress
 from datetime import timedelta
 from functools import lru_cache
 from ipaddress import ip_address
-from typing import Awaitable, Callable, Coroutine, Generator
+from typing import Awaitable, Callable, Coroutine, Generator, TypeVar
 
 from dns.exception import DNSException
 from dns.resolver import Resolver as DNSResolver
@@ -18,15 +17,18 @@ from httpx import Response
 
 from .models import FirmwareConfig, ServiceConfig
 
-HTTPX_RETRY_INTERVAL = timedelta(seconds=1)
-HTTPX_RETRY_MAX_INTERVAL = timedelta(minutes=1)
-HTTPX_RETRY_BACKOFF = 1.1
+VT = TypeVar('VT')
+DVT = TypeVar('DVT')
 
 LOGGER = logging.getLogger(__name__)
 
 
 @lru_cache
 def get_config() -> ServiceConfig:  # pragma: no cover
+    """
+    Globally cached getter for service config.
+    When first called, config is parsed from env.
+    """
     config = ServiceConfig()
 
     if not config.device_id and (config.simulation or config.mock):
@@ -46,6 +48,10 @@ def get_config() -> ServiceConfig:  # pragma: no cover
 
 @lru_cache
 def get_fw_config() -> FirmwareConfig:  # pragma: no cover
+    """
+    Globally cached getter for firmware config.
+    When first called, config is parsed from the firmware.ini file.
+    """
     parser = ConfigParser()
     parser.read('firmware/firmware.ini')
     raw = dict(parser['FIRMWARE'].items())
@@ -53,20 +59,21 @@ def get_fw_config() -> FirmwareConfig:  # pragma: no cover
     return config
 
 
-def strex(ex: Exception, tb=False):
+def strex(ex: Exception):
     """
-    Generic formatter for exceptions.
-    A formatted traceback is included if `tb=True`.
+    Formats exception as `Exception(message)`
     """
-    msg = f'{type(ex).__name__}({str(ex)})'
-    if tb:
-        trace = ''.join(traceback.format_exception(None, ex, ex.__traceback__))
-        return f'{msg}\n\n{trace}'
-    else:
-        return msg
+    return f'{type(ex).__name__}({str(ex)})'
 
 
 def graceful_shutdown(reason: str):
+    """
+    Kills the parent of the current process with a SIGTERM.
+    The parent process is expected to catch this signal,
+    and initiate asgi shutdown.
+
+    During asgi shutdown, all lifespan handlers get to clean up.
+    """
     LOGGER.warning(f'Sending shutdown signal, {reason=}')
     os.kill(os.getppid(), signal.SIGTERM)
 
@@ -143,26 +150,40 @@ def get_free_port() -> int:
 
 
 @asynccontextmanager
-async def task_context(coro: Coroutine) -> Generator[asyncio.Task, None, None]:
+async def task_context(coro: Coroutine,
+                       cancel_timeout=timedelta(seconds=5)
+                       ) -> Generator[asyncio.Task, None, None]:
+    """
+    Wraps provided coroutine in an async task.
+    At the end of the context, the task is cancelled and awaited.
+    """
     task = asyncio.create_task(coro)
     try:
         yield task
     finally:
         task.cancel()
-        await asyncio.wait([task], timeout=5)
+        await asyncio.wait([task], timeout=cancel_timeout.total_seconds())
+
+
+def not_sentinel(value: VT, default_value: DVT) -> VT | DVT:
+    if value is not ...:
+        return value
+    return default_value
 
 
 async def httpx_retry(func: Callable[[], Awaitable[Response]],
                       interval: timedelta = ...,
                       max_interval: timedelta = ...,
                       backoff: float = ...) -> Response:
+    """
+    Retries a httpx request forever until a 2XX response is received.
+    The interval between requests will be multiplied with `backoff`
+    until it is equal to `max_interval`.
+    """
     config = get_config()
-    if interval is ...:
-        interval = config.http_client_interval
-    if max_interval is ...:
-        max_interval = config.http_client_interval_max
-    if backoff is ...:
-        backoff = config.http_client_backoff
+    interval = not_sentinel(interval, config.http_client_interval)
+    max_interval = not_sentinel(max_interval, config.http_client_interval_max)
+    backoff = not_sentinel(backoff, config.http_client_backoff)
 
     while True:
         resp = None
@@ -171,17 +192,15 @@ async def httpx_retry(func: Callable[[], Awaitable[Response]],
             resp = await func()
             if resp.is_success:
                 return resp
-        except Exception as ex:
-            LOGGER.debug(strex(ex), exc_info=True)
 
-        if interval.total_seconds() > 10:
-            LOGGER.warning(f'Retrying after failed request: {resp}')
+        except Exception as ex:
+            LOGGER.trace(strex(ex), exc_info=True)
 
         await asyncio.sleep(interval.total_seconds())
         interval = min(interval * backoff, max_interval)
 
 
-def add_logging_level(level_name: str, level_num: int, method_name: str | None = None):
+def add_logging_level(level_name: str, level_num: int, method_name: str = ...):
     """
     Comprehensively adds a new logging level to the `logging` module and the
     currently configured logging class.
@@ -208,23 +227,23 @@ def add_logging_level(level_name: str, level_num: int, method_name: str | None =
     Source (2023/12/11):
     https://stackoverflow.com/questions/2183233/how-to-add-a-custom-loglevel-to-pythons-logging-facility
     """
-    if not method_name:
-        method_name = level_name.lower()
+    method_name = not_sentinel(method_name, level_name.lower())
 
-    if hasattr(logging, level_name) and getattr(logging, level_name) == level_num:
-        # Already set, no need to replicate
+    has_level = hasattr(logging, level_name)
+    has_method = hasattr(logging, method_name)
+    has_class_method = hasattr(logging.getLoggerClass(), method_name)
+    active_num = getattr(logging, level_name, None)
+
+    # Repeat calls are only allowed if completely duplicate
+    if all([has_level, has_method, has_class_method]) and active_num == level_num:
         return
-
-    if hasattr(logging, level_name):
-        raise AttributeError(f'{level_name} already defined in logging module')
-    if hasattr(logging, method_name):
-        raise AttributeError(f'{method_name} already defined in logging module')
-    if hasattr(logging.getLoggerClass(), method_name):
-        raise AttributeError(f'{method_name} already defined in logger class')
+    elif any([has_level, has_method, has_class_method]):
+        raise AttributeError(f'{level_name=} or {level_num=} are already defined in logging')
 
     # This method was inspired by the answers to Stack Overflow post
     # http://stackoverflow.com/q/2183233/2988730, especially
     # http://stackoverflow.com/a/13638084/2988730
+
     def log_for_level(self: logging.Logger, message, *args, **kwargs):
         if self.isEnabledFor(level_num):
             self._log(level_num, message, args, **kwargs)

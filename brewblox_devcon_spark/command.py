@@ -30,10 +30,10 @@ HANDSHAKE_KEYS = [
 ]
 
 LOGGER = logging.getLogger(__name__)
-CV: ContextVar['SparkCommander'] = ContextVar('commander.SparkCommander')
+CV: ContextVar['CboxCommander'] = ContextVar('command.CboxCommander')
 
 
-class SparkCommander:
+class CboxCommander:
 
     default_decode_opts = codec.DecodeOpts()
     stored_decode_opts = codec.DecodeOpts(enums=codec.ProtoEnumOpt.INT)
@@ -55,9 +55,6 @@ class SparkCommander:
 
         self.conn.on_event = self._on_event
         self.conn.on_response = self._on_response
-
-    def __str__(self):
-        return f'<{type(self).__name__} for {self.conn}>'
 
     def _next_id(self):
         self._msgid = (self._msgid + 1) % 0xFFFF
@@ -315,4 +312,4 @@ class SparkCommander:
 
 
 def setup():
-    CV.set(SparkCommander())
+    CV.set(CboxCommander())

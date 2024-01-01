@@ -16,7 +16,7 @@ DATA_END = '\n'
 DATA_PATTERN = re.compile('^(?P<message>[^^]*?)\n')
 
 
-class ControlboxParser:
+class CboxParser:
 
     def __init__(self):
         self._buffer: str = ''

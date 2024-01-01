@@ -53,6 +53,15 @@ async def test_load_save(httpx_mock: HTTPXMock):
     with pytest.raises(ValueError):
         await store.save()
 
+    # Shutdown does nothing, but also doesn't complain
+    await store.on_shutdown()
+
+    # Invalid format
+    httpx_mock.add_response(url=f'{config.datastore_url}/get',
+                            match_json={'id': '5678-blocks-db',
+                                        'namespace': const.SERVICE_NAMESPACE},
+                            json={})
+
     httpx_mock.add_response(url=f'{config.datastore_url}/get',
                             match_json={'id': '5678-blocks-db',
                                         'namespace': const.SERVICE_NAMESPACE},
@@ -74,20 +83,28 @@ async def test_load_save(httpx_mock: HTTPXMock):
                                 },
                             })
 
+    # First attempt gets invalid data, and falls back on defaults
+    await store.load('5678')
+    assert len(store.items()) == default_length
+
     await store.load('5678')
     assert len(store.items()) == read_length
 
-    # Flush on insert
-    store['inserted', 9001] = {}
-    assert len(store.items()) == read_length + 1
-    await store.run(True)
-    await store.run(False)
+    async with utils.task_context(store.repeat()):
+        # Flush on insert
+        store['inserted', 9001] = {}
+        assert len(store.items()) == read_length + 1
+        await asyncio.sleep(0)
 
-    # Flush on remove
-    del store['inserted', 9001]
-    assert len(store.items()) == read_length
-    await store.run(True)
-    await store.run(False)
+        # Flush on remove
+        del store['inserted', 9001]
+        assert len(store.items()) == read_length
+        await asyncio.sleep(0)
+
+        # Does nothing if not changed
+        await store.on_shutdown()
+
+    assert len(httpx_mock.get_requests(url=f'{config.datastore_url}/set')) < 3
 
 
 async def test_load_error(httpx_mock: HTTPXMock):

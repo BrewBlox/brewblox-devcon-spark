@@ -109,6 +109,11 @@ async def test_handler_discovery(mocker: MockerFixture):
     m_discover_mqtt: AsyncMock = mocker.patch(TESTED + '.discover_mqtt', autospec=True)
 
     def reset():
+        config.discovery = DiscoveryType.all
+        config.device_id = '1234'
+        config.discovery_interval = timedelta()
+        config.discovery_timeout = timedelta(seconds=1)
+
         m_discover_usb.reset_mock()
         m_discover_mdns.reset_mock()
         m_discover_mqtt.reset_mock()

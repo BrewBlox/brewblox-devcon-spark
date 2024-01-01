@@ -69,7 +69,7 @@ def update_firmware(ctx: Context, release='develop'):
 @task
 def testclean(ctx: Context):
     """
-    Cleans up leftover test containers and networks.
+    Cleans up leftover test containers, networks, and simulators.
     Container cleanup is normally done in test fixtures.
     This is skipped if debugged tests are stopped halfway.
     """
@@ -78,6 +78,7 @@ def testclean(ctx: Context):
     if containers:
         ctx.run(f'docker rm -f {containers}')
     ctx.run('docker network prune -f')
+    ctx.run('pkill -ef -9 brewblox-amd64.sim')
 
 
 @task

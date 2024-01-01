@@ -109,6 +109,7 @@ class ServiceConfig(BaseSettings):
 
     # Time sync options
     time_sync_interval: timedelta = timedelta(minutes=15)
+    time_sync_retry_interval: timedelta = timedelta(seconds=10)
 
     # Firmware flash options
     flash_ymodem_timeout: timedelta = timedelta(seconds=30)
@@ -436,7 +437,7 @@ IdentityError_ = Literal[
 ]
 
 
-class ServiceStatusDescription(BaseModel):
+class StatusDescription(BaseModel):
     enabled: bool
     service: ServiceDescription
     controller: ControllerDescription | None = None
@@ -446,6 +447,19 @@ class ServiceStatusDescription(BaseModel):
     connection_status: ConnectionStatus_
     firmware_error: FirmwareError_ | None = None
     identity_error: IdentityError_ | None = None
+
+
+class BlockRelation(BaseModel):
+    source: str
+    target: str
+    claimed: bool = False
+    relation: list[str]
+
+
+class BlockClaim(BaseModel):
+    source: str
+    target: str
+    intermediate: list[str]
 
 
 class BackupIdentity(BaseModel):
@@ -561,3 +575,21 @@ class StoredTimezoneSettingsBox(DatastoreSingleValueBox):
 class DatastoreEvent(BaseModel):
     changed: list[DatastoreValue] = Field(default_factory=list)
     deleted: list[DatastoreValue] = Field(default_factory=list)
+
+
+class ServiceStateEventData(BaseModel):
+    status: StatusDescription
+    blocks: list[Block]
+    relations: list[BlockRelation]
+    claims: list[BlockClaim]
+
+
+class ServiceStateEvent(BaseModel):
+    key: str
+    type: Literal['Spark.state'] = 'Spark.state'
+    data: ServiceStateEventData
+
+
+class HistoryEvent(BaseModel):
+    key: str
+    data: dict

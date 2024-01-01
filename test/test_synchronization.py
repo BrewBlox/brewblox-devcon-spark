@@ -12,7 +12,7 @@ from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from pytest_mock import MockerFixture
 
-from brewblox_devcon_spark import (codec, commander, connection, const,
+from brewblox_devcon_spark import (codec, command, connection, const,
                                    datastore, exceptions, mqtt, state_machine,
                                    synchronization, utils)
 from brewblox_devcon_spark.datastore import block_store, settings_store
@@ -33,7 +33,7 @@ def states():
 
 async def connect():
     store = settings_store.CV.get()
-    sync = synchronization.SparkSynchronization()
+    sync = synchronization.StateSynchronizer()
 
     store.service_settings.enabled = True
     await sync.synchronize()
@@ -62,7 +62,7 @@ def app() -> FastAPI:
     codec.setup()
     datastore.setup()
     connection.setup()
-    commander.setup()
+    command.setup()
 
     return FastAPI(lifespan=lifespan)
 
@@ -99,7 +99,7 @@ async def test_sync_errors(m_load_blocks: AsyncMock):
 
 
 async def test_write_error(mocker: MockerFixture):
-    m_patch_block = mocker.patch.object(commander.CV.get(), 'patch_block', autospec=True)
+    m_patch_block = mocker.patch.object(command.CV.get(), 'patch_block', autospec=True)
     m_patch_block.return_value = FirmwareBlock(
         nid=const.SYSINFO_NID,
         type='ErrorObject',
@@ -115,7 +115,7 @@ async def test_write_error(mocker: MockerFixture):
 async def test_handshake_timeout(mocker: MockerFixture):
     config = utils.get_config()
     config.handshake_timeout = timedelta(milliseconds=100)
-    m_version = mocker.patch.object(commander.CV.get(), 'version', autospec=True)
+    m_version = mocker.patch.object(command.CV.get(), 'version', autospec=True)
     m_version.side_effect = RuntimeError
 
     with pytest.raises(asyncio.TimeoutError):
@@ -124,7 +124,7 @@ async def test_handshake_timeout(mocker: MockerFixture):
 
 async def test_device_name():
     config = utils.get_config()
-    s = synchronization.SparkSynchronization()
+    s = synchronization.StateSynchronizer()
 
     config.mock = True
     config.simulation = False
@@ -140,7 +140,7 @@ async def test_device_name():
 
 async def test_on_global_store_change():
     store = settings_store.CV.get()
-    sync = synchronization.SparkSynchronization()
+    sync = synchronization.StateSynchronizer()
 
     # Update during runtime
     await connect()
@@ -163,7 +163,7 @@ async def test_incompatible_error(mocker: MockerFixture):
 
     # run() catches IncompatibleFirmware
     with pytest.raises(asyncio.TimeoutError):
-        s = synchronization.SparkSynchronization()
+        s = synchronization.StateSynchronizer()
         await asyncio.wait_for(s.run(), timeout=0.2)
 
 
@@ -177,5 +177,5 @@ async def test_invalid_error(mocker: MockerFixture):
 
     # run() catches InvalidDeviceId
     with pytest.raises(asyncio.TimeoutError):
-        s = synchronization.SparkSynchronization()
+        s = synchronization.StateSynchronizer()
         await asyncio.wait_for(s.run(), timeout=0.2)

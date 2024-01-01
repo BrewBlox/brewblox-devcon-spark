@@ -3,7 +3,7 @@ Tests brewblox_devcon_spark.connection.cbox_parser
 """
 
 
-from brewblox_devcon_spark.connection.cbox_parser import ControlboxParser
+from brewblox_devcon_spark.connection.cbox_parser import CboxParser
 
 
 def serial_data():
@@ -43,7 +43,7 @@ def expected_data():
 
 
 def test_parser():
-    parser = ControlboxParser()
+    parser = CboxParser()
     actual_events = []
     actual_data = []
 
@@ -58,7 +58,7 @@ def test_parser():
 
 
 def test_parser_partial():
-    parser = ControlboxParser()
+    parser = CboxParser()
     chunks = serial_data()
 
     parser.push(chunks[0])

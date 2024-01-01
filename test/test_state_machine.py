@@ -33,7 +33,7 @@ def make_desc() -> ControllerDescription:
 
 
 async def test_state_machine():
-    state = state_machine.ServiceState()
+    state = state_machine.StateMachine()
     state.set_connected('MOCK', 'Narnia')
     assert state.is_connected()
     assert not state.is_enabled()
@@ -125,7 +125,7 @@ async def test_wildcard_error(client):
     config = utils.get_config()
     config.device_id = ''
 
-    state = state_machine.ServiceState()
+    state = state_machine.StateMachine()
 
     # Wildcard ID in service is not a hard error
     # but does set identity_error field
