@@ -13,8 +13,9 @@ from fastapi import FastAPI
 from pytest_mock import MockerFixture
 
 from brewblox_devcon_spark import (codec, command, connection, control,
-                                   datastore, mqtt, state_machine,
-                                   synchronization, time_sync, utils)
+                                   datastore_blocks, datastore_settings, mqtt,
+                                   state_machine, synchronization, time_sync,
+                                   utils)
 
 TESTED = time_sync.__name__
 
@@ -38,7 +39,8 @@ def app() -> FastAPI():
 
     mqtt.setup()
     state_machine.setup()
-    datastore.setup()
+    datastore_settings.setup()
+    datastore_blocks.setup()
     codec.setup()
     connection.setup()
     command.setup()
@@ -74,6 +76,6 @@ async def test_sync(s_patch_block: Mock):
         await asyncio.sleep(0.1)
         assert s_patch_block.call_count >= 1
 
-    # Disabled repeat
-    config.time_sync_interval = timedelta(seconds=-1)
+    # Disabled repeat if interval <= 0
+    config.time_sync_interval = timedelta()
     await asyncio.wait_for(sync.repeat(), timeout=1)

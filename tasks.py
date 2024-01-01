@@ -1,6 +1,8 @@
+from contextlib import suppress
 from pathlib import Path
 
 from invoke import Context, task
+from invoke.exceptions import UnexpectedExit
 
 from brewblox_devcon_spark import utils
 
@@ -78,7 +80,10 @@ def testclean(ctx: Context):
     if containers:
         ctx.run(f'docker rm -f {containers}')
     ctx.run('docker network prune -f')
-    ctx.run('pkill -ef -9 brewblox-amd64.sim')
+
+    with suppress(UnexpectedExit):
+        # returns 1 if nothing killed
+        ctx.run('pkill -ef -9 brewblox-amd64.sim')
 
 
 @task

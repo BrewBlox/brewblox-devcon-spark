@@ -7,7 +7,7 @@ import logging
 
 from fastapi import APIRouter
 
-from ..datastore import settings_store
+from .. import datastore_settings
 from ..models import AutoconnectSettings
 
 LOGGER = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ async def settings_enabled_get() -> AutoconnectSettings:
     """
     Get enabled flag.
     """
-    enabled = settings_store.CV.get().service_settings.enabled
+    enabled = datastore_settings.CV.get().service_settings.enabled
     return AutoconnectSettings(enabled=enabled)
 
 
@@ -29,7 +29,7 @@ async def settings_enabled_put(args: AutoconnectSettings) -> AutoconnectSettings
     """
     Set enabled flag.
     """
-    store = settings_store.CV.get()
+    store = datastore_settings.CV.get()
     store.service_settings.enabled = args.enabled
     await store.commit_service_settings()
     return AutoconnectSettings(enabled=args.enabled)

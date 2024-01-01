@@ -5,7 +5,6 @@ Tests brewblox_devcon_spark.backup
 import asyncio
 from contextlib import AsyncExitStack, asynccontextmanager
 from datetime import timedelta
-from unittest.mock import AsyncMock
 
 import pytest
 from asgi_lifespan import LifespanManager
@@ -13,7 +12,8 @@ from fastapi import FastAPI
 from pytest_mock import MockerFixture
 
 from brewblox_devcon_spark import (block_backup, codec, command, connection,
-                                   control, datastore, mqtt, state_machine,
+                                   control, datastore_blocks,
+                                   datastore_settings, mqtt, state_machine,
                                    synchronization, utils)
 from brewblox_devcon_spark.models import Backup, BackupIdentity
 
@@ -37,7 +37,8 @@ def app() -> FastAPI():
 
     mqtt.setup()
     state_machine.setup()
-    datastore.setup()
+    datastore_settings.setup()
+    datastore_blocks.setup()
     codec.setup()
     connection.setup()
     command.setup()
@@ -59,8 +60,8 @@ async def synchronized(manager: LifespanManager):
 async def test_inactive():
     storage = block_backup.CV.get()
     config = utils.get_config()
-    config.backup_interval = timedelta(seconds=-2)
-    config.backup_retry_interval = timedelta(seconds=-1)
+    config.backup_interval = timedelta()
+    config.backup_retry_interval = timedelta()
 
     # Early exit when backup_interval <= 0
     await asyncio.wait_for(storage.repeat(), timeout=1)
@@ -80,7 +81,19 @@ async def test_autosave(mocker: MockerFixture):
     data = await storage.read(stored[0])
     assert isinstance(data, Backup)
 
-    mocker.patch.object(ctrl, 'make_backup', AsyncMock(side_effect=RuntimeError))
+    m_make = mocker.patch.object(ctrl, 'make_backup', autospec=True)
+    m_make.return_value = Backup(blocks=[], store=[])
+
+    async with utils.task_context(storage.repeat()) as task:
+        await asyncio.sleep(0.1)
+        assert m_make.call_count > 0
+
+        m_make.side_effect = RuntimeError
+        m_make.reset_mock()
+        await asyncio.sleep(0.01)
+        assert m_make.call_count > 0
+        assert not task.done()
+
     with pytest.raises(RuntimeError):
         await storage.run()
 

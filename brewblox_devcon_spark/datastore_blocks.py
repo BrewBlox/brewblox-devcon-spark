@@ -9,10 +9,10 @@ from contextvars import ContextVar
 
 from httpx import AsyncClient
 
-from .. import const, utils
-from ..models import (DatastoreSingleQuery, TwinKeyEntriesBox,
-                      TwinKeyEntriesValue, TwinKeyEntry)
-from ..twinkeydict import TwinKeyDict, TwinKeyError
+from . import const, utils
+from .models import (DatastoreSingleQuery, TwinKeyEntriesBox,
+                     TwinKeyEntriesValue, TwinKeyEntry)
+from .twinkeydict import TwinKeyDict, TwinKeyError
 
 SYS_OBJECTS: list[TwinKeyEntry] = [
     TwinKeyEntry(keys=keys, data={})
@@ -55,9 +55,6 @@ class BlockStore(TwinKeyDict[str, int, dict]):
                 data = []
             LOGGER.info(f'Loaded {len(data)} block(s)')
 
-        except Exception as ex:
-            LOGGER.warning(f'Load error {utils.strex(ex)}', exc_info=self.config.debug)
-
         finally:
             # Clear -> load from database -> merge defaults
             super().clear()
@@ -94,7 +91,7 @@ class BlockStore(TwinKeyDict[str, int, dict]):
                 await self._changed_ev.wait()
                 await asyncio.sleep(self.config.datastore_flush_delay.total_seconds())
                 await self.save()
-            except Exception as ex:
+            except Exception as ex:  # pragma: no cover
                 LOGGER.error(utils.strex(ex), exc_info=self.config.debug)
 
     async def on_shutdown(self):
@@ -104,7 +101,7 @@ class BlockStore(TwinKeyDict[str, int, dict]):
         try:
             await asyncio.wait_for(self.save(),
                                    timeout=self.config.datastore_shutdown_timeout.total_seconds())
-        except Exception as ex:
+        except Exception as ex:  # pragma: no cover
             LOGGER.error(utils.strex(ex), exc_info=self.config.debug)
 
     def __setitem__(self, keys: tuple[str, int], item: dict):

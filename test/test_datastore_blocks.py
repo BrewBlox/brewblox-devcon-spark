@@ -1,5 +1,5 @@
 """
-Tests brewblox_devcon_spark.datastore.block_store
+Tests brewblox_devcon_spark.datastore_blocks
 """
 
 
@@ -12,15 +12,14 @@ from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from pytest_httpx import HTTPXMock
 
-from brewblox_devcon_spark import const, utils
-from brewblox_devcon_spark.datastore import block_store
+from brewblox_devcon_spark import const, datastore_blocks, utils
 from brewblox_devcon_spark.models import TwinKeyEntry
 
-TESTED = block_store.__name__
+TESTED = datastore_blocks.__name__
 
 
 def read_objects() -> list[TwinKeyEntry]:
-    return block_store.SYS_OBJECTS[:1] + [
+    return datastore_blocks.SYS_OBJECTS[:1] + [
         TwinKeyEntry(keys=(f'key{i}', i+const.USER_NID_START), data={})
         for i in range(10)
     ]
@@ -31,7 +30,7 @@ def app() -> FastAPI:
     config = utils.get_config()
     config.datastore_flush_delay = timedelta()
 
-    block_store.setup()
+    datastore_blocks.setup()
     return FastAPI()
 
 
@@ -42,9 +41,9 @@ async def manager(manager: LifespanManager):
 
 async def test_load_save(httpx_mock: HTTPXMock):
     config = utils.get_config()
-    store = block_store.CV.get()
+    store = datastore_blocks.CV.get()
 
-    default_length = len(block_store.SYS_OBJECTS)
+    default_length = len(datastore_blocks.SYS_OBJECTS)
     read_length = default_length + len(read_objects()) - 1  # overlapping item is merged
 
     assert len(store.items()) == default_length
@@ -109,7 +108,7 @@ async def test_load_save(httpx_mock: HTTPXMock):
 
 async def test_load_error(httpx_mock: HTTPXMock):
     config = utils.get_config()
-    store = block_store.CV.get()
+    store = datastore_blocks.CV.get()
 
     httpx_mock.add_response(url=f'{config.datastore_url}/get',
                             match_json={'id': '5678-blocks-db',
@@ -126,4 +125,4 @@ async def test_load_error(httpx_mock: HTTPXMock):
     store['inserted', 9001] = {}
 
     await store.load('5678')
-    assert len(store.items()) == len(block_store.SYS_OBJECTS)
+    assert len(store.items()) == len(datastore_blocks.SYS_OBJECTS)

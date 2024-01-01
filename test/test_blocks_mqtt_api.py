@@ -11,7 +11,8 @@ from fastapi import FastAPI
 from pytest_mock import MockerFixture
 
 from brewblox_devcon_spark import (codec, command, connection, control,
-                                   datastore, exceptions, mqtt, state_machine,
+                                   datastore_blocks, datastore_settings,
+                                   exceptions, mqtt, state_machine,
                                    synchronization, utils)
 from brewblox_devcon_spark.api import blocks_mqtt_api
 from brewblox_devcon_spark.models import Block, BlockIdentity
@@ -35,7 +36,8 @@ def app() -> FastAPI:
 
     mqtt.setup()
     state_machine.setup()
-    datastore.setup()
+    datastore_settings.setup()
+    datastore_blocks.setup()
     codec.setup()
     connection.setup()
     command.setup()

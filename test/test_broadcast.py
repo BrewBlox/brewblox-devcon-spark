@@ -13,7 +13,8 @@ from fastapi import FastAPI
 from pytest_mock import MockerFixture
 
 from brewblox_devcon_spark import (broadcast, codec, command, connection,
-                                   control, datastore, exceptions, mqtt,
+                                   control, datastore_blocks,
+                                   datastore_settings, exceptions, mqtt,
                                    state_machine, synchronization, utils)
 from brewblox_devcon_spark.connection import mock_connection
 from brewblox_devcon_spark.models import ErrorCode
@@ -38,7 +39,8 @@ def app() -> FastAPI():
 
     mqtt.setup()
     state_machine.setup()
-    datastore.setup()
+    datastore_settings.setup()
+    datastore_blocks.setup()
     codec.setup()
     connection.setup()
     command.setup()
@@ -90,7 +92,7 @@ async def test_broadcast(s_publish: Mock):
 
     # Early exit if interval <= 0
     s_publish.reset_mock()
-    config.broadcast_interval = timedelta(seconds=-1)
+    config.broadcast_interval = timedelta()
     async with utils.task_context(b.repeat()) as task:
         await asyncio.sleep(0.1)
         assert task.done()

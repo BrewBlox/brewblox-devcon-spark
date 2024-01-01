@@ -46,10 +46,9 @@ import traceback
 from contextlib import asynccontextmanager
 from functools import wraps
 
-from . import (codec, command, connection, const, exceptions, state_machine,
-               utils)
+from . import (codec, command, const, datastore_blocks, datastore_settings,
+               exceptions, state_machine, utils)
 from .codec.time_utils import serialize_duration
-from .datastore import block_store, settings_store
 from .models import FirmwareBlock
 
 LOGGER = logging.getLogger(__name__)
@@ -78,10 +77,9 @@ class StateSynchronizer:
     def __init__(self):
         self.config = utils.get_config()
         self.state = state_machine.CV.get()
-        self.settings_store = settings_store.CV.get()
-        self.block_store = block_store.CV.get()
+        self.settings_store = datastore_settings.CV.get()
+        self.block_store = datastore_blocks.CV.get()
         self.converter = codec.unit_conversion.CV.get()
-        self.connection = connection.CV.get()
         self.commander = command.CV.get()
 
     @property
@@ -200,7 +198,7 @@ class StateSynchronizer:
 
         except Exception as ex:
             LOGGER.error(f'Failed to sync: {utils.strex(ex)}')
-            await self.connection.reset()
+            await self.commander.reset_connection()
 
         await self.state.wait_disconnected()
 

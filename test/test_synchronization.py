@@ -13,9 +13,9 @@ from fastapi import FastAPI
 from pytest_mock import MockerFixture
 
 from brewblox_devcon_spark import (codec, command, connection, const,
-                                   datastore, exceptions, mqtt, state_machine,
+                                   datastore_blocks, datastore_settings,
+                                   exceptions, mqtt, state_machine,
                                    synchronization, utils)
-from brewblox_devcon_spark.datastore import block_store, settings_store
 from brewblox_devcon_spark.models import FirmwareBlock
 
 TESTED = synchronization.__name__
@@ -32,7 +32,7 @@ def states():
 
 
 async def connect():
-    store = settings_store.CV.get()
+    store = datastore_settings.CV.get()
     sync = synchronization.StateSynchronizer()
 
     store.service_settings.enabled = True
@@ -40,7 +40,7 @@ async def connect():
 
 
 async def disconnect():
-    store = settings_store.CV.get()
+    store = datastore_settings.CV.get()
     state = state_machine.CV.get()
     conn = connection.CV.get()
 
@@ -60,7 +60,8 @@ def app() -> FastAPI:
     state_machine.setup()
     mqtt.setup()
     codec.setup()
-    datastore.setup()
+    datastore_settings.setup()
+    datastore_blocks.setup()
     connection.setup()
     command.setup()
 
@@ -69,7 +70,7 @@ def app() -> FastAPI:
 
 @pytest.fixture
 def m_load_blocks(app: FastAPI, mocker: MockerFixture):
-    m = mocker.patch.object(block_store.CV.get(), 'load', autospec=True)
+    m = mocker.patch.object(datastore_blocks.CV.get(), 'load', autospec=True)
     return m
 
 
@@ -106,10 +107,19 @@ async def test_write_error(mocker: MockerFixture):
         data={'error': 'something went wrong'}
     )
 
-    with pytest.raises(exceptions.CommandException):
-        await connect()
+    s = synchronization.StateSynchronizer()
 
+    with pytest.raises(exceptions.CommandException):
+        await s.synchronize()
+
+    # synchronize raises error after acknowledge
     assert states() == [False, True, True, False]
+
+    # run catches error
+    await s.run()
+
+    # state is reset to disconnected
+    assert states() == [True, False, False, False]
 
 
 async def test_handshake_timeout(mocker: MockerFixture):
@@ -139,7 +149,7 @@ async def test_device_name():
 
 
 async def test_on_global_store_change():
-    store = settings_store.CV.get()
+    store = datastore_settings.CV.get()
     sync = synchronization.StateSynchronizer()
 
     # Update during runtime

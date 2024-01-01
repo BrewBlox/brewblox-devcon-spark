@@ -296,11 +296,11 @@ async def test_handler_disconnect(mocker: MockerFixture):
 
     state.set_enabled(True)
 
-    async with utils.task_context(handler.run()) as task:
+    async with utils.task_context(handler.repeat()) as task:
         await asyncio.wait_for(state.wait_connected(),
                                timeout=5)
 
-        await handler.reset()
+        await handler.end()
 
         # If connection signals closed, handler cleanly stops its run
         # and calls state.set_disconnected()

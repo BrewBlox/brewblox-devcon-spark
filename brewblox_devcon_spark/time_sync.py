@@ -35,7 +35,7 @@ class TimeSync:
         interval = self.config.time_sync_interval
         retry_interval = self.config.time_sync_retry_interval
 
-        if interval < timedelta():
+        if interval <= timedelta():
             LOGGER.warning(f'Cancelling time sync (interval={interval})')
             return
 

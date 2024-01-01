@@ -63,7 +63,7 @@ class Broadcaster:
     async def repeat(self):
         interval = self.config.broadcast_interval
 
-        if interval < timedelta():
+        if interval <= timedelta():
             LOGGER.warning(f'Cancelling broadcaster (interval={interval})')
             return
 

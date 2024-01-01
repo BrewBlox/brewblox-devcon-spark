@@ -12,10 +12,10 @@ from fastapi import FastAPI
 from pytest_mock import MockerFixture
 
 from brewblox_devcon_spark import (codec, command, connection, const, control,
-                                   datastore, exceptions, mqtt, state_machine,
+                                   datastore_blocks, datastore_settings,
+                                   exceptions, mqtt, state_machine,
                                    synchronization, utils)
 from brewblox_devcon_spark.connection import mock_connection
-from brewblox_devcon_spark.datastore import block_store
 from brewblox_devcon_spark.models import (Block, BlockIdentity, ErrorCode,
                                           FirmwareBlock)
 
@@ -38,7 +38,8 @@ def app() -> FastAPI:
 
     mqtt.setup()
     state_machine.setup()
-    datastore.setup()
+    datastore_settings.setup()
+    datastore_blocks.setup()
     codec.setup()
     connection.setup()
     command.setup()
@@ -100,7 +101,7 @@ async def test_validate_sid_error(sid: str):
 
 
 async def test_to_firmware_block():
-    store = block_store.CV.get()
+    store = datastore_blocks.CV.get()
     ctrl = control.CV.get()
 
     store['alias', 123] = dict()
@@ -123,7 +124,7 @@ async def test_to_firmware_block():
 
 
 async def test_to_block():
-    store = block_store.CV.get()
+    store = datastore_blocks.CV.get()
     ctrl = control.CV.get()
 
     store['alias', 123] = dict()
@@ -137,7 +138,7 @@ async def test_to_block():
 
 
 async def test_resolve_data_ids():
-    store = block_store.CV.get()
+    store = datastore_blocks.CV.get()
     ctrl = control.CV.get()
 
     store['eeney', 9001] = dict()

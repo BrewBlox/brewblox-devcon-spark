@@ -127,7 +127,7 @@ def m_sleep(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest):
     real_func = asyncio.sleep
 
     async def wrapper(delay: float, *args, **kwargs):
-        if delay > 0:
+        if delay > 0.1:
             print(f'asyncio.sleep({delay}) in {request.node.name}')
         return await real_func(delay, *args, **kwargs)
     monkeypatch.setattr('asyncio.sleep', wrapper)

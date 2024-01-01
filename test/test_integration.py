@@ -12,11 +12,11 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
 from brewblox_devcon_spark import (app_factory, block_backup, codec, command,
-                                   connection, const, control, datastore, mqtt,
+                                   connection, const, control,
+                                   datastore_blocks, datastore_settings, mqtt,
                                    state_machine, synchronization, utils)
 from brewblox_devcon_spark.api import (backup_api, blocks_api, debug_api,
                                        settings_api, system_api)
-from brewblox_devcon_spark.datastore import block_store
 from brewblox_devcon_spark.models import (Backup, Block, BlockIdentity,
                                           DatastoreMultiQuery, DecodedPayload,
                                           EncodedMessage, EncodedPayload,
@@ -70,7 +70,7 @@ async def lifespan(app: FastAPI):
     async with AsyncExitStack() as stack:
         await stack.enter_async_context(clear_datastore())
         await stack.enter_async_context(mqtt.lifespan())
-        await stack.enter_async_context(datastore.lifespan())
+        # await stack.enter_async_context(datastore.lifespan())
         await stack.enter_async_context(connection.lifespan())
         await stack.enter_async_context(synchronization.lifespan())
         yield
@@ -84,7 +84,8 @@ def app() -> FastAPI:
 
     mqtt.setup()
     state_machine.setup()
-    datastore.setup()
+    datastore_settings.setup()
+    datastore_blocks.setup()
     codec.setup()
     connection.setup()
     command.setup()
@@ -386,7 +387,7 @@ async def test_delete_all(client: AsyncClient, block_args: Block):
 
 
 async def test_cleanup(client: AsyncClient, block_args: Block):
-    store = block_store.CV.get()
+    store = datastore_blocks.CV.get()
     resp = await client.post('/blocks/create', json=block_args.model_dump())
     assert resp.status_code == 201
 
@@ -710,6 +711,23 @@ async def test_system_resets(client: AsyncClient, m_kill: Mock):
     await client.post('/system/reboot/controller')
     await client.post('/system/clear_wifi')
     await client.post('/system/factory_reset')
+
+
+async def test_system_flash(client: AsyncClient, m_kill: Mock):
+    state = state_machine.CV.get()
+
+    resp = await client.post('/system/flash')
+    assert resp.status_code == 424  # incompatible firmware
+    assert m_kill.call_count == 0
+    assert state.is_synchronized()
+
+    desc = state.desc()
+    desc.connection_kind = 'TCP'
+    desc.controller.platform == 'dummy'  # not handled, but also not an error
+    resp = await client.post('/system/flash')
+    assert resp.status_code == 200
+    assert m_kill.call_count == 1
+    assert not state.is_connected()
 
 
 async def test_debug_encode_request(client: AsyncClient):

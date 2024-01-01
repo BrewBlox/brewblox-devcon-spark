@@ -74,15 +74,15 @@ class BackupStorage:
         retry_interval = self.config.backup_retry_interval
         interval = normal_interval
 
-        if normal_interval < timedelta():
+        if normal_interval <= timedelta():
             LOGGER.warning(f'Cancelling block backups (interval={normal_interval})')
             return
 
         while True:
             try:
                 await asyncio.sleep(interval.total_seconds())
-                await self.run()
                 interval = normal_interval
+                await self.run()
             except Exception as ex:
                 LOGGER.error(utils.strex(ex), exc_info=self.config.debug)
                 interval = retry_interval

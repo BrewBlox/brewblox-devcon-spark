@@ -11,9 +11,9 @@ from contextvars import ContextVar
 from datetime import datetime, timezone
 from typing import Callable, Union
 
-from . import command, const, exceptions, state_machine, twinkeydict, utils
+from . import (command, const, datastore_blocks, exceptions, state_machine,
+               twinkeydict, utils)
 from .codec import bloxfield, sequence
-from .datastore import block_store
 from .models import (Backup, BackupApplyResult, Block, BlockIdentity,
                      BlockNameChange, FirmwareBlock, FirmwareBlockIdentity)
 
@@ -69,7 +69,7 @@ class SparkController:
         self.config = utils.get_config()
         self.state = state_machine.CV.get()
         self.cmder = command.CV.get()
-        self.store = block_store.CV.get()
+        self.store = datastore_blocks.CV.get()
 
         self._discovery_lock = asyncio.Lock()
         self._conn_check_lock = asyncio.Lock()

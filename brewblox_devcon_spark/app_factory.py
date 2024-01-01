@@ -8,8 +8,8 @@ from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from fastapi.responses import JSONResponse
 
 from . import (block_backup, broadcast, codec, command, connection, control,
-               datastore, mqtt, state_machine, synchronization, time_sync,
-               utils)
+               datastore_blocks, datastore_settings, mqtt, state_machine,
+               synchronization, time_sync, utils)
 from .api import (backup_api, blocks_api, blocks_mqtt_api, debug_api,
                   settings_api, sim_api, system_api)
 from .models import ErrorResponse
@@ -93,7 +93,8 @@ async def lifespan(app: FastAPI):
 
     async with AsyncExitStack() as stack:
         await stack.enter_async_context(mqtt.lifespan())
-        await stack.enter_async_context(datastore.lifespan())
+        await stack.enter_async_context(datastore_settings.lifespan())
+        await stack.enter_async_context(datastore_blocks.lifespan())
         await stack.enter_async_context(connection.lifespan())
         await stack.enter_async_context(synchronization.lifespan())
         await stack.enter_async_context(broadcast.lifespan())
@@ -114,7 +115,8 @@ def create_app() -> FastAPI:
     # Call setup functions for modules
     mqtt.setup()
     state_machine.setup()
-    datastore.setup()
+    datastore_settings.setup()
+    datastore_blocks.setup()
     codec.setup()
     connection.setup()
     command.setup()

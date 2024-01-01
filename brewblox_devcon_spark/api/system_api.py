@@ -85,7 +85,7 @@ async def system_factory_reset():
 
 class Flasher:
 
-    def __init__(self) -> None:
+    def __init__(self, background_tasks: BackgroundTasks) -> None:
         self.config = utils.get_config()
         self.fw_config = utils.get_fw_config()
 
@@ -93,8 +93,9 @@ class Flasher:
         self.mqtt_client = mqtt.CV.get()
         self.commander = command.CV.get()
         self.client = AsyncClient()
+        self.background_tasks = background_tasks
 
-        self.topic = f'{self.config.state_topic}/{self.config.name}/update'
+        self.notify_topic = f'{self.config.state_topic}/{self.config.name}/update'
         self.fw_version = self.fw_config.firmware_version
         self.fw_date = self.fw_config.firmware_date
         self.fw_url = ESP_URL_FMT.format(date=self.fw_date,
@@ -102,7 +103,7 @@ class Flasher:
 
     def _notify(self, msg: str):
         LOGGER.info(msg)
-        self.mqtt_client.publish(self.topic,
+        self.mqtt_client.publish(self.notify_topic,
                                  {
                                      'key': self.config.name,
                                      'type': 'Spark.update',
@@ -111,14 +112,14 @@ class Flasher:
                                      },
                                  })
 
-    async def run(self) -> FirmwareFlashResponse:
+    async def run(self) -> FirmwareFlashResponse:  # pragma: no cover
         desc = self.state.desc()
         device_id = desc.controller.device.device_id
         platform = desc.controller.platform
         connection_kind = desc.connection_kind
         address = desc.address
 
-        if desc.connection_status not in ['ACKNOWLEDGED', 'SYNCHRONIZED']:
+        if not self.state.is_acknowledged():
             self._notify('Controller is not connected. Aborting update.')
             raise exceptions.NotConnected()
 
@@ -131,7 +132,11 @@ class Flasher:
 
             self._notify('Preparing update')
             self.state.set_updating()
-            await self.commander.wait_empty()  # Controller will send no new requests
+
+            self._notify('Waiting for in-progress commands to finish')
+            await asyncio.wait_for(
+                self.commander.wait_empty(),
+                self.config.command_timeout.total_seconds())
 
             self._notify('Sending update command to controller')
             await self.commander.firmware_update()
@@ -141,7 +146,7 @@ class Flasher:
                 self.commander.end_connection(),
                 self.config.flash_disconnect_timeout.total_seconds())
 
-            if platform == 'esp32':  # pragma: no cover
+            if platform == 'esp32':
                 if connection_kind == 'TCP':
                     host, _ = address.split(':')
                     self._notify(f'Sending update prompt to {host}')
@@ -158,12 +163,12 @@ class Flasher:
 
             if platform in ['photon', 'p1']:
                 self._notify(f'Connecting to {address}')
-                conn = await ymodem.connect(address)
+                ymodem_conn = await ymodem.connect(address)
                 ota_client = ymodem.OtaClient(self._notify)
 
-                with conn.autoclose():
+                with ymodem_conn.autoclose():
                     await asyncio.wait_for(
-                        ota_client.send(conn, f'firmware/brewblox-{platform}.bin'),
+                        ota_client.send(ymodem_conn, f'firmware/brewblox-{platform}.bin'),
                         self.config.flash_ymodem_timeout.total_seconds())
                     self._notify('Update done!')
 
@@ -173,6 +178,7 @@ class Flasher:
 
         finally:
             self._notify('Restarting service...')
+            self.background_tasks.add_task(utils.graceful_shutdown, 'Firmware flash')
 
         response = FirmwareFlashResponse(address=address, version=self.fw_version)
         return response
@@ -180,7 +186,6 @@ class Flasher:
 
 @router.post('/flash')
 async def system_flash(background_tasks: BackgroundTasks) -> FirmwareFlashResponse:
-    background_tasks.add_task(utils.graceful_shutdown, 'Firmware flash')
-    flasher = Flasher()
+    flasher = Flasher(background_tasks)
     response = await flasher.run()
     return response
