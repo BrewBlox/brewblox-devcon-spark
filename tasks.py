@@ -1,13 +1,26 @@
+from configparser import ConfigParser
 from contextlib import suppress
 from pathlib import Path
 
 from invoke import Context, task
 from invoke.exceptions import UnexpectedExit
 
-from brewblox_devcon_spark import utils
+from brewblox_devcon_spark.models import FirmwareConfig
 
 ROOT = Path(__file__).parent.resolve()
 FW_BASE_URL = 'https://brewblox.blob.core.windows.net/firmware'
+
+
+def get_fw_config() -> FirmwareConfig:  # pragma: no cover
+    """
+    Globally cached getter for firmware config.
+    When first called, config is parsed from the firmware.ini file.
+    """
+    parser = ConfigParser()
+    parser.read(ROOT / 'firmware.ini')
+    raw = dict(parser['FIRMWARE'].items())
+    config = FirmwareConfig(**raw)
+    return config
 
 
 @task
@@ -26,8 +39,8 @@ def compile_proto(ctx: Context):
 
 @task
 def download_firmware(ctx: Context):
+    fw_config = get_fw_config()
     fw_dir = ROOT / 'firmware'
-    fw_config = utils.get_fw_config()
 
     fw_date = fw_config.firmware_date
     fw_version = fw_config.firmware_version
@@ -56,7 +69,7 @@ def update_firmware(ctx: Context, release='develop'):
     with ctx.cd(ROOT):
         ctx.run(f'curl -sSf -o firmware.ini "{url}"')
 
-    fw_config = utils.get_fw_config()
+    fw_config = get_fw_config()
     fw_date = fw_config.firmware_date
     fw_version = fw_config.firmware_version
     proto_version = fw_config.proto_version
