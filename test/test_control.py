@@ -228,6 +228,9 @@ async def test_check_connection(mocker: MockerFixture):
     await ctrl._check_connection()
     assert s_noop.await_count == 6
 
+    with pytest.raises(exceptions.ConnectionException):
+        await ctrl.noop()
+
 
 async def test_start_update():
     state = state_machine.CV.get()

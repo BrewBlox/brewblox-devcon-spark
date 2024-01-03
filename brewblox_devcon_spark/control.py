@@ -215,9 +215,15 @@ class SparkController:
         if self.state.is_updating():
             raise exceptions.UpdateInProgress('Update is in progress')
 
-        await asyncio.wait_for(
-            self.state.wait_synchronized(),
-            self.config.command_timeout.total_seconds())
+        self.state.check_compatible()
+
+        try:
+            await asyncio.wait_for(
+                self.state.wait_synchronized(),
+                self.config.command_timeout.total_seconds())
+
+        except asyncio.TimeoutError:
+            raise exceptions.ConnectionException('Not connected')
 
         try:
             yield

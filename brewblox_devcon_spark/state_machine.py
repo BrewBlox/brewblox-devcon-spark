@@ -8,7 +8,7 @@ import logging
 from contextvars import ContextVar
 from typing import Literal
 
-from . import utils
+from . import exceptions, utils
 from .models import (ConnectionKind_, ControllerDescription, DeviceDescription,
                      FirmwareDescription, ServiceDescription,
                      StatusDescription)
@@ -59,6 +59,15 @@ class StateMachine:
 
     def desc(self) -> StatusDescription:
         return self._status_desc
+
+    def check_compatible(self) -> Literal[True]:
+        if self._status_desc.firmware_error == 'INCOMPATIBLE':
+            raise exceptions.IncompatibleFirmware()
+
+        if self._status_desc.identity_error == 'INCOMPATIBLE':
+            raise exceptions.InvalidDeviceId()
+
+        return True
 
     def set_enabled(self, enabled: bool):
         self._status_desc.enabled = enabled

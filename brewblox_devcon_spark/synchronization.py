@@ -126,13 +126,7 @@ class StateSynchronizer:
                     await asyncio.wait([ack_task],
                                        timeout=self.config.handshake_ping_interval.total_seconds())
 
-        desc = self.state.desc()
-
-        if desc.firmware_error == 'INCOMPATIBLE':
-            raise exceptions.IncompatibleFirmware()
-
-        if desc.identity_error == 'INCOMPATIBLE':
-            raise exceptions.InvalidDeviceId()
+        self.state.check_compatible()
 
     @subroutine('sync block store')
     async def _sync_block_store(self):
