@@ -13,9 +13,10 @@ _sym_db = _symbol_database.Default()
 
 import brewblox_pb2 as brewblox__pb2
 import nanopb_pb2 as nanopb__pb2
+import PrecisionAnalogModule_pb2 as PrecisionAnalogModule__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x16TempSensorAnalog.proto\x12\x15\x62lox.TempSensorAnalog\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xc9\x01\n\x05\x42lock\x12\x39\n\x04type\x18\x01 \x01(\x0e\x32+.blox.TempSensorAnalog.TempSensorAnalogType\x12\x1e\n\x08moduleId\x18\x02 \x01(\rB\x0c\x92?\x02\x38\x10\x8a\xb5\x18\x03\x18\xcb\x02\x12\x16\n\x07\x63hannel\x18\x03 \x01(\rB\x05\x92?\x02\x38\x08\x12!\n\x05value\x18\x04 \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x08\x01\x10\x80 (\x01\x30\x01\x12\x1e\n\x06offset\x18\x05 \x01(\x11\x42\x0e\x92?\x02\x38 \x8a\xb5\x18\x05\x08\x06\x10\x80 :\n\x8a\xb5\x18\x06\x18\xcc\x02J\x01\x02*\x92\x01\n\x14TempSensorAnalogType\x12\x1a\n\x16TEMP_SENSOR_TYPE_UNSET\x10\x00\x12\x1e\n\x1aTEMP_SENSOR_TYPE_RTD_2WIRE\x10\x01\x12\x1e\n\x1aTEMP_SENSOR_TYPE_RTD_3WIRE\x10\x02\x12\x1e\n\x1aTEMP_SENSOR_TYPE_RTD_4WIRE\x10\x03\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x16TempSensorAnalog.proto\x12\x15\x62lox.TempSensorAnalog\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x1bPrecisionAnalogModule.proto\"\xc5\x02\n\x05\x42lock\x12\x39\n\x04type\x18\x01 \x01(\x0e\x32+.blox.TempSensorAnalog.TempSensorAnalogType\x12\x1e\n\x08moduleId\x18\x02 \x01(\rB\x0c\x92?\x02\x38\x10\x8a\xb5\x18\x03\x18\xcb\x02\x12\x16\n\x07\x63hannel\x18\x03 \x01(\rB\x05\x92?\x02\x38\x08\x12!\n\x05value\x18\x04 \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x08\x01\x10\x80 (\x01\x30\x01\x12\x1e\n\x06offset\x18\x05 \x01(\x11\x42\x0e\x92?\x02\x38 \x8a\xb5\x18\x05\x08\x06\x10\x80 \x12?\n\x08\x64\x65tected\x18\x06 \x01(\x0e\x32-.blox.PrecisionAnalogModule.AnalogChannelType\x12\x39\n\x04spec\x18\x07 \x01(\x0e\x32+.blox.TempSensorAnalog.TempSensorAnalogSpec:\n\x8a\xb5\x18\x06\x18\xcc\x02J\x01\x02*\x94\x01\n\x14TempSensorAnalogType\x12\x1c\n\x18TEMP_SENSOR_TYPE_NOT_SET\x10\x00\x12\x1e\n\x1aTEMP_SENSOR_TYPE_RTD_2WIRE\x10\x01\x12\x1e\n\x1aTEMP_SENSOR_TYPE_RTD_3WIRE\x10\x02\x12\x1e\n\x1aTEMP_SENSOR_TYPE_RTD_4WIRE\x10\x03*z\n\x14TempSensorAnalogSpec\x12\x10\n\x0cSPEC_NOT_SET\x10\x00\x12\x12\n\x0eSPEC_PT100_385\x10\x01\x12\x12\n\x0eSPEC_PT100_392\x10\x02\x12\x13\n\x0fSPEC_PT1000_385\x10\x03\x12\x13\n\x0fSPEC_PT1000_392\x10\x04\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,8 +33,10 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _BLOCK.fields_by_name['offset']._serialized_options = b'\222?\0028 \212\265\030\005\010\006\020\200 '
   _BLOCK._options = None
   _BLOCK._serialized_options = b'\212\265\030\006\030\314\002J\001\002'
-  _globals['_TEMPSENSORANALOGTYPE']._serialized_start=284
-  _globals['_TEMPSENSORANALOGTYPE']._serialized_end=430
-  _globals['_BLOCK']._serialized_start=80
-  _globals['_BLOCK']._serialized_end=281
+  _globals['_TEMPSENSORANALOGTYPE']._serialized_start=437
+  _globals['_TEMPSENSORANALOGTYPE']._serialized_end=585
+  _globals['_TEMPSENSORANALOGSPEC']._serialized_start=587
+  _globals['_TEMPSENSORANALOGSPEC']._serialized_end=709
+  _globals['_BLOCK']._serialized_start=109
+  _globals['_BLOCK']._serialized_end=434
 # @@protoc_insertion_point(module_scope)

@@ -45,7 +45,9 @@ if 'brewblox_pb2' not in sys.modules:  # pragma: no cover
     import TempSensorOneWire_pb2
     import TouchSettings_pb2
     import WiFiSettings_pb2
-    import BioSense_pb2
+    import KvdwAnalogModule_pb2
+    import KvdwDigitalModule_pb2
+    import KvdwSensor_pb2
 
 __all__ = [
     'ActuatorAnalogMock_pb2',
@@ -62,6 +64,9 @@ __all__ = [
     'DS2413_pb2',
     'EdgeCase_pb2',
     'FastPwm_pb2',
+    'KvdwAnalogModule_pb2',
+    'KvdwDigitalModule_pb2',
+    'KvdwSensor_pb2',
     'MockPins_pb2',
     'MotorValve_pb2',
     'Mutex_pb2',
@@ -82,5 +87,4 @@ __all__ = [
     'TempSensorOneWire_pb2',
     'TouchSettings_pb2',
     'WiFiSettings_pb2',
-    'BioSense_pb2',
 ]
