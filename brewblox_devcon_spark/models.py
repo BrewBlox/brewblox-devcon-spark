@@ -10,6 +10,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from . import const
 
 
+def parse_enum(cls: type[enum.Enum], v: Any):
+    """Return enum value if `v` matches either name or value"""
+    try:
+        return cls[v]
+    except KeyError:
+        return cls(v)
+
+
 class DiscoveryType(enum.Enum):
     all = 1
     usb = 2
@@ -119,6 +127,11 @@ class ServiceConfig(BaseSettings):
     @property
     def datastore_url(self) -> str:
         return f'http://{self.datastore_host}:{self.datastore_port}{self.datastore_path}'
+
+    @field_validator('discovery', mode='before')
+    @classmethod
+    def parse_discovery(cls, v):
+        return parse_enum(DiscoveryType, v)
 
 
 class FirmwareConfig(BaseModel):
@@ -286,10 +299,8 @@ class BasePayload(BaseModel):
 
     @field_validator('maskMode', mode='before')
     @classmethod
-    def from_raw_mask_mode(cls, v):
-        if isinstance(v, str):
-            return MaskMode[v]
-        return MaskMode(v)
+    def parse_mask_mode(cls, v):
+        return parse_enum(MaskMode, v)
 
 
 class EncodedPayload(BasePayload):
@@ -311,10 +322,8 @@ class BaseRequest(BaseModel):
 
     @field_validator('opcode', mode='before')
     @classmethod
-    def from_raw_opcode(cls, v):
-        if isinstance(v, str):
-            return Opcode[v]
-        return Opcode(v)
+    def parse_opcode(cls, v):
+        return parse_enum(Opcode, v)
 
 
 class IntermediateRequest(BaseRequest):
@@ -332,10 +341,8 @@ class BaseResponse(BaseModel):
 
     @field_validator('error', mode='before')
     @classmethod
-    def from_raw_error(cls, v):
-        if isinstance(v, str):
-            return ErrorCode[v]
-        return ErrorCode(v)
+    def parse_error(cls, v):
+        return parse_enum(ErrorCode, v)
 
 
 class IntermediateResponse(BaseResponse):
