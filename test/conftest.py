@@ -18,7 +18,7 @@ from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
 from pytest_docker.plugin import Services as DockerServices
 
 from brewblox_devcon_spark import app_factory, utils
-from brewblox_devcon_spark.models import Block, FirmwareConfig, ServiceConfig
+from brewblox_devcon_spark.models import Block, ServiceConfig
 
 LOGGER = logging.getLogger(__name__)
 
@@ -79,21 +79,6 @@ def config(monkeypatch: pytest.MonkeyPatch,
     )
     print(cfg)
     monkeypatch.setattr(utils, 'get_config', lambda: cfg)
-    yield cfg
-
-
-@pytest.fixture(autouse=True)
-def fw_config(monkeypatch: pytest.MonkeyPatch,
-              ) -> Generator[FirmwareConfig, None, None]:
-    cfg = FirmwareConfig(
-        firmware_version='f27f141c',
-        firmware_date='2023-12-06',
-        firmware_sha='f27f141cb66c348afb6735ed08a60d1814791b71',
-        proto_version='0fa3f6b2',
-        proto_date='2023-12-06',
-        system_version='3.2.0',
-    )
-    monkeypatch.setattr(utils, 'get_fw_config', lambda: cfg)
     yield cfg
 
 

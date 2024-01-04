@@ -47,7 +47,7 @@ def get_config() -> ServiceConfig:  # pragma: no cover
 
 
 @lru_cache
-def get_fw_config() -> FirmwareConfig:  # pragma: no cover
+def get_fw_config() -> FirmwareConfig:
     """
     Globally cached getter for firmware config.
     When first called, config is parsed from the firmware.ini file.
