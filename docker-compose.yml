@@ -1,0 +1,43 @@
+services:
+  eventbus:
+    image: brewblox/mosquitto:develop
+    ports:
+      - "1883:1883"
+
+  victoria:
+    image: victoriametrics/victoria-metrics:v1.88.0
+    command: >-
+      --retentionPeriod=100y
+      --influxMeasurementFieldSeparator=/
+      --http.pathPrefix=/victoria
+      --search.latencyOffset=10s
+
+  redis:
+    image: redis:6.0
+    command: --appendonly yes
+
+  history:
+    image: ghcr.io/brewblox/brewblox-history:develop
+
+  sparkey:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: ./Dockerfile.service
+    volumes:
+      - type: bind
+        source: ./brewblox_devcon_spark
+        target: /app/brewblox_devcon_spark
+      - type: bind
+        source: ./parse_appenv.py
+        target: /app/parse_appenv.py
+      - type: bind
+        source: ./entrypoint.sh
+        target: /app/entrypoint.sh
+    environment:
+      - UVICORN_RELOAD=True
+      - BREWBLOX_DEBUG=True
+      - BREWBLOX_TRACE=False
+      - BREWBLOX_SIMULATION=True
+    ports:
+      - "5000:5000"

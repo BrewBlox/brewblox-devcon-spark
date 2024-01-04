@@ -24,7 +24,7 @@ def store():
     return twinkeydict.TwinKeyDict()
 
 
-def test_get_set(store, items):
+def test_get_set(store: twinkeydict.TwinKeyDict, items: list[tuple]):
     assert not store
     store['tri', 'ang'] = 'le'
     assert store
@@ -71,7 +71,7 @@ def test_get_set(store, items):
         store[None, None] = 'pancakes'
 
 
-def test_pop_del(store, items):
+def test_pop_del(store: twinkeydict.TwinKeyDict, items: list[tuple]):
     for left, right, value in items:
         store[left, right] = value
 
@@ -91,7 +91,7 @@ def test_pop_del(store, items):
     assert (None, 'same') not in store
 
 
-def test_rename(store):
+def test_rename(store: twinkeydict.TwinKeyDict):
     store['wabber', 'jockey'] = 'alice'
     store.rename(('wabber', None), ('blobber', None))
     with pytest.raises(twinkeydict.TwinKeyError):

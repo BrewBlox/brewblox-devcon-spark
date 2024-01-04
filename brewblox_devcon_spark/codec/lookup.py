@@ -3,6 +3,7 @@ Protobuf messages coupled to their respective type identities
 """
 
 
+from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Generator, Optional, Type
 
@@ -17,6 +18,11 @@ BlockType: EnumTypeWrapper = pb2.brewblox_pb2.BlockType
 # Block type values below this are reserved for interfaces
 # They will not be associated with actual messages
 BLOCK_INTERFACE_TYPE_END = 255
+
+
+CV_OBJECTS: ContextVar[list['ObjectLookup']] = ContextVar('lookup.objects')
+CV_INTERFACES: ContextVar[list['InterfaceLookup']] = ContextVar('lookup.interfaces')
+CV_COMBINED: ContextVar[list['InterfaceLookup']] = ContextVar('lookup.combined')
 
 
 @dataclass(frozen=True)
@@ -61,38 +67,43 @@ def _object_lookup_generator() -> Generator[ObjectLookup, None, None]:
                 )
 
 
-OBJECT_LOOKUPS: list[ObjectLookup] = [
-    # Actual objects
-    *_object_lookup_generator(),
+def setup():
+    objects: list[ObjectLookup] = [
+        # Actual objects
+        *_object_lookup_generator(),
 
-    # Custom test objects
-    ObjectLookup(
-        type_str='EdgeCase',
-        type_int=9001,
-        subtype_str=None,
-        subtype_int=0,
-        message_cls=pb2.EdgeCase_pb2.Block,
-    ),
-    ObjectLookup(
-        type_str='EdgeCase',
-        type_int=9001,
-        subtype_str='SubCase',
-        subtype_int=1,
-        message_cls=pb2.EdgeCase_pb2.SubCase,
-    ),
-]
+        # Custom test objects
+        ObjectLookup(
+            type_str='EdgeCase',
+            type_int=9001,
+            subtype_str=None,
+            subtype_int=0,
+            message_cls=pb2.EdgeCase_pb2.Block,
+        ),
+        ObjectLookup(
+            type_str='EdgeCase',
+            type_int=9001,
+            subtype_str='SubCase',
+            subtype_int=1,
+            message_cls=pb2.EdgeCase_pb2.SubCase,
+        ),
+    ]
 
-INTERFACE_LOOKUPS: list[InterfaceLookup] = [
-    *_interface_lookup_generator(),
+    interfaces: list[InterfaceLookup] = [
+        *_interface_lookup_generator(),
 
-    # Custom test objects
-    InterfaceLookup(
-        type_str='EdgeCase',
-        type_int=9001,
-    ),
-]
+        # Custom test objects
+        InterfaceLookup(
+            type_str='EdgeCase',
+            type_int=9001,
+        ),
+    ]
 
-COMBINED_LOOKUPS: list[InterfaceLookup] = [
-    *OBJECT_LOOKUPS,
-    *INTERFACE_LOOKUPS,
-]
+    combined: list[InterfaceLookup] = [
+        *objects,
+        *interfaces,
+    ]
+
+    CV_OBJECTS.set(objects)
+    CV_INTERFACES.set(interfaces)
+    CV_COMBINED.set(combined)

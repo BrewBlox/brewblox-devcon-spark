@@ -3,64 +3,79 @@ Tests brewblox_devcon_spark.time_sync
 """
 
 import asyncio
+from contextlib import AsyncExitStack, asynccontextmanager
+from datetime import timedelta
+from unittest.mock import Mock
 
 import pytest
-from brewblox_service import repeater, scheduler
+from asgi_lifespan import LifespanManager
+from fastapi import FastAPI
+from pytest_mock import MockerFixture
 
-from brewblox_devcon_spark import (block_store, codec, commander, connection,
-                                   controller, global_store, service_status,
-                                   service_store, synchronization, time_sync)
-from brewblox_devcon_spark.models import ServiceConfig
+from brewblox_devcon_spark import (codec, command, connection, control,
+                                   datastore_blocks, datastore_settings, mqtt,
+                                   state_machine, synchronization, time_sync,
+                                   utils)
 
 TESTED = time_sync.__name__
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with AsyncExitStack() as stack:
+        await stack.enter_async_context(mqtt.lifespan())
+        await stack.enter_async_context(connection.lifespan())
+        await stack.enter_async_context(synchronization.lifespan())
+        await state_machine.CV.get().wait_synchronized()
+        yield
+
+
+@pytest.fixture
+def app() -> FastAPI():
+    config = utils.get_config()
+    config.mock = True
+    config.time_sync_interval = timedelta(milliseconds=1)
+    config.time_sync_retry_interval = timedelta(milliseconds=1)
+
+    mqtt.setup()
+    state_machine.setup()
+    datastore_settings.setup()
+    datastore_blocks.setup()
+    codec.setup()
+    connection.setup()
+    command.setup()
+    control.setup()
+    return FastAPI(lifespan=lifespan)
+
+
 @pytest.fixture(autouse=True)
-def m_error_interval(mocker):
-    mocker.patch(TESTED + '.ERROR_INTERVAL_S', 0.01)
+async def manager(manager: LifespanManager):
+    yield manager
 
 
 @pytest.fixture
-def m_controller(mocker):
-    m = mocker.patch(TESTED + '.controller.fget')
-    return m.return_value
+def s_patch_block(app: FastAPI, mocker: MockerFixture) -> Mock:
+    s = mocker.spy(control.CV.get(), 'patch_block')
+    return s
 
 
-@pytest.fixture
-async def setup(app):
-    config: ServiceConfig = app['config']
-    config.time_sync_interval = 0.01
+async def test_sync(s_patch_block: Mock):
+    config = utils.get_config()
+    sync = time_sync.TimeSync()
+    await sync.run()
+    assert s_patch_block.call_count == 1
 
-    service_status.setup(app)
-    scheduler.setup(app)
-    codec.setup(app)
-    block_store.setup(app)
-    global_store.setup(app)
-    service_store.setup(app)
-    connection.setup(app)
-    commander.setup(app)
-    synchronization.setup(app)
-    controller.setup(app)
-    time_sync.setup(app)
+    # Normal repeat
+    s_patch_block.reset_mock()
+    async with time_sync.lifespan():
+        await asyncio.sleep(0.1)
+        assert s_patch_block.call_count >= 1
 
+        s_patch_block.reset_mock()
+        s_patch_block.side_effect = RuntimeError
+        await asyncio.sleep(0.1)
+        assert s_patch_block.call_count >= 1
 
-@pytest.fixture
-async def synchronized(app, client):
-    await service_status.wait_synchronized(app)
-
-
-async def test_sync(app, client, synchronized, m_controller):
-    await asyncio.sleep(0.1)
-    assert time_sync.fget(app).enabled
-    assert m_controller.patch_block.call_count > 0
-
-
-async def test_disabled_sync(app, client, synchronized):
-    app['config'].time_sync_interval = 0
-
-    sync = time_sync.TimeSync(app)
-    with pytest.raises(repeater.RepeaterCancelled):
-        await sync.prepare()
-
-    assert not sync.enabled
-    assert not sync.active
+    # Disabled repeat if interval <= 0
+    config.time_sync_interval = timedelta()
+    await asyncio.wait_for(sync.repeat(), timeout=1)

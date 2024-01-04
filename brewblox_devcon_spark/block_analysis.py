@@ -2,10 +2,10 @@
 Calculate block metadata
 """
 
-from typing import Any, Optional, TypedDict
+from typing import Any
 
-from brewblox_devcon_spark.codec import bloxfield
-from brewblox_devcon_spark.models import Block
+from .codec import bloxfield
+from .models import Block, BlockClaim, BlockRelation
 
 # Relations to these blocks should be ignored,
 # as they have no impact on control logic
@@ -29,19 +29,6 @@ INVERTED_RELATION_FIELDS = [
     'analog',  # Logic Actuator
     'digital',  # Logic Actuator
 ]
-
-
-class BlockRelation(TypedDict):
-    source: str
-    target: str
-    claimed: Optional[bool]
-    relation: list[str]
-
-
-class BlockClaim(TypedDict):
-    source: str
-    target: str
-    intermediate: list[str]
 
 
 def _find_nested_relations(
@@ -115,20 +102,20 @@ def calculate_relations(blocks: list[Block]) -> list[BlockRelation]:
     Returns:
         list[BlockRelation]: Valid relations between blocks in `blocks`.
     """
-    relations = []
+    relations: list[BlockRelation] = []
     for block in blocks:
         if block.type in IGNORED_RELATION_TYPES:
             continue
         relations += _find_nested_relations(block.id, [], block.data)
 
     for block in blocks:
-        claim = block.data.get('claimedBy')
-        if claim and claim['id']:
+        raw_claim = block.data.get('claimedBy')
+        if raw_claim and raw_claim['id']:
             target = block.id
-            source = claim['id']
+            source = raw_claim['id']
             for r in relations:  # pragma: no branch
-                if r['target'] == target and r['source'] == source:
-                    r['claimed'] = True
+                if r.target == target and r.source == source:
+                    r.claimed = True
                     break
 
     return relations
@@ -156,19 +143,19 @@ def calculate_claims(blocks: list[Block]) -> list[BlockClaim]:
                                                  intermediate=[]))
 
     def extended_claim(claim: BlockClaim) -> BlockClaim:
-        source_claim = claim_dict.get(claim['source'])
+        source_claim = claim_dict.get(claim.source)
         if not source_claim:
             return claim
 
-        grand_source = source_claim['source']
-        if grand_source in claim['intermediate']:
+        grand_source = source_claim.source
+        if grand_source in claim.intermediate:
             return claim  # Circular claim
 
         # Shift claim, look further up the tree
         return extended_claim(
             BlockClaim(source=grand_source,
-                       target=claim['target'],
-                       intermediate=[*claim['intermediate'], claim['source']]))
+                       target=claim.target,
+                       intermediate=[*claim.intermediate, claim.source]))
 
     return [extended_claim(c)
             for c in [*claim_dict.values(), *channel_claims]]

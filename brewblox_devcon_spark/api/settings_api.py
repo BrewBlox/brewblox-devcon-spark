@@ -2,50 +2,34 @@
 REST API for persistent settings
 """
 
-from aiohttp import web
-from aiohttp_pydantic import PydanticView
-from aiohttp_pydantic.oas.typing import r200
-from brewblox_service import brewblox_logger
-from pydantic import BaseModel
 
-from brewblox_devcon_spark import service_status, service_store
+import logging
 
-LOGGER = brewblox_logger(__name__)
-routes = web.RouteTableDef()
+from fastapi import APIRouter
 
+from .. import datastore_settings
+from ..models import AutoconnectSettings
 
-def setup(app: web.Application):
-    app.router.add_routes(routes)
+LOGGER = logging.getLogger(__name__)
+
+router = APIRouter(prefix='/settings', tags=['Settings'])
 
 
-class AutoconnectSettings(BaseModel):
-    enabled: bool
+@router.get('/enabled')
+async def settings_enabled_get() -> AutoconnectSettings:
+    """
+    Get enabled flag.
+    """
+    enabled = datastore_settings.CV.get().service_settings.enabled
+    return AutoconnectSettings(enabled=enabled)
 
 
-@routes.view('/settings/autoconnecting')
-class AutoconnectingView(PydanticView):
-    async def get(self) -> r200[AutoconnectSettings]:
-        """
-        Get autoconnecting flag.
-
-        Tags: Settings
-        """
-        enabled = service_store.get_autoconnecting(self.request.app)
-        settings = AutoconnectSettings(enabled=enabled)
-        return web.json_response(
-            settings.dict()
-        )
-
-    async def put(self, args: AutoconnectSettings) -> r200[AutoconnectSettings]:
-        """
-        Set autoconnecting flag.
-
-        Tags: Settings
-        """
-        enabled = service_store.set_autoconnecting(self.request.app,
-                                                   args.enabled)
-        service_status.set_enabled(self.request.app, enabled)
-        settings = AutoconnectSettings(enabled=enabled)
-        return web.json_response(
-            settings.dict()
-        )
+@router.put('/enabled')
+async def settings_enabled_put(args: AutoconnectSettings) -> AutoconnectSettings:
+    """
+    Set enabled flag.
+    """
+    store = datastore_settings.CV.get()
+    store.service_settings.enabled = args.enabled
+    await store.commit_service_settings()
+    return AutoconnectSettings(enabled=args.enabled)

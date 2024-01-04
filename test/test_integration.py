@@ -3,336 +3,428 @@ Integration tests: API calls against the firmware simulator.
 """
 
 import asyncio
-from shutil import rmtree
-from unittest.mock import ANY, AsyncMock
+from contextlib import AsyncExitStack, asynccontextmanager
+from unittest.mock import ANY, Mock
 
 import pytest
-from aiohttp.test_utils import TestClient
-from brewblox_service import mqtt, scheduler
-from brewblox_service.testing import find_free_port, response
+from fastapi import FastAPI
+from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
-from brewblox_devcon_spark import (backup_storage, block_store, codec,
-                                   commander, connection, const, controller,
-                                   global_store, service_status, service_store,
-                                   synchronization)
-from brewblox_devcon_spark.__main__ import parse_ini
+from brewblox_devcon_spark import (app_factory, block_backup, codec, command,
+                                   connection, const, control,
+                                   datastore_blocks, datastore_settings, mqtt,
+                                   state_machine, synchronization, utils)
 from brewblox_devcon_spark.api import (backup_api, blocks_api, debug_api,
-                                       error_response, settings_api,
-                                       system_api)
-from brewblox_devcon_spark.connection import stream_connection
-from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
+                                       settings_api, system_api)
+from brewblox_devcon_spark.models import (Backup, Block, BlockIdentity,
+                                          DatastoreMultiQuery, DecodedPayload,
+                                          EncodedMessage, EncodedPayload,
                                           ErrorCode, IntermediateRequest,
                                           IntermediateResponse, Opcode,
-                                          ServiceConfig)
+                                          TwinKeyEntry)
 
 
 class DummmyError(BaseException):
     pass
 
 
-def ret_ids(objects):
-    return {obj['id'] for obj in objects}
+def ret_ids(objects: list[dict | Block]) -> set[str]:
+    try:
+        return {obj['id'] for obj in objects}
+    except TypeError:
+        return {obj.id for obj in objects}
 
 
-@pytest.fixture(scope='module', autouse=True)
-def simulator_file_cleanup():
-    yield
-    rmtree('simulator/', ignore_errors=True)
+def repeated_blocks(ids: list[str], base: Block) -> list[Block]:
+    return [Block(id=id, type=base.type, data=base.data)
+            for id in ids]
 
 
 @pytest.fixture
-def block_args():
-    return {
-        'id': 'testobj',
-        'type': 'TempSensorOneWire',
-        'data': {
+def block_args() -> Block:
+    return Block(
+        id='testobj',
+        type='TempSensorOneWire',
+        data={
             'value': 12345,
             'offset': 20,
             'address': 'FF'
         }
-    }
+    )
 
 
-@pytest.fixture(autouse=True)
-def m_publish(app, mocker: MockerFixture):
-    m = mocker.spy(mqtt, 'publish')
-    return m
+@asynccontextmanager
+async def clear_datastore():
+    config = utils.get_config()
+    client = AsyncClient(base_url=config.datastore_url)
+    query = DatastoreMultiQuery(namespace=const.SERVICE_NAMESPACE, filter='*')
+    content = query.model_dump(mode='json')
+    await asyncio.wait_for(utils.httpx_retry(lambda: client.post('/mdelete', json=content)),
+                           timeout=5)
+    yield
 
 
-@pytest.fixture(autouse=True)
-def m_backup_dir(mocker: MockerFixture, tmp_path):
-    mocker.patch(backup_storage.__name__ + '.BASE_BACKUP_DIR', tmp_path / 'backup')
-
-
-@pytest.fixture(autouse=True)
-def m_simulator_dir(mocker: MockerFixture, tmp_path):
-    mocker.patch(stream_connection.__name__ + '.SIMULATION_CWD', tmp_path / 'simulator')
-
-
-def repeated_blocks(ids, args):
-    return [{
-        'id': id,
-        'type': args['type'],
-        'data': args['data']
-    } for id in ids]
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with AsyncExitStack() as stack:
+        await stack.enter_async_context(clear_datastore())
+        await stack.enter_async_context(mqtt.lifespan())
+        # await stack.enter_async_context(datastore.lifespan())
+        await stack.enter_async_context(connection.lifespan())
+        await stack.enter_async_context(synchronization.lifespan())
+        yield
 
 
 @pytest.fixture
-async def setup(app, broker):
-    """App + controller routes"""
-    app['ini'] = parse_ini(app)
-
-    config: ServiceConfig = app['config']
+def app() -> FastAPI:
+    config = utils.get_config()
     config.mock = False
     config.simulation = True
-    config.isolated = True
-    config.device_id = '123456789012345678901234'
-    config.device_port = find_free_port()
-    config.display_ws_port = 0  # let firmware find its own free port
-    config.mqtt_host = 'localhost'
-    config.mqtt_port = broker['mqtt']
-    config.state_topic = 'test_integration/state'
 
-    service_status.setup(app)
-    scheduler.setup(app)
-    mqtt.setup(app)
-    codec.setup(app)
-    connection.setup(app)
-    commander.setup(app)
-    block_store.setup(app)
-    global_store.setup(app)
-    service_store.setup(app)
-    synchronization.setup(app)
-    controller.setup(app)
-    backup_storage.setup(app)
+    mqtt.setup()
+    state_machine.setup()
+    datastore_settings.setup()
+    datastore_blocks.setup()
+    codec.setup()
+    connection.setup()
+    command.setup()
+    control.setup()
+    block_backup.setup()
 
-    error_response.setup(app)
-    blocks_api.setup(app)
-    backup_api.setup(app)
-    system_api.setup(app)
-    settings_api.setup(app)
-    debug_api.setup(app)
+    app = FastAPI(lifespan=lifespan)
 
+    app_factory.add_exception_handlers(app)
 
-@pytest.fixture
-async def production_app(app):
-    app['config'].debug = False
+    app.include_router(blocks_api.router)
+    app.include_router(system_api.router)
+    app.include_router(settings_api.router)
+    app.include_router(backup_api.router)
+    app.include_router(debug_api.router)
+
     return app
 
 
 @pytest.fixture(autouse=True)
-async def synchronized(app, client: TestClient):
+def s_publish(app: FastAPI, mocker: MockerFixture) -> Mock:
+    m = mocker.spy(mqtt.CV.get(), 'publish')
+    return m
+
+
+@pytest.fixture(autouse=True)
+async def synchronized(client: AsyncClient):
+    state = state_machine.CV.get()
     # Prevents test hangups if the connection fails
-    await asyncio.wait_for(
-        asyncio.gather(
-            service_status.wait_synchronized(app),
-            mqtt.fget(app).ready.wait(),
-        ),
-        timeout=5)
+    await asyncio.wait_for(state.wait_synchronized(),
+                           timeout=5)
 
 
-async def test_create(app, client: TestClient, block_args):
+async def test_create(client: AsyncClient, block_args: Block):
     # Create object
-    retd = await response(client.post('/blocks/create', json=block_args), 201)
-    assert retd['id'] == block_args['id']
+    resp = await client.post('/blocks/create', json=block_args.model_dump())
+    assert Block.model_validate_json(resp.text).id == block_args.id
 
     # Conflict error: name already taken
-    await response(client.post('/blocks/create', json=block_args), 409)
+    resp = await client.post('/blocks/create', json=block_args.model_dump())
+    assert resp.status_code == 409
 
-    block_args['id'] = 'other_obj'
-    retd = await response(client.post('/blocks/create', json=block_args), 201)
-    assert retd['id'] == 'other_obj'
+    block_args.id = 'other_obj'
+    resp = await client.post('/blocks/create', json=block_args.model_dump())
+    assert Block.model_validate_json(resp.text).id == block_args.id
 
 
-async def test_invalid_input(app, client: TestClient, block_args):
-    # 400 if input fails schema check
-    del block_args['type']
-    retv = await response(client.post('/blocks/create', json=block_args), 400)
-    assert retv == [{
-        'in': 'body',
-        'loc': ['type'],
-        'msg': 'field required',
-        'type': 'value_error.missing',
-    }]
+async def test_invalid_input(client: AsyncClient, block_args: Block, mocker: MockerFixture):
+    ctrl = control.CV.get()
 
-    # 400 if input fails encoding
-    # This yields a JSON error
-    block_args['type'] = 'dummy'
-    retv = await response(client.post('/blocks/create', json=block_args), 400)
+    # 422 if input fails schema check
+    raw = block_args.model_dump()
+    del raw['type']
+    resp = await client.post('/blocks/create', json=raw)
+    assert resp.status_code == 422
+    retv = resp.json()
+    assert 'RequestValidationError' in retv['error']
+    assert 'traceback' not in retv
+    assert 'validation' in retv
+
+    # 409 if input fails encoding
+    raw = block_args.model_dump()
+    raw['type'] = 'dummy'
+    resp = await client.post('/blocks/create', json=raw)
+    assert resp.status_code == 400
+    retv = resp.json()
     assert 'dummy' in retv['error']
     assert 'traceback' in retv
+    assert 'validation' not in retv
+
+    # We need to simulate some bugs now
+    m = mocker.patch.object(ctrl, 'create_block', autospec=True)
+
+    # 500 if output is invalid
+    # This is a programming error
+    m.side_effect = None
+    m.return_value = BlockIdentity()
+    resp = await client.post('/blocks/create', json=raw)
+    assert resp.status_code == 500
+    retv = resp.json()
+    assert 'ResponseValidationError' in retv['error']
+    assert 'traceback' not in retv
+    assert 'validation' in retv
 
 
-async def test_invalid_input_prod(production_app, client: TestClient, block_args):
-    # 400 if input fails schema check
-    del block_args['type']
-    retv = await response(client.post('/blocks/create', json=block_args), 400)
-    assert retv == [{
-        'in': 'body',
-        'loc': ['type'],
-        'msg': 'field required',
-        'type': 'value_error.missing',
-    }]
+async def test_invalid_input_prod(client: AsyncClient, block_args: Block, mocker: MockerFixture):
+    ctrl = control.CV.get()
+    config = utils.get_config()
+    config.debug = False
 
-    # 400 if input fails encoding
-    # This yields a JSON error
-    # For production errors, no traceback is returned
-    block_args['type'] = 'dummy'
-    retv = await response(client.post('/blocks/create', json=block_args), 400)
+    # 422 if input fails schema check
+    raw = block_args.model_dump()
+    del raw['type']
+    resp = await client.post('/blocks/create', json=raw)
+    assert resp.status_code == 422
+    retv = resp.json()
+    assert 'RequestValidationError' in retv['error']
+    assert 'traceback' not in retv
+    assert 'validation' in retv
+
+    # 409 if input fails encoding
+    raw = block_args.model_dump()
+    raw['type'] = 'dummy'
+    resp = await client.post('/blocks/create', json=raw)
+    assert resp.status_code == 400
+    retv = resp.json()
     assert 'dummy' in retv['error']
     assert 'traceback' not in retv
+    assert 'validation' not in retv
+
+    # We need to simulate some bugs now
+    m = mocker.patch.object(ctrl, 'create_block', autospec=True)
+
+    # 500 if output is invalid
+    # This is a programming error
+    m.side_effect = None
+    m.return_value = BlockIdentity()
+    resp = await client.post('/blocks/create', json=raw)
+    assert resp.status_code == 500
+    retv = resp.json()
+    assert 'ResponseValidationError' in retv['error']
+    assert 'traceback' not in retv
+    assert 'validation' in retv
 
 
-async def test_create_performance(app, client: TestClient, block_args):
+async def test_create_performance(client: AsyncClient, block_args: Block):
     num_items = 50
     ids = [f'id{num}' for num in range(num_items)]
     blocks = repeated_blocks(ids, block_args)
 
-    await asyncio.gather(*(response(client.post('/blocks/create', json=block), 201)
+    await asyncio.gather(*(client.post('/blocks/create', json=block.model_dump(mode='json'))
                            for block in blocks))
 
-    retd = await response(client.post('/blocks/all/read'))
-    assert set(ids).issubset(ret_ids(retd))
+    resp = await client.post('/blocks/all/read')
+    assert set(ids).issubset(ret_ids(resp.json()))
 
 
-async def test_batch_create_read_delete(app, client: TestClient, block_args):
+async def test_batch_create_read_delete(client: AsyncClient, block_args: Block):
     num_items = 50
     ids = [f'id{num}' for num in range(num_items)]
     blocks = repeated_blocks(ids, block_args)
+    raw_idents = [{'id': block.id} for block in blocks]
+    raw_blocks = [block.model_dump(mode='json') for block in blocks]
 
-    retv = await response(client.post('/blocks/batch/create', json=blocks), 201)
-    assert len(retv) == num_items
+    resp = await client.post('/blocks/batch/create', json=raw_blocks)
+    assert resp.status_code == 201
+    assert len(resp.json()) == num_items
 
-    ident_args = [{'id': block['id']} for block in blocks]
-    retv = await response(client.post('/blocks/batch/read', json=ident_args))
-    assert len(retv) == num_items
+    resp = await client.post('/blocks/batch/read', json=raw_idents)
+    assert resp.status_code == 200
+    assert len(resp.json()) == num_items
 
-    retv = await response(client.post('/blocks/all/read'))
-    assert set(ids).issubset(ret_ids(retv))
+    resp = await client.post('/blocks/all/read')
+    assert resp.status_code == 200
+    assert set(ids).issubset(ret_ids(resp.json()))
 
-    retv = await response(client.post('/blocks/batch/delete', json=ident_args))
-    assert len(retv) == num_items
+    resp = await client.post('/blocks/batch/delete', json=raw_idents)
+    assert resp.status_code == 200
+    assert len(resp.json()) == num_items
 
-    retv = await response(client.post('/blocks/all/read'))
-    assert set(ids).isdisjoint(ret_ids(retv))
-
-
-async def test_read(app, client: TestClient, block_args):
-    await response(client.post('/blocks/read', json={'id': 'testobj'}), 400)  # Object does not exist
-    await response(client.post('/blocks/create', json=block_args), 201)
-
-    retd = await response(client.post('/blocks/read', json={'id': 'testobj'}))
-    assert retd['id'] == 'testobj'
+    resp = await client.post('/blocks/all/read')
+    assert set(ids).isdisjoint(ret_ids(resp.json()))
 
 
-async def test_read_performance(app, client: TestClient, block_args):
-    await response(client.post('/blocks/create', json=block_args), 201)
-    await asyncio.gather(*(response(client.post('/blocks/read', json={'id': 'testobj'})) for _ in range(100)))
+async def test_read(client: AsyncClient, block_args: Block):
+    resp = await client.post('/blocks/read', json={'id': 'testobj'})
+    assert resp.status_code == 400  # Block does not exist
+
+    resp = await client.post('/blocks/create', json=block_args.model_dump())
+    assert resp.status_code == 201
+
+    resp = await client.post('/blocks/read', json={'id': 'testobj'})
+    assert Block.model_validate_json(resp.text).id == 'testobj'
 
 
-async def test_read_logged(app, client: TestClient, block_args):
-    await response(client.post('/blocks/create', json=block_args), 201)
+async def test_read_performance(client: AsyncClient, block_args: Block):
+    resp = await client.post('/blocks/create', json=block_args.model_dump())
+    assert resp.status_code == 201
 
-    retd = await response(client.post('/blocks/read/logged', json={'id': 'testobj'}))
-    assert retd['id'] == 'testobj'
-    assert 'address' not in retd['data']  # address is not a logged field
-
-
-async def test_write(app, client: TestClient, block_args, m_publish):
-    await response(client.post('/blocks/create', json=block_args), 201)
-    assert await response(client.post('/blocks/write', json=block_args))
-    assert m_publish.call_count == 2
+    resps = await asyncio.gather(*(client.post('/blocks/read', json={'id': 'testobj'}) for _ in range(100)))
+    for resp in resps:
+        assert resp.status_code == 200
 
 
-async def test_batch_write(app, client: TestClient, block_args, m_publish):
-    await response(client.post('/blocks/create', json=block_args), 201)
-    assert await response(client.post('/blocks/batch/write', json=[block_args, block_args, block_args]))
-    assert m_publish.call_count == 2
+async def test_read_logged(client: AsyncClient, block_args: Block):
+    resp = await client.post('/blocks/create', json=block_args.model_dump())
+    assert resp.status_code == 201
+
+    resp = await client.post('/blocks/read/logged', json={'id': 'testobj'})
+    retd = Block.model_validate_json(resp.text)
+    assert retd.id == 'testobj'
+    assert 'address' not in retd.data  # address is not a logged field
 
 
-async def test_patch(app, client: TestClient, block_args, m_publish):
-    await response(client.post('/blocks/create', json=block_args), 201)
-    assert await response(client.post('/blocks/patch', json=block_args))
-    assert m_publish.call_count == 2
+async def test_write(client: AsyncClient, block_args: Block, s_publish: Mock):
+    resp = await client.post('/blocks/create', json=block_args.model_dump())
+    assert resp.status_code == 201
+
+    resp = await client.post('/blocks/write', json=block_args.model_dump())
+    assert resp.status_code == 200
+    assert s_publish.call_count == 2
 
 
-async def test_batch_patch(app, client: TestClient, block_args, m_publish):
-    await response(client.post('/blocks/create', json=block_args), 201)
-    assert await response(client.post('/blocks/batch/patch', json=[block_args, block_args, block_args]))
-    assert m_publish.call_count == 2
+async def test_batch_write(client: AsyncClient, block_args: Block, s_publish: Mock):
+    resp = await client.post('/blocks/create', json=block_args.model_dump())
+    assert resp.status_code == 201
+
+    resp = await client.post('/blocks/batch/write',
+                             json=[block_args.model_dump(),
+                                   block_args.model_dump(),
+                                   block_args.model_dump()])
+    assert resp.status_code == 200
+    assert s_publish.call_count == 2
 
 
-async def test_delete(app, client: TestClient, block_args):
-    await response(client.post('/blocks/create', json=block_args), 201)
+async def test_patch(client: AsyncClient, block_args: Block, s_publish: Mock):
+    resp = await client.post('/blocks/create', json=block_args.model_dump())
+    assert resp.status_code == 201
 
-    retd = await response(client.post('/blocks/delete', json={'id': 'testobj'}))
-    assert retd['id'] == 'testobj'
-
-    await response(client.post('/blocks/read', json={'id': 'testobj'}), 400)
-
-
-async def test_nid_crud(app, client: TestClient, block_args):
-    created = await response(client.post('/blocks/create', json=block_args), 201)
-    nid = created['nid']
-
-    created['data']['value'] = 5
-    await response(client.post('/blocks/read', json={'nid': nid}))
-    await response(client.post('/blocks/write', json=created))
-    await response(client.post('/blocks/delete', json={'nid': nid}))
-
-    await response(client.post('/blocks/read', json={'nid': nid}), 500)
+    resp = await client.post('/blocks/patch', json=block_args.model_dump())
+    assert resp.status_code == 200
+    assert s_publish.call_count == 2
 
 
-async def test_stored_blocks(app, client: TestClient, block_args):
-    retd = await response(client.post('/blocks/all/read/stored'))
-    base_num = len(retd)
+async def test_batch_patch(client: AsyncClient, block_args: Block, s_publish: Mock):
+    resp = await client.post('/blocks/create', json=block_args.model_dump())
+    assert resp.status_code == 201
 
-    await response(client.post('/blocks/create', json=block_args), 201)
-    retd = await response(client.post('/blocks/all/read/stored'))
-    assert len(retd) == 1 + base_num
-
-    retd = await response(client.post('/blocks/read/stored', json={'id': 'testobj'}))
-    assert retd['id'] == 'testobj'
-
-    await response(client.post('/blocks/read/stored', json={'id': 'flappy'}), 400)
+    resp = await client.post('/blocks/batch/patch',
+                             json=[block_args.model_dump(),
+                                   block_args.model_dump(),
+                                   block_args.model_dump()])
+    assert resp.status_code == 200
+    assert s_publish.call_count == 2
 
 
-async def test_delete_all(app, client: TestClient, block_args):
-    n_sys_obj = len(await response(client.post('/blocks/all/read')))
+async def test_delete(client: AsyncClient, block_args: Block):
+    resp = await client.post('/blocks/create', json=block_args.model_dump())
+    assert resp.status_code == 201
+
+    resp = await client.post('/blocks/delete', json={'id': 'testobj'})
+    assert BlockIdentity.model_validate_json(resp.text).id == 'testobj'
+
+    resp = await client.post('/blocks/read', json={'id': 'testobj'})
+    assert resp.status_code == 400
+
+
+async def test_nid_crud(client: AsyncClient, block_args: Block):
+    resp = await client.post('/blocks/create', json=block_args.model_dump())
+    assert resp.status_code == 201
+
+    created = Block.model_validate_json(resp.text)
+
+    created.data['value'] = 5
+    resp = await client.post('/blocks/read', json={'nid': created.nid})
+    assert resp.status_code == 200
+    resp = await client.post('/blocks/write', json=created.model_dump())
+    assert resp.status_code == 200
+    resp = await client.post('/blocks/delete', json={'nid': created.nid})
+    assert resp.status_code == 200
+
+    resp = await client.post('/blocks/read', json={'nid': created.nid})
+    assert resp.status_code == 500
+
+
+async def test_stored_blocks(client: AsyncClient, block_args: Block):
+    resp = await client.post('/blocks/all/read/stored')
+    base_num = len(resp.json())
+
+    resp = await client.post('/blocks/create', json=block_args.model_dump())
+    assert resp.status_code == 201
+    resp = await client.post('/blocks/all/read/stored')
+    assert len(resp.json()) == 1 + base_num
+
+    resp = await client.post('/blocks/read/stored', json={'id': 'testobj'})
+    assert Block.model_validate_json(resp.text).id == 'testobj'
+
+    resp = await client.post('/blocks/read/stored', json={'id': 'flappy'})
+    assert resp.status_code == 400
+
+
+async def test_delete_all(client: AsyncClient, block_args: Block):
+    resp = await client.post('/blocks/all/read')
+    n_sys_obj = len(resp.json())
 
     for i in range(5):
-        block_args['id'] = f'id{i}'
-        await response(client.post('/blocks/create', json=block_args), 201)
+        block_args.id = f'id{i}'
+        resp = await client.post('/blocks/create', json=block_args.model_dump())
+        assert resp.status_code == 201
 
-    assert len(await response(client.post('/blocks/all/read'))) == 5 + n_sys_obj
-    await response(client.post('/blocks/all/delete'))
-    assert len(await response(client.post('/blocks/all/read'))) == n_sys_obj
+    resp = await client.post('/blocks/all/read')
+    assert len(resp.json()) == n_sys_obj + 5
+
+    resp = await client.post('/blocks/all/delete')
+    assert len(resp.json()) == 5
+
+    resp = await client.post('/blocks/all/read')
+    assert len(resp.json()) == n_sys_obj
 
 
-async def test_cleanup(app, client: TestClient, block_args):
-    store = block_store.fget(app)
-    await response(client.post('/blocks/create', json=block_args), 201)
+async def test_cleanup(client: AsyncClient, block_args: Block):
+    store = datastore_blocks.CV.get()
+    resp = await client.post('/blocks/create', json=block_args.model_dump())
+    assert resp.status_code == 201
+
     store['unused', 456] = {}
-    retv = await response(client.post('/blocks/cleanup'))
-    assert {'id': 'unused', 'nid': 456, 'type': None, 'serviceId': 'test_app'} in retv
+
+    resp = await client.post('/blocks/cleanup')
+    retv = resp.json()
+    expected = {
+        'id': 'unused',
+        'nid': 456,
+        'type': None,
+        'serviceId': 'sparkey',
+    }
+    assert expected in retv
     assert not [v for v in retv if v['id'] == 'testobj']
 
 
-async def test_rename(app, client: TestClient, block_args):
-    await response(client.post('/blocks/create', json=block_args), 201)
-    existing = block_args['id']
+async def test_rename(client: AsyncClient, block_args: Block):
+    resp = await client.post('/blocks/create', json=block_args.model_dump())
+    assert resp.status_code == 201
+    existing = block_args.id
     desired = 'newname'
 
-    await response(client.post('/blocks/read', json={'id': desired}), 400)
-    await response(client.post('/blocks/rename', json={
+    resp = await client.post('/blocks/read', json={'id': desired})
+    assert resp.status_code == 400
+
+    resp = await client.post('/blocks/rename', json={
         'existing': existing,
-        'desired': desired
-    }))
-    await response(client.post('/blocks/read', json={'id': desired}))
+        'desired': desired,
+    })
+    assert resp.status_code == 200
+
+    resp = await client.post('/blocks/read', json={'id': desired})
+    assert resp.status_code == 200
 
 
-async def test_sequence(app, client: TestClient):
+async def test_sequence(client: AsyncClient):
     setpoint_block = {
         'id': 'setpoint',
         'type': 'SetpointSensorPair',
@@ -353,10 +445,14 @@ async def test_sequence(app, client: TestClient):
         }
     }
 
-    await response(client.post('/blocks/create', json=setpoint_block), 201)
-    retd = await response(client.post('/blocks/create', json=sequence_block), 201)
+    resp = await client.post('/blocks/create', json=setpoint_block)
+    assert resp.status_code == 201
 
-    assert retd['data']['instructions'] == [
+    resp = await client.post('/blocks/create', json=sequence_block)
+    assert resp.status_code == 201
+    block = Block.model_validate_json(resp.text)
+
+    assert block.data['instructions'] == [
         '# This is a comment',
         'SET_SETPOINT target=setpoint, setting=40.0C',
         'WAIT_SETPOINT target=setpoint, precision=1.0dC',
@@ -364,40 +460,46 @@ async def test_sequence(app, client: TestClient):
     ]
 
 
-async def test_ping(app, client: TestClient):
-    await response(client.get('/system/ping'))
-    await response(client.post('/system/ping'))
+async def test_ping(client: AsyncClient):
+    resp = await client.get('/system/ping')
+    assert resp.status_code == 200
+    resp = await client.post('/system/ping')
+    assert resp.status_code == 200
 
 
-async def test_settings_api(app, client: TestClient, block_args):
-    await response(client.post('/blocks/create', json=block_args), 201)
+async def test_settings_api(client: AsyncClient, block_args: Block):
+    resp = await client.post('/blocks/create', json=block_args.model_dump())
+    assert resp.status_code == 201
 
-    retd = await response(client.get('/settings/autoconnecting'))
-    assert retd == {'enabled': True}
+    resp = await client.get('/settings/enabled')
+    assert resp.json() == {'enabled': True}
 
-    retd = await response(client.put('/settings/autoconnecting', json={'enabled': False}))
-    assert retd == {'enabled': False}
-    retd = await response(client.get('/settings/autoconnecting'))
-    assert retd == {'enabled': False}
+    resp = await client.put('/settings/enabled', json={'enabled': False})
+    assert resp.json() == {'enabled': False}
 
-
-async def test_discover(app, client: TestClient):
-    resp = await response(client.post('/blocks/discover'))
-    assert resp == []
+    resp = await client.get('/settings/enabled')
+    assert resp.json() == {'enabled': False}
 
 
-async def test_validate(app, client: TestClient, block_args):
+async def test_discover(client: AsyncClient):
+    resp = await client.post('/blocks/discover')
+    assert resp.json() == []
+
+
+async def test_validate(client: AsyncClient, block_args: Block):
     validate_args = {
-        'type': block_args['type'],
-        'data': block_args['data'],
+        'type': block_args.type,
+        'data': block_args.data,
     }
-    await response(client.post('/blocks/validate', json=validate_args))
+    resp = await client.post('/blocks/validate', json=validate_args)
+    assert resp.status_code == 200
 
     invalid_data_obj = {
-        'type': block_args['type'],
-        'data': {**block_args['data'], 'invalid': True}
+        'type': block_args.type,
+        'data': {**block_args.data, 'invalid': True}
     }
-    await response(client.post('/blocks/validate', json=invalid_data_obj), 400)
+    resp = await client.post('/blocks/validate', json=invalid_data_obj)
+    assert resp.status_code == 400
 
     invalid_link_obj = {
         'type': 'SetpointSensorPair',
@@ -410,102 +512,116 @@ async def test_validate(app, client: TestClient, block_args):
             'filterThreshold': 2
         }
     }
-    await response(client.post('/blocks/validate', json=invalid_link_obj), 400)
+    resp = await client.post('/blocks/validate', json=invalid_link_obj)
+    assert resp.status_code == 400
 
 
-async def test_backup_save(app, client: TestClient, block_args):
-    retd = await response(client.post('/blocks/backup/save'))
-    base_num = len(retd['blocks'])
+async def test_backup_save(client: AsyncClient, block_args: Block):
+    resp = await client.post('/blocks/backup/save')
+    base_num = len(resp.json()['blocks'])
 
-    await response(client.post('/blocks/create', json=block_args), 201)
-    retd = await response(client.post('/blocks/backup/save'))
-    assert len(retd['blocks']) == 1 + base_num
+    resp = await client.post('/blocks/create', json=block_args.model_dump())
+    assert resp.status_code == 201
+
+    resp = await client.post('/blocks/backup/save')
+    assert len(resp.json()['blocks']) == base_num + 1
 
 
-async def test_backup_load(app, client: TestClient, spark_blocks):
+async def test_backup_load(client: AsyncClient, spark_blocks: list[Block]):
     # reverse the set, to ensure some blocks are written with invalid references
-    data = {
-        'store': [{'keys': [block['id'], block['nid']], 'data': dict()} for block in spark_blocks],
-        'blocks': spark_blocks[::-1],
-    }
-    resp = await response(client.post('/blocks/backup/load', json=data))
-    assert resp == {'messages': []}
+    backup = Backup(
+        store=[TwinKeyEntry(keys=(block.id, block.nid), data={})
+               for block in spark_blocks],
+        blocks=spark_blocks[::-1]
+    )
 
-    resp = await response(client.post('/blocks/all/read'))
+    resp = await client.post('/blocks/backup/load', json=backup.model_dump())
+    assert resp.json() == {'messages': []}
+
+    resp = await client.post('/blocks/all/read')
     ids = ret_ids(spark_blocks)
-    resp_ids = ret_ids(resp)
+    resp_ids = ret_ids(resp.json())
     assert set(ids).issubset(resp_ids)
     assert 'ActiveGroups' not in resp_ids
     assert 'SystemInfo' in resp_ids
 
     # Add an obsolete system block
-    data['blocks'].append({'nid': 1, 'type': 'Groups', 'data': {}})
+    backup.blocks.append(Block(
+        nid=1,
+        type='Groups',
+        data={},
+    ))
 
     # Add an unused store alias
-    data['store'].append({'keys': ['TROLOLOL', 9999], 'data': dict()})
+    backup.store.append(TwinKeyEntry(
+        keys=('TROLOLOL', 9999),
+        data={}))
 
     # Add renamed type to store data
-    data['store'].append({'keys': ['renamed_display_settings', const.DISPLAY_SETTINGS_NID], 'data': dict()})
+    backup.store.append(TwinKeyEntry(
+        keys=('renamed_display_settings', const.DISPLAY_SETTINGS_NID),
+        data={},
+    ))
 
     # Add a Block that will fail to be created, and should be skipped
-    data['blocks'].append({
-        'id': 'derpface',
-        'nid': 500,
-        'type': 'INVALID',
-        'data': {}
-    })
+    backup.blocks.append(Block(
+        id='derpface',
+        nid=500,
+        type='INVALID',
+        data={}
+    ))
 
-    resp = await response(client.post('/blocks/backup/load', json=data))
-    resp = resp['messages']
+    resp = await client.post('/blocks/backup/load', json=backup.model_dump())
+    resp = resp.json()['messages']
     assert len(resp) == 2
     assert 'derpface' in resp[0]
     assert 'TROLOLOL' in resp[1]
 
-    resp = await response(client.post('/blocks/all/read'))
-    resp_ids = ret_ids(resp)
+    resp = await client.post('/blocks/all/read')
+    resp_ids = ret_ids(resp.json())
     assert 'renamed_display_settings' in resp_ids
     assert 'derpface' not in resp_ids
 
 
-async def test_backup_stored(app, client: TestClient, block_args):
-    portable = await response(client.post('/blocks/backup/save'))
-    saved_stored = await response(client.post('/blocks/backup/stored/save', json={
-        'name': 'stored',
-    }))
+async def test_backup_stored(client: AsyncClient, block_args: Block):
+    resp = await client.post('/blocks/backup/save')
+    portable = Backup.model_validate_json(resp.text)
 
-    assert saved_stored['blocks']
-    assert saved_stored['store']
-    assert saved_stored['timestamp']
-    assert saved_stored['firmware']
-    assert saved_stored['device']
+    resp = await client.post('/blocks/backup/stored/save', json={'name': 'stored'})
+    saved_stored = Backup.model_validate_json(resp.text)
 
-    assert len(portable['blocks']) == len(saved_stored['blocks'])
+    assert len(portable.blocks) == len(saved_stored.blocks)
 
-    download_stored = await response(client.post('/blocks/backup/stored/download', json={
-        'name': 'stored',
-    }))
+    resp = await client.post('/blocks/backup/stored/download', json={'name': 'stored'})
+    download_stored = Backup.model_validate_json(resp.text)
+
     assert saved_stored == download_stored
 
-    upload_stored = await response(client.post('/blocks/backup/stored/upload', json=download_stored))
+    resp = await client.post('/blocks/backup/stored/upload', json=download_stored.model_dump())
+    upload_stored = Backup.model_validate_json(resp.text)
+
     assert saved_stored == upload_stored
 
-    download_stored['name'] = None
-    await response(client.post('/blocks/backup/stored/upload', json=download_stored), status=400)
+    download_stored.name = None
+    resp = await client.post('/blocks/backup/stored/upload', json=download_stored.model_dump())
+    assert resp.status_code == 400
 
-    all_stored = await response(client.post('/blocks/backup/stored/all'))
-    assert all_stored == [{'name': 'stored'}]
+    resp = await client.post('/blocks/backup/stored/all')
+    assert resp.json() == [{'name': 'stored'}]
 
     # Create block not in backup
     # Then restore backup
-    await response(client.post('/blocks/create', json=block_args), 201)
-    await response(client.post('/blocks/backup/stored/load', json={
-        'name': 'stored',
-    }))
-    ids = ret_ids(await response(client.post('/blocks/all/read')))
-    assert block_args['id'] not in ids
+    resp = await client.post('/blocks/create', json=block_args.model_dump())
+    assert resp.status_code == 201
+
+    resp = await client.post('/blocks/backup/stored/load', json={'name': 'stored'})
+    assert resp.status_code == 200
+
+    resp = await client.post('/blocks/all/read')
+    assert block_args.id not in ret_ids(resp.json())
 
 
-async def test_read_all_logged(app, client: TestClient):
+async def test_read_all_logged(client: AsyncClient):
     args = {
         'id': 'pwm',
         'type': 'ActuatorPwm',
@@ -515,9 +631,14 @@ async def test_read_all_logged(app, client: TestClient):
         }
     }
 
-    await response(client.post('/blocks/create', json=args), 201)
-    all = await response(client.post('/blocks/all/read'))
-    logged = await response(client.post('/blocks/all/read/logged'))
+    resp = await client.post('/blocks/create', json=args)
+    assert resp.status_code == 201
+
+    resp = await client.post('/blocks/all/read')
+    all = resp.json()
+
+    resp = await client.post('/blocks/all/read/logged')
+    logged = resp.json()
 
     # list_objects returns everything
     obj = all[-1]
@@ -536,32 +657,34 @@ async def test_read_all_logged(app, client: TestClient):
     assert 'period' not in obj_data
 
 
-async def test_system_status(app, client: TestClient):
-    await service_status.wait_synchronized(app)
-    resp = await response(client.get('/system/status'))
+async def test_system_status(client: AsyncClient):
+    config = utils.get_config()
+    fw_config = utils.get_fw_config()
+    resp = await client.get('/system/status')
+    desc = resp.json()
 
     firmware_desc = {
-        'firmware_version': ANY,
-        'proto_version': ANY,
-        'firmware_date': ANY,
-        'proto_date': ANY,
+        'firmware_version': fw_config.firmware_version,
+        'proto_version': fw_config.proto_version,
+        'firmware_date': fw_config.firmware_date,
+        'proto_date': fw_config.proto_date,
     }
 
     device_desc = {
-        'device_id': ANY,
+        'device_id': config.device_id,
     }
 
-    assert resp == {
+    assert desc == {
         'enabled': True,
         'service': {
-            'name': 'test_app',
+            'name': 'sparkey',
             'firmware': firmware_desc,
             'device': device_desc,
         },
         'controller': {
             'system_version': ANY,
             'platform': ANY,
-            'reset_reason': ANY,
+            'reset_reason': 'NONE',
             'firmware': firmware_desc,
             'device': device_desc,
         },
@@ -572,26 +695,42 @@ async def test_system_status(app, client: TestClient):
         'identity_error': None,
     }
 
-    service_status.set_disconnected(app)
-    await asyncio.sleep(0.01)
-    resp = await response(client.get('/system/status'))
-    assert resp['connection_status'] == 'DISCONNECTED'
-    assert resp['controller'] is None
+    await command.CV.get().end_connection()
+
+    resp = await client.get('/system/status')
+    desc = resp.json()
+
+    assert desc['connection_status'] == 'DISCONNECTED'
+    assert desc['controller'] is None
 
 
-async def test_system_resets(app, client: TestClient, mocker):
-    sys_api = system_api.__name__
-    mocker.patch(sys_api + '.shutdown_soon', AsyncMock())
+async def test_system_resets(client: AsyncClient, m_kill: Mock):
+    await client.post('/system/reboot/service')
+    m_kill.assert_called_once()
 
-    await response(client.post('/system/reboot/service'))
-    system_api.shutdown_soon.assert_awaited()
-
-    await response(client.post('/system/reboot/controller'))
-    await response(client.post('/system/clear_wifi'))
-    await response(client.post('/system/factory_reset'))
+    await client.post('/system/reboot/controller')
+    await client.post('/system/clear_wifi')
+    await client.post('/system/factory_reset')
 
 
-async def test_debug_encode_request(app, client: TestClient):
+async def test_system_flash(client: AsyncClient, m_kill: Mock):
+    state = state_machine.CV.get()
+
+    resp = await client.post('/system/flash')
+    assert resp.status_code == 424  # incompatible firmware
+    assert m_kill.call_count == 0
+    assert state.is_synchronized()
+
+    desc = state.desc()
+    desc.connection_kind = 'TCP'
+    desc.controller.platform == 'dummy'  # not handled, but also not an error
+    resp = await client.post('/system/flash')
+    assert resp.status_code == 200
+    assert m_kill.call_count == 1
+    assert not state.is_connected()
+
+
+async def test_debug_encode_request(client: AsyncClient):
     payload = DecodedPayload(
         blockId=123,
         blockType='TempSensorOneWire',
@@ -602,9 +741,8 @@ async def test_debug_encode_request(app, client: TestClient):
         }
     )
 
-    retv = await response(client.post('/_debug/encode_payload',
-                                      json=payload.clean_dict()))
-    payload = EncodedPayload(**retv)
+    resp = await client.post('/_debug/encode_payload', json=payload.model_dump(mode='json'))
+    payload = EncodedPayload.model_validate_json(resp.text)
 
     req = IntermediateRequest(
         msgId=1,
@@ -612,24 +750,22 @@ async def test_debug_encode_request(app, client: TestClient):
         payload=payload,
     )
 
-    retv = await response(client.post('/_debug/encode_request',
-                                      json=req.clean_dict()))
-    assert retv['message']
+    resp = await client.post('/_debug/encode_request', json=req.model_dump(mode='json'))
+    msg = EncodedMessage.model_validate_json(resp.text)
 
-    retv = await response(client.post('/_debug/decode_request',
-                                      json=retv))
-    req = IntermediateRequest(**retv)
+    resp = await client.post('/_debug/decode_request', json=msg.model_dump(mode='json'))
+    req = IntermediateRequest.model_validate_json(resp.text)
+
     assert req.opcode == Opcode.BLOCK_WRITE
 
-    retv = await response(client.post('/_debug/decode_payload',
-                                      json=req.payload.clean_dict()))
-    payload = DecodedPayload(**retv)
+    resp = await client.post('/_debug/decode_payload', json=req.payload.model_dump(mode='json'))
+    payload = DecodedPayload.model_validate_json(resp.text)
 
     assert payload.content['value']['value'] == 0  # Readonly value
     assert payload.content['offset']['value'] == 20
 
 
-async def test_debug_encode_response(app, client: TestClient):
+async def test_debug_encode_response(client: AsyncClient):
     payload = DecodedPayload(
         blockId=123,
         blockType='TempSensorOneWire',
@@ -639,27 +775,27 @@ async def test_debug_encode_response(app, client: TestClient):
             'address': 'FF'
         }
     )
-    retv = await response(client.post('/_debug/encode_payload',
-                                      json=payload.clean_dict()))
-    payload = EncodedPayload(**retv)
 
-    resp = IntermediateResponse(
+    resp = await client.post('/_debug/encode_payload', json=payload.model_dump(mode='json'))
+    payload = EncodedPayload.model_validate_json(resp.text)
+
+    iresp = IntermediateResponse(
         msgId=1,
         error=ErrorCode.INVALID_BLOCK,
         payload=[payload],
     )
-    retv = await response(client.post('/_debug/encode_response',
-                                      json=resp.clean_dict()))
-    assert retv['message']
+    resp = await client.post('/_debug/encode_response', json=iresp.model_dump(mode='json'))
+    msg = EncodedMessage.model_validate_json(resp.text)
 
-    retv = await response(client.post('/_debug/decode_response',
-                                      json=retv))
-    resp = IntermediateResponse(**retv)
-    assert resp.error == ErrorCode.INVALID_BLOCK
+    resp = await client.post('/_debug/decode_response', json=msg.model_dump(mode='json'))
+    iresp = IntermediateResponse.model_validate_json(resp.text)
 
-    retv = await response(client.post('/_debug/decode_payload',
-                                      json=resp.payload[0].clean_dict()))
-    payload = DecodedPayload(**retv)
+    assert iresp.error == ErrorCode.INVALID_BLOCK
+    assert len(iresp.payload) == 1
+
+    payload = iresp.payload[0]
+    resp = await client.post('/_debug/decode_payload', json=payload.model_dump(mode='json'))
+    payload = DecodedPayload.model_validate_json(resp.text)
 
     assert payload.content['value']['value'] == 0  # Readonly value
     assert payload.content['offset']['value'] == 20

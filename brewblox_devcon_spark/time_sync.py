@@ -4,50 +4,52 @@ This is a backup mechanism to NTP, used if the controller has no internet access
 """
 
 import asyncio
-from datetime import datetime
+import logging
+from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
 
-from aiohttp import web
-from brewblox_service import brewblox_logger, features, repeater, strex
+from . import const, control, state_machine, utils
+from .models import Block
 
-from brewblox_devcon_spark import const, controller, service_status
-from brewblox_devcon_spark.models import Block, ServiceConfig
-
-LOGGER = brewblox_logger(__name__)
-ERROR_INTERVAL_S = 10
+LOGGER = logging.getLogger(__name__)
 
 
-class TimeSync(repeater.RepeaterFeature):
+class TimeSync:
 
-    def __init__(self, app: web.Application):
-        super().__init__(app)
-
-        config: ServiceConfig = app['config']
-        self.interval_s = config.time_sync_interval
-        self.enabled = self.interval_s > 0
-
-    async def prepare(self):
-        if not self.enabled:
-            raise repeater.RepeaterCancelled()
+    def __init__(self) -> None:
+        self.config = utils.get_config()
+        self.state = state_machine.CV.get()
+        self.ctrl = control.CV.get()
 
     async def run(self):
-        try:
-            await service_status.wait_synchronized(self.app)
-            await controller.fget(self.app).patch_block(Block(
-                nid=const.SYSINFO_NID,
-                type='SysInfo',
-                data={'systemTime': datetime.now()},
-            ))
-            await asyncio.sleep(self.interval_s)
+        await self.state.wait_synchronized()
+        now = datetime.now()
+        await self.ctrl.patch_block(Block(
+            nid=const.SYSINFO_NID,
+            type=const.SYSINFO_BLOCK_TYPE,
+            data={'systemTime': now},
+        ))
+        LOGGER.debug(f'Time sync: {now=}')
 
-        except Exception as ex:
-            LOGGER.debug(f'{self} exception: {strex(ex)}')
-            await asyncio.sleep(ERROR_INTERVAL_S)
-            raise ex
+    async def repeat(self):
+        interval = self.config.time_sync_interval
+        retry_interval = self.config.time_sync_retry_interval
+
+        if interval <= timedelta():
+            LOGGER.warning(f'Cancelling time sync (interval={interval})')
+            return
+
+        while True:
+            try:
+                await self.run()
+                await asyncio.sleep(interval.total_seconds())
+            except Exception as ex:
+                LOGGER.error(utils.strex(ex), exc_info=self.config.debug)
+                await asyncio.sleep(retry_interval.total_seconds())
 
 
-def setup(app: web.Application):
-    features.add(app, TimeSync(app))
-
-
-def fget(app: web.Application) -> TimeSync:
-    return features.get(app, TimeSync)
+@asynccontextmanager
+async def lifespan():
+    sync = TimeSync()
+    async with utils.task_context(sync.repeat()):
+        yield

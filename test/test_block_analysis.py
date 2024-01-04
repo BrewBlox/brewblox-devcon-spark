@@ -2,13 +2,11 @@
 Tests brewblox_devcon_spark.block_analysis
 """
 
-from typing import Optional
-
 from brewblox_devcon_spark import block_analysis
-from brewblox_devcon_spark.models import Block
+from brewblox_devcon_spark.models import Block, BlockClaim, BlockRelation
 
 
-def blox_link(id: Optional[str], blockType: Optional[str] = None):
+def blox_link(id: str | None, blockType: str | None = None):
     return {
         '__bloxtype': 'Link',
         'id': id,
@@ -16,7 +14,7 @@ def blox_link(id: Optional[str], blockType: Optional[str] = None):
     }
 
 
-def blox_qty(value: Optional[float], unit: str = None):
+def blox_qty(value: float | None, unit: str = None):
     return {
         '__bloxtype': 'Quantity',
         'value': value,
@@ -24,11 +22,11 @@ def blox_qty(value: Optional[float], unit: str = None):
     }
 
 
-def temp_qty(value: Optional[float]):
+def temp_qty(value: float | None):
     return blox_qty(value, 'degC')
 
 
-def delta_temp_qty(value: Optional[float]):
+def delta_temp_qty(value: float | None):
     return blox_qty(value, 'delta_degC')
 
 
@@ -278,42 +276,62 @@ def make_blocks() -> list[Block]:
 def test_calculate_relations():
     blocks = make_blocks()
     result = block_analysis.calculate_relations(blocks)
-    result = sorted(result, key=lambda v: v['source'] + ' ' + v['target'])
+    result = sorted(result, key=lambda v: f'{v.source} {v.target}')
     assert result == [
-        {'source': 'Cool Actuator', 'target': 'Spark Pins', 'relation': ['hwDevice']},
-        {'source': 'Cool PID', 'target': 'Cool PWM', 'relation': ['outputId'], 'claimed': True},
-        {
-            'source': 'Cool PWM',
-            'target': 'Balancer',
-            'relation': [
-                'constrainedBy',
-                'constraints',
-                '0',
-                'balanced',
-                'balancerId',
-            ],
-        },
-        {'source': 'Cool PWM', 'target': 'Cool Actuator', 'relation': ['actuatorId'], 'claimed': True},
-        {'source': 'Heat Actuator', 'target': 'Spark Pins', 'relation': ['hwDevice']},
-        {'source': 'Heat PID', 'target': 'Heat PWM', 'relation': ['outputId'], 'claimed': True},
-        {'source': 'Heat PWM', 'target': 'Heat Actuator', 'relation': ['actuatorId'], 'claimed': True},
-        {'source': 'Sensor', 'target': 'Setpoint', 'relation': ['sensorId']},
-        {'source': 'Setpoint', 'target': 'Cool PID', 'relation': ['inputId']},
-        {'source': 'Setpoint', 'target': 'Heat PID', 'relation': ['inputId']},
+        BlockRelation(source='Cool Actuator',
+                      target='Spark Pins',
+                      relation=['hwDevice']),
+        BlockRelation(source='Cool PID',
+                      target='Cool PWM',
+                      claimed=True,
+                      relation=['outputId']),
+        BlockRelation(source='Cool PWM',
+                      target='Balancer',
+                      relation=[
+                          'constrainedBy',
+                          'constraints',
+                          '0',
+                          'balanced',
+                          'balancerId',
+                      ]),
+        BlockRelation(source='Cool PWM',
+                      target='Cool Actuator',
+                      claimed=True,
+                      relation=['actuatorId']),
+        BlockRelation(source='Heat Actuator',
+                      target='Spark Pins',
+                      relation=['hwDevice']),
+        BlockRelation(source='Heat PID',
+                      target='Heat PWM',
+                      claimed=True,
+                      relation=['outputId']),
+        BlockRelation(source='Heat PWM',
+                      target='Heat Actuator',
+                      claimed=True,
+                      relation=['actuatorId']),
+        BlockRelation(source='Sensor',
+                      target='Setpoint',
+                      relation=['sensorId']),
+        BlockRelation(source='Setpoint',
+                      target='Cool PID',
+                      relation=['inputId']),
+        BlockRelation(source='Setpoint',
+                      target='Heat PID',
+                      relation=['inputId']),
     ]
 
 
 def test_calculate_claims():
     blocks = make_blocks()
     result = block_analysis.calculate_claims(blocks)
-    result = sorted(result, key=lambda v: v['target'] + ' ' + v['source'])
+    result = sorted(result, key=lambda v: f'{v.target} {v.source}')
     assert result == [
-        {'target': 'Cool Actuator', 'source': 'Cool PID', 'intermediate': ['Cool PWM']},
-        {'target': 'Cool PWM', 'source': 'Cool PID', 'intermediate': []},
-        {'target': 'Heat Actuator', 'source': 'Heat PID', 'intermediate': ['Heat PWM']},
-        {'target': 'Heat PWM', 'source': 'Heat PID', 'intermediate': []},
-        {'target': 'Spark Pins', 'source': 'Cool PID', 'intermediate': ['Cool Actuator', 'Cool PWM']},
-        {'target': 'Spark Pins', 'source': 'Heat PID', 'intermediate': ['Heat Actuator', 'Heat PWM']},
+        BlockClaim(target='Cool Actuator', source='Cool PID', intermediate=['Cool PWM']),
+        BlockClaim(target='Cool PWM', source='Cool PID', intermediate=[]),
+        BlockClaim(target='Heat Actuator', source='Heat PID', intermediate=['Heat PWM']),
+        BlockClaim(target='Heat PWM', source='Heat PID', intermediate=[]),
+        BlockClaim(target='Spark Pins', source='Cool PID', intermediate=['Cool Actuator', 'Cool PWM']),
+        BlockClaim(target='Spark Pins', source='Heat PID', intermediate=['Heat Actuator', 'Heat PWM']),
     ]
 
 
@@ -342,9 +360,9 @@ def test_calculate_circular_claims():
         ),
     ]
     result = block_analysis.calculate_claims(blocks)
-    result = sorted(result, key=lambda v: v['target'])
+    result = sorted(result, key=lambda v: v.target)
     assert result == [
-        {'target': 'block-1', 'source': 'block-1', 'intermediate': ['block-3', 'block-2']},
-        {'target': 'block-2', 'source': 'block-2', 'intermediate': ['block-1', 'block-3']},
-        {'target': 'block-3', 'source': 'block-3', 'intermediate': ['block-2', 'block-1']},
+        BlockClaim(target='block-1', source='block-1', intermediate=['block-3', 'block-2']),
+        BlockClaim(target='block-2', source='block-2', intermediate=['block-1', 'block-3']),
+        BlockClaim(target='block-3', source='block-3', intermediate=['block-2', 'block-1']),
     ]
