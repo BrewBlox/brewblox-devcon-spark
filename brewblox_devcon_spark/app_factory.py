@@ -94,7 +94,6 @@ async def lifespan(app: FastAPI):
     async with AsyncExitStack() as stack:
         await stack.enter_async_context(mqtt.lifespan())
         await stack.enter_async_context(datastore_settings.lifespan())
-        await stack.enter_async_context(datastore_blocks.lifespan())
         await stack.enter_async_context(connection.lifespan())
         await stack.enter_async_context(synchronization.lifespan())
         await stack.enter_async_context(broadcast.lifespan())

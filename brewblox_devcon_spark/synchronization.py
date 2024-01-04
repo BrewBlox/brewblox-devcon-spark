@@ -42,7 +42,6 @@ The synchronization process consists of:
 
 import asyncio
 import logging
-import traceback
 from contextlib import asynccontextmanager
 from functools import wraps
 
@@ -82,18 +81,6 @@ class StateSynchronizer:
         self.converter = codec.unit_conversion.CV.get()
         self.commander = command.CV.get()
 
-    @property
-    def device_name(self) -> str:
-        # Simulation services are identified by service name.
-        # This prevents data conflicts when a simulation service
-        # is reconfigured to start interacting with a controller.
-        desc = self.state.desc()
-
-        if desc.connection_kind == 'SIM':
-            return f'simulator__{self.config.name}'
-
-        return desc.controller.device.device_id
-
     @subroutine('apply global settings')
     async def _apply_global_settings(self):
         await self.set_converter_units()
@@ -130,14 +117,13 @@ class StateSynchronizer:
 
     @subroutine('sync block store')
     async def _sync_block_store(self):
-        await self.block_store.load(self.device_name)
+        await self.block_store.load()
 
     @subroutine('sync controller settings')
     async def _sync_sysinfo(self):
         await self.set_sysinfo_settings()
 
     async def set_converter_units(self):
-        LOGGER.info('\n'.join(traceback.format_tb(None)))
         self.converter.temperature = self.settings_store.unit_settings.temperature
         LOGGER.info(f'Service temperature unit set to {self.converter.temperature}')
 

@@ -69,7 +69,7 @@ class SparkController:
         self.config = utils.get_config()
         self.state = state_machine.CV.get()
         self.cmder = command.CV.get()
-        self.store = datastore_blocks.CV.get()
+        self.block_store = datastore_blocks.CV.get()
 
         self._discovery_lock = asyncio.Lock()
         self._conn_check_lock = asyncio.Lock()
@@ -79,13 +79,13 @@ class SparkController:
             raise exceptions.InvalidId(SID_RULES)
         if next((keys for keys in const.SYS_OBJECT_KEYS if sid == keys[0]), None):
             raise exceptions.InvalidId(f'Block ID `{sid}` is reserved for system objects')
-        if (sid, None) in self.store:
+        if (sid, None) in self.block_store:
             raise exceptions.ExistingId(f'Block ID `{sid}` is already in use')
 
     def _assign_sid(self, blockType: str):
         for i in itertools.count(start=1):  # pragma: no cover
             name = f'{const.GENERATED_ID_PREFIX}{blockType}-{i}'
-            if (name, None) not in self.store:
+            if (name, None) not in self.block_store:
                 return name
 
     def _find_nid(self, sid: str, blockType: str) -> int:
@@ -96,7 +96,7 @@ class SparkController:
             return int(sid)
 
         try:
-            return self.store.right_key(sid)
+            return self.block_store.right_key(sid)
         except KeyError:
             raise exceptions.UnknownId(f'Block ID `{sid}` not found. type={blockType}')
 
@@ -108,11 +108,11 @@ class SparkController:
             raise exceptions.DecodeException(f'Expected numeric block ID, got string `{nid}`')
 
         try:
-            sid = self.store.left_key(nid)
+            sid = self.block_store.left_key(nid)
         except KeyError:
             # If service ID not found, randomly generate one
             sid = self._assign_sid(blockType)
-            self.store[sid, nid] = dict()
+            self.block_store[sid, nid] = dict()
 
         return sid
 
@@ -154,7 +154,7 @@ class SparkController:
 
         if nid is None:
             try:
-                nid = self.store.right_key(sid)
+                nid = self.block_store.right_key(sid)
             except KeyError:
                 raise exceptions.UnknownId(f'Block ID `{sid}` not found. type={block.type}')
 
@@ -169,7 +169,7 @@ class SparkController:
 
         if nid is None:
             try:
-                nid = self.store.right_key(sid) if find_nid else 0
+                nid = self.block_store.right_key(sid) if find_nid else 0
             except KeyError:
                 raise exceptions.UnknownId(f'Block ID `{sid}` not found. type={block.type}')
 
@@ -223,7 +223,7 @@ class SparkController:
                 self.config.command_timeout.total_seconds())
 
         except asyncio.TimeoutError:
-            raise exceptions.ConnectionException('Not connected')
+            raise exceptions.NotConnected('Timed out waiting for synchronized state')
 
         try:
             yield
@@ -236,6 +236,9 @@ class SparkController:
         except Exception as ex:
             LOGGER.debug(f'Failed to execute {desc}: {utils.strex(ex)}')
             raise ex
+
+        finally:
+            asyncio.create_task(self.block_store.flush())
 
     async def noop(self) -> None:
         """
@@ -376,20 +379,20 @@ class SparkController:
             # Avoid race conditions for the desired sid
             # Claim it with a placeholder until the spark create call returns
             placeholder_nid = object()
-            self.store[desired_sid, placeholder_nid] = 'PLACEHOLDER'
+            self.block_store[desired_sid, placeholder_nid] = 'PLACEHOLDER'
 
             try:
                 block = await self.cmder.create_block(block)
             finally:
-                del self.store[desired_sid, placeholder_nid]
+                del self.block_store[desired_sid, placeholder_nid]
 
             # It's possible there is a leftover entry with the generated nid
             # In this case, the newly created entry takes precedence
             with suppress(KeyError):
-                del self.store[None, block.nid]
+                del self.block_store[None, block.nid]
 
             # The placeholder is always removed - add real entry if create was ok
-            self.store[desired_sid, block.nid] = dict()
+            self.block_store[desired_sid, block.nid] = dict()
 
             block = self._to_block(block)
             return block
@@ -414,8 +417,8 @@ class SparkController:
             await self.cmder.delete_block(block)
 
             nid = block.nid
-            sid = self.store.left_key(nid)
-            del self.store[sid, nid]
+            sid = self.block_store.left_key(nid)
+            del self.block_store[sid, nid]
             ident = BlockIdentity(
                 id=sid,
                 nid=nid,
@@ -517,7 +520,7 @@ class SparkController:
         async with self._execute('Remove all blocks'):
             blocks = await self.cmder.clear_blocks()
             identities = [self._to_block_identity(v) for v in blocks]
-            self.store.clear()
+            self.block_store.clear()
             await self.cmder.write_block(FirmwareBlock(
                 nid=const.DISPLAY_SETTINGS_NID,
                 type='DisplaySettings',
@@ -540,10 +543,10 @@ class SparkController:
                 The new sid + nid.
         """
         self._validate_sid(change.desired)
-        self.store.rename((change.existing, None), (change.desired, None))
+        self.block_store.rename((change.existing, None), (change.desired, None))
         return BlockIdentity(
             id=change.desired,
-            nid=self.store.right_key(change.desired),
+            nid=self.block_store.right_key(change.desired),
             serviceId=self.config.name
         )
 
@@ -559,10 +562,10 @@ class SparkController:
         actual = [block.id
                   for block in await self.read_all_blocks()]
         unused = [(sid, nid)
-                  for (sid, nid) in self.store
+                  for (sid, nid) in self.block_store
                   if sid not in actual]
         for (sid, nid) in unused.copy():
-            del self.store[sid, nid]
+            del self.block_store[sid, nid]
         return [BlockIdentity(id=sid, nid=nid, serviceId=self.config.name)
                 for (sid, nid) in unused]
 
@@ -576,7 +579,7 @@ class SparkController:
                 JSON-ready backup data, compatible with apply_backup().
         """
         store_data = [{'keys': keys, 'data': content}
-                      for keys, content in self.store.items()]
+                      for keys, content in self.block_store.items()]
         blocks_data = await self.read_all_stored_blocks()
         timestamp = datetime\
             .now(tz=timezone.utc)\
@@ -624,11 +627,11 @@ class SparkController:
             for entry in exported.store:
 
                 try:
-                    self.store[entry.keys] = entry.data
+                    self.block_store[entry.keys] = entry.data
                 except twinkeydict.TwinKeyError:
                     sid, nid = entry.keys
-                    self.store.rename((None, nid), (sid, None))
-                    self.store[entry.keys] = entry.data
+                    self.block_store.rename((None, nid), (sid, None))
+                    self.block_store[entry.keys] = entry.data
 
             # Now either create or write the objects, depending on whether they are system objects
             for block in exported.blocks:
@@ -648,12 +651,12 @@ class SparkController:
 
             used_nids = [b.nid for b in await self.read_all_blocks()]
             unused = [
-                (sid, nid) for (sid, nid) in self.store
+                (sid, nid) for (sid, nid) in self.block_store
                 if nid >= const.USER_NID_START
                 and nid not in used_nids
             ]
             for sid, nid in unused:
-                del self.store[sid, nid]
+                del self.block_store[sid, nid]
                 message = f'Removed unused alias [{sid},{nid}]'
                 LOGGER.info(message)
                 error_log.append(message)

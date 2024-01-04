@@ -132,22 +132,6 @@ async def test_handshake_timeout(mocker: MockerFixture):
         await connect()
 
 
-async def test_device_name():
-    config = utils.get_config()
-    s = synchronization.StateSynchronizer()
-
-    config.mock = True
-    config.simulation = False
-    await connect()
-    assert s.device_name == config.device_id
-    await disconnect()
-
-    config.mock = False
-    config.simulation = True
-    await connect()
-    assert s.device_name == f'simulator__{config.name}'
-
-
 async def test_on_global_store_change():
     store = datastore_settings.CV.get()
     sync = synchronization.StateSynchronizer()

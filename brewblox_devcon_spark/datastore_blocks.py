@@ -1,15 +1,14 @@
 """
 Stores sid/nid relations for blocks
 """
-
 import asyncio
 import logging
-from contextlib import asynccontextmanager, suppress
+from contextlib import suppress
 from contextvars import ContextVar
 
 from httpx import AsyncClient
 
-from . import const, utils
+from . import const, exceptions, state_machine, utils
 from .models import (DatastoreSingleQuery, TwinKeyEntriesBox,
                      TwinKeyEntriesValue, TwinKeyEntry)
 from .twinkeydict import TwinKeyDict, TwinKeyError
@@ -29,21 +28,39 @@ class BlockStore(TwinKeyDict[str, int, dict]):
         super().__init__()
 
         self.config = utils.get_config()
+        self.state = state_machine.CV.get()
         self._changed_ev = asyncio.Event()
-        self._doc_id: str = None
+        self._flush_lock = asyncio.Lock()
         self._defaults = defaults
         self._client = AsyncClient(base_url=self.config.datastore_url)
+        self._doc_id: str | None = None
 
-        self.clear()  # inserts defaults
+    def get_doc_id(self) -> str | None:
+        if not self.state.is_acknowledged():
+            return None
 
-    async def load(self, device_id: str):
-        doc_id = f'{device_id}-blocks-db'
+        # Simulation services are identified by service name.
+        # This prevents data conflicts when a simulation service
+        # is reconfigured to start interacting with a controller.
+        desc = self.state.desc()
+        if desc.connection_kind == 'SIM':
+            device_name = f'simulator__{self.config.name}'
+        elif desc.connection_kind == 'MOCK':
+            device_name = f'mock__{self.config.name}'
+        else:
+            device_name = desc.controller.device.device_id
+
+        return f'{device_name}-blocks-db'
+
+    async def load(self):
+        self._doc_id = self.get_doc_id()
         data: list[TwinKeyEntry] = []
 
-        try:
-            self._doc_id = None
+        if not self._doc_id:
+            raise exceptions.NotConnected('Not acknowledged before loading block store')
 
-            query = DatastoreSingleQuery(id=doc_id,
+        try:
+            query = DatastoreSingleQuery(id=self._doc_id,
                                          namespace=const.SERVICE_NAMESPACE)
             content = query.model_dump(mode='json')
             resp = await utils.httpx_retry(lambda: self._client.post('/get', json=content))
@@ -65,44 +82,28 @@ class BlockStore(TwinKeyDict[str, int, dict]):
                     if obj.keys not in self:
                         self.__setitem__(obj.keys, obj.data)
 
-            self._doc_id = doc_id
+            self._changed_ev.clear()
 
-    async def save(self):
+    async def flush(self):
         if not self._doc_id:
-            raise ValueError('Document ID not set - did you forget to call load()?')
+            raise exceptions.NotConnected('Not acknowledged before flushing block store')
 
-        data = [TwinKeyEntry(keys=k, data=v)
-                for k, v in self.items()]
-        box = TwinKeyEntriesBox(
-            value=TwinKeyEntriesValue(
-                id=self._doc_id,
-                namespace=const.SERVICE_NAMESPACE,
-                data=data
+        async with self._flush_lock:
+            if not self._changed_ev.is_set():
+                return
+
+            box = TwinKeyEntriesBox(
+                value=TwinKeyEntriesValue(
+                    id=self._doc_id,
+                    namespace=const.SERVICE_NAMESPACE,
+                    data=[TwinKeyEntry(keys=k, data=v)
+                          for k, v in self.items()]
+                )
             )
-        )
-        await self._client.post('/set',
-                                json=box.model_dump(mode='json'))
-        LOGGER.info(f'Saved {len(data)} block(s)')
-        self._changed_ev.clear()
-
-    async def repeat(self):
-        while True:
-            try:
-                await self._changed_ev.wait()
-                await asyncio.sleep(self.config.datastore_flush_delay.total_seconds())
-                await self.save()
-            except Exception as ex:  # pragma: no cover
-                LOGGER.error(utils.strex(ex), exc_info=self.config.debug)
-
-    async def on_shutdown(self):
-        if not self._doc_id or not self._changed_ev.is_set():
-            return
-
-        try:
-            await asyncio.wait_for(self.save(),
-                                   timeout=self.config.datastore_shutdown_timeout.total_seconds())
-        except Exception as ex:  # pragma: no cover
-            LOGGER.error(utils.strex(ex), exc_info=self.config.debug)
+            self._changed_ev.clear()
+            await self._client.post('/set',
+                                    json=box.model_dump(mode='json'))
+            LOGGER.info(f'Saved {len(box.value.data)} block(s)')
 
     def __setitem__(self, keys: tuple[str, int], item: dict):
         super().__setitem__(keys, item)
@@ -116,14 +117,6 @@ class BlockStore(TwinKeyDict[str, int, dict]):
         super().clear()
         for obj in self._defaults:
             self.__setitem__(obj.keys, obj.data)
-
-
-@asynccontextmanager
-async def lifespan():
-    store = CV.get()
-    async with utils.task_context(store.repeat()):
-        yield
-    await store.on_shutdown()
 
 
 def setup():
