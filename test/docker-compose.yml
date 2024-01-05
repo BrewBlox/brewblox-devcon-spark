@@ -20,4 +20,4 @@ services:
     ports:
       - "5000"
     environment:
-      - BREWBLOX_DEBUG=True
+      - BREWBLOX_HISTORY_DEBUG=True

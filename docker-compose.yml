@@ -6,11 +6,12 @@ services:
 
   victoria:
     image: victoriametrics/victoria-metrics:v1.88.0
-    command: >-
-      --retentionPeriod=100y
-      --influxMeasurementFieldSeparator=/
-      --http.pathPrefix=/victoria
-      --search.latencyOffset=10s
+    command: --envflag.enable=true --envflag.prefix=VM_
+    environment:
+      - VM_retentionPeriod=100y
+      - VM_influxMeasurementFieldSeparator=/
+      - VM_http_pathPrefix=/victoria
+      - VM_search_latencyOffset=10s
 
   redis:
     image: redis:6.0
@@ -36,8 +37,8 @@ services:
         target: /app/entrypoint.sh
     environment:
       - UVICORN_RELOAD=True
-      - BREWBLOX_DEBUG=True
-      - BREWBLOX_TRACE=False
-      - BREWBLOX_SIMULATION=True
+      - BREWBLOX_SPARK_DEBUG=True
+      - BREWBLOX_SPARK_TRACE=False
+      - BREWBLOX_SPARK_SIMULATION=True
     ports:
       - "5000:5000"
