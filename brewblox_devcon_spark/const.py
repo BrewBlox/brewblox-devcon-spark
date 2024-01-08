@@ -28,6 +28,17 @@ SYS_OBJECT_KEYS: list[tuple[str, int]] = [
     ['TouchSettings', TOUCH_SETTINGS_NID],
     ['DisplaySettings', DISPLAY_SETTINGS_NID],
     ['SparkPins', SPARK_PINS_NID],
+    ['GPIO-1', 50], # kvdw blocks below
+    ['GPIO-2', 51],
+    ['ANALOG-1', 52],
+    ['SENSOR-1', 53],
+    ['SENSOR-2', 54],
+    ['SENSOR-3', 55],
+    ['SENSOR-4', 56],
+    ['SENSOR-5', 57],
+    ['SENSOR-6', 58],
+    ['SENSOR-7', 59],
+    ['SENSOR-8', 60],
 ]
 
 # Relevant block types
