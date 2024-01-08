@@ -1,8 +1,3 @@
-"""
-Tests brewblox_devcon_spark.connection.connection_handler
-"""
-
-
 import asyncio
 from datetime import timedelta
 from unittest.mock import AsyncMock, Mock

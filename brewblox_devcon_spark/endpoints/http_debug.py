@@ -1,5 +1,5 @@
 """
-REST API for system debugging
+REST endpoints for system debugging
 """
 
 import logging

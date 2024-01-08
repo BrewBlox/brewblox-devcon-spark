@@ -1,7 +1,3 @@
-"""
-Tests brewblox_devcon_spark.codec.processor
-"""
-
 import pytest
 
 from brewblox_devcon_spark.codec import (DecodeOpts, ProtobufProcessor,

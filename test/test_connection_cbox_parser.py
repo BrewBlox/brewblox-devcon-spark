@@ -1,8 +1,3 @@
-"""
-Tests brewblox_devcon_spark.connection.cbox_parser
-"""
-
-
 from brewblox_devcon_spark.connection.cbox_parser import CboxParser
 
 

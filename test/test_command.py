@@ -1,7 +1,3 @@
-"""
-Tests brewblox_devcon_spark.command
-"""
-
 import asyncio
 from contextlib import asynccontextmanager
 from datetime import timedelta

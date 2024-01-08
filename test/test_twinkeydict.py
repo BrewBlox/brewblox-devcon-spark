@@ -1,8 +1,3 @@
-"""
-Tests brewblox_devcon_spark.simple_store
-"""
-
-
 import pytest
 
 from brewblox_devcon_spark import twinkeydict

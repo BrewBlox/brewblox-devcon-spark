@@ -1,6 +1,3 @@
-"""
-Tests brewblox_devcon_spark.utils
-"""
 import asyncio
 import logging
 from datetime import timedelta

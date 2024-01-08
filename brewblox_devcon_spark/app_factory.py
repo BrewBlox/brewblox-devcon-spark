@@ -7,11 +7,9 @@ from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from fastapi.responses import JSONResponse
 
-from . import (block_backup, broadcast, codec, command, connection, control,
-               datastore_blocks, datastore_settings, mqtt, state_machine,
-               synchronization, time_sync, utils)
-from .api import (backup_api, blocks_api, blocks_mqtt_api, debug_api,
-                  settings_api, sim_api, system_api)
+from . import (block_backup, broadcast, codec, command, connection,
+               datastore_blocks, datastore_settings, endpoints, mqtt,
+               spark_api, state_machine, synchronization, time_sync, utils)
 from .models import ErrorResponse
 
 LOGGER = logging.getLogger(__name__)
@@ -119,9 +117,9 @@ def create_app() -> FastAPI:
     codec.setup()
     connection.setup()
     command.setup()
-    control.setup()
+    spark_api.setup()
     block_backup.setup()
-    blocks_mqtt_api.setup()
+    endpoints.setup()
 
     # Create app
     # OpenApi endpoints are set to /api/doc for backwards compatibility
@@ -135,11 +133,7 @@ def create_app() -> FastAPI:
     add_exception_handlers(app)
 
     # Include all endpoints declared by modules
-    app.include_router(blocks_api.router, prefix=prefix)
-    app.include_router(system_api.router, prefix=prefix)
-    app.include_router(settings_api.router, prefix=prefix)
-    app.include_router(sim_api.router, prefix=prefix)
-    app.include_router(backup_api.router, prefix=prefix)
-    app.include_router(debug_api.router, prefix=prefix)
+    for router in endpoints.routers:
+        app.include_router(router, prefix=prefix)
 
     return app

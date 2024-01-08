@@ -1,7 +1,3 @@
-"""
-Tests brewblox_devcon_spark.codec.bloxfield
-"""
-
 from brewblox_devcon_spark.codec import bloxfield
 
 

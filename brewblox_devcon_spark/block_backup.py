@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from contextvars import ContextVar
 from datetime import datetime, timedelta
 
-from . import control, exceptions, state_machine, utils
+from . import exceptions, spark_api, state_machine, utils
 from .models import Backup, BackupApplyResult, BackupIdentity
 
 LOGGER = logging.getLogger(__name__)
@@ -20,16 +20,16 @@ class BackupStorage:
     def __init__(self):
         self.config = utils.get_config()
         self.state = state_machine.CV.get()
-        self.ctrl = control.CV.get()
+        self.api = spark_api.CV.get()
 
         self.dir = self.config.backup_root_dir / self.config.name
         self.dir.mkdir(mode=0o777, parents=True, exist_ok=True)
 
     async def save_portable(self) -> Backup:
-        return await self.ctrl.make_backup()
+        return await self.api.make_backup()
 
     async def load_portable(self, data: Backup) -> BackupApplyResult:
-        return await self.ctrl.apply_backup(data)
+        return await self.api.apply_backup(data)
 
     async def all(self) -> list[BackupIdentity]:
         return [BackupIdentity(name=f.stem)
@@ -55,14 +55,14 @@ class BackupStorage:
         return data
 
     async def save(self, ident: BackupIdentity):
-        data = await self.ctrl.make_backup()
+        data = await self.api.make_backup()
         data.name = ident.name
         await self.write(data)
         return data
 
     async def load(self, ident: BackupIdentity) -> BackupApplyResult:
         data = await self.read(ident)
-        return await self.ctrl.apply_backup(data)
+        return await self.api.apply_backup(data)
 
     async def run(self):
         if self.state.is_synchronized():
