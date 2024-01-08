@@ -1,7 +1,3 @@
-"""
-Tests brewblox_devcon_spark.backup
-"""
-
 import asyncio
 from contextlib import AsyncExitStack, asynccontextmanager
 from datetime import timedelta
@@ -12,9 +8,9 @@ from fastapi import FastAPI
 from pytest_mock import MockerFixture
 
 from brewblox_devcon_spark import (block_backup, codec, command, connection,
-                                   control, datastore_blocks,
-                                   datastore_settings, mqtt, state_machine,
-                                   synchronization, utils)
+                                   datastore_blocks, datastore_settings, mqtt,
+                                   spark_api, state_machine, synchronization,
+                                   utils)
 from brewblox_devcon_spark.models import Backup, BackupIdentity
 
 TESTED = block_backup.__name__
@@ -42,7 +38,7 @@ def app() -> FastAPI():
     codec.setup()
     connection.setup()
     command.setup()
-    control.setup()
+    spark_api.setup()
     block_backup.setup()
     return FastAPI(lifespan=lifespan)
 
@@ -70,7 +66,7 @@ async def test_inactive():
 async def test_autosave(mocker: MockerFixture):
     state = state_machine.CV.get()
     storage = block_backup.CV.get()
-    ctrl = control.CV.get()
+    api = spark_api.CV.get()
 
     await storage.run()
 
@@ -81,7 +77,7 @@ async def test_autosave(mocker: MockerFixture):
     data = await storage.read(stored[0])
     assert isinstance(data, Backup)
 
-    m_make = mocker.patch.object(ctrl, 'make_backup', autospec=True)
+    m_make = mocker.patch.object(api, 'make_backup', autospec=True)
     m_make.return_value = Backup(blocks=[], store=[])
 
     async with utils.task_context(storage.repeat()) as task:

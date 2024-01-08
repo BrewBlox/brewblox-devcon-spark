@@ -1,7 +1,3 @@
-"""
-Tests brewblox codec
-"""
-
 from contextlib import asynccontextmanager
 
 import pytest

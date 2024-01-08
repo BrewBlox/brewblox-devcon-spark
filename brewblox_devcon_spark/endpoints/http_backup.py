@@ -1,7 +1,6 @@
 """
-REST API for handling backups of controller data
+REST endpoints for handling backups of controller data
 """
-
 
 import logging
 

@@ -1,7 +1,3 @@
-"""
-Tests brewblox_devcon_spark.state_machine
-"""
-
 import pytest
 
 from brewblox_devcon_spark import state_machine, utils

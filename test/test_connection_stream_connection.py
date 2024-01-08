@@ -1,7 +1,3 @@
-"""
-Tests brewblox_devcon_spark.connection.stream_connection.py
-"""
-
 import asyncio
 from typing import Generator
 

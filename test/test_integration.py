@@ -1,7 +1,3 @@
-"""
-Integration tests: API calls against the firmware simulator.
-"""
-
 import asyncio
 from contextlib import AsyncExitStack, asynccontextmanager
 from unittest.mock import ANY, Mock
@@ -12,11 +8,10 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
 from brewblox_devcon_spark import (app_factory, block_backup, codec, command,
-                                   connection, const, control,
-                                   datastore_blocks, datastore_settings, mqtt,
-                                   state_machine, synchronization, utils)
-from brewblox_devcon_spark.api import (backup_api, blocks_api, debug_api,
-                                       settings_api, system_api)
+                                   connection, const, datastore_blocks,
+                                   datastore_settings, endpoints, mqtt,
+                                   spark_api, state_machine, synchronization,
+                                   utils)
 from brewblox_devcon_spark.models import (Backup, Block, BlockIdentity,
                                           DatastoreMultiQuery, DecodedPayload,
                                           EncodedMessage, EncodedPayload,
@@ -89,18 +84,15 @@ def app() -> FastAPI:
     codec.setup()
     connection.setup()
     command.setup()
-    control.setup()
+    spark_api.setup()
     block_backup.setup()
 
     app = FastAPI(lifespan=lifespan)
 
     app_factory.add_exception_handlers(app)
 
-    app.include_router(blocks_api.router)
-    app.include_router(system_api.router)
-    app.include_router(settings_api.router)
-    app.include_router(backup_api.router)
-    app.include_router(debug_api.router)
+    for router in endpoints.routers:
+        app.include_router(router)
 
     return app
 
@@ -134,7 +126,7 @@ async def test_create(client: AsyncClient, block_args: Block):
 
 
 async def test_invalid_input(client: AsyncClient, block_args: Block, mocker: MockerFixture):
-    ctrl = control.CV.get()
+    api = spark_api.CV.get()
 
     # 422 if input fails schema check
     raw = block_args.model_dump()
@@ -157,7 +149,7 @@ async def test_invalid_input(client: AsyncClient, block_args: Block, mocker: Moc
     assert 'validation' not in retv
 
     # We need to simulate some bugs now
-    m = mocker.patch.object(ctrl, 'create_block', autospec=True)
+    m = mocker.patch.object(api, 'create_block', autospec=True)
 
     # 500 if output is invalid
     # This is a programming error
@@ -172,7 +164,7 @@ async def test_invalid_input(client: AsyncClient, block_args: Block, mocker: Moc
 
 
 async def test_invalid_input_prod(client: AsyncClient, block_args: Block, mocker: MockerFixture):
-    ctrl = control.CV.get()
+    api = spark_api.CV.get()
     config = utils.get_config()
     config.debug = False
 
@@ -197,7 +189,7 @@ async def test_invalid_input_prod(client: AsyncClient, block_args: Block, mocker
     assert 'validation' not in retv
 
     # We need to simulate some bugs now
-    m = mocker.patch.object(ctrl, 'create_block', autospec=True)
+    m = mocker.patch.object(api, 'create_block', autospec=True)
 
     # 500 if output is invalid
     # This is a programming error

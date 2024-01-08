@@ -1,7 +1,3 @@
-"""
-Tests brewblox_devcon_spark.block_analysis
-"""
-
 from brewblox_devcon_spark import block_analysis
 from brewblox_devcon_spark.models import Block, BlockClaim, BlockRelation
 

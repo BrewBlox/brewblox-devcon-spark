@@ -1,5 +1,5 @@
 """
-Specific endpoints for using system objects
+REST endpoints for system level blocks and commands
 """
 
 import asyncio
@@ -8,7 +8,8 @@ import logging
 from fastapi import APIRouter, BackgroundTasks
 from httpx import AsyncClient
 
-from .. import command, control, exceptions, mqtt, state_machine, utils, ymodem
+from .. import (command, exceptions, mqtt, spark_api, state_machine, utils,
+                ymodem)
 from ..models import FirmwareFlashResponse, PingResponse, StatusDescription
 
 ESP_URL_FMT = 'http://brewblox.blob.core.windows.net/firmware/{date}-{version}/brewblox-esp32.bin'
@@ -32,7 +33,7 @@ async def system_ping_get() -> PingResponse:
     """
     Ping the controller.
     """
-    await control.CV.get().noop()
+    await spark_api.CV.get().noop()
     return PingResponse()
 
 
@@ -41,7 +42,7 @@ async def system_ping_post() -> PingResponse:
     """
     Ping the controller.
     """
-    await control.CV.get().noop()
+    await spark_api.CV.get().noop()
     return PingResponse()
 
 
@@ -50,7 +51,7 @@ async def system_reboot_controller():
     """
     Reboot the controller.
     """
-    await control.CV.get().reboot()
+    await spark_api.CV.get().reboot()
     return {}
 
 
@@ -69,7 +70,7 @@ async def system_clear_wifi():
     Clear Wifi settings on the controller.
     The controller may reboot or lose connection.
     """
-    await control.CV.get().clear_wifi()
+    await spark_api.CV.get().clear_wifi()
     return {}
 
 
@@ -79,7 +80,7 @@ async def system_factory_reset():
     Factory reset the controller.
     This does not include firmware.
     """
-    await control.CV.get().factory_reset()
+    await spark_api.CV.get().factory_reset()
     return {}
 
 

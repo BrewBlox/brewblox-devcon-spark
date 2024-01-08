@@ -26,7 +26,7 @@ An object ID must adhere to the following rules:
 """
 
 LOGGER = logging.getLogger(__name__)
-CV: ContextVar['SparkController'] = ContextVar('controller.SparkController')
+CV: ContextVar['SparkApi'] = ContextVar('spark_api.SparkApi')
 
 
 def merge(a: dict, b: dict):
@@ -63,7 +63,7 @@ def resolve_data_ids(data: Union[dict, list, tuple],
             resolve_data_ids(v, replacer)
 
 
-class SparkController:
+class SparkApi:
 
     def __init__(self):
         self.config = utils.get_config()
@@ -704,4 +704,4 @@ class SparkController:
 
 
 def setup():
-    CV.set(SparkController())
+    CV.set(SparkApi())

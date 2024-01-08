@@ -1,7 +1,3 @@
-"""
-Tests brewblox_devcon_spark.broadcast
-"""
-
 import asyncio
 from contextlib import AsyncExitStack, asynccontextmanager
 from datetime import timedelta
@@ -13,9 +9,9 @@ from fastapi import FastAPI
 from pytest_mock import MockerFixture
 
 from brewblox_devcon_spark import (broadcast, codec, command, connection,
-                                   control, datastore_blocks,
-                                   datastore_settings, exceptions, mqtt,
-                                   state_machine, synchronization, utils)
+                                   datastore_blocks, datastore_settings,
+                                   exceptions, mqtt, spark_api, state_machine,
+                                   synchronization, utils)
 from brewblox_devcon_spark.connection import mock_connection
 from brewblox_devcon_spark.models import ErrorCode
 
@@ -44,7 +40,7 @@ def app() -> FastAPI():
     codec.setup()
     connection.setup()
     command.setup()
-    control.setup()
+    spark_api.setup()
     return FastAPI(lifespan=lifespan)
 
 

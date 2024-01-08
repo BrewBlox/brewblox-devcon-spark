@@ -1,7 +1,3 @@
-"""
-Tests brewblox_devcon_spark.codec.time_utils
-"""
-
 from datetime import datetime, timedelta, timezone
 
 import pytest

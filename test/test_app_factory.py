@@ -1,6 +1,3 @@
-"""
-Tests brewblox_devcon_spark.app_factory
-"""
 import asyncio
 
 import pytest

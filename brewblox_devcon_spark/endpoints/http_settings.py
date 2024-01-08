@@ -1,7 +1,6 @@
 """
-REST API for persistent settings
+REST endpoints for persistent settings
 """
-
 
 import logging
 

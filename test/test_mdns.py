@@ -1,7 +1,3 @@
-"""
-Tests brewblox_devcon_spark.mdns
-"""
-
 import asyncio
 from datetime import timedelta
 from socket import inet_aton

@@ -1,7 +1,3 @@
-"""
-Tests brewblox_devcon_spark.codec.unit_conversion
-"""
-
 import pytest
 
 from brewblox_devcon_spark.codec import unit_conversion

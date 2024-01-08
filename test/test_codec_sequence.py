@@ -1,7 +1,3 @@
-"""
-Tests brewblox_devcon_spark.codec.sequence
-"""
-
 import pytest
 
 from brewblox_devcon_spark.codec import sequence

@@ -8,7 +8,7 @@ import logging
 from contextlib import asynccontextmanager
 from datetime import timedelta
 
-from . import const, control, mqtt, state_machine, utils
+from . import const, mqtt, spark_api, state_machine, utils
 from .block_analysis import calculate_claims, calculate_relations
 from .models import HistoryEvent, ServiceStateEvent, ServiceStateEventData
 
@@ -19,7 +19,7 @@ class Broadcaster:
 
     def __init__(self):
         self.config = utils.get_config()
-        self.controller = control.CV.get()
+        self.api = spark_api.CV.get()
 
         self.state_topic = f'{self.config.state_topic}/{self.config.name}'
         self.history_topic = f'{self.config.history_topic}/{self.config.name}'
@@ -31,7 +31,7 @@ class Broadcaster:
 
         try:
             if state.is_synchronized():
-                blocks, logged_blocks = await self.controller.read_all_broadcast_blocks()
+                blocks, logged_blocks = await self.api.read_all_broadcast_blocks()
 
                 # Convert list to key/value format suitable for history
                 history_data = {

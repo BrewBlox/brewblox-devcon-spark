@@ -1,7 +1,3 @@
-"""
-Tests brewblox_devcon_spark.time_sync
-"""
-
 import asyncio
 from contextlib import AsyncExitStack, asynccontextmanager
 from datetime import timedelta
@@ -12,10 +8,10 @@ from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from pytest_mock import MockerFixture
 
-from brewblox_devcon_spark import (codec, command, connection, control,
+from brewblox_devcon_spark import (codec, command, connection,
                                    datastore_blocks, datastore_settings, mqtt,
-                                   state_machine, synchronization, time_sync,
-                                   utils)
+                                   spark_api, state_machine, synchronization,
+                                   time_sync, utils)
 
 TESTED = time_sync.__name__
 
@@ -44,7 +40,7 @@ def app() -> FastAPI():
     codec.setup()
     connection.setup()
     command.setup()
-    control.setup()
+    spark_api.setup()
     return FastAPI(lifespan=lifespan)
 
 
@@ -55,7 +51,7 @@ async def manager(manager: LifespanManager):
 
 @pytest.fixture
 def s_patch_block(app: FastAPI, mocker: MockerFixture) -> Mock:
-    s = mocker.spy(control.CV.get(), 'patch_block')
+    s = mocker.spy(spark_api.CV.get(), 'patch_block')
     return s
 
 

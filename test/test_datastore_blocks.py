@@ -1,8 +1,3 @@
-"""
-Tests brewblox_devcon_spark.datastore_blocks
-"""
-
-
 import asyncio
 from datetime import timedelta
 from unittest.mock import ANY

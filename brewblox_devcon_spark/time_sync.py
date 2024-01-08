@@ -8,7 +8,7 @@ import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 
-from . import const, control, state_machine, utils
+from . import const, spark_api, state_machine, utils
 from .models import Block
 
 LOGGER = logging.getLogger(__name__)
@@ -19,12 +19,12 @@ class TimeSync:
     def __init__(self) -> None:
         self.config = utils.get_config()
         self.state = state_machine.CV.get()
-        self.ctrl = control.CV.get()
+        self.api = spark_api.CV.get()
 
     async def run(self):
         await self.state.wait_synchronized()
         now = datetime.now()
-        await self.ctrl.patch_block(Block(
+        await self.api.patch_block(Block(
             nid=const.SYSINFO_NID,
             type=const.SYSINFO_BLOCK_TYPE,
             data={'systemTime': now},

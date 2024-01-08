@@ -1,7 +1,3 @@
-"""
-Tests brewblox_devcon_spark.api.blocks_mqtt_api
-"""
-
 import asyncio
 from contextlib import AsyncExitStack, asynccontextmanager
 
@@ -10,14 +6,14 @@ from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from pytest_mock import MockerFixture
 
-from brewblox_devcon_spark import (codec, command, connection, control,
+from brewblox_devcon_spark import (codec, command, connection,
                                    datastore_blocks, datastore_settings,
-                                   exceptions, mqtt, state_machine,
+                                   exceptions, mqtt, spark_api, state_machine,
                                    synchronization, utils)
-from brewblox_devcon_spark.api import blocks_mqtt_api
+from brewblox_devcon_spark.endpoints import mqtt_blocks
 from brewblox_devcon_spark.models import Block, BlockIdentity
 
-TESTED = blocks_mqtt_api.__name__
+TESTED = mqtt_blocks.__name__
 
 
 @asynccontextmanager
@@ -41,8 +37,8 @@ def app() -> FastAPI:
     codec.setup()
     connection.setup()
     command.setup()
-    control.setup()
-    blocks_mqtt_api.setup()
+    spark_api.setup()
+    mqtt_blocks.setup()
     return FastAPI(lifespan=lifespan)
 
 
@@ -68,7 +64,7 @@ def block_args():
 async def test_crud(mocker: MockerFixture):
     config = utils.get_config()
     mqtt_client = mqtt.CV.get()
-    ctrl = control.CV.get()
+    api = spark_api.CV.get()
 
     def publish(endpoint: str, args: Block | BlockIdentity):
         mqtt_client.publish(config.blocks_topic + endpoint, args.model_dump(mode='json'))
@@ -79,7 +75,7 @@ async def test_crud(mocker: MockerFixture):
         As a side effect, an event is set.
         This allows us to get a callback on function call.
         """
-        func = getattr(ctrl, name)
+        func = getattr(api, name)
         ev = asyncio.Event()
 
         async def wrapper(*args, **kwargs):
@@ -87,7 +83,7 @@ async def test_crud(mocker: MockerFixture):
             ev.set()
             return retv
 
-        setattr(ctrl, name, wrapper)
+        setattr(api, name, wrapper)
         return ev
 
     create_ev = wrap('create_block')
@@ -122,27 +118,27 @@ async def test_crud(mocker: MockerFixture):
     await asyncio.wait_for(create_ev.wait(), timeout=5)
     create_ev.clear()
 
-    assert await ctrl.read_block(BlockIdentity(id=real.id))
+    assert await api.read_block(BlockIdentity(id=real.id))
     with pytest.raises(exceptions.UnknownId):
-        await ctrl.read_block(BlockIdentity(id=dummy.id))
+        await api.read_block(BlockIdentity(id=dummy.id))
 
     publish('/write', dummy)
     publish('/write', real)
     await asyncio.wait_for(write_ev.wait(), timeout=5)
     write_ev.clear()
 
-    assert await ctrl.read_block(BlockIdentity(id=real.id))
+    assert await api.read_block(BlockIdentity(id=real.id))
     with pytest.raises(exceptions.UnknownId):
-        await ctrl.read_block(BlockIdentity(id=dummy.id))
+        await api.read_block(BlockIdentity(id=dummy.id))
 
     publish('/patch', dummy)
     publish('/patch', real)
     await asyncio.wait_for(patch_ev.wait(), timeout=5)
     patch_ev.clear()
 
-    assert await ctrl.read_block(BlockIdentity(id=real.id))
+    assert await api.read_block(BlockIdentity(id=real.id))
     with pytest.raises(exceptions.UnknownId):
-        await ctrl.read_block(BlockIdentity(id=dummy.id))
+        await api.read_block(BlockIdentity(id=dummy.id))
 
     publish('/delete', dummy)
     publish('/delete', real)
@@ -150,9 +146,9 @@ async def test_crud(mocker: MockerFixture):
     delete_ev.clear()
 
     with pytest.raises(exceptions.UnknownId):
-        assert await ctrl.read_block(BlockIdentity(id=real.id))
+        assert await api.read_block(BlockIdentity(id=real.id))
     with pytest.raises(exceptions.UnknownId):
-        await ctrl.read_block(BlockIdentity(id=dummy.id))
+        await api.read_block(BlockIdentity(id=dummy.id))
 
     assert not create_ev.is_set()
     assert not write_ev.is_set()
