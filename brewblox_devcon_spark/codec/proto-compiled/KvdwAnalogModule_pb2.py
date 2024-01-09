@@ -15,7 +15,7 @@ import brewblox_pb2 as brewblox__pb2
 import nanopb_pb2 as nanopb__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x16KvdwAnalogModule.proto\x12\x15\x62lox.KvdwAnalogModule\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xad\x03\n\x05\x42lock\x12\x1d\n\x0emodulePosition\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12(\n\ncoffeeTemp\x18\x03 \x01(\x11\x42\x14\x92?\x02\x38 \x8a\xb5\x18\x0b\x08\x01\x10\x80 (\x01\x30\x01h\x01\x12%\n\tcoffeeNtc\x18\x04 \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x10\x80 (\x01\x30\x01h\x01\x12\'\n\tsteamTemp\x18\x05 \x01(\x11\x42\x14\x92?\x02\x38 \x8a\xb5\x18\x0b\x08\x01\x10\x80 (\x01\x30\x01h\x01\x12$\n\x08steamNtc\x18\x06 \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x10\x80 (\x01\x30\x01h\x01\x12\"\n\x06level1\x18\x07 \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x10\x80 (\x01\x30\x01h\x01\x12\"\n\x06level2\x18\x08 \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x10\x80 (\x01\x30\x01h\x01\x12\"\n\x06level3\x18\t \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x10\x80 (\x01\x30\x01h\x01\x12$\n\x08\x63urrent1\x18\n \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x10\x80 (\x01\x30\x01h\x01\x12$\n\x08\x63urrent2\x18\x0b \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x10\x80 (\x01\x30\x01h\x01\x12$\n\x08\x63urrent3\x18\x0c \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x10\x80 (\x01\x30\x01h\x01:\x07\x8a\xb5\x18\x03\x18\xcd\x02\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x16KvdwAnalogModule.proto\x12\x15\x62lox.KvdwAnalogModule\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x97\x03\n\x05\x42lock\x12\x1d\n\x0emodulePosition\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12!\n\x05temp1\x18\x03 \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x10\x80 (\x01\x30\x01h\x01\x12 \n\x04ntc1\x18\x04 \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x10\x80 (\x01\x30\x01h\x01\x12!\n\x05temp2\x18\x05 \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x10\x80 (\x01\x30\x01h\x01\x12 \n\x04ntc2\x18\x06 \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x10\x80 (\x01\x30\x01h\x01\x12\"\n\x06level1\x18\x07 \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x10\x80 (\x01\x30\x01h\x01\x12\"\n\x06level2\x18\x08 \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x10\x80 (\x01\x30\x01h\x01\x12\"\n\x06level3\x18\t \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x10\x80 (\x01\x30\x01h\x01\x12$\n\x08\x63urrent1\x18\n \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x10\x80 (\x01\x30\x01h\x01\x12$\n\x08\x63urrent2\x18\x0b \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x10\x80 (\x01\x30\x01h\x01\x12$\n\x08\x63urrent3\x18\x0c \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x10\x80 (\x01\x30\x01h\x01:\x07\x8a\xb5\x18\x03\x18\xcd\x02\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -24,14 +24,14 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   _BLOCK.fields_by_name['modulePosition']._options = None
   _BLOCK.fields_by_name['modulePosition']._serialized_options = b'\222?\0028\010'
-  _BLOCK.fields_by_name['coffeeTemp']._options = None
-  _BLOCK.fields_by_name['coffeeTemp']._serialized_options = b'\222?\0028 \212\265\030\013\010\001\020\200 (\0010\001h\001'
-  _BLOCK.fields_by_name['coffeeNtc']._options = None
-  _BLOCK.fields_by_name['coffeeNtc']._serialized_options = b'\222?\0028 \212\265\030\t\020\200 (\0010\001h\001'
-  _BLOCK.fields_by_name['steamTemp']._options = None
-  _BLOCK.fields_by_name['steamTemp']._serialized_options = b'\222?\0028 \212\265\030\013\010\001\020\200 (\0010\001h\001'
-  _BLOCK.fields_by_name['steamNtc']._options = None
-  _BLOCK.fields_by_name['steamNtc']._serialized_options = b'\222?\0028 \212\265\030\t\020\200 (\0010\001h\001'
+  _BLOCK.fields_by_name['temp1']._options = None
+  _BLOCK.fields_by_name['temp1']._serialized_options = b'\222?\0028 \212\265\030\t\020\200 (\0010\001h\001'
+  _BLOCK.fields_by_name['ntc1']._options = None
+  _BLOCK.fields_by_name['ntc1']._serialized_options = b'\222?\0028 \212\265\030\t\020\200 (\0010\001h\001'
+  _BLOCK.fields_by_name['temp2']._options = None
+  _BLOCK.fields_by_name['temp2']._serialized_options = b'\222?\0028 \212\265\030\t\020\200 (\0010\001h\001'
+  _BLOCK.fields_by_name['ntc2']._options = None
+  _BLOCK.fields_by_name['ntc2']._serialized_options = b'\222?\0028 \212\265\030\t\020\200 (\0010\001h\001'
   _BLOCK.fields_by_name['level1']._options = None
   _BLOCK.fields_by_name['level1']._serialized_options = b'\222?\0028 \212\265\030\t\020\200 (\0010\001h\001'
   _BLOCK.fields_by_name['level2']._options = None
@@ -47,5 +47,5 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _BLOCK._options = None
   _BLOCK._serialized_options = b'\212\265\030\003\030\315\002'
   _globals['_BLOCK']._serialized_start=80
-  _globals['_BLOCK']._serialized_end=509
+  _globals['_BLOCK']._serialized_end=487
 # @@protoc_insertion_point(module_scope)
