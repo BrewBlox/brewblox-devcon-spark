@@ -10,7 +10,8 @@ from httpx import AsyncClient
 
 from .. import (command, exceptions, mqtt, spark_api, state_machine, utils,
                 ymodem)
-from ..models import FirmwareFlashResponse, PingResponse, StatusDescription
+from ..models import (FirmwareFlashResponse, PingResponse, ServiceUpdateEvent,
+                      ServiceUpdateEventData, StatusDescription)
 
 ESP_URL_FMT = 'http://brewblox.blob.core.windows.net/firmware/{date}-{version}/brewblox-esp32.bin'
 
@@ -105,13 +106,10 @@ class Flasher:
     def _notify(self, msg: str):
         LOGGER.info(msg)
         self.mqtt_client.publish(self.notify_topic,
-                                 {
-                                     'key': self.config.name,
-                                     'type': 'Spark.update',
-                                     'data': {
-                                         'log': [msg],
-                                     },
-                                 })
+                                 ServiceUpdateEvent(
+                                     key=self.config.name,
+                                     data=ServiceUpdateEventData(log=[msg])
+                                 ).model_dump(mode='json'))
 
     async def run(self) -> FirmwareFlashResponse:  # pragma: no cover
         desc = self.state.desc()

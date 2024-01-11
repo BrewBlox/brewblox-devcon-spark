@@ -150,6 +150,7 @@ async def test_invalid_input(client: AsyncClient, block_args: Block, mocker: Moc
 
     # We need to simulate some bugs now
     m = mocker.patch.object(api, 'create_block', autospec=True)
+    mocker.patch(endpoints.http_blocks.__name__ + '.publish')
 
     # 500 if output is invalid
     # This is a programming error
@@ -190,6 +191,7 @@ async def test_invalid_input_prod(client: AsyncClient, block_args: Block, mocker
 
     # We need to simulate some bugs now
     m = mocker.patch.object(api, 'create_block', autospec=True)
+    mocker.patch(endpoints.http_blocks.__name__ + '.publish')
 
     # 500 if output is invalid
     # This is a programming error

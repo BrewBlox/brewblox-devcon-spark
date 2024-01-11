@@ -7,7 +7,8 @@ import logging
 from fastapi import APIRouter
 
 from .. import mqtt, spark_api, utils
-from ..models import Block, BlockIdentity, BlockNameChange
+from ..models import (Block, BlockIdentity, BlockNameChange, ServicePatchEvent,
+                      ServicePatchEventData)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -18,18 +19,15 @@ def publish(changed: list[Block] = None,
             deleted: list[BlockIdentity] = None):
     config = utils.get_config()
     mqtt_client = mqtt.CV.get()
-    changed = [v.model_dump(mode='json') for v in changed] if changed else []
-    deleted = [v.id for v in deleted] if deleted else []
+    changed = changed or []
+    deleted = [v.id for v in (deleted or [])]
     mqtt_client.publish(f'{config.state_topic}/{config.name}/patch',
-                        {
-                            'key': config.name,
-                            'type': 'Spark.patch',
-                            'ttl': '1d',
-                            'data': {
-                                'changed': changed,
-                                'deleted': deleted,
-                            },
-                        })
+                        ServicePatchEvent(
+                            key=config.name,
+                            data=ServicePatchEventData(
+                                changed=changed,
+                                deleted=deleted)
+                        ).model_dump(mode='json'))
 
 
 @router.post('/create', status_code=201)

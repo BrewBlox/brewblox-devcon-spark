@@ -584,6 +584,11 @@ class DatastoreEvent(BaseModel):
     deleted: list[DatastoreValue] = Field(default_factory=list)
 
 
+class HistoryEvent(BaseModel):
+    key: str
+    data: dict
+
+
 class ServiceStateEventData(BaseModel):
     status: StatusDescription
     blocks: list[Block]
@@ -597,6 +602,22 @@ class ServiceStateEvent(BaseModel):
     data: ServiceStateEventData
 
 
-class HistoryEvent(BaseModel):
+class ServicePatchEventData(BaseModel):
+    changed: list[Block] = Field(default_factory=list)
+    deleted: list[str] = Field(default_factory=list)
+
+
+class ServicePatchEvent(BaseModel):
     key: str
-    data: dict
+    type: Literal['Spark.patch'] = 'Spark.patch'
+    data: ServicePatchEventData
+
+
+class ServiceUpdateEventData(BaseModel):
+    log: list[str]
+
+
+class ServiceUpdateEvent(BaseModel):
+    key: str
+    type: Literal['Spark.update'] = 'Spark.update'
+    data: ServiceUpdateEventData
