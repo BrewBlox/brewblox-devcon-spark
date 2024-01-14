@@ -1,18 +1,21 @@
 import enum
-from dataclasses import dataclass
-from typing import Any, Literal, Optional, TypedDict, Union
+from datetime import timedelta
+from pathlib import Path
+from typing import Any, Literal, Self
 
-from brewblox_service.models import BaseServiceConfig
-from pydantic import BaseModel, Field, validator
+from pydantic import (BaseModel, ConfigDict, Field, ValidationInfo,
+                      computed_field, field_validator, model_validator)
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from . import const
 
 
-class ServiceFirmwareIni(TypedDict):
-    firmware_version: str
-    firmware_date: str
-    firmware_sha: str
-    proto_version: str
-    proto_date: str
-    system_version: str
+def parse_enum(cls: type[enum.Enum], v: Any):
+    """Return enum value if `v` matches either name or value"""
+    try:
+        return cls[v]
+    except KeyError:
+        return cls(v)
 
 
 class DiscoveryType(enum.Enum):
@@ -29,61 +32,136 @@ class DiscoveryType(enum.Enum):
         return self.name
 
 
-class ServiceConfig(BaseServiceConfig):
-    # Device options
-    simulation: bool
-    mock: bool
-    device_host: Optional[str]
-    device_port: int
-    device_serial: Optional[str]
-    device_id: Optional[str]
-    discovery: DiscoveryType
-    display_ws_port: int
+class ServiceConfig(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file='.appenv',
+        env_prefix='brewblox_spark_',
+        case_sensitive=False,
+        json_schema_extra='ignore',
+    )
 
-    # Network options
-    command_timeout: float
-    broadcast_interval: float
-    isolated: bool
-    datastore_topic: str
+    # Generic options
+    name: str = ''  # autodetect if not set
+    debug: bool = False
+    trace: bool = False
+    debugger: bool = False
+
+    # MQTT options
+    mqtt_protocol: Literal['mqtt', 'mqtts'] = 'mqtt'
+    mqtt_host: str = 'eventbus'
+    mqtt_port: int = 1883
+
+    state_topic: str = 'brewcast/state'
+    history_topic: str = 'brewcast/history'
+    datastore_topic: str = 'brewcast/datastore'
+    blocks_topic: str = 'brewcast/spark/blocks'
+
+    # HTTP client options
+    http_client_interval: timedelta = timedelta(seconds=1)
+    http_client_interval_max: timedelta = timedelta(minutes=1)
+    http_client_backoff: float = 1.1
+
+    # Datastore options
+    datastore_host: str = 'history'
+    datastore_port: int = 5000
+    datastore_path: str = '/history/datastore'
+
+    datastore_fetch_timeout: timedelta = timedelta(minutes=5)
+    datastore_flush_delay: timedelta = timedelta(seconds=5)
+    datastore_shutdown_timeout: timedelta = timedelta(seconds=2)
+
+    # Device options
+    device_id: str | None = None
+    discovery: DiscoveryType = DiscoveryType.all
+
+    device_host: str | None = None
+    device_port: int = 8332
+    device_serial: str | None = None
+
+    mock: bool = False
+
+    simulation: bool = False
+    simulation_port: int = 0  # any free port
+    simulation_display_port: int = 0  # any free port
+    simulation_workdir: Path = Path('./simulator')
+
+    # Connection options
+    connect_interval: timedelta = timedelta(seconds=2)
+    connect_interval_max: timedelta = timedelta(seconds=30)
+    connect_backoff: float = 1.5
+
+    discovery_interval: timedelta = timedelta(seconds=5)
+    discovery_timeout: timedelta = timedelta(minutes=2)
+    discovery_timeout_mqtt: timedelta = timedelta(seconds=3)
+    discovery_timeout_mdns: timedelta = timedelta(seconds=20)
+
+    subprocess_connect_interval: timedelta = timedelta(milliseconds=200)
+    subprocess_connect_timeout: timedelta = timedelta(seconds=10)
+
+    handshake_timeout: timedelta = timedelta(minutes=2)
+    handshake_ping_interval: timedelta = timedelta(seconds=2)
+
+    # Command options
+    command_timeout: timedelta = timedelta(seconds=20)
+
+    # Broadcast options
+    broadcast_interval: timedelta = timedelta(seconds=5)
 
     # Firmware options
-    skip_version_check: bool
+    skip_version_check: bool = False
 
     # Backup options
-    backup_interval: float
-    backup_retry_interval: float
+    backup_interval: timedelta = timedelta(hours=1)
+    backup_retry_interval: timedelta = timedelta(minutes=5)
+    backup_root_dir: Path = Path('./backup')
 
     # Time sync options
-    time_sync_interval: float
+    time_sync_interval: timedelta = timedelta(minutes=15)
+    time_sync_retry_interval: timedelta = timedelta(seconds=10)
+
+    # Firmware flash options
+    flash_ymodem_timeout: timedelta = timedelta(seconds=30)
+    flash_disconnect_timeout: timedelta = timedelta(seconds=20)
+
+    @computed_field
+    @property
+    def datastore_url(self) -> str:
+        return f'http://{self.datastore_host}:{self.datastore_port}{self.datastore_path}'
+
+    @field_validator('discovery', mode='before')
+    @classmethod
+    def parse_discovery(cls, v):
+        return parse_enum(DiscoveryType, v)
+
+
+class FirmwareConfig(BaseModel):
+    firmware_version: str
+    firmware_date: str
+    firmware_sha: str
+    proto_version: str
+    proto_date: str
+    system_version: str
 
 
 class BlockIdentity(BaseModel):
-    id: Optional[str]
-    nid: Optional[int]
-    type: Optional[str]
-    serviceId: Optional[str]
+    id: str | None = None
+    nid: int | None = None
+    type: str | None = None
+    serviceId: str | None = None
 
 
 class Block(BaseModel):
-    id: Optional[str]
-    nid: Optional[int]
+    id: str | None = None
+    nid: int | None = None
     type: str
-    serviceId: Optional[str]
+    serviceId: str | None = None
     data: dict[str, Any]
-
-
-class BlockList(BaseModel):
-    __root__: list[Block]
-
-
-class BlockIdentityList(BaseModel):
-    __root__: list[BlockIdentity]
 
 
 class FirmwareBlockIdentity(BaseModel):
     nid: int
-    type: Optional[str]
-    data: Optional[dict[str, Any]]
+    type: str | None = None
+    data: dict[str, Any] | None = None
 
 
 class FirmwareBlock(BaseModel):
@@ -92,7 +170,7 @@ class FirmwareBlock(BaseModel):
     data: dict[str, Any]
 
 
-class StoreEntry(TypedDict):
+class TwinKeyEntry(BaseModel):
     keys: tuple[str, int]
     data: dict
 
@@ -121,6 +199,9 @@ class ResetReason(enum.Enum):
     PANIC = '82'
     USER = '8C'
 
+    def __str__(self):
+        return self.name
+
 
 class ResetData(enum.Enum):
     NOT_SPECIFIED = '00'
@@ -131,6 +212,9 @@ class ResetData(enum.Enum):
     LISTENING_MODE_EXIT = '05'
     FIRMWARE_UPDATE_SUCCESS = '06'
     OUT_OF_MEMORY = '07'
+
+    def __str__(self):
+        return self.name
 
 
 class Opcode(enum.Enum):
@@ -211,62 +295,43 @@ class MaskMode(enum.Enum):
 class BasePayload(BaseModel):
     blockId: int
     mask: list[int] = Field(default_factory=list)
-    maskMode: MaskMode = Field(default=MaskMode.NO_MASK)
+    maskMode: MaskMode = MaskMode.NO_MASK
 
-    @validator('maskMode', pre=True)
-    def from_raw_mask_mode(cls, v):
-        if isinstance(v, str):
-            return MaskMode[v]
-        return MaskMode(v)
-
-    def clean_dict(self):
-        return {
-            **self.dict(),
-            'maskMode': self.maskMode.name,
-        }
+    @field_validator('maskMode', mode='before')
+    @classmethod
+    def parse_mask_mode(cls, v):
+        return parse_enum(MaskMode, v)
 
 
 class EncodedPayload(BasePayload):
-    blockType: Optional[Union[int, str]]
-    subtype: Optional[Union[int, str]]
-    content: str = Field(default='')
-
-    class Config:
-        # ensures integers in Union[int, str] are parsed correctly
-        smart_union = True
+    blockType: int | str | None = None
+    subtype: int | str | None = None
+    content: str = ''
 
 
 class DecodedPayload(BasePayload):
-    blockType: Optional[str]
-    subtype: Optional[str]
-    content: Optional[dict]
+    blockType: str | None = None
+    subtype: str | None = None
+    content: dict | None = None
 
 
 class BaseRequest(BaseModel):
     msgId: int
     opcode: Opcode
-    payload: Optional[BasePayload]
+    payload: BasePayload | None = None
 
-    @validator('opcode', pre=True)
-    def from_raw_opcode(cls, v):
-        if isinstance(v, str):
-            return Opcode[v]
-        return Opcode(v)
-
-    def clean_dict(self):
-        return {
-            **self.dict(),
-            'opcode': self.opcode.name,
-            'payload': self.payload.clean_dict() if self.payload else None,
-        }
+    @field_validator('opcode', mode='before')
+    @classmethod
+    def parse_opcode(cls, v):
+        return parse_enum(Opcode, v)
 
 
 class IntermediateRequest(BaseRequest):
-    payload: Optional[EncodedPayload]
+    payload: EncodedPayload | None = None
 
 
 class DecodedRequest(BaseRequest):
-    payload: Optional[DecodedPayload]
+    payload: DecodedPayload | None = None
 
 
 class BaseResponse(BaseModel):
@@ -274,18 +339,10 @@ class BaseResponse(BaseModel):
     error: ErrorCode
     payload: list[BasePayload]
 
-    @validator('error', pre=True)
-    def from_raw_error(cls, v):
-        if isinstance(v, str):
-            return ErrorCode[v]
-        return ErrorCode(v)
-
-    def clean_dict(self):
-        return {
-            **self.dict(),
-            'error': self.error.name,
-            'payload': [v.clean_dict() for v in self.payload]
-        }
+    @field_validator('error', mode='before')
+    @classmethod
+    def parse_error(cls, v):
+        return parse_enum(ErrorCode, v)
 
 
 class IntermediateResponse(BaseResponse):
@@ -300,8 +357,7 @@ class EncodedMessage(BaseModel):
     message: str
 
 
-@dataclass
-class HandshakeMessage:
+class HandshakeMessage(BaseModel):
     name: str
     firmware_version: str
     proto_version: str
@@ -311,16 +367,18 @@ class HandshakeMessage:
     platform: str
     reset_reason_hex: str
     reset_data_hex: str
-    device_id: str = Field(default='')
-    reset_reason: str = Field(init=False)
-    reset_data: str = Field(init=False)
+    device_id: str
+    reset_reason: str = str(ResetReason.NONE)
+    reset_data: str = str(ResetData.NOT_SPECIFIED)
 
-    def __post_init__(self):
-        self.reset_reason = ResetReason(self.reset_reason_hex.upper()).name
+    @model_validator(mode='after')
+    def parse_reset_enums(self) -> Self:
+        self.reset_reason = str(ResetReason(self.reset_reason_hex.upper()))
         try:
-            self.reset_data = ResetData(self.reset_data_hex.upper()).name
+            self.reset_data = str(ResetData(self.reset_data_hex.upper()))
         except Exception:
-            self.reset_data = self.reset_data_hex.upper()
+            self.reset_data = str(ResetData.NOT_SPECIFIED)
+        return self
 
 
 class FirmwareDescription(BaseModel):
@@ -329,8 +387,9 @@ class FirmwareDescription(BaseModel):
     firmware_date: str
     proto_date: str
 
-    @validator('firmware_version', 'proto_version')
-    def truncate_version(cls, v: str):
+    @field_validator('firmware_version', 'proto_version')
+    @classmethod
+    def truncate_version(cls, v: str, info: ValidationInfo):
         # We only compare the first 8 characters of git hashes
         return v[:8]
 
@@ -338,9 +397,10 @@ class FirmwareDescription(BaseModel):
 class DeviceDescription(BaseModel):
     device_id: str
 
-    @validator('device_id')
-    def lower_device_id(cls, v: str):
-        return v.lower()
+    @model_validator(mode='after')
+    def lower_device_id(self) -> Self:
+        self.device_id = self.device_id.lower()
+        return self
 
 
 class ServiceDescription(BaseModel):
@@ -384,16 +444,29 @@ IdentityError_ = Literal[
 ]
 
 
-class ServiceStatusDescription(BaseModel):
+class StatusDescription(BaseModel):
     enabled: bool
     service: ServiceDescription
-    controller: Optional[ControllerDescription]
-    address: Optional[str]
+    controller: ControllerDescription | None = None
+    address: str | None = None
 
-    connection_kind: Optional[ConnectionKind_]
+    connection_kind: ConnectionKind_ | None = None
     connection_status: ConnectionStatus_
-    firmware_error: Optional[FirmwareError_]
-    identity_error: Optional[IdentityError_]
+    firmware_error: FirmwareError_ | None = None
+    identity_error: IdentityError_ | None = None
+
+
+class BlockRelation(BaseModel):
+    source: str
+    target: str
+    claimed: bool = False
+    relation: list[str]
+
+
+class BlockClaim(BaseModel):
+    source: str
+    target: str
+    intermediate: list[str]
 
 
 class BackupIdentity(BaseModel):
@@ -403,14 +476,148 @@ class BackupIdentity(BaseModel):
 class Backup(BaseModel):
     # Older backups won't have these fields
     # They will not be used when loading backups
-    name: Optional[str]
-    timestamp: Optional[str]
-    firmware: Optional[FirmwareDescription]
-    device: Optional[DeviceDescription]
+    name: str | None = None
+    timestamp: str | None = None
+    firmware: FirmwareDescription | None = None
+    device: DeviceDescription | None = None
 
     blocks: list[Block]
-    store: list[StoreEntry]
+    store: list[TwinKeyEntry]
 
 
 class BackupApplyResult(BaseModel):
     messages: list[str]
+
+
+class AutoconnectSettings(BaseModel):
+    enabled: bool
+
+
+class ErrorResponse(BaseModel):
+    error: str
+    validation: list | None = None
+    traceback: list[str] | None = None
+
+
+class FirmwareFlashResponse(BaseModel):
+    address: str
+    version: str
+
+
+class PingResponse(BaseModel):
+    ping: Literal['pong'] = 'pong'
+
+
+class DatastoreSingleQuery(BaseModel):
+    namespace: str
+    id: str
+
+
+class DatastoreMultiQuery(BaseModel):
+    namespace: str
+    ids: list[str] | None = None
+    filter: str | None = None
+
+
+class DatastoreValue(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+
+    namespace: str
+    id: str
+
+
+class DatastoreSingleValueBox(BaseModel):
+    value: DatastoreValue | None
+
+
+class DatastoreMultiValueBox(BaseModel):
+    values: list[DatastoreValue]
+
+
+class TwinKeyEntriesValue(DatastoreValue):
+    namespace: str = const.SERVICE_NAMESPACE
+
+    data: list[TwinKeyEntry]
+
+
+class StoredServiceSettingsValue(DatastoreValue):
+    namespace: str = const.SERVICE_NAMESPACE
+
+    enabled: bool = True
+
+
+class StoredUnitSettingsValue(DatastoreValue):
+    namespace: str = const.GLOBAL_NAMESPACE
+    id: str = const.GLOBAL_UNITS_ID
+
+    temperature: Literal['degC', 'degF'] = 'degC'
+
+
+class StoredTimezoneSettingsValue(DatastoreValue):
+    namespace: str = const.GLOBAL_NAMESPACE
+    id: str = const.GLOBAL_TIME_ZONE_ID
+
+    name: str = 'Etc/UTC'
+    posixValue: str = 'UTC0'
+
+
+class TwinKeyEntriesBox(DatastoreSingleValueBox):
+    value: TwinKeyEntriesValue | None
+
+
+class StoredServiceSettingsBox(DatastoreSingleValueBox):
+    value: StoredServiceSettingsValue | None
+
+
+class StoredUnitSettingsBox(DatastoreSingleValueBox):
+    value: StoredUnitSettingsValue | None
+
+
+class StoredTimezoneSettingsBox(DatastoreSingleValueBox):
+    value: StoredTimezoneSettingsValue | None
+
+
+class DatastoreEvent(BaseModel):
+    changed: list[DatastoreValue] = Field(default_factory=list)
+    deleted: list[DatastoreValue] = Field(default_factory=list)
+
+
+class HistoryEvent(BaseModel):
+    key: str
+    data: dict
+
+
+class ServiceStateEventData(BaseModel):
+    status: StatusDescription
+    blocks: list[Block]
+    relations: list[BlockRelation]
+    claims: list[BlockClaim]
+
+
+class ServiceStateEvent(BaseModel):
+    key: str
+    type: Literal['Spark.state'] = 'Spark.state'
+    data: ServiceStateEventData
+
+
+class ServicePatchEventData(BaseModel):
+    changed: list[Block] = Field(default_factory=list)
+    deleted: list[str] = Field(default_factory=list)
+
+
+class ServicePatchEvent(BaseModel):
+    key: str
+    type: Literal['Spark.patch'] = 'Spark.patch'
+    data: ServicePatchEventData
+
+
+class ServiceUpdateEventData(BaseModel):
+    log: list[str]
+
+
+class ServiceUpdateEvent(BaseModel):
+    key: str
+    type: Literal['Spark.update'] = 'Spark.update'
+    data: ServiceUpdateEventData

@@ -10,9 +10,17 @@ This includes USB/TCP communication with the controller, but also encoding, deco
 
 ## Installation
 
-To set up the development environment, follow the instructions at <https://github.com/BrewBlox/brewblox-boilerplate#readme>.
+To set up the development environment, follow the instructions at <https://brewblox.com/dev/service/python_env.html>.
 
-Integration tests run against the firmware simulator.
+## Tests
+
+Integration tests run against the firmware simulator. This firmware is downloaded, but not committed.
+To ensure you have the latest firmware, run `invoke download-firmware`.
+This also happens during `invoke update-firmware`.
+
+During tests, you may need to kill the pytest process.
+This will cause it to skip test teardown, and leave leftover containers and processes. \
+To remove these leftovers, run `invoke testclean`.
 
 ## Firmware
 

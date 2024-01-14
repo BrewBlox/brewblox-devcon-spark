@@ -7,7 +7,7 @@ OBJECT_LINK_POSTFIX_START = '<'
 OBJECT_LINK_POSTFIX_END = '>'
 GENERATED_ID_PREFIX = 'New|'
 
-SPARK_NAMESPACE = 'spark-service'
+SERVICE_NAMESPACE = 'spark-service'
 GLOBAL_NAMESPACE = 'brewblox-global'
 GLOBAL_UNITS_ID = 'units'
 GLOBAL_TIME_ZONE_ID = 'timeZone'
@@ -43,3 +43,4 @@ SYS_OBJECT_KEYS: list[tuple[str, int]] = [
 
 # Relevant block types
 SEQUENCE_BLOCK_TYPE = 'Sequence'
+SYSINFO_BLOCK_TYPE = 'SysInfo'

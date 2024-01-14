@@ -1,47 +1,42 @@
 import asyncio
-from contextlib import suppress
+import logging
+from contextlib import asynccontextmanager, suppress
+from contextvars import ContextVar
+from datetime import timedelta
 
-from aiohttp import web
-from brewblox_service import brewblox_logger, features, repeater, strex
-
-from brewblox_devcon_spark import exceptions, service_status, service_store
-from brewblox_devcon_spark.models import DiscoveryType, ServiceConfig
-
+from .. import exceptions, state_machine, utils
+from ..models import DiscoveryType
 from .connection_impl import ConnectionCallbacks, ConnectionImplBase
 from .mock_connection import connect_mock
 from .mqtt_connection import discover_mqtt
 from .stream_connection import (connect_simulation, connect_tcp, connect_usb,
                                 discover_mdns, discover_usb)
 
-LOGGER = brewblox_logger(__name__)
-
-BASE_RECONNECT_DELAY_S = 2
-MAX_RECONNECT_DELAY_S = 30
 MAX_RETRY_COUNT = 20
 
-DISCOVERY_INTERVAL_S = 5
-DISCOVERY_TIMEOUT_S = 120
+LOGGER = logging.getLogger(__name__)
+
+CV: ContextVar['ConnectionHandler'] = ContextVar('connection_handler.ConnectionHandler')
 
 
-def calc_backoff(value: float) -> float:
+def calc_interval(value: timedelta | None) -> timedelta:
+    config = utils.get_config()
+
     if value:
-        return min(MAX_RECONNECT_DELAY_S, round(1.5 * value))
+        return min(value * config.connect_backoff, config.connect_interval_max)
     else:
-        return BASE_RECONNECT_DELAY_S
+        return config.connect_interval
 
 
-class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
-    def __init__(self, app: web.Application):
-        super().__init__(app)
+class ConnectionHandler(ConnectionCallbacks):
+    def __init__(self):
+        self.config = utils.get_config()
+        self.state = state_machine.CV.get()
 
+        self._enabled: bool = True
+        self._interval: timedelta = calc_interval(None)
         self._attempts: int = 0
         self._impl: ConnectionImplBase = None
-
-    def __str__(self):
-        return f'<{type(self).__name__} for {self._impl}>'
-
-    async def before_shutdown(self, app: web.Application):
-        await self.end()
 
     @property
     def connected(self) -> bool:
@@ -50,22 +45,20 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
 
     @property
     def usb_compatible(self) -> bool:
-        config: ServiceConfig = self.app['config']
-
         # Simulations (internal or external) do not use USB
-        if config.mock or config.simulation:
+        if self.config.mock or self.config.simulation:
             return False
 
         # Hardcoded addresses take precedence over device discovery
-        if config.device_serial or config.device_host:
-            return config.device_serial is not None
+        if self.config.device_serial or self.config.device_host:
+            return self.config.device_serial is not None
 
         # USB is explicitly enabled
-        if config.discovery == DiscoveryType.usb:
+        if self.config.discovery == DiscoveryType.usb:
             return True
 
         # TCP is explicitly enabled
-        if config.discovery != DiscoveryType.all:
+        if self.config.discovery != DiscoveryType.all:
             return False
 
         # Spark models can be identified by device ID
@@ -73,7 +66,7 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
         # Spark 4 uses 6 bytes / 12 characters
         # Spark simulations can have variable length IDs
         # USB should only be disabled if we're sure it is not supported
-        if config.device_id and len(config.device_id) == 12:
+        if self.config.device_id and len(self.config.device_id) == 12:
             return False
 
         # We're not sure
@@ -92,116 +85,123 @@ class ConnectionHandler(repeater.RepeaterFeature, ConnectionCallbacks):
         """
 
     async def discover(self) -> ConnectionImplBase:
-        config: ServiceConfig = self.app['config']
-
-        discovery_type = config.discovery
+        discovery_type = self.config.discovery
         LOGGER.info(f'Discovering devices... ({discovery_type})')
 
         try:
-            async with asyncio.timeout(DISCOVERY_TIMEOUT_S):
+            async with asyncio.timeout(self.config.discovery_timeout.total_seconds()):
                 while True:
                     if discovery_type in [DiscoveryType.all, DiscoveryType.usb]:
-                        result = await discover_usb(self.app, self)
+                        result = await discover_usb(self)
                         if result:
                             return result
 
                     if discovery_type in [DiscoveryType.all, DiscoveryType.mdns]:
-                        result = await discover_mdns(self.app, self)
+                        result = await discover_mdns(self)
                         if result:
                             return result
 
                     if discovery_type in [DiscoveryType.all, DiscoveryType.mqtt]:
-                        result = await discover_mqtt(self.app, self)
+                        result = await discover_mqtt(self)
                         if result:
                             return result
 
-                    await asyncio.sleep(DISCOVERY_INTERVAL_S)
+                    await asyncio.sleep(self.config.discovery_interval.total_seconds())
 
         except asyncio.TimeoutError:
             raise ConnectionAbortedError('Discovery timeout')
 
     async def connect(self) -> ConnectionImplBase:
-        config: ServiceConfig = self.app['config']
-
-        mock = config.mock
-        simulation = config.simulation
-        device_serial = config.device_serial
-        device_host = config.device_host
-        device_port = config.device_port
+        mock = self.config.mock
+        simulation = self.config.simulation
+        device_serial = self.config.device_serial
+        device_host = self.config.device_host
+        device_port = self.config.device_port
 
         if mock:
-            return await connect_mock(self.app, self)
+            return await connect_mock(self)
         elif simulation:
-            return await connect_simulation(self.app, self)
+            return await connect_simulation(self)
         elif device_serial:
-            return await connect_usb(self.app, self, device_serial)
+            return await connect_usb(self, device_serial)
         elif device_host:
-            return await connect_tcp(self.app, self, device_host, device_port)
+            return await connect_tcp(self, device_host, device_port)
         else:
             return await self.discover()
 
     async def run(self):
-        """Implements RepeaterFeature.run"""
-        delay = service_store.get_reconnect_delay(self.app)
-
         try:
             if self._attempts > MAX_RETRY_COUNT:
                 raise ConnectionAbortedError('Retry attempts exhausted')
 
-            await asyncio.sleep(delay)
-            await service_status.wait_enabled(self.app)
-
+            await self.state.wait_enabled()
             self._impl = await self.connect()
             await self._impl.connected.wait()
 
-            service_status.set_connected(self.app,
-                                         self._impl.kind,
-                                         self._impl.address)
+            self.state.set_connected(self._impl.kind,
+                                     self._impl.address)
 
             self._attempts = 0
-            self._reconnect_interval = 0
+            self._interval = calc_interval(None)
 
             await self._impl.disconnected.wait()
             raise ConnectionError('Disconnected')
 
         except ConnectionAbortedError as ex:
-            LOGGER.error(strex(ex))
-            service_store.set_reconnect_delay(self.app, calc_backoff(delay))
+            LOGGER.error(utils.strex(ex))
+            self._interval = calc_interval(self._interval)
 
             # USB devices that were plugged in after container start are not visible
             # If we are potentially connecting to a USB device, we need to restart
             if self.usb_compatible:
-                raise web.GracefulExit()
+                utils.graceful_shutdown(utils.strex(ex))
             else:
                 self._attempts = 0
 
         except Exception as ex:
             self._attempts += 1
             if self._attempts == 1:
-                LOGGER.error(strex(ex))
+                LOGGER.error(utils.strex(ex))
             else:
-                LOGGER.debug(strex(ex))
+                LOGGER.debug(utils.strex(ex), exc_info=True)
 
         finally:
             with suppress(Exception):
                 await self._impl.close()
-            service_status.set_disconnected(self.app)
+            self._impl = None
+            self.state.set_disconnected()
+
+    async def repeat(self):
+        while self._enabled:
+            try:
+                await self.run()
+            except Exception as ex:  # pragma: no cover
+                LOGGER.error(utils.strex(ex), exc_info=self.config.debug)
+
+            await asyncio.sleep(self._interval.total_seconds())
 
     async def send_request(self, msg: str):
         if not self.connected:
-            raise exceptions.NotConnected(f'{self} not connected')
+            raise exceptions.NotConnected()
 
         await self._impl.send_request(msg)
 
-    async def start_reconnect(self):
-        # The run() function will handle cleanup, and then reconnect
+    async def reset(self):
+        # The run() function will handle cleanup
         if self._impl:
             await self._impl.close()
+        await self.state.wait_disconnected()
+
+    async def end(self):
+        self._enabled = False
+        await self.reset()
 
 
-def setup(app: web.Application):
-    features.add(app, ConnectionHandler(app))
+@asynccontextmanager
+async def lifespan():
+    async with utils.task_context(CV.get().repeat()):
+        yield
 
 
-def fget(app: web.Application) -> ConnectionHandler:
-    return features.get(app, ConnectionHandler)
+def setup():
+    CV.set(ConnectionHandler())

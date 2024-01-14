@@ -4,15 +4,14 @@ Supports lookups where either left or right value is unknown.
 When looking up objects with both left and right key, asserts that keys point to the same object.
 """
 
+import logging
 from collections.abc import MutableMapping
 from contextlib import suppress
 from dataclasses import dataclass
 from typing import (TYPE_CHECKING, Any, Generic, Hashable, Iterator, Optional,
                     TypeVar)
 
-from brewblox_service import brewblox_logger
-
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 LT = TypeVar('LT', bound=Hashable)
 RT = TypeVar('RT', bound=Hashable)
@@ -132,7 +131,7 @@ class TwinKeyDict(DictBase, Generic[LT, RT, VT]):
 
     def __setitem__(self, keys: Keys_, item):
         if None in keys:
-            raise TwinKeyError('None keys not allowed')
+            raise TwinKeyError(f'None keys not allowed, {keys=}')
 
         with suppress(KeyError):
             # Checks whether key combo either matches, or does not exist

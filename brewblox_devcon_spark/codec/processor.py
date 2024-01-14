@@ -3,6 +3,7 @@ Input/output modification functions for transcoding
 """
 
 import ipaddress
+import logging
 import re
 from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
@@ -11,18 +12,17 @@ from functools import reduce
 from socket import htonl, ntohl
 from typing import Any, Iterator
 
-from brewblox_service import brewblox_logger
 from google.protobuf import json_format
 from google.protobuf.descriptor import Descriptor, FieldDescriptor
 
 from brewblox_devcon_spark.models import DecodedPayload, MaskMode
 
+from . import unit_conversion
 from .opts import DateFormatOpt, DecodeOpts, FilterOpt, MetadataOpt
 from .pb2 import brewblox_pb2
 from .time_utils import serialize_datetime
-from .unit_conversion import UnitConverter
 
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -38,8 +38,8 @@ class OptionElement():
 class ProtobufProcessor():
     _BREWBLOX_PROVIDER: FieldDescriptor = brewblox_pb2.field
 
-    def __init__(self, converter: UnitConverter, strip_readonly=True):
-        self._converter = converter
+    def __init__(self, strip_readonly=True):
+        self._converter = unit_conversion.CV.get()
         self._strip_readonly = strip_readonly
 
         symbols = re.escape('[]<>')

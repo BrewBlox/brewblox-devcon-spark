@@ -71,3 +71,5 @@ eeprom.bin
 
 # Build files
 firmware/
+
+.appenv
