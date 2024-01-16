@@ -9,7 +9,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = ">=3.11,<4"
 pyserial-asyncio = "^0.6"
-protobuf = "^4.24.3"
+protobuf = "<4.25"
 aiofiles = "^23.2.1"
 aiozeroconf = "^0.1.8"
 debugpy = "^1.5.1"

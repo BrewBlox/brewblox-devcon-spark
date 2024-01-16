@@ -105,6 +105,9 @@ def create_app() -> FastAPI:
     setup_logging(config.debug, config.trace)
 
     if config.debugger:  # pragma: no cover
+        import faulthandler
+        faulthandler.enable()
+
         import debugpy
         debugpy.listen(('0.0.0.0', 5678))
         LOGGER.info('Debugger is enabled and listening on 5678')
