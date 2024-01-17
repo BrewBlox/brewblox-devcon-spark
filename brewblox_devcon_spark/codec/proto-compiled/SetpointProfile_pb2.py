@@ -4,9 +4,8 @@
 """Generated protocol buffer code."""
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -16,45 +15,29 @@ import brewblox_pb2 as brewblox__pb2
 import nanopb_pb2 as nanopb__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15SetpointProfile.proto\x12\x14\x62lox.SetpointProfile\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"b\n\x05Point\x12\x19\n\x04time\x18\x01 \x01(\rB\x0b\x8a\xb5\x18\x02\x08\x03\x92?\x02\x38 \x12)\n\x0btemperature\x18\x02 \x01(\x05\x42\x12\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 H\x00\x42\x13\n\x11temperature_oneof\"\xe6\x01\n\x05\x42lock\x12+\n\x06points\x18\x01 \x03(\x0b\x32\x1b.blox.SetpointProfile.Point\x12\x0f\n\x07\x65nabled\x18\x03 \x01(\x08\x12\x1e\n\x08targetId\x18\x04 \x01(\rB\x0c\x8a\xb5\x18\x03\x18\xaf\x02\x92?\x02\x38\x10\x12/\n\x07setting\x18\x05 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\x1a\n\x05start\x18\x06 \x01(\rB\x0b\x8a\xb5\x18\x02X\x01\x92?\x02\x38 \x12#\n\x0e\x64rivenTargetId\x18Z \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03:\r\x8a\xb5\x18\x03\x18\xb7\x02\x8a\xb5\x18\x02H\x0f\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15SetpointProfile.proto\x12\x14\x62lox.SetpointProfile\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"^\n\x05Point\x12\x19\n\x04time\x18\x01 \x01(\rB\x0b\x92?\x02\x38 \x8a\xb5\x18\x02\x08\x03\x12%\n\x0btemperature\x18\x02 \x01(\x05\x42\x0e\x92?\x02\x38 \x8a\xb5\x18\x05\x08\x01\x10\x80 H\x00\x42\x13\n\x11temperature_oneof\"\xd7\x01\n\x05\x42lock\x12+\n\x06points\x18\x01 \x03(\x0b\x32\x1b.blox.SetpointProfile.Point\x12\x0f\n\x07\x65nabled\x18\x03 \x01(\x08\x12\x1e\n\x08targetId\x18\x04 \x01(\rB\x0c\x92?\x02\x38\x10\x8a\xb5\x18\x03\x18\xaf\x02\x12#\n\x07setting\x18\x05 \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x08\x01\x10\x80 (\x01\x30\x01\x12\x1a\n\x05start\x18\x06 \x01(\rB\x0b\x92?\x02\x38 \x8a\xb5\x18\x02X\x01\x12#\n\x0e\x64rivenTargetId\x18Z \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01:\n\x8a\xb5\x18\x06\x18\xb7\x02J\x01\x0f\x62\x06proto3')
 
-
-
-_POINT = DESCRIPTOR.message_types_by_name['Point']
-_BLOCK = DESCRIPTOR.message_types_by_name['Block']
-Point = _reflection.GeneratedProtocolMessageType('Point', (_message.Message,), {
-  'DESCRIPTOR' : _POINT,
-  '__module__' : 'SetpointProfile_pb2'
-  # @@protoc_insertion_point(class_scope:blox.SetpointProfile.Point)
-  })
-_sym_db.RegisterMessage(Point)
-
-Block = _reflection.GeneratedProtocolMessageType('Block', (_message.Message,), {
-  'DESCRIPTOR' : _BLOCK,
-  '__module__' : 'SetpointProfile_pb2'
-  # @@protoc_insertion_point(class_scope:blox.SetpointProfile.Block)
-  })
-_sym_db.RegisterMessage(Block)
-
+_globals = globals()
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'SetpointProfile_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
-
   DESCRIPTOR._options = None
   _POINT.fields_by_name['time']._options = None
-  _POINT.fields_by_name['time']._serialized_options = b'\212\265\030\002\010\003\222?\0028 '
+  _POINT.fields_by_name['time']._serialized_options = b'\222?\0028 \212\265\030\002\010\003'
   _POINT.fields_by_name['temperature']._options = None
-  _POINT.fields_by_name['temperature']._serialized_options = b'\212\265\030\002\010\001\212\265\030\003\020\200 \222?\0028 '
+  _POINT.fields_by_name['temperature']._serialized_options = b'\222?\0028 \212\265\030\005\010\001\020\200 '
   _BLOCK.fields_by_name['targetId']._options = None
-  _BLOCK.fields_by_name['targetId']._serialized_options = b'\212\265\030\003\030\257\002\222?\0028\020'
+  _BLOCK.fields_by_name['targetId']._serialized_options = b'\222?\0028\020\212\265\030\003\030\257\002'
   _BLOCK.fields_by_name['setting']._options = None
-  _BLOCK.fields_by_name['setting']._serialized_options = b'\212\265\030\0020\001\212\265\030\002\010\001\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'
+  _BLOCK.fields_by_name['setting']._serialized_options = b'\222?\0028 \212\265\030\t\010\001\020\200 (\0010\001'
   _BLOCK.fields_by_name['start']._options = None
-  _BLOCK.fields_by_name['start']._serialized_options = b'\212\265\030\002X\001\222?\0028 '
+  _BLOCK.fields_by_name['start']._serialized_options = b'\222?\0028 \212\265\030\002X\001'
   _BLOCK.fields_by_name['drivenTargetId']._options = None
-  _BLOCK.fields_by_name['drivenTargetId']._serialized_options = b'\212\265\030\002H\001\222?\002\030\003'
+  _BLOCK.fields_by_name['drivenTargetId']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
   _BLOCK._options = None
-  _BLOCK._serialized_options = b'\212\265\030\003\030\267\002\212\265\030\002H\017'
-  _POINT._serialized_start=77
-  _POINT._serialized_end=175
-  _BLOCK._serialized_start=178
-  _BLOCK._serialized_end=408
+  _BLOCK._serialized_options = b'\212\265\030\006\030\267\002J\001\017'
+  _globals['_POINT']._serialized_start=77
+  _globals['_POINT']._serialized_end=171
+  _globals['_BLOCK']._serialized_start=174
+  _globals['_BLOCK']._serialized_end=389
 # @@protoc_insertion_point(module_scope)

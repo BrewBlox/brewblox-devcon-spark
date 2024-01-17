@@ -2,20 +2,17 @@
 Default exports for codec module
 """
 
+import logging
 from base64 import b64decode, b64encode
+from contextvars import ContextVar
 from typing import Optional
 
-from aiohttp import web
-from brewblox_service import brewblox_logger, features, strex
 from google.protobuf import json_format
 
-from brewblox_devcon_spark import exceptions
-from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
-                                          IntermediateRequest,
-                                          IntermediateResponse)
-
-from . import pb2, time_utils, unit_conversion
-from .lookup import INTERFACE_LOOKUPS, OBJECT_LOOKUPS
+from .. import exceptions, utils
+from ..models import (DecodedPayload, EncodedPayload, IntermediateRequest,
+                      IntermediateResponse)
+from . import lookup, pb2, time_utils, unit_conversion
 from .opts import (DateFormatOpt, DecodeOpts, FilterOpt, MetadataOpt,
                    ProtoEnumOpt)
 from .processor import ProtobufProcessor
@@ -24,7 +21,9 @@ DEPRECATED_TYPE_INT = 65533
 DEPRECATED_TYPE_STR = 'DeprecatedObject'
 UNKNOWN_TYPE_STR = 'UnknownType'
 ERROR_TYPE_STR = 'ErrorObject'
-LOGGER = brewblox_logger(__name__)
+
+LOGGER = logging.getLogger(__name__)
+CV: ContextVar['Codec'] = ContextVar('codec.Codec')
 
 
 def split_type(type_str: str) -> tuple[str, Optional[str]]:
@@ -41,20 +40,18 @@ def join_type(blockType: str, subtype: Optional[str]) -> str:
         return blockType
 
 
-class Codec(features.ServiceFeature):
-    def __init__(self, app: web.Application, strip_readonly=True):
-        super().__init__(app)
-        self._processor = ProtobufProcessor(unit_conversion.fget(app),
-                                            strip_readonly)
+class Codec:
+    def __init__(self, strip_readonly=True):
+        self._processor = ProtobufProcessor(strip_readonly)
 
     def encode_request(self, request: IntermediateRequest) -> str:
         try:
             message = pb2.command_pb2.Request()
-            json_format.ParseDict(request.clean_dict(), message)
+            json_format.ParseDict(request.model_dump(mode='json'), message)
             return b64encode(message.SerializeToString()).decode()
 
         except Exception as ex:
-            msg = strex(ex)
+            msg = utils.strex(ex)
             LOGGER.debug(msg, exc_info=True)
             raise exceptions.EncodeException(msg)
 
@@ -74,18 +71,18 @@ class Codec(features.ServiceFeature):
             return IntermediateRequest(**decoded)
 
         except Exception as ex:
-            msg = strex(ex)
+            msg = utils.strex(ex)
             LOGGER.debug(msg, exc_info=True)
             raise exceptions.DecodeException(msg)
 
     def encode_response(self, response: IntermediateResponse) -> str:
         try:
             message = pb2.command_pb2.Response()
-            json_format.ParseDict(response.clean_dict(), message)
+            json_format.ParseDict(response.model_dump(mode='json'), message)
             return b64encode(message.SerializeToString()).decode()
 
         except Exception as ex:
-            msg = strex(ex)
+            msg = utils.strex(ex)
             LOGGER.debug(msg, exc_info=True)
             raise exceptions.EncodeException(msg)
 
@@ -105,7 +102,7 @@ class Codec(features.ServiceFeature):
             return IntermediateResponse(**decoded)
 
         except Exception as ex:
-            msg = strex(ex)
+            msg = utils.strex(ex)
             LOGGER.debug(msg, exc_info=True)
             raise exceptions.DecodeException(msg)
 
@@ -128,28 +125,28 @@ class Codec(features.ServiceFeature):
 
             # Interface-only payload
             if payload.content is None:
-                lookup = next((v for v in INTERFACE_LOOKUPS
-                               if v.type_str == payload.blockType))
+                impl = next((v for v in lookup.CV_COMBINED.get()
+                             if v.type_str == payload.blockType))
                 return EncodedPayload(
                     blockId=payload.blockId,
-                    blockType=lookup.type_int,
+                    blockType=impl.type_int,
                 )
 
             # Payload contains data
-            lookup = next((v for v in OBJECT_LOOKUPS
-                           if v.type_str == payload.blockType
-                           and v.subtype_str == payload.subtype))
+            impl = next((v for v in lookup.CV_OBJECTS.get()
+                         if v.type_str == payload.blockType
+                         and v.subtype_str == payload.subtype))
 
-            message = lookup.message_cls()
+            message = impl.message_cls()
             payload = self._processor.pre_encode(message.DESCRIPTOR,
-                                                 payload.copy(deep=True))
+                                                 payload.model_copy(deep=True))
             json_format.ParseDict(payload.content, message)
             content: str = b64encode(message.SerializeToString()).decode()
 
             return EncodedPayload(
                 blockId=payload.blockId,
-                blockType=lookup.type_int,
-                subtype=lookup.subtype_int,
+                blockType=impl.type_int,
+                subtype=impl.subtype_int,
                 content=content,
                 mask=payload.mask,
                 maskMode=payload.maskMode,
@@ -161,7 +158,7 @@ class Codec(features.ServiceFeature):
             raise exceptions.EncodeException(msg)
 
         except Exception as ex:
-            msg = strex(ex)
+            msg = utils.strex(ex)
             LOGGER.debug(msg, exc_info=True)
             raise exceptions.EncodeException(msg)
 
@@ -180,14 +177,14 @@ class Codec(features.ServiceFeature):
                 )
 
             # First, try to find an object lookup
-            lookup = next((v for v in OBJECT_LOOKUPS
-                           if payload.blockType in [v.type_str, v.type_int]
-                           and payload.subtype in [v.subtype_str, v.subtype_int]), None)
+            impl = next((v for v in lookup.CV_OBJECTS.get()
+                         if payload.blockType in [v.type_str, v.type_int]
+                         and payload.subtype in [v.subtype_str, v.subtype_int]), None)
 
-            if lookup:
+            if impl:
                 # We have an object lookup, and can decode the content
                 int_enum = opts.enums == ProtoEnumOpt.INT
-                message = lookup.message_cls()
+                message = impl.message_cls()
                 message.ParseFromString(b64decode(payload.content))
                 content: dict = json_format.MessageToDict(
                     message=message,
@@ -197,8 +194,8 @@ class Codec(features.ServiceFeature):
                 )
                 decoded = DecodedPayload(
                     blockId=payload.blockId,
-                    blockType=lookup.type_str,
-                    subtype=lookup.subtype_str,
+                    blockType=impl.type_str,
+                    subtype=impl.subtype_str,
                     content=content,
                     mask=payload.mask,
                     maskMode=payload.maskMode,
@@ -206,13 +203,13 @@ class Codec(features.ServiceFeature):
                 return self._processor.post_decode(message.DESCRIPTOR, decoded, opts)
 
             # No object lookup found. Try the interfaces.
-            intf_lookup = next((v for v in INTERFACE_LOOKUPS
-                                if payload.blockType in [v.type_str, v.type_int]), None)
+            intf_impl = next((v for v in lookup.CV_INTERFACES.get()
+                              if payload.blockType in [v.type_str, v.type_int]), None)
 
-            if intf_lookup:
+            if intf_impl:
                 return DecodedPayload(
                     blockId=payload.blockId,
-                    blockType=intf_lookup.type_str,
+                    blockType=intf_impl.type_str,
                 )
 
             # No lookup of any kind found
@@ -228,7 +225,7 @@ class Codec(features.ServiceFeature):
             )
 
         except Exception as ex:
-            msg = strex(ex)
+            msg = utils.strex(ex)
             LOGGER.debug(msg, exc_info=True)
             return DecodedPayload(
                 blockId=payload.blockId,
@@ -241,13 +238,10 @@ class Codec(features.ServiceFeature):
             )
 
 
-def setup(app: web.Application):
-    unit_conversion.setup(app)
-    features.add(app, Codec(app))
-
-
-def fget(app: web.Application) -> Codec:
-    return features.get(app, Codec)
+def setup():
+    lookup.setup()
+    unit_conversion.setup()
+    CV.set(Codec())
 
 
 __all__ = [
@@ -256,7 +250,7 @@ __all__ = [
 
     'Codec',
     'setup',
-    'fget',
+    'CV',
 
     'DecodeOpts',
     'ProtoEnumOpt',

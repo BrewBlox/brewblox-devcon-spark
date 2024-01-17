@@ -3,26 +3,26 @@ Input/output modification functions for transcoding
 """
 
 import ipaddress
+import logging
 import re
 from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
 from dataclasses import dataclass
 from functools import reduce
 from socket import htonl, ntohl
-from typing import Any, Iterator, Optional, Union
+from typing import Any, Iterator
 
-from brewblox_service import brewblox_logger
 from google.protobuf import json_format
 from google.protobuf.descriptor import Descriptor, FieldDescriptor
 
 from brewblox_devcon_spark.models import DecodedPayload, MaskMode
 
+from . import unit_conversion
 from .opts import DateFormatOpt, DecodeOpts, FilterOpt, MetadataOpt
 from .pb2 import brewblox_pb2
 from .time_utils import serialize_datetime
-from .unit_conversion import UnitConverter
 
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -38,8 +38,8 @@ class OptionElement():
 class ProtobufProcessor():
     _BREWBLOX_PROVIDER: FieldDescriptor = brewblox_pb2.field
 
-    def __init__(self, converter: UnitConverter, strip_readonly=True):
-        self._converter = converter
+    def __init__(self, strip_readonly=True):
+        self._converter = unit_conversion.CV.get()
         self._strip_readonly = strip_readonly
 
         symbols = re.escape('[]<>')
@@ -119,7 +119,7 @@ class ProtobufProcessor():
     def _type_name(self, blockType_num: int) -> str:
         return brewblox_pb2.BlockType.Name(blockType_num)
 
-    def _encode_unit(self, value: Union[float, dict], unit_type: str, postfix: Optional[str]) -> float:
+    def _encode_unit(self, value: float | dict, unit_type: str, postfix: str | None) -> float:
         if isinstance(value, dict):
             user_value = value['value']
             user_unit = value.get('unit')
@@ -208,7 +208,7 @@ class ProtobufProcessor():
             if payload.maskMode == MaskMode.INCLUSIVE and not element.nested:
                 payload.mask.append(element.field.number)
 
-            def _convert_value(value: Any) -> Union[str, int, float]:
+            def _convert_value(value: Any) -> str | int | float:
                 if options.unit:
                     unit_name = self._unit_name(options.unit)
                     value = self._encode_unit(value, unit_name, element.postfix or None)
@@ -278,6 +278,7 @@ class ProtobufProcessor():
         * readonly:     Ignored: decoding means reading from controller.
         * ignored:      Strip value from output.
         * logged:       Tag for filtering output data.
+        * *_invalid_if: Sets value to None if equal to invalid value.
 
         Supported codec options:
         * filter:       If opts.filter == LOGGED, all values without options.logged are excluded from output.
@@ -346,12 +347,14 @@ class ProtobufProcessor():
             qty_system_unit = self._unit_name(options.unit)
             qty_user_unit = self._converter.to_user_unit(qty_system_unit)
 
-            def _convert_value(value: Union[float, int, str]) -> Any:
+            def _convert_value(value: float | int | str) -> float | int | str | None:
+                null_value = options.null_if_zero and value == 0
+
                 if options.scale:
                     value /= options.scale
 
                 if options.unit:
-                    if excluded:
+                    if excluded or null_value:
                         value = None
                     else:
                         value = self._converter.to_user_value(value, qty_system_unit)
@@ -369,7 +372,7 @@ class ProtobufProcessor():
                     return value
 
                 if options.objtype:
-                    if excluded:
+                    if excluded or null_value:
                         value = None
 
                     if opts.metadata == MetadataOpt.TYPED:
@@ -381,7 +384,7 @@ class ProtobufProcessor():
 
                     return value
 
-                if excluded:
+                if excluded or null_value:
                     return None
 
                 if options.hexed:
@@ -407,6 +410,14 @@ class ProtobufProcessor():
                     new_key = f'{element.key}<{link_type}>'
                 if options.unit:
                     new_key = f'{element.key}[{qty_user_unit}]'
+
+            # Filter values that should be omitted entirely
+            if options.omit_if_zero:
+                if isinstance(new_value, (list, set)):
+                    new_value = [v for v in new_value if v != 0]
+                elif new_value == 0:
+                    del element.obj[element.key]
+                    continue
 
             # Convert value
             if isinstance(new_value, (list, set)):

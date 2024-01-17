@@ -2,23 +2,15 @@
 User-configurable unit conversion
 """
 
+import logging
+from contextvars import ContextVar
 from dataclasses import dataclass
 
-from aiohttp import web
-from brewblox_service import brewblox_logger, features
 from pint import UnitRegistry
 
 from brewblox_devcon_spark.exceptions import InvalidInput
 
-LOGGER = brewblox_logger(__name__)
-
-# Pint makes multiple I/O calls while constructing its UnitRegistry
-# As long as we never modify the unit registry, we can keep it in module scope
-# This significantly reduces setup time for unit tests
-_UREG = UnitRegistry()
-
 SYSTEM_TEMP = 'degC'
-
 FORMATS = {
     'NotSet': '',
     'Celsius': '{temp}',
@@ -34,6 +26,14 @@ FORMATS = {
     'DeltaCelsiusMultMinute': 'delta_{temp} * minute',
     'DeltaCelsiusMultHour': 'delta_{temp} * hour',
 }
+
+# Pint makes multiple I/O calls while constructing its UnitRegistry
+# As long as we never modify the unit registry, we can keep it in module scope
+# This significantly reduces setup time for unit tests
+_UREG = UnitRegistry()
+
+LOGGER = logging.getLogger(__name__)
+CV: ContextVar['UnitConverter'] = ContextVar('unit_conversion.UnitConverter')
 
 
 @dataclass(frozen=True)
@@ -55,10 +55,9 @@ def derived_table(user_temp) -> dict[str, UnitMapping]:
     }
 
 
-class UnitConverter(features.ServiceFeature):
+class UnitConverter:
 
-    def __init__(self, app: web.Application):
-        super().__init__(app)
+    def __init__(self):
         # Init with system temp. All mappings will have system_value == user_value
         self._table = derived_table(SYSTEM_TEMP)
 
@@ -93,9 +92,5 @@ class UnitConverter(features.ServiceFeature):
         return self._table[id].user_value
 
 
-def setup(app: web.Application):
-    features.add(app, UnitConverter(app))
-
-
-def fget(app: web.Application) -> UnitConverter:
-    return features.get(app, UnitConverter)
+def setup():
+    CV.set(UnitConverter())

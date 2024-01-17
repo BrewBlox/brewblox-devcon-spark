@@ -4,9 +4,8 @@
 """Generated protocol buffer code."""
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -16,31 +15,23 @@ import brewblox_pb2 as brewblox__pb2
 import nanopb_pb2 as nanopb__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x17TempSensorOneWire.proto\x12\x16\x62lox.TempSensorOneWire\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xb2\x01\n\x05\x42lock\x12-\n\x05value\x18\x01 \x01(\x11\x42\x1e\x8a\xb5\x18\x02\x30\x01\x8a\xb5\x18\x02\x08\x01\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x8a\xb5\x18\x02(\x01\x12\"\n\x06offset\x18\x03 \x01(\x11\x42\x12\x8a\xb5\x18\x02\x08\x06\x8a\xb5\x18\x03\x10\x80 \x92?\x02\x38 \x12\x17\n\x07\x61\x64\x64ress\x18\x04 \x01(\x06\x42\x06\x8a\xb5\x18\x02 \x01\x12(\n\x0coneWireBusId\x18\x05 \x01(\rB\x12\x8a\xb5\x18\x03\x18\x82\x02\x92?\x02\x38\x10\x8a\xb5\x18\x02(\x01:\x13\x8a\xb5\x18\x03\x18\xae\x02\x8a\xb5\x18\x02H\x02\x8a\xb5\x18\x02H\tb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x17TempSensorOneWire.proto\x12\x16\x62lox.TempSensorOneWire\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x96\x01\n\x05\x42lock\x12!\n\x05value\x18\x01 \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x08\x01\x10\x80 (\x01\x30\x01\x12\x1e\n\x06offset\x18\x03 \x01(\x11\x42\x0e\x92?\x02\x38 \x8a\xb5\x18\x05\x08\x06\x10\x80 \x12\x17\n\x07\x61\x64\x64ress\x18\x04 \x01(\x06\x42\x06\x8a\xb5\x18\x02 \x01\x12$\n\x0coneWireBusId\x18\x05 \x01(\rB\x0e\x92?\x02\x38\x10\x8a\xb5\x18\x05\x18\x82\x02(\x01:\x0b\x8a\xb5\x18\x07\x18\xae\x02J\x02\x02\tb\x06proto3')
 
-
-
-_BLOCK = DESCRIPTOR.message_types_by_name['Block']
-Block = _reflection.GeneratedProtocolMessageType('Block', (_message.Message,), {
-  'DESCRIPTOR' : _BLOCK,
-  '__module__' : 'TempSensorOneWire_pb2'
-  # @@protoc_insertion_point(class_scope:blox.TempSensorOneWire.Block)
-  })
-_sym_db.RegisterMessage(Block)
-
+_globals = globals()
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'TempSensorOneWire_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
-
   DESCRIPTOR._options = None
   _BLOCK.fields_by_name['value']._options = None
-  _BLOCK.fields_by_name['value']._serialized_options = b'\212\265\030\0020\001\212\265\030\002\010\001\212\265\030\003\020\200 \222?\0028 \212\265\030\002(\001'
+  _BLOCK.fields_by_name['value']._serialized_options = b'\222?\0028 \212\265\030\t\010\001\020\200 (\0010\001'
   _BLOCK.fields_by_name['offset']._options = None
-  _BLOCK.fields_by_name['offset']._serialized_options = b'\212\265\030\002\010\006\212\265\030\003\020\200 \222?\0028 '
+  _BLOCK.fields_by_name['offset']._serialized_options = b'\222?\0028 \212\265\030\005\010\006\020\200 '
   _BLOCK.fields_by_name['address']._options = None
   _BLOCK.fields_by_name['address']._serialized_options = b'\212\265\030\002 \001'
   _BLOCK.fields_by_name['oneWireBusId']._options = None
-  _BLOCK.fields_by_name['oneWireBusId']._serialized_options = b'\212\265\030\003\030\202\002\222?\0028\020\212\265\030\002(\001'
+  _BLOCK.fields_by_name['oneWireBusId']._serialized_options = b'\222?\0028\020\212\265\030\005\030\202\002(\001'
   _BLOCK._options = None
-  _BLOCK._serialized_options = b'\212\265\030\003\030\256\002\212\265\030\002H\002\212\265\030\002H\t'
-  _BLOCK._serialized_start=82
-  _BLOCK._serialized_end=260
+  _BLOCK._serialized_options = b'\212\265\030\007\030\256\002J\002\002\t'
+  _globals['_BLOCK']._serialized_start=82
+  _globals['_BLOCK']._serialized_end=232
 # @@protoc_insertion_point(module_scope)

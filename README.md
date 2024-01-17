@@ -10,16 +10,17 @@ This includes USB/TCP communication with the controller, but also encoding, deco
 
 ## Installation
 
-To set up the development environment, follow the instructions at <https://github.com/BrewBlox/brewblox-boilerplate#readme>.
+To set up the development environment, follow the instructions at <https://brewblox.com/dev/service/python_env.html>.
 
-Integration tests run against the firmware simulator.
+## Tests
 
-**If you run Ubuntu 22.04, and your tests fail, you may need to manually install libssl 1.1**.
+Integration tests run against the firmware simulator. This firmware is downloaded, but not committed.
+To ensure you have the latest firmware, run `invoke download-firmware`.
+This also happens during `invoke update-firmware`.
 
-```sh
-wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb
-sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2_amd64.deb
-```
+During tests, you may need to kill the pytest process.
+This will cause it to skip test teardown, and leave leftover containers and processes. \
+To remove these leftovers, run `invoke testclean`.
 
 ## Firmware
 
@@ -33,7 +34,8 @@ The brewblox-proto repository only contains .proto files. The associated pb2.py 
 
 Firmware dependency management is handled by [invoke](https://docs.pyinvoke.org/en/stable/index.html) commands, defined in `tasks.py`:
 
-`invoke update-firmware` fetches the latest firmware.ini file for a given firmware build (*develop* by default), checks out the associated brewblox-proto commit for the submodule, and calls both `compile-proto.sh` and `download-firmware.sh`.
+`invoke update-firmware` fetches the latest firmware.ini file for a given firmware build (*develop* by default),
+checks out the associated brewblox-proto commit for the submodule, and then calls `compile-proto` and `download-firmware`.
 
 `invoke compile-proto` compiles .proto files found in the proto submodule into _pb2.py python files.
 The_pb2.py files are committed into version control.

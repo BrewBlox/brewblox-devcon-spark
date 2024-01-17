@@ -7,28 +7,22 @@ MockConnection is an alternative to StreamConnection or MqttConnection.
 This prevents having to spin up a simulator in a separate process for tests.
 """
 
+import logging
 from datetime import datetime
 from itertools import count
-from typing import Optional, Union
 
-from aiohttp import web
-from brewblox_service import brewblox_logger
-
-from brewblox_devcon_spark import codec, const
-from brewblox_devcon_spark.codec import bloxfield
-from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
-                                          ErrorCode, FirmwareBlock,
-                                          IntermediateRequest,
-                                          IntermediateResponse, Opcode,
-                                          ResetData, ResetReason)
-
+from .. import codec, const, utils
+from ..codec import bloxfield
+from ..models import (DecodedPayload, EncodedPayload, ErrorCode, FirmwareBlock,
+                      IntermediateRequest, IntermediateResponse, Opcode,
+                      ResetData, ResetReason)
 from .connection_impl import ConnectionCallbacks, ConnectionImplBase
 
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 # an ErrorCode will be returned
 # a None value will cause no response to be returned
-NEXT_ERROR: list[Union[ErrorCode, None]] = []
+NEXT_ERROR: list[ErrorCode | None] = []
 
 
 def default_blocks() -> dict[int, FirmwareBlock]:
@@ -82,15 +76,13 @@ def default_blocks() -> dict[int, FirmwareBlock]:
 
 class MockConnection(ConnectionImplBase):
     def __init__(self,
-                 app: web.Application,
                  device_id: str,
                  callbacks: ConnectionCallbacks,
                  ) -> None:
         super().__init__('MOCK', device_id, callbacks)
-        self.app = app
 
         self._start_time = datetime.now()
-        self._codec = codec.Codec(app, strip_readonly=False)
+        self._codec = codec.Codec(strip_readonly=False)
         self._id_counter = count(start=const.USER_NID_START)
         self._blocks: dict[int, FirmwareBlock] = default_blocks()
 
@@ -139,21 +131,25 @@ class MockConnection(ConnectionImplBase):
         sysinfo_block.data['systemTime'] = self._start_time.timestamp() + elapsed.total_seconds()
 
     async def welcome(self):
+        config = utils.get_config()
+        fw_config = utils.get_fw_config()
         welcome = [
             '!BREWBLOX',
-            self.app['ini']['firmware_version'],
-            self.app['ini']['proto_version'],
-            self.app['ini']['firmware_date'],
-            self.app['ini']['proto_date'],
-            self.app['ini']['system_version'],
+            fw_config.firmware_version,
+            fw_config.proto_version,
+            fw_config.firmware_date,
+            fw_config.proto_date,
+            fw_config.system_version,
             'mock',
             ResetReason.NONE.value,
             ResetData.NOT_SPECIFIED.value,
-            self.app['config']['device_id'],
+            config.device_id,
         ]
         await self.on_event(','.join(welcome))
 
-    async def handle_command(self, request: IntermediateRequest) -> Optional[IntermediateResponse]:  # pragma: no cover
+    async def handle_command(self,
+                             request: IntermediateRequest
+                             ) -> IntermediateResponse | None:  # pragma: no cover
         response = IntermediateResponse(
             msgId=request.msgId,
             error=ErrorCode.OK,
@@ -278,8 +274,8 @@ class MockConnection(ConnectionImplBase):
         self.disconnected.set()
 
 
-async def connect_mock(app: web.Application, callbacks: ConnectionCallbacks) -> ConnectionImplBase:
-    device_id = app['config']['device_id']
-    conn = MockConnection(app, device_id, callbacks)
+async def connect_mock(callbacks: ConnectionCallbacks) -> ConnectionImplBase:
+    config = utils.get_config()
+    conn = MockConnection(config.device_id, callbacks)
     await conn.connect()
     return conn

@@ -4,9 +4,8 @@
 """Generated protocol buffer code."""
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -16,27 +15,19 @@ import brewblox_pb2 as brewblox__pb2
 import nanopb_pb2 as nanopb__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0bMutex.proto\x12\nblox.Mutex\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"s\n\x05\x42lock\x12/\n\rwaitRemaining\x18\x02 \x01(\rB\x18\x8a\xb5\x18\x02(\x01\x8a\xb5\x18\x02\x08\x03\x8a\xb5\x18\x03\x10\xe8\x07\x92?\x02\x38 \x12*\n\x15\x64ifferentActuatorWait\x18Z \x01(\x08\x42\x0b\x8a\xb5\x18\x02H\x01\x92?\x02\x18\x03:\r\x8a\xb5\x18\x03\x18\xb6\x02\x8a\xb5\x18\x02H\x08\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0bMutex.proto\x12\nblox.Mutex\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"h\n\x05\x42lock\x12\'\n\rwaitRemaining\x18\x02 \x01(\rB\x10\x92?\x02\x38 \x8a\xb5\x18\x07\x08\x03\x10\xe8\x07(\x01\x12*\n\x15\x64ifferentActuatorWait\x18Z \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01:\n\x8a\xb5\x18\x06\x18\xb6\x02J\x01\x08\x62\x06proto3')
 
-
-
-_BLOCK = DESCRIPTOR.message_types_by_name['Block']
-Block = _reflection.GeneratedProtocolMessageType('Block', (_message.Message,), {
-  'DESCRIPTOR' : _BLOCK,
-  '__module__' : 'Mutex_pb2'
-  # @@protoc_insertion_point(class_scope:blox.Mutex.Block)
-  })
-_sym_db.RegisterMessage(Block)
-
+_globals = globals()
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'Mutex_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
-
   DESCRIPTOR._options = None
   _BLOCK.fields_by_name['waitRemaining']._options = None
-  _BLOCK.fields_by_name['waitRemaining']._serialized_options = b'\212\265\030\002(\001\212\265\030\002\010\003\212\265\030\003\020\350\007\222?\0028 '
+  _BLOCK.fields_by_name['waitRemaining']._serialized_options = b'\222?\0028 \212\265\030\007\010\003\020\350\007(\001'
   _BLOCK.fields_by_name['differentActuatorWait']._options = None
-  _BLOCK.fields_by_name['differentActuatorWait']._serialized_options = b'\212\265\030\002H\001\222?\002\030\003'
+  _BLOCK.fields_by_name['differentActuatorWait']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
   _BLOCK._options = None
-  _BLOCK._serialized_options = b'\212\265\030\003\030\266\002\212\265\030\002H\010'
-  _BLOCK._serialized_start=57
-  _BLOCK._serialized_end=172
+  _BLOCK._serialized_options = b'\212\265\030\006\030\266\002J\001\010'
+  _globals['_BLOCK']._serialized_start=57
+  _globals['_BLOCK']._serialized_end=161
 # @@protoc_insertion_point(module_scope)

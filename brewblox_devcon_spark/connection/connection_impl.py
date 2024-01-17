@@ -34,9 +34,6 @@ class ConnectionImplBase(ConnectionCallbacks):
         self._connected = asyncio.Event()
         self._disconnected = asyncio.Event()
 
-    def __str__(self):
-        return f'<{type(self).__name__} for {self._kind} {self._address}>'
-
     @property
     def kind(self) -> ConnectionKind_:
         return self._kind

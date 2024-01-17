@@ -6,40 +6,85 @@ authors = ["BrewPi <development@brewpi.com>"]
 license = "GPL-3.0"
 readme = "README.md"
 
-[tool.pyright]
-include = ["brewblox_devcon_spark"]
-exclude = ["**/node_modules", "**/__pycache__"]
-
-useLibraryCodeForTypes = true
-reportMissingImports = "information"
-
 [tool.poetry.dependencies]
-python = ">=3.9,<4"
-brewblox-service = "^2.1.1"
+python = ">=3.11,<4"
 pyserial-asyncio = "^0.6"
-protobuf = "<4.0dev"
-aiofiles = "^0.8.0"
+protobuf = "<4.25"
+aiofiles = "^23.2.1"
 aiozeroconf = "^0.1.8"
 debugpy = "^1.5.1"
-Pint = "^0.19"
+Pint = "^0.22"
 esptool = "^4.0"
 pytimeparse = "^1.1.8"
 ciso8601 = "^2.2.0"
-cryptography = "40.0.1"
-pydantic = "==1.*"
+fastapi = "^0.104.1"
+uvicorn = { extras = ["standard"], version = "^0.24.0.post1" }
+httpx = "^0.25.2"
+fastapi-mqtt = "^2.0.0"
+pydantic-settings = "^2.1.0"
+websockets = "^12.0"
+httpx-ws = "^0.4.3"
+dnspython = "^2.4.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
 pytest-cov = "*"
 pytest-mock = "*"
-pytest-aiohttp = "*"
 flake8 = "*"
 autopep8 = "*"
-aresponses = "*"
 flake8-quotes = "*"
-invoke = "^2.1.3"
-grpcio-tools = "<1.49"
+invoke = "*"
+grpcio-tools = "^1.58.0"
+flake8-pyproject = "*"
+pytest-docker = "*"
+pytest-asyncio = "*"
+pytest-httpx = "*"
+asgi-lifespan = "*"
 
 [build-system]
-requires = ["poetry>=0.12", "cryptography==40.0.1"]
-build-backend = "poetry.masonry.api"
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pyright]
+include = ["brewblox_devcon_spark"]
+exclude = ["**/node_modules", "**/__pycache__"]
+useLibraryCodeForTypes = true
+reportMissingImports = "information"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+addopts = """
+    --ignore=brewblox_devcon_spark/codec/proto-compiled/
+    --cov=brewblox_devcon_spark
+    --cov-branch
+    --cov-report=term-missing:skip-covered
+    --cov-fail-under=100
+    --no-cov-on-fail
+    --durations=3
+    """
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "except asyncio.CancelledError:",
+]
+
+[tool.coverage.run]
+omit = [
+    "brewblox_devcon_spark/ymodem.py",
+    "brewblox_devcon_spark/codec/proto-compiled/*",
+]
+
+[tool.flake8]
+max-line-length = 120
+exclude = "*_pb2.py,.venv"
+
+[tool.autopep8]
+max-line-length = 120
