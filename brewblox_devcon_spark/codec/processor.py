@@ -15,7 +15,7 @@ from typing import Any, Iterator
 from google.protobuf import json_format
 from google.protobuf.descriptor import Descriptor, FieldDescriptor
 
-from brewblox_devcon_spark.models import DecodedPayload, MaskMode
+from brewblox_devcon_spark.models import DecodedPayload, MaskField, MaskMode
 
 from . import unit_conversion
 from .opts import DateFormatOpt, DecodeOpts, FilterOpt, MetadataOpt
@@ -28,11 +28,54 @@ LOGGER = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class OptionElement():
     field: FieldDescriptor
+    """The protobuf field descriptor"""
+
     obj: dict
+    """The raw data in python format"""
+
     key: str
+    """The key for `obj` in python ({key:obj})"""
+
     base_key: str
+    """The key for `obj` with any unit/link postfixes removed
+
+    Example: `key` = 'value[degC]', `base_key` = 'value'
+    """
+
     postfix: str
-    nested: bool
+    """The postfixed content removed from `key` to make `base_key`
+
+    This does not include brackets.
+    Example: `key` = 'value[degC]', `postfix` = 'degC'
+    """
+
+    address: tuple[int | None]
+    """The nested protobuf address, expressed as field tags.
+
+    A None value indicates a member of a repeated field
+
+    Example:
+        `{
+            tag_1: {
+                tag_2: {
+                    tag_3: True,
+                    tag_4: False,
+                },
+                tag_5: [
+                    { tag_6: True },
+                    { tag_6: True },
+                ],
+            },
+        }`
+        yields addresses:
+        - (1,)
+        - (1,2)
+        - (1,2,3)
+        - (1,2,4)
+        - (1,5)
+        - (1,5,None,6)
+        - (1,5,None,6)
+    """
 
 
 class ProtobufProcessor():
@@ -85,7 +128,18 @@ class ProtobufProcessor():
     def unpack_bit_flags(flags: int) -> list[int]:
         return [i for i in range(8) if 1 << i & flags]
 
-    def _find_elements(self, desc: Descriptor, obj: dict, nested: bool = False) -> Iterator[OptionElement]:
+    @staticmethod
+    def matching_address(field: MaskField, match: tuple[int | None]):
+        for ma, fa in zip(match, field.address):
+            if ma is not None and ma != fa:
+                return False
+        return True
+
+    def _find_elements(self,
+                       desc: Descriptor,
+                       obj: dict,
+                       parent_address: tuple[int | None] = (),
+                       ) -> Iterator[OptionElement]:
         """
         Recursively walks `obj`, and yields an `OptionElement` for each value.
 
@@ -96,17 +150,23 @@ class ProtobufProcessor():
         for key in set(obj.keys()):
             base_key, postfix = self._postfix_pattern.findall(key)[0]
             field: FieldDescriptor = desc.fields_by_name[base_key]
+            address: tuple[int | None] = (*parent_address, field.number)
 
+            # Field is a submessage, not a direct value type
             if field.message_type:
+                # traverse all members of repeated submessage
+                # obj is { key: [{...},{...}] }
                 if field.label == FieldDescriptor.LABEL_REPEATED:
-                    children = [v for v in obj[key]]
+                    nested_address = (*address, None)  # insert None to indicate a repeated field
+                    for childobj in obj[key]:
+                        yield from self._find_elements(field.message_type, childobj, nested_address)
+
+                # traverse regular submessage
+                # obj is { key: {...} }
                 else:
-                    children = [obj[key]]
+                    yield from self._find_elements(field.message_type, obj[key], address)
 
-                for c in children:
-                    yield from self._find_elements(field.message_type, c, True)
-
-            yield OptionElement(field, obj, key, base_key, postfix, nested)
+            yield OptionElement(field, obj, key, base_key, postfix, address)
 
         return
 
@@ -205,8 +265,10 @@ class ProtobufProcessor():
                 continue
 
             # We don't support exclusive masks at this level
-            if payload.maskMode == MaskMode.INCLUSIVE and not element.nested:
-                payload.mask.append(element.field.number)
+            # List items are not supported for patching
+            # Only insert a field mask for the `repeated` field itself, not its children
+            if payload.maskMode == MaskMode.INCLUSIVE and None not in element.address:
+                payload.maskFields.append(MaskField(address=list(element.address)))
 
             def _convert_value(value: Any) -> str | int | float:
                 if options.unit:
@@ -326,12 +388,12 @@ class ProtobufProcessor():
         for element in self._find_elements(desc, payload.content):
             options = self._field_options(element.field)
 
-            if payload.maskMode == MaskMode.NO_MASK or element.nested:
+            if payload.maskMode == MaskMode.NO_MASK:
                 excluded = False
-            elif payload.maskMode == MaskMode.INCLUSIVE:
-                excluded = element.field.number not in payload.mask
-            elif payload.maskMode == MaskMode.EXCLUSIVE:
-                excluded = element.field.number in payload.mask
+            elif payload.maskMode in [MaskMode.INCLUSIVE, MaskMode.EXCLUSIVE]:
+                masked = any((f for f in payload.maskFields
+                              if self.matching_address(f, element.address)))
+                excluded = masked ^ (payload.maskMode == MaskMode.INCLUSIVE)
             else:
                 raise NotImplementedError(f'{payload.maskMode=}')
 
