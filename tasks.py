@@ -1,18 +1,25 @@
 from configparser import ConfigParser
+from contextlib import suppress
 from pathlib import Path
 
 from invoke import Context, task
+from invoke.exceptions import UnexpectedExit
 
-from brewblox_devcon_spark.models import ServiceFirmwareIni
+from brewblox_devcon_spark.models import FirmwareConfig
 
 ROOT = Path(__file__).parent.resolve()
 FW_BASE_URL = 'https://brewblox.blob.core.windows.net/firmware'
 
 
-def parse_ini() -> ServiceFirmwareIni:
+def get_fw_config() -> FirmwareConfig:  # pragma: no cover
+    """
+    Globally cached getter for firmware config.
+    When first called, config is parsed from the firmware.ini file.
+    """
     parser = ConfigParser()
-    parser.read((ROOT / 'firmware.ini').resolve())
-    config = ServiceFirmwareIni(parser['FIRMWARE'].items())
+    parser.read(ROOT / 'firmware.ini')
+    raw = dict(parser['FIRMWARE'].items())
+    config = FirmwareConfig(**raw)
     return config
 
 
@@ -32,11 +39,11 @@ def compile_proto(ctx: Context):
 
 @task
 def download_firmware(ctx: Context):
+    fw_config = get_fw_config()
     fw_dir = ROOT / 'firmware'
-    ini = parse_ini()
 
-    fw_date = ini['firmware_date']
-    fw_version = ini['firmware_version']
+    fw_date = fw_config.firmware_date
+    fw_version = fw_config.firmware_version
     fw_file = 'brewblox-release.tar.gz'
     url = f'{FW_BASE_URL}/{fw_date}-{fw_version}/{fw_file}'
     print(f'Downloading firmware release {fw_date}-{fw_version}')
@@ -62,16 +69,34 @@ def update_firmware(ctx: Context, release='develop'):
     with ctx.cd(ROOT):
         ctx.run(f'curl -sSf -o firmware.ini "{url}"')
 
-    ini = parse_ini()
-    fw_date = ini['firmware_date']
-    fw_version = ini['firmware_version']
-    proto_version = ini['proto_version']
+    fw_config = get_fw_config()
+    fw_date = fw_config.firmware_date
+    fw_version = fw_config.firmware_version
+    proto_version = fw_config.proto_version
 
     print(f'Updating to firmware release {fw_date}-{fw_version}')
 
     with ctx.cd(ROOT / 'brewblox-proto'):
         ctx.run('git fetch')
         ctx.run(f'git checkout --quiet "{proto_version}"')
+
+
+@task
+def testclean(ctx: Context):
+    """
+    Cleans up leftover test containers, networks, and simulators.
+    Container cleanup is normally done in test fixtures.
+    This is skipped if debugged tests are stopped halfway.
+    """
+    result = ctx.run('docker ps -aq --filter "name=pytest"', hide='stdout')
+    containers = result.stdout.strip().replace('\n', ' ')
+    if containers:
+        ctx.run(f'docker rm -f {containers}')
+    ctx.run('docker network prune -f')
+
+    with suppress(UnexpectedExit):
+        # returns 1 if nothing killed
+        ctx.run('pkill -ef -9 brewblox-amd64.sim')
 
 
 @task
@@ -83,6 +108,6 @@ def build(ctx: Context):
 
 
 @task(pre=[build])
-def local_docker(ctx: Context, tag='local'):
+def image(ctx: Context, tag='local'):
     with ctx.cd(ROOT):
         ctx.run(f'docker build -t ghcr.io/brewblox/brewblox-devcon-spark:{tag} -f Dockerfile.service .')

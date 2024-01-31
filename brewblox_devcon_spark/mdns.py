@@ -3,25 +3,25 @@ mDNS discovery of Spark devices
 """
 
 import asyncio
+import logging
 from collections import namedtuple
 from contextlib import suppress
+from datetime import timedelta
 from socket import AF_INET, inet_aton, inet_ntoa
-from typing import Generator, Optional
+from typing import Generator
 
 from aiozeroconf import ServiceBrowser, ServiceStateChange, Zeroconf
 from aiozeroconf.aiozeroconf import ServiceInfo
-from brewblox_service import brewblox_logger
 
-DEFAULT_TIMEOUT_S = 5
 SIM_ADDR = inet_aton('0.0.0.0')
 
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 ConnectInfo = namedtuple('ConnectInfo', ['address', 'port', 'id'])
 
 
 async def _discover(
-    desired_id: Optional[str],
+    desired_id: str | None,
     dns_type: str,
 ) -> Generator[ConnectInfo, None, None]:
     queue: asyncio.Queue[ServiceInfo] = asyncio.Queue()
@@ -44,7 +44,7 @@ async def _discover(
                 continue  # discard unknown addresses and simulators
 
             addr = inet_ntoa(info.address)
-            id = info.properties.get(b'ID', bytes()).decode().lower()
+            id = info.properties.get(b'ID', b'').decode().lower()
 
             if not id:
                 LOGGER.error(f'Invalid device: {info.name} @ {addr}:{info.port} has no ID TXT property')
@@ -59,21 +59,21 @@ async def _discover(
 
 
 async def discover_all(
-    desired_id: Optional[str],
+    desired_id: str | None,
     dns_type: str,
-    timeout_v: float,
+    timeout: timedelta,
 ) -> Generator[ConnectInfo, None, None]:
     with suppress(asyncio.TimeoutError):
-        async with asyncio.timeout(timeout_v):
+        async with asyncio.timeout(timeout.total_seconds()):
             async for res in _discover(desired_id, dns_type):  # pragma: no branch
                 yield res
 
 
 async def discover_one(
-    desired_id: Optional[str],
+    desired_id: str | None,
     dns_type: str,
-    timeout_v: Optional[float] = None,
+    timeout: timedelta,
 ) -> ConnectInfo:
-    async with asyncio.timeout(timeout_v):
+    async with asyncio.timeout(timeout.total_seconds()):
         async for res in _discover(desired_id, dns_type):  # pragma: no branch
             return res

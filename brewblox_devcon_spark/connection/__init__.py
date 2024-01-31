@@ -1,12 +1,21 @@
-from aiohttp import web
+from contextlib import asynccontextmanager
 
 from . import connection_handler, mqtt_connection
+from .connection_handler import CV
 
 
-def setup(app: web.Application):
-    mqtt_connection.setup(app)
-    connection_handler.setup(app)
+@asynccontextmanager
+async def lifespan():
+    async with connection_handler.lifespan():
+        yield
 
 
-def fget(app: web.Application):
-    return connection_handler.fget(app)
+def setup():
+    mqtt_connection.setup()
+    connection_handler.setup()
+
+
+__all__ = [
+    'setup',
+    'CV'
+]
