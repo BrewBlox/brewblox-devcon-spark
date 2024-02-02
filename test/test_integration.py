@@ -303,6 +303,7 @@ async def test_patch(client: AsyncClient, block_args: Block, s_publish: Mock):
     assert resp.status_code == 200
     assert s_publish.call_count == 2
 
+    # Create block with only min constraint
     pwm_block = Block(id='pwm',
                       type='ActuatorPwm',
                       data={
@@ -314,19 +315,57 @@ async def test_patch(client: AsyncClient, block_args: Block, s_publish: Mock):
     resp = await client.post('/blocks/create', json=pwm_block.model_dump())
     assert resp.status_code == 201
 
-    pwm_patch = Block(id='pwm',
+    # Add a max constraint in a patch
+    pwm_block = Block(id='pwm',
                       type='ActuatorPwm',
                       data={
                           'constraints': {
                               'max': {'value': 100},
                           },
                       })
-    resp = await client.post('/blocks/patch', json=pwm_patch.model_dump())
+    resp = await client.post('/blocks/patch', json=pwm_block.model_dump())
     assert resp.status_code == 200
+
     patched = Block.model_validate_json(resp.text)
+    assert patched.data['enabled'] is True
     assert patched.data['constraints'] == {
         'min': {'enabled': False, 'limiting': False, 'value': 10},
         'max': {'enabled': False, 'limiting': False, 'value': 100},
+    }
+
+    # Patch the max constraint to only edit the `enabled` field
+    pwm_block = Block(id='pwm',
+                      type='ActuatorPwm',
+                      data={
+                          'constraints': {
+                              'max': {'enabled': True},
+                          },
+                      })
+    resp = await client.post('/blocks/patch', json=pwm_block.model_dump())
+    assert resp.status_code == 200
+
+    patched = Block.model_validate_json(resp.text)
+    assert patched.data['enabled'] is True
+    assert patched.data['constraints'] == {
+        'min': {'enabled': False, 'limiting': False, 'value': 10},
+        'max': {'enabled': True, 'limiting': False, 'value': 100},
+    }
+
+    # Remove the max constraint in a patch
+    pwm_block = Block(id='pwm',
+                      type='ActuatorPwm',
+                      data={
+                          'constraints': {
+                              'max': None,
+                          },
+                      })
+    resp = await client.post('/blocks/patch', json=pwm_block.model_dump())
+    assert resp.status_code == 200
+
+    patched = Block.model_validate_json(resp.text)
+    assert patched.data['enabled'] is True
+    assert patched.data['constraints'] == {
+        'min': {'enabled': False, 'limiting': False, 'value': 10},
     }
 
 

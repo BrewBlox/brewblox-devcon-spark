@@ -52,7 +52,11 @@ class OptionElement():
     address: tuple[int | None]
     """The nested protobuf address, expressed as field tags.
 
-    A None value indicates a member of a repeated field
+    A None value indicates an address that should not be
+    included in a mask. Only leaf nodes should be included
+    in an inclusive mask, as a root node mask serves as a wildcard.
+
+    Repeated fields are always considered leaf nodes.
 
     Example:
         `{
@@ -65,16 +69,18 @@ class OptionElement():
                     { tag_6: True },
                     { tag_6: True },
                 ],
+                tag_7: None,
             },
         }`
         yields addresses:
-        - (1,)
-        - (1,2)
+        - (1,None)
+        - (1,2,None)
         - (1,2,3)
         - (1,2,4)
         - (1,5)
         - (1,5,None,6)
         - (1,5,None,6)
+        - (1,7)
     """
 
 
@@ -130,8 +136,8 @@ class ProtobufProcessor():
 
     @staticmethod
     def matches_address(field: MaskField, match: tuple[int | None]):
-        for ma, fa in zip(match, field.address):
-            if ma is not None and ma != fa:
+        for fa_tag, ma_tag in zip(field.address, match):
+            if fa_tag is not None and fa_tag != ma_tag:
                 return False
         return True
 
@@ -160,21 +166,37 @@ class ProtobufProcessor():
             field: FieldDescriptor = desc.fields_by_name[base_key]
             address: tuple[int | None] = (*parent_address, field.number)
 
-            # Field is a submessage, not a direct value type
-            if field.message_type:
-                # traverse all members of repeated submessage
-                # obj is { key: [{...},{...}] }
-                if field.label == FieldDescriptor.LABEL_REPEATED:
-                    nested_address = (*address, None)  # insert None to indicate a repeated field
-                    for childobj in obj[key]:
-                        yield from self._walk_elements(field.message_type, childobj, nested_address)
+            # Value field, no need for recursion
+            # This is a leaf node
+            # obj is { key: ... }
+            if not field.message_type:
+                yield OptionElement(field, obj, key, base_key, postfix, address)
 
-                # traverse regular submessage
-                # obj is { key: {...} }
-                else:
-                    yield from self._walk_elements(field.message_type, obj[key], address)
+            # Explicitly deleted submessage field
+            # Stop recursion
+            # obj is { key: None }
+            # Because we stop here, this field is a leaf node
+            elif obj[key] is None:
+                yield OptionElement(field, obj, key, base_key, postfix, address)
 
-            yield OptionElement(field, obj, key, base_key, postfix, address)
+            # Repeated field
+            # traverse all members
+            # obj is { key: [{...},{...}] }
+            # Because we can't patch list items, the repeated field itself is a leaf node
+            elif field.label == FieldDescriptor.LABEL_REPEATED:
+                for childobj in obj[key]:
+                    yield from self._walk_elements(field.message_type, childobj, (*address, None))
+
+                yield OptionElement(field, obj, key, base_key, postfix, address)
+
+            # Submessage with content
+            # traverse all members
+            # obj is { key: {...} }
+            # The field itself is not a leaf node
+            else:
+                yield from self._walk_elements(field.message_type, obj[key], address)
+                # This is not a leaf node. Its address should not be included in the mask
+                yield OptionElement(field, obj, key, base_key, postfix, (*address, None))
 
         return
 
