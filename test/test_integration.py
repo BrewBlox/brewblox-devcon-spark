@@ -303,6 +303,32 @@ async def test_patch(client: AsyncClient, block_args: Block, s_publish: Mock):
     assert resp.status_code == 200
     assert s_publish.call_count == 2
 
+    pwm_block = Block(id='pwm',
+                      type='ActuatorPwm',
+                      data={
+                          'enabled': True,
+                          'constraints': {
+                              'min': {'value': 10},
+                          },
+                      })
+    resp = await client.post('/blocks/create', json=pwm_block.model_dump())
+    assert resp.status_code == 201
+
+    pwm_patch = Block(id='pwm',
+                      type='ActuatorPwm',
+                      data={
+                          'constraints': {
+                              'max': {'value': 100},
+                          },
+                      })
+    resp = await client.post('/blocks/patch', json=pwm_patch.model_dump())
+    assert resp.status_code == 200
+    patched = Block.model_validate_json(resp.text)
+    assert patched.data['constraints'] == {
+        'min': {'enabled': False, 'limiting': False, 'value': 10},
+        'max': {'enabled': False, 'limiting': False, 'value': 100},
+    }
+
 
 async def test_batch_patch(client: AsyncClient, block_args: Block, s_publish: Mock):
     resp = await client.post('/blocks/create', json=block_args.model_dump())

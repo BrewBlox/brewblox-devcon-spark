@@ -129,13 +129,21 @@ class ProtobufProcessor():
         return [i for i in range(8) if 1 << i & flags]
 
     @staticmethod
-    def matching_address(field: MaskField, match: tuple[int | None]):
+    def matches_address(field: MaskField, match: tuple[int | None]):
         for ma, fa in zip(match, field.address):
             if ma is not None and ma != fa:
                 return False
         return True
 
-    def _find_elements(self,
+    @staticmethod
+    def unit_name(unit_num: int) -> str:
+        return brewblox_pb2.UnitType.Name(unit_num)
+
+    @staticmethod
+    def type_name(blockType_num: int) -> str:
+        return brewblox_pb2.BlockType.Name(blockType_num)
+
+    def _walk_elements(self,
                        desc: Descriptor,
                        obj: dict,
                        parent_address: tuple[int | None] = (),
@@ -159,12 +167,12 @@ class ProtobufProcessor():
                 if field.label == FieldDescriptor.LABEL_REPEATED:
                     nested_address = (*address, None)  # insert None to indicate a repeated field
                     for childobj in obj[key]:
-                        yield from self._find_elements(field.message_type, childobj, nested_address)
+                        yield from self._walk_elements(field.message_type, childobj, nested_address)
 
                 # traverse regular submessage
                 # obj is { key: {...} }
                 else:
-                    yield from self._find_elements(field.message_type, obj[key], address)
+                    yield from self._walk_elements(field.message_type, obj[key], address)
 
             yield OptionElement(field, obj, key, base_key, postfix, address)
 
@@ -172,12 +180,6 @@ class ProtobufProcessor():
 
     def _field_options(self, field: FieldDescriptor) -> brewblox_pb2.FieldOpts:
         return field.GetOptions().Extensions[self._BREWBLOX_PROVIDER]
-
-    def _unit_name(self, unit_num: int) -> str:
-        return brewblox_pb2.UnitType.Name(unit_num)
-
-    def _type_name(self, blockType_num: int) -> str:
-        return brewblox_pb2.BlockType.Name(blockType_num)
 
     def _encode_unit(self, value: float | dict, unit_type: str, postfix: str | None) -> float:
         if isinstance(value, dict):
@@ -253,7 +255,7 @@ class ProtobufProcessor():
                 }
             }
         """
-        for element in self._find_elements(desc, payload.content):
+        for element in self._walk_elements(desc, payload.content):
             options = self._field_options(element.field)
 
             if options.ignored:
@@ -272,7 +274,7 @@ class ProtobufProcessor():
 
             def _convert_value(value: Any) -> str | int | float:
                 if options.unit:
-                    unit_name = self._unit_name(options.unit)
+                    unit_name = self.unit_name(options.unit)
                     value = self._encode_unit(value, unit_name, element.postfix or None)
 
                 if options.objtype:
@@ -385,14 +387,14 @@ class ProtobufProcessor():
                 }
             }
         """
-        for element in self._find_elements(desc, payload.content):
+        for element in self._walk_elements(desc, payload.content):
             options = self._field_options(element.field)
 
             if payload.maskMode == MaskMode.NO_MASK:
                 excluded = False
             elif payload.maskMode in [MaskMode.INCLUSIVE, MaskMode.EXCLUSIVE]:
                 masked = any((f for f in payload.maskFields
-                              if self.matching_address(f, element.address)))
+                              if self.matches_address(f, element.address)))
                 excluded = masked ^ (payload.maskMode == MaskMode.INCLUSIVE)
             else:
                 raise NotImplementedError(f'{payload.maskMode=}')
@@ -405,8 +407,8 @@ class ProtobufProcessor():
                 del element.obj[element.key]
                 continue
 
-            link_type = self._type_name(options.objtype)
-            qty_system_unit = self._unit_name(options.unit)
+            link_type = self.type_name(options.objtype)
+            qty_system_unit = self.unit_name(options.unit)
             qty_user_unit = self._converter.to_user_unit(qty_system_unit)
 
             def _convert_value(value: float | int | str) -> float | int | str | None:
