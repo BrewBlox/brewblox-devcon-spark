@@ -217,7 +217,7 @@ class OtaClient():
             match = re.search(r'<!(?P<message>FIRMWARE_UPDATER[^>]*)>', buffer)
             if match:
                 args = match.group('message').split(',')
-                message = HandshakeMessage(*args)
+                message = HandshakeMessage(*args[:8])
                 self._notify(f'Handshake received: {message}')
                 break
         else:
