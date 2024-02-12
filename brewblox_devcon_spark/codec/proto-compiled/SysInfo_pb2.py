@@ -21,7 +21,6 @@ _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'SysInfo_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
-
   DESCRIPTOR._options = None
   _BLOCK.fields_by_name['deviceId']._options = None
   _BLOCK.fields_by_name['deviceId']._serialized_options = b'\222?\002\010\014\212\265\030\004(\0018\001'

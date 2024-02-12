@@ -22,7 +22,6 @@ _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'Sequence_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
-
   DESCRIPTOR._options = None
   _ENABLEDISABLE.fields_by_name['target']._options = None
   _ENABLEDISABLE.fields_by_name['target']._serialized_options = b'\222?\0028\020\212\265\030\002\030\017'

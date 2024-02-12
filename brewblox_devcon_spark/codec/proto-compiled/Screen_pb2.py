@@ -20,7 +20,6 @@ _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'Screen_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
-
   DESCRIPTOR._options = None
   _LAYOUTNODE.fields_by_name['parent']._options = None
   _LAYOUTNODE.fields_by_name['parent']._serialized_options = b'\222?\0028\010'

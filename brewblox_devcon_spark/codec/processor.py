@@ -3,43 +3,92 @@ Input/output modification functions for transcoding
 """
 
 import ipaddress
+import logging
 import re
 from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
 from dataclasses import dataclass
 from functools import reduce
 from socket import htonl, ntohl
-from typing import Any, Iterator, Optional, Union
+from typing import Any, Iterator
 
-from brewblox_service import brewblox_logger
 from google.protobuf import json_format
 from google.protobuf.descriptor import Descriptor, FieldDescriptor
 
-from brewblox_devcon_spark.models import DecodedPayload, MaskMode
+from brewblox_devcon_spark.models import DecodedPayload, MaskField, MaskMode
 
+from . import unit_conversion
 from .opts import DateFormatOpt, DecodeOpts, FilterOpt, MetadataOpt
 from .pb2 import brewblox_pb2
 from .time_utils import serialize_datetime
-from .unit_conversion import UnitConverter
 
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
 class OptionElement():
     field: FieldDescriptor
+    """The protobuf field descriptor"""
+
     obj: dict
+    """The raw data in python format"""
+
     key: str
+    """The key for `obj` in python ({key:obj})"""
+
     base_key: str
+    """The key for `obj` with any unit/link postfixes removed
+
+    Example: `key` = 'value[degC]', `base_key` = 'value'
+    """
+
     postfix: str
-    nested: bool
+    """The postfixed content removed from `key` to make `base_key`
+
+    This does not include brackets.
+    Example: `key` = 'value[degC]', `postfix` = 'degC'
+    """
+
+    address: tuple[int | None]
+    """The nested protobuf address, expressed as field tags.
+
+    A None value indicates an address that should not be
+    included in a mask. Only leaf nodes should be included
+    in an inclusive mask, as a root node mask serves as a wildcard.
+
+    Repeated fields are always considered leaf nodes.
+
+    Example:
+        `{
+            tag_1: {
+                tag_2: {
+                    tag_3: True,
+                    tag_4: False,
+                },
+                tag_5: [
+                    { tag_6: True },
+                    { tag_6: True },
+                ],
+                tag_7: None,
+            },
+        }`
+        yields addresses:
+        - (1,None)
+        - (1,2,None)
+        - (1,2,3)
+        - (1,2,4)
+        - (1,5)
+        - (1,5,None,6)
+        - (1,5,None,6)
+        - (1,7)
+    """
 
 
 class ProtobufProcessor():
     _BREWBLOX_PROVIDER: FieldDescriptor = brewblox_pb2.field
 
-    def __init__(self, converter: UnitConverter, strip_readonly=True):
-        self._converter = converter
+    def __init__(self, strip_readonly=True):
+        self._converter = unit_conversion.CV.get()
         self._strip_readonly = strip_readonly
 
         symbols = re.escape('[]<>')
@@ -85,7 +134,26 @@ class ProtobufProcessor():
     def unpack_bit_flags(flags: int) -> list[int]:
         return [i for i in range(8) if 1 << i & flags]
 
-    def _find_elements(self, desc: Descriptor, obj: dict, nested: bool = False) -> Iterator[OptionElement]:
+    @staticmethod
+    def matches_address(field: MaskField, match: tuple[int | None]):
+        for fa_tag, ma_tag in zip(field.address, match):
+            if fa_tag is not None and fa_tag != ma_tag:
+                return False
+        return True
+
+    @staticmethod
+    def unit_name(unit_num: int) -> str:
+        return brewblox_pb2.UnitType.Name(unit_num)
+
+    @staticmethod
+    def type_name(blockType_num: int) -> str:
+        return brewblox_pb2.BlockType.Name(blockType_num)
+
+    def _walk_elements(self,
+                       desc: Descriptor,
+                       obj: dict,
+                       parent_address: tuple[int | None] = (),
+                       ) -> Iterator[OptionElement]:
         """
         Recursively walks `obj`, and yields an `OptionElement` for each value.
 
@@ -96,30 +164,46 @@ class ProtobufProcessor():
         for key in set(obj.keys()):
             base_key, postfix = self._postfix_pattern.findall(key)[0]
             field: FieldDescriptor = desc.fields_by_name[base_key]
+            address: tuple[int | None] = (*parent_address, field.number)
 
-            if field.message_type:
-                if field.label == FieldDescriptor.LABEL_REPEATED:
-                    children = [v for v in obj[key]]
-                else:
-                    children = [obj[key]]
+            # Value field, no need for recursion
+            # This is a leaf node
+            # obj is { key: ... }
+            if not field.message_type:
+                yield OptionElement(field, obj, key, base_key, postfix, address)
 
-                for c in children:
-                    yield from self._find_elements(field.message_type, c, True)
+            # Explicitly deleted submessage field
+            # Stop recursion
+            # obj is { key: None }
+            # Because we stop here, this field is a leaf node
+            elif obj[key] is None:
+                yield OptionElement(field, obj, key, base_key, postfix, address)
 
-            yield OptionElement(field, obj, key, base_key, postfix, nested)
+            # Repeated field
+            # traverse all members
+            # obj is { key: [{...},{...}] }
+            # Because we can't patch list items, the repeated field itself is a leaf node
+            elif field.label == FieldDescriptor.LABEL_REPEATED:
+                for childobj in obj[key]:
+                    yield from self._walk_elements(field.message_type, childobj, (*address, None))
+
+                yield OptionElement(field, obj, key, base_key, postfix, address)
+
+            # Submessage with content
+            # traverse all members
+            # obj is { key: {...} }
+            # The field itself is not a leaf node
+            else:
+                yield from self._walk_elements(field.message_type, obj[key], address)
+                # This is not a leaf node. Its address should not be included in the mask
+                yield OptionElement(field, obj, key, base_key, postfix, (*address, None))
 
         return
 
     def _field_options(self, field: FieldDescriptor) -> brewblox_pb2.FieldOpts:
         return field.GetOptions().Extensions[self._BREWBLOX_PROVIDER]
 
-    def _unit_name(self, unit_num: int) -> str:
-        return brewblox_pb2.UnitType.Name(unit_num)
-
-    def _type_name(self, blockType_num: int) -> str:
-        return brewblox_pb2.BlockType.Name(blockType_num)
-
-    def _encode_unit(self, value: Union[float, dict], unit_type: str, postfix: Optional[str]) -> float:
+    def _encode_unit(self, value: float | dict, unit_type: str, postfix: str | None) -> float:
         if isinstance(value, dict):
             user_value = value['value']
             user_unit = value.get('unit')
@@ -193,7 +277,7 @@ class ProtobufProcessor():
                 }
             }
         """
-        for element in self._find_elements(desc, payload.content):
+        for element in self._walk_elements(desc, payload.content):
             options = self._field_options(element.field)
 
             if options.ignored:
@@ -205,12 +289,14 @@ class ProtobufProcessor():
                 continue
 
             # We don't support exclusive masks at this level
-            if payload.maskMode == MaskMode.INCLUSIVE and not element.nested:
-                payload.mask.append(element.field.number)
+            # List items are not supported for patching
+            # Only insert a field mask for the `repeated` field itself, not its children
+            if payload.maskMode == MaskMode.INCLUSIVE and None not in element.address:
+                payload.maskFields.append(MaskField(address=list(element.address)))
 
-            def _convert_value(value: Any) -> Union[str, int, float]:
+            def _convert_value(value: Any) -> str | int | float:
                 if options.unit:
-                    unit_name = self._unit_name(options.unit)
+                    unit_name = self.unit_name(options.unit)
                     value = self._encode_unit(value, unit_name, element.postfix or None)
 
                 if options.objtype:
@@ -278,6 +364,7 @@ class ProtobufProcessor():
         * readonly:     Ignored: decoding means reading from controller.
         * ignored:      Strip value from output.
         * logged:       Tag for filtering output data.
+        * *_invalid_if: Sets value to None if equal to invalid value.
 
         Supported codec options:
         * filter:       If opts.filter == LOGGED, all values without options.logged are excluded from output.
@@ -322,15 +409,15 @@ class ProtobufProcessor():
                 }
             }
         """
-        for element in self._find_elements(desc, payload.content):
+        for element in self._walk_elements(desc, payload.content):
             options = self._field_options(element.field)
 
-            if payload.maskMode == MaskMode.NO_MASK or element.nested:
+            if payload.maskMode == MaskMode.NO_MASK:
                 excluded = False
-            elif payload.maskMode == MaskMode.INCLUSIVE:
-                excluded = element.field.number not in payload.mask
-            elif payload.maskMode == MaskMode.EXCLUSIVE:
-                excluded = element.field.number in payload.mask
+            elif payload.maskMode in [MaskMode.INCLUSIVE, MaskMode.EXCLUSIVE]:
+                masked = any((f for f in payload.maskFields
+                              if self.matches_address(f, element.address)))
+                excluded = masked ^ (payload.maskMode == MaskMode.INCLUSIVE)
             else:
                 raise NotImplementedError(f'{payload.maskMode=}')
 
@@ -342,16 +429,18 @@ class ProtobufProcessor():
                 del element.obj[element.key]
                 continue
 
-            link_type = self._type_name(options.objtype)
-            qty_system_unit = self._unit_name(options.unit)
+            link_type = self.type_name(options.objtype)
+            qty_system_unit = self.unit_name(options.unit)
             qty_user_unit = self._converter.to_user_unit(qty_system_unit)
 
-            def _convert_value(value: Union[float, int, str]) -> Any:
+            def _convert_value(value: float | int | str) -> float | int | str | None:
+                null_value = options.null_if_zero and value == 0
+
                 if options.scale:
                     value /= options.scale
 
                 if options.unit:
-                    if excluded:
+                    if excluded or null_value:
                         value = None
                     else:
                         value = self._converter.to_user_value(value, qty_system_unit)
@@ -369,7 +458,7 @@ class ProtobufProcessor():
                     return value
 
                 if options.objtype:
-                    if excluded:
+                    if excluded or null_value:
                         value = None
 
                     if opts.metadata == MetadataOpt.TYPED:
@@ -381,7 +470,7 @@ class ProtobufProcessor():
 
                     return value
 
-                if excluded:
+                if excluded or null_value:
                     return None
 
                 if options.hexed:
@@ -407,6 +496,14 @@ class ProtobufProcessor():
                     new_key = f'{element.key}<{link_type}>'
                 if options.unit:
                     new_key = f'{element.key}[{qty_user_unit}]'
+
+            # Filter values that should be omitted entirely
+            if options.omit_if_zero:
+                if isinstance(new_value, (list, set)):
+                    new_value = [v for v in new_value if v != 0]
+                elif new_value == 0:
+                    del element.obj[element.key]
+                    continue
 
             # Convert value
             if isinstance(new_value, (list, set)):

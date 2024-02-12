@@ -2,13 +2,12 @@
 Parses stream data into controlbox events and data
 """
 
+import logging
 import re
 from queue import Queue
 from typing import Generator
 
-from brewblox_service import brewblox_logger
-
-LOGGER = brewblox_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 # Pattern: '{start}(?P<message>[^{start}]*?){end}'
 EVENT_END = '>'
@@ -17,7 +16,7 @@ DATA_END = '\n'
 DATA_PATTERN = re.compile('^(?P<message>[^^]*?)\n')
 
 
-class ControlboxParser():
+class CboxParser:
 
     def __init__(self):
         self._buffer: str = ''
