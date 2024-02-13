@@ -1,5 +1,5 @@
 import asyncio
-from typing import Generator
+from typing import AsyncGenerator
 
 import pytest
 from pytest_mock import MockerFixture
@@ -46,7 +46,7 @@ def random_port() -> int:
 
 
 @pytest.fixture(autouse=True)
-async def echo_server(random_port: int) -> Generator[asyncio.Server, None, None]:
+async def echo_server(random_port: int) -> AsyncGenerator[asyncio.Server, None]:
     loop = asyncio.get_running_loop()
     server = await loop.create_server(EchoServerProtocol, 'localhost', random_port)
     async with server:
