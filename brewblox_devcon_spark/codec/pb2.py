@@ -41,6 +41,7 @@ if 'brewblox_pb2' not in sys.modules:  # pragma: no cover
     import Spark2Pins_pb2
     import Spark3Pins_pb2
     import SysInfo_pb2
+    import TempSensorAnalog_pb2
     import TempSensorCombi_pb2
     import TempSensorExternal_pb2
     import TempSensorMock_pb2
@@ -55,7 +56,6 @@ __all__ = [
     'ActuatorPwm_pb2',
     'Balancer_pb2',
     'brewblox_pb2',
-    'ChemProbe_pb2',
     'command_pb2',
     'DigitalActuator_pb2',
     'DigitalInput_pb2',
@@ -80,6 +80,7 @@ __all__ = [
     'Spark2Pins_pb2',
     'Spark3Pins_pb2',
     'SysInfo_pb2',
+    'TempSensorAnalog_pb2',
     'TempSensorCombi_pb2',
     'TempSensorExternal_pb2',
     'TempSensorMock_pb2',
