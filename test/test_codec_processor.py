@@ -3,7 +3,7 @@ import pytest
 from brewblox_devcon_spark.codec import (DecodeOpts, ProtobufProcessor,
                                          unit_conversion)
 from brewblox_devcon_spark.codec.pb2 import TempSensorOneWire_pb2
-from brewblox_devcon_spark.models import DecodedPayload, MaskMode
+from brewblox_devcon_spark.models import DecodedPayload, MaskField, MaskMode
 
 
 @pytest.fixture
@@ -98,14 +98,14 @@ def test_masking(degf_processor, desc):
     vals = generate_encoding_data()
     vals.maskMode = MaskMode.INCLUSIVE
     degf_processor.pre_encode(desc, vals)
-    assert sorted(vals.mask) == [
-        1,  # value
-        3,  # offset
-        4,  # address
+    assert sorted(list((f.address for f in vals.maskFields))) == [
+        [1],  # value
+        [3],  # offset
+        [4],  # address
     ]
 
     vals = generate_decoding_data()
     vals.maskMode = MaskMode.EXCLUSIVE
-    vals.mask = [1]  # value
+    vals.maskFields = [MaskField(address=[1])]  # value
     degf_processor.post_decode(desc, vals, DecodeOpts())
     assert vals.content['value']['value'] is None

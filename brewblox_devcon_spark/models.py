@@ -292,10 +292,14 @@ class MaskMode(enum.Enum):
     EXCLUSIVE = 2
 
 
+class MaskField(BaseModel):
+    address: list[int]
+
+
 class BasePayload(BaseModel):
     blockId: int
-    mask: list[int] = Field(default_factory=list)
     maskMode: MaskMode = MaskMode.NO_MASK
+    maskFields: list[MaskField] = Field(default_factory=list)
 
     @field_validator('maskMode', mode='before')
     @classmethod
