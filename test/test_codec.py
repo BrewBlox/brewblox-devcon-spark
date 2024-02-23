@@ -7,7 +7,7 @@ from brewblox_devcon_spark import codec, connection, exceptions
 from brewblox_devcon_spark.codec import (Codec, DecodeOpts, MetadataOpt,
                                          ProtoEnumOpt)
 from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
-                                          MaskMode)
+                                          MaskField, MaskMode)
 
 TEMP_SENSOR_TYPE_INT = 302
 
@@ -209,7 +209,7 @@ async def test_exclusive_mask():
             'logged': 10,  # tag 7
         },
         maskMode=MaskMode.EXCLUSIVE,
-        mask=[6],
+        maskFields=[MaskField(address=[6])],
     ))
     payload = cdc.decode_payload(enc_payload)
 
@@ -217,7 +217,7 @@ async def test_exclusive_mask():
     assert payload.content['deltaV']['unit'] == 'delta_degC / second'
     assert payload.content['logged'] == 10
     assert payload.maskMode == MaskMode.EXCLUSIVE
-    assert payload.mask == [6]
+    assert payload.maskFields == [MaskField(address=[6])]
 
     payload = cdc.decode_payload(enc_payload, opts=DecodeOpts(metadata=MetadataOpt.POSTFIX))
     assert payload.content['deltaV[delta_degC / second]'] is None

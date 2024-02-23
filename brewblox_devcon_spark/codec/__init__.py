@@ -148,8 +148,8 @@ class Codec:
                 blockType=impl.type_int,
                 subtype=impl.subtype_int,
                 content=content,
-                mask=payload.mask,
                 maskMode=payload.maskMode,
+                maskFields=payload.maskFields
             )
 
         except StopIteration:
@@ -197,8 +197,8 @@ class Codec:
                     blockType=impl.type_str,
                     subtype=impl.subtype_str,
                     content=content,
-                    mask=payload.mask,
                     maskMode=payload.maskMode,
+                    maskFields=payload.maskFields
                 )
                 return self._processor.post_decode(message.DESCRIPTOR, decoded, opts)
 
