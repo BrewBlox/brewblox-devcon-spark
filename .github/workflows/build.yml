@@ -22,7 +22,7 @@ jobs:
 
       - name: (Service) Image metadata
         id: service_meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           images: ghcr.io/brewblox/brewblox-devcon-spark
 
