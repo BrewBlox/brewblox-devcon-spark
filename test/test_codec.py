@@ -333,3 +333,39 @@ async def test_invalid_if_decoding():
     assert payload.content['listValues'][0]['value'] == pytest.approx(10)
     assert payload.content['deltaV']['value'] is None
     assert 'logged' not in payload.content
+
+
+async def test_map_fields():
+    cdc = codec.CV.get()
+
+    encoded_payload = cdc.encode_payload(DecodedPayload(
+        blockId=1,
+        blockType='Variables',
+        content={
+            'variables': {
+                'k1': {'digital': 'STATE_ACTIVE'},
+                'k2': {'temp[degC]': 20},
+                'k3': {'duration[s]': 10},
+            },
+        },
+    ))
+    payload = cdc.decode_payload(encoded_payload)
+    assert payload.content == {
+        'variables': {
+            'k1': {'digital': 'STATE_ACTIVE'},
+            'k2': {
+                'temp': {
+                    '__bloxtype': 'Quantity',
+                    'unit': 'degC',
+                    'value': pytest.approx(20),
+                },
+            },
+            'k3': {
+                'duration': {
+                    '__bloxtype': 'Quantity',
+                    'unit': 'second',
+                    'value': 10
+                },
+            },
+        }
+    }
