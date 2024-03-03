@@ -6,7 +6,7 @@ This converts Sequence block instructions from and to the line format.
 
 import re
 from datetime import timedelta
-from typing import Any
+from typing import Any, Iterable
 
 from google.protobuf.descriptor import Descriptor, FieldDescriptor
 
@@ -15,6 +15,12 @@ from brewblox_devcon_spark.codec.pb2 import Sequence_pb2, brewblox_pb2
 from brewblox_devcon_spark.models import Block
 
 INSTRUCTION_MSG_DESC: Descriptor = Sequence_pb2.Instruction.DESCRIPTOR
+RAW_PREFIX = '__raw__'
+VAR_PREFIX = '__var__'
+
+
+def base_keys(keys: Iterable[str]) -> set[str]:
+    return set(map(lambda k: k.removeprefix(RAW_PREFIX).removeprefix(VAR_PREFIX), keys))
 
 
 def from_line(line: str, line_num: int) -> dict:
@@ -65,8 +71,10 @@ def from_line(line: str, line_num: int) -> dict:
     except KeyError:
         raise ValueError(f'line {line_num}: Invalid instruction name: `{opcode}`')
 
-    def parse_arg_value(key: str, value: str) -> Any:
-        field_desc = opcode_arg_field_descs.get(key)
+    def parse_arg_entry(key: str, value: str) -> tuple[str, Any]:
+        raw_key = f'{RAW_PREFIX}{key}'
+        var_key = f'{VAR_PREFIX}{key}'
+        field_desc = opcode_arg_field_descs.get(raw_key)
 
         if '=' in value:
             raise ValueError(f'line {line_num}: Missing argument separator: `{key}={value}`')
@@ -74,13 +82,16 @@ def from_line(line: str, line_num: int) -> dict:
         if not field_desc:
             raise ValueError(f'line {line_num}: Invalid argument name: `{key}`')
 
+        if value.startswith('$'):
+            return (var_key, value[1:])
+
         opts = field_desc.GetOptions().Extensions[brewblox_pb2.field]
 
         if opts.objtype:
-            return {
+            return (raw_key, {
                 '__bloxtype': 'Link',
                 'id': value,
-            }
+            })
 
         elif opts.unit:
             unit_name = brewblox_pb2.UnitType.Name(opts.unit)
@@ -101,29 +112,29 @@ def from_line(line: str, line_num: int) -> dict:
                     raise ValueError(
                         f'line {line_num}: Mismatch between delta and absolute temperature: `{key}={value}{unit}`')
 
-                return {
+                return (raw_key, {
                     '__bloxtype': 'Quantity',
                     'value': value,
                     'unit': unit,
-                }
+                })
 
             elif unit_name == 'Second':
                 td = time_utils.parse_duration(value)
 
-                return {
+                return (raw_key, {
                     '__bloxtype': 'Quantity',
                     'value': int(td.total_seconds()),
                     'unit': 'second',
-                }
+                })
 
             else:  # pragma: no cover
                 raise NotImplementedError(f'{unit_name} quantities not yet implemented')
 
         else:
             try:
-                return float(value)
+                return (raw_key, float(value))
             except ValueError:
-                return value
+                return (raw_key, value)
 
     # - the comma-separated argument string is split into `key=value` strings
     # - key and value are extracted from the `key=value` string
@@ -134,12 +145,11 @@ def from_line(line: str, line_num: int) -> dict:
                for (argk, _, argv)
                in [arg.partition('=') for arg in args.split(',') if arg]}
 
-    parsed = {
-        key: parse_arg_value(key, value)
-        for key, value in argdict.items()
-    }
+    parsed = dict([parse_arg_entry(key, value)
+                   for key, value in argdict.items()])
 
-    if missing := set(opcode_arg_field_descs.keys()) - set(parsed.keys()):
+    # strip prefixes from fields - we need one per oneof, not all possible fields
+    if missing := base_keys(opcode_arg_field_descs.keys()) - base_keys(parsed.keys()):
         raise ValueError(f'line {line_num}: Missing arguments: `{", ".join(missing)}`')
 
     return {opcode: parsed}
@@ -153,6 +163,8 @@ def to_line(args: dict) -> str:
     """
 
     opcode, argdict = list(args.items())[0]
+    opcode: str
+    argdict: dict[str, Any]
     args: list[str] = []
 
     if opcode == 'COMMENT':
@@ -163,6 +175,10 @@ def to_line(args: dict) -> str:
         return opcode
 
     for key, value in argdict.items():
+        if key.startswith(VAR_PREFIX):
+            args.append(f'{key.removeprefix(VAR_PREFIX)}=${value}')
+            continue
+
         if bloxfield.is_link(value):
             value = value['id']
             if ' ' in value:
@@ -185,7 +201,7 @@ def to_line(args: dict) -> str:
         elif isinstance(value, float):
             value = round(value, 2)
 
-        args.append(f'{key}={value}')
+        args.append(f'{key.removeprefix(RAW_PREFIX)}={value}')
 
     return ' '.join([opcode, ', '.join(args)])
 
