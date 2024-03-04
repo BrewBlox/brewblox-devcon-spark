@@ -126,6 +126,13 @@ def test_sequence_from_line():
     }
 
     assert sequence.from_line(
+        '# $not_a_variable',
+        1
+    ) == {
+        'COMMENT': {'text': ' $not_a_variable'},
+    }
+
+    assert sequence.from_line(
         '#',
         1
     ) == {
@@ -140,6 +147,9 @@ def test_sequence_from_line():
 
     with pytest.raises(ValueError, match=r'line 1: Invalid argument name: `magic`'):
         sequence.from_line('SET_SETPOINT magic=1', 1)
+
+    with pytest.raises(ValueError, match=r'line 1: Invalid argument name: `magic`'):
+        sequence.from_line('SET_SETPOINT magic=$var', 1)
 
     with pytest.raises(ValueError, match=r'line 1: Invalid argument name: `1s`'):
         sequence.from_line('WAIT_DURATION 1s', 1)
@@ -204,8 +214,26 @@ def test_sequence_to_line():
     }) == 'SET_PWM target=actuator, setting=23.46'
 
     assert sequence.to_line({
+        'SET_PWM': {
+            '__var__target': 'actuator',
+            '__raw__setting': 23.4567
+        }
+    }) == 'SET_PWM target=$actuator, setting=23.46'
+
+    assert sequence.to_line({
+        'SET_PWM': {
+            '__var__target': 'actuator',
+            '__var__setting': 'setting'
+        }
+    }) == 'SET_PWM target=$actuator, setting=$setting'
+
+    assert sequence.to_line({
         'COMMENT': {'text': '    =)'},
     }) == '#    =)'
+
+    assert sequence.to_line({
+        'COMMENT': {'text': '$not_a_variable'},
+    }) == '#$not_a_variable'
 
     assert sequence.to_line({
         'COMMENT': {},
