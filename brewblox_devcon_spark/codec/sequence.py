@@ -23,6 +23,10 @@ def base_keys(keys: Iterable[str]) -> set[str]:
     return set(map(lambda k: k.removeprefix(RAW_PREFIX).removeprefix(VAR_PREFIX), keys))
 
 
+def quoted(value: str) -> str:
+    return f"'{value}'" if ' ' in value else value
+
+
 def from_line(line: str, line_num: int) -> dict:
     """
     Converts Sequence line instruction to dict.
@@ -176,32 +180,33 @@ def to_line(args: dict) -> str:
 
     for key, value in argdict.items():
         if key.startswith(VAR_PREFIX):
-            args.append(f'{key.removeprefix(VAR_PREFIX)}=${value}')
-            continue
+            key = key.removeprefix(VAR_PREFIX)
+            value = quoted(f'${value}')
 
-        if bloxfield.is_link(value):
-            value = value['id']
-            if ' ' in value:
-                value = f"'{value}'"
+        else:
+            key = key.removeprefix(RAW_PREFIX)
 
-        elif bloxfield.is_quantity(value):
-            amount = value['value']
-            unit = value['unit']
+            if bloxfield.is_link(value):
+                value = quoted(value['id'])
 
-            if 'deg' in unit:
-                unit = value['unit'].replace('delta_', 'd').replace('degC', 'C').replace('degF', 'F')
-                value = f'{round(amount, 2)}{unit}'
+            elif bloxfield.is_quantity(value):
+                amount = value['value']
+                unit = value['unit']
 
-            elif unit == 'second':
-                value = time_utils.serialize_duration(timedelta(seconds=amount))
+                if 'deg' in unit:
+                    unit = value['unit'].replace('delta_', 'd').replace('degC', 'C').replace('degF', 'F')
+                    value = f'{round(amount, 2)}{unit}'
 
-            else:  # pragma: no cover
-                raise NotImplementedError(f'{unit} quantities not yet implemented')
+                elif unit == 'second':
+                    value = time_utils.serialize_duration(timedelta(seconds=amount))
 
-        elif isinstance(value, float):
-            value = round(value, 2)
+                else:  # pragma: no cover
+                    raise NotImplementedError(f'{unit} quantities not yet implemented')
 
-        args.append(f'{key.removeprefix(RAW_PREFIX)}={value}')
+            elif isinstance(value, float):
+                value = round(value, 2)
+
+        args.append(f'{key}={value}')
 
     return ' '.join([opcode, ', '.join(args)])
 

@@ -223,9 +223,9 @@ def test_sequence_to_line():
     assert sequence.to_line({
         'SET_PWM': {
             '__var__target': 'actuator',
-            '__var__setting': 'setting'
+            '__var__setting': 'space setting'
         }
-    }) == 'SET_PWM target=$actuator, setting=$setting'
+    }) == "SET_PWM target=$actuator, setting='$space setting'"
 
     assert sequence.to_line({
         'COMMENT': {'text': '    =)'},
