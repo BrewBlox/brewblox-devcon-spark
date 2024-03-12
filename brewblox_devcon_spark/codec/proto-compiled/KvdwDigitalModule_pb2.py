@@ -16,7 +16,7 @@ import nanopb_pb2 as nanopb__pb2
 import GpioModule_pb2 as GpioModule__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x17KvdwDigitalModule.proto\x12\x16\x62lox.KvdwDigitalModule\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x10GpioModule.proto\"\x8e\x01\n\x05\x42lock\x12\x31\n\x08\x63hannels\x18\x01 \x03(\x0b\x32\x18.blox.GpioModule.ChannelB\x05\x92?\x02\x10\x08\x12\x1d\n\x0emodulePosition\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12\'\n\x06status\x18\x0f \x01(\x0b\x32\x17.blox.GpioModule.Status:\n\x8a\xb5\x18\x06\x18\xce\x02J\x01\nb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x17KvdwDigitalModule.proto\x12\x16\x62lox.KvdwDigitalModule\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x10GpioModule.proto\"\x8e\x01\n\x05\x42lock\x12\x31\n\x08\x63hannels\x18\x01 \x03(\x0b\x32\x18.blox.GpioModule.ChannelB\x05\x92?\x02\x10\x08\x12\x1d\n\x0emodulePosition\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12\'\n\x06status\x18\x0f \x01(\x0b\x32\x17.blox.GpioModule.Status:\n\x8a\xb5\x18\x06\x18\x82}J\x01\nb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -28,7 +28,7 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _BLOCK.fields_by_name['modulePosition']._options = None
   _BLOCK.fields_by_name['modulePosition']._serialized_options = b'\222?\0028\010'
   _BLOCK._options = None
-  _BLOCK._serialized_options = b'\212\265\030\006\030\316\002J\001\n'
+  _BLOCK._serialized_options = b'\212\265\030\006\030\202}J\001\n'
   _globals['_BLOCK']._serialized_start=100
   _globals['_BLOCK']._serialized_end=242
 # @@protoc_insertion_point(module_scope)

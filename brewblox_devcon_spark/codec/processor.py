@@ -161,7 +161,7 @@ class ProtobufProcessor():
         This makes it safe for calling code to modify or delete the value relevant to them.
         Any entries added to the parent object after an element is yielded will not be considered.
         """
-        for key in set(obj.keys()):
+        for key, value in list(obj.items()):
             base_key, postfix = self._postfix_pattern.findall(key)[0]
             field: FieldDescriptor = desc.fields_by_name[base_key]
             address: tuple[int | None] = (*parent_address, field.number)
@@ -176,16 +176,29 @@ class ProtobufProcessor():
             # Stop recursion
             # obj is { key: None }
             # Because we stop here, this field is a leaf node
-            elif obj[key] is None:
+            elif value is None:
                 yield OptionElement(field, obj, key, base_key, postfix, address)
 
-            # Repeated field
-            # traverse all members
-            # obj is { key: [{...},{...}] }
-            # Because we can't patch list items, the repeated field itself is a leaf node
+            # Repeated fields are generic collections, expressed in json as list or dict
+            # Because the list/map index is not a tag, we can't patch inside the repeated field
+            # The repeated field itself is a leaf node
             elif field.label == FieldDescriptor.LABEL_REPEATED:
-                for childobj in obj[key]:
-                    yield from self._walk_elements(field.message_type, childobj, (*address, None))
+
+                # map<K, V> field
+                # traverse all values
+                # The content is serialized as repeated `{ key: K, value: V }` entries
+                # obj is { key: {...} }
+                if isinstance(value, dict):
+                    message_type = field.message_type.fields_by_name['value'].message_type
+                    for childobj in value.values():
+                        yield from self._walk_elements(message_type, childobj, (*address, None))
+
+                # Generic repeated field
+                # traverse all values
+                # obj is { key: [{...},{...}] }
+                else:
+                    for childobj in value:
+                        yield from self._walk_elements(field.message_type, childobj, (*address, None))
 
                 yield OptionElement(field, obj, key, base_key, postfix, address)
 
@@ -194,7 +207,7 @@ class ProtobufProcessor():
             # obj is { key: {...} }
             # The field itself is not a leaf node
             else:
-                yield from self._walk_elements(field.message_type, obj[key], address)
+                yield from self._walk_elements(field.message_type, value, address)
                 # This is not a leaf node. Its address should not be included in the mask
                 yield OptionElement(field, obj, key, base_key, postfix, (*address, None))
 

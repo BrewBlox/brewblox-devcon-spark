@@ -8,7 +8,7 @@ from collections import namedtuple
 from contextlib import suppress
 from datetime import timedelta
 from socket import AF_INET, inet_aton, inet_ntoa
-from typing import Generator
+from typing import AsyncGenerator
 
 from aiozeroconf import ServiceBrowser, ServiceStateChange, Zeroconf
 from aiozeroconf.aiozeroconf import ServiceInfo
@@ -23,7 +23,7 @@ ConnectInfo = namedtuple('ConnectInfo', ['address', 'port', 'id'])
 async def _discover(
     desired_id: str | None,
     dns_type: str,
-) -> Generator[ConnectInfo, None, None]:
+) -> AsyncGenerator[ConnectInfo, None]:
     queue: asyncio.Queue[ServiceInfo] = asyncio.Queue()
     conf = Zeroconf(asyncio.get_event_loop(), address_family=[AF_INET])
 
@@ -62,7 +62,7 @@ async def discover_all(
     desired_id: str | None,
     dns_type: str,
     timeout: timedelta,
-) -> Generator[ConnectInfo, None, None]:
+) -> AsyncGenerator[ConnectInfo, None]:
     with suppress(asyncio.TimeoutError):
         async with asyncio.timeout(timeout.total_seconds()):
             async for res in _discover(desired_id, dns_type):  # pragma: no branch
