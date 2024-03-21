@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
 
 
 @pytest.fixture
-def app() -> FastAPI():
+def app() -> FastAPI:
     config = utils.get_config()
     config.mock = True
     config.broadcast_interval = timedelta(milliseconds=1)

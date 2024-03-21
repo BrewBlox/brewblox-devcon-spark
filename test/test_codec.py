@@ -7,7 +7,7 @@ from brewblox_devcon_spark import codec, connection, exceptions
 from brewblox_devcon_spark.codec import (Codec, DecodeOpts, MetadataOpt,
                                          ProtoEnumOpt)
 from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
-                                          MaskMode)
+                                          MaskField, MaskMode)
 
 TEMP_SENSOR_TYPE_INT = 302
 
@@ -209,7 +209,7 @@ async def test_exclusive_mask():
             'logged': 10,  # tag 7
         },
         maskMode=MaskMode.EXCLUSIVE,
-        mask=[6],
+        maskFields=[MaskField(address=[6])],
     ))
     payload = cdc.decode_payload(enc_payload)
 
@@ -217,7 +217,7 @@ async def test_exclusive_mask():
     assert payload.content['deltaV']['unit'] == 'delta_degC / second'
     assert payload.content['logged'] == 10
     assert payload.maskMode == MaskMode.EXCLUSIVE
-    assert payload.mask == [6]
+    assert payload.maskFields == [MaskField(address=[6])]
 
     payload = cdc.decode_payload(enc_payload, opts=DecodeOpts(metadata=MetadataOpt.POSTFIX))
     assert payload.content['deltaV[delta_degC / second]'] is None
@@ -333,3 +333,39 @@ async def test_invalid_if_decoding():
     assert payload.content['listValues'][0]['value'] == pytest.approx(10)
     assert payload.content['deltaV']['value'] is None
     assert 'logged' not in payload.content
+
+
+async def test_map_fields():
+    cdc = codec.CV.get()
+
+    encoded_payload = cdc.encode_payload(DecodedPayload(
+        blockId=1,
+        blockType='Variables',
+        content={
+            'variables': {
+                'k1': {'digital': 'STATE_ACTIVE'},
+                'k2': {'temp[degC]': 20},
+                'k3': {'duration[s]': 10},
+            },
+        },
+    ))
+    payload = cdc.decode_payload(encoded_payload)
+    assert payload.content == {
+        'variables': {
+            'k1': {'digital': 'STATE_ACTIVE'},
+            'k2': {
+                'temp': {
+                    '__bloxtype': 'Quantity',
+                    'unit': 'degC',
+                    'value': pytest.approx(20),
+                },
+            },
+            'k3': {
+                'duration': {
+                    '__bloxtype': 'Quantity',
+                    'unit': 'second',
+                    'value': 10
+                },
+            },
+        }
+    }

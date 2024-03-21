@@ -7,7 +7,7 @@ import asyncio
 import logging
 from datetime import timedelta
 from pathlib import Path
-from typing import Generator
+from typing import AsyncGenerator, Generator
 from unittest.mock import Mock
 
 import pytest
@@ -133,7 +133,7 @@ def app() -> FastAPI:
 
 
 @pytest.fixture
-async def manager(app: FastAPI) -> Generator[LifespanManager, None, None]:
+async def manager(app: FastAPI) -> AsyncGenerator[LifespanManager, None]:
     """
     AsyncClient does not automatically send ASGI lifespan events to the app
     https://asgi.readthedocs.io/en/latest/specs/lifespan.html
@@ -147,7 +147,7 @@ async def manager(app: FastAPI) -> Generator[LifespanManager, None, None]:
 
 
 @pytest.fixture
-async def client(manager: LifespanManager) -> Generator[AsyncClient, None, None]:
+async def client(manager: LifespanManager) -> AsyncGenerator[AsyncClient, None]:
     async with AsyncClient(app=manager.app, base_url='http://test') as ac:
         yield ac
 
