@@ -10,7 +10,7 @@ This includes USB/TCP communication with the controller, but also encoding, deco
 
 ## Installation
 
-To set up the development environment, follow the instructions at <https://brewblox.com/dev/service/python_env.html>.
+To set up the development environment, follow the instructions at <https://brewblox.com/dev/python_env.html>.
 
 ## Tests
 
