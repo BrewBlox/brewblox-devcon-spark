@@ -10,11 +10,11 @@ def test_sequence_from_line():
         1
     ) == {
         'SET_SETPOINT': {
-            'target': {
+            '__raw__target': {
                 '__bloxtype': 'Link',
                 'id': 'Kettle Setpoint',
             },
-            'setting': {
+            '__raw__setting': {
                 '__bloxtype': 'Quantity',
                 'value': pytest.approx(40.0),
                 'unit': 'degC',
@@ -27,11 +27,11 @@ def test_sequence_from_line():
         1
     ) == {
         'SET_SETPOINT': {
-            'target': {
+            '__raw__target': {
                 '__bloxtype': 'Link',
                 'id': 'Kettle Setpoint   ',
             },
-            'setting': {
+            '__raw__setting': {
                 '__bloxtype': 'Quantity',
                 'value': pytest.approx(40.0),
                 'unit': 'degC',
@@ -44,11 +44,11 @@ def test_sequence_from_line():
         1
     ) == {
         'WAIT_SETPOINT': {
-            'target': {
+            '__raw__target': {
                 '__bloxtype': 'Link',
                 'id': 'Kettle Setpoint',
             },
-            'precision': {
+            '__raw__precision': {
                 '__bloxtype': 'Quantity',
                 'value': pytest.approx(1.0),
                 'unit': 'delta_degC',
@@ -61,7 +61,7 @@ def test_sequence_from_line():
         1
     ) == {
         'WAIT_DURATION': {
-            'duration': {
+            '__raw__duration': {
                 '__bloxtype': 'Quantity',
                 'value': 70,
                 'unit': 'second',
@@ -74,11 +74,11 @@ def test_sequence_from_line():
         1
     ) == {
         'SET_DIGITAL': {
-            'target': {
+            '__raw__target': {
                 '__bloxtype': 'Link',
                 'id': 'actuator',
             },
-            'setting': 'STATE_ACTIVE'
+            '__raw__setting': 'STATE_ACTIVE'
         }
     }
 
@@ -87,12 +87,35 @@ def test_sequence_from_line():
         1
     ) == {
         'SET_PWM': {
-            'target': {
+            '__raw__target': {
                 '__bloxtype': 'Link',
                 'id': 'actuator',
             },
-            'setting': pytest.approx(12.34)
+            '__raw__setting': pytest.approx(12.34)
         }
+    }
+
+    assert sequence.from_line(
+        'SET_SETPOINT target=Kettle Setpoint, setting=$kettle_setting',
+        1
+    ) == {
+        'SET_SETPOINT': {
+            '__raw__target': {
+                '__bloxtype': 'Link',
+                'id': 'Kettle Setpoint',
+            },
+            '__var__setting': 'kettle_setting',
+        },
+    }
+
+    assert sequence.from_line(
+        "SET_SETPOINT target='$kettle_setpoint', setting= $kettle_setting ",
+        1
+    ) == {
+        'SET_SETPOINT': {
+            '__var__target': 'kettle_setpoint',
+            '__var__setting': 'kettle_setting',
+        },
     }
 
     assert sequence.from_line(
@@ -100,6 +123,13 @@ def test_sequence_from_line():
         1
     ) == {
         'COMMENT': {'text': ' Hello, this is "comment"'},
+    }
+
+    assert sequence.from_line(
+        '# $not_a_variable',
+        1
+    ) == {
+        'COMMENT': {'text': ' $not_a_variable'},
     }
 
     assert sequence.from_line(
@@ -117,6 +147,9 @@ def test_sequence_from_line():
 
     with pytest.raises(ValueError, match=r'line 1: Invalid argument name: `magic`'):
         sequence.from_line('SET_SETPOINT magic=1', 1)
+
+    with pytest.raises(ValueError, match=r'line 1: Invalid argument name: `magic`'):
+        sequence.from_line('SET_SETPOINT magic=$var', 1)
 
     with pytest.raises(ValueError, match=r'line 1: Invalid argument name: `1s`'):
         sequence.from_line('WAIT_DURATION 1s', 1)
@@ -138,11 +171,11 @@ def test_sequence_to_line():
 
     assert sequence.to_line({
         'SET_SETPOINT': {
-            'target': {
+            '__raw__target': {
                 '__bloxtype': 'Link',
                 'id': 'Kettle Setpoint   ',
             },
-            'setting': {
+            '__raw__setting': {
                 '__bloxtype': 'Quantity',
                 'value': 40.0,
                 'unit': 'degC',
@@ -152,7 +185,7 @@ def test_sequence_to_line():
 
     assert sequence.to_line({
         'WAIT_DURATION': {
-            'duration': {
+            '__raw__duration': {
                 '__bloxtype': 'Quantity',
                 'value': 70,
                 'unit': 'second',
@@ -162,27 +195,45 @@ def test_sequence_to_line():
 
     assert sequence.to_line({
         'SET_DIGITAL': {
-            'target': {
+            '__raw__target': {
                 '__bloxtype': 'Link',
                 'id': 'actuator',
             },
-            'setting': 'STATE_ACTIVE'
+            '__raw__setting': 'STATE_ACTIVE'
         }
     }) == 'SET_DIGITAL target=actuator, setting=STATE_ACTIVE'
 
     assert sequence.to_line({
         'SET_PWM': {
-            'target': {
+            '__raw__target': {
                 '__bloxtype': 'Link',
                 'id': 'actuator',
             },
-            'setting': 23.4567
+            '__raw__setting': 23.4567
         }
     }) == 'SET_PWM target=actuator, setting=23.46'
 
     assert sequence.to_line({
+        'SET_PWM': {
+            '__var__target': 'actuator',
+            '__raw__setting': 23.4567
+        }
+    }) == 'SET_PWM target=$actuator, setting=23.46'
+
+    assert sequence.to_line({
+        'SET_PWM': {
+            '__var__target': 'actuator',
+            '__var__setting': 'space setting'
+        }
+    }) == "SET_PWM target=$actuator, setting='$space setting'"
+
+    assert sequence.to_line({
         'COMMENT': {'text': '    =)'},
     }) == '#    =)'
+
+    assert sequence.to_line({
+        'COMMENT': {'text': '$not_a_variable'},
+    }) == '#$not_a_variable'
 
     assert sequence.to_line({
         'COMMENT': {},
