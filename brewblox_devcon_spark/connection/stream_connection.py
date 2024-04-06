@@ -8,6 +8,7 @@ import logging
 import os
 import platform
 import signal
+import sys
 from asyncio.subprocess import Process
 from contextlib import suppress
 from functools import partial
@@ -22,12 +23,6 @@ from .connection_impl import (ConnectionCallbacks, ConnectionImplBase,
 
 BREWBLOX_DNS_TYPE = '_brewblox._tcp.local.'
 USB_BAUD_RATE = 115200
-
-SIM_BINARIES = {
-    'x86_64': 'brewblox-amd64.sim',
-    'armv7l': 'brewblox-arm32.sim',
-    'aarch64': 'brewblox-arm64.sim'
-}
 
 SPARK_HWIDS = [
     r'USB VID\:PID=2B04\:C006.*',  # Photon
@@ -144,17 +139,29 @@ async def connect_subprocess(callbacks: ConnectionCallbacks,
 
 async def connect_simulation(callbacks: ConnectionCallbacks) -> ConnectionImplBase:  # pragma: no cover
     config = utils.get_config()
-    arch = platform.machine()
-    binary = SIM_BINARIES.get(arch)
+    is_64_bit = sys.maxsize > 2**32  # https://docs.python.org/3/library/platform.html#platform.architecture
+    machine = platform.machine()
+    binary = None
+
+    match (machine, is_64_bit):
+        case ('x86_64', True):
+            binary = 'brewblox-amd64.sim'
+        case ('aarch64', True):
+            binary = 'brewblox-arm64.sim'
+        # The Pi >=4 always reports aarch64, regardless of OS type
+        # To select the correct binary, we need to check userland 32/64 bit
+        case (('armhf' | 'aarch64'), False):
+            binary = 'brewblox-arm32.sim'
 
     if not binary:
         raise exceptions.ConnectionImpossible(
-            f'No simulator available for architecture {arch}')
+            f'No simulator available for {machine=}, {is_64_bit=}')
 
     binary_path = Path(f'firmware/{binary}').resolve()
     workdir = config.simulation_workdir.resolve()
     workdir.mkdir(mode=0o777, exist_ok=True)
 
+    LOGGER.debug(f'Starting `{binary_path}` ...')
     proc = await asyncio.create_subprocess_exec(binary_path,
                                                 '--device_id', config.device_id,
                                                 '--port', str(config.simulation_port),
