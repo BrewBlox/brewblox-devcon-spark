@@ -15,10 +15,11 @@ from typing import Any, Iterator
 from google.protobuf import json_format
 from google.protobuf.descriptor import Descriptor, FieldDescriptor
 
-from brewblox_devcon_spark.models import DecodedPayload, MaskField, MaskMode
+from brewblox_devcon_spark.models import (DecodedPayload, MaskField, MaskMode,
+                                          ReadMode)
 
 from . import unit_conversion
-from .opts import DateFormatOpt, DecodeOpts, FilterOpt, MetadataOpt
+from .opts import DateFormatOpt, MetadataOpt
 from .pb2 import brewblox_pb2
 from .time_utils import serialize_datetime
 
@@ -87,9 +88,9 @@ class OptionElement():
 class ProtobufProcessor():
     _BREWBLOX_PROVIDER: FieldDescriptor = brewblox_pb2.field
 
-    def __init__(self, strip_readonly=True):
+    def __init__(self, filter_values=True):
         self._converter = unit_conversion.CV.get()
-        self._strip_readonly = strip_readonly
+        self._filter_values = filter_values
 
         symbols = re.escape('[]<>')
         self._postfix_pattern = re.compile(''.join([
@@ -227,7 +228,8 @@ class ProtobufProcessor():
 
     def pre_encode(self,
                    desc: Descriptor,
-                   payload: DecodedPayload,
+                   payload: DecodedPayload, /,
+                   filter_values: bool | None = None
                    ) -> DecodedPayload:
         """
         Modifies `payload` based on Protobuf options and dict key postfixes.
@@ -290,6 +292,9 @@ class ProtobufProcessor():
                 }
             }
         """
+        if filter_values is None:
+            filter_values = self._filter_values
+
         for element in self._walk_elements(desc, payload.content):
             options = self._field_options(element.field)
 
@@ -297,7 +302,7 @@ class ProtobufProcessor():
                 del element.obj[element.key]
                 continue
 
-            if options.readonly and self._strip_readonly:
+            if filter_values and options.readonly:
                 del element.obj[element.key]
                 continue
 
@@ -360,8 +365,9 @@ class ProtobufProcessor():
 
     def post_decode(self,
                     desc: Descriptor,
-                    payload: DecodedPayload,
-                    opts: DecodeOpts,
+                    payload: DecodedPayload, /,
+                    mode: ReadMode = ReadMode.DEFAULT,
+                    filter_values: bool | None = None,
                     ) -> DecodedPayload:
         """
         Post-processes protobuf data based on protobuf / codec options.
@@ -376,13 +382,9 @@ class ProtobufProcessor():
         * ipv4address:  Converts integer IP address to dot string notation.
         * readonly:     Ignored: decoding means reading from controller.
         * ignored:      Strip value from output.
-        * logged:       Tag for filtering output data.
+        * logged:       Tag for filtering output data when using ReadMode.LOGGED.
+        * stored:       Tag for filtering output data when using ReadMode.STORED.
         * *_invalid_if: Sets value to None if equal to invalid value.
-
-        Supported codec options:
-        * filter:       If opts.filter == LOGGED, all values without options.logged are excluded from output.
-        * metadata:     Format used to serialize object metadata.
-                        Determines whether units/links are postfixed or rendered as typed object.
 
         Example:
             >>> values = {
@@ -397,7 +399,7 @@ class ProtobufProcessor():
             >>> post_decode(
                     ExampleMessage_pb2.ExampleMessage(),
                     values,
-                    DecodeOpts(metadata=MetadataOpt.POSTFIX))
+                    mode=ReadMode.LOGGED)
 
             # ExampleMessage.proto:
             #
@@ -422,6 +424,16 @@ class ProtobufProcessor():
                 }
             }
         """
+        metadata_opt = MetadataOpt.TYPED
+        date_fmt_opt = DateFormatOpt.ISO8601
+
+        if mode == ReadMode.LOGGED:
+            metadata_opt = MetadataOpt.POSTFIX
+            date_fmt_opt = DateFormatOpt.SECONDS
+
+        if filter_values is None:
+            filter_values = self._filter_values
+
         for element in self._walk_elements(desc, payload.content):
             options = self._field_options(element.field)
 
@@ -438,9 +450,11 @@ class ProtobufProcessor():
                 del element.obj[element.key]
                 continue
 
-            if opts.filter == FilterOpt.LOGGED and not options.logged:
-                del element.obj[element.key]
-                continue
+            if filter_values:
+                if (mode == ReadMode.STORED and not options.stored) \
+                        or (mode == ReadMode.LOGGED and not options.logged):
+                    del element.obj[element.key]
+                    continue
 
             link_type = self.type_name(options.objtype)
             qty_system_unit = self.unit_name(options.unit)
@@ -458,7 +472,7 @@ class ProtobufProcessor():
                     else:
                         value = self._converter.to_user_value(value, qty_system_unit)
 
-                    if opts.metadata == MetadataOpt.TYPED:
+                    if metadata_opt == MetadataOpt.TYPED:
                         value = {
                             '__bloxtype': 'Quantity',
                             'unit': qty_user_unit,
@@ -474,7 +488,7 @@ class ProtobufProcessor():
                     if excluded or null_value:
                         value = None
 
-                    if opts.metadata == MetadataOpt.TYPED:
+                    if metadata_opt == MetadataOpt.TYPED:
                         value = {
                             '__bloxtype': 'Link',
                             'type': link_type,
@@ -496,7 +510,7 @@ class ProtobufProcessor():
                     return self.int_to_ipv4(value)
 
                 if options.datetime:
-                    return serialize_datetime(value, opts.dates)
+                    return serialize_datetime(value, date_fmt_opt)
 
                 return value
 
@@ -504,7 +518,7 @@ class ProtobufProcessor():
             new_value = element.obj[element.key]
 
             # If metadata is postfixed, we may need to update the key
-            if opts.metadata == MetadataOpt.POSTFIX:
+            if metadata_opt == MetadataOpt.POSTFIX:
                 if options.objtype:
                     new_key = f'{element.key}<{link_type}>'
                 if options.unit:

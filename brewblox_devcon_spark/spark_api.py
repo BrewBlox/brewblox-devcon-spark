@@ -15,7 +15,8 @@ from . import (command, const, datastore_blocks, exceptions, state_machine,
                twinkeydict, utils)
 from .codec import bloxfield, sequence
 from .models import (Backup, BackupApplyResult, Block, BlockIdentity,
-                     BlockNameChange, FirmwareBlock, FirmwareBlockIdentity)
+                     BlockNameChange, FirmwareBlock, FirmwareBlockIdentity,
+                     ReadMode)
 
 SID_PATTERN = re.compile(r'^[a-zA-Z]{1}[a-zA-Z0-9 _\-\(\)\|]{0,199}$')
 SID_RULES = """
@@ -287,7 +288,7 @@ class SparkApi:
         """
         async with self._execute('Read block (logged)'):
             block = self._to_firmware_block_identity(block)
-            block = await self.cmder.read_logged_block(block)
+            block = await self.cmder.read_block(block, ReadMode.LOGGED)
             block = self._to_block(block)
             return block
 
@@ -311,7 +312,7 @@ class SparkApi:
         """
         async with self._execute('Read block (stored)'):
             block = self._to_firmware_block_identity(block)
-            block = await self.cmder.read_stored_block(block)
+            block = await self.cmder.read_block(block, ReadMode.STORED)
             block = self._to_block(block)
             return block
 
@@ -453,7 +454,7 @@ class SparkApi:
                 marked for logging, and units will use the postfixed format.
         """
         async with self._execute('Read all blocks (logged)'):
-            blocks = await self.cmder.read_all_logged_blocks()
+            blocks = await self.cmder.read_all_blocks(ReadMode.LOGGED)
             blocks = self._to_block_list(blocks)
             return blocks
 
@@ -470,26 +471,9 @@ class SparkApi:
                 Non-persistent fields will be absent or set to a default value.
         """
         async with self._execute('Read all blocks (stored)'):
-            blocks = await self.cmder.read_all_stored_blocks()
+            blocks = await self.cmder.read_all_blocks(ReadMode.STORED)
             blocks = self._to_block_list(blocks)
             return blocks
-
-    async def read_all_broadcast_blocks(self) -> tuple[list[Block], list[Block]]:
-        """
-        Read all blocks on the controller.
-        The same raw data is formatted both normally, and suitable for logging.
-
-        Returns:
-            tuple[list[Block], list[Block]]:
-                All present blocks on the controller.
-                The first list in the tuple will be formatted normally,
-                the second is suitable for logging.
-        """
-        async with self._execute('Read all blocks (broadcast)'):
-            blocks, logged_blocks = await self.cmder.read_all_broadcast_blocks()
-            blocks = self._to_block_list(blocks)
-            logged_blocks = self._to_block_list(logged_blocks)
-            return (blocks, logged_blocks)
 
     async def discover_blocks(self) -> list[Block]:
         """

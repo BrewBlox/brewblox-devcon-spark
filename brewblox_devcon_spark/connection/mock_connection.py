@@ -15,7 +15,7 @@ from .. import codec, const, utils
 from ..codec import bloxfield
 from ..models import (DecodedPayload, EncodedPayload, ErrorCode, FirmwareBlock,
                       IntermediateRequest, IntermediateResponse, Opcode,
-                      ResetData, ResetReason)
+                      ReadMode, ResetData, ResetReason)
 from .connection_impl import ConnectionCallbacks, ConnectionImplBase
 
 LOGGER = logging.getLogger(__name__)
@@ -49,11 +49,6 @@ def default_blocks() -> dict[int, FirmwareBlock]:
                 data={},
             ),
             FirmwareBlock(
-                nid=const.TOUCH_SETTINGS_NID,
-                type='TouchSettings',
-                data={},
-            ),
-            FirmwareBlock(
                 nid=const.DISPLAY_SETTINGS_NID,
                 type='DisplaySettings',
                 data={},
@@ -82,11 +77,11 @@ class MockConnection(ConnectionImplBase):
         super().__init__('MOCK', device_id, callbacks)
 
         self._start_time = datetime.now()
-        self._codec = codec.Codec(strip_readonly=False)
+        self._codec = codec.Codec(filter_values=False)
         self._id_counter = count(start=const.USER_NID_START)
         self._blocks: dict[int, FirmwareBlock] = default_blocks()
 
-    def _to_payload(self, block: FirmwareBlock) -> EncodedPayload:
+    def _to_payload(self, block: FirmwareBlock, mode: ReadMode) -> EncodedPayload:
         (blockType, subtype) = codec.split_type(block.type)
         return self._codec.encode_payload(DecodedPayload(
             blockId=block.nid,
@@ -153,7 +148,8 @@ class MockConnection(ConnectionImplBase):
         response = IntermediateResponse(
             msgId=request.msgId,
             error=ErrorCode.OK,
-            payload=[]
+            mode=request.mode,
+            payload=[],
         )
 
         if NEXT_ERROR:
@@ -171,21 +167,19 @@ class MockConnection(ConnectionImplBase):
 
         elif request.opcode in [
             Opcode.BLOCK_READ,
-            Opcode.BLOCK_STORED_READ,
             Opcode.STORAGE_READ,
         ]:
             block = self._blocks.get(request.payload.blockId)
             if not block:
                 response.error = ErrorCode.INVALID_BLOCK_ID
             else:
-                response.payload = [self._to_payload(block)]
+                response.payload = [self._to_payload(block, request.mode)]
 
         elif request.opcode in [
             Opcode.BLOCK_READ_ALL,
-            Opcode.BLOCK_STORED_READ_ALL,
             Opcode.STORAGE_READ_ALL,
         ]:
-            response.payload = [self._to_payload(block)
+            response.payload = [self._to_payload(block, request.mode)
                                 for block in self._blocks.values()]
 
         elif request.opcode == Opcode.BLOCK_WRITE:
@@ -199,7 +193,7 @@ class MockConnection(ConnectionImplBase):
             else:
                 src = self._to_block(request.payload)
                 self._merge_blocks(block, src)
-                response.payload = [self._to_payload(block)]
+                response.payload = [self._to_payload(block, request.mode)]
 
         elif request.opcode == Opcode.BLOCK_CREATE:
             nid = request.payload.blockId
@@ -216,7 +210,7 @@ class MockConnection(ConnectionImplBase):
                 block = self._default_block(nid, argblock.type)
                 self._merge_blocks(block, argblock)
                 self._blocks[nid] = block
-                response.payload = [self._to_payload(block)]
+                response.payload = [self._to_payload(block, request.mode)]
 
         elif request.opcode == Opcode.BLOCK_DELETE:
             nid = request.payload.blockId
@@ -231,14 +225,14 @@ class MockConnection(ConnectionImplBase):
         elif request.opcode == Opcode.BLOCK_DISCOVER:
             # Always return spark pins when discovering blocks
             block = self._blocks[const.SPARK_PINS_NID]
-            response.payload = [self._to_payload(block)]
+            response.payload = [self._to_payload(block, request.mode)]
 
         elif request.opcode == Opcode.REBOOT:
             self._start_time = datetime.now()
             self.update_systime()
 
         elif request.opcode == Opcode.CLEAR_BLOCKS:
-            response.payload = [self._to_payload(block)
+            response.payload = [self._to_payload(block, request.mode)
                                 for block in self._blocks.values()
                                 if block.nid >= const.USER_NID_START]
             self._blocks = default_blocks()

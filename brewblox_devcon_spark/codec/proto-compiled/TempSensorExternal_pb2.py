@@ -15,17 +15,19 @@ import brewblox_pb2 as brewblox__pb2
 import nanopb_pb2 as nanopb__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x18TempSensorExternal.proto\x12\x17\x62lox.TempSensorExternal\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xaf\x01\n\x05\x42lock\x12\x0f\n\x07\x65nabled\x18\x01 \x01(\x08\x12\x1c\n\x07timeout\x18\x02 \x01(\rB\x0b\x92?\x02\x38 \x8a\xb5\x18\x02\x08\x03\x12!\n\x07setting\x18\x03 \x01(\x11\x42\x10\x92?\x02\x38 \x8a\xb5\x18\x07\x08\x01\x10\x80 0\x01\x12$\n\x0blastUpdated\x18\x04 \x01(\rB\x0f\x92?\x02\x38 \x8a\xb5\x18\x06(\x01\x30\x01X\x01\x12!\n\x05value\x18\x05 \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x08\x01\x10\x80 (\x01\x30\x01:\x0b\x8a\xb5\x18\x07\x18\xc8\x02J\x02\x02\x0f\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x18TempSensorExternal.proto\x12\x17\x62lox.TempSensorExternal\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xbb\x01\n\x05\x42lock\x12\x17\n\x07\x65nabled\x18\x01 \x01(\x08\x42\x06\x8a\xb5\x18\x02x\x01\x12\x1e\n\x07timeout\x18\x02 \x01(\rB\r\x92?\x02\x38 \x8a\xb5\x18\x04\x08\x03x\x01\x12#\n\x07setting\x18\x03 \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x08\x01\x10\x80 0\x01x\x01\x12$\n\x0blastUpdated\x18\x04 \x01(\rB\x0f\x92?\x02\x38 \x8a\xb5\x18\x06(\x01\x30\x01X\x01\x12!\n\x05value\x18\x05 \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x08\x01\x10\x80 (\x01\x30\x01:\x0b\x8a\xb5\x18\x07\x18\xc8\x02J\x02\x02\x0f\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'TempSensorExternal_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
+  _BLOCK.fields_by_name['enabled']._options = None
+  _BLOCK.fields_by_name['enabled']._serialized_options = b'\212\265\030\002x\001'
   _BLOCK.fields_by_name['timeout']._options = None
-  _BLOCK.fields_by_name['timeout']._serialized_options = b'\222?\0028 \212\265\030\002\010\003'
+  _BLOCK.fields_by_name['timeout']._serialized_options = b'\222?\0028 \212\265\030\004\010\003x\001'
   _BLOCK.fields_by_name['setting']._options = None
-  _BLOCK.fields_by_name['setting']._serialized_options = b'\222?\0028 \212\265\030\007\010\001\020\200 0\001'
+  _BLOCK.fields_by_name['setting']._serialized_options = b'\222?\0028 \212\265\030\t\010\001\020\200 0\001x\001'
   _BLOCK.fields_by_name['lastUpdated']._options = None
   _BLOCK.fields_by_name['lastUpdated']._serialized_options = b'\222?\0028 \212\265\030\006(\0010\001X\001'
   _BLOCK.fields_by_name['value']._options = None
@@ -33,5 +35,5 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _BLOCK._options = None
   _BLOCK._serialized_options = b'\212\265\030\007\030\310\002J\002\002\017'
   _globals['_BLOCK']._serialized_start=84
-  _globals['_BLOCK']._serialized_end=259
+  _globals['_BLOCK']._serialized_end=271
 # @@protoc_insertion_point(module_scope)
