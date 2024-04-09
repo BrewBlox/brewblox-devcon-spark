@@ -4,10 +4,9 @@ import pytest
 from fastapi import FastAPI
 
 from brewblox_devcon_spark import codec, connection, exceptions
-from brewblox_devcon_spark.codec import (Codec, DecodeOpts, MetadataOpt,
-                                         ProtoEnumOpt)
+from brewblox_devcon_spark.codec import Codec
 from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
-                                          MaskField, MaskMode)
+                                          MaskField, MaskMode, ReadMode)
 
 TEMP_SENSOR_TYPE_INT = 302
 
@@ -149,7 +148,7 @@ async def test_encode_delta_sec():
         blockType='EdgeCase',
         content={'deltaV': 100}
     ))
-    payload = cdc.decode_payload(payload, opts=DecodeOpts(metadata=MetadataOpt.POSTFIX))
+    payload = cdc.decode_payload(payload, mode=ReadMode.LOGGED, filter_values=False)
     assert payload.content['deltaV[delta_degC / second]'] == pytest.approx(100, 0.1)
 
 
@@ -199,7 +198,7 @@ async def test_transcode_interfaces():
 
 async def test_exclusive_mask():
     cdc = codec.CV.get()
-    rw_cdc = Codec(strip_readonly=False)
+    rw_cdc = Codec(filter_values=False)
 
     enc_payload = rw_cdc.encode_payload(DecodedPayload(
         blockId=1,
@@ -219,7 +218,9 @@ async def test_exclusive_mask():
     assert payload.maskMode == MaskMode.EXCLUSIVE
     assert payload.maskFields == [MaskField(address=[6])]
 
-    payload = cdc.decode_payload(enc_payload, opts=DecodeOpts(metadata=MetadataOpt.POSTFIX))
+    payload = cdc.decode_payload(enc_payload,
+                                 mode=ReadMode.LOGGED,
+                                 filter_values=False)
     assert payload.content['deltaV[delta_degC / second]'] is None
 
 
@@ -236,7 +237,9 @@ async def test_postfixed_decoding():
             }
         },
     ))
-    payload = cdc.decode_payload(payload, opts=DecodeOpts(metadata=MetadataOpt.POSTFIX))
+    payload = cdc.decode_payload(payload,
+                                 mode=ReadMode.LOGGED,
+                                 filter_values=False)
     assert payload.content['link<ActuatorAnalogInterface>'] == 10
     assert payload.content['state']['value[degC]'] == pytest.approx(10, 0.01)
 
@@ -311,7 +314,7 @@ async def test_enum_decoding():
     payload = cdc.decode_payload(encoded_payload)
     assert payload.content['storedState'] == 'STATE_ACTIVE'
 
-    payload = cdc.decode_payload(encoded_payload, opts=DecodeOpts(enums=ProtoEnumOpt.INT))
+    payload = cdc.decode_payload(encoded_payload, mode=ReadMode.STORED)
     assert payload.content['storedState'] == 1
 
 

@@ -2,7 +2,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from brewblox_devcon_spark.codec import DateFormatOpt, time_utils
+from brewblox_devcon_spark.codec import time_utils
+from brewblox_devcon_spark.codec.opts import DateFormatOpt
 
 
 def test_parse_duration():
