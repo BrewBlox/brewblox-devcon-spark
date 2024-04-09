@@ -31,8 +31,7 @@ class Broadcaster:
 
         try:
             if state.is_synchronized():
-                blocks = await self.api.read_all_blocks()
-                logged_blocks = await self.api.read_all_logged_blocks()
+                blocks, logged_blocks = await self.api.read_all_broadcast_blocks()
 
                 # Convert list to key/value format suitable for history
                 history_data = {

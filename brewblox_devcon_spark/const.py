@@ -16,6 +16,7 @@ GLOBAL_TIME_ZONE_ID = 'timeZone'
 SYSINFO_NID = 2
 ONEWIREBUS_NID = 4
 WIFI_SETTINGS_NID = 5
+TOUCH_SETTINGS_NID = 6
 DISPLAY_SETTINGS_NID = 7
 SPARK_PINS_NID = 19
 
@@ -24,6 +25,7 @@ SYS_OBJECT_KEYS: list[tuple[str, int]] = [
     ['SystemInfo', SYSINFO_NID],
     ['OneWireBus', ONEWIREBUS_NID],
     ['WiFiSettings', WIFI_SETTINGS_NID],
+    ['TouchSettings', TOUCH_SETTINGS_NID],
     ['DisplaySettings', DISPLAY_SETTINGS_NID],
     ['SparkPins', SPARK_PINS_NID],
 ]

@@ -16,7 +16,7 @@ import nanopb_pb2 as nanopb__pb2
 import IoArray_pb2 as IoArray__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12\x44igitalInput.proto\x12\x11\x62lox.DigitalInput\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\xb6\x02\n\x05\x42lock\x12\x1f\n\x08hwDevice\x18\x01 \x01(\rB\r\x92?\x02\x38\x10\x8a\xb5\x18\x04\x18\nx\x01\x12\x1c\n\x07\x63hannel\x18\x02 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02x\x01\x12\x33\n\x05state\x18\x03 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x08\x8a\xb5\x18\x04(\x01\x30\x01\x12\x16\n\x06invert\x18\x04 \x01(\x08\x42\x06\x8a\xb5\x18\x02x\x01\x12;\n\x08\x62\x65havior\x18\x05 \x01(\x0e\x32!.blox.DigitalInput.ToggleBehaviorB\x06\x8a\xb5\x18\x02x\x01\x12\"\n\rminActiveTime\x18\x06 \x01(\rB\x0b\x8a\xb5\x18\x07\x08\x03\x10\xe8\x07x\x01\x12\x33\n\x07hwState\x18\x07 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x06\x8a\xb5\x18\x02(\x01:\x0b\x8a\xb5\x18\x07\x18\xca\x02J\x02\x1b\x11*-\n\x0eToggleBehavior\x12\n\n\x06\x44IRECT\x10\x00\x12\x0f\n\x0b\x41LTERNATING\x10\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12\x44igitalInput.proto\x12\x11\x62lox.DigitalInput\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\x9c\x02\n\x05\x42lock\x12\x1d\n\x08hwDevice\x18\x01 \x01(\rB\x0b\x92?\x02\x38\x10\x8a\xb5\x18\x02\x18\n\x12\x16\n\x07\x63hannel\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12\x33\n\x05state\x18\x03 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x08\x8a\xb5\x18\x04(\x01\x30\x01\x12\x0e\n\x06invert\x18\x04 \x01(\x08\x12\x33\n\x08\x62\x65havior\x18\x05 \x01(\x0e\x32!.blox.DigitalInput.ToggleBehavior\x12 \n\rminActiveTime\x18\x06 \x01(\rB\t\x8a\xb5\x18\x05\x08\x03\x10\xe8\x07\x12\x33\n\x07hwState\x18\x07 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x06\x8a\xb5\x18\x02(\x01:\x0b\x8a\xb5\x18\x07\x18\xca\x02J\x02\x1b\x11*-\n\x0eToggleBehavior\x12\n\n\x06\x44IRECT\x10\x00\x12\x0f\n\x0b\x41LTERNATING\x10\x01\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -24,23 +24,19 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'DigitalInput_pb2', _globals
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   _BLOCK.fields_by_name['hwDevice']._options = None
-  _BLOCK.fields_by_name['hwDevice']._serialized_options = b'\222?\0028\020\212\265\030\004\030\nx\001'
+  _BLOCK.fields_by_name['hwDevice']._serialized_options = b'\222?\0028\020\212\265\030\002\030\n'
   _BLOCK.fields_by_name['channel']._options = None
-  _BLOCK.fields_by_name['channel']._serialized_options = b'\222?\0028\010\212\265\030\002x\001'
+  _BLOCK.fields_by_name['channel']._serialized_options = b'\222?\0028\010'
   _BLOCK.fields_by_name['state']._options = None
   _BLOCK.fields_by_name['state']._serialized_options = b'\212\265\030\004(\0010\001'
-  _BLOCK.fields_by_name['invert']._options = None
-  _BLOCK.fields_by_name['invert']._serialized_options = b'\212\265\030\002x\001'
-  _BLOCK.fields_by_name['behavior']._options = None
-  _BLOCK.fields_by_name['behavior']._serialized_options = b'\212\265\030\002x\001'
   _BLOCK.fields_by_name['minActiveTime']._options = None
-  _BLOCK.fields_by_name['minActiveTime']._serialized_options = b'\212\265\030\007\010\003\020\350\007x\001'
+  _BLOCK.fields_by_name['minActiveTime']._serialized_options = b'\212\265\030\005\010\003\020\350\007'
   _BLOCK.fields_by_name['hwState']._options = None
   _BLOCK.fields_by_name['hwState']._serialized_options = b'\212\265\030\002(\001'
   _BLOCK._options = None
   _BLOCK._serialized_options = b'\212\265\030\007\030\312\002J\002\033\021'
-  _globals['_TOGGLEBEHAVIOR']._serialized_start=399
-  _globals['_TOGGLEBEHAVIOR']._serialized_end=444
+  _globals['_TOGGLEBEHAVIOR']._serialized_start=373
+  _globals['_TOGGLEBEHAVIOR']._serialized_end=418
   _globals['_BLOCK']._serialized_start=87
-  _globals['_BLOCK']._serialized_end=397
+  _globals['_BLOCK']._serialized_end=371
 # @@protoc_insertion_point(module_scope)

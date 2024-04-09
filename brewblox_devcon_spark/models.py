@@ -140,7 +140,6 @@ class FirmwareConfig(BaseModel):
     firmware_sha: str
     proto_version: str
     proto_date: str
-    proto_sha: str
     system_version: str
 
 
@@ -228,6 +227,8 @@ class Opcode(enum.Enum):
     BLOCK_CREATE = 13
     BLOCK_DELETE = 14
     BLOCK_DISCOVER = 15
+    BLOCK_STORED_READ = 16
+    BLOCK_STORED_READ_ALL = 17
 
     STORAGE_READ = 20
     STORAGE_READ_ALL = 21
@@ -285,12 +286,6 @@ class ErrorCode(enum.Enum):
     INVALID_STORED_BLOCK_CONTENT = 54
 
 
-class ReadMode(enum.Enum):
-    DEFAULT = 0
-    STORED = 1
-    LOGGED = 2
-
-
 class MaskMode(enum.Enum):
     NO_MASK = 0
     INCLUSIVE = 1
@@ -327,18 +322,12 @@ class DecodedPayload(BasePayload):
 class BaseRequest(BaseModel):
     msgId: int
     opcode: Opcode
-    mode: ReadMode = ReadMode.DEFAULT
     payload: BasePayload | None = None
 
     @field_validator('opcode', mode='before')
     @classmethod
     def parse_opcode(cls, v):
         return parse_enum(Opcode, v)
-
-    @field_validator('mode', mode='before')
-    @classmethod
-    def parse_mode(cls, v):
-        return parse_enum(ReadMode, v)
 
 
 class IntermediateRequest(BaseRequest):
@@ -352,18 +341,12 @@ class DecodedRequest(BaseRequest):
 class BaseResponse(BaseModel):
     msgId: int
     error: ErrorCode
-    mode: ReadMode = ReadMode.DEFAULT
     payload: list[BasePayload]
 
     @field_validator('error', mode='before')
     @classmethod
     def parse_error(cls, v):
         return parse_enum(ErrorCode, v)
-
-    @field_validator('mode', mode='before')
-    @classmethod
-    def parse_mode(cls, v):
-        return parse_enum(ReadMode, v)
 
 
 class IntermediateResponse(BaseResponse):

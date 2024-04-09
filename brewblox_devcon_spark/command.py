@@ -8,11 +8,12 @@ import logging
 from contextvars import ContextVar
 
 from . import codec, connection, exceptions, state_machine, utils
+from .codec.opts import DecodeOpts
 from .models import (ControllerDescription, DecodedPayload, DeviceDescription,
                      EncodedPayload, ErrorCode, FirmwareBlock,
                      FirmwareBlockIdentity, FirmwareDescription,
                      HandshakeMessage, IntermediateRequest,
-                     IntermediateResponse, MaskMode, Opcode, ReadMode)
+                     IntermediateResponse, MaskMode, Opcode)
 
 WELCOME_PREFIX = '!BREWBLOX'
 HANDSHAKE_KEYS = [
@@ -33,6 +34,13 @@ CV: ContextVar['CboxCommander'] = ContextVar('command.CboxCommander')
 
 
 class CboxCommander:
+
+    default_decode_opts = codec.DecodeOpts()
+    stored_decode_opts = codec.DecodeOpts(enums=codec.ProtoEnumOpt.INT)
+    logged_decode_opts = codec.DecodeOpts(enums=codec.ProtoEnumOpt.INT,
+                                          filter=codec.FilterOpt.LOGGED,
+                                          metadata=codec.MetadataOpt.POSTFIX,
+                                          dates=codec.DateFormatOpt.SECONDS)
 
     def __init__(self):
         self.config = utils.get_config()
@@ -55,7 +63,7 @@ class CboxCommander:
     def _to_payload(self,
                     block: FirmwareBlock, /,
                     identity_only=False,
-                    patch=False,
+                    patch=False
                     ) -> EncodedPayload:
         if block.type:
             (blockType, subtype) = codec.split_type(block.type)
@@ -71,11 +79,8 @@ class CboxCommander:
 
         return self.codec.encode_payload(payload)
 
-    def _to_block(self,
-                  payload: EncodedPayload, /,
-                  mode: ReadMode = ReadMode.DEFAULT,
-                  ) -> FirmwareBlock:
-        payload = self.codec.decode_payload(payload, mode=mode)
+    def _to_block(self, payload: EncodedPayload, opts: DecodeOpts) -> FirmwareBlock:
+        payload = self.codec.decode_payload(payload, opts=opts)
         return FirmwareBlock(
             nid=payload.blockId,
             type=codec.join_type(payload.blockType, payload.subtype),
@@ -123,16 +128,14 @@ class CboxCommander:
             LOGGER.error(f'Error parsing message `{msg}` : {utils.strex(ex)}')
 
     async def _execute(self,
-                       opcode: Opcode, /,
-                       payload: EncodedPayload | None = None,
-                       mode: ReadMode = ReadMode.DEFAULT,
+                       opcode: Opcode,
+                       payload: EncodedPayload | None,
                        ) -> list[EncodedPayload]:
         msg_id = self._next_id()
 
         request = IntermediateRequest(
             msgId=msg_id,
             opcode=opcode,
-            mode=mode,
             payload=payload
         )
 
@@ -164,69 +167,139 @@ class CboxCommander:
         request = IntermediateRequest(
             msgId=0,
             opcode=Opcode.NONE,
-            mode=ReadMode.DEFAULT,
             payload=self._to_payload(block),
         )
         self.codec.encode_request(request)
         return block
 
     async def noop(self) -> None:
-        await self._execute(Opcode.NONE)
+        await self._execute(Opcode.NONE, None)
 
     async def version(self) -> None:
-        await self._execute(Opcode.VERSION)
+        await self._execute(Opcode.VERSION, None)
 
-    async def read_block(self,
-                         ident: FirmwareBlockIdentity,
-                         mode: ReadMode = ReadMode.DEFAULT) -> FirmwareBlock:
-        payloads = await self._execute(Opcode.BLOCK_READ,
-                                       mode=mode,
-                                       payload=self._to_payload(ident, identity_only=True))
-        return self._to_block(payloads[0], mode=mode)
+    async def read_block(self, ident: FirmwareBlockIdentity) -> FirmwareBlock:
+        payloads = await self._execute(
+            Opcode.BLOCK_READ,
+            self._to_payload(ident, identity_only=True),
+        )
+        return self._to_block(payloads[0], self.default_decode_opts)
 
-    async def read_all_blocks(self, mode: ReadMode = ReadMode.DEFAULT) -> list[FirmwareBlock]:
-        payloads = await self._execute(Opcode.BLOCK_READ_ALL,
-                                       mode=mode)
-        return [self._to_block(v, mode=mode) for v in payloads]
+    async def read_logged_block(self, ident: FirmwareBlockIdentity) -> FirmwareBlock:
+        payloads = await self._execute(
+            Opcode.BLOCK_READ,
+            self._to_payload(ident, identity_only=True),
+        )
+        return self._to_block(payloads[0], self.logged_decode_opts)
+
+    async def read_all_blocks(self) -> list[FirmwareBlock]:
+        payloads = await self._execute(
+            Opcode.BLOCK_READ_ALL,
+            None,
+        )
+        return [self._to_block(v, self.default_decode_opts)
+                for v in payloads]
+
+    async def read_all_logged_blocks(self) -> list[FirmwareBlock]:
+        payloads = await self._execute(
+            Opcode.BLOCK_READ_ALL,
+            None,
+        )
+        return [self._to_block(v, self.logged_decode_opts)
+                for v in payloads]
+
+    async def read_all_broadcast_blocks(self) -> tuple[list[FirmwareBlock], list[FirmwareBlock]]:
+        payloads = await self._execute(
+            Opcode.BLOCK_READ_ALL,
+            None,
+        )
+        default_retv = [self._to_block(v, self.default_decode_opts)
+                        for v in payloads]
+        logged_retv = [self._to_block(v, self.logged_decode_opts)
+                       for v in payloads]
+        return (default_retv, logged_retv)
 
     async def write_block(self, block: FirmwareBlock) -> FirmwareBlock:
-        payloads = await self._execute(Opcode.BLOCK_WRITE,
-                                       payload=self._to_payload(block))
-        return self._to_block(payloads[0])
+        payloads = await self._execute(
+            Opcode.BLOCK_WRITE,
+            self._to_payload(block),
+        )
+        return self._to_block(payloads[0], self.default_decode_opts)
 
     async def patch_block(self, block: FirmwareBlock) -> FirmwareBlock:
-        payloads = await self._execute(Opcode.BLOCK_WRITE,
-                                       payload=self._to_payload(block, patch=True))
-        return self._to_block(payloads[0])
+        payloads = await self._execute(
+            Opcode.BLOCK_WRITE,
+            self._to_payload(block, patch=True),
+        )
+        return self._to_block(payloads[0], self.default_decode_opts)
 
     async def create_block(self, block: FirmwareBlock) -> FirmwareBlock:
-        payloads = await self._execute(Opcode.BLOCK_CREATE,
-                                       payload=self._to_payload(block, patch=True))
-        return self._to_block(payloads[0])
+        payloads = await self._execute(
+            Opcode.BLOCK_CREATE,
+            self._to_payload(block, patch=True),
+        )
+        return self._to_block(payloads[0], self.default_decode_opts)
 
     async def delete_block(self, ident: FirmwareBlockIdentity) -> None:
-        await self._execute(Opcode.BLOCK_DELETE,
-                            payload=self._to_payload(ident, identity_only=True))
+        await self._execute(
+            Opcode.BLOCK_DELETE,
+            self._to_payload(ident, identity_only=True),
+        )
 
     async def discover_blocks(self) -> list[FirmwareBlock]:
-        payloads = await self._execute(Opcode.BLOCK_DISCOVER)
-        return [self._to_block(v) for v in payloads]
+        payloads = await self._execute(
+            Opcode.BLOCK_DISCOVER,
+            None,
+        )
+        return [self._to_block(v, self.default_decode_opts)
+                for v in payloads]
+
+    async def read_stored_block(self, ident: FirmwareBlockIdentity) -> FirmwareBlock:
+        payloads = await self._execute(
+            Opcode.BLOCK_STORED_READ,
+            self._to_payload(ident, identity_only=True),
+        )
+        return self._to_block(payloads[0], self.stored_decode_opts)
+
+    async def read_all_stored_blocks(self) -> list[FirmwareBlock]:
+        payloads = await self._execute(
+            Opcode.BLOCK_STORED_READ_ALL,
+            None,
+        )
+        return [self._to_block(v, self.stored_decode_opts)
+                for v in payloads]
 
     async def reboot(self) -> None:
-        await self._execute(Opcode.REBOOT)
+        await self._execute(
+            Opcode.REBOOT,
+            None,
+        )
 
     async def clear_blocks(self) -> list[FirmwareBlock]:
-        payloads = await self._execute(Opcode.CLEAR_BLOCKS)
-        return [self._to_block(v) for v in payloads]
+        payloads = await self._execute(
+            Opcode.CLEAR_BLOCKS,
+            None,
+        )
+        return [self._to_block(v, self.default_decode_opts)
+                for v in payloads]
 
     async def clear_wifi(self) -> None:
-        await self._execute(Opcode.CLEAR_WIFI)
+        await self._execute(
+            Opcode.CLEAR_WIFI,
+            None,
+        )
 
     async def factory_reset(self) -> None:
-        await self._execute(Opcode.FACTORY_RESET)
+        await self._execute(
+            Opcode.FACTORY_RESET,
+            None,
+        )
 
     async def firmware_update(self) -> None:
-        await self._execute(Opcode.FIRMWARE_UPDATE)
+        await self._execute(
+            Opcode.FIRMWARE_UPDATE,
+            None,
+        )
 
     async def reset_connection(self) -> None:
         await self.conn.reset()

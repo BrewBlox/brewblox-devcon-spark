@@ -11,8 +11,10 @@ from google.protobuf import json_format
 
 from .. import exceptions, utils
 from ..models import (DecodedPayload, EncodedPayload, IntermediateRequest,
-                      IntermediateResponse, ReadMode)
+                      IntermediateResponse)
 from . import lookup, pb2, time_utils, unit_conversion
+from .opts import (DateFormatOpt, DecodeOpts, FilterOpt, MetadataOpt,
+                   ProtoEnumOpt)
 from .processor import ProtobufProcessor
 
 DEPRECATED_TYPE_INT = 65533
@@ -39,8 +41,8 @@ def join_type(blockType: str, subtype: Optional[str]) -> str:
 
 
 class Codec:
-    def __init__(self, filter_values=True):
-        self._processor = ProtobufProcessor(filter_values)
+    def __init__(self, strip_readonly=True):
+        self._processor = ProtobufProcessor(strip_readonly)
 
     def encode_request(self, request: IntermediateRequest) -> str:
         try:
@@ -104,9 +106,7 @@ class Codec:
             LOGGER.debug(msg, exc_info=True)
             raise exceptions.DecodeException(msg)
 
-    def encode_payload(self,
-                       payload: DecodedPayload,
-                       filter_values: bool | None = None) -> EncodedPayload:
+    def encode_payload(self, payload: DecodedPayload) -> EncodedPayload:
         try:
             # No encoding required
             if payload.blockType is None:
@@ -139,8 +139,7 @@ class Codec:
 
             message = impl.message_cls()
             payload = self._processor.pre_encode(message.DESCRIPTOR,
-                                                 payload.model_copy(deep=True),
-                                                 filter_values=filter_values)
+                                                 payload.model_copy(deep=True))
             json_format.ParseDict(payload.content, message)
             content: str = b64encode(message.SerializeToString()).decode()
 
@@ -165,8 +164,7 @@ class Codec:
 
     def decode_payload(self,
                        payload: EncodedPayload, /,
-                       mode: ReadMode = ReadMode.DEFAULT,
-                       filter_values: bool | None = None,
+                       opts: DecodeOpts = DecodeOpts(),
                        ) -> DecodedPayload:
         try:
             if payload.blockType == DEPRECATED_TYPE_INT:
@@ -185,13 +183,14 @@ class Codec:
 
             if impl:
                 # We have an object lookup, and can decode the content
+                int_enum = opts.enums == ProtoEnumOpt.INT
                 message = impl.message_cls()
                 message.ParseFromString(b64decode(payload.content))
                 content: dict = json_format.MessageToDict(
                     message=message,
                     preserving_proto_field_name=True,
                     including_default_value_fields=True,
-                    use_integers_for_enums=(mode in (ReadMode.STORED, ReadMode.LOGGED)),
+                    use_integers_for_enums=int_enum,
                 )
                 decoded = DecodedPayload(
                     blockId=payload.blockId,
@@ -201,10 +200,7 @@ class Codec:
                     maskMode=payload.maskMode,
                     maskFields=payload.maskFields
                 )
-                return self._processor.post_decode(message.DESCRIPTOR,
-                                                   decoded,
-                                                   mode=mode,
-                                                   filter_values=filter_values)
+                return self._processor.post_decode(message.DESCRIPTOR, decoded, opts)
 
             # No object lookup found. Try the interfaces.
             intf_impl = next((v for v in lookup.CV_INTERFACES.get()
@@ -256,6 +252,11 @@ __all__ = [
     'setup',
     'CV',
 
+    'DecodeOpts',
+    'ProtoEnumOpt',
+    'FilterOpt',
+    'MetadataOpt',
+    'DateFormatOpt',
     'ProtobufProcessor'
 
     # utils
