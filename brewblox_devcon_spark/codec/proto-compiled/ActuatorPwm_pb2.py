@@ -17,7 +17,7 @@ import Constraints_pb2 as Constraints__pb2
 import Claims_pb2 as Claims__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11\x41\x63tuatorPwm.proto\x12\x10\x62lox.ActuatorPwm\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x11\x43onstraints.proto\x1a\x0c\x43laims.proto\"\x90\x04\n\x05\x42lock\x12\x17\n\x07\x65nabled\x18\x08 \x01(\x08\x42\x06\x8a\xb5\x18\x02x\x01\x12!\n\nactuatorId\x18\x01 \x01(\rB\r\x92?\x02\x38\x10\x8a\xb5\x18\x04\x18\x06x\x01\x12\'\n\rstoredSetting\x18\x0b \x01(\x11\x42\x10\x92?\x02\x38 \x8a\xb5\x18\x07\x10\x80 0\x01x\x01\x12(\n\x0e\x64\x65siredSetting\x18\t \x01(\x11\x42\x10\x92?\x02\x38 \x8a\xb5\x18\x07\x10\x80 (\x01\x30\x01\x12!\n\x07setting\x18\x04 \x01(\x11\x42\x10\x92?\x02\x38 \x8a\xb5\x18\x07\x10\x80 (\x01\x30\x01\x12\x1f\n\x05value\x18\x05 \x01(\x11\x42\x10\x92?\x02\x38 \x8a\xb5\x18\x07\x10\x80 (\x01\x30\x01\x12\x1b\n\x06period\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x07\x08\x03\x10\xe8\x07x\x01\x12\x44\n\rconstrainedBy\x18\x06 \x01(\x0b\x32-.blox.Constraints.DeprecatedAnalogConstraints\x12@\n\x0b\x63onstraints\x18\r \x01(\x0b\x32#.blox.Constraints.AnalogConstraintsB\x06\x8a\xb5\x18\x02x\x01\x12!\n\tclaimedBy\x18\n \x01(\rB\x0e\x92?\x02\x38\x10\x8a\xb5\x18\x05\x18\xff\x01(\x01\x12\x35\n\x0bsettingMode\x18\x0c \x01(\x0e\x32\x18.blox.Claims.SettingModeB\x06\x8a\xb5\x18\x02x\x01\x12%\n\x10\x64rivenActuatorId\x18Z \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01:\x0e\x8a\xb5\x18\n\x18\xb3\x02J\x05\x01\x05\x13\x0f\x10\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11\x41\x63tuatorPwm.proto\x12\x10\x62lox.ActuatorPwm\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x11\x43onstraints.proto\x1a\x0c\x43laims.proto\"\x86\x04\n\x05\x42lock\x12\x17\n\x07\x65nabled\x18\x08 \x01(\x08\x42\x06\x8a\xb5\x18\x02x\x01\x12\x1c\n\nactuatorId\x18\x01 \x01(\rB\x08\x8a\xb5\x18\x04\x18\x06x\x01\x12\'\n\rstoredSetting\x18\x0b \x01(\x11\x42\x10\x92?\x02\x38 \x8a\xb5\x18\x07\x10\x80 0\x01x\x01\x12(\n\x0e\x64\x65siredSetting\x18\t \x01(\x11\x42\x10\x92?\x02\x38 \x8a\xb5\x18\x07\x10\x80 (\x01\x30\x01\x12!\n\x07setting\x18\x04 \x01(\x11\x42\x10\x92?\x02\x38 \x8a\xb5\x18\x07\x10\x80 (\x01\x30\x01\x12\x1f\n\x05value\x18\x05 \x01(\x11\x42\x10\x92?\x02\x38 \x8a\xb5\x18\x07\x10\x80 (\x01\x30\x01\x12\x1b\n\x06period\x18\x03 \x01(\rB\x0b\x8a\xb5\x18\x07\x08\x03\x10\xe8\x07x\x01\x12\x44\n\rconstrainedBy\x18\x06 \x01(\x0b\x32-.blox.Constraints.DeprecatedAnalogConstraints\x12@\n\x0b\x63onstraints\x18\r \x01(\x0b\x32#.blox.Constraints.AnalogConstraintsB\x06\x8a\xb5\x18\x02x\x01\x12\x1c\n\tclaimedBy\x18\n \x01(\rB\t\x8a\xb5\x18\x05\x18\xff\x01(\x01\x12\x35\n\x0bsettingMode\x18\x0c \x01(\x0e\x32\x18.blox.Claims.SettingModeB\x06\x8a\xb5\x18\x02x\x01\x12%\n\x10\x64rivenActuatorId\x18Z \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01:\x0e\x8a\xb5\x18\n\x18\xb3\x02J\x05\x01\x05\x13\x0f\x10\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -27,7 +27,7 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _BLOCK.fields_by_name['enabled']._options = None
   _BLOCK.fields_by_name['enabled']._serialized_options = b'\212\265\030\002x\001'
   _BLOCK.fields_by_name['actuatorId']._options = None
-  _BLOCK.fields_by_name['actuatorId']._serialized_options = b'\222?\0028\020\212\265\030\004\030\006x\001'
+  _BLOCK.fields_by_name['actuatorId']._serialized_options = b'\212\265\030\004\030\006x\001'
   _BLOCK.fields_by_name['storedSetting']._options = None
   _BLOCK.fields_by_name['storedSetting']._serialized_options = b'\222?\0028 \212\265\030\007\020\200 0\001x\001'
   _BLOCK.fields_by_name['desiredSetting']._options = None
@@ -41,7 +41,7 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _BLOCK.fields_by_name['constraints']._options = None
   _BLOCK.fields_by_name['constraints']._serialized_options = b'\212\265\030\002x\001'
   _BLOCK.fields_by_name['claimedBy']._options = None
-  _BLOCK.fields_by_name['claimedBy']._serialized_options = b'\222?\0028\020\212\265\030\005\030\377\001(\001'
+  _BLOCK.fields_by_name['claimedBy']._serialized_options = b'\212\265\030\005\030\377\001(\001'
   _BLOCK.fields_by_name['settingMode']._options = None
   _BLOCK.fields_by_name['settingMode']._serialized_options = b'\212\265\030\002x\001'
   _BLOCK.fields_by_name['drivenActuatorId']._options = None
@@ -49,5 +49,5 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _BLOCK._options = None
   _BLOCK._serialized_options = b'\212\265\030\n\030\263\002J\005\001\005\023\017\020'
   _globals['_BLOCK']._serialized_start=103
-  _globals['_BLOCK']._serialized_end=631
+  _globals['_BLOCK']._serialized_end=621
 # @@protoc_insertion_point(module_scope)

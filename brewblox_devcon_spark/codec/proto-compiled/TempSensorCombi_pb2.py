@@ -15,7 +15,7 @@ import brewblox_pb2 as brewblox__pb2
 import nanopb_pb2 as nanopb__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15TempSensorCombi.proto\x12\x14\x62lox.TempSensorCombi\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x9c\x01\n\x05\x42lock\x12!\n\x05value\x18\x01 \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x08\x01\x10\x80 (\x01\x30\x01\x12\x42\n\x0b\x63ombineFunc\x18\x02 \x01(\x0e\x32%.blox.TempSensorCombi.SensorCombiFuncB\x06\x8a\xb5\x18\x02x\x01\x12 \n\x07sensors\x18\x03 \x03(\rB\x0f\x92?\x04\x10\x08\x38\x10\x8a\xb5\x18\x04\x18\x02x\x01:\n\x8a\xb5\x18\x06\x18\xc4\x02J\x01\x02*b\n\x0fSensorCombiFunc\x12\x19\n\x15SENSOR_COMBI_FUNC_AVG\x10\x00\x12\x19\n\x15SENSOR_COMBI_FUNC_MIN\x10\x01\x12\x19\n\x15SENSOR_COMBI_FUNC_MAX\x10\x02\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15TempSensorCombi.proto\x12\x14\x62lox.TempSensorCombi\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x9a\x01\n\x05\x42lock\x12!\n\x05value\x18\x01 \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x08\x01\x10\x80 (\x01\x30\x01\x12\x42\n\x0b\x63ombineFunc\x18\x02 \x01(\x0e\x32%.blox.TempSensorCombi.SensorCombiFuncB\x06\x8a\xb5\x18\x02x\x01\x12\x1e\n\x07sensors\x18\x03 \x03(\rB\r\x92?\x02\x10\x08\x8a\xb5\x18\x04\x18\x02x\x01:\n\x8a\xb5\x18\x06\x18\xc4\x02J\x01\x02*b\n\x0fSensorCombiFunc\x12\x19\n\x15SENSOR_COMBI_FUNC_AVG\x10\x00\x12\x19\n\x15SENSOR_COMBI_FUNC_MIN\x10\x01\x12\x19\n\x15SENSOR_COMBI_FUNC_MAX\x10\x02\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -27,11 +27,11 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _BLOCK.fields_by_name['combineFunc']._options = None
   _BLOCK.fields_by_name['combineFunc']._serialized_options = b'\212\265\030\002x\001'
   _BLOCK.fields_by_name['sensors']._options = None
-  _BLOCK.fields_by_name['sensors']._serialized_options = b'\222?\004\020\0108\020\212\265\030\004\030\002x\001'
+  _BLOCK.fields_by_name['sensors']._serialized_options = b'\222?\002\020\010\212\265\030\004\030\002x\001'
   _BLOCK._options = None
   _BLOCK._serialized_options = b'\212\265\030\006\030\304\002J\001\002'
-  _globals['_SENSORCOMBIFUNC']._serialized_start=236
-  _globals['_SENSORCOMBIFUNC']._serialized_end=334
+  _globals['_SENSORCOMBIFUNC']._serialized_start=234
+  _globals['_SENSORCOMBIFUNC']._serialized_end=332
   _globals['_BLOCK']._serialized_start=78
-  _globals['_BLOCK']._serialized_end=234
+  _globals['_BLOCK']._serialized_end=232
 # @@protoc_insertion_point(module_scope)

@@ -15,7 +15,7 @@ import brewblox_pb2 as brewblox__pb2
 import nanopb_pb2 as nanopb__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0e\x42\x61lancer.proto\x12\rblox.Balancer\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"r\n\x10\x42\x61lancedActuator\x12\x1a\n\x02id\x18\x01 \x01(\rB\x0e\x92?\x02\x38\x10\x8a\xb5\x18\x05\x18\xff\x01(\x01\x12!\n\trequested\x18\x02 \x01(\x11\x42\x0e\x92?\x02\x38 \x8a\xb5\x18\x05\x10\x80 (\x01\x12\x1f\n\x07granted\x18\x03 \x01(\x11\x42\x0e\x92?\x02\x38 \x8a\xb5\x18\x05\x10\x80 (\x01\"M\n\x05\x42lock\x12\x38\n\x07\x63lients\x18\x01 \x03(\x0b\x32\x1f.blox.Balancer.BalancedActuatorB\x06\x8a\xb5\x18\x02(\x01:\n\x8a\xb5\x18\x06\x18\xb5\x02J\x01\x07\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0e\x42\x61lancer.proto\x12\rblox.Balancer\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"m\n\x10\x42\x61lancedActuator\x12\x15\n\x02id\x18\x01 \x01(\rB\t\x8a\xb5\x18\x05\x18\xff\x01(\x01\x12!\n\trequested\x18\x02 \x01(\x11\x42\x0e\x92?\x02\x38 \x8a\xb5\x18\x05\x10\x80 (\x01\x12\x1f\n\x07granted\x18\x03 \x01(\x11\x42\x0e\x92?\x02\x38 \x8a\xb5\x18\x05\x10\x80 (\x01\"M\n\x05\x42lock\x12\x38\n\x07\x63lients\x18\x01 \x03(\x0b\x32\x1f.blox.Balancer.BalancedActuatorB\x06\x8a\xb5\x18\x02(\x01:\n\x8a\xb5\x18\x06\x18\xb5\x02J\x01\x07\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -23,7 +23,7 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'Balancer_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   _BALANCEDACTUATOR.fields_by_name['id']._options = None
-  _BALANCEDACTUATOR.fields_by_name['id']._serialized_options = b'\222?\0028\020\212\265\030\005\030\377\001(\001'
+  _BALANCEDACTUATOR.fields_by_name['id']._serialized_options = b'\212\265\030\005\030\377\001(\001'
   _BALANCEDACTUATOR.fields_by_name['requested']._options = None
   _BALANCEDACTUATOR.fields_by_name['requested']._serialized_options = b'\222?\0028 \212\265\030\005\020\200 (\001'
   _BALANCEDACTUATOR.fields_by_name['granted']._options = None
@@ -33,7 +33,7 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _BLOCK._options = None
   _BLOCK._serialized_options = b'\212\265\030\006\030\265\002J\001\007'
   _globals['_BALANCEDACTUATOR']._serialized_start=63
-  _globals['_BALANCEDACTUATOR']._serialized_end=177
-  _globals['_BLOCK']._serialized_start=179
-  _globals['_BLOCK']._serialized_end=256
+  _globals['_BALANCEDACTUATOR']._serialized_end=172
+  _globals['_BLOCK']._serialized_start=174
+  _globals['_BLOCK']._serialized_end=251
 # @@protoc_insertion_point(module_scope)
