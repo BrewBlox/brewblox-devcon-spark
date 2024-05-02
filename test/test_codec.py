@@ -25,16 +25,6 @@ def app() -> FastAPI:
     return FastAPI()
 
 
-async def test_type_conversion():
-    for (joined, split) in [
-        ['Pid', ('Pid', None)],
-        ['Pid.subtype', ('Pid', 'subtype')],
-        ['Pid.subtype.subsubtype', ('Pid', 'subtype.subsubtype')]
-    ]:
-        assert codec.split_type(joined) == split
-        assert codec.join_type(*split) == joined
-
-
 async def test_encode_system_objects():
     cdc = codec.CV.get()
 
@@ -158,15 +148,12 @@ async def test_encode_submessage():
     payload = cdc.encode_payload(DecodedPayload(
         blockId=1,
         blockType='EdgeCase',
-        subtype='SubCase',
         content={}
     ))
     assert payload.blockType == 9001
-    assert payload.subtype == 1
 
     payload = cdc.decode_payload(payload)
     assert payload.blockType == 'EdgeCase'
-    assert payload.subtype == 'SubCase'
 
     # Interface encoding
     payload = cdc.encode_payload(DecodedPayload(

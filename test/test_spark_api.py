@@ -7,7 +7,7 @@ from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from pytest_mock import MockerFixture
 
-from brewblox_devcon_spark import (codec, command, connection, const,
+from brewblox_devcon_spark import (codec, command, connection,
                                    datastore_blocks, datastore_settings,
                                    exceptions, mqtt, spark_api, state_machine,
                                    synchronization, utils)
@@ -49,6 +49,7 @@ async def manager(manager: LifespanManager):
 
 
 async def test_merge():
+    await state_machine.CV.get().wait_synchronized()
     assert spark_api.merge(
         {},
         {'a': True}
@@ -67,41 +68,13 @@ async def test_merge():
     ) == {'nested': {'a': True, 'b': True}, 'second': 'empty'}
 
 
-@pytest.mark.parametrize('sid', [
-    'flabber',
-    'FLABBER',
-    'f(1)',
-    'l12142|35234231',
-    'word'*50,
-])
-async def test_validate_sid(sid: str):
-    spark_api.CV.get()._validate_sid(sid)
-
-
-@pytest.mark.parametrize('sid', [
-    '1',
-    '1adsjlfdsf',
-    'pancakes[delicious]',
-    '[',
-    'f]abbergasted',
-    '',
-    'word'*51,
-    'brackey><',
-    'SystemInfo',
-    'SparkPins',
-    'a;ljfoihoewr*&(%&^&*%*&^(*&^(',
-])
-async def test_validate_sid_error(sid: str):
-    with pytest.raises(exceptions.InvalidId):
-        spark_api.CV.get()._validate_sid(sid)
-
-
 async def test_to_firmware_block():
+    await state_machine.CV.get().wait_synchronized()
     store = datastore_blocks.CV.get()
     api = spark_api.CV.get()
 
-    store['alias', 123] = dict()
-    store['4-2', 24] = dict()
+    store['alias'] = 123
+    store['4-2'] = 24
 
     assert api._to_firmware_block(Block(id='alias', type='', data={})).nid == 123
     assert api._to_firmware_block(Block(nid=840, type='', data={})).nid == 840
@@ -120,26 +93,28 @@ async def test_to_firmware_block():
 
 
 async def test_to_block():
+    await state_machine.CV.get().wait_synchronized()
     store = datastore_blocks.CV.get()
     api = spark_api.CV.get()
 
-    store['alias', 123] = dict()
-    store['4-2', 24] = dict()
+    store['alias'] = 123
+    store['4-2'] = 24
 
     assert api._to_block(FirmwareBlock(nid=123, type='', data={})).id == 'alias'
 
     # Service ID not found: create placeholder
     generated = api._to_block(FirmwareBlock(nid=456, type='', data={}))
-    assert generated.id.startswith(const.GENERATED_ID_PREFIX)
+    assert generated.id == '456'
 
 
 async def test_resolve_data_ids():
+    await state_machine.CV.get().wait_synchronized()
     store = datastore_blocks.CV.get()
     api = spark_api.CV.get()
 
-    store['eeney', 9001] = dict()
-    store['miney', 9002] = dict()
-    store['moo', 9003] = dict()
+    store['eeney'] = 9001
+    store['miney'] = 9002
+    store['moo'] = 9003
 
     def create_data():
         return {
@@ -229,6 +204,7 @@ async def test_check_connection(mocker: MockerFixture):
 
 
 async def test_start_update():
+    await state_machine.CV.get().wait_synchronized()
     state = state_machine.CV.get()
     api = spark_api.CV.get()
 

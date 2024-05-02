@@ -30,11 +30,10 @@ The synchronization process consists of:
         until status is ACKNOWLEDGED.
     - Verify that the service is compatible with the controller.
     - If the controller is not compatible, abort synchronization.
-- Synchronize block store:
-    - Fetch controller-specific data from datastore.
 - Synchronize controller settings:
     - Send timezone to controller.
     - Send temperature display units to controller.
+    - Get block names from controller.
 - Set status to SYNCHRONIZED.
 - Wait for DISCONNECTED status.
 - Repeat
@@ -117,7 +116,10 @@ class StateSynchronizer:
 
     @subroutine('sync block store')
     async def _sync_block_store(self):
-        await self.block_store.load()
+        blocks = await self.commander.read_all_block_names()
+        self.block_store.clear()
+        for block in blocks:
+            self.block_store[block.id] = block.nid
 
     @subroutine('sync controller settings')
     async def _sync_sysinfo(self):
@@ -183,14 +185,10 @@ class StateSynchronizer:
         await self.state.wait_disconnected()
 
     async def repeat(self):
-        try:
-            self.settings_store.service_settings_listeners.add(self._apply_service_settings)
-            self.settings_store.global_settings_listeners.add(self._apply_global_settings)
-            while True:
-                await self.run()
-        finally:
-            self.settings_store.service_settings_listeners.remove(self._apply_service_settings)
-            self.settings_store.global_settings_listeners.remove(self._apply_global_settings)
+        self.settings_store.service_settings_listeners.add(self._apply_service_settings)
+        self.settings_store.global_settings_listeners.add(self._apply_global_settings)
+        while True:
+            await self.run()
 
 
 @asynccontextmanager

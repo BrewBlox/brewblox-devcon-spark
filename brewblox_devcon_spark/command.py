@@ -58,16 +58,16 @@ class CboxCommander:
                     patch=False,
                     ) -> EncodedPayload:
         if block.type:
-            (blockType, subtype) = codec.split_type(block.type)
             payload = DecodedPayload(
                 blockId=block.nid,
-                blockType=blockType,
-                subypte=subtype,
+                blockType=block.type,
+                name=block.id,
                 content=(None if identity_only else block.data),
                 maskMode=(MaskMode.INCLUSIVE if patch else MaskMode.NO_MASK),
             )
         else:
-            payload = DecodedPayload(blockId=block.nid)
+            payload = DecodedPayload(blockId=block.nid,
+                                     name=block.id)
 
         return self.codec.encode_payload(payload)
 
@@ -77,8 +77,9 @@ class CboxCommander:
                   ) -> FirmwareBlock:
         payload = self.codec.decode_payload(payload, mode=mode)
         return FirmwareBlock(
+            id=payload.name,
             nid=payload.blockId,
-            type=codec.join_type(payload.blockType, payload.subtype),
+            type=payload.blockType,
             data=payload.content or {},
         )
 
@@ -201,7 +202,7 @@ class CboxCommander:
 
     async def create_block(self, block: FirmwareBlock) -> FirmwareBlock:
         payloads = await self._execute(Opcode.BLOCK_CREATE,
-                                       payload=self._to_payload(block, patch=True))
+                                       payload=self._to_payload(block))
         return self._to_block(payloads[0])
 
     async def delete_block(self, ident: FirmwareBlockIdentity) -> None:
@@ -211,6 +212,15 @@ class CboxCommander:
     async def discover_blocks(self) -> list[FirmwareBlock]:
         payloads = await self._execute(Opcode.BLOCK_DISCOVER)
         return [self._to_block(v) for v in payloads]
+
+    async def read_all_block_names(self) -> list[FirmwareBlock]:
+        payloads = await self._execute(Opcode.NAME_READ_ALL)
+        return [self._to_block(v) for v in payloads]
+
+    async def write_block_name(self, ident: FirmwareBlockIdentity) -> FirmwareBlock:
+        payloads = await self._execute(Opcode.NAME_WRITE,
+                                       payload=self._to_payload(ident, identity_only=True))
+        return self._to_block(payloads[0])
 
     async def reboot(self) -> None:
         await self._execute(Opcode.REBOOT)

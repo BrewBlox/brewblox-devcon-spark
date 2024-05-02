@@ -30,6 +30,7 @@ def default_blocks() -> dict[int, FirmwareBlock]:
         block.nid: block
         for block in [
             FirmwareBlock(
+                id='SystemInfo',
                 nid=const.SYSINFO_NID,
                 type='SysInfo',
                 data={
@@ -39,21 +40,25 @@ def default_blocks() -> dict[int, FirmwareBlock]:
                 },
             ),
             FirmwareBlock(
+                id='OneWireBus',
                 nid=const.ONEWIREBUS_NID,
                 type='OneWireBus',
                 data={},
             ),
             FirmwareBlock(
+                id='WiFiSettings',
                 nid=const.WIFI_SETTINGS_NID,
                 type='WiFiSettings',
                 data={},
             ),
             FirmwareBlock(
+                id='DisplaySettings',
                 nid=const.DISPLAY_SETTINGS_NID,
                 type='DisplaySettings',
                 data={},
             ),
             FirmwareBlock(
+                id='SparkPins',
                 nid=const.SPARK_PINS_NID,
                 type='Spark3Pins',
                 data={
@@ -82,28 +87,29 @@ class MockConnection(ConnectionImplBase):
         self._blocks: dict[int, FirmwareBlock] = default_blocks()
 
     def _to_payload(self, block: FirmwareBlock, mode: ReadMode) -> EncodedPayload:
-        (blockType, subtype) = codec.split_type(block.type)
         return self._codec.encode_payload(DecodedPayload(
             blockId=block.nid,
-            blockType=blockType,
-            subypte=subtype,
+            blockType=block.type,
+            name=block.id,
             content=block.data
         ))
 
     def _to_block(self, payload: EncodedPayload) -> FirmwareBlock:
         payload = self._codec.decode_payload(payload)
         return FirmwareBlock(
+            id=payload.name,
             nid=payload.blockId,
-            type=codec.join_type(payload.blockType, payload.subtype),
+            type=payload.blockType,
             data=payload.content,
         )
 
-    def _default_block(self, block_id: int, block_type: str) -> FirmwareBlock:
+    def _default_block(self, block_id: str, block_nid: int, block_type: str) -> FirmwareBlock:
         return self._to_block(
             self._codec.encode_payload(
                 DecodedPayload(
-                    blockId=block_id,
+                    blockId=block_nid,
                     blockType=block_type,
+                    name=block_id,
                     content={}
                 )
             )
@@ -168,6 +174,7 @@ class MockConnection(ConnectionImplBase):
         elif request.opcode in [
             Opcode.BLOCK_READ,
             Opcode.STORAGE_READ,
+            Opcode.NAME_READ,
         ]:
             block = self._blocks.get(request.payload.blockId)
             if not block:
@@ -178,6 +185,7 @@ class MockConnection(ConnectionImplBase):
         elif request.opcode in [
             Opcode.BLOCK_READ_ALL,
             Opcode.STORAGE_READ_ALL,
+            Opcode.NAME_READ_ALL,
         ]:
             response.payload = [self._to_payload(block, request.mode)
                                 for block in self._blocks.values()]
@@ -207,7 +215,7 @@ class MockConnection(ConnectionImplBase):
             else:
                 nid = nid or next(self._id_counter)
                 argblock = self._to_block(request.payload)
-                block = self._default_block(nid, argblock.type)
+                block = self._default_block(request.payload.name, nid, argblock.type)
                 self._merge_blocks(block, argblock)
                 self._blocks[nid] = block
                 response.payload = [self._to_payload(block, request.mode)]
@@ -226,6 +234,22 @@ class MockConnection(ConnectionImplBase):
             # Always return spark pins when discovering blocks
             block = self._blocks[const.SPARK_PINS_NID]
             response.payload = [self._to_payload(block, request.mode)]
+
+        elif request.opcode == Opcode.NAME_WRITE:
+            nid = request.payload.blockId
+            name = request.payload.name
+            block = self._blocks.get(nid)
+            match = next((block for block in self._blocks.values()
+                          if block.id == name), None)
+            if not block:
+                response.error = ErrorCode.INVALID_BLOCK_ID
+            elif not name:
+                response.error = ErrorCode.INVALID_BLOCK_NAME
+            elif match and match.nid != nid:
+                response.error = ErrorCode.INVALID_BLOCK_NAME
+            else:
+                block.id = name
+                response.payload = [self._to_payload(block, ReadMode.DEFAULT)]
 
         elif request.opcode == Opcode.REBOOT:
             self._start_time = datetime.now()

@@ -118,7 +118,7 @@ async def test_create(client: AsyncClient, block_args: Block):
 
     # Conflict error: name already taken
     resp = await client.post('/blocks/create', json=block_args.model_dump())
-    assert resp.status_code == 409
+    assert resp.status_code == 500
 
     block_args.id = 'other_obj'
     resp = await client.post('/blocks/create', json=block_args.model_dump())
@@ -445,25 +445,6 @@ async def test_delete_all(client: AsyncClient, block_args: Block):
     assert len(resp.json()) == n_sys_obj
 
 
-async def test_cleanup(client: AsyncClient, block_args: Block):
-    store = datastore_blocks.CV.get()
-    resp = await client.post('/blocks/create', json=block_args.model_dump())
-    assert resp.status_code == 201
-
-    store['unused', 456] = {}
-
-    resp = await client.post('/blocks/cleanup')
-    retv = resp.json()
-    expected = {
-        'id': 'unused',
-        'nid': 456,
-        'type': None,
-        'serviceId': 'sparkey',
-    }
-    assert expected in retv
-    assert not [v for v in retv if v['id'] == 'testobj']
-
-
 async def test_rename(client: AsyncClient, block_args: Block):
     resp = await client.post('/blocks/create', json=block_args.model_dump())
     assert resp.status_code == 201
@@ -616,12 +597,6 @@ async def test_backup_load(client: AsyncClient, spark_blocks: list[Block]):
         keys=('TROLOLOL', 9999),
         data={}))
 
-    # Add renamed type to store data
-    backup.store.append(TwinKeyEntry(
-        keys=('renamed_display_settings', const.DISPLAY_SETTINGS_NID),
-        data={},
-    ))
-
     # Add a Block that will fail to be created, and should be skipped
     backup.blocks.append(Block(
         id='derpface',
@@ -633,12 +608,11 @@ async def test_backup_load(client: AsyncClient, spark_blocks: list[Block]):
     resp = await client.post('/blocks/backup/load', json=backup.model_dump())
     resp = resp.json()['messages']
     assert len(resp) == 2
-    assert 'derpface' in resp[0]
-    assert 'TROLOLOL' in resp[1]
+    assert 'Groups' in resp[0]
+    assert 'derpface' in resp[1]
 
     resp = await client.post('/blocks/all/read')
     resp_ids = ret_ids(resp.json())
-    assert 'renamed_display_settings' in resp_ids
     assert 'derpface' not in resp_ids
 
 

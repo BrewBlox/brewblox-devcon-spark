@@ -3,28 +3,18 @@ Offers a functional interface to the device functionality
 """
 
 import asyncio
-import itertools
 import logging
-import re
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager
 from contextvars import ContextVar
 from datetime import datetime, timezone
 from typing import Callable, Union
 
 from . import (command, const, datastore_blocks, exceptions, state_machine,
-               twinkeydict, utils)
+               utils)
 from .codec import bloxfield, sequence
 from .models import (Backup, BackupApplyResult, Block, BlockIdentity,
                      BlockNameChange, FirmwareBlock, FirmwareBlockIdentity,
                      ReadMode)
-
-SID_PATTERN = re.compile(r'^[a-zA-Z]{1}[a-zA-Z0-9 _\-\(\)\|]{0,199}$')
-SID_RULES = """
-An object ID must adhere to the following rules:
-- Starts with a letter
-- May only contain alphanumeric characters, space, and _-()|
-- At most 200 characters
-"""
 
 LOGGER = logging.getLogger(__name__)
 CV: ContextVar['SparkApi'] = ContextVar('spark_api.SparkApi')
@@ -43,10 +33,10 @@ def merge(a: dict, b: dict):
     return a
 
 
-def resolve_data_ids(data: Union[dict, list, tuple],
-                     replacer: Union[Callable[[str, str], int],
-                                     Callable[[int, str], str]
-                                     ]):
+def resolve_data_ids(data: dict | list | tuple,
+                     replacer: Union[Callable[[str], int],
+                                     Callable[[int], str]],
+                     ):
     iter = enumerate(data) \
         if isinstance(data, (list, tuple)) \
         else data.items()
@@ -54,11 +44,10 @@ def resolve_data_ids(data: Union[dict, list, tuple],
     for k, v in iter:
         # Object-style link
         if bloxfield.is_link(v):
-            v['id'] = replacer(v['id'], v.get('type'))
+            v['id'] = replacer(v['id'])
         # Postfix-style link
         elif str(k).endswith(const.OBJECT_LINK_POSTFIX_END):
-            link_type = k[k.rfind(const.OBJECT_LINK_POSTFIX_START)+1:-1]
-            data[k] = replacer(v, link_type)
+            data[k] = replacer(v)
         # Nested data - increase iteration depth
         elif isinstance(v, (dict, list, tuple)):
             resolve_data_ids(v, replacer)
@@ -75,21 +64,7 @@ class SparkApi:
         self._discovery_lock = asyncio.Lock()
         self._conn_check_lock = asyncio.Lock()
 
-    def _validate_sid(self, sid: str):
-        if not re.match(SID_PATTERN, sid):
-            raise exceptions.InvalidId(SID_RULES)
-        if next((keys for keys in const.SYS_OBJECT_KEYS if sid == keys[0]), None):
-            raise exceptions.InvalidId(f'Block ID `{sid}` is reserved for system objects')
-        if (sid, None) in self.block_store:
-            raise exceptions.ExistingId(f'Block ID `{sid}` is already in use')
-
-    def _assign_sid(self, blockType: str):
-        for i in itertools.count(start=1):  # pragma: no cover
-            name = f'{const.GENERATED_ID_PREFIX}{blockType}-{i}'
-            if (name, None) not in self.block_store:
-                return name
-
-    def _find_nid(self, sid: str, blockType: str) -> int:
+    def _find_nid(self, sid: str) -> int:
         if sid is None:
             return 0
 
@@ -97,11 +72,11 @@ class SparkApi:
             return int(sid)
 
         try:
-            return self.block_store.right_key(sid)
+            return self.block_store[sid]
         except KeyError:
-            raise exceptions.UnknownId(f'Block ID `{sid}` not found. type={blockType}')
+            raise exceptions.UnknownId(f'Block ID `{sid}` not found.')
 
-    def _find_sid(self, nid: int, blockType: str) -> str:
+    def _find_sid(self, nid: int) -> str:
         if nid is None or nid == 0:
             return None
 
@@ -109,30 +84,45 @@ class SparkApi:
             raise exceptions.DecodeException(f'Expected numeric block ID, got string `{nid}`')
 
         try:
-            sid = self.block_store.left_key(nid)
+            sid = self.block_store.inverse[nid]
         except KeyError:
-            # If service ID not found, randomly generate one
-            sid = self._assign_sid(blockType)
-            self.block_store[sid, nid] = dict()
+            # If service ID not found, use numeric representation of nid
+            sid = str(nid)
 
         return sid
 
+    def _sync_block_id(self, block: FirmwareBlock):
+        if block.id and block.nid:
+            self.block_store[block.id] = block.nid
+
+    def _sync_all_block_ids(self, blocks: list[FirmwareBlock]):
+        if blocks and blocks[0].id and blocks[0].nid:
+            self.block_store.clear()
+            for block in blocks:
+                self.block_store[block.id] = block.nid
+
     def _to_block_identity(self, block: FirmwareBlock) -> BlockIdentity:
+        self._sync_block_id(block)
+
         return BlockIdentity(
-            id=self._find_sid(block.nid, block.type),
+            id=self._find_sid(block.nid),
             nid=block.nid,
             type=block.type,
-            serviceId=self.config.name
+            serviceId=self.config.name,
         )
 
     def _to_block(self, block: FirmwareBlock, find_sid=True) -> Block:
+        if find_sid:
+            self._sync_block_id(block)
+
         block = Block(
             **block.model_dump(),
-            id=None,
-            serviceId=self.config.name
+            serviceId=self.config.name,
         )
 
-        block.id = self._find_sid(block.nid, block.type) if find_sid else None
+        if find_sid and not block.id:
+            block.id = self._find_sid(block.nid)
+
         resolve_data_ids(block.data, self._find_sid)
 
         # Special case, where the API data format differs from proto-ready format
@@ -142,11 +132,7 @@ class SparkApi:
         return block
 
     def _to_block_list(self, blocks: list[FirmwareBlock]) -> list[Block]:
-        # Resolve all block sids before links are resolved
-        # This prevents auto-generated names using interface types
-        for block in blocks:
-            self._find_sid(block.nid, block.type)
-
+        self._sync_all_block_ids(blocks)
         return [self._to_block(block) for block in blocks]
 
     def _to_firmware_block_identity(self, block: BlockIdentity) -> FirmwareBlockIdentity:
@@ -155,11 +141,12 @@ class SparkApi:
 
         if nid is None:
             try:
-                nid = self.block_store.right_key(sid)
+                nid = self.block_store[sid]
             except KeyError:
                 raise exceptions.UnknownId(f'Block ID `{sid}` not found. type={block.type}')
 
         return FirmwareBlockIdentity(
+            id=sid,
             nid=nid,
             type=block.type,
         )
@@ -170,14 +157,15 @@ class SparkApi:
 
         if nid is None:
             try:
-                nid = self.block_store.right_key(sid) if find_nid else 0
+                nid = self.block_store[sid] if find_nid else 0
             except KeyError:
                 raise exceptions.UnknownId(f'Block ID `{sid}` not found. type={block.type}')
 
         block = FirmwareBlock(
+            id=sid,
             nid=nid,
             type=block.type,
-            data=block.data
+            data=block.data,
         )
 
         # Special case, where the API data format differs from proto-ready format
@@ -237,9 +225,6 @@ class SparkApi:
         except Exception as ex:
             LOGGER.debug(f'Failed to execute {desc}: {utils.strex(ex)}')
             raise ex
-
-        finally:
-            asyncio.create_task(self.block_store.flush())
 
     async def noop(self) -> None:
         """
@@ -371,30 +356,9 @@ class SparkApi:
             Block:
                 The desired block, as present on the controller after creation.
         """
-
         async with self._execute('Create block'):
-            desired_sid = block.id
-            self._validate_sid(desired_sid)
             block = self._to_firmware_block(block, find_nid=False)
-
-            # Avoid race conditions for the desired sid
-            # Claim it with a placeholder until the spark create call returns
-            placeholder_nid = object()
-            self.block_store[desired_sid, placeholder_nid] = 'PLACEHOLDER'
-
-            try:
-                block = await self.cmder.create_block(block)
-            finally:
-                del self.block_store[desired_sid, placeholder_nid]
-
-            # It's possible there is a leftover entry with the generated nid
-            # In this case, the newly created entry takes precedence
-            with suppress(KeyError):
-                del self.block_store[None, block.nid]
-
-            # The placeholder is always removed - add real entry if create was ok
-            self.block_store[desired_sid, block.nid] = dict()
-
+            block = await self.cmder.create_block(block)
             block = self._to_block(block)
             return block
 
@@ -418,8 +382,8 @@ class SparkApi:
             await self.cmder.delete_block(block)
 
             nid = block.nid
-            sid = self.block_store.left_key(nid)
-            del self.block_store[sid, nid]
+            sid = self.block_store.inverse[nid]
+            del self.block_store[sid]
             ident = BlockIdentity(
                 id=sid,
                 nid=nid,
@@ -510,13 +474,12 @@ class SparkApi:
                 type='DisplaySettings',
                 data={},
             ))
+            await self.load_block_names()
             return identities
 
     async def rename_block(self, change: BlockNameChange) -> BlockIdentity:
         """
         Change a block sid.
-        This will not change any data on the controller,
-        as block string IDs are stored in the datastore.
 
         Args:
             change (BlockNameChange):
@@ -526,32 +489,21 @@ class SparkApi:
             BlockIdentity:
                 The new sid + nid.
         """
-        self._validate_sid(change.desired)
-        self.block_store.rename((change.existing, None), (change.desired, None))
-        return BlockIdentity(
-            id=change.desired,
-            nid=self.block_store.right_key(change.desired),
-            serviceId=self.config.name
-        )
+        ident = FirmwareBlockIdentity(id=change.desired,
+                                      nid=self.block_store[change.existing])
+        block = await self.cmder.write_block_name(ident)
+        self.block_store[block.id] = block.nid
+        return BlockIdentity(id=block.id,
+                             nid=block.nid,
+                             type=block.type,
+                             serviceId=self.config.name)
 
-    async def remove_unused_ids(self) -> list[BlockIdentity]:
+    async def load_block_names(self):
         """
-        Compares blocks on the controller with block sid/nid entries
-        in the datastore, and removes unused entries.
-
-        Returns:
-            list[BlockIdentity]:
-                Unused (and now removed) block IDs.
+        Load all known block names from the controller
         """
-        actual = [block.id
-                  for block in await self.read_all_blocks()]
-        unused = [(sid, nid)
-                  for (sid, nid) in self.block_store
-                  if sid not in actual]
-        for (sid, nid) in unused.copy():
-            del self.block_store[sid, nid]
-        return [BlockIdentity(id=sid, nid=nid, serviceId=self.config.name)
-                for (sid, nid) in unused]
+        blocks = await self.cmder.read_all_block_names()
+        self._sync_all_block_ids(blocks)
 
     async def make_backup(self) -> Backup:
         """
@@ -562,9 +514,7 @@ class SparkApi:
             Backup:
                 JSON-ready backup data, compatible with apply_backup().
         """
-        store_data = [{'keys': keys, 'data': content}
-                      for keys, content in self.block_store.items()]
-        blocks_data = await self.read_all_stored_blocks()
+        blocks = await self.read_all_stored_blocks()
         timestamp = datetime\
             .now(tz=timezone.utc)\
             .isoformat(timespec='seconds')\
@@ -572,8 +522,9 @@ class SparkApi:
         controller_info = self.state.desc().controller
 
         return Backup(
-            blocks=[block for block in blocks_data],
-            store=store_data,
+            blocks=[block for block in blocks],
+            store=[{'keys': [block.id, block.nid], 'data': {}}
+                   for block in blocks],
             name=None,
             timestamp=timestamp,
             firmware=controller_info.firmware,
@@ -604,26 +555,19 @@ class SparkApi:
             LOGGER.info(f'Backup device = {exported.device}')
 
             await self.clear_blocks()
-            sys_nids = [k[1] for k in const.SYS_OBJECT_KEYS]
             error_log = []
 
             # First populate the datastore, to avoid unknown links
-            for entry in exported.store:
-
-                try:
-                    self.block_store[entry.keys] = entry.data
-                except twinkeydict.TwinKeyError:
-                    sid, nid = entry.keys
-                    self.block_store.rename((None, nid), (sid, None))
-                    self.block_store[entry.keys] = entry.data
+            self.block_store.clear()
+            for block in exported.blocks:
+                self.block_store[block.id] = block.nid
 
             # Now either create or write the objects, depending on whether they are system objects
             for block in exported.blocks:
                 try:
                     block = block.model_copy(deep=True)
                     if block.nid is not None and block.nid < const.USER_NID_START:
-                        if block.nid in sys_nids:  # Ignore deprecated system blocks
-                            await self.write_block(block)
+                        await self.write_block(block)
                     else:
                         # Bypass self.create_block(), to avoid meddling with store IDs
                         await self.cmder.create_block(self._to_firmware_block(block))
@@ -633,17 +577,8 @@ class SparkApi:
                     error_log.append(message)
                     LOGGER.error(message)
 
-            used_nids = [b.nid for b in await self.read_all_blocks()]
-            unused = [
-                (sid, nid) for (sid, nid) in self.block_store
-                if nid >= const.USER_NID_START
-                and nid not in used_nids
-            ]
-            for sid, nid in unused:
-                del self.block_store[sid, nid]
-                message = f'Removed unused alias [{sid},{nid}]'
-                LOGGER.info(message)
-                error_log.append(message)
+            # Sync block names with reality
+            await self.load_block_names()
 
             return BackupApplyResult(messages=error_log)
 

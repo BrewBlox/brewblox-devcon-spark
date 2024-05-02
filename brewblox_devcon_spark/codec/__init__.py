@@ -5,7 +5,6 @@ Default exports for codec module
 import logging
 from base64 import b64decode, b64encode
 from contextvars import ContextVar
-from typing import Optional
 
 from google.protobuf import json_format
 
@@ -22,20 +21,6 @@ ERROR_TYPE_STR = 'ErrorObject'
 
 LOGGER = logging.getLogger(__name__)
 CV: ContextVar['Codec'] = ContextVar('codec.Codec')
-
-
-def split_type(type_str: str) -> tuple[str, Optional[str]]:
-    if '.' in type_str:
-        return tuple(type_str.split('.', 1))
-    else:
-        return type_str, None
-
-
-def join_type(blockType: str, subtype: Optional[str]) -> str:
-    if subtype:
-        return f'{blockType}.{subtype}'
-    else:
-        return blockType
 
 
 class Codec:
@@ -112,6 +97,7 @@ class Codec:
             if payload.blockType is None:
                 return EncodedPayload(
                     blockId=payload.blockId,
+                    name=payload.name,
                 )
 
             if payload.blockType == DEPRECATED_TYPE_STR:
@@ -120,6 +106,7 @@ class Codec:
                 return EncodedPayload(
                     blockId=payload.blockId,
                     blockType=DEPRECATED_TYPE_INT,
+                    name=payload.name,
                     content=b64encode(content_bytes).decode(),
                 )
 
@@ -130,12 +117,12 @@ class Codec:
                 return EncodedPayload(
                     blockId=payload.blockId,
                     blockType=impl.type_int,
+                    name=payload.name,
                 )
 
             # Payload contains data
             impl = next((v for v in lookup.CV_OBJECTS.get()
-                         if v.type_str == payload.blockType
-                         and v.subtype_str == payload.subtype))
+                         if v.type_str == payload.blockType))
 
             message = impl.message_cls()
             payload = self._processor.pre_encode(message.DESCRIPTOR,
@@ -147,14 +134,14 @@ class Codec:
             return EncodedPayload(
                 blockId=payload.blockId,
                 blockType=impl.type_int,
-                subtype=impl.subtype_int,
+                name=payload.name,
                 content=content,
                 maskMode=payload.maskMode,
                 maskFields=payload.maskFields
             )
 
         except StopIteration:
-            msg = f'No codec entry found for {payload.blockType}.{payload.subtype}'
+            msg = f'No codec entry found for {payload.blockType}'
             LOGGER.debug(msg, exc_info=True)
             raise exceptions.EncodeException(msg)
 
@@ -175,13 +162,13 @@ class Codec:
                 return DecodedPayload(
                     blockId=payload.blockId,
                     blockType=DEPRECATED_TYPE_STR,
-                    content=content
+                    name=payload.name,
+                    content=content,
                 )
 
             # First, try to find an object lookup
             impl = next((v for v in lookup.CV_OBJECTS.get()
-                         if payload.blockType in [v.type_str, v.type_int]
-                         and payload.subtype in [v.subtype_str, v.subtype_int]), None)
+                         if payload.blockType in [v.type_str, v.type_int]), None)
 
             if impl:
                 # We have an object lookup, and can decode the content
@@ -196,7 +183,7 @@ class Codec:
                 decoded = DecodedPayload(
                     blockId=payload.blockId,
                     blockType=impl.type_str,
-                    subtype=impl.subtype_str,
+                    name=payload.name,
                     content=content,
                     maskMode=payload.maskMode,
                     maskFields=payload.maskFields
@@ -214,15 +201,17 @@ class Codec:
                 return DecodedPayload(
                     blockId=payload.blockId,
                     blockType=intf_impl.type_str,
+                    name=payload.name,
                 )
 
             # No lookup of any kind found
             # We're decoding (returned) data, so would rather return a stub than raise an error
-            msg = f'No codec entry found for {payload.blockType}.{payload.subtype}'
+            msg = f'No codec entry found for {payload.blockType}'
             LOGGER.debug(msg, exc_info=True)
             return DecodedPayload(
                 blockId=payload.blockId,
                 blockType=UNKNOWN_TYPE_STR,
+                name=payload.name,
                 content={
                     'error': msg,
                 },
@@ -234,10 +223,10 @@ class Codec:
             return DecodedPayload(
                 blockId=payload.blockId,
                 blockType=ERROR_TYPE_STR,
+                name=payload.name,
                 content={
                     'error': msg,
                     'blockType': payload.blockType,
-                    'subtype': payload.subtype,
                 },
             )
 
@@ -249,9 +238,6 @@ def setup():
 
 
 __all__ = [
-    'split_type',
-    'join_type',
-
     'Codec',
     'setup',
     'CV',
