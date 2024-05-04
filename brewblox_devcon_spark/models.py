@@ -614,7 +614,7 @@ class StoredTimezoneSettingsBox(DatastoreSingleValueBox):
 
 class DatastoreEvent(BaseModel):
     changed: list[DatastoreValue] = Field(default_factory=list)
-    deleted: list[DatastoreValue] = Field(default_factory=list)
+    deleted: list[str] = Field(default_factory=list)
 
 
 class HistoryEvent(BaseModel):

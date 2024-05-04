@@ -47,7 +47,7 @@ from functools import wraps
 from . import (codec, command, const, datastore_blocks, datastore_settings,
                exceptions, state_machine, utils)
 from .codec.time_utils import serialize_duration
-from .models import FirmwareBlock
+from .models import FirmwareBlock, FirmwareBlockIdentity
 
 LOGGER = logging.getLogger(__name__)
 
@@ -120,6 +120,18 @@ class StateSynchronizer:
         self.block_store.clear()
         for block in blocks:
             self.block_store[block.id] = block.nid
+
+        # Check if redis still contains a name table for this controller's blocks
+        # If it does, attempt to load block names
+        # This is a one-time migration. The redis table is removed after reading.
+        for entry in await datastore_blocks.extract_legacy_redis_block_names():  # pragma: no cover
+            sid, nid = entry
+            LOGGER.info(f'Renaming block to legacy name: {sid=}, {nid=}')
+            try:
+                await self.commander.write_block_name(FirmwareBlockIdentity(id=sid, nid=nid))
+                self.block_store[sid] = nid
+            except Exception as ex:
+                LOGGER.info(f'Failed to rename block {entry}: {utils.strex(ex)}')
 
     @subroutine('sync controller settings')
     async def _sync_sysinfo(self):

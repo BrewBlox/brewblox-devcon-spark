@@ -96,15 +96,15 @@ async def test_deprecated_object():
 
     payload = cdc.encode_payload(DecodedPayload(
         blockId=1,
-        blockType='DeprecatedObject',
-        content={'actualId': 100},
+        blockType='Deprecated',
+        content={'bytes': 'ZAA='},
     ))
     assert payload.blockType == 65533
     assert payload.content == 'ZAA='
 
     payload = cdc.decode_payload(payload)
-    assert payload.blockType == 'DeprecatedObject'
-    assert payload.content == {'actualId': 100}
+    assert payload.blockType == 'Deprecated'
+    assert payload.content == {'bytes': 'ZAA='}
 
 
 async def test_encode_constraint():

@@ -14,8 +14,6 @@ from ..models import (DecodedPayload, EncodedPayload, IntermediateRequest,
 from . import lookup, pb2, time_utils, unit_conversion
 from .processor import ProtobufProcessor
 
-DEPRECATED_TYPE_INT = 65533
-DEPRECATED_TYPE_STR = 'DeprecatedObject'
 UNKNOWN_TYPE_STR = 'UnknownType'
 ERROR_TYPE_STR = 'ErrorObject'
 
@@ -100,14 +98,12 @@ class Codec:
                     name=payload.name,
                 )
 
-            if payload.blockType == DEPRECATED_TYPE_STR:
-                actual_id = payload.content['actualId']
-                content_bytes = actual_id.to_bytes(2, 'little')
+            if payload.blockType == 'Deprecated':
                 return EncodedPayload(
                     blockId=payload.blockId,
-                    blockType=DEPRECATED_TYPE_INT,
+                    blockType=lookup.BlockType.Value('Deprecated'),
                     name=payload.name,
-                    content=b64encode(content_bytes).decode(),
+                    content=payload.content['bytes'],
                 )
 
             # Interface-only payload
@@ -156,14 +152,12 @@ class Codec:
                        filter_values: bool | None = None,
                        ) -> DecodedPayload:
         try:
-            if payload.blockType == DEPRECATED_TYPE_INT:
-                content_bytes = b64decode(payload.content)
-                content = {'actualId': int.from_bytes(content_bytes, 'little')}
+            if payload.blockType == lookup.BlockType.Value('Deprecated'):
                 return DecodedPayload(
                     blockId=payload.blockId,
-                    blockType=DEPRECATED_TYPE_STR,
+                    blockType='Deprecated',
                     name=payload.name,
-                    content=content,
+                    content={'bytes': payload.content},
                 )
 
             # First, try to find an object lookup
