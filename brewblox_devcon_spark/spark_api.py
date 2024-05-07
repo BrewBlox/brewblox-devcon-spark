@@ -523,8 +523,6 @@ class SparkApi:
 
         return Backup(
             blocks=[block for block in blocks],
-            store=[{'keys': [block.id, block.nid], 'data': {}}
-                   for block in blocks],
             name=None,
             timestamp=timestamp,
             firmware=controller_info.firmware,
@@ -558,7 +556,7 @@ class SparkApi:
             error_log = []
 
             # First populate the datastore, to avoid unknown links
-            self.block_store.clear()
+            await self.load_block_names()
             for block in exported.blocks:
                 self.block_store[block.id] = block.nid
 
