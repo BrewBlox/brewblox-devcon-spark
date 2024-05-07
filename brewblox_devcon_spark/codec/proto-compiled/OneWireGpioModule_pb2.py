@@ -16,7 +16,7 @@ import nanopb_pb2 as nanopb__pb2
 import GpioModule_pb2 as GpioModule__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x17OneWireGpioModule.proto\x12\x16\x62lox.OneWireGpioModule\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x10GpioModule.proto\"\x8f\x02\n\x05\x42lock\x12\x37\n\x08\x63hannels\x18\x01 \x03(\x0b\x32\x18.blox.GpioModule.ChannelB\x0b\x92?\x02\x10\x08\x8a\xb5\x18\x02x\x01\x12#\n\x0emodulePosition\x18\x02 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02x\x01\x12 \n\x10useExternalPower\x18\x0e \x01(\x08\x42\x06\x8a\xb5\x18\x02x\x01\x12/\n\x06status\x18\x0f \x01(\x0b\x32\x17.blox.GpioModule.StatusB\x06\x8a\xb5\x18\x02(\x01\x12&\n\x11moduleStatusClear\x18Z \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12 \n\x0b\x63learFaults\x18  \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01:\x0b\x8a\xb5\x18\x07\x18\xc5\x02J\x02\n\x0c\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x17OneWireGpioModule.proto\x12\x16\x62lox.OneWireGpioModule\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x10GpioModule.proto\"\xf6\x05\n\x05\x42lock\x12\x37\n\x08\x63hannels\x18\x01 \x03(\x0b\x32\x18.blox.GpioModule.ChannelB\x0b\x92?\x02\x10\x08\x8a\xb5\x18\x02x\x01\x12#\n\x0emodulePosition\x18\x02 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02x\x01\x12 \n\x10useExternalPower\x18\x0e \x01(\x08\x42\x06\x8a\xb5\x18\x02x\x01\x12/\n\x06status\x18\x11 \x01(\x0b\x32\x17.blox.GpioModule.StatusB\x06\x8a\xb5\x18\x02(\x01\x12!\n\x0cmoduleStatus\x18\x03 \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12\"\n\rpullUpDesired\x18\x04 \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12!\n\x0cPullUpStatus\x18\x05 \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12%\n\x10PullUpWhenActive\x18\x06 \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12\'\n\x12PullUpWhenInactive\x18\x07 \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12$\n\x0fpullDownDesired\x18\x08 \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12#\n\x0ePullDownStatus\x18\t \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12\'\n\x12PullDownWhenActive\x18\n \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12)\n\x14PullDownWhenInactive\x18\x0b \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12 \n\x0boverCurrent\x18\x0c \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12\x1d\n\x08openLoad\x18\r \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12$\n\x0f\x66\x61ultsHistory5m\x18\x0f \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12%\n\x10\x66\x61ultsHistory60m\x18\x10 \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12&\n\x11moduleStatusClear\x18Z \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12 \n\x0b\x63learFaults\x18  \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01:\x0b\x8a\xb5\x18\x07\x18\xc5\x02J\x02\n\x0c\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -31,6 +31,32 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _BLOCK.fields_by_name['useExternalPower']._serialized_options = b'\212\265\030\002x\001'
   _BLOCK.fields_by_name['status']._options = None
   _BLOCK.fields_by_name['status']._serialized_options = b'\212\265\030\002(\001'
+  _BLOCK.fields_by_name['moduleStatus']._options = None
+  _BLOCK.fields_by_name['moduleStatus']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _BLOCK.fields_by_name['pullUpDesired']._options = None
+  _BLOCK.fields_by_name['pullUpDesired']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _BLOCK.fields_by_name['PullUpStatus']._options = None
+  _BLOCK.fields_by_name['PullUpStatus']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _BLOCK.fields_by_name['PullUpWhenActive']._options = None
+  _BLOCK.fields_by_name['PullUpWhenActive']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _BLOCK.fields_by_name['PullUpWhenInactive']._options = None
+  _BLOCK.fields_by_name['PullUpWhenInactive']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _BLOCK.fields_by_name['pullDownDesired']._options = None
+  _BLOCK.fields_by_name['pullDownDesired']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _BLOCK.fields_by_name['PullDownStatus']._options = None
+  _BLOCK.fields_by_name['PullDownStatus']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _BLOCK.fields_by_name['PullDownWhenActive']._options = None
+  _BLOCK.fields_by_name['PullDownWhenActive']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _BLOCK.fields_by_name['PullDownWhenInactive']._options = None
+  _BLOCK.fields_by_name['PullDownWhenInactive']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _BLOCK.fields_by_name['overCurrent']._options = None
+  _BLOCK.fields_by_name['overCurrent']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _BLOCK.fields_by_name['openLoad']._options = None
+  _BLOCK.fields_by_name['openLoad']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _BLOCK.fields_by_name['faultsHistory5m']._options = None
+  _BLOCK.fields_by_name['faultsHistory5m']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _BLOCK.fields_by_name['faultsHistory60m']._options = None
+  _BLOCK.fields_by_name['faultsHistory60m']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
   _BLOCK.fields_by_name['moduleStatusClear']._options = None
   _BLOCK.fields_by_name['moduleStatusClear']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
   _BLOCK.fields_by_name['clearFaults']._options = None
@@ -38,5 +64,5 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _BLOCK._options = None
   _BLOCK._serialized_options = b'\212\265\030\007\030\305\002J\002\n\014'
   _globals['_BLOCK']._serialized_start=100
-  _globals['_BLOCK']._serialized_end=371
+  _globals['_BLOCK']._serialized_end=858
 # @@protoc_insertion_point(module_scope)
