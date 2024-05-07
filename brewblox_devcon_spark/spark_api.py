@@ -91,37 +91,31 @@ class SparkApi:
 
         return sid
 
-    def _sync_block_id(self, block: FirmwareBlock):
+    def _sync_block_id(self, block: FirmwareBlock | FirmwareBlockIdentity):
         if block.id and block.nid:
             self.block_store[block.id] = block.nid
-
-    def _sync_all_block_ids(self, blocks: list[FirmwareBlock]):
-        if blocks and blocks[0].id and blocks[0].nid:
-            self.block_store.clear()
-            for block in blocks:
-                self.block_store[block.id] = block.nid
 
     def _to_block_identity(self, block: FirmwareBlock) -> BlockIdentity:
         self._sync_block_id(block)
 
         return BlockIdentity(
-            id=self._find_sid(block.nid),
+            id=block.id or self._find_sid(block.nid),
             nid=block.nid,
             type=block.type,
             serviceId=self.config.name,
         )
 
-    def _to_block(self, block: FirmwareBlock, find_sid=True) -> Block:
-        if find_sid:
-            self._sync_block_id(block)
+    def _to_block(self, block: FirmwareBlock) -> Block:
+        self._sync_block_id(block)
 
+        ident = self._to_block_identity(block)
         block = Block(
-            **block.model_dump(),
-            serviceId=self.config.name,
+            id=ident.id,
+            nid=ident.nid,
+            type=ident.type,
+            serviceId=ident.serviceId,
+            data=block.data,
         )
-
-        if find_sid and not block.id:
-            block.id = self._find_sid(block.nid)
 
         resolve_data_ids(block.data, self._find_sid)
 
@@ -131,40 +125,25 @@ class SparkApi:
 
         return block
 
-    def _to_block_list(self, blocks: list[FirmwareBlock]) -> list[Block]:
-        self._sync_all_block_ids(blocks)
-        return [self._to_block(block) for block in blocks]
-
-    def _to_firmware_block_identity(self, block: BlockIdentity) -> FirmwareBlockIdentity:
-        sid = block.id
-        nid = block.nid
-
-        if nid is None:
+    def _to_firmware_block_identity(self, block: Block | BlockIdentity) -> FirmwareBlockIdentity:
+        if (nid := block.nid) is None:
             try:
-                nid = self.block_store[sid]
+                nid = self.block_store[block.id]
             except KeyError:
-                raise exceptions.UnknownId(f'Block ID `{sid}` not found. type={block.type}')
+                raise exceptions.UnknownId(f'Block ID `{block.id}` not found. type={block.type}')
 
         return FirmwareBlockIdentity(
-            id=sid,
+            id=block.id,
             nid=nid,
             type=block.type,
         )
 
-    def _to_firmware_block(self, block: Block, find_nid=True) -> FirmwareBlock:
-        sid = block.id
-        nid = block.nid
-
-        if nid is None:
-            try:
-                nid = self.block_store[sid] if find_nid else 0
-            except KeyError:
-                raise exceptions.UnknownId(f'Block ID `{sid}` not found. type={block.type}')
-
+    def _to_firmware_block(self, block: Block) -> FirmwareBlock:
+        ident = self._to_firmware_block_identity(block)
         block = FirmwareBlock(
-            id=sid,
-            nid=nid,
-            type=block.type,
+            id=ident.id,
+            nid=ident.nid,
+            type=ident.type,
             data=block.data,
         )
 
@@ -357,7 +336,9 @@ class SparkApi:
                 The desired block, as present on the controller after creation.
         """
         async with self._execute('Create block'):
-            block = self._to_firmware_block(block, find_nid=False)
+            if block.nid is None:
+                block.nid = 0
+            block = self._to_firmware_block(block)
             block = await self.cmder.create_block(block)
             block = self._to_block(block)
             return block
@@ -403,7 +384,7 @@ class SparkApi:
         """
         async with self._execute('Read all blocks'):
             blocks = await self.cmder.read_all_blocks()
-            blocks = self._to_block_list(blocks)
+            blocks = [self._to_block(block) for block in blocks]
             return blocks
 
     async def read_all_logged_blocks(self) -> list[Block]:
@@ -419,7 +400,7 @@ class SparkApi:
         """
         async with self._execute('Read all blocks (logged)'):
             blocks = await self.cmder.read_all_blocks(ReadMode.LOGGED)
-            blocks = self._to_block_list(blocks)
+            blocks = [self._to_block(block) for block in blocks]
             return blocks
 
     async def read_all_stored_blocks(self) -> list[Block]:
@@ -436,7 +417,7 @@ class SparkApi:
         """
         async with self._execute('Read all blocks (stored)'):
             blocks = await self.cmder.read_all_blocks(ReadMode.STORED)
-            blocks = self._to_block_list(blocks)
+            blocks = [self._to_block(block) for block in blocks]
             return blocks
 
     async def discover_blocks(self) -> list[Block]:
@@ -452,7 +433,7 @@ class SparkApi:
         async with self._execute('Discover blocks'):
             async with self._discovery_lock:
                 blocks = await self.cmder.discover_blocks()
-            blocks = self._to_block_list(blocks)
+            blocks = [self._to_block(block) for block in blocks]
             return blocks
 
     async def clear_blocks(self) -> list[BlockIdentity]:
@@ -468,13 +449,12 @@ class SparkApi:
         async with self._execute('Remove all blocks'):
             blocks = await self.cmder.clear_blocks()
             identities = [self._to_block_identity(v) for v in blocks]
-            self.block_store.clear()
+            await self.load_block_names()
             await self.cmder.write_block(FirmwareBlock(
                 nid=const.DISPLAY_SETTINGS_NID,
                 type='DisplaySettings',
                 data={},
             ))
-            await self.load_block_names()
             return identities
 
     async def rename_block(self, change: BlockNameChange) -> BlockIdentity:
@@ -503,7 +483,9 @@ class SparkApi:
         Load all known block names from the controller
         """
         blocks = await self.cmder.read_all_block_names()
-        self._sync_all_block_ids(blocks)
+        self.block_store.clear()
+        self.block_store.update({block.id: block.nid
+                                 for block in blocks})
 
     async def make_backup(self) -> Backup:
         """
@@ -555,20 +537,19 @@ class SparkApi:
             await self.clear_blocks()
             error_log = []
 
-            # First populate the datastore, to avoid unknown links
-            await self.load_block_names()
-            for block in exported.blocks:
-                self.block_store[block.id] = block.nid
+            # First populate the name store, to avoid unknown links
+            self.block_store.update({block.id: block.nid
+                                     for block in exported.blocks})
+            LOGGER.debug(f'Block store with exported block names: {self.block_store}')
 
             # Now either create or write the objects, depending on whether they are system objects
             for block in exported.blocks:
                 try:
                     block = block.model_copy(deep=True)
-                    if block.nid is not None and block.nid < const.USER_NID_START:
-                        await self.write_block(block)
+                    if block.nid and block.nid >= const.USER_NID_START:
+                        await self.create_block(block)
                     else:
-                        # Bypass self.create_block(), to avoid meddling with store IDs
-                        await self.cmder.create_block(self._to_firmware_block(block))
+                        await self.write_block(block)
 
                 except Exception as ex:
                     message = f'failed to import block. Error={utils.strex(ex)}, block={block}'
@@ -614,9 +595,17 @@ class SparkApi:
                 Both sid and nid may be omitted.
         """
         async with self._execute('Validate block'):
-            block = self._to_firmware_block(block, find_nid=False)
+            sid = block.id
+            nid = block.nid
+
+            block.id = None
+            block.nid = 0
+            block = self._to_firmware_block(block)
             block = await self.cmder.validate(block)
-            block = self._to_block(block, find_sid=False)
+            block = self._to_block(block)
+
+            block.id = sid
+            block.nid = nid
             return block
 
 
