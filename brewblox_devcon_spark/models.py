@@ -269,6 +269,7 @@ class ErrorCode(enum.Enum):
     STORAGE_CRC_ERROR = 23
     STORAGE_WRITE_ERROR = 24
     STORAGE_ENCODING_ERROR = 25
+    STORAGE_OUT_OF_BOUNDS_ERROR = 26
 
     # Invalid actions
     BLOCK_NOT_WRITABLE = 30
