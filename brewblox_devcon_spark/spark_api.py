@@ -533,23 +533,39 @@ class SparkApi:
             LOGGER.info(f'Backup timestamp = {exported.timestamp}')
             LOGGER.info(f'Backup firmware = {exported.firmware}')
             LOGGER.info(f'Backup device = {exported.device}')
+            LOGGER.info(f'Backup block count = {len(exported.blocks)}')
 
             await self.clear_blocks()
             error_log = []
 
-            # First populate the name store, to avoid unknown links
+            # Populate the block store, to avoid unknown links
             self.block_store.update({block.id: block.nid
                                      for block in exported.blocks})
-            LOGGER.debug(f'Block store with exported block names: {self.block_store}')
 
-            # Now either create or write the objects, depending on whether they are system objects
+            # Resolve IDs now before concurrent calls can edit the block store
+            resolved_blocks: list[FirmwareBlock] = []
             for block in exported.blocks:
                 try:
                     block = block.model_copy(deep=True)
-                    if block.nid and block.nid >= const.USER_NID_START:
-                        await self.create_block(block)
+                    block = self._to_firmware_block(block)
+                    resolved_blocks.append(block)
+
+                except Exception as ex:
+                    message = f'failed to resolve block. Error={utils.strex(ex)}, block={block}'
+                    error_log.append(message)
+                    LOGGER.error(message)
+
+            LOGGER.debug('Loading blocks from backup:')
+            for block in resolved_blocks:
+                LOGGER.debug(block)
+
+            # Create or write blocks, depending on whether they are system blocks
+            for block in resolved_blocks:
+                try:
+                    if block.nid >= const.USER_NID_START:
+                        await self.cmder.create_block(block)
                     else:
-                        await self.write_block(block)
+                        await self.cmder.write_block(block)
 
                 except Exception as ex:
                     message = f'failed to import block. Error={utils.strex(ex)}, block={block}'
