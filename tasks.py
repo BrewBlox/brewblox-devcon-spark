@@ -72,13 +72,13 @@ def update_firmware(ctx: Context, release='develop'):
     fw_config = get_fw_config()
     fw_date = fw_config.firmware_date
     fw_version = fw_config.firmware_version
-    proto_version = fw_config.proto_version
+    proto_sha = fw_config.proto_sha
 
     print(f'Updating to firmware release {fw_date}-{fw_version}')
 
     with ctx.cd(ROOT / 'brewblox-proto'):
         ctx.run('git fetch')
-        ctx.run(f'git checkout --quiet "{proto_version}"')
+        ctx.run(f'git checkout --quiet "{proto_sha}"')
 
 
 @task

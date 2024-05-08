@@ -12,9 +12,10 @@ _sym_db = _symbol_database.Default()
 
 
 import nanopb_pb2 as nanopb__pb2
+import brewblox_pb2 as brewblox__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cScreen.proto\x12\x06screen\x1a\x0cnanopb.proto\"\xa2\x01\n\nLayoutNode\x12\x15\n\x06parent\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08\x12\x15\n\x06nodeId\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12%\n\x04type\x18\x03 \x01(\x0e\x32\x17.screen.LayoutNode.Type\x12\x15\n\x06weight\x18\x04 \x01(\rB\x05\x92?\x02\x38\x10\"(\n\x04Type\x12\x07\n\x03Row\x10\x00\x12\n\n\x06\x43olumn\x10\x01\x12\x0b\n\x07\x43ontent\x10\x02\"=\n\x05\x43olor\x12\x10\n\x01r\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08\x12\x10\n\x01g\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12\x10\n\x01\x62\x18\x03 \x01(\rB\x05\x92?\x02\x38\x08\"^\n\x12NumericValueWidget\x12\x1c\n\x05\x63olor\x18\x01 \x01(\x0b\x32\r.screen.Color\x12\x14\n\x05value\x18\x02 \x01(\rB\x05\x92?\x02\x38\x08\x12\x14\n\x05label\x18\x03 \x01(\tB\x05\x92?\x02p(\"+\n\x0b\x43olorWidget\x12\x1c\n\x05\x63olor\x18\x01 \x01(\x0b\x32\r.screen.Color\"\x9b\x01\n\x0b\x43ontentNode\x12\x1b\n\x0clayoutNodeId\x18\x01 \x01(\rB\x05\x92?\x02\x38\x08\x12\x38\n\x12numericValueWidget\x18\x02 \x01(\x0b\x32\x1a.screen.NumericValueWidgetH\x00\x12*\n\x0b\x63olorWidget\x18\x03 \x01(\x0b\x32\x13.screen.ColorWidgetH\x00\x42\t\n\x07\x63ontent\"\\\n\x06\x43onfig\x12\'\n\x0blayoutNodes\x18\x01 \x03(\x0b\x32\x12.screen.LayoutNode\x12)\n\x0c\x63ontentNodes\x18\x02 \x03(\x0b\x32\x13.screen.ContentNodeb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cScreen.proto\x12\x06screen\x1a\x0cnanopb.proto\x1a\x0e\x62rewblox.proto\"\xbc\x01\n\nLayoutNode\x12\x1b\n\x06parent\x18\x01 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02x\x01\x12\x1b\n\x06nodeId\x18\x02 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02x\x01\x12-\n\x04type\x18\x03 \x01(\x0e\x32\x17.screen.LayoutNode.TypeB\x06\x8a\xb5\x18\x02x\x01\x12\x1b\n\x06weight\x18\x04 \x01(\rB\x0b\x92?\x02\x38\x10\x8a\xb5\x18\x02x\x01\"(\n\x04Type\x12\x07\n\x03Row\x10\x00\x12\n\n\x06\x43olumn\x10\x01\x12\x0b\n\x07\x43ontent\x10\x02\"O\n\x05\x43olor\x12\x16\n\x01r\x18\x01 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02x\x01\x12\x16\n\x01g\x18\x02 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02x\x01\x12\x16\n\x01\x62\x18\x03 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02x\x01\"r\n\x12NumericValueWidget\x12$\n\x05\x63olor\x18\x01 \x01(\x0b\x32\r.screen.ColorB\x06\x8a\xb5\x18\x02x\x01\x12\x1a\n\x05value\x18\x02 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02x\x01\x12\x1a\n\x05label\x18\x03 \x01(\tB\x0b\x92?\x02p(\x8a\xb5\x18\x02x\x01\"3\n\x0b\x43olorWidget\x12$\n\x05\x63olor\x18\x01 \x01(\x0b\x32\r.screen.ColorB\x06\x8a\xb5\x18\x02x\x01\"\xb1\x01\n\x0b\x43ontentNode\x12!\n\x0clayoutNodeId\x18\x01 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02x\x01\x12@\n\x12numericValueWidget\x18\x02 \x01(\x0b\x32\x1a.screen.NumericValueWidgetB\x06\x8a\xb5\x18\x02x\x01H\x00\x12\x32\n\x0b\x63olorWidget\x18\x03 \x01(\x0b\x32\x13.screen.ColorWidgetB\x06\x8a\xb5\x18\x02x\x01H\x00\x42\t\n\x07\x63ontent\"l\n\x06\x43onfig\x12/\n\x0blayoutNodes\x18\x01 \x03(\x0b\x32\x12.screen.LayoutNodeB\x06\x8a\xb5\x18\x02x\x01\x12\x31\n\x0c\x63ontentNodes\x18\x02 \x03(\x0b\x32\x13.screen.ContentNodeB\x06\x8a\xb5\x18\x02x\x01\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -22,35 +23,49 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'Screen_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   _LAYOUTNODE.fields_by_name['parent']._options = None
-  _LAYOUTNODE.fields_by_name['parent']._serialized_options = b'\222?\0028\010'
+  _LAYOUTNODE.fields_by_name['parent']._serialized_options = b'\222?\0028\010\212\265\030\002x\001'
   _LAYOUTNODE.fields_by_name['nodeId']._options = None
-  _LAYOUTNODE.fields_by_name['nodeId']._serialized_options = b'\222?\0028\010'
+  _LAYOUTNODE.fields_by_name['nodeId']._serialized_options = b'\222?\0028\010\212\265\030\002x\001'
+  _LAYOUTNODE.fields_by_name['type']._options = None
+  _LAYOUTNODE.fields_by_name['type']._serialized_options = b'\212\265\030\002x\001'
   _LAYOUTNODE.fields_by_name['weight']._options = None
-  _LAYOUTNODE.fields_by_name['weight']._serialized_options = b'\222?\0028\020'
+  _LAYOUTNODE.fields_by_name['weight']._serialized_options = b'\222?\0028\020\212\265\030\002x\001'
   _COLOR.fields_by_name['r']._options = None
-  _COLOR.fields_by_name['r']._serialized_options = b'\222?\0028\010'
+  _COLOR.fields_by_name['r']._serialized_options = b'\222?\0028\010\212\265\030\002x\001'
   _COLOR.fields_by_name['g']._options = None
-  _COLOR.fields_by_name['g']._serialized_options = b'\222?\0028\010'
+  _COLOR.fields_by_name['g']._serialized_options = b'\222?\0028\010\212\265\030\002x\001'
   _COLOR.fields_by_name['b']._options = None
-  _COLOR.fields_by_name['b']._serialized_options = b'\222?\0028\010'
+  _COLOR.fields_by_name['b']._serialized_options = b'\222?\0028\010\212\265\030\002x\001'
+  _NUMERICVALUEWIDGET.fields_by_name['color']._options = None
+  _NUMERICVALUEWIDGET.fields_by_name['color']._serialized_options = b'\212\265\030\002x\001'
   _NUMERICVALUEWIDGET.fields_by_name['value']._options = None
-  _NUMERICVALUEWIDGET.fields_by_name['value']._serialized_options = b'\222?\0028\010'
+  _NUMERICVALUEWIDGET.fields_by_name['value']._serialized_options = b'\222?\0028\010\212\265\030\002x\001'
   _NUMERICVALUEWIDGET.fields_by_name['label']._options = None
-  _NUMERICVALUEWIDGET.fields_by_name['label']._serialized_options = b'\222?\002p('
+  _NUMERICVALUEWIDGET.fields_by_name['label']._serialized_options = b'\222?\002p(\212\265\030\002x\001'
+  _COLORWIDGET.fields_by_name['color']._options = None
+  _COLORWIDGET.fields_by_name['color']._serialized_options = b'\212\265\030\002x\001'
   _CONTENTNODE.fields_by_name['layoutNodeId']._options = None
-  _CONTENTNODE.fields_by_name['layoutNodeId']._serialized_options = b'\222?\0028\010'
-  _globals['_LAYOUTNODE']._serialized_start=39
-  _globals['_LAYOUTNODE']._serialized_end=201
-  _globals['_LAYOUTNODE_TYPE']._serialized_start=161
-  _globals['_LAYOUTNODE_TYPE']._serialized_end=201
-  _globals['_COLOR']._serialized_start=203
-  _globals['_COLOR']._serialized_end=264
-  _globals['_NUMERICVALUEWIDGET']._serialized_start=266
-  _globals['_NUMERICVALUEWIDGET']._serialized_end=360
-  _globals['_COLORWIDGET']._serialized_start=362
-  _globals['_COLORWIDGET']._serialized_end=405
-  _globals['_CONTENTNODE']._serialized_start=408
-  _globals['_CONTENTNODE']._serialized_end=563
-  _globals['_CONFIG']._serialized_start=565
-  _globals['_CONFIG']._serialized_end=657
+  _CONTENTNODE.fields_by_name['layoutNodeId']._serialized_options = b'\222?\0028\010\212\265\030\002x\001'
+  _CONTENTNODE.fields_by_name['numericValueWidget']._options = None
+  _CONTENTNODE.fields_by_name['numericValueWidget']._serialized_options = b'\212\265\030\002x\001'
+  _CONTENTNODE.fields_by_name['colorWidget']._options = None
+  _CONTENTNODE.fields_by_name['colorWidget']._serialized_options = b'\212\265\030\002x\001'
+  _CONFIG.fields_by_name['layoutNodes']._options = None
+  _CONFIG.fields_by_name['layoutNodes']._serialized_options = b'\212\265\030\002x\001'
+  _CONFIG.fields_by_name['contentNodes']._options = None
+  _CONFIG.fields_by_name['contentNodes']._serialized_options = b'\212\265\030\002x\001'
+  _globals['_LAYOUTNODE']._serialized_start=55
+  _globals['_LAYOUTNODE']._serialized_end=243
+  _globals['_LAYOUTNODE_TYPE']._serialized_start=203
+  _globals['_LAYOUTNODE_TYPE']._serialized_end=243
+  _globals['_COLOR']._serialized_start=245
+  _globals['_COLOR']._serialized_end=324
+  _globals['_NUMERICVALUEWIDGET']._serialized_start=326
+  _globals['_NUMERICVALUEWIDGET']._serialized_end=440
+  _globals['_COLORWIDGET']._serialized_start=442
+  _globals['_COLORWIDGET']._serialized_end=493
+  _globals['_CONTENTNODE']._serialized_start=496
+  _globals['_CONTENTNODE']._serialized_end=673
+  _globals['_CONFIG']._serialized_start=675
+  _globals['_CONFIG']._serialized_end=783
 # @@protoc_insertion_point(module_scope)
