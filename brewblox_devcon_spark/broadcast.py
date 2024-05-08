@@ -8,7 +8,7 @@ import logging
 from contextlib import asynccontextmanager
 from datetime import timedelta
 
-from . import const, mqtt, spark_api, state_machine, utils
+from . import mqtt, spark_api, state_machine, utils
 from .block_analysis import calculate_claims, calculate_relations
 from .models import HistoryEvent, ServiceStateEvent, ServiceStateEventData
 
@@ -35,11 +35,8 @@ class Broadcaster:
                 logged_blocks = await self.api.read_all_logged_blocks()
 
                 # Convert list to key/value format suitable for history
-                history_data = {
-                    block.id: block.data
-                    for block in logged_blocks
-                    if not block.id.startswith(const.GENERATED_ID_PREFIX)
-                }
+                history_data = {block.id: block.data
+                                for block in logged_blocks}
 
                 mqtt_client.publish(self.history_topic,
                                     HistoryEvent(

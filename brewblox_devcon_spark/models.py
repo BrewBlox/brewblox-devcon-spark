@@ -160,12 +160,14 @@ class Block(BaseModel):
 
 
 class FirmwareBlockIdentity(BaseModel):
+    id: str | None = None
     nid: int
     type: str | None = None
     data: dict[str, Any] | None = None
 
 
 class FirmwareBlock(BaseModel):
+    id: str | None = None
     nid: int
     type: str
     data: dict[str, Any]
@@ -232,6 +234,10 @@ class Opcode(enum.Enum):
     STORAGE_READ = 20
     STORAGE_READ_ALL = 21
 
+    NAME_READ = 50
+    NAME_READ_ALL = 51
+    NAME_WRITE = 52
+
     REBOOT = 30
     CLEAR_BLOCKS = 31
     CLEAR_WIFI = 32
@@ -263,6 +269,7 @@ class ErrorCode(enum.Enum):
     STORAGE_CRC_ERROR = 23
     STORAGE_WRITE_ERROR = 24
     STORAGE_ENCODING_ERROR = 25
+    STORAGE_OUT_OF_BOUNDS_ERROR = 26
 
     # Invalid actions
     BLOCK_NOT_WRITABLE = 30
@@ -274,15 +281,19 @@ class ErrorCode(enum.Enum):
     INVALID_BLOCK = 40
     INVALID_BLOCK_ID = 41
     INVALID_BLOCK_TYPE = 42
-    INVALID_BLOCK_SUBTYPE = 43
     INVALID_BLOCK_CONTENT = 44
+    INVALID_BLOCK_NAME = 45
 
     # Invalid stored block data
     INVALID_STORED_BLOCK = 50
     INVALID_STORED_BLOCK_ID = 51
     INVALID_STORED_BLOCK_TYPE = 52
-    INVALID_STORED_BLOCK_SUBTYPE = 53
     INVALID_STORED_BLOCK_CONTENT = 54
+    INVALID_STORED_BLOCK_NAME = 55
+
+    # Invalid block identifiers
+    DUPLICATE_BLOCK_ID = 60
+    DUPLICATE_BLOCK_NAME = 61
 
 
 class ReadMode(enum.Enum):
@@ -314,13 +325,13 @@ class BasePayload(BaseModel):
 
 class EncodedPayload(BasePayload):
     blockType: int | str | None = None
-    subtype: int | str | None = None
+    name: str | None = None
     content: str = ''
 
 
 class DecodedPayload(BasePayload):
     blockType: str | None = None
-    subtype: str | None = None
+    name: str | None = None
     content: dict | None = None
 
 
@@ -502,8 +513,10 @@ class Backup(BaseModel):
     firmware: FirmwareDescription | None = None
     device: DeviceDescription | None = None
 
+    # Deprecated fields
+    store: list | None = None
+
     blocks: list[Block]
-    store: list[TwinKeyEntry]
 
 
 class BackupApplyResult(BaseModel):
@@ -602,7 +615,7 @@ class StoredTimezoneSettingsBox(DatastoreSingleValueBox):
 
 class DatastoreEvent(BaseModel):
     changed: list[DatastoreValue] = Field(default_factory=list)
-    deleted: list[DatastoreValue] = Field(default_factory=list)
+    deleted: list[str] = Field(default_factory=list)
 
 
 class HistoryEvent(BaseModel):
