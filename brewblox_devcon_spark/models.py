@@ -250,6 +250,7 @@ class ErrorCode(enum.Enum):
     OK = 0
     UNKNOWN_ERROR = 1
     INVALID_OPCODE = 2
+    NOT_ALLOWED = 3
 
     # Memory errors
     INSUFFICIENT_HEAP = 4
