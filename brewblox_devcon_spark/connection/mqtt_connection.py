@@ -34,15 +34,20 @@ class MqttConnection(ConnectionImplBase):
         self._response_topic = RESPONSE_TOPIC + device_id
         self._handshake_topic = HANDSHAKE_TOPIC + device_id
         self._log_topic = LOG_TOPIC + device_id
+        self._buffer = ''
 
-    async def _handshake_cb(self, client, topic, payload, qos, properties):
+    async def _handshake_cb(self, client, topic, payload: bytes, qos, properties):
         if not payload:
             self.disconnected.set()
 
-    async def _resp_cb(self, client, topic, payload, qos, properties):
-        await self.on_response(payload.decode())
+    async def _resp_cb(self, client, topic, payload: bytes, qos, properties):
+        self._buffer += payload.decode()
+        if '\n' in self._buffer:
+            local = self._buffer.rstrip()
+            self._buffer = ''
+            await self.on_response(local)
 
-    async def _log_cb(self, client, topic, payload, qos, properties):
+    async def _log_cb(self, client, topic, payload: bytes, qos, properties):
         await self.on_event(payload.decode())
 
     async def send_request(self, msg: str):
