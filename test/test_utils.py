@@ -4,8 +4,10 @@ from datetime import timedelta
 from unittest.mock import AsyncMock, Mock
 
 import pytest
+from pydantic import ValidationError
 
 from brewblox_devcon_spark import utils
+from brewblox_devcon_spark.models import parse_timedelta
 
 TESTED = utils.__name__
 
@@ -65,3 +67,16 @@ async def test_httpx_retry():
     f.side_effect = [RuntimeError, m_nok, m_ok]
     await asyncio.wait_for(utils.httpx_retry(f, interval=timedelta()), timeout=1)
     assert f.await_count == 3
+
+
+def test_parse_timedelta():
+    assert parse_timedelta('2h10m') == timedelta(hours=2, minutes=10)
+    assert parse_timedelta('10') == timedelta(seconds=10)
+    assert parse_timedelta(timedelta(hours=1)) == timedelta(minutes=60)
+    assert parse_timedelta('P1DT10M5S') == timedelta(days=1, minutes=10, seconds=5)
+
+    with pytest.raises(ValidationError):
+        parse_timedelta('')
+
+    with pytest.raises(ValidationError):
+        parse_timedelta(None)
