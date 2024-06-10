@@ -1,7 +1,42 @@
-FROM ghcr.io/brewblox/firmware-particle:latest
+FROM debian:bookworm-slim
 
 WORKDIR /app
+
+RUN <<EOF bash
+    set -ex
+
+    apt-get update -q
+    apt-get install -y --no-install-recommends \
+        usbutils \
+        curl \
+        ca-certificates
+
+    CLI_VERSION="3.24.0"
+    ARCH="$(dpkg --print-architecture)"
+    if [ "\${ARCH}" = "amd64" ]; then
+        CLI_ARCH="x64"
+    elif [ "\${ARCH}" = "armhf" ]; then
+        CLI_ARCH="arm"
+    elif [ "\${ARCH}" = "arm64" ]; then
+        CLI_ARCH="arm64"
+    fi
+
+    curl -sSL \
+        -o ./particle.gz \
+        "https://binaries.particle.io/particle-cli/\${CLI_VERSION}/linux/\${CLI_ARCH}/particle.gz"
+    gunzip ./particle.gz
+    chmod +x ./particle
+    mv ./particle /usr/local/bin/
+
+    apt-get remove -y \
+        curl \
+        ca-certificates
+    apt-get autoremove -y
+    rm -rf /var/cache/apt/archives /var/lib/apt/lists
+EOF
 
 COPY ./firmware/* ./
 
 RUN rm ./*.sim && bash inspect
+
+ENTRYPOINT [ "/bin/bash" ]
