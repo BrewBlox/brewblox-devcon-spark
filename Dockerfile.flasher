@@ -7,9 +7,10 @@ RUN <<EOF bash
 
     apt-get update -q
     apt-get install -y --no-install-recommends \
-        usbutils \
+        ca-certificates \
         curl \
-        ca-certificates
+        libatomic1 \
+        usbutils
 
     CLI_VERSION="3.24.0"
     ARCH="$(dpkg --print-architecture)"
