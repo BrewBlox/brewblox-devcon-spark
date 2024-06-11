@@ -1,4 +1,4 @@
-FROM debian:bookworm-slim
+FROM python:3.11-slim-bookworm
 
 WORKDIR /app
 
@@ -28,9 +28,6 @@ RUN <<EOF bash
     chmod +x ./particle
     mv ./particle /usr/local/bin/
 
-    apt-get remove -y \
-        curl \
-        ca-certificates
     apt-get autoremove -y
     rm -rf /var/cache/apt/archives /var/lib/apt/lists
 EOF
