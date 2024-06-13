@@ -1317,20 +1317,6 @@ files = [
 cp2110 = ["hidapi"]
 
 [[package]]
-name = "pyserial-asyncio"
-version = "0.6"
-description = "Python Serial Port Extension - Asynchronous I/O support"
-optional = false
-python-versions = "*"
-files = [
-    {file = "pyserial-asyncio-0.6.tar.gz", hash = "sha256:b6032923e05e9d75ec17a5af9a98429c46d2839adfaf80604d52e0faacd7a32f"},
-    {file = "pyserial_asyncio-0.6-py3-none-any.whl", hash = "sha256:de9337922619421b62b9b1a84048634b3ac520e1d690a674ed246a2af7ce1fc5"},
-]
-
-[package.dependencies]
-pyserial = "*"
-
-[[package]]
 name = "pytest"
 version = "7.4.4"
 description = "pytest: simple powerful testing with Python"
@@ -1855,4 +1841,4 @@ h11 = ">=0.9.0,<1"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<4"
-content-hash = "a216dd3f792a5f40912d6350cf204c539bf8c341a508b2a5a368b63ec2837afa"
+content-hash = "a4cd7953f1823467b5d7a76178f4e344d0a5687ae516bd40feb4fb77b983a7b4"

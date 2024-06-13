@@ -234,7 +234,9 @@ class ServiceConfig(BaseSettings):
 
     device_host: str | None = None
     device_port: int = 8332
-    device_serial: str | None = None
+
+    usb_proxy_host: str = 'usb-proxy'
+    usb_proxy_port: int = 5000
 
     mock: bool = False
 

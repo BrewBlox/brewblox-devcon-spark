@@ -14,7 +14,7 @@ from contextlib import suppress
 from functools import partial
 from pathlib import Path
 
-from serial.tools import list_ports
+from httpx import AsyncClient
 
 from .. import exceptions, mdns, utils
 from .cbox_parser import CboxParser
@@ -172,20 +172,6 @@ async def connect_simulation(callbacks: ConnectionCallbacks) -> ConnectionImplBa
     return await connect_subprocess(callbacks, config.simulation_port, proc, 'SIM', binary)
 
 
-async def connect_usb(callbacks: ConnectionCallbacks,
-                      device_serial: str | None = None,
-                      ) -> ConnectionImplBase:  # pragma: no cover
-    config = utils.get_config()
-    device_serial = device_serial or config.device_serial
-    proc = await asyncio.create_subprocess_exec('/usr/bin/socat',
-                                                f'tcp-listen:{config.device_port},reuseaddr,fork',
-                                                f'file:{device_serial},raw,echo=0,b{USB_BAUD_RATE}',
-                                                preexec_fn=os.setsid,
-                                                shell=False)
-
-    return await connect_subprocess(callbacks, config.device_port, proc, 'USB', device_serial)
-
-
 async def discover_mdns(callbacks: ConnectionCallbacks) -> ConnectionImplBase | None:
     config = utils.get_config()
     try:
@@ -198,11 +184,27 @@ async def discover_mdns(callbacks: ConnectionCallbacks) -> ConnectionImplBase | 
 
 
 async def discover_usb(callbacks: ConnectionCallbacks) -> ConnectionImplBase | None:  # pragma: no cover
+    """
+    USB connections are handled through a proxy.
+    We query the proxy whether it has detected a device with
+    """
     config = utils.get_config()
-    for usb_port in list_ports.grep(SPARK_DEVICE_REGEX):
-        if config.device_id is None or config.device_id.lower() == usb_port.serial_number.lower():
-            LOGGER.info(f'Discovered {[v for v in usb_port]}')
-            return await connect_usb(callbacks, usb_port.device)
+    try:
+        client = AsyncClient()
+        proxy_host = config.usb_proxy_host
+        proxy_port = config.usb_proxy_port
+        resp = await client.get(f'http://{proxy_host}:{proxy_port}/{proxy_host}/connected/spark')
+        index: dict[str, int] = resp.json()
+
+        if config.device_id:
+            device_port = index.get(config.device_id)
         else:
-            LOGGER.info(f'Discarding {[v for v in usb_port]}')
+            device_port = next(iter(index.values()), None)
+
+        if device_port:
+            return await connect_tcp(callbacks, proxy_host, device_port)
+
+    except Exception as ex:
+        LOGGER.debug(f'Failed to query USB proxy: {utils.strex(ex)}')
+
     return None
