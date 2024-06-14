@@ -98,18 +98,30 @@ class Codec:
                     name=payload.name,
                 )
 
+            try:
+                # We use the numeric value to find a lookup
+                # This lets us use name aliases that resolve to the same value
+                block_type_value = lookup.BlockType.Value(payload.blockType)
+            except ValueError:
+                if payload.blockType == 'EdgeCase':
+                    block_type_value = 9001
+                else:
+                    msg = f'No codec entry found for {payload.blockType}'
+                    LOGGER.debug(msg, exc_info=True)
+                    raise exceptions.EncodeException(msg)
+
             if payload.blockType == 'Deprecated':
                 return EncodedPayload(
                     blockId=payload.blockId,
-                    blockType=lookup.BlockType.Value('Deprecated'),
+                    blockType=block_type_value,
                     name=payload.name,
                     content=payload.content['bytes'],
                 )
 
             # Interface-only payload
             if payload.content is None:
-                impl = next((v for v in lookup.CV_COMBINED.get()
-                             if v.type_str == payload.blockType))
+                impl = next((v for v in lookup.CV_COMBINED.get()  # pragma: no branch
+                             if v.type_int == block_type_value))
                 return EncodedPayload(
                     blockId=payload.blockId,
                     blockType=impl.type_int,
@@ -117,8 +129,8 @@ class Codec:
                 )
 
             # Payload contains data
-            impl = next((v for v in lookup.CV_OBJECTS.get()
-                         if v.type_str == payload.blockType))
+            impl = next((v for v in lookup.CV_OBJECTS.get()  # pragma: no branch
+                         if v.type_int == block_type_value))
 
             message = impl.message_cls()
             payload = self._processor.pre_encode(message.DESCRIPTOR,
@@ -136,10 +148,8 @@ class Codec:
                 maskFields=payload.maskFields
             )
 
-        except StopIteration:
-            msg = f'No codec entry found for {payload.blockType}'
-            LOGGER.debug(msg, exc_info=True)
-            raise exceptions.EncodeException(msg)
+        except exceptions.EncodeException:
+            raise
 
         except Exception as ex:
             msg = utils.strex(ex)
