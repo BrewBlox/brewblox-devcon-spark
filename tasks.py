@@ -28,6 +28,7 @@ def compile_proto(ctx: Context):
     out_dir = ROOT / 'brewblox_devcon_spark/codec/proto-compiled'
 
     with ctx.cd(ROOT):
+        ctx.run('poetry install --sync')
         ctx.run(f'rm -rf {out_dir}/*_pb2.py')
         ctx.run(' '.join([
             'python3 -m grpc_tools.protoc',
