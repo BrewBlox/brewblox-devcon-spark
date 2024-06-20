@@ -193,8 +193,10 @@ async def discover_usb(callbacks: ConnectionCallbacks) -> ConnectionImplBase | N
         client = AsyncClient()
         proxy_host = config.usb_proxy_host
         proxy_port = config.usb_proxy_port
-        resp = await client.get(f'http://{proxy_host}:{proxy_port}/{proxy_host}/connected/spark')
+        desired_id = config.device_id or 'all'
+        resp = await client.get(f'http://{proxy_host}:{proxy_port}/{proxy_host}/discover/{desired_id}')
         index: dict[str, int] = resp.json()
+        LOGGER.debug(f'Detected USB devices: {index}')
 
         if config.device_id:
             device_port = index.get(config.device_id)
@@ -202,7 +204,9 @@ async def discover_usb(callbacks: ConnectionCallbacks) -> ConnectionImplBase | N
             device_port = next(iter(index.values()), None)
 
         if device_port:
-            return await connect_tcp(callbacks, proxy_host, device_port)
+            factory = partial(StreamConnection, 'USB', f'{proxy_host}:{device_port}', callbacks)
+            _, protocol = await asyncio.get_event_loop().create_connection(factory, proxy_host, device_port)
+            return protocol
 
     except Exception as ex:
         LOGGER.debug(f'Failed to query USB proxy: {utils.strex(ex)}')
