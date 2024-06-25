@@ -5,6 +5,7 @@ from unittest.mock import ANY, Mock
 import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient
+from pytest_httpx import HTTPXMock
 from pytest_mock import MockerFixture
 
 from brewblox_devcon_spark import (app_factory, block_backup, codec, command,
@@ -16,7 +17,8 @@ from brewblox_devcon_spark.models import (Backup, Block, BlockIdentity,
                                           DatastoreMultiQuery, DecodedPayload,
                                           EncodedMessage, EncodedPayload,
                                           ErrorCode, IntermediateRequest,
-                                          IntermediateResponse, Opcode)
+                                          IntermediateResponse, Opcode,
+                                          UsbProxyResponse)
 
 
 class DummmyError(BaseException):
@@ -735,6 +737,23 @@ async def test_system_status(client: AsyncClient):
 
     assert desc['connection_status'] == 'DISCONNECTED'
     assert desc['controller'] is None
+
+
+async def test_system_usb(client: AsyncClient, httpx_mock: HTTPXMock):
+    resp = await client.post('/system/usb')
+    data = UsbProxyResponse.model_validate_json(resp.text)
+    assert not data.enabled
+    assert data.devices == []
+
+    httpx_mock.add_response(url='http://usb-proxy:5000/usb-proxy/discover/_',
+                            json={
+                                '12345': 9000,
+                                '23456': None,
+                            })
+    resp = await client.post('/system/usb')
+    data = UsbProxyResponse.model_validate_json(resp.text)
+    assert data.enabled
+    assert data.devices == ['12345', '23456']
 
 
 async def test_system_resets(client: AsyncClient, m_kill: Mock):

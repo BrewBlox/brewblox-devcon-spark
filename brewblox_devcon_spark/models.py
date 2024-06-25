@@ -547,6 +547,11 @@ class PingResponse(BaseModel):
     ping: Literal['pong'] = 'pong'
 
 
+class UsbProxyResponse(BaseModel):
+    enabled: bool
+    devices: list[str]
+
+
 class DatastoreSingleQuery(BaseModel):
     namespace: str
     id: str
