@@ -454,6 +454,15 @@ class ControllerDescription(BaseModel):
     device: DeviceDescription
 
 
+DiscoveryKind_ = Literal[
+    'SIM',
+    'ADDRESS',
+    'USB',
+    'MDNS',
+    'MQTT',
+    'ALL',
+]
+
 ConnectionKind_ = Literal[
     'MOCK',
     'SIM',
@@ -487,6 +496,7 @@ class StatusDescription(BaseModel):
     controller: ControllerDescription | None = None
     address: str | None = None
 
+    discovery_kind: DiscoveryKind_
     connection_kind: ConnectionKind_ | None = None
     connection_status: ConnectionStatus_
     firmware_error: FirmwareError_ | None = None

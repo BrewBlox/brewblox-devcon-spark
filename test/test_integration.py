@@ -724,6 +724,7 @@ async def test_system_status(client: AsyncClient):
             'device': device_desc,
         },
         'address': 'brewblox-amd64.sim',
+        'discovery_kind': 'SIM',
         'connection_kind': 'SIM',
         'connection_status': 'SYNCHRONIZED',
         'firmware_error': None,
