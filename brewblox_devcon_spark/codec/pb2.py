@@ -26,11 +26,11 @@ if 'brewblox_pb2' not in sys.modules:  # pragma: no cover
     import DS2413_pb2
     import EdgeCase_pb2
     import FastPwm_pb2
+    import GpioModule_pb2
     import MockPins_pb2
     import MotorValve_pb2
     import Mutex_pb2
     import OneWireBus_pb2
-    import OneWireGpioModule_pb2
     import Pid_pb2
     import Screen_pb2
     import Sequence_pb2
@@ -63,11 +63,11 @@ __all__ = [
     'DS2413_pb2',
     'EdgeCase_pb2',
     'FastPwm_pb2',
+    'GpioModule_pb2',
     'MockPins_pb2',
     'MotorValve_pb2',
     'Mutex_pb2',
     'OneWireBus_pb2',
-    'OneWireGpioModule_pb2',
     'Pid_pb2',
     'Screen_pb2',
     'Sequence_pb2',
