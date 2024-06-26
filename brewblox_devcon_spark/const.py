@@ -2,6 +2,8 @@
 System-wide constant values
 """
 
+BREWBLOX_DNS_TYPE = '_brewblox._tcp.local.'
+
 USER_NID_START = 100
 OBJECT_LINK_POSTFIX_START = '<'
 OBJECT_LINK_POSTFIX_END = '>'

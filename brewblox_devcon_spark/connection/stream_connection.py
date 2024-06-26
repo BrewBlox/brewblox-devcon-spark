@@ -16,12 +16,11 @@ from pathlib import Path
 
 from httpx import AsyncClient
 
-from .. import exceptions, mdns, utils
+from .. import const, exceptions, mdns, utils
 from .cbox_parser import CboxParser
 from .connection_impl import (ConnectionCallbacks, ConnectionImplBase,
                               ConnectionKind_)
 
-BREWBLOX_DNS_TYPE = '_brewblox._tcp.local.'
 USB_BAUD_RATE = 115200
 
 SPARK_HWIDS = [
@@ -176,7 +175,7 @@ async def discover_mdns(callbacks: ConnectionCallbacks) -> ConnectionImplBase | 
     config = utils.get_config()
     try:
         resp = await mdns.discover_one(config.device_id,
-                                       BREWBLOX_DNS_TYPE,
+                                       const.BREWBLOX_DNS_TYPE,
                                        config.discovery_timeout_mdns)
         return await connect_tcp(callbacks, resp.address, resp.port)
     except asyncio.TimeoutError:
