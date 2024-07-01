@@ -30,7 +30,7 @@ async def test_encode_system_objects():
 
     types = [
         'SysInfo',
-        'OneWireBus',
+        'DisplaySettings',
     ]
 
     encoded = [
