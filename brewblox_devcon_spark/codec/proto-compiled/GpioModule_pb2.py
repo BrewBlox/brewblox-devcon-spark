@@ -16,7 +16,7 @@ import brewblox_pb2 as brewblox__pb2
 import nanopb_pb2 as nanopb__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10GpioModule.proto\x12\x0f\x62lox.GpioModule\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x98\x02\n\x07\x43hannel\x12\x17\n\x02id\x18\x01 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02x\x01\x12\x37\n\ndeviceType\x18\x02 \x01(\x0e\x32\x1b.blox.GpioModule.DeviceTypeB\x06\x8a\xb5\x18\x02x\x01\x12\x1f\n\x08pinsMask\x18\x03 \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04P\x01x\x01\x12\x1a\n\x05width\x18\x04 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02x\x01\x12\x19\n\x04name\x18\x05 \x01(\tB\x0b\x92?\x02\x08 \x8a\xb5\x18\x02x\x01\x12#\n\x0c\x63\x61pabilities\x18\x06 \x01(\rB\r\x92?\x02\x38\x10\x8a\xb5\x18\x04(\x01P\x01\x12\x1b\n\tclaimedBy\x18\x07 \x01(\rB\x08\x8a\xb5\x18\x04\x18\x11(\x01\x12!\n\nerrorFlags\x18\x08 \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04P\x01x\x01\"\x89\x04\n\x06Status\x12#\n\x0cmoduleStatus\x18\x03 \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12$\n\rpullUpDesired\x18\x04 \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12#\n\x0cpullUpStatus\x18\x05 \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12\'\n\x10pullUpWhenActive\x18\x06 \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12)\n\x12pullUpWhenInactive\x18\x07 \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12&\n\x0fpullDownDesired\x18\x08 \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12%\n\x0epullDownStatus\x18\t \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12)\n\x12pullDownWhenActive\x18\n \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12+\n\x14pullDownWhenInactive\x18\x0b \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12\"\n\x0boverCurrent\x18\x0c \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12\x1f\n\x08openLoad\x18\r \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12&\n\x0f\x66\x61ultsHistory5m\x18\x0f \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12\'\n\x10\x66\x61ultsHistory60m\x18\x10 \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01*\xa9\x05\n\nDeviceType\x12\x11\n\rGPIO_DEV_NONE\x10\x00\x12\x13\n\x0fGPIO_DEV_SSR_2P\x10\x01\x12\x13\n\x0fGPIO_DEV_SSR_1P\x10\x02\x12 \n\x1cGPIO_DEV_MECHANICAL_RELAY_2P\x10\x03\x12*\n&GPIO_DEV_MECHANICAL_RELAY_1P_HIGH_SIDE\x10\x04\x12)\n%GPIO_DEV_MECHANICAL_RELAY_1P_LOW_SIDE\x10\x05\x12\x14\n\x10GPIO_DEV_COIL_2P\x10\x06\x12\"\n\x1eGPIO_DEV_COIL_2P_BIDIRECTIONAL\x10\x07\x12\x1e\n\x1aGPIO_DEV_COIL_1P_HIGH_SIDE\x10\x08\x12\x1d\n\x19GPIO_DEV_COIL_1P_LOW_SIDE\x10\t\x12\x15\n\x11GPIO_DEV_MOTOR_2P\x10\n\x12#\n\x1fGPIO_DEV_MOTOR_2P_BIDIRECTIONAL\x10\x0b\x12\x1f\n\x1bGPIO_DEV_MOTOR_1P_HIGH_SIDE\x10\x0c\x12\x1e\n\x1aGPIO_DEV_MOTOR_1P_LOW_SIDE\x10\r\x12\"\n\x1eGPIO_DEV_DETECT_LOW_CURRENT_2P\x10\x0e\x12&\n\"GPIO_DEV_DETECT_LOW_CURRENT_1P_GND\x10\x0f\x12\x15\n\x11GPIO_DEV_POWER_1P\x10\x11\x12)\n%GPIO_DEV_DETECT_HIGH_CURRENT_1P_POWER\x10\x12\x12\x13\n\x0fGPIO_DEV_GND_1P\x10\x13\x12\'\n#GPIO_DEV_DETECT_HIGH_CURRENT_1P_GND\x10\x14\x12#\n\x1fGPIO_DEV_DETECT_HIGH_CURRENT_2P\x10\x15*\x86\x02\n\nErrorFlags\x12\x11\n\rGPIO_ERR_NONE\x10\x00\x12\x1b\n\x17GPIO_ERR_POWER_ON_RESET\x10\x01\x12\x18\n\x14GPIO_ERR_OVERVOLTAGE\x10\x02\x12\x19\n\x15GPIO_ERR_UNDERVOLTAGE\x10\x04\x12\x18\n\x14GPIO_ERR_OVERCURRENT\x10\x08\x12\x16\n\x12GPIO_ERR_OPEN_LOAD\x10\x10\x12$\n GPIO_ERR_OVERTEMPERATURE_WARNING\x10 \x12\"\n\x1eGPIO_ERR_OVERTEMPERATURE_ERROR\x10@\x12\x17\n\x12GPIO_ERR_SPI_ERROR\x10\x80\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10GpioModule.proto\x12\x0f\x62lox.GpioModule\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x98\x02\n\x07\x43hannel\x12\x17\n\x02id\x18\x01 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02x\x01\x12\x37\n\ndeviceType\x18\x02 \x01(\x0e\x32\x1b.blox.GpioModule.DeviceTypeB\x06\x8a\xb5\x18\x02x\x01\x12\x1f\n\x08pinsMask\x18\x03 \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04P\x01x\x01\x12\x1a\n\x05width\x18\x04 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02x\x01\x12\x19\n\x04name\x18\x05 \x01(\tB\x0b\x92?\x02\x08 \x8a\xb5\x18\x02x\x01\x12#\n\x0c\x63\x61pabilities\x18\x06 \x01(\rB\r\x92?\x02\x38\x10\x8a\xb5\x18\x04(\x01P\x01\x12\x1b\n\tclaimedBy\x18\x07 \x01(\rB\x08\x8a\xb5\x18\x04\x18\x11(\x01\x12!\n\nerrorFlags\x18\x08 \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04P\x01x\x01\"\x89\x04\n\x06Status\x12#\n\x0cmoduleStatus\x18\x03 \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12$\n\rpullUpDesired\x18\x04 \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12#\n\x0cpullUpStatus\x18\x05 \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12\'\n\x10pullUpWhenActive\x18\x06 \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12)\n\x12pullUpWhenInactive\x18\x07 \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12&\n\x0fpullDownDesired\x18\x08 \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12%\n\x0epullDownStatus\x18\t \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12)\n\x12pullDownWhenActive\x18\n \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12+\n\x14pullDownWhenInactive\x18\x0b \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12\"\n\x0boverCurrent\x18\x0c \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12\x1f\n\x08openLoad\x18\r \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12&\n\x0f\x66\x61ultsHistory5m\x18\x0f \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\x12\'\n\x10\x66\x61ultsHistory60m\x18\x10 \x01(\rB\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01P\x01\"\xb7\x02\n\rAnalogChannel\x12\x17\n\x02id\x18\x01 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02(\x01\x12=\n\nsensorType\x18\x02 \x01(\x0e\x32!.blox.GpioModule.AnalogSensorTypeB\x06\x8a\xb5\x18\x02x\x01\x12\x1b\n\tclaimedBy\x18\x03 \x01(\rB\x08\x8a\xb5\x18\x04\x18\x1d(\x01\x12(\n\nresistance\x18\x04 \x01(\x11\x42\x14\x92?\x02\x38 \x8a\xb5\x18\x0b\x08\x0f\x10\x80 (\x01\x30\x01h\x01\x12,\n\x0eleadResistance\x18\x05 \x01(\x11\x42\x14\x92?\x02\x38 \x8a\xb5\x18\x0b\x08\x0f\x10\x80 (\x01\x30\x01h\x01\x12.\n\x10\x62ridgeResistance\x18\x06 \x01(\x11\x42\x14\x92?\x02\x38 \x8a\xb5\x18\x0b\x08\x0f\x10\x80 (\x01\x30\x01h\x01\x12)\n\x0c\x62ridgeOutput\x18\x07 \x01(\x11\x42\x13\x92?\x02\x38 \x8a\xb5\x18\n\x10\x80\x80\x10(\x01\x30\x01h\x01\"\xe9\x06\n\x05\x42lock\x12\x37\n\x08\x63hannels\x18\x01 \x03(\x0b\x32\x18.blox.GpioModule.ChannelB\x0b\x92?\x02\x10\x08\x8a\xb5\x18\x02x\x01\x12#\n\x0emodulePosition\x18\x02 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02x\x01\x12 \n\x10useExternalPower\x18\x0e \x01(\x08\x42\x06\x8a\xb5\x18\x02x\x01\x12/\n\x06status\x18\x11 \x01(\x0b\x32\x17.blox.GpioModule.StatusB\x06\x8a\xb5\x18\x02(\x01\x12\x45\n\x0e\x61nalogChannels\x18\x14 \x03(\x0b\x32\x1e.blox.GpioModule.AnalogChannelB\r\x92?\x02\x10\x04\x8a\xb5\x18\x04(\x01\x30\x01\x12*\n\x0c\x62\x61roPressure\x18\x15 \x01(\x11\x42\x14\x92?\x02\x38 \x8a\xb5\x18\x0b\x08\r\x10\x80 (\x01\x30\x01h\x01\x12!\n\x0cmoduleStatus\x18\x03 \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12\"\n\rpullUpDesired\x18\x04 \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12!\n\x0cpullUpStatus\x18\x05 \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12%\n\x10pullUpWhenActive\x18\x06 \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12\'\n\x12pullUpWhenInactive\x18\x07 \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12$\n\x0fpullDownDesired\x18\x08 \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12#\n\x0epullDownStatus\x18\t \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12\'\n\x12pullDownWhenActive\x18\n \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12)\n\x14pullDownWhenInactive\x18\x0b \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12 \n\x0boverCurrent\x18\x0c \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12\x1d\n\x08openLoad\x18\r \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12$\n\x0f\x66\x61ultsHistory5m\x18\x0f \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12%\n\x10\x66\x61ultsHistory60m\x18\x10 \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12&\n\x11moduleStatusClear\x18Z \x01(\rB\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12 \n\x0b\x63learFaults\x18  \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01:\x0b\x8a\xb5\x18\x07\x18\xc5\x02J\x02\n\x0c*\xa9\x05\n\nDeviceType\x12\x11\n\rGPIO_DEV_NONE\x10\x00\x12\x13\n\x0fGPIO_DEV_SSR_2P\x10\x01\x12\x13\n\x0fGPIO_DEV_SSR_1P\x10\x02\x12 \n\x1cGPIO_DEV_MECHANICAL_RELAY_2P\x10\x03\x12*\n&GPIO_DEV_MECHANICAL_RELAY_1P_HIGH_SIDE\x10\x04\x12)\n%GPIO_DEV_MECHANICAL_RELAY_1P_LOW_SIDE\x10\x05\x12\x14\n\x10GPIO_DEV_COIL_2P\x10\x06\x12\"\n\x1eGPIO_DEV_COIL_2P_BIDIRECTIONAL\x10\x07\x12\x1e\n\x1aGPIO_DEV_COIL_1P_HIGH_SIDE\x10\x08\x12\x1d\n\x19GPIO_DEV_COIL_1P_LOW_SIDE\x10\t\x12\x15\n\x11GPIO_DEV_MOTOR_2P\x10\n\x12#\n\x1fGPIO_DEV_MOTOR_2P_BIDIRECTIONAL\x10\x0b\x12\x1f\n\x1bGPIO_DEV_MOTOR_1P_HIGH_SIDE\x10\x0c\x12\x1e\n\x1aGPIO_DEV_MOTOR_1P_LOW_SIDE\x10\r\x12\"\n\x1eGPIO_DEV_DETECT_LOW_CURRENT_2P\x10\x0e\x12&\n\"GPIO_DEV_DETECT_LOW_CURRENT_1P_GND\x10\x0f\x12\x15\n\x11GPIO_DEV_POWER_1P\x10\x11\x12)\n%GPIO_DEV_DETECT_HIGH_CURRENT_1P_POWER\x10\x12\x12\x13\n\x0fGPIO_DEV_GND_1P\x10\x13\x12\'\n#GPIO_DEV_DETECT_HIGH_CURRENT_1P_GND\x10\x14\x12#\n\x1fGPIO_DEV_DETECT_HIGH_CURRENT_2P\x10\x15*\x86\x02\n\nErrorFlags\x12\x11\n\rGPIO_ERR_NONE\x10\x00\x12\x1b\n\x17GPIO_ERR_POWER_ON_RESET\x10\x01\x12\x18\n\x14GPIO_ERR_OVERVOLTAGE\x10\x02\x12\x19\n\x15GPIO_ERR_UNDERVOLTAGE\x10\x04\x12\x18\n\x14GPIO_ERR_OVERCURRENT\x10\x08\x12\x16\n\x12GPIO_ERR_OPEN_LOAD\x10\x10\x12$\n GPIO_ERR_OVERTEMPERATURE_WARNING\x10 \x12\"\n\x1eGPIO_ERR_OVERTEMPERATURE_ERROR\x10@\x12\x17\n\x12GPIO_ERR_SPI_ERROR\x10\x80\x01*\xdf\x01\n\x10\x41nalogSensorType\x12\x1b\n\x17\x41NALOG_SENSOR_TYPE_NONE\x10\x00\x12#\n\x1f\x41NALOG_SENSOR_TYPE_STRAIN_GAUGE\x10\x01\x12 \n\x1c\x41NALOG_SENSOR_TYPE_RTD_2WIRE\x10\x02\x12 \n\x1c\x41NALOG_SENSOR_TYPE_RTD_3WIRE\x10\x03\x12 \n\x1c\x41NALOG_SENSOR_TYPE_RTD_4WIRE\x10\x04\x12#\n\x1f\x41NALOG_SENSOR_TYPE_RTD_3WIRE_LS\x10\x05\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -65,12 +65,76 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_STATUS'].fields_by_name['faultsHistory5m']._serialized_options = b'\222?\0028\010\212\265\030\004(\001P\001'
   _globals['_STATUS'].fields_by_name['faultsHistory60m']._options = None
   _globals['_STATUS'].fields_by_name['faultsHistory60m']._serialized_options = b'\222?\0028\010\212\265\030\004(\001P\001'
-  _globals['_DEVICETYPE']._serialized_start=875
-  _globals['_DEVICETYPE']._serialized_end=1556
-  _globals['_ERRORFLAGS']._serialized_start=1559
-  _globals['_ERRORFLAGS']._serialized_end=1821
+  _globals['_ANALOGCHANNEL'].fields_by_name['id']._options = None
+  _globals['_ANALOGCHANNEL'].fields_by_name['id']._serialized_options = b'\222?\0028\010\212\265\030\002(\001'
+  _globals['_ANALOGCHANNEL'].fields_by_name['sensorType']._options = None
+  _globals['_ANALOGCHANNEL'].fields_by_name['sensorType']._serialized_options = b'\212\265\030\002x\001'
+  _globals['_ANALOGCHANNEL'].fields_by_name['claimedBy']._options = None
+  _globals['_ANALOGCHANNEL'].fields_by_name['claimedBy']._serialized_options = b'\212\265\030\004\030\035(\001'
+  _globals['_ANALOGCHANNEL'].fields_by_name['resistance']._options = None
+  _globals['_ANALOGCHANNEL'].fields_by_name['resistance']._serialized_options = b'\222?\0028 \212\265\030\013\010\017\020\200 (\0010\001h\001'
+  _globals['_ANALOGCHANNEL'].fields_by_name['leadResistance']._options = None
+  _globals['_ANALOGCHANNEL'].fields_by_name['leadResistance']._serialized_options = b'\222?\0028 \212\265\030\013\010\017\020\200 (\0010\001h\001'
+  _globals['_ANALOGCHANNEL'].fields_by_name['bridgeResistance']._options = None
+  _globals['_ANALOGCHANNEL'].fields_by_name['bridgeResistance']._serialized_options = b'\222?\0028 \212\265\030\013\010\017\020\200 (\0010\001h\001'
+  _globals['_ANALOGCHANNEL'].fields_by_name['bridgeOutput']._options = None
+  _globals['_ANALOGCHANNEL'].fields_by_name['bridgeOutput']._serialized_options = b'\222?\0028 \212\265\030\n\020\200\200\020(\0010\001h\001'
+  _globals['_BLOCK'].fields_by_name['channels']._options = None
+  _globals['_BLOCK'].fields_by_name['channels']._serialized_options = b'\222?\002\020\010\212\265\030\002x\001'
+  _globals['_BLOCK'].fields_by_name['modulePosition']._options = None
+  _globals['_BLOCK'].fields_by_name['modulePosition']._serialized_options = b'\222?\0028\010\212\265\030\002x\001'
+  _globals['_BLOCK'].fields_by_name['useExternalPower']._options = None
+  _globals['_BLOCK'].fields_by_name['useExternalPower']._serialized_options = b'\212\265\030\002x\001'
+  _globals['_BLOCK'].fields_by_name['status']._options = None
+  _globals['_BLOCK'].fields_by_name['status']._serialized_options = b'\212\265\030\002(\001'
+  _globals['_BLOCK'].fields_by_name['analogChannels']._options = None
+  _globals['_BLOCK'].fields_by_name['analogChannels']._serialized_options = b'\222?\002\020\004\212\265\030\004(\0010\001'
+  _globals['_BLOCK'].fields_by_name['baroPressure']._options = None
+  _globals['_BLOCK'].fields_by_name['baroPressure']._serialized_options = b'\222?\0028 \212\265\030\013\010\r\020\200 (\0010\001h\001'
+  _globals['_BLOCK'].fields_by_name['moduleStatus']._options = None
+  _globals['_BLOCK'].fields_by_name['moduleStatus']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _globals['_BLOCK'].fields_by_name['pullUpDesired']._options = None
+  _globals['_BLOCK'].fields_by_name['pullUpDesired']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _globals['_BLOCK'].fields_by_name['pullUpStatus']._options = None
+  _globals['_BLOCK'].fields_by_name['pullUpStatus']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _globals['_BLOCK'].fields_by_name['pullUpWhenActive']._options = None
+  _globals['_BLOCK'].fields_by_name['pullUpWhenActive']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _globals['_BLOCK'].fields_by_name['pullUpWhenInactive']._options = None
+  _globals['_BLOCK'].fields_by_name['pullUpWhenInactive']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _globals['_BLOCK'].fields_by_name['pullDownDesired']._options = None
+  _globals['_BLOCK'].fields_by_name['pullDownDesired']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _globals['_BLOCK'].fields_by_name['pullDownStatus']._options = None
+  _globals['_BLOCK'].fields_by_name['pullDownStatus']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _globals['_BLOCK'].fields_by_name['pullDownWhenActive']._options = None
+  _globals['_BLOCK'].fields_by_name['pullDownWhenActive']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _globals['_BLOCK'].fields_by_name['pullDownWhenInactive']._options = None
+  _globals['_BLOCK'].fields_by_name['pullDownWhenInactive']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _globals['_BLOCK'].fields_by_name['overCurrent']._options = None
+  _globals['_BLOCK'].fields_by_name['overCurrent']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _globals['_BLOCK'].fields_by_name['openLoad']._options = None
+  _globals['_BLOCK'].fields_by_name['openLoad']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _globals['_BLOCK'].fields_by_name['faultsHistory5m']._options = None
+  _globals['_BLOCK'].fields_by_name['faultsHistory5m']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _globals['_BLOCK'].fields_by_name['faultsHistory60m']._options = None
+  _globals['_BLOCK'].fields_by_name['faultsHistory60m']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _globals['_BLOCK'].fields_by_name['moduleStatusClear']._options = None
+  _globals['_BLOCK'].fields_by_name['moduleStatusClear']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _globals['_BLOCK'].fields_by_name['clearFaults']._options = None
+  _globals['_BLOCK'].fields_by_name['clearFaults']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
+  _globals['_BLOCK']._options = None
+  _globals['_BLOCK']._serialized_options = b'\212\265\030\007\030\305\002J\002\n\014'
+  _globals['_DEVICETYPE']._serialized_start=2065
+  _globals['_DEVICETYPE']._serialized_end=2746
+  _globals['_ERRORFLAGS']._serialized_start=2749
+  _globals['_ERRORFLAGS']._serialized_end=3011
+  _globals['_ANALOGSENSORTYPE']._serialized_start=3014
+  _globals['_ANALOGSENSORTYPE']._serialized_end=3237
   _globals['_CHANNEL']._serialized_start=68
   _globals['_CHANNEL']._serialized_end=348
   _globals['_STATUS']._serialized_start=351
   _globals['_STATUS']._serialized_end=872
+  _globals['_ANALOGCHANNEL']._serialized_start=875
+  _globals['_ANALOGCHANNEL']._serialized_end=1186
+  _globals['_BLOCK']._serialized_start=1189
+  _globals['_BLOCK']._serialized_end=2062
 # @@protoc_insertion_point(module_scope)

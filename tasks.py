@@ -97,7 +97,7 @@ def testclean(ctx: Context):
 
     with suppress(UnexpectedExit):
         # returns 1 if nothing killed
-        ctx.run('pkill -ef -9 brewblox-amd64.sim')
+        ctx.run('sudo pkill -ef -9 brewblox-amd64.sim')
 
 
 @task

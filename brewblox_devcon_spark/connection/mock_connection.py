@@ -40,12 +40,6 @@ def default_blocks() -> dict[int, FirmwareBlock]:
                 },
             ),
             FirmwareBlock(
-                id='OneWireBus',
-                nid=const.ONEWIREBUS_NID,
-                type='OneWireBus',
-                data={},
-            ),
-            FirmwareBlock(
                 id='WiFiSettings',
                 nid=const.WIFI_SETTINGS_NID,
                 type='WiFiSettings',
