@@ -30,7 +30,6 @@ if 'brewblox_pb2' not in sys.modules:  # pragma: no cover
     import MockPins_pb2
     import MotorValve_pb2
     import Mutex_pb2
-    import OneWireBus_pb2
     import Pid_pb2
     import Screen_pb2
     import Sequence_pb2
@@ -67,7 +66,6 @@ __all__ = [
     'MockPins_pb2',
     'MotorValve_pb2',
     'Mutex_pb2',
-    'OneWireBus_pb2',
     'Pid_pb2',
     'Screen_pb2',
     'Sequence_pb2',
