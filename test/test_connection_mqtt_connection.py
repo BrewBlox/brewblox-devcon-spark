@@ -84,7 +84,7 @@ async def test_mqtt_impl():
     @mqtt_client.subscribe('brewcast/cbox/req/+')
     async def on_request(client, topic, payload: bytes, qos, properties):
         resp_topic = topic.replace('/req/', '/resp/')
-        mqtt_client.publish(resp_topic, f'1:0:{payload.decode()[::-1]}\n'.encode())
+        mqtt_client.publish(resp_topic, f'1;0;{payload.decode()[::-1]}\n'.encode())
         recv_req.set()
 
     @mqtt_client.subscribe('brewcast/cbox/resp/+')
@@ -129,14 +129,14 @@ async def test_mqtt_message_handling():
     callbacks = AsyncMock(spec=connection_handler.ConnectionHandler)
     impl = mqtt_connection.MqttConnection('1234', callbacks)
 
-    await impl._resp_cb(None, None, '1:0:first,'.encode(), 0, None)
-    await impl._resp_cb(None, None, '2:1:second,'.encode(), 0, None)
-    await impl._resp_cb(None, None, '3:1:third\n'.encode(), 0, None)
-    await impl._resp_cb(None, None, '4:0:fourth\n'.encode(), 0, None)
-    await impl._resp_cb(None, None, '5:0:fifth,'.encode(), 0, None)
-    await impl._resp_cb(None, None, '5:1:fifth-second\n'.encode(), 0, None)
-    await impl._resp_cb(None, None, '6:0:sixth,'.encode(), 0, None)
+    await impl._resp_cb(None, None, '1;0;first,'.encode(), 0, None)
+    await impl._resp_cb(None, None, '2;1;second,'.encode(), 0, None)
+    await impl._resp_cb(None, None, '3;1;third\n'.encode(), 0, None)
+    await impl._resp_cb(None, None, '4;0;fourth\n'.encode(), 0, None)
+    await impl._resp_cb(None, None, '5;0;fifth,'.encode(), 0, None)
+    await impl._resp_cb(None, None, '5;1;fifth-second\n'.encode(), 0, None)
+    await impl._resp_cb(None, None, '6;0;sixth,'.encode(), 0, None)
     await impl._resp_cb(None, None, 'garbled'.encode(), 0, None)
-    await impl._resp_cb(None, None, '6:1:sixth-second\n'.encode(), 0, None)
+    await impl._resp_cb(None, None, '6;1;sixth-second\n'.encode(), 0, None)
 
     assert callbacks.on_response.await_args_list == [call('fourth'), call('fifth,fifth-second')]

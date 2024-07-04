@@ -48,7 +48,7 @@ class MqttConnection(ConnectionImplBase):
 
     async def _resp_cb(self, client, topic, payload: bytes, qos, properties):
         try:
-            (msg_id, chunk_idx, chunk) = payload.decode().split(':')
+            (msg_id, chunk_idx, chunk) = payload.decode().split(';')
             msg_id = int(msg_id)
             chunk_idx = int(chunk_idx)
         except ValueError as ex:
