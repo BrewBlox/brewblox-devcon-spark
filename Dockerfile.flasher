@@ -1,5 +1,7 @@
 FROM python:3.11-slim-bookworm
 
+ENV PIP_EXTRA_INDEX_URL=https://www.piwheels.org/simple
+
 WORKDIR /app
 
 RUN <<EOF bash
