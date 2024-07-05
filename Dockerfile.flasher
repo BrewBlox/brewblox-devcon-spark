@@ -12,6 +12,9 @@ RUN <<EOF bash
         libatomic1 \
         usbutils
 
+    pip3 install \
+        esptool
+
     CLI_VERSION="3.24.0"
     ARCH="$(dpkg --print-architecture)"
     if [ "\${ARCH}" = "amd64" ]; then
