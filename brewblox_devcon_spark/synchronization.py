@@ -30,11 +30,10 @@ The synchronization process consists of:
         until status is ACKNOWLEDGED.
     - Verify that the service is compatible with the controller.
     - If the controller is not compatible, abort synchronization.
-- Synchronize block store:
-    - Fetch controller-specific data from datastore.
 - Synchronize controller settings:
     - Send timezone to controller.
     - Send temperature display units to controller.
+    - Get block names from controller.
 - Set status to SYNCHRONIZED.
 - Wait for DISCONNECTED status.
 - Repeat
@@ -48,7 +47,7 @@ from functools import wraps
 from . import (codec, command, const, datastore_blocks, datastore_settings,
                exceptions, state_machine, utils)
 from .codec.time_utils import serialize_duration
-from .models import FirmwareBlock
+from .models import FirmwareBlock, FirmwareBlockIdentity
 
 LOGGER = logging.getLogger(__name__)
 
@@ -117,7 +116,22 @@ class StateSynchronizer:
 
     @subroutine('sync block store')
     async def _sync_block_store(self):
-        await self.block_store.load()
+        blocks = await self.commander.read_all_block_names()
+        self.block_store.clear()
+        for block in blocks:
+            self.block_store[block.id] = block.nid
+
+        # Check if redis still contains a name table for this controller's blocks
+        # If it does, attempt to load block names
+        # This is a one-time migration. The redis table is removed after reading.
+        for entry in await datastore_blocks.extract_legacy_redis_block_names():  # pragma: no cover
+            sid, nid = entry
+            LOGGER.info(f'Renaming block to legacy name: {sid=}, {nid=}')
+            try:
+                await self.commander.write_block_name(FirmwareBlockIdentity(id=sid, nid=nid))
+                self.block_store[sid] = nid
+            except Exception as ex:
+                LOGGER.info(f'Failed to rename block {entry}: {utils.strex(ex)}')
 
     @subroutine('sync controller settings')
     async def _sync_sysinfo(self):
@@ -183,14 +197,10 @@ class StateSynchronizer:
         await self.state.wait_disconnected()
 
     async def repeat(self):
-        try:
-            self.settings_store.service_settings_listeners.add(self._apply_service_settings)
-            self.settings_store.global_settings_listeners.add(self._apply_global_settings)
-            while True:
-                await self.run()
-        finally:
-            self.settings_store.service_settings_listeners.remove(self._apply_service_settings)
-            self.settings_store.global_settings_listeners.remove(self._apply_global_settings)
+        self.settings_store.service_settings_listeners.add(self._apply_service_settings)
+        self.settings_store.global_settings_listeners.add(self._apply_global_settings)
+        while True:
+            await self.run()
 
 
 @asynccontextmanager

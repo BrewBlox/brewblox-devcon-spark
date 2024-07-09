@@ -193,15 +193,6 @@ async def blocks_all_delete() -> list[BlockIdentity]:
     return idents
 
 
-@router.post('/cleanup')
-async def blocks_cleanup() -> list[BlockIdentity]:
-    """
-    Clean unused block IDs.
-    """
-    idents = await spark_api.CV.get().remove_unused_ids()
-    return idents
-
-
 @router.post('/rename')
 async def blocks_rename(args: BlockNameChange) -> BlockIdentity:
     """
