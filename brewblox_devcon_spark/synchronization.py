@@ -116,6 +116,7 @@ class StateSynchronizer:
 
     @subroutine('sync block store')
     async def _sync_block_store(self):
+        state = state_machine.CV.get()
         blocks = await self.commander.read_all_block_names()
         self.block_store.clear()
         for block in blocks:
@@ -123,8 +124,9 @@ class StateSynchronizer:
 
         # Check if redis still contains a name table for this controller's blocks
         # If it does, attempt to load block names
-        # This is a one-time migration. The redis table is removed after reading.
-        for entry in await datastore_blocks.extract_legacy_redis_block_names():  # pragma: no cover
+        legacy_names = await datastore_blocks.extract_legacy_redis_block_names()
+
+        for entry in legacy_names:  # pragma: no cover
             sid, nid = entry
             LOGGER.info(f'Renaming block to legacy name: {sid=}, {nid=}')
             try:
@@ -132,6 +134,10 @@ class StateSynchronizer:
                 self.block_store[sid] = nid
             except Exception as ex:
                 LOGGER.info(f'Failed to rename block {entry}: {utils.strex(ex)}')
+
+        # Remove the name table if the controller didn't crash or disconnect during migration
+        if legacy_names and state.is_acknowledged():  # pragma: no cover
+            await datastore_blocks.remove_legacy_redis_block_names()
 
     @subroutine('sync controller settings')
     async def _sync_sysinfo(self):
