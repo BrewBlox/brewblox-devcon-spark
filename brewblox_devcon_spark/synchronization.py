@@ -154,7 +154,7 @@ class StateSynchronizer:
 
         sysinfo = await self.commander.patch_block(
             FirmwareBlock(
-                nid=const.SYSINFO_NID,
+                nid=const.SYS_BLOCK_IDS['SysInfo'],
                 type=const.SYSINFO_BLOCK_TYPE,
                 data={
                     'timeZone': tz_posix,
