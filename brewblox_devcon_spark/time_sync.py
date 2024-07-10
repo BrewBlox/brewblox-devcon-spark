@@ -25,7 +25,7 @@ class TimeSync:
         await self.state.wait_synchronized()
         now = datetime.now()
         await self.api.patch_block(Block(
-            nid=const.SYSINFO_NID,
+            nid=const.SYS_BLOCK_IDS['SysInfo'],
             type=const.SYSINFO_BLOCK_TYPE,
             data={'systemTime': now},
         ))

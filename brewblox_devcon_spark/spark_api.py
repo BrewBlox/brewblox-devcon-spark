@@ -451,7 +451,7 @@ class SparkApi:
             identities = [self._to_block_identity(v) for v in blocks]
             await self.load_block_names()
             await self.cmder.write_block(FirmwareBlock(
-                nid=const.DISPLAY_SETTINGS_NID,
+                nid=const.SYS_BLOCK_IDS['DisplaySettings'],
                 type='DisplaySettings',
                 data={},
             ))
@@ -535,8 +535,13 @@ class SparkApi:
             LOGGER.info(f'Backup device = {exported.device}')
             LOGGER.info(f'Backup block count = {len(exported.blocks)}')
 
-            await self.clear_blocks()
             error_log = []
+            await self.clear_blocks()
+
+            # We want to support cross-platform backup loads
+            # Load IDs for all system block IDs here to prevent errors
+            # when blocks have links to an unavailable system block
+            self.block_store.update(const.SYS_BLOCK_IDS)
 
             # Populate the block store, to avoid unknown links
             self.block_store.update({block.id: block.nid
@@ -573,6 +578,7 @@ class SparkApi:
                     LOGGER.error(message)
 
             # Sync block names with reality
+            await self.cmder.discover_blocks()
             await self.load_block_names()
 
             return BackupApplyResult(messages=error_log)
