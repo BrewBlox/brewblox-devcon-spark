@@ -106,7 +106,7 @@ class Codec:
                 if payload.blockType == 'EdgeCase':
                     block_type_value = 9001
                 else:
-                    msg = f'No codec entry found for {payload.blockType}'
+                    msg = f'Unknown block type: {payload.blockType}'
                     LOGGER.debug(msg, exc_info=True)
                     raise exceptions.EncodeException(msg)
 
@@ -129,8 +129,13 @@ class Codec:
                 )
 
             # Payload contains data
-            impl = next((v for v in lookup.CV_OBJECTS.get()  # pragma: no branch
-                         if v.type_int == block_type_value))
+            try:
+                impl = next((v for v in lookup.CV_OBJECTS.get()  # pragma: no branch
+                            if v.type_int == block_type_value))
+            except StopIteration:
+                msg = f'No codec entry found for {payload.blockType}'
+                LOGGER.debug(msg, exc_info=True)
+                raise exceptions.EncodeException(msg)
 
             message = impl.message_cls()
             payload = self._processor.pre_encode(message.DESCRIPTOR,
