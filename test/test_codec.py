@@ -59,6 +59,15 @@ async def test_encode_errors():
             blockType='MAGIC'
         ))
 
+    # TouchSettings only exist as deprecated BlockType name,
+    # and no longer has an associated message
+    with pytest.raises(exceptions.EncodeException):
+        cdc.encode_payload(DecodedPayload(
+            blockId=1,
+            blockType='TouchSettings',
+            content={},
+        ))
+
     with pytest.raises(exceptions.EncodeException):
         cdc.encode_payload(DecodedPayload(
             blockId=1,

@@ -13,12 +13,17 @@ GLOBAL_NAMESPACE = 'brewblox-global'
 GLOBAL_UNITS_ID = 'units'
 GLOBAL_TIME_ZONE_ID = 'timeZone'
 
-# Numeric IDs of system objects
-SYSINFO_NID = 2
-WIFI_SETTINGS_NID = 5
-DISPLAY_SETTINGS_NID = 7
-SPARK_PINS_NID = 19
-
 # Relevant block types
 SEQUENCE_BLOCK_TYPE = 'Sequence'
 SYSINFO_BLOCK_TYPE = 'SysInfo'
+
+# IDs and names of system blocks for all platforms.
+# This includes deprecated system blocks,
+# to ensure backwards compatibility when loading backups.
+SYS_BLOCK_IDS = {
+    'SysInfo': 2,
+    'OneWireBus': 4,  # Deprecated
+    'WiFiSettings': 5,  # Spark 2 and 3 only
+    'DisplaySettings': 7,
+    'SparkPins': 19,  # Spark 2 and 3 only
+}
