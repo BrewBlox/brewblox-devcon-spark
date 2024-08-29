@@ -92,7 +92,7 @@ async def test_sync_errors(mocker: MockerFixture):
 async def test_write_error(mocker: MockerFixture):
     m_patch_block = mocker.patch.object(command.CV.get(), 'patch_block', autospec=True)
     m_patch_block.return_value = FirmwareBlock(
-        nid=const.SYSINFO_NID,
+        nid=const.SYS_BLOCK_IDS['SysInfo'],
         type='ErrorObject',
         data={'error': 'something went wrong'}
     )

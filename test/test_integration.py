@@ -606,6 +606,18 @@ async def test_backup_load(client: AsyncClient, spark_blocks: list[Block]):
         data={}
     ))
 
+    backup.blocks.append(Block(
+        id='sensor-onewire-old',
+        nid=500,
+        type='TempSensorOneWire',
+        data={
+            'value[celsius]': 20.89789201,
+             'offset[delta_degC]': 9,
+            'address': 'DEADBEEF',
+            'oneWireBusId<>': 'OneWireBus',
+        },
+    ))
+
     resp = await client.post('/blocks/backup/load', json=backup.model_dump())
     resp = resp.json()['messages']
     assert len(resp) == 3

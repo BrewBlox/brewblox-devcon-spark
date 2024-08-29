@@ -31,7 +31,7 @@ def default_blocks() -> dict[int, FirmwareBlock]:
         for block in [
             FirmwareBlock(
                 id='SystemInfo',
-                nid=const.SYSINFO_NID,
+                nid=const.SYS_BLOCK_IDS['SysInfo'],
                 type='SysInfo',
                 data={
                     'deviceId': 'FACADE',
@@ -41,19 +41,19 @@ def default_blocks() -> dict[int, FirmwareBlock]:
             ),
             FirmwareBlock(
                 id='WiFiSettings',
-                nid=const.WIFI_SETTINGS_NID,
+                nid=const.SYS_BLOCK_IDS['WiFiSettings'],
                 type='WiFiSettings',
                 data={},
             ),
             FirmwareBlock(
                 id='DisplaySettings',
-                nid=const.DISPLAY_SETTINGS_NID,
+                nid=const.SYS_BLOCK_IDS['DisplaySettings'],
                 type='DisplaySettings',
                 data={},
             ),
             FirmwareBlock(
                 id='SparkPins',
-                nid=const.SPARK_PINS_NID,
+                nid=const.SYS_BLOCK_IDS['SparkPins'],
                 type='Spark3Pins',
                 data={
                     'channels': [
@@ -121,7 +121,7 @@ class MockConnection(ConnectionImplBase):
 
     def update_systime(self):
         elapsed = datetime.now() - self._start_time
-        sysinfo_block = self._blocks[const.SYSINFO_NID]
+        sysinfo_block = self._blocks[const.SYS_BLOCK_IDS['SysInfo']]
         sysinfo_block.data['uptime'] = elapsed.total_seconds() * 1000
         sysinfo_block.data['systemTime'] = self._start_time.timestamp() + elapsed.total_seconds()
 
@@ -226,7 +226,7 @@ class MockConnection(ConnectionImplBase):
 
         elif request.opcode == Opcode.BLOCK_DISCOVER:
             # Always return spark pins when discovering blocks
-            block = self._blocks[const.SPARK_PINS_NID]
+            block = self._blocks[const.SYS_BLOCK_IDS['SparkPins']]
             response.payload = [self._to_payload(block, request.mode)]
 
         elif request.opcode == Opcode.NAME_WRITE:
@@ -257,7 +257,7 @@ class MockConnection(ConnectionImplBase):
             self.update_systime()
 
         elif request.opcode == Opcode.CLEAR_WIFI:
-            self._blocks[const.WIFI_SETTINGS_NID].data.clear()
+            self._blocks[const.SYS_BLOCK_IDS['WiFiSettings']].data.clear()
 
         elif request.opcode == Opcode.FACTORY_RESET:
             self._blocks = default_blocks()
