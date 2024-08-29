@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager, suppress
 from datetime import timedelta
 from functools import lru_cache
 from ipaddress import ip_address
-from typing import Awaitable, Callable, Coroutine, Generator, TypeVar
+from typing import AsyncGenerator, Awaitable, Callable, Coroutine, TypeVar
 
 from dns.exception import DNSException
 from dns.resolver import Resolver as DNSResolver
@@ -152,7 +152,7 @@ def get_free_port() -> int:
 @asynccontextmanager
 async def task_context(coro: Coroutine,
                        cancel_timeout=timedelta(seconds=5)
-                       ) -> Generator[asyncio.Task, None, None]:
+                       ) -> AsyncGenerator[asyncio.Task, None]:
     """
     Wraps provided coroutine in an async task.
     At the end of the context, the task is cancelled and awaited.
@@ -162,7 +162,9 @@ async def task_context(coro: Coroutine,
         yield task
     finally:
         task.cancel()
-        await asyncio.wait([task], timeout=cancel_timeout.total_seconds())
+        _, pending = await asyncio.wait([task], timeout=cancel_timeout.total_seconds())
+        if pending:  # pragma: no cover
+            LOGGER.error(f'Cancelled tasks pending: {pending}')
 
 
 def not_sentinel(value: VT, default_value: DVT) -> VT | DVT:

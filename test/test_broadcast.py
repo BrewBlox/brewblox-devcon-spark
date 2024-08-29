@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
 
 
 @pytest.fixture
-def app() -> FastAPI():
+def app() -> FastAPI:
     config = utils.get_config()
     config.mock = True
     config.broadcast_interval = timedelta(milliseconds=1)
@@ -70,8 +70,7 @@ async def test_broadcast_unsync(s_publish: Mock):
     assert s_publish.call_count == 1
 
 
-async def test_broadcast(s_publish: Mock):
-    config = utils.get_config()
+async def test_broadcast_recovery(s_publish: Mock):
     b = broadcast.Broadcaster()
     await b.run()
 
@@ -82,9 +81,14 @@ async def test_broadcast(s_publish: Mock):
     s_publish.reset_mock()
 
     async with broadcast.lifespan():
-        mock_connection.NEXT_ERROR.append(ErrorCode.UNKNOWN_ERROR)
+        mock_connection.NEXT_ERROR += [ErrorCode.UNKNOWN_ERROR]*100
         await asyncio.sleep(0.2)
         assert s_publish.call_count > 1
+
+
+async def test_broadcast_early_exit(s_publish: Mock):
+    config = utils.get_config()
+    b = broadcast.Broadcaster()
 
     # Early exit if interval <= 0
     s_publish.reset_mock()

@@ -35,14 +35,44 @@ class MqttConnection(ConnectionImplBase):
         self._handshake_topic = HANDSHAKE_TOPIC + device_id
         self._log_topic = LOG_TOPIC + device_id
 
-    async def _handshake_cb(self, client, topic, payload, qos, properties):
+        self._recv_msg_id: int = 0
+        self._recv_chunks: list[str]
+
+    def _reset_recv_buffer(self, msg_id: int):
+        self._recv_msg_id = msg_id
+        self._recv_chunks = []
+
+    async def _handshake_cb(self, client, topic, payload: bytes, qos, properties):
         if not payload:
             self.disconnected.set()
 
-    async def _resp_cb(self, client, topic, payload, qos, properties):
-        await self.on_response(payload.decode())
+    async def _resp_cb(self, client, topic, payload: bytes, qos, properties):
+        try:
+            (msg_id, chunk_idx, chunk) = payload.decode().split(';')
+            msg_id = int(msg_id)
+            chunk_idx = int(chunk_idx)
+        except ValueError as ex:
+            LOGGER.error(f'Failed to parse MQTT payload "{payload}" with error {utils.strex(ex)}')
+            self._reset_recv_buffer(0)
+            return
 
-    async def _log_cb(self, client, topic, payload, qos, properties):
+        if msg_id != self._recv_msg_id:
+            self._reset_recv_buffer(msg_id)
+
+        if len(self._recv_chunks) != chunk_idx:
+            LOGGER.error(f'Received unexpected MQTT message chunk with idx {chunk_idx}')
+            self._reset_recv_buffer(0)
+            return
+
+        self._recv_chunks.append(chunk)
+
+        # we found a message separator - message is done
+        if '\n' in chunk:
+            msg = ''.join(self._recv_chunks).rstrip()
+            self._reset_recv_buffer(0)
+            await self.on_response(msg)
+
+    async def _log_cb(self, client, topic, payload: bytes, qos, properties):
         await self.on_event(payload.decode())
 
     async def send_request(self, msg: str):

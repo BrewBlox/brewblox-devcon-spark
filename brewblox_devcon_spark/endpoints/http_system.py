@@ -4,14 +4,16 @@ REST endpoints for system level blocks and commands
 
 import asyncio
 import logging
+from datetime import timedelta
 
 from fastapi import APIRouter, BackgroundTasks
 from httpx import AsyncClient
 
-from .. import (command, exceptions, mqtt, spark_api, state_machine, utils,
-                ymodem)
+from .. import (command, const, exceptions, mdns, mqtt, spark_api,
+                state_machine, utils, ymodem)
 from ..models import (FirmwareFlashResponse, PingResponse, ServiceUpdateEvent,
-                      ServiceUpdateEventData, StatusDescription)
+                      ServiceUpdateEventData, StatusDescription,
+                      UsbProxyResponse)
 
 ESP_URL_FMT = 'http://brewblox.blob.core.windows.net/firmware/{date}-{version}/brewblox-esp32.bin'
 
@@ -45,6 +47,38 @@ async def system_ping_post() -> PingResponse:
     """
     await spark_api.CV.get().noop()
     return PingResponse()
+
+
+@router.post('/usb')
+async def system_usb() -> UsbProxyResponse:
+    """
+    List available USB devices.
+    """
+    try:
+        config = utils.get_config()
+        client = AsyncClient()
+        proxy_host = config.usb_proxy_host
+        proxy_port = config.usb_proxy_port
+        resp = await client.get(f'http://{proxy_host}:{proxy_port}/{proxy_host}/discover/_')
+        index: dict[str, int] = resp.json()
+        return UsbProxyResponse(enabled=True,
+                                devices=list(index.keys()))
+
+    except Exception as ex:
+        LOGGER.debug(f'Failed to query USB proxy: {utils.strex(ex)}')
+        return UsbProxyResponse(enabled=False,
+                                devices=[])
+
+
+@router.post('/mdns')
+async def system_mdns() -> list[str]:  # pragma: no cover
+    """
+    List available mDNS devices.
+    """
+    retv = []
+    async for res in mdns.discover_all(None, const.BREWBLOX_DNS_TYPE, timedelta(seconds=1)):
+        retv.append(res.id)
+    return retv
 
 
 @router.post('/reboot/controller')

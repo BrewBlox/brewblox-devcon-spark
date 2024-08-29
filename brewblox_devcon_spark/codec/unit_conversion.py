@@ -26,6 +26,7 @@ FORMATS = {
     'DeltaCelsiusMultMinute': 'delta_{temp} * minute',
     'DeltaCelsiusMultHour': 'delta_{temp} * hour',
     'MilliBar': 'millibar',
+    'Ohm': 'ohm',
     'Volt': 'volt',
 }
 

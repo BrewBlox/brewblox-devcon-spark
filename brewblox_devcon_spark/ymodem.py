@@ -9,7 +9,7 @@ After a firmware update command, controlbox will hand over the serial to the OTA
 
 OTA procedure:
 - Send controlbox firmware update command (not handled here).
-- Connect to serial/TCP. Both are handled the same.
+- Connect to TCP.
 - Write newline characters until the controller responds with a handshake.
     - Handshakes are formatted as controlbox events.
     - The firmware update handshake is different from the generic controlbox handshake.
@@ -55,11 +55,6 @@ from typing import Awaitable, ByteString
 
 import aiofiles
 
-from . import utils
-
-YMODEM_TRIGGER_BAUD_RATE = 28800
-YMODEM_TRANSFER_BAUD_RATE = 115200
-USB_CONNECT_INTERVAL = timedelta(seconds=1)
 TCP_CONNECT_INTERVAL = timedelta(seconds=3)
 NAK_RETRY_DELAY = timedelta(milliseconds=100)
 CONNECT_ATTEMPTS = 5
@@ -132,10 +127,6 @@ class FileSenderProtocol(asyncio.Protocol):
             self._queue.get_nowait()
 
 
-def is_tcp(address: str) -> str:
-    return ':' in address
-
-
 async def connect_tcp(address: str, proc: subprocess.Popen = None) -> Connection:
     LOGGER.info(f'Connecting to {address}...')
     host, port = address.split(':')
@@ -146,37 +137,11 @@ async def connect_tcp(address: str, proc: subprocess.Popen = None) -> Connection
     return conn
 
 
-async def connect_usb(address: str) -> Connection:
-    LOGGER.info(f'Creating bridge for {address}')
-
-    proc = subprocess.Popen([
-        '/usr/bin/socat',
-        'tcp-listen:8332,reuseaddr,fork',
-        f'file:{address},raw,echo=0,b{YMODEM_TRANSFER_BAUD_RATE}'
-    ])
-
-    last_err = None
-    for _ in range(5):
-        try:
-            await asyncio.sleep(USB_CONNECT_INTERVAL.total_seconds())
-            return await connect_tcp('localhost:8332', proc)
-        except OSError as ex:
-            last_err = utils.strex(ex)
-            LOGGER.debug(f'Subprocess connection error: {last_err}')
-
-    raise ConnectionError(last_err)
-
-
 async def connect(address: str) -> Connection:
-    if is_tcp(address):
-        connect_func = connect_tcp
-    else:
-        connect_func = connect_usb
-
     for _ in range(CONNECT_ATTEMPTS):
         try:
             await asyncio.sleep(TCP_CONNECT_INTERVAL.total_seconds())
-            return await connect_func(address)
+            return await connect_tcp(address)
         except ConnectionRefusedError:
             LOGGER.debug('Connection refused, retrying...')
     raise ConnectionRefusedError()

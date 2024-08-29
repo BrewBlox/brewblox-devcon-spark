@@ -8,26 +8,20 @@ import logging
 import os
 import platform
 import signal
+import sys
 from asyncio.subprocess import Process
 from contextlib import suppress
 from functools import partial
 from pathlib import Path
 
-from serial.tools import list_ports
+from httpx import AsyncClient
 
-from .. import exceptions, mdns, utils
+from .. import const, exceptions, mdns, utils
 from .cbox_parser import CboxParser
 from .connection_impl import (ConnectionCallbacks, ConnectionImplBase,
                               ConnectionKind_)
 
-BREWBLOX_DNS_TYPE = '_brewblox._tcp.local.'
 USB_BAUD_RATE = 115200
-
-SIM_BINARIES = {
-    'x86_64': 'brewblox-amd64.sim',
-    'armv7l': 'brewblox-arm32.sim',
-    'aarch64': 'brewblox-arm64.sim'
-}
 
 SPARK_HWIDS = [
     r'USB VID\:PID=2B04\:C006.*',  # Photon
@@ -144,17 +138,29 @@ async def connect_subprocess(callbacks: ConnectionCallbacks,
 
 async def connect_simulation(callbacks: ConnectionCallbacks) -> ConnectionImplBase:  # pragma: no cover
     config = utils.get_config()
-    arch = platform.machine()
-    binary = SIM_BINARIES.get(arch)
+    is_64_bit = sys.maxsize > 2**32  # https://docs.python.org/3/library/platform.html#platform.architecture
+    machine = platform.machine()
+    binary = None
+
+    match (machine, is_64_bit):
+        case ('x86_64', True):
+            binary = 'brewblox-amd64.sim'
+        case ('aarch64', True):
+            binary = 'brewblox-arm64.sim'
+        # The Pi >=4 always reports aarch64, regardless of OS type
+        # To select the correct binary, we need to check userland 32/64 bit
+        case (('armhf' | 'aarch64'), False):
+            binary = 'brewblox-arm32.sim'
 
     if not binary:
         raise exceptions.ConnectionImpossible(
-            f'No simulator available for architecture {arch}')
+            f'No simulator available for {machine=}, {is_64_bit=}')
 
     binary_path = Path(f'firmware/{binary}').resolve()
     workdir = config.simulation_workdir.resolve()
     workdir.mkdir(mode=0o777, exist_ok=True)
 
+    LOGGER.debug(f'Starting `{binary_path}` ...')
     proc = await asyncio.create_subprocess_exec(binary_path,
                                                 '--device_id', config.device_id,
                                                 '--port', str(config.simulation_port),
@@ -165,25 +171,11 @@ async def connect_simulation(callbacks: ConnectionCallbacks) -> ConnectionImplBa
     return await connect_subprocess(callbacks, config.simulation_port, proc, 'SIM', binary)
 
 
-async def connect_usb(callbacks: ConnectionCallbacks,
-                      device_serial: str | None = None,
-                      ) -> ConnectionImplBase:  # pragma: no cover
-    config = utils.get_config()
-    device_serial = device_serial or config.device_serial
-    proc = await asyncio.create_subprocess_exec('/usr/bin/socat',
-                                                f'tcp-listen:{config.device_port},reuseaddr,fork',
-                                                f'file:{device_serial},raw,echo=0,b{USB_BAUD_RATE}',
-                                                preexec_fn=os.setsid,
-                                                shell=False)
-
-    return await connect_subprocess(callbacks, config.device_port, proc, 'USB', device_serial)
-
-
 async def discover_mdns(callbacks: ConnectionCallbacks) -> ConnectionImplBase | None:
     config = utils.get_config()
     try:
         resp = await mdns.discover_one(config.device_id,
-                                       BREWBLOX_DNS_TYPE,
+                                       const.BREWBLOX_DNS_TYPE,
                                        config.discovery_timeout_mdns)
         return await connect_tcp(callbacks, resp.address, resp.port)
     except asyncio.TimeoutError:
@@ -191,11 +183,31 @@ async def discover_mdns(callbacks: ConnectionCallbacks) -> ConnectionImplBase | 
 
 
 async def discover_usb(callbacks: ConnectionCallbacks) -> ConnectionImplBase | None:  # pragma: no cover
+    """
+    USB connections are handled through a proxy.
+    We query the proxy whether it has detected a device with
+    """
     config = utils.get_config()
-    for usb_port in list_ports.grep(SPARK_DEVICE_REGEX):
-        if config.device_id is None or config.device_id.lower() == usb_port.serial_number.lower():
-            LOGGER.info(f'Discovered {[v for v in usb_port]}')
-            return await connect_usb(callbacks, usb_port.device)
+    try:
+        client = AsyncClient()
+        proxy_host = config.usb_proxy_host
+        proxy_port = config.usb_proxy_port
+        desired_id = config.device_id or 'all'
+        resp = await client.get(f'http://{proxy_host}:{proxy_port}/{proxy_host}/discover/{desired_id}')
+        index: dict[str, int] = resp.json()
+        LOGGER.debug(f'Detected USB devices: {index}')
+
+        if config.device_id:
+            device_port = index.get(config.device_id)
         else:
-            LOGGER.info(f'Discarding {[v for v in usb_port]}')
+            device_port = next(iter(index.values()), None)
+
+        if device_port:
+            factory = partial(StreamConnection, 'USB', f'{proxy_host}:{device_port}', callbacks)
+            _, protocol = await asyncio.get_event_loop().create_connection(factory, proxy_host, device_port)
+            return protocol
+
+    except Exception as ex:
+        LOGGER.debug(f'Failed to query USB proxy: {utils.strex(ex)}')
+
     return None

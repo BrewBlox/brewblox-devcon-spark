@@ -1,7 +1,6 @@
 import asyncio
 from contextlib import asynccontextmanager
 from datetime import timedelta
-from unittest.mock import AsyncMock
 
 import pytest
 from asgi_lifespan import LifespanManager
@@ -64,14 +63,8 @@ def app() -> FastAPI:
     return FastAPI(lifespan=lifespan)
 
 
-@pytest.fixture
-def m_load_blocks(app: FastAPI, mocker: MockerFixture):
-    m = mocker.patch.object(datastore_blocks.CV.get(), 'load', autospec=True)
-    return m
-
-
 @pytest.fixture(autouse=True)
-async def manager(manager: LifespanManager, m_load_blocks: AsyncMock):
+async def manager(manager: LifespanManager):
     yield manager
 
 
@@ -86,8 +79,9 @@ async def test_sync_status(m_sleep):
     assert states() == [False, True, True, True]
 
 
-async def test_sync_errors(m_load_blocks: AsyncMock):
-    m_load_blocks.side_effect = RuntimeError
+async def test_sync_errors(mocker: MockerFixture):
+    m_read_names = mocker.patch.object(command.CV.get(), 'read_all_block_names', autospec=True)
+    m_read_names.side_effect = RuntimeError
 
     with pytest.raises(RuntimeError):
         await connect()

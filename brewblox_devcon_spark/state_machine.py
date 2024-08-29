@@ -10,7 +10,7 @@ from typing import Literal
 
 from . import exceptions, utils
 from .models import (ConnectionKind_, ControllerDescription, DeviceDescription,
-                     FirmwareDescription, ServiceDescription,
+                     DiscoveryKind_, FirmwareDescription, ServiceDescription,
                      StatusDescription)
 
 LOGGER = logging.getLogger(__name__)
@@ -36,11 +36,18 @@ class StateMachine:
             ),
         )
 
+        discovery_kind: DiscoveryKind_ = str(config.discovery).upper()
+        if config.simulation or config.mock:
+            discovery_kind = 'SIM'
+        elif config.device_host:  # pragma: no cover
+            discovery_kind = 'ADDRESS'
+
         self._status_desc = StatusDescription(
             enabled=False,
             service=service_desc,
             controller=None,
             address=None,
+            discovery_kind=discovery_kind,
             connection_kind=None,
             connection_status='DISCONNECTED',
             firmware_error=None,

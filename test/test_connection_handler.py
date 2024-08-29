@@ -56,47 +56,6 @@ async def test_calc_interval(value: timedelta | None, expected: timedelta):
     assert connection_handler.calc_interval(value) == expected
 
 
-async def test_usb_compatible():
-    config = utils.get_config()
-    handler = connection_handler.ConnectionHandler()
-
-    # Set all relevant settings to default
-    def reset():
-        config.discovery = DiscoveryType.all
-        config.device_serial = None
-        config.device_host = None
-        config.device_id = None
-        config.simulation = False
-        config.mock = False
-        config.discovery_timeout = timedelta(seconds=10)
-
-    # The default is to enable USB
-    reset()
-    assert handler.usb_compatible
-
-    reset()
-    config.mock = True
-    assert not handler.usb_compatible
-
-    reset()
-    config.device_host = 'localhost'
-    assert not handler.usb_compatible
-
-    reset()
-    config.discovery = DiscoveryType.lan
-    assert not handler.usb_compatible
-
-    reset()
-    config.discovery = DiscoveryType.usb
-    assert handler.usb_compatible
-
-    # Positive identification of Spark 4 ID
-    reset()
-    config.discovery = DiscoveryType.all
-    config.device_id = 'x'*12
-    assert not handler.usb_compatible
-
-
 async def test_handler_discovery(mocker: MockerFixture):
     config = utils.get_config()
     m_discover_usb: AsyncMock = mocker.patch(TESTED + '.discover_usb', autospec=True)
@@ -178,7 +137,6 @@ async def test_handler_connect_order(mocker: MockerFixture):
         for k in [
             'connect_mock',
             'connect_simulation',
-            'connect_usb',
             'connect_tcp',
             'discover_usb',
             'discover_mdns',
@@ -196,10 +154,9 @@ async def test_handler_connect_order(mocker: MockerFixture):
     handler = connection_handler.ConnectionHandler()
 
     # Lowest prio: discovery
-    # Discovery order is serial -> TCP -> MQTT
+    # Discovery order is USB -> TCP -> MQTT
     config.mock = False
     config.simulation = False
-    config.device_serial = None
     config.device_host = None
     config.discovery = DiscoveryType.all
     config.device_id = '01ab23ce'
@@ -220,17 +177,6 @@ async def test_handler_connect_order(mocker: MockerFixture):
 
     m_funcs['connect_tcp'].assert_awaited_once_with(handler, 'hostface', 1234)
     for f in without('connect_tcp'):
-        f.assert_not_awaited()
-
-    reset()
-
-    # If serial is set, it takes precedence over TCP
-    config.device_serial = 'serialface'
-
-    await handler.connect()
-
-    m_funcs['connect_usb'].assert_awaited_once_with(handler, 'serialface')
-    for f in without('connect_usb'):
         f.assert_not_awaited()
 
     reset()
@@ -314,16 +260,8 @@ async def test_handler_connect_error(mocker: MockerFixture, m_kill: Mock):
 
     config.mock = True
     state.set_enabled(True)
-
-    # Retry until attempts exhausted
-    # This is a mock - it will not attempt to restart the service
-    for _ in range(connection_handler.MAX_RETRY_COUNT * 2):
-        await handler.run()
-
+    await handler.run()
     m_kill.assert_not_called()
-
-    # It immediately threw a connection abort once the retry count was exceeded
-    assert m_connect_mock.await_count == connection_handler.MAX_RETRY_COUNT * 2 - 1
 
 
 async def test_handler_discovery_error(mocker: MockerFixture, m_kill: Mock):
@@ -333,7 +271,6 @@ async def test_handler_discovery_error(mocker: MockerFixture, m_kill: Mock):
     config = utils.get_config()
     config.mock = False
     config.simulation = False
-    config.device_serial = None
     config.device_host = None
     config.discovery = DiscoveryType.usb
     config.discovery_interval = timedelta()
@@ -344,14 +281,11 @@ async def test_handler_discovery_error(mocker: MockerFixture, m_kill: Mock):
     state.set_enabled(True)
 
     handler = connection_handler.ConnectionHandler()
-    m_kill.side_effect = RuntimeError
-    with pytest.raises(RuntimeError):
-        await handler.run()
+    await handler.run()
+    await handler.run()
 
-    # No reboot is required when discovery does not involve USB
     m_discover_mqtt = mocker.patch(TESTED + '.discover_mqtt', autospec=True)
-    m_discover_mqtt.return_value = None
+    m_discover_mqtt.side_effect = RuntimeError('boo')
     config.discovery = DiscoveryType.mqtt
-
-    # No error, only a silent exit
+    await handler.run()
     await handler.run()
