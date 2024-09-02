@@ -70,7 +70,6 @@ __all__ = [
     'Mutex_pb2',
     'Pid_pb2',
     'ProbeConnector_pb2',
-    'PrecisionAnalogModule_pb2',
     'Screen_pb2',
     'Sequence_pb2',
     'SetpointProfile_pb2',
