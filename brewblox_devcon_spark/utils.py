@@ -162,7 +162,9 @@ async def task_context(coro: Coroutine,
         yield task
     finally:
         task.cancel()
-        await asyncio.wait([task], timeout=cancel_timeout.total_seconds())
+        _, pending = await asyncio.wait([task], timeout=cancel_timeout.total_seconds())
+        if pending:  # pragma: no cover
+            LOGGER.error(f'Cancelled tasks pending: {pending}')
 
 
 def not_sentinel(value: VT, default_value: DVT) -> VT | DVT:

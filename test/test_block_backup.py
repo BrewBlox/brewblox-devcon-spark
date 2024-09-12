@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
 
 
 @pytest.fixture
-def app() -> FastAPI():
+def app() -> FastAPI:
     config = utils.get_config()
     config.backup_interval = timedelta(milliseconds=1)
     config.backup_retry_interval = timedelta(milliseconds=1)

@@ -5,7 +5,7 @@ Protobuf messages coupled to their respective type identities
 
 from contextvars import ContextVar
 from dataclasses import dataclass
-from typing import Generator, Optional, Type
+from typing import Generator, Type
 
 from google.protobuf.descriptor import Descriptor, FileDescriptor
 from google.protobuf.internal.enum_type_wrapper import EnumTypeWrapper
@@ -35,8 +35,6 @@ class InterfaceLookup:
 class ObjectLookup:
     type_str: str
     type_int: int
-    subtype_str: Optional[str]
-    subtype_int: Optional[int]
     message_cls: Type[Message]
 
 
@@ -61,8 +59,6 @@ def _object_lookup_generator() -> Generator[ObjectLookup, None, None]:
                 yield ObjectLookup(
                     type_str=BlockType.Name(opts.objtype),
                     type_int=opts.objtype,
-                    subtype_str=(msg_name if opts.subtype else None),
-                    subtype_int=opts.subtype,
                     message_cls=msg_cls,
                 )
 
@@ -76,16 +72,7 @@ def setup():
         ObjectLookup(
             type_str='EdgeCase',
             type_int=9001,
-            subtype_str=None,
-            subtype_int=0,
             message_cls=pb2.EdgeCase_pb2.Block,
-        ),
-        ObjectLookup(
-            type_str='EdgeCase',
-            type_int=9001,
-            subtype_str='SubCase',
-            subtype_int=1,
-            message_cls=pb2.EdgeCase_pb2.SubCase,
         ),
     ]
 

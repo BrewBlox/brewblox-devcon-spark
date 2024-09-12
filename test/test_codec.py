@@ -4,10 +4,9 @@ import pytest
 from fastapi import FastAPI
 
 from brewblox_devcon_spark import codec, connection, exceptions
-from brewblox_devcon_spark.codec import (Codec, DecodeOpts, MetadataOpt,
-                                         ProtoEnumOpt)
+from brewblox_devcon_spark.codec import Codec
 from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
-                                          MaskField, MaskMode)
+                                          MaskField, MaskMode, ReadMode)
 
 TEMP_SENSOR_TYPE_INT = 302
 
@@ -26,22 +25,12 @@ def app() -> FastAPI:
     return FastAPI()
 
 
-async def test_type_conversion():
-    for (joined, split) in [
-        ['Pid', ('Pid', None)],
-        ['Pid.subtype', ('Pid', 'subtype')],
-        ['Pid.subtype.subsubtype', ('Pid', 'subtype.subsubtype')]
-    ]:
-        assert codec.split_type(joined) == split
-        assert codec.join_type(*split) == joined
-
-
 async def test_encode_system_objects():
     cdc = codec.CV.get()
 
     types = [
         'SysInfo',
-        'OneWireBus',
+        'DisplaySettings',
     ]
 
     encoded = [
@@ -68,6 +57,15 @@ async def test_encode_errors():
         cdc.encode_payload(DecodedPayload(
             blockId=1,
             blockType='MAGIC'
+        ))
+
+    # TouchSettings only exist as deprecated BlockType name,
+    # and no longer has an associated message
+    with pytest.raises(exceptions.EncodeException):
+        cdc.encode_payload(DecodedPayload(
+            blockId=1,
+            blockType='TouchSettings',
+            content={},
         ))
 
     with pytest.raises(exceptions.EncodeException):
@@ -107,15 +105,15 @@ async def test_deprecated_object():
 
     payload = cdc.encode_payload(DecodedPayload(
         blockId=1,
-        blockType='DeprecatedObject',
-        content={'actualId': 100},
+        blockType='Deprecated',
+        content={'bytes': 'ZAA='},
     ))
     assert payload.blockType == 65533
     assert payload.content == 'ZAA='
 
     payload = cdc.decode_payload(payload)
-    assert payload.blockType == 'DeprecatedObject'
-    assert payload.content == {'actualId': 100}
+    assert payload.blockType == 'Deprecated'
+    assert payload.content == {'bytes': 'ZAA='}
 
 
 async def test_encode_constraint():
@@ -149,7 +147,7 @@ async def test_encode_delta_sec():
         blockType='EdgeCase',
         content={'deltaV': 100}
     ))
-    payload = cdc.decode_payload(payload, opts=DecodeOpts(metadata=MetadataOpt.POSTFIX))
+    payload = cdc.decode_payload(payload, mode=ReadMode.LOGGED, filter_values=False)
     assert payload.content['deltaV[delta_degC / second]'] == pytest.approx(100, 0.1)
 
 
@@ -159,15 +157,12 @@ async def test_encode_submessage():
     payload = cdc.encode_payload(DecodedPayload(
         blockId=1,
         blockType='EdgeCase',
-        subtype='SubCase',
         content={}
     ))
     assert payload.blockType == 9001
-    assert payload.subtype == 1
 
     payload = cdc.decode_payload(payload)
     assert payload.blockType == 'EdgeCase'
-    assert payload.subtype == 'SubCase'
 
     # Interface encoding
     payload = cdc.encode_payload(DecodedPayload(
@@ -199,7 +194,7 @@ async def test_transcode_interfaces():
 
 async def test_exclusive_mask():
     cdc = codec.CV.get()
-    rw_cdc = Codec(strip_readonly=False)
+    rw_cdc = Codec(filter_values=False)
 
     enc_payload = rw_cdc.encode_payload(DecodedPayload(
         blockId=1,
@@ -219,7 +214,9 @@ async def test_exclusive_mask():
     assert payload.maskMode == MaskMode.EXCLUSIVE
     assert payload.maskFields == [MaskField(address=[6])]
 
-    payload = cdc.decode_payload(enc_payload, opts=DecodeOpts(metadata=MetadataOpt.POSTFIX))
+    payload = cdc.decode_payload(enc_payload,
+                                 mode=ReadMode.LOGGED,
+                                 filter_values=False)
     assert payload.content['deltaV[delta_degC / second]'] is None
 
 
@@ -236,7 +233,9 @@ async def test_postfixed_decoding():
             }
         },
     ))
-    payload = cdc.decode_payload(payload, opts=DecodeOpts(metadata=MetadataOpt.POSTFIX))
+    payload = cdc.decode_payload(payload,
+                                 mode=ReadMode.LOGGED,
+                                 filter_values=False)
     assert payload.content['link<ActuatorAnalogInterface>'] == 10
     assert payload.content['state']['value[degC]'] == pytest.approx(10, 0.01)
 
@@ -311,7 +310,7 @@ async def test_enum_decoding():
     payload = cdc.decode_payload(encoded_payload)
     assert payload.content['storedState'] == 'STATE_ACTIVE'
 
-    payload = cdc.decode_payload(encoded_payload, opts=DecodeOpts(enums=ProtoEnumOpt.INT))
+    payload = cdc.decode_payload(encoded_payload, mode=ReadMode.STORED)
     assert payload.content['storedState'] == 1
 
 

@@ -9,10 +9,8 @@ from ..models import DiscoveryType
 from .connection_impl import ConnectionCallbacks, ConnectionImplBase
 from .mock_connection import connect_mock
 from .mqtt_connection import discover_mqtt
-from .stream_connection import (connect_simulation, connect_tcp, connect_usb,
-                                discover_mdns, discover_usb)
-
-MAX_RETRY_COUNT = 20
+from .stream_connection import (connect_simulation, connect_tcp, discover_mdns,
+                                discover_usb)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -34,43 +32,14 @@ class ConnectionHandler(ConnectionCallbacks):
         self.state = state_machine.CV.get()
 
         self._enabled: bool = True
+        self._last_ok: bool = True
         self._interval: timedelta = calc_interval(None)
-        self._attempts: int = 0
         self._impl: ConnectionImplBase = None
 
     @property
     def connected(self) -> bool:
         return self._impl is not None \
             and self._impl.connected.is_set()
-
-    @property
-    def usb_compatible(self) -> bool:
-        # Simulations (internal or external) do not use USB
-        if self.config.mock or self.config.simulation:
-            return False
-
-        # Hardcoded addresses take precedence over device discovery
-        if self.config.device_serial or self.config.device_host:
-            return self.config.device_serial is not None
-
-        # USB is explicitly enabled
-        if self.config.discovery == DiscoveryType.usb:
-            return True
-
-        # TCP is explicitly enabled
-        if self.config.discovery != DiscoveryType.all:
-            return False
-
-        # Spark models can be identified by device ID
-        # Spark 2/3 use 12 bytes / 24 characters
-        # Spark 4 uses 6 bytes / 12 characters
-        # Spark simulations can have variable length IDs
-        # USB should only be disabled if we're sure it is not supported
-        if self.config.device_id and len(self.config.device_id) == 12:
-            return False
-
-        # We're not sure
-        return True
 
     async def on_event(self, msg: str):
         """
@@ -114,7 +83,6 @@ class ConnectionHandler(ConnectionCallbacks):
     async def connect(self) -> ConnectionImplBase:
         mock = self.config.mock
         simulation = self.config.simulation
-        device_serial = self.config.device_serial
         device_host = self.config.device_host
         device_port = self.config.device_port
 
@@ -122,8 +90,6 @@ class ConnectionHandler(ConnectionCallbacks):
             return await connect_mock(self)
         elif simulation:
             return await connect_simulation(self)
-        elif device_serial:
-            return await connect_usb(self, device_serial)
         elif device_host:
             return await connect_tcp(self, device_host, device_port)
         else:
@@ -131,9 +97,6 @@ class ConnectionHandler(ConnectionCallbacks):
 
     async def run(self):
         try:
-            if self._attempts > MAX_RETRY_COUNT:
-                raise ConnectionAbortedError('Retry attempts exhausted')
-
             await self.state.wait_enabled()
             self._impl = await self.connect()
             await self._impl.connected.wait()
@@ -141,7 +104,7 @@ class ConnectionHandler(ConnectionCallbacks):
             self.state.set_connected(self._impl.kind,
                                      self._impl.address)
 
-            self._attempts = 0
+            self._last_ok = True
             self._interval = calc_interval(None)
 
             await self._impl.disconnected.wait()
@@ -151,17 +114,10 @@ class ConnectionHandler(ConnectionCallbacks):
             LOGGER.error(utils.strex(ex))
             self._interval = calc_interval(self._interval)
 
-            # USB devices that were plugged in after container start are not visible
-            # If we are potentially connecting to a USB device, we need to restart
-            if self.usb_compatible:
-                utils.graceful_shutdown(utils.strex(ex))
-            else:
-                self._attempts = 0
-
         except Exception as ex:
-            self._attempts += 1
-            if self._attempts == 1:
+            if self._last_ok:
                 LOGGER.error(utils.strex(ex))
+                self._last_ok = False
             else:
                 LOGGER.debug(utils.strex(ex), exc_info=True)
 
