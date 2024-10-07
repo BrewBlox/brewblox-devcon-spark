@@ -513,11 +513,14 @@ async def test_settings_api(client: AsyncClient, block_args: Block):
     resp = await client.post('/blocks/create', json=block_args.model_dump())
     assert resp.status_code == 201
 
+    state = state_machine.CV.get()
     resp = await client.get('/settings/enabled')
     assert resp.json() == {'enabled': True}
+    assert state.is_enabled()
 
     resp = await client.put('/settings/enabled', json={'enabled': False})
     assert resp.json() == {'enabled': False}
+    assert not state.is_enabled()
 
     resp = await client.get('/settings/enabled')
     assert resp.json() == {'enabled': False}
