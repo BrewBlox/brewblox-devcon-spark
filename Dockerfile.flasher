@@ -12,7 +12,7 @@ RUN <<EOF bash
         ca-certificates \
         curl \
         libatomic1 \
-        usbutils \
+        usbutils
 
     pip3 install \
         cffi==1.17.0 \
