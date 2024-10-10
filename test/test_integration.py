@@ -1,6 +1,7 @@
 import asyncio
 from contextlib import AsyncExitStack, asynccontextmanager
 from unittest.mock import ANY, Mock
+from datetime import timedelta
 
 import pytest
 from fastapi import FastAPI
@@ -77,6 +78,7 @@ def app() -> FastAPI:
     config = utils.get_config()
     config.mock = False
     config.simulation = True
+    config.command_timeout = timedelta(seconds=1)
 
     mqtt.setup()
     state_machine.setup()
