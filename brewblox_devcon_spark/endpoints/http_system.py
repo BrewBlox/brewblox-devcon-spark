@@ -105,7 +105,10 @@ async def system_clear_wifi():
     Clear Wifi settings on the controller.
     The controller may reboot or lose connection.
     """
-    await spark_api.CV.get().clear_wifi()
+    try:
+        await spark_api.CV.get().clear_wifi()
+    except exceptions.CommandTimeout:
+        pass
     return {}
 
 
