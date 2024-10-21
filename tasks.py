@@ -51,7 +51,7 @@ def download_firmware(ctx: Context):
 
     with ctx.cd(ROOT):
         # Clear firmware dir
-        ctx.run(f'mkdir -p {fw_dir}')
+        ctx.run(f'mkdir -p {fw_dir}')/v
         ctx.run(f'rm -rf {fw_dir}/*')
 
         # Download and extract firmware files
@@ -112,3 +112,10 @@ def build(ctx: Context):
 def image(ctx: Context, tag='local'):
     with ctx.cd(ROOT):
         ctx.run(f'docker build -t ghcr.io/brewblox/brewblox-devcon-spark:{tag} -f Dockerfile.service .')
+
+
+@task(pre=[build])
+def image_armv7(ctx: Context, tag='local'):
+    with ctx.cd(ROOT):
+        ctx.run(
+            f'docker buildx build --platform=linux/arm/v7 -t ghcr.io/brewblox/brewblox-devcon-spark:{tag} -f Dockerfile.service .')

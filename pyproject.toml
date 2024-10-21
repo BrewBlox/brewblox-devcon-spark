@@ -16,8 +16,8 @@ Pint = "^0.22"
 pytimeparse = "^1.1.8"
 ciso8601 = "^2.2.0"
 fastapi = ">=0.104.1,<0.110.0"
-uvicorn = { extras = ["standard"], version = "==0.31.1" } # 0.32.0 failed on piwheels
-uvloop = "==0.21.0b1" # 0.21.0 fialed on piwheels, remove when fixed, installed as dep of uvicorn
+uvloop = "==0.20.0" # 0.21.0 failed on piwheels, remove when fixed, installed as dep of uvicorn
+uvicorn = {version = "==0.31.1", extras = ["standard"]} # 0.32.0 failed on piwheels
 httpx = "^0.25.2"
 fastapi-mqtt = "^2.0.0"
 pydantic-settings = "^2.1.0"
