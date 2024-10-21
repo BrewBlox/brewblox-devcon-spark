@@ -15,7 +15,8 @@ RUN <<EOF bash
         usbutils
 
     pip3 install \
-        cffi==1.17.0 \
+        cffi==1.17.1 \
+        cryptography==42.0.8 \
         esptool
 
     CLI_VERSION="3.24.0"
