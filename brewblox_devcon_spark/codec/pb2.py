@@ -15,7 +15,6 @@ if 'brewblox_pb2' not in sys.modules:  # pragma: no cover
     import ActuatorLogic_pb2
     import ActuatorOffset_pb2
     import ActuatorPwm_pb2
-    import AnalogGpioModule_pb2
     import Balancer_pb2
     import brewblox_pb2
     import command_pb2
@@ -51,7 +50,6 @@ __all__ = [
     'ActuatorLogic_pb2',
     'ActuatorOffset_pb2',
     'ActuatorPwm_pb2',
-    'AnalogGpioModule_pb2',
     'Balancer_pb2',
     'brewblox_pb2',
     'command_pb2',
