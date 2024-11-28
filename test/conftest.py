@@ -13,8 +13,9 @@ from unittest.mock import Mock
 import pytest
 from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
+import pytest_asyncio
 from pytest_docker.plugin import Services as DockerServices
 
 from brewblox_devcon_spark import app_factory, utils
@@ -43,8 +44,7 @@ class TestConfig(ServiceConfig):
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         return (init_settings,)
 
-
-@pytest.fixture(scope='session')
+@pytest_asyncio.fixture(loop_scope="session", scope="session")
 def docker_compose_file():
     return Path('./test/docker-compose.yml').resolve()
 
@@ -148,7 +148,7 @@ async def manager(app: FastAPI) -> AsyncGenerator[LifespanManager, None]:
 
 @pytest.fixture
 async def client(manager: LifespanManager) -> AsyncGenerator[AsyncClient, None]:
-    async with AsyncClient(app=manager.app, base_url='http://test') as ac:
+    async with AsyncClient(transport=ASGITransport(app=manager.app), base_url='http://test') as ac:
         yield ac
 
 

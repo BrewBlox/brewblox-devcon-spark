@@ -756,7 +756,7 @@ async def test_system_status(client: AsyncClient):
     assert desc['connection_status'] == 'DISCONNECTED'
     assert desc['controller'] is None
 
-
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_system_usb(client: AsyncClient, httpx_mock: HTTPXMock):
     resp = await client.post('/system/usb')
     data = UsbProxyResponse.model_validate_json(resp.text)
