@@ -104,8 +104,8 @@ def testclean(ctx: Context):
 def build(ctx: Context):
     with ctx.cd(ROOT):
         ctx.run('rm -rf dist')
-        ctx.run('poetry build --format sdist')
-        ctx.run('poetry export --without-hashes -f requirements.txt -o dist/requirements.txt')
+        ctx.run('uv build --sdist')
+        ctx.run('uv export --no-hashes --no-dev --format requirements-txt -o dist/requirements.txt')
 
 
 @task(pre=[build])

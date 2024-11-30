@@ -1,22 +1,16 @@
-FROM python:3.11-bookworm as base
+FROM python:3.11-bookworm AS base
 
 ENV PIP_EXTRA_INDEX_URL=https://www.piwheels.org/simple
 ENV PIP_FIND_LINKS=/wheeley
-ENV VENV=/app/.venv
-ENV PATH="$VENV/bin:$PATH"
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+ADD https://astral.sh/uv/install.sh /install.sh
+RUN chmod -R 655 /install.sh && /install.sh && rm /install.sh
 
-COPY ./dist /app/dist
-COPY ./firmware /app/firmware
-
-RUN <<EOF
-    set -ex
-
-    mkdir /wheeley
-    python3 -m venv $VENV
-    pip3 install --upgrade pip wheel setuptools
-    pip3 wheel --wheel-dir=/wheeley -r /app/dist/requirements.txt
-    pip3 wheel --wheel-dir=/wheeley /app/dist/*.tar.gz
-EOF
+COPY ./ /app/
+WORKDIR /app
+RUN /root/.local/bin/uv venv "$VIRTUAL_ENV"
+RUN /root/.local/bin/uv sync --no-dev --no-editable
 
 RUN <<EOF bash
     set -ex
@@ -40,18 +34,9 @@ ENV PIP_FIND_LINKS=/wheeley
 ENV VENV=/app/.venv
 ENV PATH="$VENV/bin:$PATH"
 
-COPY --from=base /wheeley /wheeley
+COPY --from=base /app/.venv /app/.venv
 COPY --from=base /app/firmware /app/firmware
 COPY ./parse_appenv.py ./parse_appenv.py
 COPY ./entrypoint.sh ./entrypoint.sh
-
-RUN <<EOF
-    set -ex
-
-    python3 -m venv $VENV
-    pip3 install --no-index brewblox_devcon_spark
-    pip3 freeze
-    rm -rf /wheeley
-EOF
 
 ENTRYPOINT ["bash", "./entrypoint.sh"]
