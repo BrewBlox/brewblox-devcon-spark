@@ -5,9 +5,9 @@ Any fixtures declared here are available to all test functions in this directory
 
 import asyncio
 import logging
+from collections.abc import AsyncGenerator, Callable, Generator
 from datetime import timedelta
 from pathlib import Path
-from typing import AsyncGenerator, Generator
 from unittest.mock import Mock
 
 import pytest
@@ -50,11 +50,12 @@ def docker_compose_file():
     return Path('./test/docker-compose.yml').resolve()
 
 
-@pytest.fixture(autouse=True)
+@pytest_asyncio.fixture(loop_scope='session', scope='function', autouse=True)
 def config(
     monkeypatch: pytest.MonkeyPatch,
     docker_services: DockerServices,
     tmp_path: Path,
+    unused_tcp_port_factory: Callable[[], int],
 ) -> Generator[ServiceConfig, None, None]:
     cfg = TestConfig(
         name='sparkey',
@@ -69,8 +70,8 @@ def config(
         simulation=True,
         discovery='all',
         simulation_workdir=tmp_path / 'simulator',
-        simulation_port=utils.get_free_port(),
-        simulation_display_port=utils.get_free_port(),
+        simulation_port=unused_tcp_port_factory(),
+        simulation_display_port=unused_tcp_port_factory(),
         device_id='1234',
         connect_interval=timedelta(milliseconds=10),
         connect_interval_max=timedelta(milliseconds=100),
