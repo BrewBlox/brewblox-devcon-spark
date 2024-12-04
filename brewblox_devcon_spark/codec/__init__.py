@@ -118,11 +118,9 @@ class Codec:
             # Interface-only payload
             if payload.content is None:
                 impl = next(
-
-                        v
-                        for v in lookup.CV_COMBINED.get()  # pragma: no branch
-                        if v.type_int == block_type_value
-
+                    v
+                    for v in lookup.CV_COMBINED.get()  # pragma: no branch
+                    if v.type_int == block_type_value
                 )
                 return EncodedPayload(
                     blockId=payload.blockId,
@@ -133,11 +131,9 @@ class Codec:
             # Payload contains data
             try:
                 impl = next(
-
-                        v
-                        for v in lookup.CV_OBJECTS.get()  # pragma: no branch
-                        if v.type_int == block_type_value
-
+                    v
+                    for v in lookup.CV_OBJECTS.get()  # pragma: no branch
+                    if v.type_int == block_type_value
                 )
             except StopIteration:
                 msg = f'No codec entry found for {payload.blockType}'

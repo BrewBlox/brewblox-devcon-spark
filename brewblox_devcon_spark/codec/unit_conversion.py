@@ -50,7 +50,10 @@ def derived_table(user_temp) -> dict[str, UnitMapping]:
     sys_vals = [s.format(temp=SYSTEM_TEMP) for s in FORMATS.values()]
     user_vals = [s.format(temp=user_temp) for s in FORMATS.values()]
 
-    return {k: UnitMapping(k, sys_val, user_val) for (k, sys_val, user_val) in zip(FORMATS.keys(), sys_vals, user_vals, strict=False)}
+    return {
+        k: UnitMapping(k, sys_val, user_val)
+        for (k, sys_val, user_val) in zip(FORMATS.keys(), sys_vals, user_vals, strict=False)
+    }
 
 
 class UnitConverter:
