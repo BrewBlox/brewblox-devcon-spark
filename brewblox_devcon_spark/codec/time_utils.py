@@ -42,8 +42,8 @@ def serialize_duration(value: DurationSrc_) -> str:
     td = parse_duration(value)
 
     periods = [
-        ('d', 60*60*24),
-        ('h', 60*60),
+        ('d', 60 * 60 * 24),
+        ('h', 60 * 60),
         ('m', 60),
         ('s', 1),
     ]

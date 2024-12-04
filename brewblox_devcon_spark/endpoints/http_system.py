@@ -9,11 +9,15 @@ from datetime import timedelta
 from fastapi import APIRouter, BackgroundTasks
 from httpx import AsyncClient
 
-from .. import (command, const, exceptions, mdns, mqtt, spark_api,
-                state_machine, utils, ymodem)
-from ..models import (FirmwareFlashResponse, PingResponse, ServiceUpdateEvent,
-                      ServiceUpdateEventData, StatusDescription,
-                      UsbProxyResponse)
+from .. import command, const, exceptions, mdns, mqtt, spark_api, state_machine, utils, ymodem
+from ..models import (
+    FirmwareFlashResponse,
+    PingResponse,
+    ServiceUpdateEvent,
+    ServiceUpdateEventData,
+    StatusDescription,
+    UsbProxyResponse,
+)
 
 ESP_URL_FMT = 'http://brewblox.blob.core.windows.net/firmware/{date}-{version}/brewblox-esp32.bin'
 
@@ -61,13 +65,11 @@ async def system_usb() -> UsbProxyResponse:
         proxy_port = config.usb_proxy_port
         resp = await client.get(f'http://{proxy_host}:{proxy_port}/{proxy_host}/discover/_')
         index: dict[str, int] = resp.json()
-        return UsbProxyResponse(enabled=True,
-                                devices=list(index.keys()))
+        return UsbProxyResponse(enabled=True, devices=list(index.keys()))
 
     except Exception as ex:
         LOGGER.debug(f'Failed to query USB proxy: {utils.strex(ex)}')
-        return UsbProxyResponse(enabled=False,
-                                devices=[])
+        return UsbProxyResponse(enabled=False, devices=[])
 
 
 @router.post('/mdns')
@@ -123,7 +125,6 @@ async def system_factory_reset():
 
 
 class Flasher:
-
     def __init__(self, background_tasks: BackgroundTasks) -> None:
         self.config = utils.get_config()
         self.fw_config = utils.get_fw_config()
@@ -137,16 +138,14 @@ class Flasher:
         self.notify_topic = f'{self.config.state_topic}/{self.config.name}/update'
         self.fw_version = self.fw_config.firmware_version
         self.fw_date = self.fw_config.firmware_date
-        self.fw_url = ESP_URL_FMT.format(date=self.fw_date,
-                                         version=self.fw_version)
+        self.fw_url = ESP_URL_FMT.format(date=self.fw_date, version=self.fw_version)
 
     def _notify(self, msg: str):
         LOGGER.info(msg)
-        self.mqtt_client.publish(self.notify_topic,
-                                 ServiceUpdateEvent(
-                                     key=self.config.name,
-                                     data=ServiceUpdateEventData(log=[msg])
-                                 ).model_dump(mode='json'))
+        self.mqtt_client.publish(
+            self.notify_topic,
+            ServiceUpdateEvent(key=self.config.name, data=ServiceUpdateEventData(log=[msg])).model_dump(mode='json'),
+        )
 
     async def run(self) -> FirmwareFlashResponse:  # pragma: no cover
         desc = self.state.desc()
@@ -170,17 +169,15 @@ class Flasher:
             self.state.set_updating()
 
             self._notify('Waiting for in-progress commands to finish')
-            await asyncio.wait_for(
-                self.commander.wait_empty(),
-                self.config.command_timeout.total_seconds())
+            await asyncio.wait_for(self.commander.wait_empty(), self.config.command_timeout.total_seconds())
 
             self._notify('Sending update command to controller')
             await self.commander.firmware_update()
 
             self._notify('Waiting for normal connection to close')
             await asyncio.wait_for(
-                self.commander.end_connection(),
-                self.config.flash_disconnect_timeout.total_seconds())
+                self.commander.end_connection(), self.config.flash_disconnect_timeout.total_seconds()
+            )
 
             if platform == 'esp32':
                 if connection_kind == 'TCP':
@@ -205,7 +202,8 @@ class Flasher:
                 with ymodem_conn.autoclose():
                     await asyncio.wait_for(
                         ota_client.send(ymodem_conn, f'firmware/brewblox-{platform}.bin'),
-                        self.config.flash_ymodem_timeout.total_seconds())
+                        self.config.flash_ymodem_timeout.total_seconds(),
+                    )
                     self._notify('Update done!')
 
         except Exception as ex:

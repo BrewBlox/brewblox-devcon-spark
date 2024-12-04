@@ -9,8 +9,7 @@ from contextvars import ContextVar
 from google.protobuf import json_format
 
 from .. import exceptions, utils
-from ..models import (DecodedPayload, EncodedPayload, IntermediateRequest,
-                      IntermediateResponse, ReadMode)
+from ..models import DecodedPayload, EncodedPayload, IntermediateRequest, IntermediateResponse, ReadMode
 from . import lookup, pb2, time_utils, unit_conversion
 from .processor import ProtobufProcessor
 
@@ -46,7 +45,7 @@ class Codec:
                 message=message,
                 preserving_proto_field_name=True,
                 including_default_value_fields=True,
-                use_integers_for_enums=False
+                use_integers_for_enums=False,
             )
 
             return IntermediateRequest(**decoded)
@@ -77,7 +76,7 @@ class Codec:
                 message=message,
                 preserving_proto_field_name=True,
                 including_default_value_fields=True,
-                use_integers_for_enums=False
+                use_integers_for_enums=False,
             )
 
             return IntermediateResponse(**decoded)
@@ -87,9 +86,7 @@ class Codec:
             LOGGER.debug(msg, exc_info=True)
             raise exceptions.DecodeException(msg)
 
-    def encode_payload(self,
-                       payload: DecodedPayload,
-                       filter_values: bool | None = None) -> EncodedPayload:
+    def encode_payload(self, payload: DecodedPayload, filter_values: bool | None = None) -> EncodedPayload:
         try:
             # No encoding required
             if payload.blockType is None:
@@ -120,8 +117,13 @@ class Codec:
 
             # Interface-only payload
             if payload.content is None:
-                impl = next((v for v in lookup.CV_COMBINED.get()  # pragma: no branch
-                             if v.type_int == block_type_value))
+                impl = next(
+                    (
+                        v
+                        for v in lookup.CV_COMBINED.get()  # pragma: no branch
+                        if v.type_int == block_type_value
+                    )
+                )
                 return EncodedPayload(
                     blockId=payload.blockId,
                     blockType=impl.type_int,
@@ -130,17 +132,22 @@ class Codec:
 
             # Payload contains data
             try:
-                impl = next((v for v in lookup.CV_OBJECTS.get()  # pragma: no branch
-                            if v.type_int == block_type_value))
+                impl = next(
+                    (
+                        v
+                        for v in lookup.CV_OBJECTS.get()  # pragma: no branch
+                        if v.type_int == block_type_value
+                    )
+                )
             except StopIteration:
                 msg = f'No codec entry found for {payload.blockType}'
                 LOGGER.debug(msg, exc_info=True)
                 raise exceptions.EncodeException(msg)
 
             message = impl.message_cls()
-            payload = self._processor.pre_encode(message.DESCRIPTOR,
-                                                 payload.model_copy(deep=True),
-                                                 filter_values=filter_values)
+            payload = self._processor.pre_encode(
+                message.DESCRIPTOR, payload.model_copy(deep=True), filter_values=filter_values
+            )
             json_format.ParseDict(payload.content, message)
             content: str = b64encode(message.SerializeToString()).decode()
 
@@ -150,7 +157,7 @@ class Codec:
                 name=payload.name,
                 content=content,
                 maskMode=payload.maskMode,
-                maskFields=payload.maskFields
+                maskFields=payload.maskFields,
             )
 
         except exceptions.EncodeException:
@@ -161,11 +168,13 @@ class Codec:
             LOGGER.debug(msg, exc_info=True)
             raise exceptions.EncodeException(msg)
 
-    def decode_payload(self,
-                       payload: EncodedPayload, /,
-                       mode: ReadMode = ReadMode.DEFAULT,
-                       filter_values: bool | None = None,
-                       ) -> DecodedPayload:
+    def decode_payload(
+        self,
+        payload: EncodedPayload,
+        /,
+        mode: ReadMode = ReadMode.DEFAULT,
+        filter_values: bool | None = None,
+    ) -> DecodedPayload:
         try:
             if payload.blockType == lookup.BlockType.Value('Deprecated'):
                 return DecodedPayload(
@@ -176,8 +185,7 @@ class Codec:
                 )
 
             # First, try to find an object lookup
-            impl = next((v for v in lookup.CV_OBJECTS.get()
-                         if payload.blockType in [v.type_str, v.type_int]), None)
+            impl = next((v for v in lookup.CV_OBJECTS.get() if payload.blockType in [v.type_str, v.type_int]), None)
 
             if impl:
                 # We have an object lookup, and can decode the content
@@ -195,16 +203,14 @@ class Codec:
                     name=payload.name,
                     content=content,
                     maskMode=payload.maskMode,
-                    maskFields=payload.maskFields
+                    maskFields=payload.maskFields,
                 )
-                return self._processor.post_decode(message.DESCRIPTOR,
-                                                   decoded,
-                                                   mode=mode,
-                                                   filter_values=filter_values)
+                return self._processor.post_decode(message.DESCRIPTOR, decoded, mode=mode, filter_values=filter_values)
 
             # No object lookup found. Try the interfaces.
-            intf_impl = next((v for v in lookup.CV_INTERFACES.get()
-                              if payload.blockType in [v.type_str, v.type_int]), None)
+            intf_impl = next(
+                (v for v in lookup.CV_INTERFACES.get() if payload.blockType in [v.type_str, v.type_int]), None
+            )
 
             if intf_impl:
                 return DecodedPayload(
@@ -250,9 +256,7 @@ __all__ = [
     'Codec',
     'setup',
     'CV',
-
     'ProtobufProcessor'
-
     # utils
     'bloxfield',
     'time_utils',

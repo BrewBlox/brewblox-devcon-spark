@@ -99,8 +99,9 @@ def autodetect_service_name() -> str:  # pragma: no cover
     # We can first apply a basic sanity check: does the hostname match the format?
     match = re.fullmatch(r'.+[_-].+([_-])\d+', host)
     if not match:
-        raise ValueError('Failed to autodetect service name. ' +
-                         f'"{host}" is not formatted as a Compose container name.')
+        raise ValueError(
+            'Failed to autodetect service name. ' + f'"{host}" is not formatted as a Compose container name.'
+        )
 
     # We need to identify the separactor character.
     # Depending on the Compose version, the separator character is either _ or -.
@@ -150,9 +151,7 @@ def get_free_port() -> int:
 
 
 @asynccontextmanager
-async def task_context(coro: Coroutine,
-                       cancel_timeout=timedelta(seconds=5)
-                       ) -> AsyncGenerator[asyncio.Task, None]:
+async def task_context(coro: Coroutine, cancel_timeout=timedelta(seconds=5)) -> AsyncGenerator[asyncio.Task, None]:
     """
     Wraps provided coroutine in an async task.
     At the end of the context, the task is cancelled and awaited.
@@ -173,10 +172,12 @@ def not_sentinel(value: VT, default_value: DVT) -> VT | DVT:
     return default_value
 
 
-async def httpx_retry(func: Callable[[], Awaitable[Response]],
-                      interval: timedelta = ...,
-                      max_interval: timedelta = ...,
-                      backoff: float = ...) -> Response:
+async def httpx_retry(
+    func: Callable[[], Awaitable[Response]],
+    interval: timedelta = ...,
+    max_interval: timedelta = ...,
+    backoff: float = ...,
+) -> Response:
     """
     Retries a httpx request forever until a 2XX response is received.
     The interval between requests will be multiplied with `backoff`

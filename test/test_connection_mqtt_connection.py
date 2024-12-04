@@ -8,8 +8,7 @@ from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 
 from brewblox_devcon_spark import mqtt, utils
-from brewblox_devcon_spark.connection import (connection_handler,
-                                              mqtt_connection)
+from brewblox_devcon_spark.connection import connection_handler, mqtt_connection
 
 TESTED = mqtt_connection.__name__
 
@@ -45,8 +44,7 @@ async def test_mqtt_discovery():
         recv.set()
 
     # Publish handshake message
-    mqtt_client.publish(f'brewcast/cbox/handshake/{config.device_id}',
-                        'handshake message')
+    mqtt_client.publish(f'brewcast/cbox/handshake/{config.device_id}', 'handshake message')
     await recv.wait()
 
     conn = await mqtt_connection.discover_mqtt(AsyncMock())
@@ -95,8 +93,7 @@ async def test_mqtt_impl():
     async def on_log(client, topic, payload, qos, properties):
         recv_log.set()
 
-    mqtt_client.publish(f'brewcast/cbox/handshake/{config.device_id}',
-                        'handshake message')
+    mqtt_client.publish(f'brewcast/cbox/handshake/{config.device_id}', 'handshake message')
 
     impl = mqtt_connection.MqttConnection(config.device_id, callbacks)
     await impl.connect()
@@ -107,16 +104,14 @@ async def test_mqtt_impl():
     await asyncio.wait_for(recv_resp.wait(), timeout=5)
     callbacks.on_response.assert_awaited_once_with('olleh')
 
-    mqtt_client.publish(f'brewcast/cbox/log/{config.device_id}',
-                        'log message')
+    mqtt_client.publish(f'brewcast/cbox/log/{config.device_id}', 'log message')
 
     await asyncio.wait_for(recv_log.wait(), timeout=5)
     callbacks.on_event.assert_awaited_once_with('log message')
 
     # LWT is an empty message to handshake topic
     recv_handshake.clear()
-    mqtt_client.publish(f'brewcast/cbox/handshake/{config.device_id}',
-                        None)
+    mqtt_client.publish(f'brewcast/cbox/handshake/{config.device_id}', None)
     await asyncio.wait_for(recv_handshake.wait(), timeout=5)
     assert impl.disconnected.is_set()
 

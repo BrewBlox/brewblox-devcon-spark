@@ -2,7 +2,6 @@
 Protobuf messages coupled to their respective type identities
 """
 
-
 from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Generator, Type
@@ -67,7 +66,6 @@ def setup():
     objects: list[ObjectLookup] = [
         # Actual objects
         *_object_lookup_generator(),
-
         # Custom test objects
         ObjectLookup(
             type_str='EdgeCase',
@@ -78,7 +76,6 @@ def setup():
 
     interfaces: list[InterfaceLookup] = [
         *_interface_lookup_generator(),
-
         # Custom test objects
         InterfaceLookup(
             type_str='EdgeCase',

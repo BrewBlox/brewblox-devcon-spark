@@ -3,6 +3,7 @@ Stream-based connections to the Spark.
 The connection itself is always TCP.
 For serial and simulation targets, the TCP server is a subprocess.
 """
+
 import asyncio
 import logging
 import os
@@ -18,8 +19,7 @@ from httpx import AsyncClient
 
 from .. import const, exceptions, mdns, utils
 from .cbox_parser import CboxParser
-from .connection_impl import (ConnectionCallbacks, ConnectionImplBase,
-                              ConnectionKind_)
+from .connection_impl import ConnectionCallbacks, ConnectionImplBase, ConnectionKind_
 
 USB_BAUD_RATE = 115200
 
@@ -36,10 +36,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class StreamConnection(ConnectionImplBase):
-    def __init__(self,
-                 kind: ConnectionKind_,
-                 address: str,
-                 callbacks: ConnectionCallbacks):
+    def __init__(self, kind: ConnectionKind_, address: str, callbacks: ConnectionCallbacks):
         super().__init__(kind, address, callbacks)
 
         self._transport: asyncio.Transport = None
@@ -77,12 +74,7 @@ class StreamConnection(ConnectionImplBase):
 
 
 class SubprocessConnection(StreamConnection):  # pragma: no cover
-
-    def __init__(self,
-                 kind: ConnectionKind_,
-                 address: str,
-                 callbacks: ConnectionCallbacks,
-                 proc: Process):
+    def __init__(self, kind: ConnectionKind_, address: str, callbacks: ConnectionCallbacks, proc: Process):
         super().__init__(kind, address, callbacks)
         self._proc = proc
 
@@ -94,21 +86,23 @@ class SubprocessConnection(StreamConnection):  # pragma: no cover
             await self._proc.wait()
 
 
-async def connect_tcp(callbacks: ConnectionCallbacks,
-                      host: str,
-                      port: int,
-                      ) -> ConnectionImplBase:
+async def connect_tcp(
+    callbacks: ConnectionCallbacks,
+    host: str,
+    port: int,
+) -> ConnectionImplBase:
     factory = partial(StreamConnection, 'TCP', f'{host}:{port}', callbacks)
     _, protocol = await asyncio.get_event_loop().create_connection(factory, host, port)
     return protocol
 
 
-async def connect_subprocess(callbacks: ConnectionCallbacks,
-                             port: int,
-                             proc: Process,
-                             kind: ConnectionKind_,
-                             address: str,
-                             ) -> ConnectionImplBase:  # pragma: no cover
+async def connect_subprocess(
+    callbacks: ConnectionCallbacks,
+    port: int,
+    proc: Process,
+    kind: ConnectionKind_,
+    address: str,
+) -> ConnectionImplBase:  # pragma: no cover
     config = utils.get_config()
     loop = asyncio.get_running_loop()
     factory = partial(SubprocessConnection, kind, address, callbacks, proc)
@@ -153,30 +147,32 @@ async def connect_simulation(callbacks: ConnectionCallbacks) -> ConnectionImplBa
             binary = 'brewblox-arm32.sim'
 
     if not binary:
-        raise exceptions.ConnectionImpossible(
-            f'No simulator available for {machine=}, {is_64_bit=}')
+        raise exceptions.ConnectionImpossible(f'No simulator available for {machine=}, {is_64_bit=}')
 
     binary_path = Path(f'firmware/{binary}').resolve()
     workdir = config.simulation_workdir.resolve()
     workdir.mkdir(mode=0o777, exist_ok=True)
 
     LOGGER.debug(f'Starting `{binary_path}` ...')
-    proc = await asyncio.create_subprocess_exec(binary_path,
-                                                '--device_id', config.device_id,
-                                                '--port', str(config.simulation_port),
-                                                '--display_ws_port', str(config.simulation_display_port),
-                                                cwd=workdir,
-                                                preexec_fn=os.setsid,
-                                                shell=False)
+    proc = await asyncio.create_subprocess_exec(
+        binary_path,
+        '--device_id',
+        config.device_id,
+        '--port',
+        str(config.simulation_port),
+        '--display_ws_port',
+        str(config.simulation_display_port),
+        cwd=workdir,
+        preexec_fn=os.setsid,
+        shell=False,
+    )
     return await connect_subprocess(callbacks, config.simulation_port, proc, 'SIM', binary)
 
 
 async def discover_mdns(callbacks: ConnectionCallbacks) -> ConnectionImplBase | None:
     config = utils.get_config()
     try:
-        resp = await mdns.discover_one(config.device_id,
-                                       const.BREWBLOX_DNS_TYPE,
-                                       config.discovery_timeout_mdns)
+        resp = await mdns.discover_one(config.device_id, const.BREWBLOX_DNS_TYPE, config.discovery_timeout_mdns)
         return await connect_tcp(callbacks, resp.address, resp.port)
     except asyncio.TimeoutError:
         return None

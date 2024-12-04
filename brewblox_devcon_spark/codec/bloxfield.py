@@ -12,9 +12,7 @@ def is_link(obj):
 
 
 def is_defined_link(obj):
-    return is_link(obj) \
-        and obj.get('id') \
-        and obj.get('type')
+    return is_link(obj) and obj.get('id') and obj.get('type')
 
 
 def is_quantity(obj):
@@ -22,6 +20,4 @@ def is_quantity(obj):
 
 
 def is_defined_quantity(obj):
-    return is_quantity(obj) \
-        and obj.get('value') is not None \
-        and obj.get('unit')
+    return is_quantity(obj) and obj.get('value') is not None and obj.get('unit')

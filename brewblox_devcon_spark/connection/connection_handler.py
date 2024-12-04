@@ -9,8 +9,7 @@ from ..models import DiscoveryType
 from .connection_impl import ConnectionCallbacks, ConnectionImplBase
 from .mock_connection import connect_mock
 from .mqtt_connection import discover_mqtt
-from .stream_connection import (connect_simulation, connect_tcp, discover_mdns,
-                                discover_usb)
+from .stream_connection import connect_simulation, connect_tcp, discover_mdns, discover_usb
 
 LOGGER = logging.getLogger(__name__)
 
@@ -38,8 +37,7 @@ class ConnectionHandler(ConnectionCallbacks):
 
     @property
     def connected(self) -> bool:
-        return self._impl is not None \
-            and self._impl.connected.is_set()
+        return self._impl is not None and self._impl.connected.is_set()
 
     async def on_event(self, msg: str):
         """
@@ -101,8 +99,7 @@ class ConnectionHandler(ConnectionCallbacks):
             self._impl = await self.connect()
             await self._impl.connected.wait()
 
-            self.state.set_connected(self._impl.kind,
-                                     self._impl.address)
+            self.state.set_connected(self._impl.kind, self._impl.address)
 
             self._last_ok = True
             self._interval = calc_interval(None)

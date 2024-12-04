@@ -2,7 +2,6 @@
 Intermittently broadcasts status and blocks to the eventbus
 """
 
-
 import asyncio
 import logging
 from contextlib import asynccontextmanager
@@ -16,7 +15,6 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Broadcaster:
-
     def __init__(self):
         self.config = utils.get_config()
         self.api = spark_api.CV.get()
@@ -35,28 +33,31 @@ class Broadcaster:
                 logged_blocks = await self.api.read_all_logged_blocks()
 
                 # Convert list to key/value format suitable for history
-                history_data = {block.id: block.data
-                                for block in logged_blocks}
+                history_data = {block.id: block.data for block in logged_blocks}
 
-                mqtt_client.publish(self.history_topic,
-                                    HistoryEvent(
-                                        key=self.config.name,
-                                        data=history_data,
-                                    ).model_dump(mode='json'))
+                mqtt_client.publish(
+                    self.history_topic,
+                    HistoryEvent(
+                        key=self.config.name,
+                        data=history_data,
+                    ).model_dump(mode='json'),
+                )
 
         finally:
             # State event is always published
-            mqtt_client.publish(self.state_topic,
-                                ServiceStateEvent(
-                                    key=self.config.name,
-                                    data=ServiceStateEventData(
-                                        status=state.desc(),
-                                        blocks=blocks,
-                                        relations=calculate_relations(blocks),
-                                        claims=calculate_claims(blocks)
-                                    )
-                                ).model_dump(mode='json'),
-                                retain=True)
+            mqtt_client.publish(
+                self.state_topic,
+                ServiceStateEvent(
+                    key=self.config.name,
+                    data=ServiceStateEventData(
+                        status=state.desc(),
+                        blocks=blocks,
+                        relations=calculate_relations(blocks),
+                        claims=calculate_claims(blocks),
+                    ),
+                ).model_dump(mode='json'),
+                retain=True,
+            )
 
     async def repeat(self):
         interval = self.config.broadcast_interval

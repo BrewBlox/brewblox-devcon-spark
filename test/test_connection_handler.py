@@ -29,7 +29,7 @@ def welcome_message():
         'p1',
         '78',
         '0A',
-        '1234567f0case'
+        '1234567f0case',
     ]
 
 
@@ -40,14 +40,17 @@ def app() -> FastAPI:
     return FastAPI()
 
 
-@pytest.mark.parametrize('value,expected', [
-    (timedelta(), timedelta(seconds=2)),
-    (None, timedelta(seconds=2)),
-    (timedelta(seconds=1), timedelta(seconds=1, milliseconds=500)),
-    (timedelta(seconds=2), timedelta(seconds=3)),
-    (timedelta(seconds=10), timedelta(seconds=15)),
-    (timedelta(minutes=1), timedelta(seconds=30)),
-])
+@pytest.mark.parametrize(
+    'value,expected',
+    [
+        (timedelta(), timedelta(seconds=2)),
+        (None, timedelta(seconds=2)),
+        (timedelta(seconds=1), timedelta(seconds=1, milliseconds=500)),
+        (timedelta(seconds=2), timedelta(seconds=3)),
+        (timedelta(seconds=10), timedelta(seconds=15)),
+        (timedelta(minutes=1), timedelta(seconds=30)),
+    ],
+)
 async def test_calc_interval(value: timedelta | None, expected: timedelta):
     config = utils.get_config()
     config.connect_interval = timedelta(seconds=2)
@@ -134,14 +137,7 @@ async def test_handler_connect_order(mocker: MockerFixture):
     config = utils.get_config()
     m_funcs: dict[str, AsyncMock] = {
         k: mocker.patch(f'{TESTED}.{k}', autospec=True)
-        for k in [
-            'connect_mock',
-            'connect_simulation',
-            'connect_tcp',
-            'discover_usb',
-            'discover_mdns',
-            'discover_mqtt'
-        ]
+        for k in ['connect_mock', 'connect_simulation', 'connect_tcp', 'discover_usb', 'discover_mdns', 'discover_mqtt']
     }
 
     def without(*names: list[str]) -> list[AsyncMock]:
@@ -215,8 +211,7 @@ async def test_handler_run():
 
     async with utils.task_context(handler.run()) as task:
         state.set_enabled(True)
-        await asyncio.wait_for(state.wait_connected(),
-                               timeout=5)
+        await asyncio.wait_for(state.wait_connected(), timeout=5)
 
         # We're assuming here that mock_connection.send_request()
         # immediately calls the on_response() callback
@@ -238,8 +233,7 @@ async def test_handler_disconnect(mocker: MockerFixture):
     state.set_enabled(True)
 
     async with utils.task_context(handler.repeat()) as task:
-        await asyncio.wait_for(state.wait_connected(),
-                               timeout=5)
+        await asyncio.wait_for(state.wait_connected(), timeout=5)
 
         await handler.end()
 

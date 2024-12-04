@@ -7,7 +7,7 @@
         "littlefoxteam.vscode-python-test-adapter",
         "ms-python.python",
         "ms-python.vscode-pylance",
-        "ms-python.autopep8"
+        "charliermarsh.ruff"
     ],
     // List of extensions recommended by VS Code that should not be recommended for users of this workspace.
     "unwantedRecommendations": []

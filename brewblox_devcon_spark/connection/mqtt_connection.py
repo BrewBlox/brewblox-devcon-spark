@@ -3,7 +3,6 @@ MQTT-based connection to the Spark.
 Messages are published to and read from the relevant topics on the eventbus.
 """
 
-
 import asyncio
 import logging
 from contextvars import ContextVar
@@ -21,11 +20,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class MqttConnection(ConnectionImplBase):
-
-    def __init__(self,
-                 device_id: str,
-                 callbacks: ConnectionCallbacks,
-                 ) -> None:
+    def __init__(
+        self,
+        device_id: str,
+        callbacks: ConnectionCallbacks,
+    ) -> None:
         super().__init__('MQTT', device_id, callbacks)
         self.mqtt_client = mqtt.CV.get()
 
@@ -99,8 +98,7 @@ async def discover_mqtt(callbacks: ConnectionCallbacks) -> ConnectionImplBase | 
     try:
         devices = _DEVICES.get()
         evt = devices.setdefault(config.device_id, asyncio.Event())
-        await asyncio.wait_for(evt.wait(),
-                               timeout=config.discovery_timeout_mqtt.total_seconds())
+        await asyncio.wait_for(evt.wait(), timeout=config.discovery_timeout_mqtt.total_seconds())
         conn = MqttConnection(config.device_id, callbacks)
         await conn.connect()
         return conn

@@ -9,12 +9,18 @@ from contextvars import ContextVar
 from datetime import datetime, timezone
 from typing import Callable, Union
 
-from . import (command, const, datastore_blocks, exceptions, state_machine,
-               utils)
+from . import command, const, datastore_blocks, exceptions, state_machine, utils
 from .codec import bloxfield, sequence
-from .models import (Backup, BackupApplyResult, Block, BlockIdentity,
-                     BlockNameChange, FirmwareBlock, FirmwareBlockIdentity,
-                     ReadMode)
+from .models import (
+    Backup,
+    BackupApplyResult,
+    Block,
+    BlockIdentity,
+    BlockNameChange,
+    FirmwareBlock,
+    FirmwareBlockIdentity,
+    ReadMode,
+)
 
 LOGGER = logging.getLogger(__name__)
 CV: ContextVar['SparkApi'] = ContextVar('spark_api.SparkApi')
@@ -33,13 +39,11 @@ def merge(a: dict, b: dict):
     return a
 
 
-def resolve_data_ids(data: dict | list | tuple,
-                     replacer: Union[Callable[[str], int],
-                                     Callable[[int], str]],
-                     ):
-    iter = enumerate(data) \
-        if isinstance(data, (list, tuple)) \
-        else data.items()
+def resolve_data_ids(
+    data: dict | list | tuple,
+    replacer: Union[Callable[[str], int], Callable[[int], str]],
+):
+    iter = enumerate(data) if isinstance(data, (list, tuple)) else data.items()
 
     for k, v in iter:
         # Object-style link
@@ -54,7 +58,6 @@ def resolve_data_ids(data: dict | list | tuple,
 
 
 class SparkApi:
-
     def __init__(self):
         self.config = utils.get_config()
         self.state = state_machine.CV.get()
@@ -186,9 +189,7 @@ class SparkApi:
         self.state.check_compatible()
 
         try:
-            await asyncio.wait_for(
-                self.state.wait_synchronized(),
-                self.config.command_timeout.total_seconds())
+            await asyncio.wait_for(self.state.wait_synchronized(), self.config.command_timeout.total_seconds())
 
         except asyncio.TimeoutError:
             raise exceptions.NotConnected('Timed out waiting for synchronized state')
@@ -450,11 +451,13 @@ class SparkApi:
             blocks = await self.cmder.clear_blocks()
             identities = [self._to_block_identity(v) for v in blocks]
             await self.load_block_names()
-            await self.cmder.write_block(FirmwareBlock(
-                nid=const.SYS_BLOCK_IDS['DisplaySettings'],
-                type='DisplaySettings',
-                data={},
-            ))
+            await self.cmder.write_block(
+                FirmwareBlock(
+                    nid=const.SYS_BLOCK_IDS['DisplaySettings'],
+                    type='DisplaySettings',
+                    data={},
+                )
+            )
             return identities
 
     async def rename_block(self, change: BlockNameChange) -> BlockIdentity:
@@ -469,14 +472,10 @@ class SparkApi:
             BlockIdentity:
                 The new sid + nid.
         """
-        ident = FirmwareBlockIdentity(id=change.desired,
-                                      nid=self.block_store[change.existing])
+        ident = FirmwareBlockIdentity(id=change.desired, nid=self.block_store[change.existing])
         block = await self.cmder.write_block_name(ident)
         self.block_store[block.id] = block.nid
-        return BlockIdentity(id=block.id,
-                             nid=block.nid,
-                             type=block.type,
-                             serviceId=self.config.name)
+        return BlockIdentity(id=block.id, nid=block.nid, type=block.type, serviceId=self.config.name)
 
     async def load_block_names(self):
         """
@@ -484,8 +483,7 @@ class SparkApi:
         """
         blocks = await self.cmder.read_all_block_names()
         self.block_store.clear()
-        self.block_store.update({block.id: block.nid
-                                 for block in blocks})
+        self.block_store.update({block.id: block.nid for block in blocks})
 
     async def make_backup(self) -> Backup:
         """
@@ -497,10 +495,7 @@ class SparkApi:
                 JSON-ready backup data, compatible with apply_backup().
         """
         blocks = await self.read_all_stored_blocks()
-        timestamp = datetime\
-            .now(tz=timezone.utc)\
-            .isoformat(timespec='seconds')\
-            .replace('+00:00', 'Z')
+        timestamp = datetime.now(tz=timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')
         controller_info = self.state.desc().controller
 
         return Backup(
@@ -544,8 +539,7 @@ class SparkApi:
             self.block_store.update(const.SYS_BLOCK_IDS)
 
             # Populate the block store, to avoid unknown links
-            self.block_store.update({block.id: block.nid
-                                     for block in exported.blocks})
+            self.block_store.update({block.id: block.nid for block in exported.blocks})
 
             # Resolve IDs now before concurrent calls can edit the block store
             resolved_blocks: list[FirmwareBlock] = []

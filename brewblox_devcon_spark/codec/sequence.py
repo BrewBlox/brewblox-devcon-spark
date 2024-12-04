@@ -92,10 +92,13 @@ def from_line(line: str, line_num: int) -> dict:
         opts = field_desc.GetOptions().Extensions[brewblox_pb2.field]
 
         if opts.objtype:
-            return (raw_key, {
-                '__bloxtype': 'Link',
-                'id': value,
-            })
+            return (
+                raw_key,
+                {
+                    '__bloxtype': 'Link',
+                    'id': value,
+                },
+            )
 
         elif opts.unit:
             unit_name = brewblox_pb2.UnitType.Name(opts.unit)
@@ -114,22 +117,29 @@ def from_line(line: str, line_num: int) -> dict:
 
                 if ('Delta' in unit_name) != ('delta_' in unit):
                     raise ValueError(
-                        f'line {line_num}: Mismatch between delta and absolute temperature: `{key}={value}{unit}`')
+                        f'line {line_num}: Mismatch between delta and absolute temperature: `{key}={value}{unit}`'
+                    )
 
-                return (raw_key, {
-                    '__bloxtype': 'Quantity',
-                    'value': value,
-                    'unit': unit,
-                })
+                return (
+                    raw_key,
+                    {
+                        '__bloxtype': 'Quantity',
+                        'value': value,
+                        'unit': unit,
+                    },
+                )
 
             elif unit_name == 'Second':
                 td = time_utils.parse_duration(value)
 
-                return (raw_key, {
-                    '__bloxtype': 'Quantity',
-                    'value': int(td.total_seconds()),
-                    'unit': 'second',
-                })
+                return (
+                    raw_key,
+                    {
+                        '__bloxtype': 'Quantity',
+                        'value': int(td.total_seconds()),
+                        'unit': 'second',
+                    },
+                )
 
             else:  # pragma: no cover
                 raise NotImplementedError(f'{unit_name} quantities not yet implemented')
@@ -145,12 +155,12 @@ def from_line(line: str, line_num: int) -> dict:
     # - spaces are stripped from both key and value
     # - quotes are stripped from value
     # - a {key:value} dict is constructed
-    argdict = {argk.strip(): argv.strip().strip("'")
-               for (argk, _, argv)
-               in [arg.partition('=') for arg in args.split(',') if arg]}
+    argdict = {
+        argk.strip(): argv.strip().strip("'")
+        for (argk, _, argv) in [arg.partition('=') for arg in args.split(',') if arg]
+    }
 
-    parsed = dict([parse_arg_entry(key, value)
-                   for key, value in argdict.items()])
+    parsed = dict([parse_arg_entry(key, value) for key, value in argdict.items()])
 
     # strip prefixes from fields - we need one per oneof, not all possible fields
     if missing := base_keys(opcode_arg_field_descs.keys()) - base_keys(parsed.keys()):
@@ -216,8 +226,7 @@ def parse(block: Block):
     Converts instructions in given Sequence block from line to dict format.
     """
     if 'instructions' in block.data:
-        block.data['instructions'] = [from_line(s, idx + 1)
-                                      for idx, s in enumerate(block.data['instructions'])]
+        block.data['instructions'] = [from_line(s, idx + 1) for idx, s in enumerate(block.data['instructions'])]
 
 
 def serialize(block: Block):
@@ -225,5 +234,4 @@ def serialize(block: Block):
     Converts instructions in given Sequence block from dict to line format.
     """
     if 'instructions' in block.data:
-        block.data['instructions'] = [to_line(d)
-                                      for d in block.data['instructions']]
+        block.data['instructions'] = [to_line(d) for d in block.data['instructions']]

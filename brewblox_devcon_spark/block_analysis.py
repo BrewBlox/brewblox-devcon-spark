@@ -58,11 +58,7 @@ def _find_nested_relations(
         if relation and relation[0] in INVERTED_RELATION_FIELDS:
             source, target = target, source
 
-        return [
-            BlockRelation(source=source,
-                          target=target,
-                          relation=relation)
-        ]
+        return [BlockRelation(source=source, target=target, relation=relation)]
 
     elif bloxfield.is_bloxfield(field):
         # Ignored:
@@ -129,18 +125,14 @@ def calculate_claims(blocks: list[Block]) -> list[BlockClaim]:
         # Claims to the entire block
         link = block.data.get('claimedBy')
         if link and link['id']:
-            claim_dict[block.id] = BlockClaim(source=link['id'],
-                                              target=block.id,
-                                              intermediate=[])
+            claim_dict[block.id] = BlockClaim(source=link['id'], target=block.id, intermediate=[])
 
         # On IoArrays, individual channels are claimed
         channels = block.data.get('channels', [])
         for c in channels:
             link = c['claimedBy']
             if link and link['id']:
-                channel_claims.append(BlockClaim(source=link['id'],
-                                                 target=block.id,
-                                                 intermediate=[]))
+                channel_claims.append(BlockClaim(source=link['id'], target=block.id, intermediate=[]))
 
     def extended_claim(claim: BlockClaim) -> BlockClaim:
         source_claim = claim_dict.get(claim.source)
@@ -153,9 +145,7 @@ def calculate_claims(blocks: list[Block]) -> list[BlockClaim]:
 
         # Shift claim, look further up the tree
         return extended_claim(
-            BlockClaim(source=grand_source,
-                       target=claim.target,
-                       intermediate=[*claim.intermediate, claim.source]))
+            BlockClaim(source=grand_source, target=claim.target, intermediate=[*claim.intermediate, claim.source])
+        )
 
-    return [extended_claim(c)
-            for c in [*claim_dict.values(), *channel_claims]]
+    return [extended_claim(c) for c in [*claim_dict.values(), *channel_claims]]

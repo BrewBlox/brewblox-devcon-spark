@@ -7,10 +7,19 @@ from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from pytest_mock import MockerFixture
 
-from brewblox_devcon_spark import (codec, command, connection, const,
-                                   datastore_blocks, datastore_settings,
-                                   exceptions, mqtt, state_machine,
-                                   synchronization, utils)
+from brewblox_devcon_spark import (
+    codec,
+    command,
+    connection,
+    const,
+    datastore_blocks,
+    datastore_settings,
+    exceptions,
+    mqtt,
+    state_machine,
+    synchronization,
+    utils,
+)
 from brewblox_devcon_spark.models import FirmwareBlock
 
 TESTED = synchronization.__name__
@@ -92,9 +101,7 @@ async def test_sync_errors(mocker: MockerFixture):
 async def test_write_error(mocker: MockerFixture):
     m_patch_block = mocker.patch.object(command.CV.get(), 'patch_block', autospec=True)
     m_patch_block.return_value = FirmwareBlock(
-        nid=const.SYS_BLOCK_IDS['SysInfo'],
-        type='ErrorObject',
-        data={'error': 'something went wrong'}
+        nid=const.SYS_BLOCK_IDS['SysInfo'], type='ErrorObject', data={'error': 'something went wrong'}
     )
 
     s = synchronization.StateSynchronizer()

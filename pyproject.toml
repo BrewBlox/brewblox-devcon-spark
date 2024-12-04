@@ -47,6 +47,7 @@ exclude = [
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
+    "D211",
     "D203",
     "D213",
     "COM812",

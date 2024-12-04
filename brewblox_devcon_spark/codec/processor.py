@@ -15,8 +15,7 @@ from typing import Any, Iterator
 from google.protobuf import json_format
 from google.protobuf.descriptor import Descriptor, FieldDescriptor
 
-from brewblox_devcon_spark.models import (DecodedPayload, MaskField, MaskMode,
-                                          ReadMode)
+from brewblox_devcon_spark.models import DecodedPayload, MaskField, MaskMode, ReadMode
 
 from . import unit_conversion
 from .opts import DateFormatOpt, MetadataOpt
@@ -27,7 +26,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class OptionElement():
+class OptionElement:
     field: FieldDescriptor
     """The protobuf field descriptor"""
 
@@ -85,7 +84,7 @@ class OptionElement():
     """
 
 
-class ProtobufProcessor():
+class ProtobufProcessor:
     _BREWBLOX_PROVIDER: FieldDescriptor = brewblox_pb2.field
 
     def __init__(self, filter_values=True):
@@ -93,13 +92,17 @@ class ProtobufProcessor():
         self._filter_values = filter_values
 
         symbols = re.escape('[]<>')
-        self._postfix_pattern = re.compile(''.join([
-            f'([^{symbols}]+)',     # "value" -> captured
-            f'[{symbols}]?',        # "["
-            f'([^{symbols},]*)',    # "degC" -> captured
-            f',?[^{symbols}]*',     # ",driven" -> (backwards compatibility)
-            f'[{symbols}]?',        # "]"
-        ]))
+        self._postfix_pattern = re.compile(
+            ''.join(
+                [
+                    f'([^{symbols}]+)',  # "value" -> captured
+                    f'[{symbols}]?',  # "["
+                    f'([^{symbols},]*)',  # "degC" -> captured
+                    f',?[^{symbols}]*',  # ",driven" -> (backwards compatibility)
+                    f'[{symbols}]?',  # "]"
+                ]
+            )
+        )
 
     @staticmethod
     def hex_to_int(s: str) -> int:
@@ -150,11 +153,12 @@ class ProtobufProcessor():
     def type_name(blockType_num: int) -> str:
         return brewblox_pb2.BlockType.Name(blockType_num)
 
-    def _walk_elements(self,
-                       desc: Descriptor,
-                       obj: dict,
-                       parent_address: tuple[int | None] = (),
-                       ) -> Iterator[OptionElement]:
+    def _walk_elements(
+        self,
+        desc: Descriptor,
+        obj: dict,
+        parent_address: tuple[int | None] = (),
+    ) -> Iterator[OptionElement]:
         """
         Recursively walks `obj`, and yields an `OptionElement` for each value.
 
@@ -184,7 +188,6 @@ class ProtobufProcessor():
             # Because the list/map index is not a tag, we can't patch inside the repeated field
             # The repeated field itself is a leaf node
             elif field.label == FieldDescriptor.LABEL_REPEATED:
-
                 # map<K, V> field
                 # traverse all values
                 # The content is serialized as repeated `{ key: K, value: V }` entries
@@ -226,11 +229,9 @@ class ProtobufProcessor():
             user_unit = postfix
             return self._converter.to_sys_value(value, unit_type, user_unit)
 
-    def pre_encode(self,
-                   desc: Descriptor,
-                   payload: DecodedPayload, /,
-                   filter_values: bool | None = None
-                   ) -> DecodedPayload:
+    def pre_encode(
+        self, desc: Descriptor, payload: DecodedPayload, /, filter_values: bool | None = None
+    ) -> DecodedPayload:
         """
         Modifies `payload` based on Protobuf options and dict key postfixes.
 
@@ -349,9 +350,7 @@ class ProtobufProcessor():
                 continue
 
             if isinstance(new_value, (list, set)):
-                new_value = [_convert_value(v)
-                             for v in new_value
-                             if v is not None]
+                new_value = [_convert_value(v) for v in new_value if v is not None]
             else:
                 new_value = _convert_value(new_value)
 
@@ -363,12 +362,14 @@ class ProtobufProcessor():
 
         return payload
 
-    def post_decode(self,
-                    desc: Descriptor,
-                    payload: DecodedPayload, /,
-                    mode: ReadMode = ReadMode.DEFAULT,
-                    filter_values: bool | None = None,
-                    ) -> DecodedPayload:
+    def post_decode(
+        self,
+        desc: Descriptor,
+        payload: DecodedPayload,
+        /,
+        mode: ReadMode = ReadMode.DEFAULT,
+        filter_values: bool | None = None,
+    ) -> DecodedPayload:
         """
         Post-processes protobuf data based on protobuf / codec options.
 
@@ -440,8 +441,7 @@ class ProtobufProcessor():
             if payload.maskMode == MaskMode.NO_MASK:
                 excluded = False
             elif payload.maskMode in [MaskMode.INCLUSIVE, MaskMode.EXCLUSIVE]:
-                masked = any((f for f in payload.maskFields
-                              if self.matches_address(f, element.address)))
+                masked = any((f for f in payload.maskFields if self.matches_address(f, element.address)))
                 excluded = masked ^ (payload.maskMode == MaskMode.INCLUSIVE)
             else:
                 raise NotImplementedError(f'{payload.maskMode=}')
@@ -451,8 +451,7 @@ class ProtobufProcessor():
                 continue
 
             if filter_values:
-                if (mode == ReadMode.STORED and not options.stored) \
-                        or (mode == ReadMode.LOGGED and not options.logged):
+                if (mode == ReadMode.STORED and not options.stored) or (mode == ReadMode.LOGGED and not options.logged):
                     del element.obj[element.key]
                     continue
 
@@ -473,11 +472,7 @@ class ProtobufProcessor():
                         value = self._converter.to_user_value(value, qty_system_unit)
 
                     if metadata_opt == MetadataOpt.TYPED:
-                        value = {
-                            '__bloxtype': 'Quantity',
-                            'unit': qty_user_unit,
-                            'value': value
-                        }
+                        value = {'__bloxtype': 'Quantity', 'unit': qty_user_unit, 'value': value}
 
                         if options.readonly:
                             value['readonly'] = True

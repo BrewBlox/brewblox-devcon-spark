@@ -15,7 +15,6 @@ LOGGER = logging.getLogger(__name__)
 
 
 class TimeSync:
-
     def __init__(self) -> None:
         self.config = utils.get_config()
         self.state = state_machine.CV.get()
@@ -24,11 +23,13 @@ class TimeSync:
     async def run(self):
         await self.state.wait_synchronized()
         now = datetime.now()
-        await self.api.patch_block(Block(
-            nid=const.SYS_BLOCK_IDS['SysInfo'],
-            type=const.SYSINFO_BLOCK_TYPE,
-            data={'systemTime': now},
-        ))
+        await self.api.patch_block(
+            Block(
+                nid=const.SYS_BLOCK_IDS['SysInfo'],
+                type=const.SYSINFO_BLOCK_TYPE,
+                data={'systemTime': now},
+            )
+        )
         LOGGER.debug(f'Time sync: {now=}')
 
     async def repeat(self):

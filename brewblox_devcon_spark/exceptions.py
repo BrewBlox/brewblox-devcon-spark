@@ -3,7 +3,6 @@ Lists various possible BrewBlox-related exceptions.
 This improves clarity as to what actually went wrong.
 """
 
-
 from fastapi import HTTPException, status
 
 
@@ -11,8 +10,7 @@ class BrewbloxException(HTTPException):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 
     def __init__(self, msg: str = '') -> None:
-        super().__init__(status_code=self.__class__.status_code,
-                         detail=msg)
+        super().__init__(status_code=self.__class__.status_code, detail=msg)
 
 
 ##################################################################################################
@@ -123,6 +121,7 @@ class ConnectionPaused(ConnectionException):
 ##################################################################################################
 # Firmware exceptions
 ##################################################################################################
+
 
 class FirmwareException(BrewbloxException):
     status_code = status.HTTP_424_FAILED_DEPENDENCY

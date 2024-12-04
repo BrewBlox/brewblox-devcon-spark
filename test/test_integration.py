@@ -9,17 +9,36 @@ from httpx import AsyncClient
 from pytest_httpx import HTTPXMock
 from pytest_mock import MockerFixture
 
-from brewblox_devcon_spark import (app_factory, block_backup, codec, command,
-                                   connection, const, datastore_blocks,
-                                   datastore_settings, endpoints, mqtt,
-                                   spark_api, state_machine, synchronization,
-                                   utils)
-from brewblox_devcon_spark.models import (Backup, Block, BlockIdentity,
-                                          DatastoreMultiQuery, DecodedPayload,
-                                          EncodedMessage, EncodedPayload,
-                                          ErrorCode, IntermediateRequest,
-                                          IntermediateResponse, Opcode,
-                                          UsbProxyResponse)
+from brewblox_devcon_spark import (
+    app_factory,
+    block_backup,
+    codec,
+    command,
+    connection,
+    const,
+    datastore_blocks,
+    datastore_settings,
+    endpoints,
+    mqtt,
+    spark_api,
+    state_machine,
+    synchronization,
+    utils,
+)
+from brewblox_devcon_spark.models import (
+    Backup,
+    Block,
+    BlockIdentity,
+    DatastoreMultiQuery,
+    DecodedPayload,
+    EncodedMessage,
+    EncodedPayload,
+    ErrorCode,
+    IntermediateRequest,
+    IntermediateResponse,
+    Opcode,
+    UsbProxyResponse,
+)
 
 
 class DummmyError(BaseException):
@@ -34,21 +53,12 @@ def ret_ids(objects: list[dict | Block]) -> set[str]:
 
 
 def repeated_blocks(ids: list[str], base: Block) -> list[Block]:
-    return [Block(id=id, type=base.type, data=base.data)
-            for id in ids]
+    return [Block(id=id, type=base.type, data=base.data) for id in ids]
 
 
 @pytest.fixture
 def block_args() -> Block:
-    return Block(
-        id='testobj',
-        type='TempSensorOneWire',
-        data={
-            'value': 12345,
-            'offset': 20,
-            'address': 'FF'
-        }
-    )
+    return Block(id='testobj', type='TempSensorOneWire', data={'value': 12345, 'offset': 20, 'address': 'FF'})
 
 
 @asynccontextmanager
@@ -57,8 +67,7 @@ async def clear_datastore():
     client = AsyncClient(base_url=config.datastore_url)
     query = DatastoreMultiQuery(namespace=const.SERVICE_NAMESPACE, filter='*')
     content = query.model_dump(mode='json')
-    await asyncio.wait_for(utils.httpx_retry(lambda: client.post('/mdelete', json=content)),
-                           timeout=5)
+    await asyncio.wait_for(utils.httpx_retry(lambda: client.post('/mdelete', json=content)), timeout=5)
     yield
 
 
@@ -110,8 +119,7 @@ def s_publish(app: FastAPI, mocker: MockerFixture) -> Mock:
 async def synchronized(client: AsyncClient):
     state = state_machine.CV.get()
     # Prevents test hangups if the connection fails
-    await asyncio.wait_for(state.wait_synchronized(),
-                           timeout=5)
+    await asyncio.wait_for(state.wait_synchronized(), timeout=5)
 
 
 async def test_create(client: AsyncClient, block_args: Block):
@@ -214,8 +222,7 @@ async def test_create_performance(client: AsyncClient, block_args: Block):
     ids = [f'id{num}' for num in range(num_items)]
     blocks = repeated_blocks(ids, block_args)
 
-    await asyncio.gather(*(client.post('/blocks/create', json=block.model_dump(mode='json'))
-                           for block in blocks))
+    await asyncio.gather(*(client.post('/blocks/create', json=block.model_dump(mode='json')) for block in blocks))
 
     resp = await client.post('/blocks/all/read')
     assert set(ids).issubset(ret_ids(resp.json()))
@@ -291,10 +298,9 @@ async def test_batch_write(client: AsyncClient, block_args: Block, s_publish: Mo
     resp = await client.post('/blocks/create', json=block_args.model_dump())
     assert resp.status_code == 201
 
-    resp = await client.post('/blocks/batch/write',
-                             json=[block_args.model_dump(),
-                                   block_args.model_dump(),
-                                   block_args.model_dump()])
+    resp = await client.post(
+        '/blocks/batch/write', json=[block_args.model_dump(), block_args.model_dump(), block_args.model_dump()]
+    )
     assert resp.status_code == 200
     assert s_publish.call_count == 2
 
@@ -308,25 +314,29 @@ async def test_patch(client: AsyncClient, block_args: Block, s_publish: Mock):
     assert s_publish.call_count == 2
 
     # Create block with only min constraint
-    pwm_block = Block(id='pwm',
-                      type='ActuatorPwm',
-                      data={
-                          'enabled': True,
-                          'constraints': {
-                              'min': {'value': 10},
-                          },
-                      })
+    pwm_block = Block(
+        id='pwm',
+        type='ActuatorPwm',
+        data={
+            'enabled': True,
+            'constraints': {
+                'min': {'value': 10},
+            },
+        },
+    )
     resp = await client.post('/blocks/create', json=pwm_block.model_dump())
     assert resp.status_code == 201
 
     # Add a max constraint in a patch
-    pwm_block = Block(id='pwm',
-                      type='ActuatorPwm',
-                      data={
-                          'constraints': {
-                              'max': {'value': 100},
-                          },
-                      })
+    pwm_block = Block(
+        id='pwm',
+        type='ActuatorPwm',
+        data={
+            'constraints': {
+                'max': {'value': 100},
+            },
+        },
+    )
     resp = await client.post('/blocks/patch', json=pwm_block.model_dump())
     assert resp.status_code == 200
 
@@ -338,13 +348,15 @@ async def test_patch(client: AsyncClient, block_args: Block, s_publish: Mock):
     }
 
     # Patch the max constraint to only edit the `enabled` field
-    pwm_block = Block(id='pwm',
-                      type='ActuatorPwm',
-                      data={
-                          'constraints': {
-                              'max': {'enabled': True},
-                          },
-                      })
+    pwm_block = Block(
+        id='pwm',
+        type='ActuatorPwm',
+        data={
+            'constraints': {
+                'max': {'enabled': True},
+            },
+        },
+    )
     resp = await client.post('/blocks/patch', json=pwm_block.model_dump())
     assert resp.status_code == 200
 
@@ -356,13 +368,15 @@ async def test_patch(client: AsyncClient, block_args: Block, s_publish: Mock):
     }
 
     # Remove the max constraint in a patch
-    pwm_block = Block(id='pwm',
-                      type='ActuatorPwm',
-                      data={
-                          'constraints': {
-                              'max': None,
-                          },
-                      })
+    pwm_block = Block(
+        id='pwm',
+        type='ActuatorPwm',
+        data={
+            'constraints': {
+                'max': None,
+            },
+        },
+    )
     resp = await client.post('/blocks/patch', json=pwm_block.model_dump())
     assert resp.status_code == 200
 
@@ -377,10 +391,9 @@ async def test_batch_patch(client: AsyncClient, block_args: Block, s_publish: Mo
     resp = await client.post('/blocks/create', json=block_args.model_dump())
     assert resp.status_code == 201
 
-    resp = await client.post('/blocks/batch/patch',
-                             json=[block_args.model_dump(),
-                                   block_args.model_dump(),
-                                   block_args.model_dump()])
+    resp = await client.post(
+        '/blocks/batch/patch', json=[block_args.model_dump(), block_args.model_dump(), block_args.model_dump()]
+    )
     assert resp.status_code == 200
     assert s_publish.call_count == 2
 
@@ -458,10 +471,13 @@ async def test_rename(client: AsyncClient, block_args: Block):
     resp = await client.post('/blocks/read', json={'id': desired})
     assert resp.status_code == 400
 
-    resp = await client.post('/blocks/rename', json={
-        'existing': existing,
-        'desired': desired,
-    })
+    resp = await client.post(
+        '/blocks/rename',
+        json={
+            'existing': existing,
+            'desired': desired,
+        },
+    )
     assert resp.status_code == 200
 
     resp = await client.post('/blocks/read', json={'id': desired})
@@ -469,11 +485,7 @@ async def test_rename(client: AsyncClient, block_args: Block):
 
 
 async def test_sequence(client: AsyncClient):
-    setpoint_block = {
-        'id': 'setpoint',
-        'type': 'SetpointSensorPair',
-        'data': {}
-    }
+    setpoint_block = {'id': 'setpoint', 'type': 'SetpointSensorPair', 'data': {}}
 
     sequence_block = {
         'id': 'sequence',
@@ -485,8 +497,8 @@ async def test_sequence(client: AsyncClient):
                 'SET_SETPOINT target=setpoint, setting=40C',
                 'WAIT_SETPOINT target=setpoint, precision=1dC',
                 'RESTART',
-            ]
-        }
+            ],
+        },
     }
 
     resp = await client.post('/blocks/create', json=setpoint_block)
@@ -541,10 +553,7 @@ async def test_validate(client: AsyncClient, block_args: Block):
     resp = await client.post('/blocks/validate', json=validate_args)
     assert resp.status_code == 200
 
-    invalid_data_obj = {
-        'type': block_args.type,
-        'data': {**block_args.data, 'invalid': True}
-    }
+    invalid_data_obj = {'type': block_args.type, 'data': {**block_args.data, 'invalid': True}}
     resp = await client.post('/blocks/validate', json=invalid_data_obj)
     assert resp.status_code == 400
 
@@ -556,8 +565,8 @@ async def test_validate(client: AsyncClient, block_args: Block):
             'value': 0,
             'enabled': True,
             'filter': 'FILT_15s',
-            'filterThreshold': 2
-        }
+            'filterThreshold': 2,
+        },
     }
     resp = await client.post('/blocks/validate', json=invalid_link_obj)
     assert resp.status_code == 400
@@ -589,39 +598,35 @@ async def test_backup_load(client: AsyncClient, spark_blocks: list[Block]):
     assert 'SystemInfo' in resp_ids
 
     # Add an obsolete system block
-    backup.blocks.append(Block(
-        nid=1,
-        type='Groups',
-        data={},
-    ))
+    backup.blocks.append(
+        Block(
+            nid=1,
+            type='Groups',
+            data={},
+        )
+    )
 
     # Add a block that has an unknown link
-    backup.blocks.append(Block(
-        id='fantast',
-        nid=400,
-        type='SetpointSensorPair',
-        data={'sensorId<>': 'going to another high school'}
-    ))
+    backup.blocks.append(
+        Block(id='fantast', nid=400, type='SetpointSensorPair', data={'sensorId<>': 'going to another high school'})
+    )
 
     # Add a Block that will fail to be created, and should be skipped
-    backup.blocks.append(Block(
-        id='derpface',
-        nid=500,
-        type='INVALID',
-        data={}
-    ))
+    backup.blocks.append(Block(id='derpface', nid=500, type='INVALID', data={}))
 
-    backup.blocks.append(Block(
-        id='sensor-onewire-old',
-        nid=500,
-        type='TempSensorOneWire',
-        data={
-            'value[celsius]': 20.89789201,
-             'offset[delta_degC]': 9,
-            'address': 'DEADBEEF',
-            'oneWireBusId<>': 'OneWireBus',
-        },
-    ))
+    backup.blocks.append(
+        Block(
+            id='sensor-onewire-old',
+            nid=500,
+            type='TempSensorOneWire',
+            data={
+                'value[celsius]': 20.89789201,
+                'offset[delta_degC]': 9,
+                'address': 'DEADBEEF',
+                'oneWireBusId<>': 'OneWireBus',
+            },
+        )
+    )
 
     resp = await client.post('/blocks/backup/load', json=backup.model_dump())
     resp = resp.json()['messages']
@@ -680,7 +685,7 @@ async def test_read_all_logged(client: AsyncClient):
         'data': {
             'storedSetting': 80,  # logged
             'period': 2,  # not logged
-        }
+        },
     }
 
     resp = await client.post('/blocks/create', json=args)
@@ -756,6 +761,7 @@ async def test_system_status(client: AsyncClient):
     assert desc['connection_status'] == 'DISCONNECTED'
     assert desc['controller'] is None
 
+
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_system_usb(client: AsyncClient, httpx_mock: HTTPXMock):
     resp = await client.post('/system/usb')
@@ -763,11 +769,13 @@ async def test_system_usb(client: AsyncClient, httpx_mock: HTTPXMock):
     assert not data.enabled
     assert data.devices == []
 
-    httpx_mock.add_response(url='http://usb-proxy:5000/usb-proxy/discover/_',
-                            json={
-                                '12345': 9000,
-                                '23456': None,
-                            })
+    httpx_mock.add_response(
+        url='http://usb-proxy:5000/usb-proxy/discover/_',
+        json={
+            '12345': 9000,
+            '23456': None,
+        },
+    )
     resp = await client.post('/system/usb')
     data = UsbProxyResponse.model_validate_json(resp.text)
     assert data.enabled
@@ -802,13 +810,7 @@ async def test_system_flash(client: AsyncClient, m_kill: Mock):
 
 async def test_debug_encode_request(client: AsyncClient):
     payload = DecodedPayload(
-        blockId=123,
-        blockType='TempSensorOneWire',
-        content={
-            'value': 12345,
-            'offset': 20,
-            'address': 'FF'
-        }
+        blockId=123, blockType='TempSensorOneWire', content={'value': 12345, 'offset': 20, 'address': 'FF'}
     )
 
     resp = await client.post('/_debug/encode_payload', json=payload.model_dump(mode='json'))
@@ -837,13 +839,7 @@ async def test_debug_encode_request(client: AsyncClient):
 
 async def test_debug_encode_response(client: AsyncClient):
     payload = DecodedPayload(
-        blockId=123,
-        blockType='TempSensorOneWire',
-        content={
-            'value': 12345,
-            'offset': 20,
-            'address': 'FF'
-        }
+        blockId=123, blockType='TempSensorOneWire', content={'value': 12345, 'offset': 20, 'address': 'FF'}
     )
 
     resp = await client.post('/_debug/encode_payload', json=payload.model_dump(mode='json'))

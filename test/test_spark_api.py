@@ -7,13 +7,21 @@ from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from pytest_mock import MockerFixture
 
-from brewblox_devcon_spark import (codec, command, connection,
-                                   datastore_blocks, datastore_settings,
-                                   exceptions, mqtt, spark_api, state_machine,
-                                   synchronization, utils)
+from brewblox_devcon_spark import (
+    codec,
+    command,
+    connection,
+    datastore_blocks,
+    datastore_settings,
+    exceptions,
+    mqtt,
+    spark_api,
+    state_machine,
+    synchronization,
+    utils,
+)
 from brewblox_devcon_spark.connection import mock_connection
-from brewblox_devcon_spark.models import (Block, BlockIdentity, ErrorCode,
-                                          FirmwareBlock)
+from brewblox_devcon_spark.models import Block, BlockIdentity, ErrorCode, FirmwareBlock
 
 TESTED = spark_api.__name__
 
@@ -50,21 +58,11 @@ async def manager(manager: LifespanManager):
 
 async def test_merge():
     await state_machine.CV.get().wait_synchronized()
+    assert spark_api.merge({}, {'a': True}) == {'a': True}
+    assert spark_api.merge({'a': False}, {'a': True}) == {'a': True}
+    assert spark_api.merge({'a': True}, {'b': True}) == {'a': True, 'b': True}
     assert spark_api.merge(
-        {},
-        {'a': True}
-    ) == {'a': True}
-    assert spark_api.merge(
-        {'a': False},
-        {'a': True}
-    ) == {'a': True}
-    assert spark_api.merge(
-        {'a': True},
-        {'b': True}
-    ) == {'a': True, 'b': True}
-    assert spark_api.merge(
-        {'nested': {'a': False, 'b': True}, 'second': {}},
-        {'nested': {'a': True}, 'second': 'empty'}
+        {'nested': {'a': False, 'b': True}, 'second': {}}, {'nested': {'a': True}, 'second': 'empty'}
     ) == {'nested': {'a': True, 'b': True}, 'second': 'empty'}
 
 
@@ -121,14 +119,8 @@ async def test_resolve_data_ids():
             'testval': 1,
             'input<ProcessValueInterface>': 'eeney',
             'output<ProcessValueInterface>': 'miney',
-            'nested': {
-                'flappy<>': 'moo',
-                'meaning_of_life': 42,
-                'mystery<EdgeCase>': None
-            },
-            'listed': [
-                {'flappy<SetpointSensorPairInterface>': 'moo'}
-            ],
+            'nested': {'flappy<>': 'moo', 'meaning_of_life': 42, 'mystery<EdgeCase>': None},
+            'listed': [{'flappy<SetpointSensorPairInterface>': 'moo'}],
             'metavalue': {
                 '__bloxtype': 'Link',
                 'id': 'eeney',

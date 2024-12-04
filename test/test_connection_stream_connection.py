@@ -52,7 +52,6 @@ class Context:
         "self.addr"."""
         self.server = await self.loop.create_server(EchoServerProtocol, 'localhost', self.port)
 
-
     async def close_server(self):
         """Close the server."""
         if self.server is not None:
@@ -60,7 +59,8 @@ class Context:
             server.close()
             await server.wait_closed()
 
-@pytest_asyncio.fixture(loop_scope="session", scope="session")
+
+@pytest_asyncio.fixture(loop_scope='session', scope='session')
 async def ctx(unused_tcp_port_factory):
     """Generate tests with TCP sockets and Unix domain sockets."""
     port = unused_tcp_port_factory()
@@ -83,7 +83,8 @@ async def ctx(unused_tcp_port_factory):
             pass
         pass
 
-@pytest.mark.asyncio(loop_scope="session")
+
+@pytest.mark.asyncio(loop_scope='session')
 async def test_tcp_connection(ctx):
     callbacks = DummyCallbacks()
     impl = await stream_connection.connect_tcp(callbacks, 'localhost', ctx.port)
@@ -103,7 +104,8 @@ async def test_tcp_connection(ctx):
     assert callbacks.response_msg == 'world'
     assert callbacks.event_msg == 'event'
 
-@pytest.mark.asyncio(loop_scope="session")
+
+@pytest.mark.asyncio(loop_scope='session')
 async def test_tcp_connection_close(ctx):
     callbacks = DummyCallbacks()
     impl = await stream_connection.connect_tcp(callbacks, 'localhost', ctx.port)
@@ -111,7 +113,8 @@ async def test_tcp_connection_close(ctx):
     await asyncio.wait_for(impl.disconnected.wait(), timeout=5)
     await impl.close()  # Can safely be called again
 
-@pytest.mark.asyncio(loop_scope="session")
+
+@pytest.mark.asyncio(loop_scope='session')
 async def test_tcp_connection_error(ctx):
     callbacks = DummyCallbacks()
     impl = await stream_connection.connect_tcp(callbacks, 'localhost', ctx.port)
@@ -119,7 +122,7 @@ async def test_tcp_connection_error(ctx):
     await asyncio.wait_for(impl.disconnected.wait(), timeout=5)
 
 
-@pytest.mark.asyncio(loop_scope="session")
+@pytest.mark.asyncio(loop_scope='session')
 async def test_discover_mdns(mocker: MockerFixture, ctx):
     config = utils.get_config()
 

@@ -7,39 +7,23 @@ from brewblox_devcon_spark.codec.opts import DateFormatOpt
 
 
 def test_parse_duration():
-    assert time_utils.parse_duration('1d99m') == \
-        timedelta(days=1, hours=1, minutes=39)
+    assert time_utils.parse_duration('1d99m') == timedelta(days=1, hours=1, minutes=39)
 
-    assert time_utils.parse_duration(100) == \
-        timedelta(seconds=100)
+    assert time_utils.parse_duration(100) == timedelta(seconds=100)
 
-    assert time_utils.parse_duration(None) == \
-        timedelta(seconds=0)
+    assert time_utils.parse_duration(None) == timedelta(seconds=0)
 
-    assert time_utils.parse_duration({
-        '__bloxtype': 'Quantity',
-        'unit': 'minute',
-        'value': 20
-    }) == \
-        timedelta(minutes=20)
+    assert time_utils.parse_duration({'__bloxtype': 'Quantity', 'unit': 'minute', 'value': 20}) == timedelta(minutes=20)
 
 
 def test_serialize_duration():
-    assert time_utils.serialize_duration(
-        timedelta(seconds=70)) == '1m10s'
+    assert time_utils.serialize_duration(timedelta(seconds=70)) == '1m10s'
 
-    assert time_utils.serialize_duration(
-        timedelta(days=2, hours=30, seconds=1)) == '3d6h1s'
+    assert time_utils.serialize_duration(timedelta(days=2, hours=30, seconds=1)) == '3d6h1s'
 
 
 def test_parse_datetime():
-    expected = datetime(year=2022,
-                        month=7,
-                        day=21,
-                        hour=2,
-                        minute=11,
-                        second=5,
-                        tzinfo=timezone.utc)
+    expected = datetime(year=2022, month=7, day=21, hour=2, minute=11, second=5, tzinfo=timezone.utc)
 
     assert time_utils.parse_datetime(expected) == expected
     assert time_utils.parse_datetime(1658369465) == expected
@@ -53,13 +37,7 @@ def test_parse_datetime():
 
 
 def test_serialize_datetime():
-    dt = datetime(year=2022,
-                  month=7,
-                  day=21,
-                  hour=2,
-                  minute=11,
-                  second=5,
-                  tzinfo=timezone.utc)
+    dt = datetime(year=2022, month=7, day=21, hour=2, minute=11, second=5, tzinfo=timezone.utc)
 
     assert time_utils.serialize_datetime(dt, DateFormatOpt.MILLISECONDS) == 1658369465000
     assert time_utils.serialize_datetime(dt, DateFormatOpt.SECONDS) == 1658369465

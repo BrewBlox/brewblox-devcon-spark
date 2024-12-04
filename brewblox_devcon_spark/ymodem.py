@@ -63,14 +63,14 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Control(IntEnum):
-    SOH = 0x01          # 01 - 128 byte blocks
-    STX = 0x02          # 02 - 1K blocks
-    EOT = 0x04          # 04 - End Of Transfer
-    EOF = 0x1A          # 26 - End Of File
-    ACK = 0x06          # 06 - Acknowledge
-    NAK = 0x15          # 21 - Negative Acknowledge
-    CAN = 0x18          # 24 - Cancel
-    C = 0x43            # 67 - Continue
+    SOH = 0x01  # 01 - 128 byte blocks
+    STX = 0x02  # 02 - 1K blocks
+    EOT = 0x04  # 04 - End Of Transfer
+    EOF = 0x1A  # 26 - End Of File
+    ACK = 0x06  # 06 - Acknowledge
+    NAK = 0x15  # 21 - Negative Acknowledge
+    CAN = 0x18  # 24 - Cancel
+    C = 0x43  # 67 - Continue
 
 
 @dataclass
@@ -147,7 +147,7 @@ async def connect(address: str) -> Connection:
     raise ConnectionRefusedError()
 
 
-class OtaClient():
+class OtaClient:
     PACKET_MARK = Control.STX
     DATA_LEN = 1024 if PACKET_MARK == Control.STX else 128
     PACKET_LEN = DATA_LEN + 5
@@ -230,8 +230,7 @@ class OtaClient():
                 response = await self._send_data(conn, current, list(data))
 
                 if response != Control.ACK:
-                    raise ConnectionAbortedError(
-                        f'Failed with code {response.name} while sending package {current}')
+                    raise ConnectionAbortedError(f'Failed with code {response.name} while sending package {current}')
 
         LOGGER.debug('Sending EOT')
         assert await self._send_packet(conn, [Control.EOT]) == Control.ACK

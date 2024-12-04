@@ -7,10 +7,19 @@ from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from pytest_mock import MockerFixture
 
-from brewblox_devcon_spark import (block_backup, codec, command, connection,
-                                   datastore_blocks, datastore_settings, mqtt,
-                                   spark_api, state_machine, synchronization,
-                                   utils)
+from brewblox_devcon_spark import (
+    block_backup,
+    codec,
+    command,
+    connection,
+    datastore_blocks,
+    datastore_settings,
+    mqtt,
+    spark_api,
+    state_machine,
+    synchronization,
+    utils,
+)
 from brewblox_devcon_spark.models import Backup, BackupIdentity
 
 TESTED = block_backup.__name__
