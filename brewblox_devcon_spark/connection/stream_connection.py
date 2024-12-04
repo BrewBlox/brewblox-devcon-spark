@@ -124,7 +124,7 @@ async def connect_subprocess(
                     errors.add(utils.strex(ex))
                     await asyncio.sleep(config.subprocess_connect_interval.total_seconds())
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         with suppress(Exception):
             proc.terminate()
         raise ConnectionError(str(errors))
@@ -174,7 +174,7 @@ async def discover_mdns(callbacks: ConnectionCallbacks) -> ConnectionImplBase | 
     try:
         resp = await mdns.discover_one(config.device_id, const.BREWBLOX_DNS_TYPE, config.discovery_timeout_mdns)
         return await connect_tcp(callbacks, resp.address, resp.port)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         return None
 
 

@@ -1,8 +1,8 @@
 import asyncio
 import logging
+from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
-from typing import Awaitable, Callable
 
 from httpx import AsyncClient
 

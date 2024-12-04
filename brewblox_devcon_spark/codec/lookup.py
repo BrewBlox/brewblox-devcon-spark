@@ -2,9 +2,9 @@
 Protobuf messages coupled to their respective type identities
 """
 
+from collections.abc import Generator
 from contextvars import ContextVar
 from dataclasses import dataclass
-from typing import Generator, Type
 
 from google.protobuf.descriptor import Descriptor, FileDescriptor
 from google.protobuf.internal.enum_type_wrapper import EnumTypeWrapper
@@ -34,7 +34,7 @@ class InterfaceLookup:
 class ObjectLookup:
     type_str: str
     type_int: int
-    message_cls: Type[Message]
+    message_cls: type[Message]
 
 
 def _interface_lookup_generator() -> Generator[InterfaceLookup, None, None]:

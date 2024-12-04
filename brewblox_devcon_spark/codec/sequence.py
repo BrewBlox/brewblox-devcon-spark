@@ -5,8 +5,9 @@ This converts Sequence block instructions from and to the line format.
 """
 
 import re
+from collections.abc import Iterable
 from datetime import timedelta
-from typing import Any, Iterable
+from typing import Any
 
 from google.protobuf.descriptor import Descriptor, FieldDescriptor
 
@@ -100,7 +101,7 @@ def from_line(line: str, line_num: int) -> dict:
                 },
             )
 
-        elif opts.unit:
+        if opts.unit:
             unit_name = brewblox_pb2.UnitType.Name(opts.unit)
             value = value.strip()
 
@@ -129,7 +130,7 @@ def from_line(line: str, line_num: int) -> dict:
                     },
                 )
 
-            elif unit_name == 'Second':
+            if unit_name == 'Second':
                 td = time_utils.parse_duration(value)
 
                 return (
@@ -141,14 +142,13 @@ def from_line(line: str, line_num: int) -> dict:
                     },
                 )
 
-            else:  # pragma: no cover
-                raise NotImplementedError(f'{unit_name} quantities not yet implemented')
+            # pragma: no cover
+            raise NotImplementedError(f'{unit_name} quantities not yet implemented')
 
-        else:
-            try:
-                return (raw_key, float(value))
-            except ValueError:
-                return (raw_key, value)
+        try:
+            return (raw_key, float(value))
+        except ValueError:
+            return (raw_key, value)
 
     # - the comma-separated argument string is split into `key=value` strings
     # - key and value are extracted from the `key=value` string
@@ -175,7 +175,6 @@ def to_line(args: dict) -> str:
 
     Link IDs must already have been converted to SID.
     """
-
     opcode, argdict = list(args.items())[0]
     opcode: str
     argdict: dict[str, Any]

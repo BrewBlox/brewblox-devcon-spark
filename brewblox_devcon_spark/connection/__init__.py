@@ -15,4 +15,4 @@ def setup():
     connection_handler.setup()
 
 
-__all__ = ['setup', 'CV']
+__all__ = ['CV', 'setup']

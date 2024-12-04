@@ -53,7 +53,7 @@ def app() -> FastAPI:
 
 @pytest.fixture(autouse=True)
 async def manager(manager: LifespanManager):
-    yield manager
+    return manager
 
 
 async def test_merge():

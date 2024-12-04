@@ -159,8 +159,7 @@ class MockConnection(ConnectionImplBase):
             error = NEXT_ERROR.pop(0)
             if error is None:
                 return None  # No response at all
-            else:
-                response.error = error
+            response.error = error
 
         elif request.opcode in [
             Opcode.NONE,
@@ -202,9 +201,7 @@ class MockConnection(ConnectionImplBase):
         elif request.opcode == Opcode.BLOCK_CREATE:
             nid = request.payload.blockId
             block = self._blocks.get(nid)
-            if block:
-                response.error = ErrorCode.BLOCK_NOT_CREATABLE
-            elif nid > 0 and nid < const.USER_NID_START:
+            if block or (nid > 0 and nid < const.USER_NID_START):
                 response.error = ErrorCode.BLOCK_NOT_CREATABLE
             elif request.payload.content is None:
                 response.error = ErrorCode.INVALID_BLOCK
@@ -238,9 +235,7 @@ class MockConnection(ConnectionImplBase):
             match = next((block for block in self._blocks.values() if block.id == name), None)
             if not block:
                 response.error = ErrorCode.INVALID_BLOCK_ID
-            elif not name:
-                response.error = ErrorCode.INVALID_BLOCK_NAME
-            elif match and match.nid != nid:
+            elif not name or (match and match.nid != nid):
                 response.error = ErrorCode.INVALID_BLOCK_NAME
             else:
                 block.id = name

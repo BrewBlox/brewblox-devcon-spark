@@ -30,7 +30,7 @@ LOGGER = logging.getLogger(__name__)
 
 def setup_logging(debug: bool, trace: bool):
     level = logging.DEBUG if debug else logging.INFO
-    unimportant_level = logging.INFO if debug else logging.WARN
+    unimportant_level = logging.INFO if debug else logging.WARNING
     format = '%(asctime)s.%(msecs)03d [%(levelname).1s:%(name)s:%(lineno)d] %(message)s'
     datefmt = '%Y/%m/%d %H:%M:%S'
 
@@ -44,7 +44,7 @@ def setup_logging(debug: bool, trace: bool):
 
     logging.getLogger('gmqtt').setLevel(unimportant_level)
     logging.getLogger('httpx').setLevel(unimportant_level)
-    logging.getLogger('httpcore').setLevel(logging.WARN)
+    logging.getLogger('httpcore').setLevel(logging.WARNING)
     logging.getLogger('uvicorn.access').setLevel(unimportant_level)
     logging.getLogger('uvicorn.error').disabled = True
 

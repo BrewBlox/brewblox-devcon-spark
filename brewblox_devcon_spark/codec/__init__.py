@@ -37,7 +37,7 @@ class Codec:
 
     def decode_request(self, b64_encoded: str) -> IntermediateRequest:
         try:
-            data = b''.join((b64decode(subs) for subs in b64_encoded.split(',')))
+            data = b''.join(b64decode(subs) for subs in b64_encoded.split(','))
 
             message = pb2.command_pb2.Request()
             message.ParseFromString(data)
@@ -68,7 +68,7 @@ class Codec:
 
     def decode_response(self, b64_encoded: str) -> IntermediateResponse:
         try:
-            data = b''.join((b64decode(subs) for subs in b64_encoded.split(',')))
+            data = b''.join(b64decode(subs) for subs in b64_encoded.split(','))
 
             message = pb2.command_pb2.Response()
             message.ParseFromString(data)
@@ -118,11 +118,11 @@ class Codec:
             # Interface-only payload
             if payload.content is None:
                 impl = next(
-                    (
+
                         v
                         for v in lookup.CV_COMBINED.get()  # pragma: no branch
                         if v.type_int == block_type_value
-                    )
+
                 )
                 return EncodedPayload(
                     blockId=payload.blockId,
@@ -133,11 +133,11 @@ class Codec:
             # Payload contains data
             try:
                 impl = next(
-                    (
+
                         v
                         for v in lookup.CV_OBJECTS.get()  # pragma: no branch
                         if v.type_int == block_type_value
-                    )
+
                 )
             except StopIteration:
                 msg = f'No codec entry found for {payload.blockType}'

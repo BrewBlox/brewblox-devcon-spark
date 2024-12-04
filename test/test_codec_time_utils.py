@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -23,7 +23,7 @@ def test_serialize_duration():
 
 
 def test_parse_datetime():
-    expected = datetime(year=2022, month=7, day=21, hour=2, minute=11, second=5, tzinfo=timezone.utc)
+    expected = datetime(year=2022, month=7, day=21, hour=2, minute=11, second=5, tzinfo=UTC)
 
     assert time_utils.parse_datetime(expected) == expected
     assert time_utils.parse_datetime(1658369465) == expected
@@ -37,7 +37,7 @@ def test_parse_datetime():
 
 
 def test_serialize_datetime():
-    dt = datetime(year=2022, month=7, day=21, hour=2, minute=11, second=5, tzinfo=timezone.utc)
+    dt = datetime(year=2022, month=7, day=21, hour=2, minute=11, second=5, tzinfo=UTC)
 
     assert time_utils.serialize_datetime(dt, DateFormatOpt.MILLISECONDS) == 1658369465000
     assert time_utils.serialize_datetime(dt, DateFormatOpt.SECONDS) == 1658369465

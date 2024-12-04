@@ -29,7 +29,7 @@ def app() -> FastAPI:
 
 @pytest.fixture(autouse=True)
 async def manager(manager: LifespanManager):
-    yield manager
+    return manager
 
 
 async def test_mqtt_discovery():
@@ -124,14 +124,14 @@ async def test_mqtt_message_handling():
     callbacks = AsyncMock(spec=connection_handler.ConnectionHandler)
     impl = mqtt_connection.MqttConnection('1234', callbacks)
 
-    await impl._resp_cb(None, None, '1;0;first,'.encode(), 0, None)
-    await impl._resp_cb(None, None, '2;1;second,'.encode(), 0, None)
-    await impl._resp_cb(None, None, '3;1;third\n'.encode(), 0, None)
-    await impl._resp_cb(None, None, '4;0;fourth\n'.encode(), 0, None)
-    await impl._resp_cb(None, None, '5;0;fifth,'.encode(), 0, None)
-    await impl._resp_cb(None, None, '5;1;fifth-second\n'.encode(), 0, None)
-    await impl._resp_cb(None, None, '6;0;sixth,'.encode(), 0, None)
-    await impl._resp_cb(None, None, 'garbled'.encode(), 0, None)
-    await impl._resp_cb(None, None, '6;1;sixth-second\n'.encode(), 0, None)
+    await impl._resp_cb(None, None, b'1;0;first,', 0, None)
+    await impl._resp_cb(None, None, b'2;1;second,', 0, None)
+    await impl._resp_cb(None, None, b'3;1;third\n', 0, None)
+    await impl._resp_cb(None, None, b'4;0;fourth\n', 0, None)
+    await impl._resp_cb(None, None, b'5;0;fifth,', 0, None)
+    await impl._resp_cb(None, None, b'5;1;fifth-second\n', 0, None)
+    await impl._resp_cb(None, None, b'6;0;sixth,', 0, None)
+    await impl._resp_cb(None, None, b'garbled', 0, None)
+    await impl._resp_cb(None, None, b'6;1;sixth-second\n', 0, None)
 
     assert callbacks.on_response.await_args_list == [call('fourth'), call('fifth,fifth-second')]

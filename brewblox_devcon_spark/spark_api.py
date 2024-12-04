@@ -4,10 +4,10 @@ Offers a functional interface to the device functionality
 
 import asyncio
 import logging
+from collections.abc import Callable
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
-from datetime import datetime, timezone
-from typing import Callable, Union
+from datetime import UTC, datetime
 
 from . import command, const, datastore_blocks, exceptions, state_machine, utils
 from .codec import bloxfield, sequence
@@ -41,7 +41,7 @@ def merge(a: dict, b: dict):
 
 def resolve_data_ids(
     data: dict | list | tuple,
-    replacer: Union[Callable[[str], int], Callable[[int], str]],
+    replacer: Callable[[str], int] | Callable[[int], str],
 ):
     iter = enumerate(data) if isinstance(data, (list, tuple)) else data.items()
 
@@ -182,6 +182,7 @@ class SparkApi:
         Args:
             desc (str):
                 Human-readable function description, to be used in error messages.
+
         """
         if self.state.is_updating():
             raise exceptions.UpdateInProgress('Update is in progress')
@@ -191,7 +192,7 @@ class SparkApi:
         try:
             await asyncio.wait_for(self.state.wait_synchronized(), self.config.command_timeout.total_seconds())
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise exceptions.NotConnected('Timed out waiting for synchronized state')
 
         try:
@@ -227,6 +228,7 @@ class SparkApi:
         Returns:
             Block:
                 The desired block, as present on the controller.
+
         """
         async with self._execute('Read block'):
             block = self._to_firmware_block_identity(block)
@@ -250,6 +252,7 @@ class SparkApi:
                 The desired block, as present on the controller.
                 Block data will only include fields explicitly
                 marked for logging, and units will use the postfixed format.
+
         """
         async with self._execute('Read block (logged)'):
             block = self._to_firmware_block_identity(block)
@@ -274,6 +277,7 @@ class SparkApi:
                 Block data will only include fields that are stored
                 in persistent memory on the controller.
                 Non-persistent fields will be absent or set to a default value.
+
         """
         async with self._execute('Read block (stored)'):
             block = self._to_firmware_block_identity(block)
@@ -294,6 +298,7 @@ class SparkApi:
         Returns:
             Block:
                 The desired block, as present on the controller after writing.
+
         """
         async with self._execute('Write block'):
             block = self._to_firmware_block(block)
@@ -314,6 +319,7 @@ class SparkApi:
         Returns:
             Block:
                 The desired block, as present on the controller after writing.
+
         """
         async with self._execute('Patch block'):
             block = self._to_firmware_block(block)
@@ -335,6 +341,7 @@ class SparkApi:
         Returns:
             Block:
                 The desired block, as present on the controller after creation.
+
         """
         async with self._execute('Create block'):
             if block.nid is None:
@@ -358,6 +365,7 @@ class SparkApi:
         Returns:
             BlockIdentity:
                 The actual sid, nid, and type of the removed block.
+
         """
         async with self._execute('Delete block'):
             block = self._to_firmware_block_identity(block)
@@ -382,6 +390,7 @@ class SparkApi:
         Returns:
             list[Block]:
                 All present blocks on the controller.
+
         """
         async with self._execute('Read all blocks'):
             blocks = await self.cmder.read_all_blocks()
@@ -398,6 +407,7 @@ class SparkApi:
                 All present blocks on the controller.
                 Block data will only include fields explicitly
                 marked for logging, and units will use the postfixed format.
+
         """
         async with self._execute('Read all blocks (logged)'):
             blocks = await self.cmder.read_all_blocks(ReadMode.LOGGED)
@@ -415,6 +425,7 @@ class SparkApi:
                 Block data will only include fields that are stored
                 in persistent memory on the controller.
                 Non-persistent fields will be absent or set to a default value.
+
         """
         async with self._execute('Read all blocks (stored)'):
             blocks = await self.cmder.read_all_blocks(ReadMode.STORED)
@@ -430,6 +441,7 @@ class SparkApi:
         Returns:
             list[Block]:
                 Newly discovered blocks.
+
         """
         async with self._execute('Discover blocks'):
             async with self._discovery_lock:
@@ -443,9 +455,10 @@ class SparkApi:
         System blocks will not be removed, but the display settings
         will be reset.
 
-         Returns:
+        Returns:
             list[BlockIdentity]:
                 IDs of all removed blocks.
+
         """
         async with self._execute('Remove all blocks'):
             blocks = await self.cmder.clear_blocks()
@@ -471,6 +484,7 @@ class SparkApi:
         Returns:
             BlockIdentity:
                 The new sid + nid.
+
         """
         ident = FirmwareBlockIdentity(id=change.desired, nid=self.block_store[change.existing])
         block = await self.cmder.write_block_name(ident)
@@ -493,9 +507,10 @@ class SparkApi:
         Returns:
             Backup:
                 JSON-ready backup data, compatible with apply_backup().
+
         """
         blocks = await self.read_all_stored_blocks()
-        timestamp = datetime.now(tz=timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')
+        timestamp = datetime.now(tz=UTC).isoformat(timespec='seconds').replace('+00:00', 'Z')
         controller_info = self.state.desc().controller
 
         return Backup(
@@ -522,6 +537,7 @@ class SparkApi:
         Returns:
             BackupApplyResult:
                 User feedback on errors encountered during import.
+
         """
         async with self._discovery_lock:
             LOGGER.info('Applying backup ...')
@@ -609,6 +625,7 @@ class SparkApi:
             block (Block):
                 A block that at least includes type and data.
                 Both sid and nid may be omitted.
+
         """
         async with self._execute('Validate block'):
             sid = block.id

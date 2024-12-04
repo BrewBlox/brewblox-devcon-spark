@@ -99,7 +99,7 @@ class CboxCommander:
     async def _on_event(self, msg: str):
         if msg.startswith(WELCOME_PREFIX):
             handshake_values = msg.removeprefix('!').split(',')
-            handshake = HandshakeMessage(**dict(zip(HANDSHAKE_KEYS, handshake_values)))
+            handshake = HandshakeMessage(**dict(zip(HANDSHAKE_KEYS, handshake_values, strict=False)))
             LOGGER.info(handshake)
 
             desc = ControllerDescription(
@@ -162,7 +162,7 @@ class CboxCommander:
 
             return response.payload
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise exceptions.CommandTimeout(opcode.name)
 
         finally:

@@ -49,25 +49,26 @@ def _find_nested_relations(
 
     Returns:
         list[BlockRelation]: relations detected in `field` and its children.
+
     """
     if relation and relation[-1] in IGNORED_RELATION_FIELDS:
         return []
 
-    elif bloxfield.is_defined_link(field):
+    if bloxfield.is_defined_link(field):
         source, target = parent_id, field['id']
         if relation and relation[0] in INVERTED_RELATION_FIELDS:
             source, target = target, source
 
         return [BlockRelation(source=source, target=target, relation=relation)]
 
-    elif bloxfield.is_bloxfield(field):
+    if bloxfield.is_bloxfield(field):
         # Ignored:
         # - claim links
         # - unset links
         # - quantities
         return []
 
-    elif isinstance(field, dict):
+    if isinstance(field, dict):
         # Increase recursion level for nested values
         # Flatten output at each level to discard empty results
         output = []
@@ -75,7 +76,7 @@ def _find_nested_relations(
             output += _find_nested_relations(parent_id, [*relation, key], value)
         return output
 
-    elif isinstance(field, list):
+    if isinstance(field, list):
         # Increase recursion level for list values
         # Flatten output at each level to discard empty results
         output = []
@@ -83,8 +84,7 @@ def _find_nested_relations(
             output += _find_nested_relations(parent_id, [*relation, str(idx)], value)
         return output
 
-    else:
-        return []
+    return []
 
 
 def calculate_relations(blocks: list[Block]) -> list[BlockRelation]:
@@ -97,6 +97,7 @@ def calculate_relations(blocks: list[Block]) -> list[BlockRelation]:
 
     Returns:
         list[BlockRelation]: Valid relations between blocks in `blocks`.
+
     """
     relations: list[BlockRelation] = []
     for block in blocks:

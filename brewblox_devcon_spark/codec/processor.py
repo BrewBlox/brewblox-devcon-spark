@@ -7,10 +7,11 @@ import logging
 import re
 from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
+from collections.abc import Iterator
 from dataclasses import dataclass
 from functools import reduce
 from socket import htonl, ntohl
-from typing import Any, Iterator
+from typing import Any
 
 from google.protobuf import json_format
 from google.protobuf.descriptor import Descriptor, FieldDescriptor
@@ -140,7 +141,7 @@ class ProtobufProcessor:
 
     @staticmethod
     def matches_address(field: MaskField, match: tuple[int | None]):
-        for fa_tag, ma_tag in zip(field.address, match):
+        for fa_tag, ma_tag in zip(field.address, match, strict=False):
             if fa_tag is not None and fa_tag != ma_tag:
                 return False
         return True
@@ -174,14 +175,7 @@ class ProtobufProcessor:
             # Value field, no need for recursion
             # This is a leaf node
             # obj is { key: ... }
-            if not field.message_type:
-                yield OptionElement(field, obj, key, base_key, postfix, address)
-
-            # Explicitly deleted submessage field
-            # Stop recursion
-            # obj is { key: None }
-            # Because we stop here, this field is a leaf node
-            elif value is None:
+            if not field.message_type or value is None:
                 yield OptionElement(field, obj, key, base_key, postfix, address)
 
             # Repeated fields are generic collections, expressed in json as list or dict
@@ -225,9 +219,8 @@ class ProtobufProcessor:
             user_value = value['value']
             user_unit = value.get('unit')
             return self._converter.to_sys_value(user_value, unit_type, user_unit)
-        else:
-            user_unit = postfix
-            return self._converter.to_sys_value(value, unit_type, user_unit)
+        user_unit = postfix
+        return self._converter.to_sys_value(value, unit_type, user_unit)
 
     def pre_encode(
         self, desc: Descriptor, payload: DecodedPayload, /, filter_values: bool | None = None
@@ -292,6 +285,7 @@ class ProtobufProcessor:
                     'desiredSetting': 15,   # No conversion required - value already used degC
                 }
             }
+
         """
         if filter_values is None:
             filter_values = self._filter_values
@@ -424,6 +418,7 @@ class ProtobufProcessor:
                     'output': 1234,                     # We're reading -> keep readonly values
                 }
             }
+
         """
         metadata_opt = MetadataOpt.TYPED
         date_fmt_opt = DateFormatOpt.ISO8601
@@ -441,7 +436,7 @@ class ProtobufProcessor:
             if payload.maskMode == MaskMode.NO_MASK:
                 excluded = False
             elif payload.maskMode in [MaskMode.INCLUSIVE, MaskMode.EXCLUSIVE]:
-                masked = any((f for f in payload.maskFields if self.matches_address(f, element.address)))
+                masked = any(f for f in payload.maskFields if self.matches_address(f, element.address))
                 excluded = masked ^ (payload.maskMode == MaskMode.INCLUSIVE)
             else:
                 raise NotImplementedError(f'{payload.maskMode=}')

@@ -15,7 +15,6 @@ from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
-import pytest_asyncio
 from pytest_docker.plugin import Services as DockerServices
 
 from brewblox_devcon_spark import app_factory, utils
@@ -103,7 +102,7 @@ def caplog(caplog: pytest.LogCaptureFixture) -> pytest.LogCaptureFixture:
 def m_kill(monkeypatch: pytest.MonkeyPatch) -> Generator[Mock, None, None]:
     m = Mock(spec=utils.os.kill)
     monkeypatch.setattr(utils.os, 'kill', m)
-    yield m
+    return m
 
 
 @pytest.fixture(autouse=True)
@@ -121,7 +120,6 @@ def m_sleep(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest):
         return await real_func(delay, *args, **kwargs)
 
     monkeypatch.setattr('asyncio.sleep', wrapper)
-    yield
 
 
 @pytest.fixture

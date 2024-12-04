@@ -4,8 +4,8 @@ Parses stream data into controlbox events and data
 
 import logging
 import re
+from collections.abc import Generator
 from queue import Queue
-from typing import Generator
 
 LOGGER = logging.getLogger(__name__)
 

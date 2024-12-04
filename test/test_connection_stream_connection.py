@@ -1,5 +1,4 @@
 import asyncio
-from typing import AsyncGenerator
 
 import pytest
 import pytest_asyncio
@@ -49,7 +48,8 @@ class Context:
 
     async def start_server(self):
         """Start a server with the callback *handle_client* listening on
-        "self.addr"."""
+        "self.addr".
+        """
         self.server = await self.loop.create_server(EchoServerProtocol, 'localhost', self.port)
 
     async def close_server(self):
@@ -81,7 +81,6 @@ async def ctx(unused_tcp_port_factory):
             await asyncio.wait(tasks)
         except asyncio.exceptions.CancelledError:
             pass
-        pass
 
 
 @pytest.mark.asyncio(loop_scope='session')

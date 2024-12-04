@@ -54,7 +54,7 @@ def app() -> FastAPI:
 
 @pytest.fixture(autouse=True)
 async def manager(manager: LifespanManager):
-    yield manager
+    return manager
 
 
 @pytest.fixture(autouse=True)

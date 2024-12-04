@@ -103,7 +103,7 @@ async def discover_mqtt(callbacks: ConnectionCallbacks) -> ConnectionImplBase | 
         await conn.connect()
         return conn
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         return None
 
 

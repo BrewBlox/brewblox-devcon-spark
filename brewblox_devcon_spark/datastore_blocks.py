@@ -26,10 +26,9 @@ def get_legacy_redis_block_db_name() -> str:  # pragma: no cover
     desc = state.desc()
     if desc.connection_kind == 'SIM':
         return f'simulator__{config.name}-blocks-db'
-    elif desc.connection_kind == 'MOCK':
+    if desc.connection_kind == 'MOCK':
         return f'mock__{config.name}-blocks-db'
-    else:
-        return f'{desc.controller.device.device_id}-blocks-db'
+    return f'{desc.controller.device.device_id}-blocks-db'
 
 
 async def extract_legacy_redis_block_names() -> list[tuple[str, int]]:  # pragma: no cover

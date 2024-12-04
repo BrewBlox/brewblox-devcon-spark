@@ -21,8 +21,7 @@ def calc_interval(value: timedelta | None) -> timedelta:
 
     if value:
         return min(value * config.connect_backoff, config.connect_interval_max)
-    else:
-        return config.connect_interval
+    return config.connect_interval
 
 
 class ConnectionHandler(ConnectionCallbacks):
@@ -75,7 +74,7 @@ class ConnectionHandler(ConnectionCallbacks):
 
                     await asyncio.sleep(self.config.discovery_interval.total_seconds())
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise ConnectionAbortedError('Discovery timeout')
 
     async def connect(self) -> ConnectionImplBase:
@@ -86,12 +85,11 @@ class ConnectionHandler(ConnectionCallbacks):
 
         if mock:
             return await connect_mock(self)
-        elif simulation:
+        if simulation:
             return await connect_simulation(self)
-        elif device_host:
+        if device_host:
             return await connect_tcp(self, device_host, device_port)
-        else:
-            return await self.discover()
+        return await self.discover()
 
     async def run(self):
         try:

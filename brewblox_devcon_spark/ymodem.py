@@ -38,6 +38,7 @@ Notes:
 - Control characters (STX, index, negating index, CRC) do not count towards the packet length.
 - The second and third byte in packages are its index and 0xFF - index. The header always has index 0x00.
 - CRC bytes are transmitted, but ignored. The reference implementation always sends [0,0] CRC.
+
 """
 
 import asyncio
@@ -46,12 +47,12 @@ import math
 import os
 import re
 import subprocess
+from collections.abc import Awaitable, ByteString
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import timedelta
 from enum import IntEnum
 from pathlib import Path
-from typing import Awaitable, ByteString
 
 import aiofiles
 
@@ -144,7 +145,7 @@ async def connect(address: str) -> Connection:
             return await connect_tcp(address)
         except ConnectionRefusedError:
             LOGGER.debug('Connection refused, retrying...')
-    raise ConnectionRefusedError()
+    raise ConnectionRefusedError
 
 
 class OtaClient:
@@ -171,7 +172,7 @@ class OtaClient:
         for i in range(20):
             try:
                 buffer += await asyncio.wait_for(_read(), 1)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 LOGGER.debug('Repeating handshake trigger...')
                 conn.transport.write(b'\n')
                 continue
@@ -186,7 +187,7 @@ class OtaClient:
                 self._notify(f'Handshake received: {message}')
                 break
         else:
-            raise asyncio.TimeoutError('Controller did not send handshake message')
+            raise TimeoutError('Controller did not send handshake message')
 
         # Trigger YMODEM mode
         buffer = ''
@@ -197,7 +198,7 @@ class OtaClient:
                 self._notify('Controller is ready for firmware')
                 break
         else:
-            raise asyncio.TimeoutError('Controller did not enter file transfer mode')
+            raise TimeoutError('Controller did not enter file transfer mode')
 
         ack = 0
         while ack < 2:
