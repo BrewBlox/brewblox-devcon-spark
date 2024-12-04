@@ -61,6 +61,7 @@ dependencies = [
     "aiozeroconf<1.0.0,>=0.1.8",
     "debugpy<2.0.0,>=1.5.1",
     "Pint<1.0,>=0.22",
+    "flexparser<1.0.0,<0.4",
     "pytimeparse<2.0.0,>=1.1.8",
     "ciso8601<3.0.0,>=2.2.0",
     "fastapi<0.110.0,>=0.104.1",
