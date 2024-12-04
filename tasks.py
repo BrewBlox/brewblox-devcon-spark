@@ -100,20 +100,12 @@ def testclean(ctx: Context):
         ctx.run('sudo pkill -ef -9 brewblox-amd64.sim')
 
 
-@task
-def build(ctx: Context):
-    with ctx.cd(ROOT):
-        ctx.run('rm -rf dist')
-        ctx.run('uv build --sdist')
-        ctx.run('uv export --no-hashes --no-dev --format requirements-txt -o dist/requirements.txt')
-
-
-@task(pre=[build])
+@task()
 def image(ctx: Context, tag='local'):
     with ctx.cd(ROOT):
         ctx.run(f'docker build -t ghcr.io/brewblox/brewblox-devcon-spark:{tag} -f Dockerfile.service .')
 
 @task()
-def buildx(ctx: Context, tag='local', platform='linux/arm/v7'): # linux/arm64/v8
+def buildx(ctx: Context, tag='local', platform='linux/arm/v7,linux/arm64/v8,linux/arm64/v8'):  # linux/arm64/v8
     with ctx.cd(ROOT):
         ctx.run(f'docker buildx build --no-cache --platform {platform} -t ghcr.io/brewblox/brewblox-devcon-spark:{tag} -f Dockerfile.service .')

@@ -3,30 +3,20 @@ FROM python:3.11-bookworm AS base
 # Declare a build argument for the target architecture
 ARG TARGETPLATFORM
 
-# ENV PIP_FIND_LINKS=/wheeley
-#ENV VIRTUAL_ENV=/app/.venv
-#ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 ADD https://astral.sh/uv/install.sh /install.sh
 RUN chmod -R 655 /install.sh && /install.sh && rm /install.sh
-# echo uv version
-RUN /root/.local/bin/uv --version
 
-# COPY ./brewblox_devcon_spark /app/brewblox_devcon_spark
-# COPY pyproject.toml /app/pyproject.toml
-# # COPY uv.lock /app/uv.lock
-# COPY firmware.ini /app/firmware.ini
-# COPY firmware /app/firmware
-COPY . /app
-
+COPY ./ /app
 WORKDIR /app
+
 RUN /root/.local/bin/uv venv
-RUN if [ "$TARGETPLATFORM" = "linux/arm/v7" ] || [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
-    /root/.local/bin/uv export --no-hashes --no-dev --output-file requirements.txt --default-index=https://www.piwheels.org/simple; \
-    /root/.local/bin/uv pip sync --verbose requirements.txt --default-index=https://www.piwheels.org/simple; \
+RUN if [ "$TARGETPLATFORM" = "linux/arm/v7" ] || [ "$TARGETPLATFORM" = "linux/arm64" || [ "$TARGETPLATFORM" = "linux/arm/v8" ] ]; then \
+    /root/.local/bin/uv export --no-hashes --no-dev | \
+    /root/.local/bin/uv pip sync --verbose --default-index=https://www.piwheels.org/simple -; \
     else \
-    /root/.local/bin/uv export --no-hashes --no-build --no-dev --output-file requirements.txt; \
-    /root/.local/bin/uv pip sync --verbose requirements.txt; \
+    /root/.local/bin/uv export --no-hashes --no-build --no-dev | \
+    /root/.local/bin/uv pip sync --verbose -; \
     fi
 
 RUN <<EOF bash
@@ -47,7 +37,6 @@ FROM python:3.11-slim-bookworm
 EXPOSE 5000
 WORKDIR /app
 
-ENV PIP_FIND_LINKS=/wheeley
 ENV VENV=/app/.venv
 ENV PATH="$VENV/bin:$PATH"
 
