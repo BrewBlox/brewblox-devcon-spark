@@ -865,3 +865,8 @@ async def test_debug_encode_response(client: AsyncClient):
 
     assert payload.content['value']['value'] == 0  # Readonly value
     assert payload.content['offset']['value'] == 20
+
+async def test_get_free_port():
+    # test for coverage, because tests get their free port from pytest_asyncio
+    port = utils.get_free_port()
+    assert 0 < port < 65536
