@@ -111,8 +111,22 @@ def image(ctx: Context, tag='local'):
 
 
 @task()
-def buildx(ctx: Context, tag='local', platform='linux/arm/v7,linux/arm64/v8,linux/arm64/v8'):  # linux/arm64/v8
+def buildx(ctx: Context, tag='local', platform='linux/amd64,linux/arm/v7,linux/arm64/v8'):
     with ctx.cd(ROOT):
         ctx.run(
             f'docker buildx build --no-cache --platform {platform} -t ghcr.io/brewblox/brewblox-devcon-spark:{tag} -f Dockerfile.service .'
+        )
+
+
+@task()
+def flasher_image(ctx: Context, tag='local'):
+    with ctx.cd(ROOT):
+        ctx.run(f'docker build -t ghcr.io/brewblox/brewblox-firmware-flasher:{tag} -f Dockerfile.flasher .')
+
+
+@task()
+def flasher_buildx(ctx: Context, tag='local', platform='linux/amd64,linux/arm/v7,linux/arm64/v8'):
+    with ctx.cd(ROOT):
+        ctx.run(
+            f'docker buildx build --no-cache --platform {platform} -t ghcr.io/brewblox/brewblox-firmware-flasher:{tag} -f Dockerfile.flasher .'
         )
