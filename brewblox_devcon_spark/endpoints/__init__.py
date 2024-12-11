@@ -4,8 +4,7 @@ Namespace for all REST API modules.
 
 from fastapi import APIRouter
 
-from . import (http_backup, http_blocks, http_debug, http_settings, http_sim,
-               http_system, mqtt_blocks)
+from . import http_backup, http_blocks, http_debug, http_settings, http_sim, http_system, mqtt_blocks
 
 routers: list[APIRouter] = [
     http_backup.router,

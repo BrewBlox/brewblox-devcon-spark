@@ -6,8 +6,7 @@ import pytest
 from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 
-from brewblox_devcon_spark import (codec, command, connection, state_machine,
-                                   utils)
+from brewblox_devcon_spark import codec, command, connection, state_machine, utils
 from brewblox_devcon_spark.connection import connection_handler
 from brewblox_devcon_spark.models import ErrorCode, IntermediateResponse
 
@@ -33,18 +32,20 @@ def app() -> FastAPI:
 
 
 async def test_acknowledge(manager: LifespanManager):
-    welcome = ','.join([
-        '!BREWBLOX',
-        'ed70d66f0',
-        '3f2243a',
-        '2019-06-18',
-        '2019-06-18',
-        '1.2.1-rc.2',
-        'p1',
-        '78',
-        '0A',
-        '1234567F0CASE'
-    ])
+    welcome = ','.join(
+        [
+            '!BREWBLOX',
+            'ed70d66f0',
+            '3f2243a',
+            '2019-06-18',
+            '2019-06-18',
+            '1.2.1-rc.2',
+            'p1',
+            '78',
+            '0A',
+            '1234567F0CASE',
+        ]
+    )
     state = state_machine.CV.get()
     conn = connection.CV.get()
 
@@ -67,11 +68,7 @@ async def test_unexpected_event(caplog: pytest.LogCaptureFixture):
 
 
 async def test_unexpected_response(caplog: pytest.LogCaptureFixture):
-    response = IntermediateResponse(
-        msgId=123,
-        error=ErrorCode.OK,
-        payload=[]
-    )
+    response = IntermediateResponse(msgId=123, error=ErrorCode.OK, payload=[])
     message = codec.CV.get().encode_response(response)
     await connection.CV.get().on_response(message)
 

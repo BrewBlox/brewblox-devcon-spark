@@ -6,9 +6,8 @@ import logging
 
 from fastapi import APIRouter
 
-from .. import datastore_settings
+from .. import datastore_settings, state_machine
 from ..models import AutoconnectSettings
-from .. import state_machine
 
 LOGGER = logging.getLogger(__name__)
 

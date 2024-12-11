@@ -4,12 +4,13 @@ import os
 import re
 import signal
 import socket
+from collections.abc import AsyncGenerator, Awaitable, Callable, Coroutine
 from configparser import ConfigParser
 from contextlib import asynccontextmanager, suppress
 from datetime import timedelta
 from functools import lru_cache
 from ipaddress import ip_address
-from typing import AsyncGenerator, Awaitable, Callable, Coroutine, TypeVar
+from typing import TypeVar
 
 from dns.exception import DNSException
 from dns.resolver import Resolver as DNSResolver
@@ -63,7 +64,7 @@ def strex(ex: Exception):
     """
     Formats exception as `Exception(message)`
     """
-    return f'{type(ex).__name__}({str(ex)})'
+    return f'{type(ex).__name__}({ex!s})'
 
 
 def graceful_shutdown(reason: str):
@@ -99,8 +100,9 @@ def autodetect_service_name() -> str:  # pragma: no cover
     # We can first apply a basic sanity check: does the hostname match the format?
     match = re.fullmatch(r'.+[_-].+([_-])\d+', host)
     if not match:
-        raise ValueError('Failed to autodetect service name. ' +
-                         f'"{host}" is not formatted as a Compose container name.')
+        raise ValueError(
+            'Failed to autodetect service name. ' + f'"{host}" is not formatted as a Compose container name.'
+        )
 
     # We need to identify the separactor character.
     # Depending on the Compose version, the separator character is either _ or -.
@@ -150,9 +152,7 @@ def get_free_port() -> int:
 
 
 @asynccontextmanager
-async def task_context(coro: Coroutine,
-                       cancel_timeout=timedelta(seconds=5)
-                       ) -> AsyncGenerator[asyncio.Task, None]:
+async def task_context(coro: Coroutine, cancel_timeout=timedelta(seconds=5)) -> AsyncGenerator[asyncio.Task, None]:
     """
     Wraps provided coroutine in an async task.
     At the end of the context, the task is cancelled and awaited.
@@ -173,10 +173,12 @@ def not_sentinel(value: VT, default_value: DVT) -> VT | DVT:
     return default_value
 
 
-async def httpx_retry(func: Callable[[], Awaitable[Response]],
-                      interval: timedelta = ...,
-                      max_interval: timedelta = ...,
-                      backoff: float = ...) -> Response:
+async def httpx_retry(
+    func: Callable[[], Awaitable[Response]],
+    interval: timedelta = ...,
+    max_interval: timedelta = ...,
+    backoff: float = ...,
+) -> Response:
     """
     Retries a httpx request forever until a 2XX response is received.
     The interval between requests will be multiplied with `backoff`
@@ -217,7 +219,7 @@ def add_logging_level(level_name: str, level_num: int, method_name: str = ...):
     raise an `AttributeError` if the level name is already an attribute of the
     `logging` module or if the method name is already present
 
-    Example
+    Example:
     -------
     >>> add_logging_level('TRACE', logging.DEBUG - 5)
     >>> logging.getLogger(__name__).setLevel("TRACE")
@@ -228,6 +230,7 @@ def add_logging_level(level_name: str, level_num: int, method_name: str = ...):
 
     Source (2023/12/11):
     https://stackoverflow.com/questions/2183233/how-to-add-a-custom-loglevel-to-pythons-logging-facility
+
     """
     method_name = not_sentinel(method_name, level_name.lower())
 
@@ -239,7 +242,7 @@ def add_logging_level(level_name: str, level_num: int, method_name: str = ...):
     # Repeat calls are only allowed if completely duplicate
     if all([has_level, has_method, has_class_method]) and active_num == level_num:
         return
-    elif any([has_level, has_method, has_class_method]):
+    if any([has_level, has_method, has_class_method]):
         raise AttributeError(f'{level_name=} or {level_num=} are already defined in logging')
 
     # This method was inspired by the answers to Stack Overflow post

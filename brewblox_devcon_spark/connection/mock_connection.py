@@ -13,9 +13,18 @@ from itertools import count
 
 from .. import codec, const, utils
 from ..codec import bloxfield
-from ..models import (DecodedPayload, EncodedPayload, ErrorCode, FirmwareBlock,
-                      IntermediateRequest, IntermediateResponse, Opcode,
-                      ReadMode, ResetData, ResetReason)
+from ..models import (
+    DecodedPayload,
+    EncodedPayload,
+    ErrorCode,
+    FirmwareBlock,
+    IntermediateRequest,
+    IntermediateResponse,
+    Opcode,
+    ReadMode,
+    ResetData,
+    ResetReason,
+)
 from .connection_impl import ConnectionCallbacks, ConnectionImplBase
 
 LOGGER = logging.getLogger(__name__)
@@ -65,14 +74,16 @@ def default_blocks() -> dict[int, FirmwareBlock]:
                     ]
                 },
             ),
-        ]}
+        ]
+    }
 
 
 class MockConnection(ConnectionImplBase):
-    def __init__(self,
-                 device_id: str,
-                 callbacks: ConnectionCallbacks,
-                 ) -> None:
+    def __init__(
+        self,
+        device_id: str,
+        callbacks: ConnectionCallbacks,
+    ) -> None:
         super().__init__('MOCK', device_id, callbacks)
 
         self._start_time = datetime.now()
@@ -81,12 +92,9 @@ class MockConnection(ConnectionImplBase):
         self._blocks: dict[int, FirmwareBlock] = default_blocks()
 
     def _to_payload(self, block: FirmwareBlock, mode: ReadMode) -> EncodedPayload:
-        return self._codec.encode_payload(DecodedPayload(
-            blockId=block.nid,
-            blockType=block.type,
-            name=block.id,
-            content=block.data
-        ))
+        return self._codec.encode_payload(
+            DecodedPayload(blockId=block.nid, blockType=block.type, name=block.id, content=block.data)
+        )
 
     def _to_block(self, payload: EncodedPayload) -> FirmwareBlock:
         payload = self._codec.decode_payload(payload)
@@ -100,23 +108,20 @@ class MockConnection(ConnectionImplBase):
     def _default_block(self, block_id: str, block_nid: int, block_type: str) -> FirmwareBlock:
         return self._to_block(
             self._codec.encode_payload(
-                DecodedPayload(
-                    blockId=block_nid,
-                    blockType=block_type,
-                    name=block_id,
-                    content={}
-                )
+                DecodedPayload(blockId=block_nid, blockType=block_type, name=block_id, content={})
             )
         )
 
     def _merge_blocks(self, dest: FirmwareBlock, src: FirmwareBlock):
         for key in dest.data.keys():
             v_new = src.data[key]
-            if any([
-                bloxfield.is_defined_link(v_new),
-                bloxfield.is_defined_quantity(v_new),
-                not bloxfield.is_bloxfield(v_new) and v_new is not None,
-            ]):
+            if any(
+                [
+                    bloxfield.is_defined_link(v_new),
+                    bloxfield.is_defined_quantity(v_new),
+                    not bloxfield.is_bloxfield(v_new) and v_new is not None,
+                ]
+            ):
                 dest.data[key] = v_new
 
     def update_systime(self):
@@ -142,9 +147,7 @@ class MockConnection(ConnectionImplBase):
         ]
         await self.on_event(','.join(welcome))
 
-    async def handle_command(self,
-                             request: IntermediateRequest
-                             ) -> IntermediateResponse | None:  # pragma: no cover
+    async def handle_command(self, request: IntermediateRequest) -> IntermediateResponse | None:  # pragma: no cover
         response = IntermediateResponse(
             msgId=request.msgId,
             error=ErrorCode.OK,
@@ -156,8 +159,7 @@ class MockConnection(ConnectionImplBase):
             error = NEXT_ERROR.pop(0)
             if error is None:
                 return None  # No response at all
-            else:
-                response.error = error
+            response.error = error
 
         elif request.opcode in [
             Opcode.NONE,
@@ -181,8 +183,7 @@ class MockConnection(ConnectionImplBase):
             Opcode.STORAGE_READ_ALL,
             Opcode.NAME_READ_ALL,
         ]:
-            response.payload = [self._to_payload(block, request.mode)
-                                for block in self._blocks.values()]
+            response.payload = [self._to_payload(block, request.mode) for block in self._blocks.values()]
 
         elif request.opcode == Opcode.BLOCK_WRITE:
             block = self._blocks.get(request.payload.blockId)
@@ -200,9 +201,7 @@ class MockConnection(ConnectionImplBase):
         elif request.opcode == Opcode.BLOCK_CREATE:
             nid = request.payload.blockId
             block = self._blocks.get(nid)
-            if block:
-                response.error = ErrorCode.BLOCK_NOT_CREATABLE
-            elif nid > 0 and nid < const.USER_NID_START:
+            if block or (nid > 0 and nid < const.USER_NID_START):
                 response.error = ErrorCode.BLOCK_NOT_CREATABLE
             elif request.payload.content is None:
                 response.error = ErrorCode.INVALID_BLOCK
@@ -233,13 +232,10 @@ class MockConnection(ConnectionImplBase):
             nid = request.payload.blockId
             name = request.payload.name
             block = self._blocks.get(nid)
-            match = next((block for block in self._blocks.values()
-                          if block.id == name), None)
+            match = next((block for block in self._blocks.values() if block.id == name), None)
             if not block:
                 response.error = ErrorCode.INVALID_BLOCK_ID
-            elif not name:
-                response.error = ErrorCode.INVALID_BLOCK_NAME
-            elif match and match.nid != nid:
+            elif not name or (match and match.nid != nid):
                 response.error = ErrorCode.INVALID_BLOCK_NAME
             else:
                 block.id = name
@@ -250,9 +246,11 @@ class MockConnection(ConnectionImplBase):
             self.update_systime()
 
         elif request.opcode == Opcode.CLEAR_BLOCKS:
-            response.payload = [self._to_payload(block, request.mode)
-                                for block in self._blocks.values()
-                                if block.nid >= const.USER_NID_START]
+            response.payload = [
+                self._to_payload(block, request.mode)
+                for block in self._blocks.values()
+                if block.nid >= const.USER_NID_START
+            ]
             self._blocks = default_blocks()
             self.update_systime()
 

@@ -5,10 +5,7 @@ from brewblox_devcon_spark.models import Block
 
 
 def test_sequence_from_line():
-    assert sequence.from_line(
-        'SET_SETPOINT target=Kettle Setpoint, setting=40C',
-        1
-    ) == {
+    assert sequence.from_line('SET_SETPOINT target=Kettle Setpoint, setting=40C', 1) == {
         'SET_SETPOINT': {
             '__raw__target': {
                 '__bloxtype': 'Link',
@@ -22,10 +19,7 @@ def test_sequence_from_line():
         },
     }
 
-    assert sequence.from_line(
-        "SET_SETPOINT target='Kettle Setpoint   ', setting= 40 C ",
-        1
-    ) == {
+    assert sequence.from_line("SET_SETPOINT target='Kettle Setpoint   ', setting= 40 C ", 1) == {
         'SET_SETPOINT': {
             '__raw__target': {
                 '__bloxtype': 'Link',
@@ -39,10 +33,7 @@ def test_sequence_from_line():
         },
     }
 
-    assert sequence.from_line(
-        'WAIT_SETPOINT target=Kettle Setpoint, precision=1dC',
-        1
-    ) == {
+    assert sequence.from_line('WAIT_SETPOINT target=Kettle Setpoint, precision=1dC', 1) == {
         'WAIT_SETPOINT': {
             '__raw__target': {
                 '__bloxtype': 'Link',
@@ -56,10 +47,7 @@ def test_sequence_from_line():
         },
     }
 
-    assert sequence.from_line(
-        'WAIT_DURATION duration=1m10s',
-        1
-    ) == {
+    assert sequence.from_line('WAIT_DURATION duration=1m10s', 1) == {
         'WAIT_DURATION': {
             '__raw__duration': {
                 '__bloxtype': 'Quantity',
@@ -69,36 +57,27 @@ def test_sequence_from_line():
         }
     }
 
-    assert sequence.from_line(
-        'SET_DIGITAL target=actuator, setting=STATE_ACTIVE',
-        1
-    ) == {
+    assert sequence.from_line('SET_DIGITAL target=actuator, setting=STATE_ACTIVE', 1) == {
         'SET_DIGITAL': {
             '__raw__target': {
                 '__bloxtype': 'Link',
                 'id': 'actuator',
             },
-            '__raw__setting': 'STATE_ACTIVE'
+            '__raw__setting': 'STATE_ACTIVE',
         }
     }
 
-    assert sequence.from_line(
-        'SET_PWM target=actuator, setting=12.34',
-        1
-    ) == {
+    assert sequence.from_line('SET_PWM target=actuator, setting=12.34', 1) == {
         'SET_PWM': {
             '__raw__target': {
                 '__bloxtype': 'Link',
                 'id': 'actuator',
             },
-            '__raw__setting': pytest.approx(12.34)
+            '__raw__setting': pytest.approx(12.34),
         }
     }
 
-    assert sequence.from_line(
-        'SET_SETPOINT target=Kettle Setpoint, setting=$kettle_setting',
-        1
-    ) == {
+    assert sequence.from_line('SET_SETPOINT target=Kettle Setpoint, setting=$kettle_setting', 1) == {
         'SET_SETPOINT': {
             '__raw__target': {
                 '__bloxtype': 'Link',
@@ -108,34 +87,22 @@ def test_sequence_from_line():
         },
     }
 
-    assert sequence.from_line(
-        "SET_SETPOINT target='$kettle_setpoint', setting= $kettle_setting ",
-        1
-    ) == {
+    assert sequence.from_line("SET_SETPOINT target='$kettle_setpoint', setting= $kettle_setting ", 1) == {
         'SET_SETPOINT': {
             '__var__target': 'kettle_setpoint',
             '__var__setting': 'kettle_setting',
         },
     }
 
-    assert sequence.from_line(
-        '   # Hello, this is "comment"    ',
-        1
-    ) == {
+    assert sequence.from_line('   # Hello, this is "comment"    ', 1) == {
         'COMMENT': {'text': ' Hello, this is "comment"'},
     }
 
-    assert sequence.from_line(
-        '# $not_a_variable',
-        1
-    ) == {
+    assert sequence.from_line('# $not_a_variable', 1) == {
         'COMMENT': {'text': ' $not_a_variable'},
     }
 
-    assert sequence.from_line(
-        '#',
-        1
-    ) == {
+    assert sequence.from_line('#', 1) == {
         'COMMENT': {'text': ''},
     }
 
@@ -168,76 +135,106 @@ def test_sequence_from_line():
 
 
 def test_sequence_to_line():
-
-    assert sequence.to_line({
-        'SET_SETPOINT': {
-            '__raw__target': {
-                '__bloxtype': 'Link',
-                'id': 'Kettle Setpoint   ',
-            },
-            '__raw__setting': {
-                '__bloxtype': 'Quantity',
-                'value': 40.0,
-                'unit': 'degC',
-            },
-        },
-    }) == "SET_SETPOINT target='Kettle Setpoint   ', setting=40.0C"
-
-    assert sequence.to_line({
-        'WAIT_DURATION': {
-            '__raw__duration': {
-                '__bloxtype': 'Quantity',
-                'value': 70,
-                'unit': 'second',
+    assert (
+        sequence.to_line(
+            {
+                'SET_SETPOINT': {
+                    '__raw__target': {
+                        '__bloxtype': 'Link',
+                        'id': 'Kettle Setpoint   ',
+                    },
+                    '__raw__setting': {
+                        '__bloxtype': 'Quantity',
+                        'value': 40.0,
+                        'unit': 'degC',
+                    },
+                },
             }
-        }
-    }) == 'WAIT_DURATION duration=1m10s'
+        )
+        == "SET_SETPOINT target='Kettle Setpoint   ', setting=40.0C"
+    )
 
-    assert sequence.to_line({
-        'SET_DIGITAL': {
-            '__raw__target': {
-                '__bloxtype': 'Link',
-                'id': 'actuator',
-            },
-            '__raw__setting': 'STATE_ACTIVE'
-        }
-    }) == 'SET_DIGITAL target=actuator, setting=STATE_ACTIVE'
+    assert (
+        sequence.to_line(
+            {
+                'WAIT_DURATION': {
+                    '__raw__duration': {
+                        '__bloxtype': 'Quantity',
+                        'value': 70,
+                        'unit': 'second',
+                    }
+                }
+            }
+        )
+        == 'WAIT_DURATION duration=1m10s'
+    )
 
-    assert sequence.to_line({
-        'SET_PWM': {
-            '__raw__target': {
-                '__bloxtype': 'Link',
-                'id': 'actuator',
-            },
-            '__raw__setting': 23.4567
-        }
-    }) == 'SET_PWM target=actuator, setting=23.46'
+    assert (
+        sequence.to_line(
+            {
+                'SET_DIGITAL': {
+                    '__raw__target': {
+                        '__bloxtype': 'Link',
+                        'id': 'actuator',
+                    },
+                    '__raw__setting': 'STATE_ACTIVE',
+                }
+            }
+        )
+        == 'SET_DIGITAL target=actuator, setting=STATE_ACTIVE'
+    )
 
-    assert sequence.to_line({
-        'SET_PWM': {
-            '__var__target': 'actuator',
-            '__raw__setting': 23.4567
-        }
-    }) == 'SET_PWM target=$actuator, setting=23.46'
+    assert (
+        sequence.to_line(
+            {
+                'SET_PWM': {
+                    '__raw__target': {
+                        '__bloxtype': 'Link',
+                        'id': 'actuator',
+                    },
+                    '__raw__setting': 23.4567,
+                }
+            }
+        )
+        == 'SET_PWM target=actuator, setting=23.46'
+    )
 
-    assert sequence.to_line({
-        'SET_PWM': {
-            '__var__target': 'actuator',
-            '__var__setting': 'space setting'
-        }
-    }) == "SET_PWM target=$actuator, setting='$space setting'"
+    assert (
+        sequence.to_line({'SET_PWM': {'__var__target': 'actuator', '__raw__setting': 23.4567}})
+        == 'SET_PWM target=$actuator, setting=23.46'
+    )
 
-    assert sequence.to_line({
-        'COMMENT': {'text': '    =)'},
-    }) == '#    =)'
+    assert (
+        sequence.to_line({'SET_PWM': {'__var__target': 'actuator', '__var__setting': 'space setting'}})
+        == "SET_PWM target=$actuator, setting='$space setting'"
+    )
 
-    assert sequence.to_line({
-        'COMMENT': {'text': '$not_a_variable'},
-    }) == '#$not_a_variable'
+    assert (
+        sequence.to_line(
+            {
+                'COMMENT': {'text': '    =)'},
+            }
+        )
+        == '#    =)'
+    )
 
-    assert sequence.to_line({
-        'COMMENT': {},
-    }) == '#'
+    assert (
+        sequence.to_line(
+            {
+                'COMMENT': {'text': '$not_a_variable'},
+            }
+        )
+        == '#$not_a_variable'
+    )
+
+    assert (
+        sequence.to_line(
+            {
+                'COMMENT': {},
+            }
+        )
+        == '#'
+    )
 
 
 def test_partial():

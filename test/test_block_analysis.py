@@ -167,7 +167,7 @@ def make_blocks() -> list[Block]:
                         {
                             'limiting': False,
                             'max': 100,
-                        }
+                        },
                     ],
                 },
                 'desiredSetting': 50,
@@ -194,7 +194,7 @@ def make_blocks() -> list[Block]:
                         {
                             'remaining': blox_qty(0, 'min'),
                             'delayedOff': blox_qty(1, 'h'),
-                        }
+                        },
                     ],
                 },
                 'desiredState': 'STATE_ACTIVE',
@@ -274,46 +274,26 @@ def test_calculate_relations():
     result = block_analysis.calculate_relations(blocks)
     result = sorted(result, key=lambda v: f'{v.source} {v.target}')
     assert result == [
-        BlockRelation(source='Cool Actuator',
-                      target='Spark Pins',
-                      relation=['hwDevice']),
-        BlockRelation(source='Cool PID',
-                      target='Cool PWM',
-                      claimed=True,
-                      relation=['outputId']),
-        BlockRelation(source='Cool PWM',
-                      target='Balancer',
-                      relation=[
-                          'constrainedBy',
-                          'constraints',
-                          '0',
-                          'balanced',
-                          'balancerId',
-                      ]),
-        BlockRelation(source='Cool PWM',
-                      target='Cool Actuator',
-                      claimed=True,
-                      relation=['actuatorId']),
-        BlockRelation(source='Heat Actuator',
-                      target='Spark Pins',
-                      relation=['hwDevice']),
-        BlockRelation(source='Heat PID',
-                      target='Heat PWM',
-                      claimed=True,
-                      relation=['outputId']),
-        BlockRelation(source='Heat PWM',
-                      target='Heat Actuator',
-                      claimed=True,
-                      relation=['actuatorId']),
-        BlockRelation(source='Sensor',
-                      target='Setpoint',
-                      relation=['sensorId']),
-        BlockRelation(source='Setpoint',
-                      target='Cool PID',
-                      relation=['inputId']),
-        BlockRelation(source='Setpoint',
-                      target='Heat PID',
-                      relation=['inputId']),
+        BlockRelation(source='Cool Actuator', target='Spark Pins', relation=['hwDevice']),
+        BlockRelation(source='Cool PID', target='Cool PWM', claimed=True, relation=['outputId']),
+        BlockRelation(
+            source='Cool PWM',
+            target='Balancer',
+            relation=[
+                'constrainedBy',
+                'constraints',
+                '0',
+                'balanced',
+                'balancerId',
+            ],
+        ),
+        BlockRelation(source='Cool PWM', target='Cool Actuator', claimed=True, relation=['actuatorId']),
+        BlockRelation(source='Heat Actuator', target='Spark Pins', relation=['hwDevice']),
+        BlockRelation(source='Heat PID', target='Heat PWM', claimed=True, relation=['outputId']),
+        BlockRelation(source='Heat PWM', target='Heat Actuator', claimed=True, relation=['actuatorId']),
+        BlockRelation(source='Sensor', target='Setpoint', relation=['sensorId']),
+        BlockRelation(source='Setpoint', target='Cool PID', relation=['inputId']),
+        BlockRelation(source='Setpoint', target='Heat PID', relation=['inputId']),
     ]
 
 
@@ -333,27 +313,9 @@ def test_calculate_claims():
 
 def test_calculate_circular_claims():
     blocks = [
-        Block(
-            id='block-1',
-            type='test',
-            data={
-               'claimedBy': blox_link('block-3', 'Any')
-            }
-        ),
-        Block(
-            id='block-2',
-            type='test',
-            data={
-               'claimedBy': blox_link('block-1', 'Any')
-            }
-        ),
-        Block(
-            id='block-3',
-            type='test',
-            data={
-               'claimedBy': blox_link('block-2', 'Any')
-            }
-        ),
+        Block(id='block-1', type='test', data={'claimedBy': blox_link('block-3', 'Any')}),
+        Block(id='block-2', type='test', data={'claimedBy': blox_link('block-1', 'Any')}),
+        Block(id='block-3', type='test', data={'claimedBy': blox_link('block-2', 'Any')}),
     ]
     result = block_analysis.calculate_claims(blocks)
     result = sorted(result, key=lambda v: v.target)

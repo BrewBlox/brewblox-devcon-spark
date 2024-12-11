@@ -8,10 +8,19 @@ from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from pytest_mock import MockerFixture
 
-from brewblox_devcon_spark import (codec, command, connection,
-                                   datastore_blocks, datastore_settings, mqtt,
-                                   spark_api, state_machine, synchronization,
-                                   time_sync, utils)
+from brewblox_devcon_spark import (
+    codec,
+    command,
+    connection,
+    datastore_blocks,
+    datastore_settings,
+    mqtt,
+    spark_api,
+    state_machine,
+    synchronization,
+    time_sync,
+    utils,
+)
 
 TESTED = time_sync.__name__
 
@@ -46,7 +55,7 @@ def app() -> FastAPI():
 
 @pytest.fixture(autouse=True)
 async def manager(manager: LifespanManager):
-    yield manager
+    return manager
 
 
 @pytest.fixture

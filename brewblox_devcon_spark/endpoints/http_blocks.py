@@ -7,27 +7,24 @@ import logging
 from fastapi import APIRouter
 
 from .. import mqtt, spark_api, utils
-from ..models import (Block, BlockIdentity, BlockNameChange, ServicePatchEvent,
-                      ServicePatchEventData)
+from ..models import Block, BlockIdentity, BlockNameChange, ServicePatchEvent, ServicePatchEventData
 
 LOGGER = logging.getLogger(__name__)
 
 router = APIRouter(prefix='/blocks', tags=['Blocks'])
 
 
-def publish(changed: list[Block] = None,
-            deleted: list[BlockIdentity] = None):
+def publish(changed: list[Block] = None, deleted: list[BlockIdentity] = None):
     config = utils.get_config()
     mqtt_client = mqtt.CV.get()
     changed = changed or []
     deleted = [v.id for v in (deleted or [])]
-    mqtt_client.publish(f'{config.state_topic}/{config.name}/patch',
-                        ServicePatchEvent(
-                            key=config.name,
-                            data=ServicePatchEventData(
-                                changed=changed,
-                                deleted=deleted)
-                        ).model_dump(mode='json'))
+    mqtt_client.publish(
+        f'{config.state_topic}/{config.name}/patch',
+        ServicePatchEvent(key=config.name, data=ServicePatchEventData(changed=changed, deleted=deleted)).model_dump(
+            mode='json'
+        ),
+    )
 
 
 @router.post('/create', status_code=201)
@@ -103,8 +100,7 @@ async def blocks_batch_create(args: list[Block]) -> list[Block]:
     Create multiple new blocks.
     """
     api = spark_api.CV.get()
-    blocks = [await api.create_block(block)
-              for block in args]
+    blocks = [await api.create_block(block) for block in args]
     publish(changed=blocks)
     return blocks
 
@@ -115,8 +111,7 @@ async def blocks_batch_read(args: list[BlockIdentity]) -> list[Block]:
     Read multiple existing blocks.
     """
     api = spark_api.CV.get()
-    blocks = [await api.read_block(ident)
-              for ident in args]
+    blocks = [await api.read_block(ident) for ident in args]
     return blocks
 
 
@@ -126,8 +121,7 @@ async def blocks_batch_write(args: list[Block]) -> list[Block]:
     Write multiple existing blocks. This will replace all fields.
     """
     api = spark_api.CV.get()
-    blocks = [await api.write_block(block)
-              for block in args]
+    blocks = [await api.write_block(block) for block in args]
     publish(changed=blocks)
     return blocks
 
@@ -138,8 +132,7 @@ async def blocks_batch_patch(args: list[Block]) -> list[Block]:
     Write multiple existing blocks. This will only replace provided fields.
     """
     api = spark_api.CV.get()
-    blocks = [await api.patch_block(block)
-              for block in args]
+    blocks = [await api.patch_block(block) for block in args]
     publish(changed=blocks)
     return blocks
 
@@ -150,8 +143,7 @@ async def blocks_batch_delete(args: list[BlockIdentity]) -> list[BlockIdentity]:
     Delete multiple existing user blocks.
     """
     api = spark_api.CV.get()
-    idents = [await api.delete_block(ident)
-              for ident in args]
+    idents = [await api.delete_block(ident) for ident in args]
     publish(deleted=idents)
     return idents
 
@@ -202,8 +194,7 @@ async def blocks_rename(args: BlockNameChange) -> BlockIdentity:
     api = spark_api.CV.get()
     ident = await api.rename_block(args)
     block = await api.read_block(ident)
-    old_ident = BlockIdentity(id=args.existing,
-                              serviceId=config.name)
+    old_ident = BlockIdentity(id=args.existing, serviceId=config.name)
     publish(changed=[block], deleted=[old_ident])
     return ident
 
