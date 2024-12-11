@@ -105,7 +105,7 @@ dependencies = [
     "httpx-ws<1.0.0,>=0.4.3",
     "dnspython<3.0.0,>=2.4.2",
     "bidict<1.0.0,>=0.23.1",
-    "cryptography==42.0.8",
+    "cryptography==44.0.0",
 ]
 [dependency-groups]
 dev = [
