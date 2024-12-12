@@ -28,14 +28,18 @@ def compile_proto(ctx: Context):
     out_dir = ROOT / 'brewblox_devcon_spark/codec/proto-compiled'
 
     with ctx.cd(ROOT):
-        ctx.run('poetry install --sync')
+        ctx.run('uv sync')
         ctx.run(f'rm -rf {out_dir}/*_pb2.py')
-        ctx.run(' '.join([
-            'python3 -m grpc_tools.protoc',
-            '-I=./brewblox-proto/proto',
-            f'--python_out="{out_dir}"',
-            ' ./brewblox-proto/proto/**.proto',
-        ]))
+        ctx.run(
+            ' '.join(
+                [
+                    'python3 -m grpc_tools.protoc',
+                    '-I=./brewblox-proto/proto',
+                    f'--python_out="{out_dir}"',
+                    ' ./brewblox-proto/proto/**.proto',
+                ]
+            )
+        )
 
 
 @task
@@ -100,15 +104,29 @@ def testclean(ctx: Context):
         ctx.run('sudo pkill -ef -9 brewblox-amd64.sim')
 
 
-@task
-def build(ctx: Context):
-    with ctx.cd(ROOT):
-        ctx.run('rm -rf dist')
-        ctx.run('poetry build --format sdist')
-        ctx.run('poetry export --without-hashes -f requirements.txt -o dist/requirements.txt')
-
-
-@task(pre=[build])
+@task()
 def image(ctx: Context, tag='local'):
     with ctx.cd(ROOT):
         ctx.run(f'docker build -t ghcr.io/brewblox/brewblox-devcon-spark:{tag} -f Dockerfile.service .')
+
+
+@task()
+def buildx(ctx: Context, tag='local', platform='linux/amd64,linux/arm/v7,linux/arm64/v8'):
+    with ctx.cd(ROOT):
+        ctx.run(
+            f'docker buildx build --no-cache --platform {platform} -t ghcr.io/brewblox/brewblox-devcon-spark:{tag} -f Dockerfile.service .'
+        )
+
+
+@task()
+def flasher_image(ctx: Context, tag='local'):
+    with ctx.cd(ROOT):
+        ctx.run(f'docker build -t ghcr.io/brewblox/brewblox-firmware-flasher:{tag} -f Dockerfile.flasher .')
+
+
+@task()
+def flasher_buildx(ctx: Context, tag='local', platform='linux/amd64,linux/arm/v7,linux/arm64/v8'):
+    with ctx.cd(ROOT):
+        ctx.run(
+            f'docker buildx build --no-cache --platform {platform} -t ghcr.io/brewblox/brewblox-firmware-flasher:{tag} -f Dockerfile.flasher .'
+        )

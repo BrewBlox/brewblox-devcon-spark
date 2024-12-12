@@ -1,9 +1,7 @@
 import pytest
 
 from brewblox_devcon_spark import state_machine, utils
-from brewblox_devcon_spark.models import (ControllerDescription,
-                                          DeviceDescription,
-                                          FirmwareDescription, ResetReason)
+from brewblox_devcon_spark.models import ControllerDescription, DeviceDescription, FirmwareDescription, ResetReason
 
 TESTED = state_machine.__name__
 

@@ -97,7 +97,7 @@ def test_masking(degf_processor: ProtobufProcessor, desc):
     vals = generate_encoding_data()
     vals.maskMode = MaskMode.INCLUSIVE
     degf_processor.pre_encode(desc, vals, filter_values=False)
-    assert sorted(list((f.address for f in vals.maskFields))) == [
+    assert sorted(list(f.address for f in vals.maskFields)) == [
         [1],  # value
         [3],  # offset
         [4],  # address

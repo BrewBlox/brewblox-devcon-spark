@@ -1,50 +1,3 @@
-[tool.poetry]
-name = "brewblox-devcon-spark"
-version = "1.0.0"
-description = "Communication with Spark controllers"
-authors = ["BrewPi <development@brewpi.com>"]
-license = "GPL-3.0"
-readme = "README.md"
-
-[tool.poetry.dependencies]
-python = ">=3.11,<4"
-protobuf = "<4.25"
-aiofiles = "^23.2.1"
-aiozeroconf = "^0.1.8"
-debugpy = "^1.5.1"
-Pint = "^0.22"
-pytimeparse = "^1.1.8"
-ciso8601 = "^2.2.0"
-fastapi = ">=0.104.1,<0.110.0"
-uvicorn = { extras = ["standard"], version = "^0.24.0.post1" }
-httpx = "^0.25.2"
-fastapi-mqtt = "^2.0.0"
-pydantic-settings = "^2.1.0"
-websockets = "^12.0"
-httpx-ws = "^0.4.3"
-dnspython = "^2.4.2"
-bidict = "^0.23.1"
-cryptography = "==42.0.8"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "*"
-pytest-cov = "*"
-pytest-mock = "*"
-flake8 = "*"
-autopep8 = "*"
-flake8-quotes = "*"
-invoke = "*"
-grpcio-tools = "^1.58.0"
-flake8-pyproject = "*"
-pytest-docker = "*"
-pytest-asyncio = "<23"
-pytest-httpx = "*"
-asgi-lifespan = "*"
-
-[build-system]
-requires = ["poetry-core>=1.0.0", "cryptography==42.0.8"]
-build-backend = "poetry.core.masonry.api"
-
 [tool.pyright]
 include = ["brewblox_devcon_spark"]
 exclude = ["**/node_modules", "**/__pycache__"]
@@ -53,6 +6,7 @@ reportMissingImports = "information"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 addopts = """
     --ignore=brewblox_devcon_spark/codec/proto-compiled/
     --cov=brewblox_devcon_spark
@@ -61,6 +15,8 @@ addopts = """
     --cov-fail-under=100
     --no-cov-on-fail
     --durations=3
+    --timeout=10
+    --timeout_method="signal"
     """
 
 [tool.coverage.report]
@@ -82,9 +38,91 @@ omit = [
     "brewblox_devcon_spark/codec/proto-compiled/*",
 ]
 
-[tool.flake8]
-max-line-length = 120
-exclude = "*_pb2.py,.venv,.eggs"
+[tool.ruff]
+line-length = 120
+exclude = [
+    "brewblox_devcon_spark/codec/proto-compiled"
+]
 
-[tool.autopep8]
-max-line-length = 120
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "D211",
+    "D203",
+    "D213",
+    "D212",
+    "COM812",
+    "ISC001",
+    "Q000",
+    "Q003",
+]
+
+[tool.ruff.format]
+indent-style = "space"
+line-ending = "lf"
+quote-style = "single"
+
+[tool.ruff.lint.extend-per-file-ignores]
+"test/**/*.py" = [
+    # at least this three should be fine in tests:
+    "S101", # asserts allowed in tests...
+    "ARG", # Unused function args -> fixtures nevertheless are functionally relevant...
+    "FBT", # Don't care about booleans as positional arguments in tests, e.g. via @pytest.mark.parametrize()
+    # The below are debateable
+    "PLR2004", # Magic value used in comparison, ...
+    "S311", # Standard pseudo-random generators are not suitable for cryptographic purposes
+    "D103", # Missing docstring in public function
+    "ANN201", # Missing return type annotation
+    "SLF001", # private member accessed
+]
+
+[project]
+name = "brewblox-devcon-spark"
+version = "1.0.0"
+description = "Communication with Spark controllers"
+readme = "README.md"
+authors = [
+    {name = "BrewPi", email = "development@brewpi.com"},
+]
+license = {text = "GPL-3.0"}
+requires-python = "<4,>=3.11"
+dependencies = [
+    "protobuf<5",
+    "aiofiles<24.0.0,>=23.2.1",
+    "aiozeroconf<1.0.0,>=0.1.8",
+    "debugpy<2.0.0,>=1.5.1",
+    "Pint<1.0,>=0.22",
+    "flexparser<1.0.0,<0.4",
+    "pytimeparse<2.0.0,>=1.1.8",
+    "ciso8601<3.0.0,>=2.2.0",
+    "fastapi<0.110.0,>=0.104.1",
+    "uvloop==0.20.0",
+    "uvicorn[standard]==0.31.1",
+    "httpx<1.0.0,>=0.25.2",
+    "fastapi-mqtt<3.0.0,>=2.0.0",
+    "pydantic-settings<3.0.0,>=2.1.0",
+    "websockets<13.0,>=12.0",
+    "httpx-ws<1.0.0,>=0.4.3",
+    "dnspython<3.0.0,>=2.4.2",
+    "bidict<1.0.0,>=0.23.1",
+    "cryptography==42.0.8",
+]
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "pytest-mock",
+    "ruff",
+    "invoke",
+    "grpcio-tools<2.0.0,>=1.58.0",
+    "pytest-docker",
+    "pytest-asyncio>=0.24",
+    "pytest-httpx",
+    "asgi-lifespan",
+    "pytest-timeout>=2.3.1",
+]
+[tool.astral_uv]
+require-wheels = true
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

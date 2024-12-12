@@ -5,15 +5,16 @@ Any fixtures declared here are available to all test functions in this directory
 
 import asyncio
 import logging
+from collections.abc import AsyncGenerator, Callable, Generator
 from datetime import timedelta
 from pathlib import Path
-from typing import AsyncGenerator, Generator
 from unittest.mock import Mock
 
 import pytest
+import pytest_asyncio
 from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
 from pytest_docker.plugin import Services as DockerServices
 
@@ -44,16 +45,18 @@ class TestConfig(ServiceConfig):
         return (init_settings,)
 
 
-@pytest.fixture(scope='session')
+@pytest_asyncio.fixture(loop_scope='session', scope='session')
 def docker_compose_file():
     return Path('./test/docker-compose.yml').resolve()
 
 
-@pytest.fixture(autouse=True)
-def config(monkeypatch: pytest.MonkeyPatch,
-           docker_services: DockerServices,
-           tmp_path: Path,
-           ) -> Generator[ServiceConfig, None, None]:
+@pytest_asyncio.fixture(loop_scope='session', scope='function', autouse=True)
+def config(
+    monkeypatch: pytest.MonkeyPatch,
+    docker_services: DockerServices,
+    tmp_path: Path,
+    unused_tcp_port_factory: Callable[[], int],
+) -> Generator[ServiceConfig, None, None]:
     cfg = TestConfig(
         name='sparkey',
         debug=True,
@@ -67,8 +70,8 @@ def config(monkeypatch: pytest.MonkeyPatch,
         simulation=True,
         discovery='all',
         simulation_workdir=tmp_path / 'simulator',
-        simulation_port=utils.get_free_port(),
-        simulation_display_port=utils.get_free_port(),
+        simulation_port=unused_tcp_port_factory(),
+        simulation_display_port=unused_tcp_port_factory(),
         device_id='1234',
         connect_interval=timedelta(milliseconds=10),
         connect_interval_max=timedelta(milliseconds=100),
@@ -100,7 +103,7 @@ def caplog(caplog: pytest.LogCaptureFixture) -> pytest.LogCaptureFixture:
 def m_kill(monkeypatch: pytest.MonkeyPatch) -> Generator[Mock, None, None]:
     m = Mock(spec=utils.os.kill)
     monkeypatch.setattr(utils.os, 'kill', m)
-    yield m
+    return m
 
 
 @pytest.fixture(autouse=True)
@@ -116,8 +119,8 @@ def m_sleep(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest):
         if delay > 0.1:
             print(f'asyncio.sleep({delay}) in {request.node.name}')
         return await real_func(delay, *args, **kwargs)
+
     monkeypatch.setattr('asyncio.sleep', wrapper)
-    yield
 
 
 @pytest.fixture
@@ -148,67 +151,34 @@ async def manager(app: FastAPI) -> AsyncGenerator[LifespanManager, None]:
 
 @pytest.fixture
 async def client(manager: LifespanManager) -> AsyncGenerator[AsyncClient, None]:
-    async with AsyncClient(app=manager.app, base_url='http://test') as ac:
+    async with AsyncClient(transport=ASGITransport(app=manager.app), base_url='http://test') as ac:
         yield ac
 
 
 @pytest.fixture
 def spark_blocks() -> list[Block]:
     return [
-        Block(
-            id='balancer-1',
-            nid=200,
-            type='Balancer',
-            data={}
-        ),
-        Block(
-            id='mutex-1',
-            nid=300,
-            type='Mutex',
-            data={
-                'differentActuatorWait': 43
-            }
-        ),
+        Block(id='balancer-1', nid=200, type='Balancer', data={}),
+        Block(id='mutex-1', nid=300, type='Mutex', data={'differentActuatorWait': 43}),
         Block(
             id='profile-1',
             nid=201,
             type='SetpointProfile',
             data={
                 'points': [
-                    {
-                        'time': 1540376829,
-                        'temperature[degC]': 0
-                    },
-                    {
-                        'time': 1540376839,
-                        'temperature[degC]': 50
-                    },
-                    {
-                        'time': 1540376849,
-                        'temperature[degC]': 100
-                    }
+                    {'time': 1540376829, 'temperature[degC]': 0},
+                    {'time': 1540376839, 'temperature[degC]': 50},
+                    {'time': 1540376849, 'temperature[degC]': 100},
                 ],
-                'targetId<>': 'setpoint-sensor-pair-2'
-            }
+                'targetId<>': 'setpoint-sensor-pair-2',
+            },
         ),
-        Block(
-            id='sensor-1',
-            nid=202,
-            type='TempSensorMock',
-            data={
-                'value[celsius]': 20.89789201,
-                'connected': True
-            }
-        ),
+        Block(id='sensor-1', nid=202, type='TempSensorMock', data={'value[celsius]': 20.89789201, 'connected': True}),
         Block(
             id='sensor-onewire-1',
             nid=203,
             type='TempSensorOneWire',
-            data={
-                'value[celsius]': 20.89789201,
-                'offset[delta_degC]': 9,
-                'address': 'DEADBEEF'
-            }
+            data={'value[celsius]': 20.89789201, 'offset[delta_degC]': 9, 'address': 'DEADBEEF'},
         ),
         Block(
             id='setpoint-sensor-pair-1',
@@ -220,32 +190,20 @@ def spark_blocks() -> list[Block]:
                 'value': 0,
                 'enabled': True,
                 'filter': 1,  # FILTER_15s
-                'filterThreshold': 2
-            }
+                'filterThreshold': 2,
+            },
         ),
         Block(
             id='setpoint-sensor-pair-2',
             nid=205,
             type='SetpointSensorPair',
-            data={
-                'sensorId<>': 0,
-                'setting': 0,
-                'value': 0,
-                'enabled': True
-            }
+            data={'sensorId<>': 0, 'setting': 0, 'value': 0, 'enabled': True},
         ),
         Block(
             id='actuator-1',
             nid=206,
             type='ActuatorAnalogMock',
-            data={
-                'setting': 20,
-                'minSetting': 10,
-                'maxSetting': 30,
-                'value': 50,
-                'minValue': 40,
-                'maxValue': 60
-            }
+            data={'setting': 20, 'minSetting': 10, 'maxSetting': 30, 'value': 50, 'minValue': 40, 'maxValue': 60},
         ),
         Block(
             id='actuator-pwm-1',
@@ -253,23 +211,11 @@ def spark_blocks() -> list[Block]:
             type='ActuatorPwm',
             data={
                 'constrainedBy': {
-                    'constraints': [
-                        {
-                            'min': 5
-                        },
-                        {
-                            'max': 50
-                        },
-                        {
-                            'balanced': {
-                                'balancerId<>': 'balancer-1'
-                            }
-                        }
-                    ]
+                    'constraints': [{'min': 5}, {'max': 50}, {'balanced': {'balancerId<>': 'balancer-1'}}]
                 },
                 'period': 4000,
-                'actuatorId<>': 'actuator-digital-1'
-            }
+                'actuatorId<>': 'actuator-digital-1',
+            },
         ),
         Block(
             id='actuator-digital-1',
@@ -279,9 +225,7 @@ def spark_blocks() -> list[Block]:
                 'channel': 1,
                 'constrainedBy': {
                     'constraints': [
-                        {
-                            'mutex<>': 'mutex-1'
-                        },
+                        {'mutex<>': 'mutex-1'},
                         {
                             'mutexed': {
                                 'mutexId<>': 'mutex-1',
@@ -289,19 +233,16 @@ def spark_blocks() -> list[Block]:
                                 'hasCustomHoldTime': True,
                             },
                             'limiting': True,
-                        }
+                        },
                     ]
-                }
-            }
+                },
+            },
         ),
         Block(
             id='offset-1',
             nid=209,
             type='ActuatorOffset',
-            data={
-                'targetId<>': 'setpoint-sensor-pair-1',
-                'referenceId<>': 'setpoint-sensor-pair-1'
-            }
+            data={'targetId<>': 'setpoint-sensor-pair-1', 'referenceId<>': 'setpoint-sensor-pair-1'},
         ),
         Block(
             id='pid-1',
@@ -314,8 +255,8 @@ def spark_blocks() -> list[Block]:
                 'active': True,
                 'kp': 20,
                 'ti': 3600,
-                'td': 60
-            }
+                'td': 60,
+            },
         ),
         Block(
             id='DisplaySettings',
@@ -323,50 +264,19 @@ def spark_blocks() -> list[Block]:
             type='DisplaySettings',
             data={
                 'widgets': [
-                    {
-                        'pos': 1,
-                        'color': '0088aa',
-                        'name': 'pwm1',
-                        'actuatorAnalog<>': 'actuator-pwm-1'
-                    },
-                    {
-                        'pos': 2,
-                        'color': '00aa88',
-                        'name': 'pair1',
-                        'setpointSensorPair<>': 'setpoint-sensor-pair-1'
-                    },
-                    {
-                        'pos': 3,
-                        'color': 'aa0088',
-                        'name': 'sensor1',
-                        'tempSensor<>': 'sensor-1'
-                    },
-                    {
-                        'pos': 4,
-                        'color': 'aa8800',
-                        'name': 'pid',
-                        'pid<>': 'pid-1'
-                    }
+                    {'pos': 1, 'color': '0088aa', 'name': 'pwm1', 'actuatorAnalog<>': 'actuator-pwm-1'},
+                    {'pos': 2, 'color': '00aa88', 'name': 'pair1', 'setpointSensorPair<>': 'setpoint-sensor-pair-1'},
+                    {'pos': 3, 'color': 'aa0088', 'name': 'sensor1', 'tempSensor<>': 'sensor-1'},
+                    {'pos': 4, 'color': 'aa8800', 'name': 'pid', 'pid<>': 'pid-1'},
                 ],
-                'name': 'test'
-            }
+                'name': 'test',
+            },
         ),
-        Block(
-            id='ds2413-hw-1',
-            nid=211,
-            type='DS2413',
-            data={
-                'address': '4444444444444444'
-            }
-        ),
+        Block(id='ds2413-hw-1', nid=211, type='DS2413', data={'address': '4444444444444444'}),
         Block(
             id='ow-act',
             nid=212,
             type='DigitalActuator',
-            data={
-                'channel': 1,
-                'invert': True,
-                'hwDevice<DS2413>': 'ds2413-hw-1'
-            }
-        )
+            data={'channel': 1, 'invert': True, 'hwDevice<DS2413>': 'ds2413-hw-1'},
+        ),
     ]

@@ -4,8 +4,8 @@ Parses stream data into controlbox events and data
 
 import logging
 import re
+from collections.abc import Generator
 from queue import Queue
-from typing import Generator
 
 LOGGER = logging.getLogger(__name__)
 
@@ -17,7 +17,6 @@ DATA_PATTERN = re.compile('^(?P<message>[^^]*?)\n')
 
 
 class CboxParser:
-
     def __init__(self):
         self._buffer: str = ''
         self._events = Queue()
@@ -52,7 +51,7 @@ class CboxParser:
         return ''
 
     def _coerce_message_from_buffer(self, pattern: re.Pattern, end: str):
-        """ Filters separate messages from the buffer.
+        """Filters separate messages from the buffer.
 
         It makes some assumptions about messages:
         * They have a fixed start/end special character
@@ -83,11 +82,7 @@ class CboxParser:
         # The break is required if the buffer receives malformed data
         while end in self._buffer and prev_len != len(self._buffer):
             prev_len = len(self._buffer)
-            self._buffer = re.sub(
-                pattern=pattern,
-                repl=self._extract_message,
-                string=self._buffer,
-                count=1)
+            self._buffer = re.sub(pattern=pattern, repl=self._extract_message, string=self._buffer, count=1)
 
         yield from self._messages
         self._messages = []

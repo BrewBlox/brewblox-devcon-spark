@@ -4,8 +4,7 @@ from functools import partial
 from pathlib import Path
 from typing import Annotated, Any, Literal, Self
 
-from pydantic import (BaseModel, ConfigDict, Field, ValidationInfo,
-                      computed_field, field_validator, model_validator)
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, computed_field, field_validator, model_validator
 from pydantic.functional_validators import BeforeValidator
 from pydantic_core import SchemaValidator, core_schema
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -463,13 +462,7 @@ DiscoveryKind_ = Literal[
     'ALL',
 ]
 
-ConnectionKind_ = Literal[
-    'MOCK',
-    'SIM',
-    'USB',
-    'TCP',
-    'MQTT'
-]
+ConnectionKind_ = Literal['MOCK', 'SIM', 'USB', 'TCP', 'MQTT']
 
 ConnectionStatus_ = Literal[
     'DISCONNECTED',

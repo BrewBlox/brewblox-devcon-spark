@@ -35,39 +35,42 @@ async def test_fetch_all(httpx_mock: HTTPXMock):
     store = datastore_settings.CV.get()
     config = utils.get_config()
 
-    httpx_mock.add_response(url=f'{config.datastore_url}/get',
-                            match_json={'id': config.name,
-                                        'namespace': const.SERVICE_NAMESPACE},
-                            json={
-                                'value': {
-                                    'id': config.name,
-                                    'namespace': const.SERVICE_NAMESPACE,
-                                    'enabled': False,
-                                },
-                            })
+    httpx_mock.add_response(
+        url=f'{config.datastore_url}/get',
+        match_json={'id': config.name, 'namespace': const.SERVICE_NAMESPACE},
+        json={
+            'value': {
+                'id': config.name,
+                'namespace': const.SERVICE_NAMESPACE,
+                'enabled': False,
+            },
+        },
+    )
 
-    httpx_mock.add_response(url=f'{config.datastore_url}/get',
-                            match_json={'id': const.GLOBAL_UNITS_ID,
-                                        'namespace': const.GLOBAL_NAMESPACE},
-                            json={
-                                'value': {
-                                    'id': const.GLOBAL_UNITS_ID,
-                                    'namespace': const.GLOBAL_NAMESPACE,
-                                    'temperature': 'degF',
-                                },
-                            })
+    httpx_mock.add_response(
+        url=f'{config.datastore_url}/get',
+        match_json={'id': const.GLOBAL_UNITS_ID, 'namespace': const.GLOBAL_NAMESPACE},
+        json={
+            'value': {
+                'id': const.GLOBAL_UNITS_ID,
+                'namespace': const.GLOBAL_NAMESPACE,
+                'temperature': 'degF',
+            },
+        },
+    )
 
-    httpx_mock.add_response(url=f'{config.datastore_url}/get',
-                            match_json={'id': const.GLOBAL_TIME_ZONE_ID,
-                                        'namespace': const.GLOBAL_NAMESPACE},
-                            json={
-                                'value': {
-                                    'id': const.GLOBAL_TIME_ZONE_ID,
-                                    'namespace': const.GLOBAL_NAMESPACE,
-                                    'name': 'Europe/Amsterdam',
-                                    'posixValue': 'CET-1CEST,M3.5.0,M10.5.0/3',
-                                },
-                            })
+    httpx_mock.add_response(
+        url=f'{config.datastore_url}/get',
+        match_json={'id': const.GLOBAL_TIME_ZONE_ID, 'namespace': const.GLOBAL_NAMESPACE},
+        json={
+            'value': {
+                'id': const.GLOBAL_TIME_ZONE_ID,
+                'namespace': const.GLOBAL_NAMESPACE,
+                'name': 'Europe/Amsterdam',
+                'posixValue': 'CET-1CEST,M3.5.0,M10.5.0/3',
+            },
+        },
+    )
 
     await store.fetch_all()
     assert store.service_settings.enabled is False
@@ -126,39 +129,43 @@ async def test_store_events(manager: LifespanManager):
     store.global_settings_listeners.add(global_evt_callback)
 
     for _ in range(5):
-        mqtt_client.publish(f'brewcast/datastore/{const.GLOBAL_NAMESPACE}',
-                            {
-                                'changed': [
-                                    {
-                                        'id': const.GLOBAL_UNITS_ID,
-                                        'namespace': const.GLOBAL_NAMESPACE,
-                                        'temperature': 'degF',
-                                    },
-                                    {
-                                        'id': const.GLOBAL_TIME_ZONE_ID,
-                                        'namespace': const.GLOBAL_NAMESPACE,
-                                        'name': 'Europe/Amsterdam',
-                                        'posixValue': 'CET-1CEST,M3.5.0,M10.5.0/3',
-                                    }
-                                ]
-                            })
+        mqtt_client.publish(
+            f'brewcast/datastore/{const.GLOBAL_NAMESPACE}',
+            {
+                'changed': [
+                    {
+                        'id': const.GLOBAL_UNITS_ID,
+                        'namespace': const.GLOBAL_NAMESPACE,
+                        'temperature': 'degF',
+                    },
+                    {
+                        'id': const.GLOBAL_TIME_ZONE_ID,
+                        'namespace': const.GLOBAL_NAMESPACE,
+                        'name': 'Europe/Amsterdam',
+                        'posixValue': 'CET-1CEST,M3.5.0,M10.5.0/3',
+                    },
+                ]
+            },
+        )
 
     for _ in range(5):
-        mqtt_client.publish(f'brewcast/datastore/{const.SERVICE_NAMESPACE}',
-                            {
-                                'changed': [
-                                    {
-                                        'id': config.name,
-                                        'namespace': const.SERVICE_NAMESPACE,
-                                        'enabled': False,
-                                    },
-                                    {
-                                        'id': 'spark-other',
-                                        'namespace': const.SERVICE_NAMESPACE,
-                                        'enabled': True,
-                                    }
-                                ]
-                            })
+        mqtt_client.publish(
+            f'brewcast/datastore/{const.SERVICE_NAMESPACE}',
+            {
+                'changed': [
+                    {
+                        'id': config.name,
+                        'namespace': const.SERVICE_NAMESPACE,
+                        'enabled': False,
+                    },
+                    {
+                        'id': 'spark-other',
+                        'namespace': const.SERVICE_NAMESPACE,
+                        'enabled': True,
+                    },
+                ]
+            },
+        )
 
     async with asyncio.timeout(10):
         await service_evt_received.wait()

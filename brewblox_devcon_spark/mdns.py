@@ -5,10 +5,10 @@ mDNS discovery of Spark devices
 import asyncio
 import logging
 from collections import namedtuple
+from collections.abc import AsyncGenerator
 from contextlib import suppress
 from datetime import timedelta
 from socket import AF_INET, inet_aton, inet_ntoa
-from typing import AsyncGenerator
 
 from aiozeroconf import ServiceBrowser, ServiceStateChange, Zeroconf
 from aiozeroconf.aiozeroconf import ServiceInfo

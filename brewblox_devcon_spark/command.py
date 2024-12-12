@@ -8,11 +8,22 @@ import logging
 from contextvars import ContextVar
 
 from . import codec, connection, exceptions, state_machine, utils
-from .models import (ControllerDescription, DecodedPayload, DeviceDescription,
-                     EncodedPayload, ErrorCode, FirmwareBlock,
-                     FirmwareBlockIdentity, FirmwareDescription,
-                     HandshakeMessage, IntermediateRequest,
-                     IntermediateResponse, MaskMode, Opcode, ReadMode)
+from .models import (
+    ControllerDescription,
+    DecodedPayload,
+    DeviceDescription,
+    EncodedPayload,
+    ErrorCode,
+    FirmwareBlock,
+    FirmwareBlockIdentity,
+    FirmwareDescription,
+    HandshakeMessage,
+    IntermediateRequest,
+    IntermediateResponse,
+    MaskMode,
+    Opcode,
+    ReadMode,
+)
 
 WELCOME_PREFIX = '!BREWBLOX'
 HANDSHAKE_KEYS = [
@@ -33,7 +44,6 @@ CV: ContextVar['CboxCommander'] = ContextVar('command.CboxCommander')
 
 
 class CboxCommander:
-
     def __init__(self):
         self.config = utils.get_config()
         self.state = state_machine.CV.get()
@@ -52,11 +62,13 @@ class CboxCommander:
         self._msgid = (self._msgid + 1) % 0xFFFF
         return self._msgid
 
-    def _to_payload(self,
-                    block: FirmwareBlock, /,
-                    identity_only=False,
-                    patch=False,
-                    ) -> EncodedPayload:
+    def _to_payload(
+        self,
+        block: FirmwareBlock,
+        /,
+        identity_only=False,
+        patch=False,
+    ) -> EncodedPayload:
         if block.type:
             payload = DecodedPayload(
                 blockId=block.nid,
@@ -66,15 +78,16 @@ class CboxCommander:
                 maskMode=(MaskMode.INCLUSIVE if patch else MaskMode.NO_MASK),
             )
         else:
-            payload = DecodedPayload(blockId=block.nid,
-                                     name=block.id)
+            payload = DecodedPayload(blockId=block.nid, name=block.id)
 
         return self.codec.encode_payload(payload)
 
-    def _to_block(self,
-                  payload: EncodedPayload, /,
-                  mode: ReadMode = ReadMode.DEFAULT,
-                  ) -> FirmwareBlock:
+    def _to_block(
+        self,
+        payload: EncodedPayload,
+        /,
+        mode: ReadMode = ReadMode.DEFAULT,
+    ) -> FirmwareBlock:
         payload = self.codec.decode_payload(payload, mode=mode)
         return FirmwareBlock(
             id=payload.name,
@@ -86,7 +99,7 @@ class CboxCommander:
     async def _on_event(self, msg: str):
         if msg.startswith(WELCOME_PREFIX):
             handshake_values = msg.removeprefix('!').split(',')
-            handshake = HandshakeMessage(**dict(zip(HANDSHAKE_KEYS, handshake_values)))
+            handshake = HandshakeMessage(**dict(zip(HANDSHAKE_KEYS, handshake_values, strict=False)))
             LOGGER.info(handshake)
 
             desc = ControllerDescription(
@@ -123,19 +136,16 @@ class CboxCommander:
         except Exception as ex:
             LOGGER.error(f'Error parsing message `{msg}` : {utils.strex(ex)}')
 
-    async def _execute(self,
-                       opcode: Opcode, /,
-                       payload: EncodedPayload | None = None,
-                       mode: ReadMode = ReadMode.DEFAULT,
-                       ) -> list[EncodedPayload]:
+    async def _execute(
+        self,
+        opcode: Opcode,
+        /,
+        payload: EncodedPayload | None = None,
+        mode: ReadMode = ReadMode.DEFAULT,
+    ) -> list[EncodedPayload]:
         msg_id = self._next_id()
 
-        request = IntermediateRequest(
-            msgId=msg_id,
-            opcode=opcode,
-            mode=mode,
-            payload=payload
-        )
+        request = IntermediateRequest(msgId=msg_id, opcode=opcode, mode=mode, payload=payload)
 
         msg = self.codec.encode_request(request)
         fut: asyncio.Future[IntermediateResponse] = asyncio.get_running_loop().create_future()
@@ -145,15 +155,14 @@ class CboxCommander:
         try:
             LOGGER.trace(f'request: {msg}')
             await self.conn.send_request(msg)
-            response = await asyncio.wait_for(fut,
-                                              timeout=self.config.command_timeout.total_seconds())
+            response = await asyncio.wait_for(fut, timeout=self.config.command_timeout.total_seconds())
 
             if response.error != ErrorCode.OK:
                 raise exceptions.CommandException(f'{opcode.name}, {response.error.name}')
 
             return response.payload
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise exceptions.CommandTimeout(opcode.name)
 
         finally:
@@ -177,37 +186,30 @@ class CboxCommander:
     async def version(self) -> None:
         await self._execute(Opcode.VERSION)
 
-    async def read_block(self,
-                         ident: FirmwareBlockIdentity,
-                         mode: ReadMode = ReadMode.DEFAULT) -> FirmwareBlock:
-        payloads = await self._execute(Opcode.BLOCK_READ,
-                                       mode=mode,
-                                       payload=self._to_payload(ident, identity_only=True))
+    async def read_block(self, ident: FirmwareBlockIdentity, mode: ReadMode = ReadMode.DEFAULT) -> FirmwareBlock:
+        payloads = await self._execute(
+            Opcode.BLOCK_READ, mode=mode, payload=self._to_payload(ident, identity_only=True)
+        )
         return self._to_block(payloads[0], mode=mode)
 
     async def read_all_blocks(self, mode: ReadMode = ReadMode.DEFAULT) -> list[FirmwareBlock]:
-        payloads = await self._execute(Opcode.BLOCK_READ_ALL,
-                                       mode=mode)
+        payloads = await self._execute(Opcode.BLOCK_READ_ALL, mode=mode)
         return [self._to_block(v, mode=mode) for v in payloads]
 
     async def write_block(self, block: FirmwareBlock) -> FirmwareBlock:
-        payloads = await self._execute(Opcode.BLOCK_WRITE,
-                                       payload=self._to_payload(block))
+        payloads = await self._execute(Opcode.BLOCK_WRITE, payload=self._to_payload(block))
         return self._to_block(payloads[0])
 
     async def patch_block(self, block: FirmwareBlock) -> FirmwareBlock:
-        payloads = await self._execute(Opcode.BLOCK_WRITE,
-                                       payload=self._to_payload(block, patch=True))
+        payloads = await self._execute(Opcode.BLOCK_WRITE, payload=self._to_payload(block, patch=True))
         return self._to_block(payloads[0])
 
     async def create_block(self, block: FirmwareBlock) -> FirmwareBlock:
-        payloads = await self._execute(Opcode.BLOCK_CREATE,
-                                       payload=self._to_payload(block))
+        payloads = await self._execute(Opcode.BLOCK_CREATE, payload=self._to_payload(block))
         return self._to_block(payloads[0])
 
     async def delete_block(self, ident: FirmwareBlockIdentity) -> None:
-        await self._execute(Opcode.BLOCK_DELETE,
-                            payload=self._to_payload(ident, identity_only=True))
+        await self._execute(Opcode.BLOCK_DELETE, payload=self._to_payload(ident, identity_only=True))
 
     async def discover_blocks(self) -> list[FirmwareBlock]:
         payloads = await self._execute(Opcode.BLOCK_DISCOVER)
@@ -218,8 +220,7 @@ class CboxCommander:
         return [self._to_block(v) for v in payloads]
 
     async def write_block_name(self, ident: FirmwareBlockIdentity) -> FirmwareBlock:
-        payloads = await self._execute(Opcode.NAME_WRITE,
-                                       payload=self._to_payload(ident, identity_only=True))
+        payloads = await self._execute(Opcode.NAME_WRITE, payload=self._to_payload(ident, identity_only=True))
         return self._to_block(payloads[0])
 
     async def reboot(self) -> None:

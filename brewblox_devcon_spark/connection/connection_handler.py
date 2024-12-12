@@ -9,8 +9,7 @@ from ..models import DiscoveryType
 from .connection_impl import ConnectionCallbacks, ConnectionImplBase
 from .mock_connection import connect_mock
 from .mqtt_connection import discover_mqtt
-from .stream_connection import (connect_simulation, connect_tcp, discover_mdns,
-                                discover_usb)
+from .stream_connection import connect_simulation, connect_tcp, discover_mdns, discover_usb
 
 LOGGER = logging.getLogger(__name__)
 
@@ -22,8 +21,7 @@ def calc_interval(value: timedelta | None) -> timedelta:
 
     if value:
         return min(value * config.connect_backoff, config.connect_interval_max)
-    else:
-        return config.connect_interval
+    return config.connect_interval
 
 
 class ConnectionHandler(ConnectionCallbacks):
@@ -38,8 +36,7 @@ class ConnectionHandler(ConnectionCallbacks):
 
     @property
     def connected(self) -> bool:
-        return self._impl is not None \
-            and self._impl.connected.is_set()
+        return self._impl is not None and self._impl.connected.is_set()
 
     async def on_event(self, msg: str):
         """
@@ -77,7 +74,7 @@ class ConnectionHandler(ConnectionCallbacks):
 
                     await asyncio.sleep(self.config.discovery_interval.total_seconds())
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise ConnectionAbortedError('Discovery timeout')
 
     async def connect(self) -> ConnectionImplBase:
@@ -88,12 +85,11 @@ class ConnectionHandler(ConnectionCallbacks):
 
         if mock:
             return await connect_mock(self)
-        elif simulation:
+        if simulation:
             return await connect_simulation(self)
-        elif device_host:
+        if device_host:
             return await connect_tcp(self, device_host, device_port)
-        else:
-            return await self.discover()
+        return await self.discover()
 
     async def run(self):
         try:
@@ -101,8 +97,7 @@ class ConnectionHandler(ConnectionCallbacks):
             self._impl = await self.connect()
             await self._impl.connected.wait()
 
-            self.state.set_connected(self._impl.kind,
-                                     self._impl.address)
+            self.state.set_connected(self._impl.kind, self._impl.address)
 
             self._last_ok = True
             self._interval = calc_interval(None)

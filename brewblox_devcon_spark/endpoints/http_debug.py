@@ -7,8 +7,7 @@ import logging
 from fastapi import APIRouter
 
 from .. import codec
-from ..models import (DecodedPayload, EncodedMessage, EncodedPayload,
-                      IntermediateRequest, IntermediateResponse)
+from ..models import DecodedPayload, EncodedMessage, EncodedPayload, IntermediateRequest, IntermediateResponse
 
 LOGGER = logging.getLogger(__name__)
 

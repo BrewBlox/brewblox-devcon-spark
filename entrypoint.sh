@@ -3,7 +3,9 @@ set -euo pipefail
 
 python3 ./parse_appenv.py "$@" >.appenv
 
-exec uvicorn \
+source ./.venv/bin/activate
+
+exec ./.venv/bin/uvicorn \
     --host 0.0.0.0 \
     --port 5000 \
     --factory \

@@ -38,6 +38,7 @@ Notes:
 - Control characters (STX, index, negating index, CRC) do not count towards the packet length.
 - The second and third byte in packages are its index and 0xFF - index. The header always has index 0x00.
 - CRC bytes are transmitted, but ignored. The reference implementation always sends [0,0] CRC.
+
 """
 
 import asyncio
@@ -46,12 +47,12 @@ import math
 import os
 import re
 import subprocess
+from collections.abc import Awaitable, ByteString
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import timedelta
 from enum import IntEnum
 from pathlib import Path
-from typing import Awaitable, ByteString
 
 import aiofiles
 
@@ -63,14 +64,14 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Control(IntEnum):
-    SOH = 0x01          # 01 - 128 byte blocks
-    STX = 0x02          # 02 - 1K blocks
-    EOT = 0x04          # 04 - End Of Transfer
-    EOF = 0x1A          # 26 - End Of File
-    ACK = 0x06          # 06 - Acknowledge
-    NAK = 0x15          # 21 - Negative Acknowledge
-    CAN = 0x18          # 24 - Cancel
-    C = 0x43            # 67 - Continue
+    SOH = 0x01  # 01 - 128 byte blocks
+    STX = 0x02  # 02 - 1K blocks
+    EOT = 0x04  # 04 - End Of Transfer
+    EOF = 0x1A  # 26 - End Of File
+    ACK = 0x06  # 06 - Acknowledge
+    NAK = 0x15  # 21 - Negative Acknowledge
+    CAN = 0x18  # 24 - Cancel
+    C = 0x43  # 67 - Continue
 
 
 @dataclass
@@ -144,10 +145,10 @@ async def connect(address: str) -> Connection:
             return await connect_tcp(address)
         except ConnectionRefusedError:
             LOGGER.debug('Connection refused, retrying...')
-    raise ConnectionRefusedError()
+    raise ConnectionRefusedError
 
 
-class OtaClient():
+class OtaClient:
     PACKET_MARK = Control.STX
     DATA_LEN = 1024 if PACKET_MARK == Control.STX else 128
     PACKET_LEN = DATA_LEN + 5
@@ -171,7 +172,7 @@ class OtaClient():
         for i in range(20):
             try:
                 buffer += await asyncio.wait_for(_read(), 1)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 LOGGER.debug('Repeating handshake trigger...')
                 conn.transport.write(b'\n')
                 continue
@@ -186,7 +187,7 @@ class OtaClient():
                 self._notify(f'Handshake received: {message}')
                 break
         else:
-            raise asyncio.TimeoutError('Controller did not send handshake message')
+            raise TimeoutError('Controller did not send handshake message')
 
         # Trigger YMODEM mode
         buffer = ''
@@ -197,7 +198,7 @@ class OtaClient():
                 self._notify('Controller is ready for firmware')
                 break
         else:
-            raise asyncio.TimeoutError('Controller did not enter file transfer mode')
+            raise TimeoutError('Controller did not enter file transfer mode')
 
         ack = 0
         while ack < 2:
@@ -230,8 +231,7 @@ class OtaClient():
                 response = await self._send_data(conn, current, list(data))
 
                 if response != Control.ACK:
-                    raise ConnectionAbortedError(
-                        f'Failed with code {response.name} while sending package {current}')
+                    raise ConnectionAbortedError(f'Failed with code {response.name} while sending package {current}')
 
         LOGGER.debug('Sending EOT')
         assert await self._send_packet(conn, [Control.EOT]) == Control.ACK

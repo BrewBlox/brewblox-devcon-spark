@@ -2,23 +2,27 @@
 Awaitable events for tracking device and network status
 """
 
-
 import asyncio
 import logging
 from contextvars import ContextVar
 from typing import Literal
 
 from . import exceptions, utils
-from .models import (ConnectionKind_, ControllerDescription, DeviceDescription,
-                     DiscoveryKind_, FirmwareDescription, ServiceDescription,
-                     StatusDescription)
+from .models import (
+    ConnectionKind_,
+    ControllerDescription,
+    DeviceDescription,
+    DiscoveryKind_,
+    FirmwareDescription,
+    ServiceDescription,
+    StatusDescription,
+)
 
 LOGGER = logging.getLogger(__name__)
 CV: ContextVar['StateMachine'] = ContextVar('state_machine.StateMachine')
 
 
 class StateMachine:
-
     def __init__(self):
         config = utils.get_config()
         fw_config = utils.get_fw_config()
@@ -90,9 +94,7 @@ class StateMachine:
     async def wait_enabled(self):
         await self._enabled_ev.wait()
 
-    def set_connected(self,
-                      connection_kind: ConnectionKind_,
-                      address: str):
+    def set_connected(self, connection_kind: ConnectionKind_, address: str):
         self._status_desc.address = address
         self._status_desc.connection_kind = connection_kind
         self._status_desc.connection_status = 'CONNECTED'
@@ -120,11 +122,11 @@ class StateMachine:
         service = self._status_desc.service
 
         wildcard_id = not service.device.device_id
-        compatible_firmware = service.firmware.proto_version == controller.firmware.proto_version \
-            or bool(config.skip_version_check)
+        compatible_firmware = service.firmware.proto_version == controller.firmware.proto_version or bool(
+            config.skip_version_check
+        )
         matching_firmware = service.firmware.firmware_version == controller.firmware.firmware_version
-        compatible_identity = service.device.device_id == controller.device.device_id \
-            or wildcard_id
+        compatible_identity = service.device.device_id == controller.device.device_id or wildcard_id
 
         if not compatible_firmware:
             LOGGER.warning('Handshake error: incompatible firmware')
@@ -164,8 +166,7 @@ class StateMachine:
 
     def set_synchronized(self):
         if not self._acknowledged_ev.is_set():
-            raise RuntimeError('Failed to set synchronized status: '
-                               'service is not acknowledged')
+            raise RuntimeError('Failed to set synchronized status: ' 'service is not acknowledged')
 
         self._status_desc.connection_status = 'SYNCHRONIZED'
 

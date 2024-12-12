@@ -16,7 +16,6 @@ CV: ContextVar['BackupStorage'] = ContextVar('block_backup.BackupStorage')
 
 
 class BackupStorage:
-
     def __init__(self):
         self.config = utils.get_config()
         self.state = state_machine.CV.get()
@@ -32,10 +31,7 @@ class BackupStorage:
         return await self.api.apply_backup(data)
 
     async def all(self) -> list[BackupIdentity]:
-        return [BackupIdentity(name=f.stem)
-                for f
-                in self.dir.glob('*.json')
-                if f.is_file()]
+        return [BackupIdentity(name=f.stem) for f in self.dir.glob('*.json') if f.is_file()]
 
     async def read(self, ident: BackupIdentity) -> Backup:
         infile = self.dir / f'{ident.name}.json'

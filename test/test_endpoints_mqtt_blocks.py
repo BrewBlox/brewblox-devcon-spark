@@ -6,10 +6,19 @@ from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from pytest_mock import MockerFixture
 
-from brewblox_devcon_spark import (codec, command, connection,
-                                   datastore_blocks, datastore_settings,
-                                   exceptions, mqtt, spark_api, state_machine,
-                                   synchronization, utils)
+from brewblox_devcon_spark import (
+    codec,
+    command,
+    connection,
+    datastore_blocks,
+    datastore_settings,
+    exceptions,
+    mqtt,
+    spark_api,
+    state_machine,
+    synchronization,
+    utils,
+)
 from brewblox_devcon_spark.endpoints import mqtt_blocks
 from brewblox_devcon_spark.models import Block, BlockIdentity
 
@@ -44,7 +53,7 @@ def app() -> FastAPI:
 
 @pytest.fixture(autouse=True)
 async def manager(manager: LifespanManager):
-    yield manager
+    return manager
 
 
 def block_args():
@@ -53,11 +62,7 @@ def block_args():
         id='testobj',
         serviceId=config.name,
         type='TempSensorOneWire',
-        data={
-            'value': 12345,
-            'offset': 20,
-            'address': 'FF'
-        }
+        data={'value': 12345, 'offset': 20, 'address': 'FF'},
     )
 
 
@@ -92,25 +97,11 @@ async def test_crud(mocker: MockerFixture):
     delete_ev = wrap('delete_block')
 
     dummy = Block(
-        id='dummy',
-        serviceId='other',
-        type='TempSensorOneWire',
-        data={
-            'value': 12345,
-            'offset': 20,
-            'address': 'FF'
-        }
+        id='dummy', serviceId='other', type='TempSensorOneWire', data={'value': 12345, 'offset': 20, 'address': 'FF'}
     )
 
     real = Block(
-        id='real',
-        serviceId=config.name,
-        type='TempSensorOneWire',
-        data={
-            'value': 12345,
-            'offset': 20,
-            'address': 'FF'
-        }
+        id='real', serviceId=config.name, type='TempSensorOneWire', data={'value': 12345, 'offset': 20, 'address': 'FF'}
     )
 
     publish('/create', dummy)

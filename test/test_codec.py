@@ -5,8 +5,7 @@ from fastapi import FastAPI
 
 from brewblox_devcon_spark import codec, connection, exceptions
 from brewblox_devcon_spark.codec import Codec
-from brewblox_devcon_spark.models import (DecodedPayload, EncodedPayload,
-                                          MaskField, MaskMode, ReadMode)
+from brewblox_devcon_spark.models import DecodedPayload, EncodedPayload, MaskField, MaskMode, ReadMode
 
 TEMP_SENSOR_TYPE_INT = 302
 
@@ -34,12 +33,15 @@ async def test_encode_system_objects():
     ]
 
     encoded = [
-        cdc.encode_payload(DecodedPayload(
-            blockId=1,
-            blockType=t,
-            content={},
-        ))
-        for t in types]
+        cdc.encode_payload(
+            DecodedPayload(
+                blockId=1,
+                blockType=t,
+                content={},
+            )
+        )
+        for t in types
+    ]
 
     assert encoded
 
@@ -54,26 +56,23 @@ async def test_encode_errors():
         cdc.encode_response({})
 
     with pytest.raises(exceptions.EncodeException):
-        cdc.encode_payload(DecodedPayload(
-            blockId=1,
-            blockType='MAGIC'
-        ))
+        cdc.encode_payload(DecodedPayload(blockId=1, blockType='MAGIC'))
 
     # TouchSettings only exist as deprecated BlockType name,
     # and no longer has an associated message
     with pytest.raises(exceptions.EncodeException):
-        cdc.encode_payload(DecodedPayload(
-            blockId=1,
-            blockType='TouchSettings',
-            content={},
-        ))
+        cdc.encode_payload(
+            DecodedPayload(
+                blockId=1,
+                blockType='TouchSettings',
+                content={},
+            )
+        )
 
     with pytest.raises(exceptions.EncodeException):
-        cdc.encode_payload(DecodedPayload(
-            blockId=1,
-            blockType='TempSensorOneWire',
-            content={'Galileo': 'thunderbolts and lightning'}
-        ))
+        cdc.encode_payload(
+            DecodedPayload(blockId=1, blockType='TempSensorOneWire', content={'Galileo': 'thunderbolts and lightning'})
+        )
 
 
 async def test_decode_errors():
@@ -85,29 +84,35 @@ async def test_decode_errors():
     with pytest.raises(exceptions.DecodeException):
         cdc.decode_response('Caught in a landslide')
 
-    error_object = cdc.decode_payload(EncodedPayload(
-        blockId=1,
-        blockType=TEMP_SENSOR_TYPE_INT,
-        content='Galileo, Figaro - magnificoo',
-    ))
+    error_object = cdc.decode_payload(
+        EncodedPayload(
+            blockId=1,
+            blockType=TEMP_SENSOR_TYPE_INT,
+            content='Galileo, Figaro - magnificoo',
+        )
+    )
     assert error_object.blockType == 'ErrorObject'
     assert error_object.content['error']
 
-    error_object = cdc.decode_payload(EncodedPayload(
-        blockId=1,
-        blockType=1e6,
-    ))
+    error_object = cdc.decode_payload(
+        EncodedPayload(
+            blockId=1,
+            blockType=1e6,
+        )
+    )
     assert error_object.blockType == 'UnknownType'
 
 
 async def test_deprecated_object():
     cdc = codec.CV.get()
 
-    payload = cdc.encode_payload(DecodedPayload(
-        blockId=1,
-        blockType='Deprecated',
-        content={'bytes': 'ZAA='},
-    ))
+    payload = cdc.encode_payload(
+        DecodedPayload(
+            blockId=1,
+            blockType='Deprecated',
+            content={'bytes': 'ZAA='},
+        )
+    )
     assert payload.blockType == 65533
     assert payload.content == 'ZAA='
 
@@ -119,34 +124,34 @@ async def test_deprecated_object():
 async def test_encode_constraint():
     cdc = codec.CV.get()
 
-    assert cdc.decode_payload(EncodedPayload(
-        blockId=1,
-        blockType='ActuatorPwm',
-        content='\x00',
-    ))
-    assert cdc.encode_payload(DecodedPayload(
-        blockId=1,
-        blockType='ActuatorPwm',
-        content={
-            'constrainedBy': {
-                'constraints': [
-                    {'min': -100},
-                    {'max': 100},
-                ],
+    assert cdc.decode_payload(
+        EncodedPayload(
+            blockId=1,
+            blockType='ActuatorPwm',
+            content='\x00',
+        )
+    )
+    assert cdc.encode_payload(
+        DecodedPayload(
+            blockId=1,
+            blockType='ActuatorPwm',
+            content={
+                'constrainedBy': {
+                    'constraints': [
+                        {'min': -100},
+                        {'max': 100},
+                    ],
+                },
             },
-        },
-    ))
+        )
+    )
 
 
 async def test_encode_delta_sec():
     cdc = codec.CV.get()
 
     # Check whether [delta_temperature / time] can be converted
-    payload = cdc.encode_payload(DecodedPayload(
-        blockId=1,
-        blockType='EdgeCase',
-        content={'deltaV': 100}
-    ))
+    payload = cdc.encode_payload(DecodedPayload(blockId=1, blockType='EdgeCase', content={'deltaV': 100}))
     payload = cdc.decode_payload(payload, mode=ReadMode.LOGGED, filter_values=False)
     assert payload.content['deltaV[delta_degC / second]'] == pytest.approx(100, 0.1)
 
@@ -154,21 +159,19 @@ async def test_encode_delta_sec():
 async def test_encode_submessage():
     cdc = codec.CV.get()
 
-    payload = cdc.encode_payload(DecodedPayload(
-        blockId=1,
-        blockType='EdgeCase',
-        content={}
-    ))
+    payload = cdc.encode_payload(DecodedPayload(blockId=1, blockType='EdgeCase', content={}))
     assert payload.blockType == 9001
 
     payload = cdc.decode_payload(payload)
     assert payload.blockType == 'EdgeCase'
 
     # Interface encoding
-    payload = cdc.encode_payload(DecodedPayload(
-        blockId=1,
-        blockType='EdgeCase',
-    ))
+    payload = cdc.encode_payload(
+        DecodedPayload(
+            blockId=1,
+            blockType='EdgeCase',
+        )
+    )
     assert payload.blockType == 9001
 
     payload = cdc.decode_payload(payload)
@@ -184,10 +187,12 @@ async def test_transcode_interfaces():
         'SetpointSensorPair',
         'SetpointSensorPairInterface',
     ]:
-        payload = cdc.encode_payload(DecodedPayload(
-            blockId=1,
-            blockType=type,
-        ))
+        payload = cdc.encode_payload(
+            DecodedPayload(
+                blockId=1,
+                blockType=type,
+            )
+        )
         payload = cdc.decode_payload(payload)
         assert payload.blockType == type
 
@@ -196,16 +201,18 @@ async def test_exclusive_mask():
     cdc = codec.CV.get()
     rw_cdc = Codec(filter_values=False)
 
-    enc_payload = rw_cdc.encode_payload(DecodedPayload(
-        blockId=1,
-        blockType='EdgeCase',
-        content={
-            'deltaV': 100,  # tag 6
-            'logged': 10,  # tag 7
-        },
-        maskMode=MaskMode.EXCLUSIVE,
-        maskFields=[MaskField(address=[6])],
-    ))
+    enc_payload = rw_cdc.encode_payload(
+        DecodedPayload(
+            blockId=1,
+            blockType='EdgeCase',
+            content={
+                'deltaV': 100,  # tag 6
+                'logged': 10,  # tag 7
+            },
+            maskMode=MaskMode.EXCLUSIVE,
+            maskFields=[MaskField(address=[6])],
+        )
+    )
     payload = cdc.decode_payload(enc_payload)
 
     assert payload.content['deltaV']['value'] is None
@@ -214,28 +221,21 @@ async def test_exclusive_mask():
     assert payload.maskMode == MaskMode.EXCLUSIVE
     assert payload.maskFields == [MaskField(address=[6])]
 
-    payload = cdc.decode_payload(enc_payload,
-                                 mode=ReadMode.LOGGED,
-                                 filter_values=False)
+    payload = cdc.decode_payload(enc_payload, mode=ReadMode.LOGGED, filter_values=False)
     assert payload.content['deltaV[delta_degC / second]'] is None
 
 
 async def test_postfixed_decoding():
     cdc = codec.CV.get()
 
-    payload = cdc.encode_payload(DecodedPayload(
-        blockId=1,
-        blockType='EdgeCase',
-        content={
-            'link': 10,
-            'state': {
-                'value[degC]': 10
-            }
-        },
-    ))
-    payload = cdc.decode_payload(payload,
-                                 mode=ReadMode.LOGGED,
-                                 filter_values=False)
+    payload = cdc.encode_payload(
+        DecodedPayload(
+            blockId=1,
+            blockType='EdgeCase',
+            content={'link': 10, 'state': {'value[degC]': 10}},
+        )
+    )
+    payload = cdc.decode_payload(payload, mode=ReadMode.LOGGED, filter_values=False)
     assert payload.content['link<ActuatorAnalogInterface>'] == 10
     assert payload.content['state']['value[degC]'] == pytest.approx(10, 0.01)
 
@@ -243,13 +243,13 @@ async def test_postfixed_decoding():
 async def test_ipv4_encoding():
     cdc = codec.CV.get()
 
-    payload = cdc.encode_payload(DecodedPayload(
-        blockId=1,
-        blockType='EdgeCase',
-        content={
-            'ip': '192.168.0.1'
-        },
-    ))
+    payload = cdc.encode_payload(
+        DecodedPayload(
+            blockId=1,
+            blockType='EdgeCase',
+            content={'ip': '192.168.0.1'},
+        )
+    )
     payload = cdc.decode_payload(payload)
     assert payload.content['ip'] == '192.168.0.1'
 
@@ -257,26 +257,30 @@ async def test_ipv4_encoding():
 async def test_point_presence():
     cdc = codec.CV.get()
 
-    present_payload = cdc.encode_payload(DecodedPayload(
-        blockId=1,
-        blockType='SetpointProfile',
-        content={
-            'points': [
-                {'time[s]': 0, 'temperature[degC]': 0},
-                {'time[s]': 10, 'temperature[degC]': 10},
-            ]
-        },
-    ))
+    present_payload = cdc.encode_payload(
+        DecodedPayload(
+            blockId=1,
+            blockType='SetpointProfile',
+            content={
+                'points': [
+                    {'time[s]': 0, 'temperature[degC]': 0},
+                    {'time[s]': 10, 'temperature[degC]': 10},
+                ]
+            },
+        )
+    )
 
-    absent_payload = cdc.encode_payload(DecodedPayload(
-        blockId=1,
-        blockType='SetpointProfile',
-        content={
-            'points': [
-                {'time[s]': 10, 'temperature[degC]': 10},
-            ]
-        },
-    ))
+    absent_payload = cdc.encode_payload(
+        DecodedPayload(
+            blockId=1,
+            blockType='SetpointProfile',
+            content={
+                'points': [
+                    {'time[s]': 10, 'temperature[degC]': 10},
+                ]
+            },
+        )
+    )
 
     assert present_payload.content != absent_payload.content
 
@@ -288,21 +292,25 @@ async def test_point_presence():
 async def test_enum_decoding():
     cdc = codec.CV.get()
 
-    encoded_payload = cdc.encode_payload(DecodedPayload(
-        blockId=1,
-        blockType='DigitalActuator',
-        content={
-            'storedState': 'STATE_ACTIVE',
-        },
-    ))
+    encoded_payload = cdc.encode_payload(
+        DecodedPayload(
+            blockId=1,
+            blockType='DigitalActuator',
+            content={
+                'storedState': 'STATE_ACTIVE',
+            },
+        )
+    )
 
-    encoded_int_payload = cdc.encode_payload(DecodedPayload(
-        blockId=1,
-        blockType='DigitalActuator',
-        content={
-            'storedState': 1,
-        },
-    ))
+    encoded_int_payload = cdc.encode_payload(
+        DecodedPayload(
+            blockId=1,
+            blockType='DigitalActuator',
+            content={
+                'storedState': 1,
+            },
+        )
+    )
 
     # String and int enums are both valid input
     assert encoded_payload.content == encoded_int_payload.content
@@ -317,15 +325,17 @@ async def test_enum_decoding():
 async def test_invalid_if_decoding():
     cdc = codec.CV.get()
 
-    encoded_payload = cdc.encode_payload(DecodedPayload(
-        blockId=1,
-        blockType='EdgeCase',
-        content={
-            'listValues': [0, 10],  # omit if zero
-            'deltaV': 0,  # null if zero
-            'logged': 0,  # omit if zero
-        },
-    ))
+    encoded_payload = cdc.encode_payload(
+        DecodedPayload(
+            blockId=1,
+            blockType='EdgeCase',
+            content={
+                'listValues': [0, 10],  # omit if zero
+                'deltaV': 0,  # null if zero
+                'logged': 0,  # omit if zero
+            },
+        )
+    )
 
     payload = cdc.decode_payload(encoded_payload)
     assert len(payload.content['listValues']) == 1
@@ -337,17 +347,19 @@ async def test_invalid_if_decoding():
 async def test_map_fields():
     cdc = codec.CV.get()
 
-    encoded_payload = cdc.encode_payload(DecodedPayload(
-        blockId=1,
-        blockType='Variables',
-        content={
-            'variables': {
-                'k1': {'digital': 'STATE_ACTIVE'},
-                'k2': {'temp[degC]': 20},
-                'k3': {'duration[s]': 10},
+    encoded_payload = cdc.encode_payload(
+        DecodedPayload(
+            blockId=1,
+            blockType='Variables',
+            content={
+                'variables': {
+                    'k1': {'digital': 'STATE_ACTIVE'},
+                    'k2': {'temp[degC]': 20},
+                    'k3': {'duration[s]': 10},
+                },
             },
-        },
-    ))
+        )
+    )
     payload = cdc.decode_payload(encoded_payload)
     assert payload.content == {
         'variables': {
@@ -360,11 +372,7 @@ async def test_map_fields():
                 },
             },
             'k3': {
-                'duration': {
-                    '__bloxtype': 'Quantity',
-                    'unit': 'second',
-                    'value': 10
-                },
+                'duration': {'__bloxtype': 'Quantity', 'unit': 'second', 'value': 10},
             },
         }
     }

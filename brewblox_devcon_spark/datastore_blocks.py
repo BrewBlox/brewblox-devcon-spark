@@ -1,6 +1,7 @@
 """
 Stores sid/nid relations for blocks
 """
+
 import logging
 from contextvars import ContextVar
 
@@ -25,10 +26,9 @@ def get_legacy_redis_block_db_name() -> str:  # pragma: no cover
     desc = state.desc()
     if desc.connection_kind == 'SIM':
         return f'simulator__{config.name}-blocks-db'
-    elif desc.connection_kind == 'MOCK':
+    if desc.connection_kind == 'MOCK':
         return f'mock__{config.name}-blocks-db'
-    else:
-        return f'{desc.controller.device.device_id}-blocks-db'
+    return f'{desc.controller.device.device_id}-blocks-db'
 
 
 async def extract_legacy_redis_block_names() -> list[tuple[str, int]]:  # pragma: no cover
@@ -42,8 +42,7 @@ async def extract_legacy_redis_block_names() -> list[tuple[str, int]]:  # pragma
     data: list[tuple[str, int]] = []
 
     try:
-        query = DatastoreSingleQuery(id=get_legacy_redis_block_db_name(),
-                                     namespace=const.SERVICE_NAMESPACE)
+        query = DatastoreSingleQuery(id=get_legacy_redis_block_db_name(), namespace=const.SERVICE_NAMESPACE)
         content = query.model_dump(mode='json')
         resp = await utils.httpx_retry(lambda: client.post('/get', json=content))
         box = TwinKeyEntriesBox.model_validate_json(resp.text)
@@ -58,14 +57,12 @@ async def remove_legacy_redis_block_names():  # pragma: no cover
     config = utils.get_config()
     client = AsyncClient(base_url=config.datastore_url)
 
-    query = DatastoreSingleQuery(id=get_legacy_redis_block_db_name(),
-                                 namespace=const.SERVICE_NAMESPACE)
+    query = DatastoreSingleQuery(id=get_legacy_redis_block_db_name(), namespace=const.SERVICE_NAMESPACE)
     content = query.model_dump(mode='json')
     await client.post('/delete', json=content)
 
 
 def setup():
     bd = bidict()
-    bd.on_dup = OnDup(key=OnDupAction.DROP_OLD,
-                      val=OnDupAction.DROP_OLD)
+    bd.on_dup = OnDup(key=OnDupAction.DROP_OLD, val=OnDupAction.DROP_OLD)
     CV.set(bd)

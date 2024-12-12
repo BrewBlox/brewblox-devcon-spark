@@ -12,16 +12,20 @@ CV: ContextVar[FastMQTT] = ContextVar('mqtt.client')
 
 def setup():
     config = utils.get_config()
-    mqtt_config = MQTTConfig(host=config.mqtt_host,
-                             port=config.mqtt_port,
-                             ssl=(config.mqtt_protocol == 'mqtts'),
-                             reconnect_retries=-1,
-                             will_message_topic=f'{config.state_topic}/{config.name}',
-                             will_message_payload=json.dumps({
-                                 'key': config.name,
-                                 'type': 'Spark.state',
-                                 'data': None,
-                             }))
+    mqtt_config = MQTTConfig(
+        host=config.mqtt_host,
+        port=config.mqtt_port,
+        ssl=(config.mqtt_protocol == 'mqtts'),
+        reconnect_retries=-1,
+        will_message_topic=f'{config.state_topic}/{config.name}',
+        will_message_payload=json.dumps(
+            {
+                'key': config.name,
+                'type': 'Spark.state',
+                'data': None,
+            }
+        ),
+    )
     fmqtt = FastMQTT(config=mqtt_config)
     CV.set(fmqtt)
 
