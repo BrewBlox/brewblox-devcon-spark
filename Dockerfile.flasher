@@ -1,4 +1,4 @@
-# syntax=docker.io/docker/dockerfile:1.7-labs
+# syntax=docker/dockerfile:1-labs
 FROM python:3.11-slim-bookworm
 
 ENV PIP_EXTRA_INDEX_URL=https://www.piwheels.org/simple
@@ -15,12 +15,12 @@ RUN <<EOF bash
         libatomic1 \
         usbutils
 
-    pip3 install \
+    pip3 install --no-cache-dir \
         cffi==1.17.1 \
         cryptography==42.0.8 \
         esptool
 
-    CLI_VERSION="3.24.0"
+    CLI_VERSION="3.29.1"
     ARCH="$(dpkg --print-architecture)"
     if [ "\${ARCH}" = "amd64" ]; then
         CLI_ARCH="x64"
@@ -41,6 +41,6 @@ RUN <<EOF bash
     rm -rf /var/cache/apt/archives /var/lib/apt/lists
 EOF
 
-COPY --exclude=*.sim ./firmware/* ./
+COPY --exclude=*.sim firmware/ ./
 
 ENTRYPOINT [ "/bin/bash" ]

@@ -78,6 +78,7 @@ class ResetData(enum.Enum):
     LISTENING_MODE_EXIT = '05'
     FIRMWARE_UPDATE_SUCCESS = '06'
     OUT_OF_MEMORY = '07'
+    FIRMWARE_UPDATE_TCP_SERVER_FAILED = '08'
 
     def __str__(self):
         return self.name

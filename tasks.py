@@ -107,7 +107,7 @@ def testclean(ctx: Context):
 @task()
 def image(ctx: Context, tag='local'):
     with ctx.cd(ROOT):
-        ctx.run(f'docker build -t ghcr.io/brewblox/brewblox-devcon-spark:{tag} -f Dockerfile.service .')
+        ctx.run(f'docker build --load -t ghcr.io/brewblox/brewblox-devcon-spark:{tag} -f Dockerfile.service .')
 
 
 @task()
@@ -121,7 +121,7 @@ def buildx(ctx: Context, tag='local', platform='linux/amd64,linux/arm/v7,linux/a
 @task()
 def flasher_image(ctx: Context, tag='local'):
     with ctx.cd(ROOT):
-        ctx.run(f'docker build -t ghcr.io/brewblox/brewblox-firmware-flasher:{tag} -f Dockerfile.flasher .')
+        ctx.run(f'docker build --load -t ghcr.io/brewblox/brewblox-firmware-flasher:{tag} -f Dockerfile.flasher .')
 
 
 @task()
