@@ -53,13 +53,11 @@ def derived_table(user_temp) -> dict[str, UnitMapping]:
 
     return {
         k: UnitMapping(k, sys_val, user_val)
-        for (k, sys_val, user_val)
-        in zip(FORMATS.keys(), sys_vals, user_vals)
+        for (k, sys_val, user_val) in zip(FORMATS.keys(), sys_vals, user_vals, strict=False)
     }
 
 
 class UnitConverter:
-
     def __init__(self):
         # Init with system temp. All mappings will have system_value == user_value
         self._table = derived_table(SYSTEM_TEMP)

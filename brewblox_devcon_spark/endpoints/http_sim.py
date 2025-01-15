@@ -32,8 +32,9 @@ async def sim_display_websocket(ws: WebSocket):  # pragma: no cover
     try:
         await state.wait_synchronized()
 
-        async with aconnect_ws(url=f'ws://localhost:{config.simulation_display_port}/',
-                               ) as client_ws:
+        async with aconnect_ws(
+            url=f'ws://localhost:{config.simulation_display_port}/',
+        ) as client_ws:
             while True:
                 msg = await client_ws.receive_bytes()
                 await ws.send_bytes(msg)

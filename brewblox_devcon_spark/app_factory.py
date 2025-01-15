@@ -7,9 +7,22 @@ from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from fastapi.responses import JSONResponse
 
-from . import (block_backup, broadcast, codec, command, connection,
-               datastore_blocks, datastore_settings, endpoints, mqtt,
-               spark_api, state_machine, synchronization, time_sync, utils)
+from . import (
+    block_backup,
+    broadcast,
+    codec,
+    command,
+    connection,
+    datastore_blocks,
+    datastore_settings,
+    endpoints,
+    mqtt,
+    spark_api,
+    state_machine,
+    synchronization,
+    time_sync,
+    utils,
+)
 from .models import ErrorResponse
 
 LOGGER = logging.getLogger(__name__)
@@ -17,7 +30,7 @@ LOGGER = logging.getLogger(__name__)
 
 def setup_logging(debug: bool, trace: bool):
     level = logging.DEBUG if debug else logging.INFO
-    unimportant_level = logging.INFO if debug else logging.WARN
+    unimportant_level = logging.INFO if debug else logging.WARNING
     format = '%(asctime)s.%(msecs)03d [%(levelname).1s:%(name)s:%(lineno)d] %(message)s'
     datefmt = '%Y/%m/%d %H:%M:%S'
 
@@ -31,7 +44,7 @@ def setup_logging(debug: bool, trace: bool):
 
     logging.getLogger('gmqtt').setLevel(unimportant_level)
     logging.getLogger('httpx').setLevel(unimportant_level)
-    logging.getLogger('httpcore').setLevel(logging.WARN)
+    logging.getLogger('httpcore').setLevel(logging.WARNING)
     logging.getLogger('uvicorn.access').setLevel(unimportant_level)
     logging.getLogger('uvicorn.error').disabled = True
 
@@ -49,8 +62,7 @@ def add_exception_handlers(app: FastAPI):
             content.traceback = traceback.format_exception(None, ex, ex.__traceback__)
 
         logger.error(f'[{request.url}] => {msg}', exc_info=config.debug)
-        return JSONResponse(content.model_dump(mode='json', exclude_none=True),
-                            status_code=ex.status_code)
+        return JSONResponse(content.model_dump(mode='json', exclude_none=True), status_code=ex.status_code)
 
     @app.exception_handler(RequestValidationError)
     async def on_request_error(request: Request, ex: RequestValidationError) -> JSONResponse:
@@ -58,8 +70,9 @@ def add_exception_handlers(app: FastAPI):
         content = ErrorResponse(error=msg, validation=ex.errors())
 
         logger.error(f'[{request.url}] => {msg}')
-        return JSONResponse(content.model_dump(mode='json', exclude_none=True),
-                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        return JSONResponse(
+            content.model_dump(mode='json', exclude_none=True), status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
+        )
 
     @app.exception_handler(ResponseValidationError)
     async def on_response_error(request: Request, ex: ResponseValidationError) -> JSONResponse:
@@ -67,8 +80,9 @@ def add_exception_handlers(app: FastAPI):
         content = ErrorResponse(error=msg, validation=ex.errors())
 
         logger.error(f'[{request.url}] => {msg}')
-        return JSONResponse(content.model_dump(mode='json', exclude_none=True),
-                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JSONResponse(
+            content.model_dump(mode='json', exclude_none=True), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
     @app.exception_handler(Exception)
     async def on_generic_error(request: Request, ex: Exception) -> JSONResponse:  # pragma: no cover
@@ -79,8 +93,7 @@ def add_exception_handlers(app: FastAPI):
             content.traceback = traceback.format_exception(None, ex, ex.__traceback__)
 
         logger.error(f'[{request.url}] => {msg}', exc_info=config.debug)
-        return JSONResponse(content.model_dump(exclude_none=True),
-                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JSONResponse(content.model_dump(exclude_none=True), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @asynccontextmanager
@@ -106,9 +119,11 @@ def create_app() -> FastAPI:
 
     if config.debugger:  # pragma: no cover
         import faulthandler
+
         faulthandler.enable()
 
         import debugpy
+
         debugpy.listen(('0.0.0.0', 5678))
         LOGGER.info('Debugger is enabled and listening on 5678')
 
@@ -127,10 +142,12 @@ def create_app() -> FastAPI:
     # Create app
     # OpenApi endpoints are set to /api/doc for backwards compatibility
     prefix = f'/{config.name}'
-    app = FastAPI(lifespan=lifespan,
-                  docs_url=f'{prefix}/api/doc',
-                  redoc_url=f'{prefix}/api/redoc',
-                  openapi_url=f'{prefix}/openapi.json')
+    app = FastAPI(
+        lifespan=lifespan,
+        docs_url=f'{prefix}/api/doc',
+        redoc_url=f'{prefix}/api/redoc',
+        openapi_url=f'{prefix}/openapi.json',
+    )
 
     # Set standardized error response
     add_exception_handlers(app)

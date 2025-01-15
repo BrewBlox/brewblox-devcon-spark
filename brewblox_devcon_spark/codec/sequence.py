@@ -5,8 +5,9 @@ This converts Sequence block instructions from and to the line format.
 """
 
 import re
+from collections.abc import Iterable
 from datetime import timedelta
-from typing import Any, Iterable
+from typing import Any
 
 from google.protobuf.descriptor import Descriptor, FieldDescriptor
 
@@ -92,12 +93,15 @@ def from_line(line: str, line_num: int) -> dict:
         opts = field_desc.GetOptions().Extensions[brewblox_pb2.field]
 
         if opts.objtype:
-            return (raw_key, {
-                '__bloxtype': 'Link',
-                'id': value,
-            })
+            return (
+                raw_key,
+                {
+                    '__bloxtype': 'Link',
+                    'id': value,
+                },
+            )
 
-        elif opts.unit:
+        if opts.unit:
             unit_name = brewblox_pb2.UnitType.Name(opts.unit)
             value = value.strip()
 
@@ -114,43 +118,49 @@ def from_line(line: str, line_num: int) -> dict:
 
                 if ('Delta' in unit_name) != ('delta_' in unit):
                     raise ValueError(
-                        f'line {line_num}: Mismatch between delta and absolute temperature: `{key}={value}{unit}`')
+                        f'line {line_num}: Mismatch between delta and absolute temperature: `{key}={value}{unit}`'
+                    )
 
-                return (raw_key, {
-                    '__bloxtype': 'Quantity',
-                    'value': value,
-                    'unit': unit,
-                })
+                return (
+                    raw_key,
+                    {
+                        '__bloxtype': 'Quantity',
+                        'value': value,
+                        'unit': unit,
+                    },
+                )
 
-            elif unit_name == 'Second':
+            if unit_name == 'Second':
                 td = time_utils.parse_duration(value)
 
-                return (raw_key, {
-                    '__bloxtype': 'Quantity',
-                    'value': int(td.total_seconds()),
-                    'unit': 'second',
-                })
+                return (
+                    raw_key,
+                    {
+                        '__bloxtype': 'Quantity',
+                        'value': int(td.total_seconds()),
+                        'unit': 'second',
+                    },
+                )
 
-            else:  # pragma: no cover
-                raise NotImplementedError(f'{unit_name} quantities not yet implemented')
+            # pragma: no cover
+            raise NotImplementedError(f'{unit_name} quantities not yet implemented')
 
-        else:
-            try:
-                return (raw_key, float(value))
-            except ValueError:
-                return (raw_key, value)
+        try:
+            return (raw_key, float(value))
+        except ValueError:
+            return (raw_key, value)
 
     # - the comma-separated argument string is split into `key=value` strings
     # - key and value are extracted from the `key=value` string
     # - spaces are stripped from both key and value
     # - quotes are stripped from value
     # - a {key:value} dict is constructed
-    argdict = {argk.strip(): argv.strip().strip("'")
-               for (argk, _, argv)
-               in [arg.partition('=') for arg in args.split(',') if arg]}
+    argdict = {
+        argk.strip(): argv.strip().strip("'")
+        for (argk, _, argv) in [arg.partition('=') for arg in args.split(',') if arg]
+    }
 
-    parsed = dict([parse_arg_entry(key, value)
-                   for key, value in argdict.items()])
+    parsed = dict([parse_arg_entry(key, value) for key, value in argdict.items()])
 
     # strip prefixes from fields - we need one per oneof, not all possible fields
     if missing := base_keys(opcode_arg_field_descs.keys()) - base_keys(parsed.keys()):
@@ -165,7 +175,6 @@ def to_line(args: dict) -> str:
 
     Link IDs must already have been converted to SID.
     """
-
     opcode, argdict = list(args.items())[0]
     opcode: str
     argdict: dict[str, Any]
@@ -216,8 +225,7 @@ def parse(block: Block):
     Converts instructions in given Sequence block from line to dict format.
     """
     if 'instructions' in block.data:
-        block.data['instructions'] = [from_line(s, idx + 1)
-                                      for idx, s in enumerate(block.data['instructions'])]
+        block.data['instructions'] = [from_line(s, idx + 1) for idx, s in enumerate(block.data['instructions'])]
 
 
 def serialize(block: Block):
@@ -225,5 +233,4 @@ def serialize(block: Block):
     Converts instructions in given Sequence block from dict to line format.
     """
     if 'instructions' in block.data:
-        block.data['instructions'] = [to_line(d)
-                                      for d in block.data['instructions']]
+        block.data['instructions'] = [to_line(d) for d in block.data['instructions']]

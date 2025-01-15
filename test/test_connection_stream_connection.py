@@ -1,7 +1,7 @@
 import asyncio
-from typing import AsyncGenerator
 
 import pytest
+import pytest_asyncio
 from pytest_mock import MockerFixture
 
 from brewblox_devcon_spark import utils
@@ -40,23 +40,53 @@ class DummyCallbacks(stream_connection.ConnectionCallbacks):
         self.response_ev.set()
 
 
-@pytest.fixture
-def random_port() -> int:
-    return utils.get_free_port()
+class Context:
+    def __init__(self, loop, port):
+        self.loop = loop
+        self.port = port
+        self.server = None
+
+    async def start_server(self):
+        """Start a server with the callback *handle_client* listening on
+        "self.addr".
+        """
+        self.server = await self.loop.create_server(EchoServerProtocol, 'localhost', self.port)
+
+    async def close_server(self):
+        """Close the server."""
+        if self.server is not None:
+            server, self.server = self.server, None
+            server.close()
+            await server.wait_closed()
 
 
-@pytest.fixture(autouse=True)
-async def echo_server(random_port: int) -> AsyncGenerator[asyncio.Server, None]:
-    loop = asyncio.get_running_loop()
-    server = await loop.create_server(EchoServerProtocol, 'localhost', random_port)
-    async with server:
-        async with utils.task_context(server.serve_forever()):
-            yield server
+@pytest_asyncio.fixture(loop_scope='session', scope='session')
+async def ctx(unused_tcp_port_factory):
+    """Generate tests with TCP sockets and Unix domain sockets."""
+    port = unused_tcp_port_factory()
+
+    ctx = Context(asyncio.get_event_loop(), port)
+    try:
+        await ctx.start_server()
+        yield ctx
+    finally:
+        # # Collect all tasks and cancel those that are not 'done'.
+        tasks = asyncio.all_tasks(ctx.loop)
+        tasks = [t for t in tasks if not t.done()]
+        for task in tasks:
+            task.cancel()
+
+        # Wait for all tasks to complete, ignoring any CancelledErrors
+        try:
+            await asyncio.wait(tasks)
+        except asyncio.exceptions.CancelledError:
+            pass
 
 
-async def test_tcp_connection(random_port: int):
+@pytest.mark.asyncio(loop_scope='session')
+async def test_tcp_connection(ctx):
     callbacks = DummyCallbacks()
-    impl = await stream_connection.connect_tcp(callbacks, 'localhost', random_port)
+    impl = await stream_connection.connect_tcp(callbacks, 'localhost', ctx.port)
 
     await impl.send_request('hello')
     await callbacks.response_ev.wait()
@@ -74,28 +104,32 @@ async def test_tcp_connection(random_port: int):
     assert callbacks.event_msg == 'event'
 
 
-async def test_tcp_connection_close(random_port: int):
+@pytest.mark.asyncio(loop_scope='session')
+async def test_tcp_connection_close(ctx):
     callbacks = DummyCallbacks()
-    impl = await stream_connection.connect_tcp(callbacks, 'localhost', random_port)
+    impl = await stream_connection.connect_tcp(callbacks, 'localhost', ctx.port)
     await impl.close()
     await asyncio.wait_for(impl.disconnected.wait(), timeout=5)
     await impl.close()  # Can safely be called again
 
 
-async def test_tcp_connection_error(random_port: int):
+@pytest.mark.asyncio(loop_scope='session')
+async def test_tcp_connection_error(ctx):
     callbacks = DummyCallbacks()
-    impl = await stream_connection.connect_tcp(callbacks, 'localhost', random_port)
+    impl = await stream_connection.connect_tcp(callbacks, 'localhost', ctx.port)
     await impl.send_request('error')
     await asyncio.wait_for(impl.disconnected.wait(), timeout=5)
 
 
-async def test_discover_mdns(mocker: MockerFixture, random_port: int):
+@pytest.mark.asyncio(loop_scope='session')
+async def test_discover_mdns(mocker: MockerFixture, ctx):
     config = utils.get_config()
 
     m_mdns_discover = mocker.patch(TESTED + '.mdns.discover_one', autospec=True)
-    m_mdns_discover.return_value = ConnectInfo('localhost', random_port, config.device_id)
+    m_mdns_discover.return_value = ConnectInfo('localhost', ctx.port, config.device_id)
     callbacks = DummyCallbacks()
     impl = await stream_connection.discover_mdns(callbacks)
+    assert impl is not None
 
     await impl.send_request('mdns')
     await callbacks.response_ev.wait()

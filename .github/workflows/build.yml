@@ -40,24 +40,25 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install poetry wheel
-          poetry install
+          uv sync
 
       - name: Download firmware
         run: |
-          poetry run invoke download-firmware
+          uv run invoke download-firmware
 
       - name: Test
         run: |
-          poetry run pytest
-          poetry run flake8
+          uv run pytest
 
-      - name: Build
-        run: |
-          poetry run invoke build
+      - name: Lint
+        uses: astral-sh/ruff-action@v1
+        with:
+          args: "format --check --diff"
 
       - name: (Service) Build Docker image
         uses: docker/build-push-action@v5

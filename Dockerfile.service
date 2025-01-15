@@ -1,57 +1,47 @@
-FROM python:3.11-bookworm as base
+FROM python:3.11-bookworm AS base
 
-ENV PIP_EXTRA_INDEX_URL=https://www.piwheels.org/simple
-ENV PIP_FIND_LINKS=/wheeley
-ENV VENV=/app/.venv
-ENV PATH="$VENV/bin:$PATH"
+# Declare a build argument for the target architecture
+ARG TARGETPLATFORM
 
-COPY ./dist /app/dist
-COPY ./firmware /app/firmware
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy RUST_LOG=info
+ADD https://astral.sh/uv/install.sh /install.sh
+RUN chmod +x /install.sh && /install.sh && rm /install.sh
 
-RUN <<EOF
-    set -ex
+COPY ./ /app
+WORKDIR /app
 
-    mkdir /wheeley
-    python3 -m venv $VENV
-    pip3 install --upgrade pip wheel setuptools
-    pip3 wheel --wheel-dir=/wheeley -r /app/dist/requirements.txt
-    pip3 wheel --wheel-dir=/wheeley /app/dist/*.tar.gz
-EOF
+RUN /root/.local/bin/uv venv
 
-RUN <<EOF bash
-    set -ex
-
-    cd /app/firmware
-    ARCH="$(dpkg --print-architecture)"
-    if [ "\${ARCH}" = "amd64" ]; then
-        rm ./brewblox-{arm32,arm64}.sim
-    elif [ "\${ARCH}" = "armhf" ]; then
-        rm ./brewblox-{amd64,arm64}.sim
-    elif [ "\${ARCH}" = "arm64" ]; then
-        rm ./brewblox-{amd64,arm32}.sim
+RUN if [ "$TARGETPLATFORM" = "linux/arm/v7" ] || [ "$TARGETPLATFORM" = "linux/arm/v8" ]; then \
+    /root/.local/bin/uv export --no-hashes --no-dev --no-build | \
+    /root/.local/bin/uv pip sync --verbose --index=https://www.piwheels.org/simple -; \
+    else \
+    /root/.local/bin/uv export --no-hashes --no-dev --no-build | \
+    /root/.local/bin/uv pip sync --verbose -; \
     fi
-EOF
+
+RUN ARCH="$(dpkg --print-architecture)"; \
+    set -ex; \
+    cd /app/firmware; \
+    if [ "$ARCH" = "amd64" ]; then \
+    rm -f ./brewblox-{arm32,arm64}.sim; \
+    elif [ "$ARCH" = "armhf" ]; then \
+    rm -f ./brewblox-{amd64,arm64}.sim; \
+    elif [ "$ARCH" = "arm64" ]; then \
+    rm -f ./brewblox-{amd64,arm32}.sim; \
+    fi
 
 FROM python:3.11-slim-bookworm
 EXPOSE 5000
 WORKDIR /app
 
-ENV PIP_FIND_LINKS=/wheeley
 ENV VENV=/app/.venv
 ENV PATH="$VENV/bin:$PATH"
 
-COPY --from=base /wheeley /wheeley
+COPY --from=base /app/.venv /app/.venv
+COPY ./brewblox_devcon_spark /app/brewblox_devcon_spark
 COPY --from=base /app/firmware /app/firmware
 COPY ./parse_appenv.py ./parse_appenv.py
 COPY ./entrypoint.sh ./entrypoint.sh
-
-RUN <<EOF
-    set -ex
-
-    python3 -m venv $VENV
-    pip3 install --no-index brewblox_devcon_spark
-    pip3 freeze
-    rm -rf /wheeley
-EOF
 
 ENTRYPOINT ["bash", "./entrypoint.sh"]

@@ -12,8 +12,7 @@ from brewblox_devcon_spark import const, mdns
 TESTED = mdns.__name__
 
 
-class ServiceBrowserMock():
-
+class ServiceBrowserMock:
     def __init__(self, conf, service_type, handlers):
         print(conf, service_type, handlers)
         self.conf = conf
@@ -27,7 +26,6 @@ class ServiceBrowserMock():
 
 @pytest.fixture(autouse=True)
 def conf_mock(mocker: MockerFixture) -> Mock:
-
     async def get_service_info(service_type, name):
         if name == 'id0':
             return ServiceInfo(

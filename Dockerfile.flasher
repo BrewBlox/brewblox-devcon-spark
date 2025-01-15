@@ -1,3 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1.7-labs
 FROM python:3.11-slim-bookworm
 
 ENV PIP_EXTRA_INDEX_URL=https://www.piwheels.org/simple
@@ -15,6 +16,8 @@ RUN <<EOF bash
         usbutils
 
     pip3 install \
+        cffi==1.17.1 \
+        cryptography==42.0.8 \
         esptool
 
     CLI_VERSION="3.24.0"
@@ -38,8 +41,6 @@ RUN <<EOF bash
     rm -rf /var/cache/apt/archives /var/lib/apt/lists
 EOF
 
-COPY ./firmware/* ./
-
-RUN rm ./*.sim && bash inspect
+COPY --exclude=*.sim ./firmware/* ./
 
 ENTRYPOINT [ "/bin/bash" ]

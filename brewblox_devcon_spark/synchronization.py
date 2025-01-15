@@ -44,8 +44,7 @@ import logging
 from contextlib import asynccontextmanager
 from functools import wraps
 
-from . import (codec, command, const, datastore_blocks, datastore_settings,
-               exceptions, state_machine, utils)
+from . import codec, command, const, datastore_blocks, datastore_settings, exceptions, state_machine, utils
 from .codec.time_utils import serialize_duration
 from .models import FirmwareBlock, FirmwareBlockIdentity
 
@@ -58,6 +57,7 @@ def subroutine(desc: str):
     asyncio.CancelledError is passed through as is.
     Other errors are logged and re-raised.
     """
+
     def wrapper(func):
         @wraps(func)
         async def wrapped(*args, **kwargs):
@@ -66,12 +66,13 @@ def subroutine(desc: str):
             except Exception as ex:
                 LOGGER.error(f'Sync subroutine failed: {desc} - {utils.strex(ex)}')
                 raise ex
+
         return wrapped
+
     return wrapper
 
 
 class StateSynchronizer:
-
     def __init__(self):
         self.config = utils.get_config()
         self.state = state_machine.CV.get()
@@ -109,8 +110,7 @@ class StateSynchronizer:
                 while not ack_task.done():
                     await self._prompt_handshake()
                     # Returns early if acknowledged before timeout elapsed
-                    await asyncio.wait([ack_task],
-                                       timeout=self.config.handshake_ping_interval.total_seconds())
+                    await asyncio.wait([ack_task], timeout=self.config.handshake_ping_interval.total_seconds())
 
         self.state.check_compatible()
 
@@ -166,7 +166,8 @@ class StateSynchronizer:
                     'timeZone': tz_posix,
                     'tempUnit': temp_unit_enum,
                 },
-            ))
+            )
+        )
 
         if sysinfo.type != const.SYSINFO_BLOCK_TYPE:
             raise exceptions.CommandException(f'Unexpected SysInfo block: {sysinfo}')

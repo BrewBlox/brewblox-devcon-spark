@@ -8,10 +8,20 @@ from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from pytest_mock import MockerFixture
 
-from brewblox_devcon_spark import (broadcast, codec, command, connection,
-                                   datastore_blocks, datastore_settings,
-                                   exceptions, mqtt, spark_api, state_machine,
-                                   synchronization, utils)
+from brewblox_devcon_spark import (
+    broadcast,
+    codec,
+    command,
+    connection,
+    datastore_blocks,
+    datastore_settings,
+    exceptions,
+    mqtt,
+    spark_api,
+    state_machine,
+    synchronization,
+    utils,
+)
 from brewblox_devcon_spark.connection import mock_connection
 from brewblox_devcon_spark.models import ErrorCode
 
@@ -46,7 +56,7 @@ def app() -> FastAPI:
 
 @pytest.fixture(autouse=True)
 async def manager(manager: LifespanManager):
-    yield manager
+    return manager
 
 
 @pytest.fixture(autouse=True)
@@ -74,14 +84,16 @@ async def test_broadcast_recovery(s_publish: Mock):
     b = broadcast.Broadcaster()
     await b.run()
 
-    s_publish.assert_has_calls([
-        call('brewcast/history/sparkey', ANY),
-        call('brewcast/state/sparkey', ANY, retain=True),
-    ])
+    s_publish.assert_has_calls(
+        [
+            call('brewcast/history/sparkey', ANY),
+            call('brewcast/state/sparkey', ANY, retain=True),
+        ]
+    )
     s_publish.reset_mock()
 
     async with broadcast.lifespan():
-        mock_connection.NEXT_ERROR += [ErrorCode.UNKNOWN_ERROR]*100
+        mock_connection.NEXT_ERROR += [ErrorCode.UNKNOWN_ERROR] * 100
         await asyncio.sleep(0.2)
         assert s_publish.call_count > 1
 

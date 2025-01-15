@@ -5,7 +5,6 @@ from brewblox_devcon_spark.models import ConnectionKind_
 
 
 class ConnectionCallbacks:
-
     @abstractmethod
     async def on_response(self, msg: str):
         """
@@ -22,12 +21,12 @@ class ConnectionCallbacks:
 
 
 class ConnectionImplBase(ConnectionCallbacks):
-
-    def __init__(self,
-                 kind: ConnectionKind_,
-                 address: str,
-                 callbacks: ConnectionCallbacks,
-                 ) -> None:
+    def __init__(
+        self,
+        kind: ConnectionKind_,
+        address: str,
+        callbacks: ConnectionCallbacks,
+    ) -> None:
         self._kind = kind
         self._address = address
         self._callbacks = callbacks
