@@ -24,12 +24,15 @@ RUN ARCH="$(dpkg --print-architecture)"; \
     set -ex; \
     cd /app/firmware; \
     if [ "$ARCH" = "amd64" ]; then \
-    rm -f ./brewblox-{arm32,arm64}.sim; \
+    echo "Building for amd64"; \
+    rm -f brewblox-arm32.sim; rm -f brewblox-arm64.sim; \
     elif [ "$ARCH" = "armhf" ]; then \
-    rm -f ./brewblox-{amd64,arm64}.sim; \
+    echo "Building for armhf"; \
+    rm -f brewblox-amd64.sim; rm -f brewblox-arm64.sim; \
     elif [ "$ARCH" = "arm64" ]; then \
-    rm -f ./brewblox-{amd64,arm32}.sim; \
-    fi
+    echo "Building for arm64"; \
+    rm -f ./brewblox-amd64.sim; rm -f brewblox-arm32.sim; \
+    fi;
 
 FROM python:3.11-slim-bookworm
 EXPOSE 5000

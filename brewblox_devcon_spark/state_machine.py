@@ -166,7 +166,7 @@ class StateMachine:
 
     def set_synchronized(self):
         if not self._acknowledged_ev.is_set():
-            raise RuntimeError('Failed to set synchronized status: ' 'service is not acknowledged')
+            raise RuntimeError('Failed to set synchronized status: service is not acknowledged')
 
         self._status_desc.connection_status = 'SYNCHRONIZED'
 

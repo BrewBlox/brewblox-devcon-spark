@@ -31,7 +31,7 @@ def expected_events():
 
 
 def expected_data():
-    return ['0A' '00' '01' '28C80E9A0300009C', '34234']
+    return ['0A' + '00' + '01' + '28C80E9A0300009C', '34234']
 
 
 def test_parser():
