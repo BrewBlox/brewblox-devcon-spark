@@ -17,7 +17,7 @@ import nanopb_pb2 as nanopb__pb2
 import GpioModule_pb2 as GpioModule__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x16TempSensorAnalog.proto\x12\x15\x62lox.TempSensorAnalog\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x10GpioModule.proto\"\xe6\x02\n\x05\x42lock\x12G\n\nsensorType\x18\x01 \x01(\x0e\x32+.blox.TempSensorAnalog.TempSensorAnalogTypeB\x06\x8a\xb5\x18\x02x\x01\x12\x1e\n\x0c\x61nalogDevice\x18\x02 \x01(\rB\x08\x8a\xb5\x18\x04\x18\x1cx\x01\x12\"\n\ranalogChannel\x18\x03 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02x\x01\x12!\n\x05value\x18\x04 \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x08\x01\x10\x80 (\x01\x30\x01\x12 \n\x06offset\x18\x05 \x01(\x11\x42\x10\x92?\x02\x38 \x8a\xb5\x18\x07\x08\x06\x10\x80 x\x01\x12;\n\x08\x64\x65tected\x18\x06 \x01(\x0e\x32!.blox.GpioModule.AnalogSensorTypeB\x06\x8a\xb5\x18\x02(\x01\x12\x41\n\x04spec\x18\x07 \x01(\x0e\x32+.blox.TempSensorAnalog.TempSensorAnalogSpecB\x06\x8a\xb5\x18\x02x\x01:\x0b\x8a\xb5\x18\x07\x18\xcc\x02J\x02\x02\x1d*\x94\x01\n\x14TempSensorAnalogType\x12\x1c\n\x18TEMP_SENSOR_TYPE_NOT_SET\x10\x00\x12\x1e\n\x1aTEMP_SENSOR_TYPE_RTD_2WIRE\x10\x01\x12\x1e\n\x1aTEMP_SENSOR_TYPE_RTD_3WIRE\x10\x02\x12\x1e\n\x1aTEMP_SENSOR_TYPE_RTD_4WIRE\x10\x03*z\n\x14TempSensorAnalogSpec\x12\x10\n\x0cSPEC_NOT_SET\x10\x00\x12\x12\n\x0eSPEC_PT100_385\x10\x01\x12\x12\n\x0eSPEC_PT100_392\x10\x02\x12\x13\n\x0fSPEC_PT1000_385\x10\x03\x12\x13\n\x0fSPEC_PT1000_392\x10\x04\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x16TempSensorAnalog.proto\x12\x15\x62lox.TempSensorAnalog\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x10GpioModule.proto\"\xcf\x05\n\x05\x42lock\x12G\n\nsensorType\x18\x01 \x01(\x0e\x32+.blox.TempSensorAnalog.TempSensorAnalogTypeB\x06\x8a\xb5\x18\x02x\x01\x12\x1e\n\x0c\x61nalogDevice\x18\x02 \x01(\rB\x08\x8a\xb5\x18\x04\x18\x1cx\x01\x12\"\n\ranalogChannel\x18\x03 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02x\x01\x12!\n\x05value\x18\x04 \x01(\x11\x42\x12\x92?\x02\x38 \x8a\xb5\x18\t\x08\x01\x10\x80 (\x01\x30\x01\x12;\n\x08\x64\x65tected\x18\x06 \x01(\x0e\x32!.blox.GpioModule.AnalogSensorTypeB\x06\x8a\xb5\x18\x02(\x01\x12\x41\n\x04spec\x18\x07 \x01(\x0e\x32+.blox.TempSensorAnalog.TempSensorAnalogSpecB\x06\x8a\xb5\x18\x02x\x01\x12)\n\nresistance\x18\x08 \x01(\x11\x42\x15\x92?\x02\x38 \x8a\xb5\x18\x0c\x08\x0f\x10\x80\x80\x01(\x01\x30\x01h\x01\x12&\n\x07spec_r0\x18\t \x01(\x11\x42\x15\x92?\x02\x38 \x8a\xb5\x18\x0c\x08\x0f\x10\x80\x80\x01(\x01\x30\x01h\x01\x12%\n\x06spec_a\x18\n \x01(\x11\x42\x15\x92?\x02\x38 \x8a\xb5\x18\x0c\x10\x80\x80\x80\x80\x01(\x01\x30\x01h\x01\x12&\n\x06spec_b\x18\x0b \x01(\x11\x42\x16\x92?\x02\x38 \x8a\xb5\x18\r\x10\x80\x80\x80\x80\x80@(\x01\x30\x01h\x01\x12)\n\x06spec_c\x18\x0c \x01(\x11\x42\x19\x92?\x02\x38 \x8a\xb5\x18\x10\x10\x80\x80\x80\x80\x80\x80\x80\x80\x02(\x01\x30\x01h\x01\x12-\n\x10spec_r0_override\x18\r \x01(\x11\x42\x13\x92?\x02\x38 \x8a\xb5\x18\n\x08\x0f\x10\x80\x80\x01\x30\x01h\x01\x12,\n\x0fspec_a_override\x18\x0e \x01(\x11\x42\x13\x92?\x02\x38 \x8a\xb5\x18\n\x10\x80\x80\x80\x80\x01\x30\x01h\x01\x12-\n\x0fspec_b_override\x18\x0f \x01(\x11\x42\x14\x92?\x02\x38 \x8a\xb5\x18\x0b\x10\x80\x80\x80\x80\x80@0\x01h\x01\x12\x30\n\x0fspec_c_override\x18\x10 \x01(\x11\x42\x17\x92?\x02\x38 \x8a\xb5\x18\x0e\x10\x80\x80\x80\x80\x80\x80\x80\x80\x02\x30\x01h\x01:\x0b\x8a\xb5\x18\x07\x18\xcc\x02J\x02\x02\x1d*\x94\x01\n\x14TempSensorAnalogType\x12\x1c\n\x18TEMP_SENSOR_TYPE_NOT_SET\x10\x00\x12\x1e\n\x1aTEMP_SENSOR_TYPE_RTD_2WIRE\x10\x01\x12\x1e\n\x1aTEMP_SENSOR_TYPE_RTD_3WIRE\x10\x02\x12\x1e\n\x1aTEMP_SENSOR_TYPE_RTD_4WIRE\x10\x03*z\n\x14TempSensorAnalogSpec\x12\x10\n\x0cSPEC_NOT_SET\x10\x00\x12\x12\n\x0eSPEC_PT100_385\x10\x01\x12\x12\n\x0eSPEC_PT100_392\x10\x02\x12\x13\n\x0fSPEC_PT1000_385\x10\x03\x12\x13\n\x0fSPEC_PT1000_392\x10\x04\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,18 +32,34 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_BLOCK'].fields_by_name['analogChannel']._serialized_options = b'\222?\0028\010\212\265\030\002x\001'
   _globals['_BLOCK'].fields_by_name['value']._options = None
   _globals['_BLOCK'].fields_by_name['value']._serialized_options = b'\222?\0028 \212\265\030\t\010\001\020\200 (\0010\001'
-  _globals['_BLOCK'].fields_by_name['offset']._options = None
-  _globals['_BLOCK'].fields_by_name['offset']._serialized_options = b'\222?\0028 \212\265\030\007\010\006\020\200 x\001'
   _globals['_BLOCK'].fields_by_name['detected']._options = None
   _globals['_BLOCK'].fields_by_name['detected']._serialized_options = b'\212\265\030\002(\001'
   _globals['_BLOCK'].fields_by_name['spec']._options = None
   _globals['_BLOCK'].fields_by_name['spec']._serialized_options = b'\212\265\030\002x\001'
+  _globals['_BLOCK'].fields_by_name['resistance']._options = None
+  _globals['_BLOCK'].fields_by_name['resistance']._serialized_options = b'\222?\0028 \212\265\030\014\010\017\020\200\200\001(\0010\001h\001'
+  _globals['_BLOCK'].fields_by_name['spec_r0']._options = None
+  _globals['_BLOCK'].fields_by_name['spec_r0']._serialized_options = b'\222?\0028 \212\265\030\014\010\017\020\200\200\001(\0010\001h\001'
+  _globals['_BLOCK'].fields_by_name['spec_a']._options = None
+  _globals['_BLOCK'].fields_by_name['spec_a']._serialized_options = b'\222?\0028 \212\265\030\014\020\200\200\200\200\001(\0010\001h\001'
+  _globals['_BLOCK'].fields_by_name['spec_b']._options = None
+  _globals['_BLOCK'].fields_by_name['spec_b']._serialized_options = b'\222?\0028 \212\265\030\r\020\200\200\200\200\200@(\0010\001h\001'
+  _globals['_BLOCK'].fields_by_name['spec_c']._options = None
+  _globals['_BLOCK'].fields_by_name['spec_c']._serialized_options = b'\222?\0028 \212\265\030\020\020\200\200\200\200\200\200\200\200\002(\0010\001h\001'
+  _globals['_BLOCK'].fields_by_name['spec_r0_override']._options = None
+  _globals['_BLOCK'].fields_by_name['spec_r0_override']._serialized_options = b'\222?\0028 \212\265\030\n\010\017\020\200\200\0010\001h\001'
+  _globals['_BLOCK'].fields_by_name['spec_a_override']._options = None
+  _globals['_BLOCK'].fields_by_name['spec_a_override']._serialized_options = b'\222?\0028 \212\265\030\n\020\200\200\200\200\0010\001h\001'
+  _globals['_BLOCK'].fields_by_name['spec_b_override']._options = None
+  _globals['_BLOCK'].fields_by_name['spec_b_override']._serialized_options = b'\222?\0028 \212\265\030\013\020\200\200\200\200\200@0\001h\001'
+  _globals['_BLOCK'].fields_by_name['spec_c_override']._options = None
+  _globals['_BLOCK'].fields_by_name['spec_c_override']._serialized_options = b'\222?\0028 \212\265\030\016\020\200\200\200\200\200\200\200\200\0020\001h\001'
   _globals['_BLOCK']._options = None
   _globals['_BLOCK']._serialized_options = b'\212\265\030\007\030\314\002J\002\002\035'
-  _globals['_TEMPSENSORANALOGTYPE']._serialized_start=459
-  _globals['_TEMPSENSORANALOGTYPE']._serialized_end=607
-  _globals['_TEMPSENSORANALOGSPEC']._serialized_start=609
-  _globals['_TEMPSENSORANALOGSPEC']._serialized_end=731
+  _globals['_TEMPSENSORANALOGTYPE']._serialized_start=820
+  _globals['_TEMPSENSORANALOGTYPE']._serialized_end=968
+  _globals['_TEMPSENSORANALOGSPEC']._serialized_start=970
+  _globals['_TEMPSENSORANALOGSPEC']._serialized_end=1092
   _globals['_BLOCK']._serialized_start=98
-  _globals['_BLOCK']._serialized_end=456
+  _globals['_BLOCK']._serialized_end=817
 # @@protoc_insertion_point(module_scope)

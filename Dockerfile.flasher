@@ -1,4 +1,4 @@
-# syntax=docker.io/docker/dockerfile:1.7-labs
+# syntax=docker/dockerfile:1-labs
 FROM python:3.11-slim-bookworm
 
 ENV PIP_EXTRA_INDEX_URL=https://www.piwheels.org/simple
@@ -8,6 +8,7 @@ WORKDIR /app
 RUN <<EOF bash
     set -ex
 
+    # Install only runtime dependencies
     apt-get update -q
     apt-get install -y --no-install-recommends \
         ca-certificates \
@@ -15,12 +16,14 @@ RUN <<EOF bash
         libatomic1 \
         usbutils
 
-    pip3 install \
+    # Install Python dependencies using only pre-built wheels
+    pip3 install --only-binary=:all: \
         cffi==1.17.1 \
         cryptography==42.0.8 \
         esptool
 
-    CLI_VERSION="3.24.0"
+    # Install Particle CLI
+    CLI_VERSION="3.29.1"
     ARCH="$(dpkg --print-architecture)"
     if [ "\${ARCH}" = "amd64" ]; then
         CLI_ARCH="x64"
@@ -37,10 +40,12 @@ RUN <<EOF bash
     chmod +x ./particle
     mv ./particle /usr/local/bin/
 
+    # Clean up
     apt-get autoremove -y
+    apt-get clean
     rm -rf /var/cache/apt/archives /var/lib/apt/lists
 EOF
 
-COPY --exclude=*.sim ./firmware/* ./
+COPY --exclude=*.sim firmware/ ./
 
 ENTRYPOINT [ "/bin/bash" ]
