@@ -70,6 +70,7 @@ def download_firmware(ctx: Context):
 @task(post=[compile_proto, download_firmware])
 def update_firmware(ctx: Context, release='develop'):
     url = f'{FW_BASE_URL}/{release}/firmware.ini'
+    print(url)
 
     with ctx.cd(ROOT):
         ctx.run(f'curl -sSf -o firmware.ini "{url}"')
