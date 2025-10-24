@@ -15,7 +15,7 @@ _sym_db = _symbol_database.Default()
 import brewblox_pb2 as brewblox__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12VolumeSensor.proto\x12\x11\x62lox.VolumeSensor\x1a\x0e\x62rewblox.proto\"\xfc\x01\n\x05\x42lock\x12!\n\x0epressureDevice\x18\x01 \x01(\rB\t\x8a\xb5\x18\x05\x18\xce\x02x\x01\x12%\n\x12zeroPressureVolume\x18\x03 \x01(\x11\x42\t\x8a\xb5\x18\x05\x10\x80\x08x\x01\x12 \n\rheightPerMbar\x18\x04 \x01(\x11\x42\t\x8a\xb5\x18\x05\x10\x80 x\x01\x12\x1a\n\x07mlPerMm\x18\x05 \x01(\x11\x42\t\x8a\xb5\x18\x05\x10\x80 x\x01\x12\x1f\n\x0csensorHeight\x18\x06 \x01(\x11\x42\t\x8a\xb5\x18\x05\x10\x80\x08x\x01\x12\x1b\n\x06volume\x18\t \x01(\x11\x42\x0b\x8a\xb5\x18\x07\x10\x80\x08(\x01\x30\x01\x12\x1b\n\x06height\x18\n \x01(\x11\x42\x0b\x8a\xb5\x18\x07\x10\x80\x08(\x01\x30\x01:\n\x8a\xb5\x18\x06\x18\xcf\x02J\x01\x1fJ\x04\x08\x02\x10\x03\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12VolumeSensor.proto\x12\x11\x62lox.VolumeSensor\x1a\x0e\x62rewblox.proto\"\xfd\x02\n\x05\x42lock\x12!\n\x0epressureDevice\x18\x01 \x01(\rB\t\x8a\xb5\x18\x05\x18\xce\x02x\x01\x12%\n\x12zeroPressureVolume\x18\x03 \x01(\x11\x42\t\x8a\xb5\x18\x05\x10\x80\x08x\x01\x12 \n\rheightPerMbar\x18\x04 \x01(\x11\x42\t\x8a\xb5\x18\x05\x10\x80 x\x01\x12\x1a\n\x07mlPerMm\x18\x05 \x01(\x11\x42\t\x8a\xb5\x18\x05\x10\x80 x\x01\x12\x1f\n\x0csensorHeight\x18\x06 \x01(\x11\x42\t\x8a\xb5\x18\x05\x10\x80\x08x\x01\x12\x1b\n\x06volume\x18\t \x01(\x11\x42\x0b\x8a\xb5\x18\x07\x10\x80\x08(\x01\x30\x01\x12\x1b\n\x06height\x18\n \x01(\x11\x42\x0b\x8a\xb5\x18\x07\x10\x80\x08(\x01\x30\x01\x12$\n\x0fvolumeSinceTare\x18\x0c \x01(\x11\x42\x0b\x8a\xb5\x18\x07\x10\x80\x08(\x01\x30\x01\x12\x1d\n\ntareHeight\x18\r \x01(\x11\x42\t\x8a\xb5\x18\x05\x10\x80\x08x\x01\x12\x14\n\x04live\x18\x0f \x01(\x08\x42\x06\x8a\xb5\x18\x02x\x01\x12$\n\x0fheightSinceTare\x18\x0e \x01(\x11\x42\x0b\x8a\xb5\x18\x07\x10\x80\x08(\x01\x30\x01:\n\x8a\xb5\x18\x06\x18\xcf\x02J\x01\x1fJ\x04\x08\x02\x10\x03\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -36,8 +36,16 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_BLOCK'].fields_by_name['volume']._serialized_options = b'\212\265\030\007\020\200\010(\0010\001'
   _globals['_BLOCK'].fields_by_name['height']._options = None
   _globals['_BLOCK'].fields_by_name['height']._serialized_options = b'\212\265\030\007\020\200\010(\0010\001'
+  _globals['_BLOCK'].fields_by_name['volumeSinceTare']._options = None
+  _globals['_BLOCK'].fields_by_name['volumeSinceTare']._serialized_options = b'\212\265\030\007\020\200\010(\0010\001'
+  _globals['_BLOCK'].fields_by_name['tareHeight']._options = None
+  _globals['_BLOCK'].fields_by_name['tareHeight']._serialized_options = b'\212\265\030\005\020\200\010x\001'
+  _globals['_BLOCK'].fields_by_name['live']._options = None
+  _globals['_BLOCK'].fields_by_name['live']._serialized_options = b'\212\265\030\002x\001'
+  _globals['_BLOCK'].fields_by_name['heightSinceTare']._options = None
+  _globals['_BLOCK'].fields_by_name['heightSinceTare']._serialized_options = b'\212\265\030\007\020\200\010(\0010\001'
   _globals['_BLOCK']._options = None
   _globals['_BLOCK']._serialized_options = b'\212\265\030\006\030\317\002J\001\037'
   _globals['_BLOCK']._serialized_start=58
-  _globals['_BLOCK']._serialized_end=310
+  _globals['_BLOCK']._serialized_end=439
 # @@protoc_insertion_point(module_scope)

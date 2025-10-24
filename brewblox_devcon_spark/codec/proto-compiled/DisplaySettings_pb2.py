@@ -16,13 +16,17 @@ import brewblox_pb2 as brewblox__pb2
 import nanopb_pb2 as nanopb__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15\x44isplaySettings.proto\x12\x14\x62lox.DisplaySettings\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xf1\x01\n\x06Widget\x12\x18\n\x03pos\x18\x01 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02x\x01\x12\x1e\n\x05\x63olor\x18\x02 \x01(\x0c\x42\x0f\x92?\x04\x08\x03x\x01\x8a\xb5\x18\x04\x38\x01x\x01\x12\x19\n\x04name\x18\x03 \x01(\tB\x0b\x92?\x02\x08\x10\x8a\xb5\x18\x02x\x01\x12\x1e\n\ntempSensor\x18\n \x01(\rB\x08\x8a\xb5\x18\x04\x18\x02x\x01H\x00\x12&\n\x12setpointSensorPair\x18\x0b \x01(\rB\x08\x8a\xb5\x18\x04\x18\x04x\x01H\x00\x12\"\n\x0e\x61\x63tuatorAnalog\x18\x0c \x01(\rB\x08\x8a\xb5\x18\x04\x18\x05x\x01H\x00\x12\x18\n\x03pid\x18\x0e \x01(\rB\t\x8a\xb5\x18\x05\x18\xb0\x02x\x01H\x00\x42\x0c\n\nWidgetType\"\xc6\x01\n\x05\x42lock\x12:\n\x07widgets\x18\x01 \x03(\x0b\x32\x1c.blox.DisplaySettings.WidgetB\x0b\x92?\x02\x10\x06\x8a\xb5\x18\x02x\x01\x12\x19\n\x04name\x18\x02 \x01(\tB\x0b\x92?\x02\x08(\x8a\xb5\x18\x02x\x01\x12\x1f\n\nbrightness\x18Z \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12\x1d\n\x08timeZone\x18[ \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12\x1d\n\x08tempUnit\x18\\ \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01:\x07\x8a\xb5\x18\x03\x18\xba\x02\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15\x44isplaySettings.proto\x12\x14\x62lox.DisplaySettings\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"u\n\x0cVolumeWidget\x12\x1f\n\x0cvolumeSensor\x18\x01 \x01(\rB\t\x8a\xb5\x18\x05\x18\xcf\x02x\x01\x12\x44\n\x0b\x64isplayMode\x18\x02 \x01(\x0e\x32\'.blox.DisplaySettings.VolumeDisplayModeB\x06\x8a\xb5\x18\x02x\x01\"\xb5\x02\n\x06Widget\x12\x18\n\x03pos\x18\x01 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02x\x01\x12\x1e\n\x05\x63olor\x18\x02 \x01(\x0c\x42\x0f\x92?\x04\x08\x03x\x01\x8a\xb5\x18\x04\x38\x01x\x01\x12\x19\n\x04name\x18\x03 \x01(\tB\x0b\x92?\x02\x08\x10\x8a\xb5\x18\x02x\x01\x12\x1e\n\ntempSensor\x18\n \x01(\rB\x08\x8a\xb5\x18\x04\x18\x02x\x01H\x00\x12&\n\x12setpointSensorPair\x18\x0b \x01(\rB\x08\x8a\xb5\x18\x04\x18\x04x\x01H\x00\x12\"\n\x0e\x61\x63tuatorAnalog\x18\x0c \x01(\rB\x08\x8a\xb5\x18\x04\x18\x05x\x01H\x00\x12\x18\n\x03pid\x18\x0e \x01(\rB\t\x8a\xb5\x18\x05\x18\xb0\x02x\x01H\x00\x12\x42\n\x0cvolumeSensor\x18\x0f \x01(\x0b\x32\".blox.DisplaySettings.VolumeWidgetB\x06\x8a\xb5\x18\x02x\x01H\x00\x42\x0c\n\nWidgetType\"\xc6\x01\n\x05\x42lock\x12:\n\x07widgets\x18\x01 \x03(\x0b\x32\x1c.blox.DisplaySettings.WidgetB\x0b\x92?\x02\x10\x06\x8a\xb5\x18\x02x\x01\x12\x19\n\x04name\x18\x02 \x01(\tB\x0b\x92?\x02\x08(\x8a\xb5\x18\x02x\x01\x12\x1f\n\nbrightness\x18Z \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12\x1d\n\x08timeZone\x18[ \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12\x1d\n\x08tempUnit\x18\\ \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01:\x07\x8a\xb5\x18\x03\x18\xba\x02*\xf3\x01\n\x11VolumeDisplayMode\x12\x1e\n\x1aVOLUME_DISPLAY_MODE_HEIGHT\x10\x00\x12\x1e\n\x1aVOLUME_DISPLAY_MODE_VOLUME\x10\x01\x12)\n%VOLUME_DISPLAY_MODE_VOLUME_SINCE_TARE\x10\x02\x12)\n%VOLUME_DISPLAY_MODE_HEIGHT_SINCE_TARE\x10\x03\x12#\n\x1fVOLUME_DISPLAY_MODE_TARE_BUTTON\x10\x04\x12#\n\x1fVOLUME_DISPLAY_MODE_LIVE_BUTTON\x10\x05\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'DisplaySettings_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
+  _globals['_VOLUMEWIDGET'].fields_by_name['volumeSensor']._options = None
+  _globals['_VOLUMEWIDGET'].fields_by_name['volumeSensor']._serialized_options = b'\212\265\030\005\030\317\002x\001'
+  _globals['_VOLUMEWIDGET'].fields_by_name['displayMode']._options = None
+  _globals['_VOLUMEWIDGET'].fields_by_name['displayMode']._serialized_options = b'\212\265\030\002x\001'
   _globals['_WIDGET'].fields_by_name['pos']._options = None
   _globals['_WIDGET'].fields_by_name['pos']._serialized_options = b'\222?\0028\010\212\265\030\002x\001'
   _globals['_WIDGET'].fields_by_name['color']._options = None
@@ -37,6 +41,8 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_WIDGET'].fields_by_name['actuatorAnalog']._serialized_options = b'\212\265\030\004\030\005x\001'
   _globals['_WIDGET'].fields_by_name['pid']._options = None
   _globals['_WIDGET'].fields_by_name['pid']._serialized_options = b'\212\265\030\005\030\260\002x\001'
+  _globals['_WIDGET'].fields_by_name['volumeSensor']._options = None
+  _globals['_WIDGET'].fields_by_name['volumeSensor']._serialized_options = b'\212\265\030\002x\001'
   _globals['_BLOCK'].fields_by_name['widgets']._options = None
   _globals['_BLOCK'].fields_by_name['widgets']._serialized_options = b'\222?\002\020\006\212\265\030\002x\001'
   _globals['_BLOCK'].fields_by_name['name']._options = None
@@ -49,8 +55,12 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_BLOCK'].fields_by_name['tempUnit']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
   _globals['_BLOCK']._options = None
   _globals['_BLOCK']._serialized_options = b'\212\265\030\003\030\272\002'
-  _globals['_WIDGET']._serialized_start=78
-  _globals['_WIDGET']._serialized_end=319
-  _globals['_BLOCK']._serialized_start=322
-  _globals['_BLOCK']._serialized_end=520
+  _globals['_VOLUMEDISPLAYMODE']._serialized_start=710
+  _globals['_VOLUMEDISPLAYMODE']._serialized_end=953
+  _globals['_VOLUMEWIDGET']._serialized_start=77
+  _globals['_VOLUMEWIDGET']._serialized_end=194
+  _globals['_WIDGET']._serialized_start=197
+  _globals['_WIDGET']._serialized_end=506
+  _globals['_BLOCK']._serialized_start=509
+  _globals['_BLOCK']._serialized_end=707
 # @@protoc_insertion_point(module_scope)
