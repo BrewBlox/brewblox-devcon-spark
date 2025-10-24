@@ -30,6 +30,7 @@ if 'brewblox_pb2' not in sys.modules:  # pragma: no cover
     import MotorValve_pb2
     import Mutex_pb2
     import Pid_pb2
+    import PressureSensor_pb2
     import Screen_pb2
     import Sequence_pb2
     import SetpointProfile_pb2
@@ -43,6 +44,7 @@ if 'brewblox_pb2' not in sys.modules:  # pragma: no cover
     import TempSensorMock_pb2
     import TempSensorOneWire_pb2
     import Variables_pb2
+    import VolumeSensor_pb2
     import WiFiSettings_pb2
 
 __all__ = [
@@ -63,6 +65,7 @@ __all__ = [
     'MotorValve_pb2',
     'Mutex_pb2',
     'Pid_pb2',
+    'PressureSensor_pb2',
     'Screen_pb2',
     'Sequence_pb2',
     'SetpointProfile_pb2',
@@ -76,6 +79,7 @@ __all__ = [
     'TempSensorMock_pb2',
     'TempSensorOneWire_pb2',
     'Variables_pb2',
+    'VolumeSensor_pb2',
     'WiFiSettings_pb2',
     'brewblox_pb2',
     'command_pb2',
