@@ -26,6 +26,9 @@ USB_BAUD_RATE = 115200
 SPARK_HWIDS = [
     r'USB VID\:PID=2B04\:C006.*',  # Photon
     r'USB VID\:PID=2B04\:C008.*',  # P1
+    r'USB VID\:PID=303A\:1001.*',  # ESP32-S3 (native USB)
+    r'USB VID\:PID=303A\:1002.*',  # ESP32-S3 (JTAG)
+    r'USB VID\:PID=10C4\:EA60.*',  # ESP32 (CP210x USB-UART bridge)
 ]
 
 # Construct a regex OR'ing all allowed hardware ID matches
@@ -188,12 +191,15 @@ async def discover_usb(callbacks: ConnectionCallbacks) -> ConnectionImplBase | N
         client = AsyncClient()
         proxy_host = config.usb_proxy_host
         proxy_port = config.usb_proxy_port
-        desired_id = config.device_id or 'all'
+        # Use usb_device_id for USB proxy filtering, fall back to device_id
+        desired_id = config.usb_device_id or config.device_id or 'all'
         resp = await client.get(f'http://{proxy_host}:{proxy_port}/{proxy_host}/discover/{desired_id}')
         index: dict[str, int] = resp.json()
         LOGGER.debug(f'Detected USB devices: {index}')
 
-        if config.device_id:
+        if config.usb_device_id:
+            device_port = index.get(config.usb_device_id)
+        elif config.device_id:
             device_port = index.get(config.device_id)
         else:
             device_port = next(iter(index.values()), None)

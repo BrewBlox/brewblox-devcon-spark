@@ -60,3 +60,40 @@ def test_parser_partial():
     parser.push(chunks[1])
     assert [msg for msg in parser.event_messages()] == ['!connected:sensor']
     assert [msg for msg in parser.data_messages()] == []
+
+
+def test_parser_wrapped_logs():
+    """Wrapped firmware logs go to events, handled by _on_event as 'Firmware log'."""
+    parser = CboxParser()
+
+    # Wrapped logs (normal operation)
+    parser.push('<log message here>\n')
+    parser.push('<!BREWBLOX,device_id,proto>\n')
+    parser.push('<another log>\n')
+
+    # All wrapped messages go to events
+    actual_events = [msg for msg in parser.event_messages()]
+    assert actual_events == [
+        'log message here',
+        '!BREWBLOX,device_id,proto',
+        'another log',
+    ]
+
+    # Data should be empty (only empty lines from \n after >)
+    actual_data = [msg for msg in parser.data_messages()]
+    assert actual_data == []
+
+
+def test_parser_empty_annotations():
+    """Empty annotations like <> should be skipped."""
+    parser = CboxParser()
+
+    # Empty event annotations should be ignored
+    parser.push('<><valid>< >\n')
+
+    actual_events = [msg for msg in parser.event_messages()]
+    assert actual_events == ['valid']  # Empty strings are skipped
+
+    # Empty data lines should be ignored
+    actual_data = [msg for msg in parser.data_messages()]
+    assert actual_data == []

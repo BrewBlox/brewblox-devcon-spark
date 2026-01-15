@@ -230,6 +230,7 @@ class ServiceConfig(BaseSettings):
 
     # Device options
     device_id: str | None = None
+    usb_device_id: str | None = None  # USB serial, defaults to device_id if not set
     discovery: DiscoveryType_field = DiscoveryType.all
 
     device_host: str | None = None
