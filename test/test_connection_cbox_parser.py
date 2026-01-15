@@ -82,3 +82,18 @@ def test_parser_wrapped_logs():
     # Data should be empty (only empty lines from \n after >)
     actual_data = [msg for msg in parser.data_messages()]
     assert actual_data == []
+
+
+def test_parser_empty_annotations():
+    """Empty annotations like <> should be skipped."""
+    parser = CboxParser()
+
+    # Empty event annotations should be ignored
+    parser.push('<><valid>< >\n')
+
+    actual_events = [msg for msg in parser.event_messages()]
+    assert actual_events == ['valid']  # Empty strings are skipped
+
+    # Empty data lines should be ignored
+    actual_data = [msg for msg in parser.data_messages()]
+    assert actual_data == []

@@ -122,25 +122,27 @@ class CboxCommander:
             LOGGER.info(f'Firmware log: `{msg}`')
 
     async def _on_response(self, msg: str):
-        # Ignore data messages until handshake is received
-        # Early boot messages are not wrapped and would fail to decode
-        if not self.state.is_acknowledged():
-            LOGGER.debug(f'Ignoring pre-handshake message: `{msg}`')
-            return
-
         try:
             LOGGER.trace(f'response: {msg}')
             response = self.codec.decode_response(msg)
+        except Exception as ex:
+            # Before handshake, early boot messages from ESP may not be wrapped
+            # and will fail to decode. Ignore these silently.
+            if not self.state.is_acknowledged():
+                LOGGER.debug(f'Ignoring pre-handshake message `{msg}`: {utils.strex(ex)}')
+            else:
+                LOGGER.error(f'Error parsing message `{msg}`: {utils.strex(ex)}')
+            return
 
+        try:
             # Get the Future object awaiting this request
             # the msgid field is key
             fut = self._active_messages.get(response.msgId)
             if fut is None:
                 raise ValueError(f'Unexpected message, {response=}')
             fut.set_result(response)
-
         except Exception as ex:
-            LOGGER.error(f'Error parsing message `{msg}` : {utils.strex(ex)}')
+            LOGGER.error(f'{utils.strex(ex)}')
 
     async def _execute(
         self,
