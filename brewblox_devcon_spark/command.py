@@ -119,9 +119,15 @@ class CboxCommander:
             self.state.set_acknowledged(desc)
 
         else:
-            LOGGER.info(f'Spark log: `{msg}`')
+            LOGGER.info(f'Firmware log: `{msg}`')
 
     async def _on_response(self, msg: str):
+        # Ignore data messages until handshake is received
+        # Early boot messages are not wrapped and would fail to decode
+        if not self.state.is_acknowledged():
+            LOGGER.debug(f'Ignoring pre-handshake message: `{msg}`')
+            return
+
         try:
             LOGGER.trace(f'response: {msg}')
             response = self.codec.decode_response(msg)

@@ -35,15 +35,17 @@ class CboxParser:
         self._buffer += recv
 
         # Annotations use < and > as start/end characters
-        # Most annotations can be discarded, except for event messages
         # Event messages are annotations that start with !
+        # Other annotations (including wrapped firmware logs) are handled by _on_event
         for msg in self._coerce_message_from_buffer(EVENT_PATTERN, EVENT_END):
-            self._events.put(msg)
+            if msg:  # Skip empty annotations (e.g. from newlines)
+                self._events.put(msg)
 
         # Once annotations are filtered, all that remains is data
         # Data is newline-separated
         for msg in self._coerce_message_from_buffer(DATA_PATTERN, DATA_END):
-            self._data.put(msg)
+            if msg:  # Skip empty lines
+                self._data.put(msg)
 
     def _extract_message(self, matchobj: re.Match) -> str:
         msg = matchobj.group('message').rstrip()
