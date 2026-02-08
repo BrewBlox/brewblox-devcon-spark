@@ -67,7 +67,59 @@ async def test_unexpected_event(caplog: pytest.LogCaptureFixture):
     assert 'hello world' in record.message
 
 
+async def test_pre_handshake_garbage(caplog: pytest.LogCaptureFixture):
+    """Garbage messages received before handshake are ignored silently."""
+    state = state_machine.CV.get()
+    assert not state.is_acknowledged()
+
+    # Send invalid/garbage message before handshake
+    await connection.CV.get().on_response('garbage data that cannot be decoded')
+
+    record = caplog.records[-1]
+    assert record.levelname == 'DEBUG'
+    assert 'pre-handshake' in record.message
+
+
+async def test_post_handshake_garbage(manager: LifespanManager, caplog: pytest.LogCaptureFixture):
+    """Garbage messages received after handshake are logged as errors."""
+    from brewblox_devcon_spark.models import ControllerDescription, DeviceDescription, FirmwareDescription, ResetReason
+
+    config = utils.get_config()
+    fw_config = utils.get_fw_config()
+
+    desc = ControllerDescription(
+        system_version='1.23',
+        platform='mock',
+        reset_reason=ResetReason.NONE.value,
+        firmware=FirmwareDescription(
+            firmware_version=fw_config.firmware_version,
+            proto_version=fw_config.proto_version,
+            firmware_date=fw_config.firmware_date,
+            proto_date=fw_config.proto_date,
+        ),
+        device=DeviceDescription(
+            device_id=config.device_id,
+        ),
+    )
+
+    state = state_machine.CV.get()
+    state.set_enabled(True)
+    await asyncio.wait_for(state.wait_connected(), timeout=5)
+
+    # Set acknowledged state
+    state.set_acknowledged(desc)
+    assert state.is_acknowledged()
+
+    # Send invalid/garbage message after handshake
+    await connection.CV.get().on_response('garbage data that cannot be decoded')
+
+    record = caplog.records[-1]
+    assert record.levelname == 'ERROR'
+    assert 'Error parsing message' in record.message
+
+
 async def test_unexpected_response(caplog: pytest.LogCaptureFixture):
+    """Unmatched responses are logged as errors."""
     response = IntermediateResponse(msgId=123, error=ErrorCode.OK, payload=[])
     message = codec.CV.get().encode_response(response)
     await connection.CV.get().on_response(message)

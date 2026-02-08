@@ -788,7 +788,13 @@ async def test_system_resets(client: AsyncClient, m_kill: Mock):
 
     await client.post('/system/reboot/controller')
     await client.post('/system/clear_wifi')
-    await client.post('/system/factory_reset')
+
+
+async def test_system_factory_reset(client: AsyncClient):
+    # Factory reset may timeout as the device disconnects
+    resp = await client.post('/system/factory_reset')
+    # Accept either 200 (success) or 424 (timeout/disconnected)
+    assert resp.status_code in [200, 424]
 
 
 async def test_system_flash(client: AsyncClient, m_kill: Mock):
@@ -801,7 +807,8 @@ async def test_system_flash(client: AsyncClient, m_kill: Mock):
 
     desc = state.desc()
     desc.connection_kind = 'TCP'
-    desc.controller.platform == 'dummy'  # not handled, but also not an error
+    if desc.controller:
+        desc.controller.platform = 'dummy'  # not handled, but also not an error
     resp = await client.post('/system/flash')
     assert resp.status_code == 200
     assert m_kill.call_count == 1
