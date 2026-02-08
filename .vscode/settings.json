@@ -2,10 +2,7 @@
     "python.defaultInterpreterPath": ".venv/bin/python",
     "python.terminal.activateEnvInCurrentTerminal": true,
     "python.terminal.activateEnvironment": true,
-    "python.testing.pytestArgs": [
-        "--no-cov",
-        "."
-    ],
+    "python.testing.pytestArgs": ["--no-cov", "."],
     "python.testing.unittestEnabled": false,
     "python.testing.nosetestsEnabled": false,
     "python.testing.pytestEnabled": true,
@@ -15,5 +12,6 @@
     ],
     "[python]": {
         "editor.defaultFormatter": "charliermarsh.ruff"
-    }
+    },
+    "python-envs.pythonProjects": []
 }
