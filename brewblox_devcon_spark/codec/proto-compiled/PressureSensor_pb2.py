@@ -16,7 +16,7 @@ import brewblox_pb2 as brewblox__pb2
 import nanopb_pb2 as nanopb__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14PressureSensor.proto\x12\x13\x62lox.PressureSensor\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xd7\x04\n\x05\x42lock\x12\x35\n\x04type\x18\x01 \x01(\x0e\x32\'.blox.PressureSensor.PressureSensorType\x12\x1e\n\x0c\x61nalogDevice\x18\x02 \x01(\rB\x08\x8a\xb5\x18\x04\x18\x1cx\x01\x12\x1c\n\ranalogChannel\x18\x03 \x01(\rB\x05\x92?\x02\x38\x08\x12\x19\n\x03raw\x18\x04 \x01(\x11\x42\x0c\x8a\xb5\x18\x08\x10\x80\x80\x10(\x01\x30\x01\x12\"\n\nresistance\x18\x05 \x01(\x11\x42\x0e\x8a\xb5\x18\n\x08\x0f\x10\x80\x80\x01(\x01\x30\x01\x12\'\n\x10pressureAbsolute\x18\x06 \x01(\x11\x42\r\x8a\xb5\x18\t\x08\r\x10\x80 (\x01\x30\x01\x12\'\n\x10pressureRelative\x18\x07 \x01(\x11\x42\r\x8a\xb5\x18\t\x08\r\x10\x80 (\x01\x30\x01\x12)\n\x13referenceResistance\x18\x08 \x01(\x11\x42\x0c\x8a\xb5\x18\x08\x08\x0f\x10\x80\x80\x01x\x01\x12\x1a\n\x04rMin\x18\t \x01(\x11\x42\x0c\x8a\xb5\x18\x08\x08\x0f\x10\x80\x80\x01x\x01\x12\x1a\n\x04rMax\x18\n \x01(\x11\x42\x0c\x8a\xb5\x18\x08\x08\x0f\x10\x80\x80\x01x\x01\x12\x1d\n\x08offsetO0\x18\x0b \x01(\x11\x42\x0b\x8a\xb5\x18\x07\x10\x80\x80\x80 x\x01\x12\x1d\n\x08offsetO1\x18\x0c \x01(\x11\x42\x0b\x8a\xb5\x18\x07\x10\x80\x80\x80 x\x01\x12\x1d\n\x08offsetO2\x18\r \x01(\x11\x42\x0b\x8a\xb5\x18\x07\x10\x80\x80\x80 x\x01\x12\x1b\n\x06gainS0\x18\x0e \x01(\x11\x42\x0b\x8a\xb5\x18\x07\x10\x80\x80\x80 x\x01\x12\x1b\n\x06gainS1\x18\x0f \x01(\x11\x42\x0b\x8a\xb5\x18\x07\x10\x80\x80\x80 x\x01\x12\x1b\n\x06gainS2\x18\x10 \x01(\x11\x42\x0b\x8a\xb5\x18\x07\x10\x80\x80\x80 x\x01\x12%\n\x10internalPressure\x18\x11 \x01(\x11\x42\x0b\x8a\xb5\x18\x07\x08\r\x10\x80 x\x01:\n\x8a\xb5\x18\x06\x18\xce\x02J\x01\x1d*\x88\x01\n\x12PressureSensorType\x12 \n\x1cPRESSURE_SENSOR_TYPE_NOT_SET\x10\x00\x12\'\n#PRESSURE_SENSOR_TYPE_GAUGE_ABSOLUTE\x10\x01\x12\'\n#PRESSURE_SENSOR_TYPE_GAUGE_RELATIVE\x10\x02\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14PressureSensor.proto\x12\x13\x62lox.PressureSensor\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xd3\x04\n\x05\x42lock\x12\x35\n\x04type\x18\x01 \x01(\x0e\x32\'.blox.PressureSensor.PressureSensorType\x12\x1e\n\x0c\x61nalogDevice\x18\x02 \x01(\rB\x08\x8a\xb5\x18\x04\x18\x1cx\x01\x12\x1c\n\ranalogChannel\x18\x03 \x01(\rB\x05\x92?\x02\x38\x08\x12\x19\n\x03raw\x18\x04 \x01(\x11\x42\x0c\x8a\xb5\x18\x08\x10\x80\x80\x10(\x01\x30\x01\x12!\n\nresistance\x18\x05 \x01(\x11\x42\r\x8a\xb5\x18\t\x08\x0f\x10\x80\x08(\x01\x30\x01\x12\'\n\x10pressureAbsolute\x18\x06 \x01(\x11\x42\r\x8a\xb5\x18\t\x08\r\x10\x80 (\x01\x30\x01\x12\'\n\x10pressureRelative\x18\x07 \x01(\x11\x42\r\x8a\xb5\x18\t\x08\r\x10\x80 (\x01\x30\x01\x12(\n\x13referenceResistance\x18\x08 \x01(\x11\x42\x0b\x8a\xb5\x18\x07\x08\x0f\x10\x80\x08x\x01\x12\x19\n\x04rMin\x18\t \x01(\x11\x42\x0b\x8a\xb5\x18\x07\x08\x0f\x10\x80\x08x\x01\x12\x19\n\x04rMax\x18\n \x01(\x11\x42\x0b\x8a\xb5\x18\x07\x08\x0f\x10\x80\x08x\x01\x12\x1d\n\x08offsetO0\x18\x0b \x01(\x11\x42\x0b\x8a\xb5\x18\x07\x10\x80\x80\x80 x\x01\x12\x1d\n\x08offsetO1\x18\x0c \x01(\x11\x42\x0b\x8a\xb5\x18\x07\x10\x80\x80\x80 x\x01\x12\x1d\n\x08offsetO2\x18\r \x01(\x11\x42\x0b\x8a\xb5\x18\x07\x10\x80\x80\x80 x\x01\x12\x1b\n\x06gainS0\x18\x0e \x01(\x11\x42\x0b\x8a\xb5\x18\x07\x10\x80\x80\x80 x\x01\x12\x1b\n\x06gainS1\x18\x0f \x01(\x11\x42\x0b\x8a\xb5\x18\x07\x10\x80\x80\x80 x\x01\x12\x1b\n\x06gainS2\x18\x10 \x01(\x11\x42\x0b\x8a\xb5\x18\x07\x10\x80\x80\x80 x\x01\x12%\n\x10internalPressure\x18\x11 \x01(\x11\x42\x0b\x8a\xb5\x18\x07\x08\r\x10\x80 x\x01:\n\x8a\xb5\x18\x06\x18\xce\x02J\x01\x1d*\x88\x01\n\x12PressureSensorType\x12 \n\x1cPRESSURE_SENSOR_TYPE_NOT_SET\x10\x00\x12\'\n#PRESSURE_SENSOR_TYPE_GAUGE_ABSOLUTE\x10\x01\x12\'\n#PRESSURE_SENSOR_TYPE_GAUGE_RELATIVE\x10\x02\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -30,17 +30,17 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_BLOCK'].fields_by_name['raw']._options = None
   _globals['_BLOCK'].fields_by_name['raw']._serialized_options = b'\212\265\030\010\020\200\200\020(\0010\001'
   _globals['_BLOCK'].fields_by_name['resistance']._options = None
-  _globals['_BLOCK'].fields_by_name['resistance']._serialized_options = b'\212\265\030\n\010\017\020\200\200\001(\0010\001'
+  _globals['_BLOCK'].fields_by_name['resistance']._serialized_options = b'\212\265\030\t\010\017\020\200\010(\0010\001'
   _globals['_BLOCK'].fields_by_name['pressureAbsolute']._options = None
   _globals['_BLOCK'].fields_by_name['pressureAbsolute']._serialized_options = b'\212\265\030\t\010\r\020\200 (\0010\001'
   _globals['_BLOCK'].fields_by_name['pressureRelative']._options = None
   _globals['_BLOCK'].fields_by_name['pressureRelative']._serialized_options = b'\212\265\030\t\010\r\020\200 (\0010\001'
   _globals['_BLOCK'].fields_by_name['referenceResistance']._options = None
-  _globals['_BLOCK'].fields_by_name['referenceResistance']._serialized_options = b'\212\265\030\010\010\017\020\200\200\001x\001'
+  _globals['_BLOCK'].fields_by_name['referenceResistance']._serialized_options = b'\212\265\030\007\010\017\020\200\010x\001'
   _globals['_BLOCK'].fields_by_name['rMin']._options = None
-  _globals['_BLOCK'].fields_by_name['rMin']._serialized_options = b'\212\265\030\010\010\017\020\200\200\001x\001'
+  _globals['_BLOCK'].fields_by_name['rMin']._serialized_options = b'\212\265\030\007\010\017\020\200\010x\001'
   _globals['_BLOCK'].fields_by_name['rMax']._options = None
-  _globals['_BLOCK'].fields_by_name['rMax']._serialized_options = b'\212\265\030\010\010\017\020\200\200\001x\001'
+  _globals['_BLOCK'].fields_by_name['rMax']._serialized_options = b'\212\265\030\007\010\017\020\200\010x\001'
   _globals['_BLOCK'].fields_by_name['offsetO0']._options = None
   _globals['_BLOCK'].fields_by_name['offsetO0']._serialized_options = b'\212\265\030\007\020\200\200\200 x\001'
   _globals['_BLOCK'].fields_by_name['offsetO1']._options = None
@@ -57,8 +57,8 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_BLOCK'].fields_by_name['internalPressure']._serialized_options = b'\212\265\030\007\010\r\020\200 x\001'
   _globals['_BLOCK']._options = None
   _globals['_BLOCK']._serialized_options = b'\212\265\030\006\030\316\002J\001\035'
-  _globals['_PRESSURESENSORTYPE']._serialized_start=678
-  _globals['_PRESSURESENSORTYPE']._serialized_end=814
+  _globals['_PRESSURESENSORTYPE']._serialized_start=674
+  _globals['_PRESSURESENSORTYPE']._serialized_end=810
   _globals['_BLOCK']._serialized_start=76
-  _globals['_BLOCK']._serialized_end=675
+  _globals['_BLOCK']._serialized_end=671
 # @@protoc_insertion_point(module_scope)
