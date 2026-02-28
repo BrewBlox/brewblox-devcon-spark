@@ -18,6 +18,7 @@ if 'brewblox_pb2' not in sys.modules:  # pragma: no cover
     import Balancer_pb2
     import brewblox_pb2
     import command_pb2
+    import DensitySensor_pb2
     import DigitalActuator_pb2
     import DigitalInput_pb2
     import DisplaySettings_pb2
@@ -53,6 +54,7 @@ __all__ = [
     'ActuatorOffset_pb2',
     'ActuatorPwm_pb2',
     'Balancer_pb2',
+    'DensitySensor_pb2',
     'DS2408_pb2',
     'DS2413_pb2',
     'DigitalActuator_pb2',
