@@ -25,8 +25,12 @@ FORMATS = {
     'DeltaCelsiusMultSecond': 'delta_{temp} * second',
     'DeltaCelsiusMultMinute': 'delta_{temp} * minute',
     'DeltaCelsiusMultHour': 'delta_{temp} * hour',
-    'Ohm': 'ohm',
     'MilliBar': 'millibar',
+    'Volt': 'volt',
+    'Ohm': 'ohm',
+    'MilliLiter': 'milliliter',
+    'MilliLiter_per_second': 'milliliter / second',
+    'Millisecond': 'millisecond',
 }
 
 # Pint makes multiple I/O calls while constructing its UnitRegistry
