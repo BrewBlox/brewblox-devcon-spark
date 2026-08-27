@@ -69,6 +69,9 @@ class StreamConnection(ConnectionImplBase):
             LOGGER.error(f'Connection closed with error: {utils.strex(ex)}')
         self.disconnected.set()
 
+    def reset_stream(self):
+        self._parser.reset()
+
     async def send_request(self, msg: str):
         self._transport.write(msg.encode() + b'\n')
 
@@ -146,7 +149,7 @@ async def connect_simulation(callbacks: ConnectionCallbacks) -> ConnectionImplBa
             binary = 'brewblox-arm64.sim'
         # The Pi >=4 always reports aarch64, regardless of OS type
         # To select the correct binary, we need to check userland 32/64 bit
-        case (('armhf' | 'aarch64'), False):
+        case (('armhf' | 'armv7l' | 'aarch64'), False):
             binary = 'brewblox-arm32.sim'
 
     if not binary:
