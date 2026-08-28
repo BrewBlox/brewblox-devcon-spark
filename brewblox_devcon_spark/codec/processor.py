@@ -16,6 +16,7 @@ from typing import Any
 from google.protobuf import json_format
 from google.protobuf.descriptor import Descriptor, FieldDescriptor
 
+from brewblox_devcon_spark import exceptions, utils
 from brewblox_devcon_spark.models import DecodedPayload, MaskField, MaskMode, ReadMode
 
 from . import unit_conversion
@@ -343,10 +344,17 @@ class ProtobufProcessor:
                 del element.obj[element.key]
                 continue
 
-            if isinstance(new_value, (list, set)):
-                new_value = [_convert_value(v) for v in new_value if v is not None]
-            else:
-                new_value = _convert_value(new_value)
+            try:
+                if isinstance(new_value, (list, set)):
+                    new_value = [_convert_value(v) for v in new_value if v is not None]
+                else:
+                    new_value = _convert_value(new_value)
+            except Exception as ex:
+                # Name the field: conversion errors are otherwise raised as a
+                # bare TypeError/ValueError with no clue which value caused them
+                raise exceptions.EncodeException(
+                    f'{element.field.full_name}: {utils.strex(ex)} (value={new_value!r})'
+                ) from ex
 
             # The key changed if postfixed metadata was used
             if element.key != new_key:
@@ -523,10 +531,17 @@ class ProtobufProcessor:
                     continue
 
             # Convert value
-            if isinstance(new_value, (list, set)):
-                new_value = [_convert_value(v) for v in new_value]
-            else:
-                new_value = _convert_value(new_value)
+            try:
+                if isinstance(new_value, (list, set)):
+                    new_value = [_convert_value(v) for v in new_value]
+                else:
+                    new_value = _convert_value(new_value)
+            except Exception as ex:
+                # Name the field. Decoding never raises to the caller: this is
+                # folded into the ErrorObject stub, so the message is all we get
+                raise exceptions.DecodeException(
+                    f'{element.field.full_name}: {utils.strex(ex)} (value={new_value!r})'
+                ) from ex
 
             # Remove old key/value if we updated the key
             if element.key != new_key:

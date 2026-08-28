@@ -1,5 +1,6 @@
 import pytest
 
+from brewblox_devcon_spark import exceptions
 from brewblox_devcon_spark.codec import ProtobufProcessor, unit_conversion
 from brewblox_devcon_spark.codec.pb2 import TempSensorOneWire_pb2
 from brewblox_devcon_spark.models import DecodedPayload, MaskField, MaskMode
@@ -108,3 +109,39 @@ def test_masking(degf_processor: ProtobufProcessor, desc):
     vals.maskFields = [MaskField(address=[1])]  # value
     degf_processor.post_decode(desc, vals, filter_values=False)
     assert vals.content['value']['value'] is None
+
+
+def test_pre_encode_names_failing_field(degc_processor: ProtobufProcessor, desc):
+    """
+    A conversion error names the field and the offending value.
+    Without it, the caller only sees a bare TypeError from int(round(value)).
+    """
+    payload = DecodedPayload(
+        blockId=1,
+        blockType='TempSensorOneWire',
+        content={'oneWireBusId': 'not-a-nid'},
+    )
+
+    with pytest.raises(exceptions.EncodeException) as info:
+        degc_processor.pre_encode(desc, payload)
+
+    assert 'oneWireBusId' in str(info.value)
+    assert 'not-a-nid' in str(info.value)
+
+
+def test_post_decode_names_failing_field(degc_processor: ProtobufProcessor, desc):
+    """
+    Decoding never raises to the caller - the error is folded into an
+    ErrorObject stub - so the message is the only diagnostic available.
+    """
+    payload = DecodedPayload(
+        blockId=1,
+        blockType='TempSensorOneWire',
+        # hexed conversion packs into 8 unsigned bytes, and overflows here
+        content={'address': -1},
+    )
+
+    with pytest.raises(exceptions.DecodeException) as info:
+        degc_processor.post_decode(desc, payload)
+
+    assert 'address' in str(info.value)
