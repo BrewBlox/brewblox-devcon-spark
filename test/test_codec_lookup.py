@@ -15,6 +15,7 @@ import pytest
 
 from brewblox_devcon_spark import codec
 from brewblox_devcon_spark.codec import lookup, pb2, unit_conversion
+from brewblox_devcon_spark.models import CrossPlatformResetReason
 
 BLOCK_OPTS = pb2.brewblox_pb2.msg
 FIELD_OPTS = pb2.brewblox_pb2.field
@@ -89,3 +90,13 @@ def test_unit_formats_are_valid_units():
     converter = unit_conversion.UnitConverter()
     converter.temperature = 'degF'
     converter.temperature = 'degC'
+
+
+def test_cross_platform_reset_reason_matches_proto():
+    """
+    The handshake parser keeps its own copy of SysInfo.proto's ResetReason,
+    as models.py cannot import the compiled proto. They must not drift.
+    """
+    proto = {name.removeprefix('RESET_REASON_'): value for name, value in pb2.SysInfo_pb2.ResetReason.items()}
+    ours = {member.name: member.value for member in CrossPlatformResetReason}
+    assert ours == proto

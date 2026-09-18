@@ -741,7 +741,7 @@ async def test_system_status(client: AsyncClient):
         'controller': {
             'system_version': ANY,
             'platform': ANY,
-            'reset_reason': 'NONE',
+            'reset_reason': 'POWER_ON',
             'firmware': firmware_desc,
             'device': device_desc,
         },

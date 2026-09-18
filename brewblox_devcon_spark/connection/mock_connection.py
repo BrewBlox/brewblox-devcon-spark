@@ -23,7 +23,7 @@ from ..models import (
     Opcode,
     ReadMode,
     ResetData,
-    ResetReason,
+    CrossPlatformResetReason,
 )
 from .connection_impl import ConnectionCallbacks, ConnectionImplBase
 
@@ -141,7 +141,7 @@ class MockConnection(ConnectionImplBase):
             fw_config.proto_date,
             fw_config.system_version,
             'mock',
-            ResetReason.NONE.value,
+            f'{CrossPlatformResetReason.UNKNOWN.value:02x}',
             ResetData.NOT_SPECIFIED.value,
             config.device_id,
         ]
