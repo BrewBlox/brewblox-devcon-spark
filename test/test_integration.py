@@ -19,6 +19,7 @@ from brewblox_devcon_spark import (
     datastore_blocks,
     datastore_settings,
     endpoints,
+    exceptions,
     mqtt,
     spark_api,
     state_machine,
@@ -741,7 +742,7 @@ async def test_system_status(client: AsyncClient):
         'controller': {
             'system_version': ANY,
             'platform': ANY,
-            'reset_reason': 'NONE',
+            'reset_reason': 'POWER_ON',
             'firmware': firmware_desc,
             'device': device_desc,
         },
@@ -788,6 +789,18 @@ async def test_system_resets(client: AsyncClient, m_kill: Mock):
 
     await client.post('/system/reboot/controller')
     await client.post('/system/clear_wifi')
+
+
+async def test_system_clear_wifi_timeout(client: AsyncClient, mocker: MockerFixture):
+    # Clearing wifi may drop the connection before the controller answers.
+    # Whether the simulator answers in time is a race, so force the timeout.
+    mocker.patch.object(
+        spark_api.SparkApi,
+        'clear_wifi',
+        side_effect=exceptions.CommandTimeout('CLEAR_WIFI'),
+    )
+    resp = await client.post('/system/clear_wifi')
+    assert resp.status_code == 200
 
 
 async def test_system_factory_reset(client: AsyncClient):

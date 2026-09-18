@@ -31,6 +31,19 @@ class CboxParser:
         while self._data.qsize() > 0:
             yield self._data.get_nowait()
 
+    def reset(self):
+        """
+        Discard any buffered bytes and queued messages.
+        Called on handshake to treat it as a hard sync boundary:
+        anything parsed before was boot/reconnect noise.
+        """
+        self._buffer = ''
+        self._messages = []
+        while self._events.qsize() > 0:
+            self._events.get_nowait()
+        while self._data.qsize() > 0:
+            self._data.get_nowait()
+
     def push(self, recv: str):
         self._buffer += recv
 

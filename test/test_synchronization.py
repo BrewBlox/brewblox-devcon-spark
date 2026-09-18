@@ -170,3 +170,27 @@ async def test_invalid_error(mocker: MockerFixture):
     with pytest.raises(asyncio.TimeoutError):
         s = synchronization.StateSynchronizer()
         await asyncio.wait_for(s.run(), timeout=0.2)
+
+
+async def test_retry_once():
+    """A single dropped or late response is retried once before giving up."""
+    calls = []
+
+    async def flaky():
+        calls.append(len(calls))
+        if len(calls) == 1:
+            raise exceptions.CommandTimeout('BLOCK_WRITE')
+        return 'ok'
+
+    assert await synchronization._retry_once('flaky call', flaky) == 'ok'
+    assert len(calls) == 2
+
+
+async def test_retry_once_gives_up():
+    """The retry is not repeated: a second failure propagates."""
+
+    async def always_fails():
+        raise exceptions.CommandTimeout('BLOCK_WRITE')
+
+    with pytest.raises(exceptions.CommandTimeout):
+        await synchronization._retry_once('doomed call', always_fails)

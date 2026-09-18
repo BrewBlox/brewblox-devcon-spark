@@ -29,7 +29,7 @@ FORMATS = {
     'Volt': 'volt',
     'Ohm': 'ohm',
     'MilliLiter': 'milliliter',
-    'MilliLiter_per_second': 'milliliter / second',
+    'MilliLiterPerSecond': 'milliliter / second',
     'Millisecond': 'millisecond',
 }
 

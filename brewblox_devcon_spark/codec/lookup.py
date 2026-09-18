@@ -21,7 +21,7 @@ BLOCK_INTERFACE_TYPE_END = 255
 
 CV_OBJECTS: ContextVar[list['ObjectLookup']] = ContextVar('lookup.objects')
 CV_INTERFACES: ContextVar[list['InterfaceLookup']] = ContextVar('lookup.interfaces')
-CV_COMBINED: ContextVar[list['InterfaceLookup']] = ContextVar('lookup.combined')
+CV_COMBINED: ContextVar[list['ObjectLookup | InterfaceLookup']] = ContextVar('lookup.combined')
 
 
 @dataclass(frozen=True)
@@ -83,7 +83,7 @@ def setup():
         ),
     ]
 
-    combined: list[InterfaceLookup] = [
+    combined: list[ObjectLookup | InterfaceLookup] = [
         *objects,
         *interfaces,
     ]

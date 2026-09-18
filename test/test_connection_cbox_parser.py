@@ -97,3 +97,22 @@ def test_parser_empty_annotations():
     # Empty data lines should be ignored
     actual_data = [msg for msg in parser.data_messages()]
     assert actual_data == []
+
+
+def test_parser_reset():
+    """reset() discards buffered bytes and every queued message."""
+    parser = CboxParser()
+
+    # Leaves a partial message in the buffer, and queues one of each type
+    parser.push('<event>data\n<partial')
+    assert parser._buffer == '<partial'
+
+    parser.reset()
+
+    assert parser._buffer == ''
+    assert [msg for msg in parser.event_messages()] == []
+    assert [msg for msg in parser.data_messages()] == []
+
+    # The parser is still usable afterwards
+    parser.push('<after>\n')
+    assert [msg for msg in parser.event_messages()] == ['after']

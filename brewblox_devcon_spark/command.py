@@ -39,6 +39,11 @@ HANDSHAKE_KEYS = [
     'device_id',
 ]
 
+# The controller emits a handshake as part of its reply to these opcodes.
+# A handshake answering one of these is solicited, and must not be
+# mistaken for the start of a new session.
+HANDSHAKE_OPCODES = frozenset({Opcode.NONE, Opcode.VERSION})
+
 LOGGER = logging.getLogger(__name__)
 CV: ContextVar['CboxCommander'] = ContextVar('command.CboxCommander')
 
@@ -52,6 +57,7 @@ class CboxCommander:
 
         self._msgid = 0
         self._active_messages: dict[int, asyncio.Future[IntermediateResponse]] = {}
+        self._handshake_msgids: set[int] = set()
         self._empty_ev = asyncio.Event()
         self._empty_ev.set()
 
@@ -96,8 +102,37 @@ class CboxCommander:
             data=payload.content or {},
         )
 
+    def _reset_active_messages(self, reason: str):
+        """
+        Cancel in-flight command Futures with the given reason.
+        Used when the stream is known to be desynced or a fresh session starts,
+        so waiting callers fail fast instead of hitting command_timeout.
+
+        Commands that solicit a handshake are skipped: their own reply
+        is what triggered the reset, and is still on its way.
+        """
+        stale = [msg_id for msg_id in self._active_messages if msg_id not in self._handshake_msgids]
+        if not stale:
+            return
+
+        ex = exceptions.ConnectionException(reason)
+        for msg_id in stale:
+            fut = self._active_messages.pop(msg_id)
+            if not fut.done():
+                fut.set_exception(ex)
+
+        if not self._active_messages:
+            self._empty_ev.set()
+
     async def _on_event(self, msg: str):
         if msg.startswith(WELCOME_PREFIX):
+            # The controller sends a handshake on connect, and in reply to NONE/VERSION.
+            # Only the first handshake of a session is a transport-level sync marker:
+            # anything buffered before it was boot or reconnect noise.
+            if not self.state.is_acknowledged():
+                self.conn.reset_stream()
+                self._reset_active_messages('handshake received; prior session discarded')
+
             handshake_values = msg.removeprefix('!').split(',')
             handshake = HandshakeMessage(**dict(zip(HANDSHAKE_KEYS, handshake_values, strict=False)))
             LOGGER.info(handshake)
@@ -126,23 +161,31 @@ class CboxCommander:
             LOGGER.trace(f'response: {msg}')
             response = self.codec.decode_response(msg)
         except Exception as ex:
-            # Before handshake, early boot messages from ESP may not be wrapped
-            # and will fail to decode. Ignore these silently.
+            # Pre-handshake: early boot / bootloader bytes may arrive unframed
+            # and fail to decode. Quietly drop.
             if not self.state.is_acknowledged():
                 LOGGER.debug(f'Ignoring pre-handshake message `{msg}`: {utils.strex(ex)}')
+                return
+
+            # Post-handshake: decode failure means the stream is desynced.
+            # Should be rare with atomic framed writes; loud when it happens.
+            # Fail any in-flight commands fast instead of waiting command_timeout.
+            if self._active_messages:
+                LOGGER.warning(
+                    f'Decode error, failing {len(self._active_messages)} in-flight command(s): {utils.strex(ex)}'
+                )
+                self._reset_active_messages(f'Decode error on incoming response: {utils.strex(ex)}')
             else:
-                LOGGER.error(f'Error parsing message `{msg}`: {utils.strex(ex)}')
+                LOGGER.warning(f'Decode error on unsolicited message `{msg}`: {utils.strex(ex)}')
             return
 
-        try:
-            # Get the Future object awaiting this request
-            # the msgid field is key
-            fut = self._active_messages.get(response.msgId)
-            if fut is None:
-                raise ValueError(f'Unexpected message, {response=}')
-            fut.set_result(response)
-        except Exception as ex:
-            LOGGER.error(f'{utils.strex(ex)}')
+        fut = self._active_messages.get(response.msgId)
+        if fut is None:
+            # Decoded cleanly but no caller waiting: stray/duplicate/post-timeout.
+            # Rare — log visibly so we notice if it stops being rare.
+            LOGGER.warning(f'Unexpected message, {response=}')
+            return
+        fut.set_result(response)
 
     async def _execute(
         self,
@@ -158,6 +201,8 @@ class CboxCommander:
         msg = self.codec.encode_request(request)
         fut: asyncio.Future[IntermediateResponse] = asyncio.get_running_loop().create_future()
         self._active_messages[msg_id] = fut
+        if opcode in HANDSHAKE_OPCODES:
+            self._handshake_msgids.add(msg_id)
         self._empty_ev.clear()
 
         try:
@@ -174,7 +219,10 @@ class CboxCommander:
             raise exceptions.CommandTimeout(opcode.name)
 
         finally:
-            del self._active_messages[msg_id]
+            # _reset_active_messages() may have already cleared this entry
+            # if the session was reset while we were waiting.
+            self._active_messages.pop(msg_id, None)
+            self._handshake_msgids.discard(msg_id)
             if not self._active_messages:
                 self._empty_ev.set()
 

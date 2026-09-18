@@ -1,5 +1,5 @@
 import enum
-from datetime import timedelta
+from datetime import date, timedelta
 from functools import partial
 from pathlib import Path
 from typing import Annotated, Any, Literal, Self
@@ -47,6 +47,14 @@ class DiscoveryType(enum.Enum):
 
 
 class ResetReason(enum.Enum):
+    """
+    Reset reason as reported by Particle firmware.
+
+    Only Particle ever filled in the handshake field: ESP firmware sent 00.
+    Firmware built on or after CROSS_PLATFORM_RESET_REASON_DATE reports
+    CrossPlatformResetReason instead, on every platform.
+    """
+
     NONE = '00'
     UNKNOWN = '0A'
     # Hardware
@@ -67,6 +75,70 @@ class ResetReason(enum.Enum):
 
     def __str__(self):
         return self.name
+
+
+# Firmware from this date on maps every platform's reset cause to the
+# cross-platform enum (brewblox-firmware b89ae623, "make reset-reason cross platform").
+# The numeric ranges of the two tables overlap, so the firmware date in the
+# handshake decides which one applies.
+CROSS_PLATFORM_RESET_REASON_DATE = date(2026, 7, 7)
+
+
+class CrossPlatformResetReason(enum.Enum):
+    """
+    Reset reason as reported by all platforms since CROSS_PLATFORM_RESET_REASON_DATE.
+
+    Mirrors the ResetReason enum in SysInfo.proto; the value is the enum number
+    as sent in the handshake. test_codec_lookup checks that the two agree.
+    """
+
+    UNKNOWN = 0
+    POWER_ON = 1
+    EXTERNAL = 2
+    SOFTWARE = 3
+    PANIC = 4
+    INTERRUPT_WDT = 5
+    TASK_WDT = 6
+    OTHER_WDT = 7
+    DEEP_SLEEP = 8
+    BROWNOUT = 9
+    SDIO = 10
+    USB = 11
+    JTAG = 12
+    EFUSE = 13
+    POWER_GLITCH = 14
+    CPU_LOCKUP = 15
+    FIRMWARE_UPDATE = 16
+    FIRMWARE_UPDATE_FAILED = 17
+    FIRMWARE_UPDATE_TIMEOUT = 18
+    FACTORY_RESET = 19
+    SAFE_MODE = 20
+    DFU_MODE = 21
+    USER_REQUESTED = 22
+
+    def __str__(self):
+        return self.name
+
+
+def parse_reset_reason(firmware_date: str, reset_reason_hex: str) -> str:
+    """
+    Resolves the handshake's reset reason to a name.
+
+    The reason is informational: an unrecognized value must never fail the
+    handshake, so it falls back to UNKNOWN instead of raising.
+    """
+    try:
+        cross_platform = date.fromisoformat(firmware_date) >= CROSS_PLATFORM_RESET_REASON_DATE
+    except ValueError:
+        # An unparseable date is not something old firmware produces
+        cross_platform = True
+
+    try:
+        if cross_platform:
+            return str(CrossPlatformResetReason(int(reset_reason_hex, 16)))
+        return str(ResetReason(reset_reason_hex.upper()))
+    except ValueError:
+        return str(CrossPlatformResetReason.UNKNOWN if cross_platform else ResetReason.UNKNOWN)
 
 
 class ResetData(enum.Enum):
@@ -411,7 +483,7 @@ class HandshakeMessage(BaseModel):
 
     @model_validator(mode='after')
     def parse_reset_enums(self) -> Self:
-        self.reset_reason = str(ResetReason(self.reset_reason_hex.upper()))
+        self.reset_reason = parse_reset_reason(self.firmware_date, self.reset_reason_hex)
         try:
             self.reset_data = str(ResetData(self.reset_data_hex.upper()))
         except Exception:
