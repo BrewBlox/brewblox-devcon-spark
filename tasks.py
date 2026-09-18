@@ -226,21 +226,26 @@ def testclean(ctx: Context):
 
 
 @task()
-def image(ctx: Context, tag='local'):
+def image(ctx: Context, tag='local', push=False):
     with ctx.cd(ROOT):
         ctx.run(f'docker build --load -t ghcr.io/brewblox/brewblox-devcon-spark:{tag} -f Dockerfile.service .')
+        if push:
+            ctx.run(f'docker push ghcr.io/brewblox/brewblox-devcon-spark:{tag}')
 
 
 @task()
-def buildx(ctx: Context, tag='local', platform='linux/amd64,linux/arm/v7,linux/arm64/v8'):
+def buildx(ctx: Context, tag='local', push=False, platform='linux/amd64,linux/arm/v7,linux/arm64/v8'):
+    # Without --push, a multi-platform build has nowhere to go and is discarded
+    push_flag = '--push' if push else ''
     with ctx.cd(ROOT):
         ctx.run(
-            f'docker buildx build --no-cache --platform {platform} -t ghcr.io/brewblox/brewblox-devcon-spark:{tag} -f Dockerfile.service .'
+            f'docker buildx build --no-cache --platform {platform} {push_flag} '
+            f'-t ghcr.io/brewblox/brewblox-devcon-spark:{tag} -f Dockerfile.service .'
         )
 
 
 @task
-def fetch_build(ctx: Context, tag='local', repo=None):
+def fetch_build(ctx: Context, tag='local', repo=None, push=False):
     """
     Builds a service image from a local brewblox-firmware release.
 
@@ -249,19 +254,23 @@ def fetch_build(ctx: Context, tag='local', repo=None):
     and the .proto files all come from a local brewblox-firmware checkout.
     """
     update_firmware(ctx, local=True, repo=repo)
-    image(ctx, tag)
+    image(ctx, tag, push)
     print(f'Build complete: ghcr.io/brewblox/brewblox-devcon-spark:{tag}')
 
 
 @task()
-def flasher_image(ctx: Context, tag='local'):
+def flasher_image(ctx: Context, tag='local', push=False):
     with ctx.cd(ROOT):
         ctx.run(f'docker build --load -t ghcr.io/brewblox/brewblox-firmware-flasher:{tag} -f Dockerfile.flasher .')
+        if push:
+            ctx.run(f'docker push ghcr.io/brewblox/brewblox-firmware-flasher:{tag}')
 
 
 @task()
-def flasher_buildx(ctx: Context, tag='local', platform='linux/amd64,linux/arm/v7,linux/arm64/v8'):
+def flasher_buildx(ctx: Context, tag='local', push=False, platform='linux/amd64,linux/arm/v7,linux/arm64/v8'):
+    push_flag = '--push' if push else ''
     with ctx.cd(ROOT):
         ctx.run(
-            f'docker buildx build --no-cache --platform {platform} -t ghcr.io/brewblox/brewblox-firmware-flasher:{tag} -f Dockerfile.flasher .'
+            f'docker buildx build --no-cache --platform {platform} {push_flag} '
+            f'-t ghcr.io/brewblox/brewblox-firmware-flasher:{tag} -f Dockerfile.flasher .'
         )
