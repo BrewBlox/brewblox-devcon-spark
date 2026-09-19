@@ -73,3 +73,6 @@ eeprom.bin
 firmware/
 
 .appenv
+
+# Claude Code
+.claude/settings.local.json
