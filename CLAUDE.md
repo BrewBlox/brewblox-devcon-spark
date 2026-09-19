@@ -26,9 +26,12 @@ docker compose up                         # the service in simulation mode with 
 
 Tests need Docker: pytest-docker starts the eventbus, redis, victoria, and history
 services from test/docker-compose.yml once per session, and integration tests spawn the
-simulator binary from firmware/. Every test has a 10s timeout (`--timeout`), and
-`asyncio.sleep` calls over 0.1s print the test name: config intervals in the `config`
-fixture are milliseconds, so a long sleep in a test means a real delay slipped through.
+simulator binary from firmware/. Every test has a 10s timeout (`--timeout`) that also
+covers fixture setup, so on a machine without the images the first test errors while
+`docker compose up` is still pulling: run `docker compose -f test/docker-compose.yml pull`
+first (CI does). `asyncio.sleep` calls over 0.1s print the test name: config intervals in
+the `config` fixture are milliseconds, so a long sleep in a test means a real delay
+slipped through.
 The `app` fixture must stay synchronous: contextvars set in async fixtures are invisible
 to the test function.
 
