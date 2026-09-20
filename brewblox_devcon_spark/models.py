@@ -199,6 +199,10 @@ class ErrorCode(enum.Enum):
     NETWORK_WRITE_ERROR = 13
     NETWORK_ENCODING_ERROR = 14
 
+    # The request waited too long in the transport queue before the
+    # controller could handle it; resend if still relevant
+    REQUEST_EXPIRED = 15
+
     # Storage I/O errors
     STORAGE_ERROR = 20
     STORAGE_READ_ERROR = 21
