@@ -51,6 +51,12 @@ jobs:
         run: |
           uv run invoke download-firmware
 
+      - name: Pull test images
+        # The session fixture that runs `docker compose up` is subject to the
+        # 10s per-test timeout. Pulling the images here keeps it under that.
+        run: |
+          docker compose -f test/docker-compose.yml pull
+
       - name: Test
         run: |
           uv run pytest

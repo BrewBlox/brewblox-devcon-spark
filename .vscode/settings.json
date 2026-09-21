@@ -1,5 +1,9 @@
 {
-    "python.defaultInterpreterPath": ".venv/bin/python",
+    "terminal.integrated.env.linux": {
+        "VIRTUAL_ENV": "${workspaceFolder}/.venv",
+        "PATH": "${workspaceFolder}/.venv/bin:${env:PATH}"
+    },
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
     "python.terminal.activateEnvInCurrentTerminal": true,
     "python.terminal.activateEnvironment": true,
     "python.testing.pytestArgs": [
@@ -10,9 +14,6 @@
     "python.testing.nosetestsEnabled": false,
     "python.testing.pytestEnabled": true,
     "python.languageServer": "Pylance",
-    "python.analysis.extraPaths": [
-        "brewblox_devcon_spark/codec/proto-compiled"
-    ],
     "[python]": {
         "editor.defaultFormatter": "charliermarsh.ruff"
     }
