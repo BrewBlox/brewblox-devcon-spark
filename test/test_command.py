@@ -279,3 +279,10 @@ async def test_decode_error_fails_in_flight(manager: LifespanManager, caplog: py
     record = caplog.records[-1]
     assert record.levelname == 'WARNING'
     assert 'failing 1 in-flight command(s)' in record.message
+
+
+def test_error_codes_match_proto():
+    """Every error code the firmware can send must be known, or its reply is treated as a decode error."""
+    from brewblox_devcon_spark.codec.pb2 import command_pb2
+
+    assert {code.name: code.value for code in ErrorCode} == dict(command_pb2.ErrorCode.items())

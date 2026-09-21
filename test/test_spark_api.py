@@ -195,6 +195,18 @@ async def test_check_connection(mocker: MockerFixture):
         await api.noop()
 
 
+async def test_request_expired():
+    """An expired request fails only that command; the connection stays up."""
+    api = spark_api.CV.get()
+    await state_machine.CV.get().wait_synchronized()
+
+    mock_connection.NEXT_ERROR = [ErrorCode.REQUEST_EXPIRED]
+    with pytest.raises(exceptions.CommandException, match='REQUEST_EXPIRED'):
+        await api.noop()
+
+    await api.noop()
+
+
 async def test_start_update():
     await state_machine.CV.get().wait_synchronized()
     state = state_machine.CV.get()

@@ -122,8 +122,6 @@ dev = [
     "asgi-lifespan",
     "pytest-timeout>=2.3.1",
 ]
-[tool.astral_uv]
-require-wheels = true
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

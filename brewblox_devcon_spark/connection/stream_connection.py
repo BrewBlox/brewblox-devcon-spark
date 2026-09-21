@@ -21,8 +21,6 @@ from .. import const, exceptions, mdns, utils
 from .cbox_parser import CboxParser
 from .connection_impl import ConnectionCallbacks, ConnectionImplBase, ConnectionKind_
 
-USB_BAUD_RATE = 115200
-
 SPARK_HWIDS = [
     r'USB VID\:PID=2B04\:C006.*',  # Photon
     r'USB VID\:PID=2B04\:C008.*',  # P1
