@@ -240,13 +240,7 @@ class ErrorCode(enum.Enum):
 class ReadMode(enum.Enum):
     DEFAULT = 0
     STORED = 1
-    LOGGED = 2
-
-
-class MaskMode(enum.Enum):
-    NO_MASK = 0
-    INCLUSIVE = 1
-    EXCLUSIVE = 2
+    CHANGED = 2
 
 
 def parse_enum(cls: type[enum.Enum], v: Any):
@@ -263,7 +257,6 @@ ResetData_field = Annotated[ResetData, BeforeValidator(partial(parse_enum, Reset
 Opcode_field = Annotated[Opcode, BeforeValidator(partial(parse_enum, Opcode))]
 ErrorCode_field = Annotated[ErrorCode, BeforeValidator(partial(parse_enum, ErrorCode))]
 ReadMode_field = Annotated[ReadMode, BeforeValidator(partial(parse_enum, ReadMode))]
-MaskMode_field = Annotated[MaskMode, BeforeValidator(partial(parse_enum, MaskMode))]
 
 
 class ServiceConfig(BaseSettings):
@@ -342,7 +335,11 @@ class ServiceConfig(BaseSettings):
     command_timeout: timedelta_field = timedelta(seconds=20)
 
     # Broadcast options
-    broadcast_interval: timedelta_field = timedelta(seconds=5)
+    # Every tick reads the blocks that changed, and publishes history and a patch event.
+    # Every full read interval, all blocks are read, and the full state event is published.
+    broadcast_interval: timedelta_field = timedelta(seconds=1)
+    full_read_interval: timedelta_field = timedelta(seconds=5)
+    broadcast_timeout: timedelta_field = timedelta(seconds=5)
 
     # Firmware options
     skip_version_check: bool = False
@@ -415,14 +412,8 @@ class BlockNameChange(BaseModel):
     desired: str
 
 
-class MaskField(BaseModel):
-    address: list[int]
-
-
 class BasePayload(BaseModel):
     blockId: int
-    maskMode: MaskMode_field = MaskMode.NO_MASK
-    maskFields: list[MaskField] = Field(default_factory=list)
 
 
 class EncodedPayload(BasePayload):
@@ -712,6 +703,9 @@ class DatastoreEvent(BaseModel):
 class HistoryEvent(BaseModel):
     key: str
     data: dict
+    # The time of the samples, in milliseconds since the Unix epoch.
+    # The history service uses its arrival time if this is not set.
+    timestamp: int | None = None
 
 
 class ServiceStateEventData(BaseModel):

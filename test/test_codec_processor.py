@@ -3,7 +3,7 @@ import pytest
 from brewblox_devcon_spark import exceptions
 from brewblox_devcon_spark.codec import ProtobufProcessor, unit_conversion
 from brewblox_devcon_spark.codec.pb2 import TempSensorOneWire_pb2
-from brewblox_devcon_spark.models import DecodedPayload, MaskField, MaskMode
+from brewblox_devcon_spark.models import DecodedPayload, ReadMode
 
 
 @pytest.fixture
@@ -86,29 +86,50 @@ def test_unpack_bit_flags(degf_processor: ProtobufProcessor):
 
 
 def test_null_values(degf_processor: ProtobufProcessor, desc):
+    # None, and typed objects without value, reset a writable field to its default.
+    # A readonly field (only encoded without filtering) is left out: None is invalid.
     vals = generate_encoding_data()
     vals.content['offset[delta_degF]'] = None
     vals.content['address'] = None
+    vals.content['value[degF]'] = {'__bloxtype': 'Quantity', 'unit': 'degC', 'value': None}
+    vals.content['oneWireBusId'] = {'__bloxtype': 'Link', 'type': 'OneWireBusInterface', 'id': None}
 
     degf_processor.pre_encode(desc, vals, filter_values=False)
-    assert 'address' not in vals.content
+    assert vals.content == {'offset': 0, 'address': 0, 'oneWireBusId': 0}
+
+    # Absent keys are not added
+    vals = DecodedPayload(blockId=1, blockType='TempSensorOneWire', content={'offset[delta_degC]': 0})
+    degf_processor.pre_encode(desc, vals)
+    assert vals.content == {'offset': 0}
 
 
-def test_masking(degf_processor: ProtobufProcessor, desc):
-    vals = generate_encoding_data()
-    vals.maskMode = MaskMode.INCLUSIVE
-    degf_processor.pre_encode(desc, vals, filter_values=False)
-    assert sorted(list(f.address for f in vals.maskFields)) == [
-        [1],  # value
-        [3],  # offset
-        [4],  # address
-    ]
+def test_invalid_values(degf_processor: ProtobufProcessor, desc):
+    # None is the invalid marker. Quantities and links keep their typed object.
+    vals = DecodedPayload(
+        blockId=1,
+        blockType='TempSensorOneWire',
+        content={'value': None, 'address': None, 'oneWireBusId': None},
+    )
+    degf_processor.post_decode(desc, vals)
+    assert vals.content == {
+        'value': {'__bloxtype': 'Quantity', 'unit': 'degF', 'value': None, 'readonly': True},
+        'address': None,
+        'oneWireBusId': {'__bloxtype': 'Link', 'type': 'OneWireBusInterface', 'id': None},
+    }
 
-    vals = generate_decoding_data()
-    vals.maskMode = MaskMode.EXCLUSIVE
-    vals.maskFields = [MaskField(address=[1])]  # value
-    degf_processor.post_decode(desc, vals, filter_values=False)
-    assert vals.content['value']['value'] is None
+
+def test_fill(degf_processor: ProtobufProcessor, desc):
+    # Absent optional fields: readonly is invalid (None), writable gets its default
+    assert degf_processor.fill(desc, {}) == {'value': None, 'offset': 0, 'address': '0', 'oneWireBusId': 0}
+    assert degf_processor.fill(desc, {}, ReadMode.STORED) == {
+        'value': None,
+        'offset': 0,
+        'address': '0',
+        'oneWireBusId': 0,
+    }
+    # CHANGED: absent writable fields are unchanged
+    assert degf_processor.fill(desc, {}, ReadMode.CHANGED) == {'value': None}
+    assert degf_processor.fill(desc, {'value': 10}, ReadMode.CHANGED) == {'value': 10}
 
 
 def test_pre_encode_names_failing_field(degc_processor: ProtobufProcessor, desc):

@@ -21,6 +21,7 @@ def setup():
         if block.serviceId == config.name:
             await api.create_block(block)
 
+    # Writes are by presence: /write is an alias of /patch
     @mqtt_client.subscribe(config.blocks_topic + '/write')
     async def on_write(client, topic, payload, qos, properties):
         block = Block.model_validate_json(payload)

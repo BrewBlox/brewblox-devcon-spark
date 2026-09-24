@@ -1,7 +1,12 @@
+from base64 import b64decode, b64encode
+
 import pytest
 
-from brewblox_devcon_spark.codec import sequence
-from brewblox_devcon_spark.models import Block
+from brewblox_devcon_spark import codec
+from brewblox_devcon_spark.codec import descriptors, lookup, sequence
+from brewblox_devcon_spark.codec.pb2 import Sequence_pb2
+from brewblox_devcon_spark.models import Block, DecodedPayload, EncodedPayload
+from brewblox_devcon_spark.spark_api import resolve_data_ids
 
 
 def test_sequence_from_line():
@@ -209,6 +214,10 @@ def test_sequence_to_line():
         == "SET_PWM target=$actuator, setting='$space setting'"
     )
 
+    # A zero datetime reads as None, and is written as 0
+    assert sequence.to_line({'WAIT_UNTIL': {'__raw__time': None}}) == 'WAIT_UNTIL time=0'
+    assert sequence.from_line('WAIT_UNTIL time=0', 1) == {'WAIT_UNTIL': {'__raw__time': 0}}
+
     assert (
         sequence.to_line(
             {
@@ -237,6 +246,11 @@ def test_sequence_to_line():
     )
 
 
+def test_no_args():
+    assert sequence.from_line('RESTART', 1) == {'RESTART': {}}
+    assert sequence.to_line({'RESTART': {}}) == 'RESTART'
+
+
 def test_partial():
     # Logged blocks will not include instructions
     # User input may not include instructions
@@ -245,3 +259,90 @@ def test_partial():
     assert not block.data
     sequence.serialize(block)
     assert not block.data
+
+    # Null instructions are left to the codec: they clear the list
+    block = Block(id='sequence', type='Sequence', data={'instructions': None})
+    sequence.parse(block)
+    assert block.data == {'instructions': None}
+
+
+def test_codec_round_trip():
+    # The instructions wrapper is flattened by the codec: sequence.py sees the bare list
+    codec.setup()
+    cdc = codec.CV.get()
+    lines = [
+        'ENABLE target=10',
+        'WAIT_DURATION duration=1m10s',
+        '# comment',
+    ]
+    block = Block(id='sequence', type='Sequence', data={'instructions': lines})
+    sequence.parse(block)
+
+    # spark_api resolves the link ids around the codec
+    content = resolve_data_ids(block.data, int)
+    payload = cdc.encode_payload(DecodedPayload(blockId=100, blockType='Sequence', content=content))
+    decoded = cdc.decode_payload(payload)
+    assert len(decoded.content['instructions']) == 3
+
+    block = Block(id='sequence', type='Sequence', data=resolve_data_ids(decoded.content, str))
+    sequence.serialize(block)
+    assert block.data['instructions'] == [
+        'ENABLE target=10',
+        'WAIT_DURATION duration=1m10s',
+        '# comment',
+    ]
+
+
+def test_unset_link_round_trip():
+    """An unset link reads as None. to_line writes it as 0, which from_line parses back to link 0."""
+    line = sequence.to_line(
+        {
+            'SET_SETPOINT': {
+                '__raw__target': {'__bloxtype': 'Link', 'id': None},
+                '__raw__setting': {'__bloxtype': 'Quantity', 'value': 20.0, 'unit': 'degC'},
+            },
+        }
+    )
+    assert line == 'SET_SETPOINT target=0, setting=20.0C'
+    assert sequence.from_line(line, 1)['SET_SETPOINT']['__raw__target'] == {'__bloxtype': 'Link', 'id': '0'}
+
+
+def test_zero_datetime_round_trip():
+    """
+    A zero datetime reads as None. to_line writes it as 0, which from_line parses back:
+    a read line written back writes the same zero.
+    """
+    codec.setup()
+    cdc = codec.CV.get()
+    args = [
+        (opcode.name, arg.name)
+        for opcode in sequence.INSTRUCTION_MSG_DESC.fields
+        for arg in opcode.message_type.fields
+        if descriptors.options(arg).datetime
+    ]
+    assert args == [('WAIT_UNTIL', '__raw__time')]
+
+    for opcode, arg in args:
+        message = Sequence_pb2.Block()
+        instruction = message.instructions.items.add()
+        setattr(getattr(instruction, opcode), arg, 0)
+        assert instruction.HasField(opcode)
+        assert getattr(instruction, opcode).HasField(arg)
+
+        payload = EncodedPayload(
+            blockId=100,
+            blockType=lookup.BlockType.Value('Sequence'),
+            content=b64encode(message.SerializeToString()).decode(),
+        )
+        decoded = cdc.decode_payload(payload)
+        assert decoded.content['instructions'] == [{opcode: {arg: None}}]
+
+        block = Block(id='sequence', type='Sequence', data=resolve_data_ids(decoded.content, str))
+        sequence.serialize(block)
+        assert block.data['instructions'] == [f'{opcode} {arg.removeprefix(sequence.RAW_PREFIX)}=0']
+
+        sequence.parse(block)
+        content = resolve_data_ids({'instructions': block.data['instructions']}, int)
+        payload = cdc.encode_payload(DecodedPayload(blockId=100, blockType='Sequence', content=content))
+        written = Sequence_pb2.Block.FromString(b64decode(payload.content))
+        assert written.instructions == message.instructions

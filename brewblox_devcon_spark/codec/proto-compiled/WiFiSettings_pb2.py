@@ -16,7 +16,7 @@ import brewblox_pb2 as brewblox__pb2
 import nanopb_pb2 as nanopb__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12WiFiSettings.proto\x12\x11\x62lox.WiFiSettings\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xd0\x01\n\x05\x42lock\x12\x13\n\x04ssid\x18\x01 \x01(\tB\x05\x92?\x02\x08!\x12\x17\n\x08password\x18\x02 \x01(\tB\x05\x92?\x02\x08@\x12-\n\x08security\x18\x03 \x01(\x0e\x32\x1b.blox.WiFiSettings.Security\x12)\n\x06\x63ipher\x18\x04 \x01(\x0e\x32\x19.blox.WiFiSettings.Cipher\x12\x1d\n\x06signal\x18\x05 \x01(\x05\x42\r\x92?\x02\x38\x08\x8a\xb5\x18\x04(\x01\x30\x01\x12\x17\n\x02ip\x18Z \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01:\x07\x8a\xb5\x18\x03\x18\xb8\x02*\xa7\x01\n\x08Security\x12\x12\n\x0eWLAN_SEC_UNSEC\x10\x00\x12\x10\n\x0cWLAN_SEC_WEP\x10\x01\x12\x10\n\x0cWLAN_SEC_WPA\x10\x02\x12\x11\n\rWLAN_SEC_WPA2\x10\x03\x12\x1b\n\x17WLAN_SEC_WPA_ENTERPRISE\x10\x04\x12\x1c\n\x18WLAN_SEC_WPA2_ENTERPRISE\x10\x05\x12\x15\n\x10WLAN_SEC_NOT_SET\x10\xff\x01*i\n\x06\x43ipher\x12\x17\n\x13WLAN_CIPHER_NOT_SET\x10\x00\x12\x13\n\x0fWLAN_CIPHER_AES\x10\x01\x12\x14\n\x10WLAN_CIPHER_TKIP\x10\x02\x12\x1b\n\x17WLAN_CIPHER_AES_OR_TKIP\x10\x03\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12WiFiSettings.proto\x12\x11\x62lox.WiFiSettings\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\x95\x02\n\x05\x42lock\x12\x18\n\x04ssid\x18\x01 \x01(\tB\x05\x92?\x02\x08!H\x00\x88\x01\x01\x12\x1c\n\x08password\x18\x02 \x01(\tB\x05\x92?\x02\x08@H\x01\x88\x01\x01\x12\x32\n\x08security\x18\x03 \x01(\x0e\x32\x1b.blox.WiFiSettings.SecurityH\x02\x88\x01\x01\x12.\n\x06\x63ipher\x18\x04 \x01(\x0e\x32\x19.blox.WiFiSettings.CipherH\x03\x88\x01\x01\x12 \n\x06signal\x18\x05 \x01(\x05\x42\x10\x92?\x02\x38\x08\x8a\xb5\x18\x07(\x01\x30\x01\x80\x01\x01\x12\x17\n\x02ip\x18Z \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01:\x07\x8a\xb5\x18\x03\x18\xb8\x02\x42\x07\n\x05_ssidB\x0b\n\t_passwordB\x0b\n\t_securityB\t\n\x07_cipher*\xa7\x01\n\x08Security\x12\x12\n\x0eWLAN_SEC_UNSEC\x10\x00\x12\x10\n\x0cWLAN_SEC_WEP\x10\x01\x12\x10\n\x0cWLAN_SEC_WPA\x10\x02\x12\x11\n\rWLAN_SEC_WPA2\x10\x03\x12\x1b\n\x17WLAN_SEC_WPA_ENTERPRISE\x10\x04\x12\x1c\n\x18WLAN_SEC_WPA2_ENTERPRISE\x10\x05\x12\x15\n\x10WLAN_SEC_NOT_SET\x10\xff\x01*i\n\x06\x43ipher\x12\x17\n\x13WLAN_CIPHER_NOT_SET\x10\x00\x12\x13\n\x0fWLAN_CIPHER_AES\x10\x01\x12\x14\n\x10WLAN_CIPHER_TKIP\x10\x02\x12\x1b\n\x17WLAN_CIPHER_AES_OR_TKIP\x10\x03\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -28,15 +28,15 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_BLOCK'].fields_by_name['password']._options = None
   _globals['_BLOCK'].fields_by_name['password']._serialized_options = b'\222?\002\010@'
   _globals['_BLOCK'].fields_by_name['signal']._options = None
-  _globals['_BLOCK'].fields_by_name['signal']._serialized_options = b'\222?\0028\010\212\265\030\004(\0010\001'
+  _globals['_BLOCK'].fields_by_name['signal']._serialized_options = b'\222?\0028\010\212\265\030\007(\0010\001\200\001\001'
   _globals['_BLOCK'].fields_by_name['ip']._options = None
   _globals['_BLOCK'].fields_by_name['ip']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
   _globals['_BLOCK']._options = None
   _globals['_BLOCK']._serialized_options = b'\212\265\030\003\030\270\002'
-  _globals['_SECURITY']._serialized_start=283
-  _globals['_SECURITY']._serialized_end=450
-  _globals['_CIPHER']._serialized_start=452
-  _globals['_CIPHER']._serialized_end=557
+  _globals['_SECURITY']._serialized_start=352
+  _globals['_SECURITY']._serialized_end=519
+  _globals['_CIPHER']._serialized_start=521
+  _globals['_CIPHER']._serialized_end=626
   _globals['_BLOCK']._serialized_start=72
-  _globals['_BLOCK']._serialized_end=280
+  _globals['_BLOCK']._serialized_end=349
 # @@protoc_insertion_point(module_scope)

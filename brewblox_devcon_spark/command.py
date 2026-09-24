@@ -5,7 +5,10 @@ Requests are matched with responses here.
 
 import asyncio
 import logging
+from collections.abc import Callable
 from contextvars import ContextVar
+from dataclasses import dataclass, field
+from datetime import timedelta
 
 from . import codec, connection, exceptions, state_machine, utils
 from .models import (
@@ -20,7 +23,6 @@ from .models import (
     HandshakeMessage,
     IntermediateRequest,
     IntermediateResponse,
-    MaskMode,
     Opcode,
     ReadMode,
 )
@@ -48,6 +50,35 @@ LOGGER = logging.getLogger(__name__)
 CV: ContextVar['CboxCommander'] = ContextVar('command.CboxCommander')
 
 
+@dataclass(frozen=True)
+class BlockChange:
+    """
+    The outcome of a request that changes blocks or reads them all,
+    or a sign that blocks changed where no response shows it.
+    Sent to the block listener (`CboxCommander.on_block_change`).
+    """
+
+    seq: int
+    """The send order of the request. Responses may be handled out of order."""
+
+    session: int
+    """The state machine session when the request was sent."""
+
+    opcode: Opcode | None
+    """None if no request shows the change: a late response, or a controller reboot."""
+
+    mode: ReadMode = ReadMode.DEFAULT
+
+    blocks: list[FirmwareBlock] = field(default_factory=list)
+    """The decoded response payloads, also those that came with an error."""
+
+    nid: int | None = None
+    """The block ID in the request, if any."""
+
+    error: str | None = None
+    """None if the request succeeded. Otherwise the error response, or why no response came."""
+
+
 class CboxCommander:
     def __init__(self):
         self.config = utils.get_config()
@@ -56,6 +87,7 @@ class CboxCommander:
         self.conn = connection.CV.get()
 
         self._msgid = 0
+        self._seq = 0
         self._active_messages: dict[int, asyncio.Future[IntermediateResponse]] = {}
         self._handshake_msgids: set[int] = set()
         self._empty_ev = asyncio.Event()
@@ -64,16 +96,31 @@ class CboxCommander:
         self.conn.on_event = self._on_event
         self.conn.on_response = self._on_response
 
+        self.on_block_change: Callable[[BlockChange], None] | None = None
+
     def _next_id(self):
         self._msgid = (self._msgid + 1) % 0xFFFF
         return self._msgid
+
+    def _next_seq(self) -> int:
+        self._seq += 1
+        return self._seq
+
+    def _notify(self, change: BlockChange):
+        if self.on_block_change is None:
+            return
+        try:
+            self.on_block_change(change)
+        except Exception as ex:
+            LOGGER.error(
+                f'Block listener failed on {change.opcode} (seq={change.seq}): {utils.strex(ex)}', exc_info=True
+            )
 
     def _to_payload(
         self,
         block: FirmwareBlock,
         /,
         identity_only=False,
-        patch=False,
     ) -> EncodedPayload:
         if block.type:
             payload = DecodedPayload(
@@ -81,7 +128,6 @@ class CboxCommander:
                 blockType=block.type,
                 name=block.id,
                 content=(None if identity_only else block.data),
-                maskMode=(MaskMode.INCLUSIVE if patch else MaskMode.NO_MASK),
             )
         else:
             payload = DecodedPayload(blockId=block.nid, name=block.id)
@@ -132,6 +178,9 @@ class CboxCommander:
             if not self.state.is_acknowledged():
                 self.conn.reset_stream()
                 self._reset_active_messages('handshake received; prior session discarded')
+            elif not self._handshake_msgids:
+                # Not solicited by NONE/VERSION: the controller rebooted, and blocks may have changed
+                self._notify(BlockChange(self._seq, self.state.session, None, error='unsolicited handshake'))
 
             handshake_values = msg.removeprefix('!').split(',')
             handshake = HandshakeMessage(**dict(zip(HANDSHAKE_KEYS, handshake_values, strict=False)))
@@ -184,16 +233,26 @@ class CboxCommander:
             # Decoded cleanly but no caller waiting: stray/duplicate/post-timeout.
             # Rare — log visibly so we notice if it stops being rare.
             LOGGER.warning(f'Unexpected message, {response=}')
+            # A request that timed out or was cancelled may still have changed blocks
+            self._notify(BlockChange(self._seq, self.state.session, None, error='late response'))
             return
         fut.set_result(response)
 
-    async def _execute(
+    async def _send(
         self,
         opcode: Opcode,
-        /,
-        payload: EncodedPayload | None = None,
-        mode: ReadMode = ReadMode.DEFAULT,
-    ) -> list[EncodedPayload]:
+        payload: EncodedPayload | None,
+        mode: ReadMode,
+        timeout: timedelta | None,
+    ) -> IntermediateResponse:
+        """
+        Sends a request, and waits for its response.
+        An error response is returned, not raised.
+        A `timeout` of None waits for the `command_timeout` setting.
+
+        Nothing between the call and the write to the transport yields to the event loop:
+        a send sequence number assigned just before the call is the order on the wire.
+        """
         msg_id = self._next_id()
 
         request = IntermediateRequest(msgId=msg_id, opcode=opcode, mode=mode, payload=payload)
@@ -208,12 +267,7 @@ class CboxCommander:
         try:
             LOGGER.trace(f'request: {msg}')
             await self.conn.send_request(msg)
-            response = await asyncio.wait_for(fut, timeout=self.config.command_timeout.total_seconds())
-
-            if response.error != ErrorCode.OK:
-                raise exceptions.CommandException(f'{opcode.name}, {response.error.name}')
-
-            return response.payload
+            return await asyncio.wait_for(fut, timeout=(timeout or self.config.command_timeout).total_seconds())
 
         except TimeoutError:
             raise exceptions.CommandTimeout(opcode.name)
@@ -225,6 +279,57 @@ class CboxCommander:
             self._handshake_msgids.discard(msg_id)
             if not self._active_messages:
                 self._empty_ev.set()
+
+    async def _execute(
+        self,
+        opcode: Opcode,
+        /,
+        payload: EncodedPayload | None = None,
+        mode: ReadMode = ReadMode.DEFAULT,
+    ) -> list[EncodedPayload]:
+        """
+        Sends a request, and returns the payloads of its response.
+        """
+        self._next_seq()
+        response = await self._send(opcode, payload, mode, None)
+
+        if response.error != ErrorCode.OK:
+            raise exceptions.CommandException(f'{opcode.name}, {response.error.name}')
+
+        return response.payload
+
+    async def _execute_blocks(
+        self,
+        opcode: Opcode,
+        /,
+        payload: EncodedPayload | None = None,
+        mode: ReadMode = ReadMode.DEFAULT,
+        timeout: timedelta | None = None,
+    ) -> list[FirmwareBlock]:
+        """
+        Sends a request that changes blocks or reads them all, and returns the decoded blocks.
+        The block listener is notified of the outcome: the decoded blocks,
+        also those that came with an error response, or why the request failed.
+        Errors are raised after notifying.
+        """
+        nid = payload.blockId if payload else None
+        session = self.state.session
+        seq = self._next_seq()
+
+        try:
+            response = await self._send(opcode, payload, mode, timeout)
+        except Exception as ex:
+            self._notify(BlockChange(seq, session, opcode, mode, nid=nid, error=utils.strex(ex)))
+            raise
+
+        blocks = [self._to_block(v, mode=mode) for v in response.payload]
+        error = None if response.error == ErrorCode.OK else response.error.name
+        self._notify(BlockChange(seq, session, opcode, mode, blocks, nid, error))
+
+        if error:
+            raise exceptions.CommandException(f'{opcode.name}, {error}')
+
+        return blocks
 
     async def validate(self, block: FirmwareBlock) -> FirmwareBlock:
         request = IntermediateRequest(
@@ -248,28 +353,40 @@ class CboxCommander:
         )
         return self._to_block(payloads[0], mode=mode)
 
-    async def read_all_blocks(self, mode: ReadMode = ReadMode.DEFAULT) -> list[FirmwareBlock]:
-        payloads = await self._execute(Opcode.BLOCK_READ_ALL, mode=mode)
-        return [self._to_block(v, mode=mode) for v in payloads]
+    async def read_all_blocks(
+        self,
+        mode: ReadMode = ReadMode.DEFAULT,
+        *,
+        timeout: timedelta | None = None,
+    ) -> list[FirmwareBlock]:
+        """
+        Reads all blocks.
+        A CHANGED read only returns the blocks whose readonly state changed
+        since the previous CHANGED read on this connection, without their names.
+        """
+        return await self._execute_blocks(Opcode.BLOCK_READ_ALL, mode=mode, timeout=timeout)
 
     async def write_block(self, block: FirmwareBlock) -> FirmwareBlock:
-        payloads = await self._execute(Opcode.BLOCK_WRITE, payload=self._to_payload(block))
-        return self._to_block(payloads[0])
+        """
+        Writes the fields present in the block data. Absent fields keep their value.
+        Returns the block as it is after writing.
+        """
+        blocks = await self._execute_blocks(Opcode.BLOCK_WRITE, payload=self._to_payload(block))
+        return blocks[0]
 
     async def patch_block(self, block: FirmwareBlock) -> FirmwareBlock:
-        payloads = await self._execute(Opcode.BLOCK_WRITE, payload=self._to_payload(block, patch=True))
-        return self._to_block(payloads[0])
+        # Writes are by presence: every write is a patch
+        return await self.write_block(block)
 
     async def create_block(self, block: FirmwareBlock) -> FirmwareBlock:
-        payloads = await self._execute(Opcode.BLOCK_CREATE, payload=self._to_payload(block))
-        return self._to_block(payloads[0])
+        blocks = await self._execute_blocks(Opcode.BLOCK_CREATE, payload=self._to_payload(block))
+        return blocks[0]
 
     async def delete_block(self, ident: FirmwareBlockIdentity) -> None:
-        await self._execute(Opcode.BLOCK_DELETE, payload=self._to_payload(ident, identity_only=True))
+        await self._execute_blocks(Opcode.BLOCK_DELETE, payload=self._to_payload(ident, identity_only=True))
 
     async def discover_blocks(self) -> list[FirmwareBlock]:
-        payloads = await self._execute(Opcode.BLOCK_DISCOVER)
-        return [self._to_block(v) for v in payloads]
+        return await self._execute_blocks(Opcode.BLOCK_DISCOVER)
 
     async def read_all_block_names(self) -> list[FirmwareBlock]:
         payloads = await self._execute(Opcode.NAME_READ_ALL)
@@ -283,8 +400,7 @@ class CboxCommander:
         await self._execute(Opcode.REBOOT)
 
     async def clear_blocks(self) -> list[FirmwareBlock]:
-        payloads = await self._execute(Opcode.CLEAR_BLOCKS)
-        return [self._to_block(v) for v in payloads]
+        return await self._execute_blocks(Opcode.CLEAR_BLOCKS)
 
     async def clear_wifi(self) -> None:
         await self._execute(Opcode.CLEAR_WIFI)

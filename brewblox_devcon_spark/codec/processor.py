@@ -17,10 +17,11 @@ from google.protobuf import json_format
 from google.protobuf.descriptor import Descriptor, FieldDescriptor
 
 from brewblox_devcon_spark import exceptions, utils
-from brewblox_devcon_spark.models import DecodedPayload, MaskField, MaskMode, ReadMode
+from brewblox_devcon_spark.models import DecodedPayload, ReadMode
 
-from . import unit_conversion
-from .opts import DateFormatOpt, MetadataOpt
+from . import bloxfield, unit_conversion
+from .descriptors import is_map, is_optional, json_default, list_wrapper, options, reset_value
+from .opts import DateFormatOpt
 from .pb2 import brewblox_pb2
 from .time_utils import serialize_datetime
 
@@ -51,44 +52,26 @@ class OptionElement:
     Example: `key` = 'value[degC]', `postfix` = 'degC'
     """
 
-    address: tuple[int | None]
-    """The nested protobuf address, expressed as field tags.
+    wrapper: FieldDescriptor | None
+    """The list wrapper field, if `field` is the `items` field of a flattened wrapper
 
-    A None value indicates an address that should not be
-    included in a mask. Only leaf nodes should be included
-    in an inclusive mask, as a root node mask serves as a wildcard.
-
-    Repeated fields are always considered leaf nodes.
-
-    Example:
-        `{
-            tag_1: {
-                tag_2: {
-                    tag_3: True,
-                    tag_4: False,
-                },
-                tag_5: [
-                    { tag_6: True },
-                    { tag_6: True },
-                ],
-                tag_7: None,
-            },
-        }`
-        yields addresses:
-        - (1,None)
-        - (1,2,None)
-        - (1,2,3)
-        - (1,2,4)
-        - (1,5)
-        - (1,5,None,6)
-        - (1,5,None,6)
-        - (1,7)
+    The API shows a wrapper (`{items: [...]}`) as its bare list or map.
     """
+
+    in_list: bool
+    """Whether `obj` is (inside) an element of a repeated field or a map value"""
+
+
+def is_null(value: Any) -> bool:
+    """None, or a typed Quantity or Link without value: a reset to the default when encoding"""
+    return (
+        value is None
+        or (bloxfield.is_quantity(value) and value.get('value') is None)
+        or (bloxfield.is_link(value) and value.get('id') is None)
+    )
 
 
 class ProtobufProcessor:
-    _BREWBLOX_PROVIDER: FieldDescriptor = brewblox_pb2.field
-
     def __init__(self, filter_values=True):
         self._converter = unit_conversion.CV.get()
         self._filter_values = filter_values
@@ -141,13 +124,6 @@ class ProtobufProcessor:
         return [i for i in range(8) if 1 << i & flags]
 
     @staticmethod
-    def matches_address(field: MaskField, match: tuple[int | None]):
-        for fa_tag, ma_tag in zip(field.address, match, strict=False):
-            if fa_tag is not None and fa_tag != ma_tag:
-                return False
-        return True
-
-    @staticmethod
     def unit_name(unit_num: int) -> str:
         return brewblox_pb2.UnitType.Name(unit_num)
 
@@ -155,33 +131,36 @@ class ProtobufProcessor:
     def type_name(blockType_num: int) -> str:
         return brewblox_pb2.BlockType.Name(blockType_num)
 
-    def _walk_elements(
-        self,
-        desc: Descriptor,
-        obj: dict,
-        parent_address: tuple[int | None] = (),
-    ) -> Iterator[OptionElement]:
+    def _walk_elements(self, desc: Descriptor, obj: dict, *, in_list: bool = False) -> Iterator[OptionElement]:
         """
         Recursively walks `obj`, and yields an `OptionElement` for each value.
 
         The tree is walked depth-first, and iterates over a copy of the initial keyset.
         This makes it safe for calling code to modify or delete the value relevant to them.
         Any entries added to the parent object after an element is yielded will not be considered.
+
+        List wrappers are flattened in `obj`: the wrapper key holds the bare list or map.
+        The walk uses the wrapper's `items` field in its place,
+        so maps, typed links, and postfixes in the list work as for any repeated field.
+
+        None values are not walked into, also when they are map values.
         """
         for key, value in list(obj.items()):
             base_key, postfix = self._postfix_pattern.findall(key)[0]
             field: FieldDescriptor = desc.fields_by_name[base_key]
-            address: tuple[int | None] = (*parent_address, field.number)
+            wrapper: FieldDescriptor | None = None
+
+            if items := list_wrapper(field):
+                wrapper, field = field, items
+
+            element = OptionElement(field, obj, key, base_key, postfix, wrapper, in_list)
 
             # Value field, no need for recursion
-            # This is a leaf node
             # obj is { key: ... }
             if not field.message_type or value is None:
-                yield OptionElement(field, obj, key, base_key, postfix, address)
+                yield element
 
             # Repeated fields are generic collections, expressed in json as list or dict
-            # Because the list/map index is not a tag, we can't patch inside the repeated field
-            # The repeated field itself is a leaf node
             elif field.label == FieldDescriptor.LABEL_REPEATED:
                 # map<K, V> field
                 # traverse all values
@@ -190,30 +169,41 @@ class ProtobufProcessor:
                 if isinstance(value, dict):
                     message_type = field.message_type.fields_by_name['value'].message_type
                     for childobj in value.values():
-                        yield from self._walk_elements(message_type, childobj, (*address, None))
+                        if childobj is not None:
+                            yield from self._walk_elements(message_type, childobj, in_list=True)
 
                 # Generic repeated field
                 # traverse all values
                 # obj is { key: [{...},{...}] }
                 else:
                     for childobj in value:
-                        yield from self._walk_elements(field.message_type, childobj, (*address, None))
+                        yield from self._walk_elements(field.message_type, childobj, in_list=True)
 
-                yield OptionElement(field, obj, key, base_key, postfix, address)
+                yield element
 
             # Submessage with content
             # traverse all members
             # obj is { key: {...} }
-            # The field itself is not a leaf node
             else:
-                yield from self._walk_elements(field.message_type, value, address)
-                # This is not a leaf node. Its address should not be included in the mask
-                yield OptionElement(field, obj, key, base_key, postfix, (*address, None))
+                yield from self._walk_elements(field.message_type, value, in_list=in_list)
+                yield element
 
-        return
+    def _resets(self, element: OptionElement) -> bool:
+        """
+        Whether a null `element` is sent as a reset to its default (see `pre_encode()`).
 
-    def _field_options(self, field: FieldDescriptor) -> brewblox_pb2.FieldOpts:
-        return field.GetOptions().Extensions[self._BREWBLOX_PROVIDER]
+        A member of a oneof (not a proto3 `optional`) is, unless another member of that oneof is given:
+        in a list element or map value, leaving it out would unset the oneof.
+        Any other field is outside list elements, and is left out in them: list elements are complete.
+        """
+        oneof = element.field.containing_oneof
+        if oneof is None or is_optional(element.field):
+            return not element.in_list
+        members = {f.name for f in oneof.fields}
+        return not any(
+            self._postfix_pattern.findall(key)[0][0] in members and not is_null(value)
+            for key, value in element.obj.items()
+        )
 
     def _encode_unit(self, value: float | dict, unit_type: str, postfix: str | None) -> float:
         if isinstance(value, dict):
@@ -240,8 +230,28 @@ class ProtobufProcessor:
         * datetime:     Convert ms / s / ISO-8601 value to seconds since UTC.
         * ipv4address:  Converts dot string notation to integer IP address.
 
-        The output is the same payload object, but with modified content and mask.
+        The output is the same payload object, but with modified content.
         Content values use controller units.
+
+        Writes are by presence: absent keys are not encoded, and the controller keeps their value.
+        List wrappers are given as their bare list or map, and encoded as `{items: ...}`.
+        An empty list is kept: it sends a present, empty wrapper that clears the list.
+
+        A null (None, or a typed Quantity or Link without a value) resets a writable field
+        to its default, as in a JSON Merge Patch (`descriptors.reset_value()`):
+        * a leaf is sent present with its default: 0, false, '', enum 0, or link 0 (no link).
+        * a list wrapper is sent present and empty: the list is cleared.
+          For the Variables map, which the firmware merges by key, that changes nothing.
+        * a singular message is sent present with every writable leaf reset:
+          a constraint is disabled and zeroed.
+        * a map value is sent as an empty message: for Variables, the firmware deletes that key.
+        List elements and map values are complete, so a null field there is left out: its value is the default.
+        Except a null member of a oneof (not a proto3 `optional`): leaving it out would unset the oneof,
+        and the firmware deletes a Variables entry without a value. It is sent present with its default,
+        unless another member of that oneof is given (of two null members, the first is sent).
+        A zero timestamp variable reads as null, and so writes back the same zero.
+        A null list element of a list of values is left out.
+        A null readonly field (only encoded with `filter_values=False`) is left out: it is invalid.
 
         Postfix notations and typed objects can be mixed in the same data.
 
@@ -292,44 +302,38 @@ class ProtobufProcessor:
             filter_values = self._filter_values
 
         for element in self._walk_elements(desc, payload.content):
-            options = self._field_options(element.field)
+            opts = options(element.field)
 
-            if options.ignored:
+            if opts.ignored:
                 del element.obj[element.key]
                 continue
 
-            if filter_values and options.readonly:
+            if filter_values and opts.readonly:
                 del element.obj[element.key]
                 continue
-
-            # We don't support exclusive masks at this level
-            # List items are not supported for patching
-            # Only insert a field mask for the `repeated` field itself, not its children
-            if payload.maskMode == MaskMode.INCLUSIVE and None not in element.address:
-                payload.maskFields.append(MaskField(address=list(element.address)))
 
             def _convert_value(value: Any) -> str | int | float:
-                if options.unit:
-                    unit_name = self.unit_name(options.unit)
+                if opts.unit:
+                    unit_name = self.unit_name(opts.unit)
                     value = self._encode_unit(value, unit_name, element.postfix or None)
 
-                if options.objtype:
+                if opts.objtype:
                     if isinstance(value, dict):
                         value = value['id']
 
-                if options.scale:
-                    value *= options.scale
+                if opts.scale:
+                    value *= opts.scale
 
-                if options.hexed:
+                if opts.hexed:
                     value = self.hex_to_int(value)
 
-                if options.hexstr:
+                if opts.hexstr:
                     value = self.hex_to_b64(value)
 
-                if options.ipv4address:
+                if opts.ipv4address:
                     value = self.ipv4_to_int(value)
 
-                if options.datetime:
+                if opts.datetime:
                     value = serialize_datetime(value, DateFormatOpt.SECONDS)
 
                 if element.field.cpp_type in json_format._INT_TYPES:
@@ -340,13 +344,21 @@ class ProtobufProcessor:
             new_key = element.base_key
             new_value = element.obj[element.key]
 
-            if new_value is None:
+            # Writes are by presence: an absent key keeps the stored value, and a null resets it.
+            # List elements are complete: a field left out has its default, except a oneof member.
+            if is_null(new_value):
                 del element.obj[element.key]
+                if not opts.readonly and self._resets(element):
+                    element.obj[new_key] = reset_value(element.wrapper or element.field)
                 continue
+
+            # A map value given as null is an empty message
+            if is_map(element.field):
+                new_value = {k: {} if v is None else v for k, v in new_value.items()}
 
             try:
                 if isinstance(new_value, (list, set)):
-                    new_value = [_convert_value(v) for v in new_value if v is not None]
+                    new_value = [_convert_value(v) for v in new_value if not is_null(v)]
                 else:
                     new_value = _convert_value(new_value)
             except Exception as ex:
@@ -360,9 +372,51 @@ class ProtobufProcessor:
             if element.key != new_key:
                 del element.obj[element.key]
 
+            # An empty list stays: it sends a present, empty wrapper that clears the list
+            if element.wrapper is not None:
+                new_value = {'items': new_value}
+
             element.obj[new_key] = new_value
 
         return payload
+
+    def fill(self, desc: Descriptor, obj: dict, /, mode: ReadMode = ReadMode.DEFAULT) -> dict:
+        """
+        Completes MessageToDict output in place, before post_decode.
+
+        MessageToDict never emits an unset optional field, or an unset singular message.
+        * An absent optional readonly field is invalid, and becomes None.
+        * An absent optional writable field gets its default value.
+          Not in CHANGED reads: there, absent means unchanged.
+        * A list wrapper is replaced by its bare list or map.
+          An absent wrapper becomes an empty list or map, except in CHANGED reads.
+          A CHANGED decode sets the covered wrappers present first, so only uncovered wrappers stay absent.
+
+        Present singular messages are filled recursively.
+        List elements and map values are not: their fields have no presence.
+        """
+        for field in desc.fields:
+            key = field.name
+            present = key in obj
+
+            if is_optional(field):
+                if present:
+                    continue
+                if options(field).readonly:
+                    obj[key] = None
+                elif mode != ReadMode.CHANGED:
+                    obj[key] = json_default(field, integer_enums=(mode == ReadMode.STORED))
+
+            elif items := list_wrapper(field):
+                if present:
+                    obj[key] = obj[key]['items']
+                elif mode != ReadMode.CHANGED:
+                    obj[key] = {} if is_map(items) else []
+
+            elif present and field.message_type and field.label != FieldDescriptor.LABEL_REPEATED:
+                self.fill(field.message_type, obj[key], mode)
+
+        return obj
 
     def post_decode(
         self,
@@ -374,20 +428,24 @@ class ProtobufProcessor:
     ) -> DecodedPayload:
         """
         Post-processes protobuf data based on protobuf / codec options.
+        The content is expected to be completed by `fill()` first.
 
         Supported protobuf options:
         * scale:        Divides value by scale before unit conversion.
-        * unit:         Adds unit to output, using either a [] postfix, or a typed object.
-        * objtype:      Adds object type to output, using either a <> postfix, or a typed object.
+        * unit:         Converts to the user unit, and outputs a typed Quantity object.
+        * objtype:      Outputs a typed Link object.
         * hexed:        Converts base64 decoder output to int.
         * hexstr:       Converts base64 decoder output to hexadecimal string.
-        * datetime:     Convert value to formatting specified by opts.dates.
+        * datetime:     Converts value to an ISO-8601 string.
         * ipv4address:  Converts integer IP address to dot string notation.
         * readonly:     Ignored: decoding means reading from controller.
         * ignored:      Strip value from output.
-        * logged:       Tag for filtering output data when using ReadMode.LOGGED.
         * stored:       Tag for filtering output data when using ReadMode.STORED.
-        * *_invalid_if: Sets value to None if equal to invalid value.
+        * omit_if_zero: Strip value from output if zero.
+        * null_if_zero: Sets value to None if zero.
+
+        None is the invalid marker: the value of an absent optional readonly field.
+        Quantities and links keep their typed object, with a None value or id.
 
         Example:
             >>> values = {
@@ -396,13 +454,13 @@ class ProtobufProcessor:
                     'offset': 2844,
                     'sensor': 10,
                     'output': 1234,
+                    'invalid': None,
                 }
             }
 
             >>> post_decode(
                     ExampleMessage_pb2.ExampleMessage(),
-                    values,
-                    mode=ReadMode.LOGGED)
+                    values)
 
             # ExampleMessage.proto:
             #
@@ -412,6 +470,7 @@ class ProtobufProcessor:
             #     sint32 offset = 2 [(brewblox).unit = "delta_degC", (brewblox).scale = 256];
             #     uint16 sensor = 3 [(brewblox).objtype = TempSensorInterface];
             #     sint32 output = 4 [(brewblox).readonly = true];
+            #     optional sint32 invalid = 5 [(brewblox).unit = "degC", (brewblox).readonly = true];
             #   }
             # ...
 
@@ -420,110 +479,80 @@ class ProtobufProcessor:
             >>> print(values)
             {
                 'settings': {
-                    'address': 'aabbccdd',              # Converted from base64 string to hex string
-                    'offset[delta_degF]': 20            # Scaled / 256, converted to preference, postfixed with unit
-                    'sensor<TempSensorInterface>': 10,  # Postfixed with obj type
-                    'output': 1234,                     # We're reading -> keep readonly values
+                    'address': 'aabbccdd',  # Converted from base64 string to hex string
+                    'offset': {             # Scaled / 256, converted to preference
+                        '__bloxtype': 'Quantity',
+                        'unit': 'delta_degF',
+                        'value': 20,
+                    },
+                    'sensor': {
+                        '__bloxtype': 'Link',
+                        'type': 'TempSensorInterface',
+                        'id': 10,
+                    },
+                    'output': 1234,         # We're reading -> keep readonly values
+                    'invalid': {
+                        '__bloxtype': 'Quantity',
+                        'unit': 'degF',
+                        'value': None,
+                        'readonly': True,
+                    },
                 }
             }
 
         """
-        metadata_opt = MetadataOpt.TYPED
-        date_fmt_opt = DateFormatOpt.ISO8601
-
-        if mode == ReadMode.LOGGED:
-            metadata_opt = MetadataOpt.POSTFIX
-            date_fmt_opt = DateFormatOpt.SECONDS
-
         if filter_values is None:
             filter_values = self._filter_values
 
         for element in self._walk_elements(desc, payload.content):
-            options = self._field_options(element.field)
+            opts = options(element.field)
 
-            if payload.maskMode == MaskMode.NO_MASK:
-                excluded = False
-            elif payload.maskMode in [MaskMode.INCLUSIVE, MaskMode.EXCLUSIVE]:
-                masked = any(f for f in payload.maskFields if self.matches_address(f, element.address))
-                excluded = masked ^ (payload.maskMode == MaskMode.INCLUSIVE)
-            else:
-                raise NotImplementedError(f'{payload.maskMode=}')
-
-            if options.ignored:
+            if opts.ignored:
                 del element.obj[element.key]
                 continue
 
-            if filter_values:
-                if (mode == ReadMode.STORED and not options.stored) or (mode == ReadMode.LOGGED and not options.logged):
-                    del element.obj[element.key]
-                    continue
+            if filter_values and mode == ReadMode.STORED and not opts.stored:
+                del element.obj[element.key]
+                continue
 
-            link_type = self.type_name(options.objtype)
-            qty_system_unit = self.unit_name(options.unit)
+            link_type = self.type_name(opts.objtype)
+            qty_system_unit = self.unit_name(opts.unit)
             qty_user_unit = self._converter.to_user_unit(qty_system_unit)
 
-            def _convert_value(value: float | int | str) -> float | int | str | None:
-                null_value = options.null_if_zero and value == 0
+            def _convert_value(value: float | int | str | None) -> float | int | str | dict | None:
+                # None is the invalid marker: absent optional readonly fields are filled with None
+                if value is None or (opts.null_if_zero and value == 0):
+                    value = None
+                else:
+                    if opts.scale:
+                        value /= opts.scale
 
-                if options.scale:
-                    value /= options.scale
-
-                if options.unit:
-                    if excluded or null_value:
-                        value = None
-                    else:
+                    if opts.unit:
                         value = self._converter.to_user_value(value, qty_system_unit)
+                    elif opts.hexed:
+                        value = self.int_to_hex(value)
+                    elif opts.hexstr:
+                        value = self.b64_to_hex(value)
+                    elif opts.ipv4address:
+                        value = self.int_to_ipv4(value)
+                    elif opts.datetime:
+                        value = serialize_datetime(value, DateFormatOpt.ISO8601)
 
-                    if metadata_opt == MetadataOpt.TYPED:
-                        value = {'__bloxtype': 'Quantity', 'unit': qty_user_unit, 'value': value}
+                # Invalid quantities and links keep their typed shell
+                if opts.unit:
+                    value = {'__bloxtype': 'Quantity', 'unit': qty_user_unit, 'value': value}
+                    if opts.readonly:
+                        value['readonly'] = True
 
-                        if options.readonly:
-                            value['readonly'] = True
-
-                    return value
-
-                if options.objtype:
-                    if excluded or null_value:
-                        value = None
-
-                    if metadata_opt == MetadataOpt.TYPED:
-                        value = {
-                            '__bloxtype': 'Link',
-                            'type': link_type,
-                            'id': value,
-                        }
-
-                    return value
-
-                if excluded or null_value:
-                    return None
-
-                if options.hexed:
-                    return self.int_to_hex(value)
-
-                if options.hexstr:
-                    return self.b64_to_hex(value)
-
-                if options.ipv4address:
-                    return self.int_to_ipv4(value)
-
-                if options.datetime:
-                    return serialize_datetime(value, date_fmt_opt)
+                elif opts.objtype:
+                    value = {'__bloxtype': 'Link', 'type': link_type, 'id': value}
 
                 return value
 
-            new_key = element.key
             new_value = element.obj[element.key]
 
-            # If metadata is postfixed, we may need to update the key
-            if metadata_opt == MetadataOpt.POSTFIX:
-                if options.objtype:
-                    new_key = f'{element.key}<{link_type}>'
-                if options.unit:
-                    new_key = f'{element.key}[{qty_user_unit}]'
-
             # Filter values that should be omitted entirely
-            if options.omit_if_zero:
+            if opts.omit_if_zero:
                 if isinstance(new_value, (list, set)):
                     new_value = [v for v in new_value if v != 0]
                 elif new_value == 0:
@@ -543,10 +572,6 @@ class ProtobufProcessor:
                     f'{element.field.full_name}: {utils.strex(ex)} (value={new_value!r})'
                 ) from ex
 
-            # Remove old key/value if we updated the key
-            if element.key != new_key:
-                del element.obj[element.key]
-
-            element.obj[new_key] = new_value
+            element.obj[element.key] = new_value
 
         return payload

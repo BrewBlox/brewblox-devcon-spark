@@ -1,19 +1,27 @@
 import asyncio
+import time
 from contextlib import asynccontextmanager
 from datetime import timedelta
 
 import pytest
 from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
+from pytest_mock import MockerFixture
 
 from brewblox_devcon_spark import codec, command, connection, exceptions, state_machine, utils
-from brewblox_devcon_spark.connection import connection_handler
+from brewblox_devcon_spark.command import BlockChange
+from brewblox_devcon_spark.connection import connection_handler, mock_connection
 from brewblox_devcon_spark.models import (
     ControllerDescription,
+    DecodedPayload,
     DeviceDescription,
     ErrorCode,
+    FirmwareBlock,
+    FirmwareBlockIdentity,
     FirmwareDescription,
     IntermediateResponse,
+    Opcode,
+    ReadMode,
     ResetReason,
 )
 
@@ -247,12 +255,20 @@ async def test_solicited_handshake_keeps_session(manager: LifespanManager):
     fut = loop.create_future()
     cmdr._active_messages[903] = fut
 
+    changes: list[BlockChange] = []
+    cmdr.on_block_change = changes.append
+    cmdr._handshake_msgids.add(903)
+
     await connection.CV.get().on_event(WELCOME)
 
     assert 903 in cmdr._active_messages
     assert not fut.done()
 
+    # Solicited: not a sign of a controller reboot
+    assert changes == []
+
     cmdr._active_messages.clear()
+    cmdr._handshake_msgids.clear()
 
 
 async def test_decode_error_fails_in_flight(manager: LifespanManager, caplog: pytest.LogCaptureFixture):
@@ -286,3 +302,223 @@ def test_error_codes_match_proto():
     from brewblox_devcon_spark.codec.pb2 import command_pb2
 
     assert {code.name: code.value for code in ErrorCode} == dict(command_pb2.ErrorCode.items())
+
+
+async def connected() -> command.CboxCommander:
+    state = state_machine.CV.get()
+    state.set_enabled(True)
+    await asyncio.wait_for(state.wait_connected(), timeout=5)
+    return command.CV.get()
+
+
+def sensor(nid: int = 0, **data) -> FirmwareBlock:
+    return FirmwareBlock(id='sensor', nid=nid, type='TempSensorMock', data=data)
+
+
+async def wait_sent(cmdr: command.CboxCommander):
+    """Waits until a request is waiting for its response"""
+    while not cmdr._active_messages:
+        await asyncio.sleep(0)
+
+
+async def test_block_listener(manager: LifespanManager):
+    """
+    Requests that change blocks or read them all notify the block listener,
+    in send order, with the session they were sent in.
+    """
+    state = state_machine.CV.get()
+    cmdr = await connected()
+
+    changes: list[BlockChange] = []
+    cmdr.on_block_change = changes.append
+
+    created = await cmdr.create_block(sensor(setting=20))
+    await cmdr.write_block(sensor(created.nid, setting=21))
+    await cmdr.patch_block(sensor(created.nid, setting=22))
+    await cmdr.noop()  # Not a block change
+    await cmdr.read_all_blocks()
+    changed = await cmdr.read_all_blocks(ReadMode.CHANGED)
+    await cmdr.read_all_blocks(ReadMode.STORED)
+    await cmdr.discover_blocks()
+    await cmdr.delete_block(FirmwareBlockIdentity(nid=created.nid))
+    await cmdr.clear_blocks()
+
+    assert [(v.opcode, v.mode) for v in changes] == [
+        (Opcode.BLOCK_CREATE, ReadMode.DEFAULT),
+        (Opcode.BLOCK_WRITE, ReadMode.DEFAULT),
+        (Opcode.BLOCK_WRITE, ReadMode.DEFAULT),
+        (Opcode.BLOCK_READ_ALL, ReadMode.DEFAULT),
+        (Opcode.BLOCK_READ_ALL, ReadMode.CHANGED),
+        (Opcode.BLOCK_READ_ALL, ReadMode.STORED),
+        (Opcode.BLOCK_DISCOVER, ReadMode.DEFAULT),
+        (Opcode.BLOCK_DELETE, ReadMode.DEFAULT),
+        (Opcode.CLEAR_BLOCKS, ReadMode.DEFAULT),
+    ]
+    assert all(v.error is None for v in changes)
+    assert all(v.session == state.session for v in changes)
+
+    # Every request gets a send sequence number, including those that do not notify
+    seqs = [v.seq for v in changes]
+    assert seqs == sorted(seqs)
+    assert seqs[3] == seqs[2] + 2
+    assert cmdr._seq == seqs[-1]
+
+    # The listener gets the decoded blocks the caller gets
+    assert changes[0].blocks == [created]
+    assert changes[1].blocks[0].data['setting']['value'] == 21
+    assert changes[1].nid == created.nid
+    assert changes[4].blocks == changed
+    assert not changed[0].id  # CHANGED reads have no names
+    assert changes[7].nid == created.nid
+    assert changes[7].blocks == []
+
+    # Without a listener, requests work as before
+    cmdr.on_block_change = None
+    await cmdr.read_all_blocks()
+    assert len(changes) == 9
+
+
+async def test_block_listener_errors(manager: LifespanManager):
+    """
+    Failed requests notify the listener before the error is raised.
+    Error responses keep their payloads: a read-all may fail halfway.
+    """
+    cmdr = await connected()
+    ccodec = codec.CV.get()
+    conn = connection.CV.get()
+
+    changes: list[BlockChange] = []
+    cmdr.on_block_change = changes.append
+
+    # Error response
+    with pytest.raises(exceptions.CommandException, match='INVALID_BLOCK_ID'):
+        await cmdr.write_block(sensor(1234, setting=20))
+    assert changes[-1].opcode == Opcode.BLOCK_WRITE
+    assert changes[-1].nid == 1234
+    assert changes[-1].error == 'INVALID_BLOCK_ID'
+
+    # No response
+    utils.get_config().command_timeout = timedelta(milliseconds=10)
+    mock_connection.NEXT_ERROR.append(None)
+    with pytest.raises(exceptions.CommandTimeout):
+        await cmdr.delete_block(FirmwareBlockIdentity(nid=1234))
+    assert changes[-1].opcode == Opcode.BLOCK_DELETE
+    assert 'CommandTimeout' in changes[-1].error
+
+    # An error response with the payloads that were read before the error
+    utils.get_config().command_timeout = timedelta(seconds=1)
+    mock_connection.NEXT_ERROR.append(None)
+    task = asyncio.create_task(cmdr.read_all_blocks(ReadMode.CHANGED))
+    await wait_sent(cmdr)
+    payload = ccodec.encode_payload(DecodedPayload(blockId=100, blockType='TempSensorMock', content={'setting': 21}))
+    response = IntermediateResponse(
+        msgId=cmdr._msgid,
+        error=ErrorCode.INSUFFICIENT_HEAP,
+        mode=ReadMode.CHANGED,
+        payload=[payload],
+    )
+    await conn.on_response(ccodec.encode_response(response))
+
+    with pytest.raises(exceptions.CommandException, match='INSUFFICIENT_HEAP'):
+        await task
+
+    change = changes[-1]
+    assert change.opcode == Opcode.BLOCK_READ_ALL
+    assert change.mode == ReadMode.CHANGED
+    assert change.error == 'INSUFFICIENT_HEAP'
+    assert [v.nid for v in change.blocks] == [100]
+    assert change.blocks[0].data['setting']['value'] == 21
+
+
+async def test_block_listener_session(manager: LifespanManager):
+    """The listener gets the session a request was sent in, also if the response came in another one"""
+    state = state_machine.CV.get()
+    cmdr = await connected()
+    ccodec = codec.CV.get()
+    conn = connection.CV.get()
+
+    changes: list[BlockChange] = []
+    cmdr.on_block_change = changes.append
+    session = state.session
+
+    mock_connection.NEXT_ERROR.append(None)
+    task = asyncio.create_task(cmdr.read_all_blocks(ReadMode.CHANGED, timeout=timedelta(seconds=1)))
+    await wait_sent(cmdr)
+    state.session += 1
+
+    response = IntermediateResponse(msgId=cmdr._msgid, error=ErrorCode.OK, mode=ReadMode.CHANGED, payload=[])
+    await conn.on_response(ccodec.encode_response(response))
+    assert await task == []
+    assert changes[-1].session == session
+
+
+async def test_request_timeout(manager: LifespanManager, mocker: MockerFixture):
+    """A request can have a shorter timeout than command_timeout"""
+    config = utils.get_config()
+    cmdr = await connected()
+    m_asyncio = mocker.patch.object(command, 'asyncio', wraps=asyncio)
+
+    mock_connection.NEXT_ERROR.append(None)
+    start = time.monotonic()
+    with pytest.raises(exceptions.CommandTimeout):
+        await cmdr.read_all_blocks(ReadMode.CHANGED, timeout=timedelta(milliseconds=10))
+    assert time.monotonic() - start < 0.5
+    assert m_asyncio.wait_for.call_args.kwargs['timeout'] == 0.01
+
+    # The default is command_timeout.
+    # The mock answers before the request waits: the timeout it waits with is checked instead.
+    blocks = await cmdr.read_all_blocks(ReadMode.CHANGED)
+    assert blocks
+    assert m_asyncio.wait_for.call_args.kwargs['timeout'] == config.command_timeout.total_seconds()
+    assert config.command_timeout != config.broadcast_timeout
+
+
+async def test_block_listener_late_response(manager: LifespanManager):
+    """A response without a waiting request may have changed blocks"""
+    state = state_machine.CV.get()
+    cmdr = await connected()
+    await cmdr.noop()
+
+    changes: list[BlockChange] = []
+    cmdr.on_block_change = changes.append
+
+    response = IntermediateResponse(msgId=123, error=ErrorCode.OK, payload=[])
+    await connection.CV.get().on_response(codec.CV.get().encode_response(response))
+
+    assert changes == [BlockChange(cmdr._seq, state.session, None, error='late response')]
+
+
+async def test_block_listener_handshake(manager: LifespanManager):
+    """
+    An unsolicited handshake after the first one of a session means the controller rebooted.
+    The link stayed up, so the session is the same, but blocks may have changed.
+    """
+    state = state_machine.CV.get()
+    cmdr = await connected()
+
+    changes: list[BlockChange] = []
+    cmdr.on_block_change = changes.append
+
+    # The first handshake of a session
+    await connection.CV.get().on_event(WELCOME)
+    assert state.is_acknowledged()
+    assert changes == []
+
+    await connection.CV.get().on_event(WELCOME)
+    assert changes == [BlockChange(cmdr._seq, state.session, None, error='unsolicited handshake')]
+
+
+async def test_block_listener_exception(manager: LifespanManager, caplog: pytest.LogCaptureFixture):
+    """A failing listener does not fail the request"""
+    cmdr = await connected()
+
+    def listener(change: BlockChange):
+        raise RuntimeError('listener bug')
+
+    cmdr.on_block_change = listener
+    created = await cmdr.create_block(sensor(setting=20))
+    assert created.nid
+
+    record = next(v for v in caplog.records if 'Block listener failed' in v.message)
+    assert record.levelname == 'ERROR'
+    assert 'listener bug' in record.message

@@ -1,0 +1,500 @@
+[
+  {
+    "blockType": "ActuatorAnalogMock",
+    "variant": "full",
+    "payload": "CMI+EJJOIOJdKLJtMIJ9ONKMAUIJCgcIwrsBoAYBSPIuUIEBWKIfYAFoAXIpCgoIgvoBkAMBmAMBEgoIwrgCkAMBmAMBGg8IfBCpwwGQAwGYAwHQBQE=",
+    "logged": {
+      "setting": 0.976806640625,
+      "value": 1.220947265625,
+      "desiredSetting": 0.732666015625
+    }
+  },
+  {
+    "blockType": "ActuatorAnalogMock",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  },
+  {
+    "blockType": "ActuatorLogic",
+    "variant": "full",
+    "payload": "CGUYASABKgJzNDIICAEQARhsIAE6CggBEAEYcSDi2gFA+dIBSgoKCAgBEAEYdyABUgwKCggBEAEYfSCilgPQBQE=",
+    "logged": {
+      "result": 1
+    }
+  },
+  {
+    "blockType": "ActuatorLogic",
+    "variant": "empty",
+    "payload": "",
+    "logged": {
+      "result": 0
+    }
+  },
+  {
+    "blockType": "ActuatorOffset",
+    "variant": "full",
+    "payload": "CGYYZyABMOJdOLJtQgkKBwjyqwGgBgFQAViSTmCAAWjCPnABeikKCgiy6gGQAwGYAwESCgjyqAKQAwGYAwEaDwh7EMG7AZADAZgDAdAFAdAFAQ==",
+    "logged": {
+      "setting[delta_degC]": 1.465087890625,
+      "value[delta_degC]": 1.709228515625,
+      "desiredSetting[delta_degC]": 1.220947265625
+    }
+  },
+  {
+    "blockType": "ActuatorOffset",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  },
+  {
+    "blockType": "ActuatorPwm",
+    "variant": "full",
+    "payload": "CGYY2TYgkk4o4l0yCQoHCKKcAaAGAUABSMI+UH9Y8i5gAWopCgoI4toBkAMBmAMBEgoIopkCkAMBmAMBGg8IehDZswGQAwGYAwHQBQHQBQE=",
+    "logged": {
+      "setting": 1.220947265625,
+      "value": 1.465087890625,
+      "desiredSetting": 0.976806640625
+    }
+  },
+  {
+    "blockType": "ActuatorPwm",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  },
+  {
+    "blockType": "Balancer",
+    "variant": "full",
+    "payload": "CggIZhDyLhjCPg==",
+    "logged": {}
+  },
+  {
+    "blockType": "Balancer",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  },
+  {
+    "blockType": "DS2408",
+    "variant": "full",
+    "payload": "CekDAAAAAAAAMAFIAVBoWggI8S4Q2TYYbNAFAQ==",
+    "logged": {}
+  },
+  {
+    "blockType": "DS2408",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  },
+  {
+    "blockType": "DS2413",
+    "variant": "full",
+    "payload": "CekDAAAAAAAAMAFAZ0oICIknEPEuGGvQBQE=",
+    "logged": {}
+  },
+  {
+    "blockType": "DS2413",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  },
+  {
+    "blockType": "DigitalActuator",
+    "variant": "full",
+    "payload": "CGUQ0Q8YASABKg0KCwipRqAGkU6oBvlVMAE4AUCRyAJI+c8CUJABWAFgAWpcCg4IsW2QAwGYAwGgA+mEARIPCLmUAZADAZgDAaAD8asBGg8IwbsBkAMBmAMBoAP50gEiDwjJ4gGQAwGYAwGgA4H6ASoXCIYBELmRAiABkAMBmAMBoAPZsALQBQE=",
+    "logged": {
+      "state": 1,
+      "desiredState": 1
+    }
+  },
+  {
+    "blockType": "DigitalActuator",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  },
+  {
+    "blockType": "DigitalInput",
+    "variant": "full",
+    "payload": "CGUQ0Q8YASABKAEw8S44AQ==",
+    "logged": {
+      "state": 1
+    }
+  },
+  {
+    "blockType": "DigitalInput",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  },
+  {
+    "blockType": "DisplaySettings",
+    "variant": "full",
+    "payload": "Cg0I0Q8SAgOrGgJzNFBpEgNzMTIaEAoOCME+EgIJqxoDczEwUG/QBQHYBQHgBQE=",
+    "logged": {}
+  },
+  {
+    "blockType": "DisplaySettings",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  },
+  {
+    "blockType": "FastPwm",
+    "variant": "full",
+    "payload": "CGYQuRcYASDiXSiSTjCybToJCgcIwrsBoAYBQAFIAVCx6gFYmfIBYAFohAFwwj54AYIBKQoKCIL6AZADAZgDARIKCMK4ApADAZgDARoPCHwQqcMBkAMBmAMB0AUB",
+    "logged": {
+      "setting": 1.465087890625,
+      "desiredSetting": 1.220947265625,
+      "value": 1.709228515625
+    }
+  },
+  {
+    "blockType": "FastPwm",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  },
+  {
+    "blockType": "GpioModule",
+    "variant": "full",
+    "payload": "ChcI0Q8QARihHyCJJyoCczYw2TY4bECpRhChnAEYyd8CILHnAiiZ7wIwgfcCOOn+AkDRhgNIuY4DUKGWA1iJngNg8aUDaNmtA3ABeMG1A4ABqb0DigE1GNmzASDBuwEoqcMBMJHLATj50gFA4doBSMniAVCx6gFYmfIBYIH6AWjpgQJ40YkCgAG5kQKiARkIiaECEAEYiwEggvEEKNKABTCikAU48p8FqAHCrwWyARwKGgjhXRABGLFtIJl1KgNzMTYw6YQBOHZAuZQBgAIB0AWRxQM=",
+    "logged": {
+      "analogChannels": [
+        {
+          "bridgeOutput": 0.16403579711914062,
+          "resistance[ohm]": 2.44146728515625,
+          "leadResistance[ohm]": 2.50250244140625,
+          "bridgeResistance[ohm]": 2.56353759765625
+        }
+      ],
+      "baroPressure[millibar]": 10.742431640625
+    }
+  },
+  {
+    "blockType": "GpioModule",
+    "variant": "empty",
+    "payload": "",
+    "logged": {
+      "analogChannels": []
+    }
+  },
+  {
+    "blockType": "GpioModule",
+    "variant": "zero",
+    "payload": "ChcI0Q8QARihHyCJJyoCczYw2TY4bECpRhChnAEYyd8CILHnAiiZ7wIwgfcCOOn+AkDRhgNIuY4DUKGWA1iJngNg8aUDaNmtA3ABeMG1A4ABqb0DigE1GNmzASDBuwEoqcMBMJHLATj50gFA4doBSMniAVCx6gFYmfIBYIH6AWjpgQJ40YkCgAG5kQKiAQCiARMI6QcQARhnIMI+KJJOMOJdOLJtqAHCrwWyARwKGgjhXRABGLFtIJl1KgNzMTYw6YQBOHZAuZQBgAIB0AWRxQM=",
+    "logged": {
+      "analogChannels": [
+        {},
+        {
+          "bridgeOutput": 0.026706695556640625,
+          "resistance[ohm]": 0.24420166015625,
+          "leadResistance[ohm]": 0.30523681640625,
+          "bridgeResistance[ohm]": 0.36627197265625
+        }
+      ],
+      "baroPressure[millibar]": 10.742431640625
+    }
+  },
+  {
+    "blockType": "MockPins",
+    "variant": "full",
+    "payload": "EggI0Q8QuRcYaNAFAQ==",
+    "logged": {}
+  },
+  {
+    "blockType": "MockPins",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  },
+  {
+    "blockType": "MotorValve",
+    "variant": "full",
+    "payload": "CGUQ0Q8YASoNCgsIqUagBpFOqAb5VTABOAFAjQFIAVABWlwKDgixbZADAZgDAaAD6YQBEg8IuZQBkAMBmAMBoAPxqwEaDwjBuwGQAwGYAwGgA/nSASIPCMniAZADAZgDAaADgfoBKhcIhgEQuZECIAGQAwGYAwGgA9mwAtAFAdAFAQ==",
+    "logged": {
+      "state": 1,
+      "valveState": 1,
+      "desiredState": 1
+    }
+  },
+  {
+    "blockType": "MotorValve",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  },
+  {
+    "blockType": "Mutex",
+    "variant": "full",
+    "payload": "EOkH0AUB",
+    "logged": {}
+  },
+  {
+    "blockType": "Mutex",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  },
+  {
+    "blockType": "Pid",
+    "variant": "full",
+    "payload": "CGUQZijyLjDCPjiSTkDiXVgBYAFo0owBcJFOePlVgAHCuwGIAZLLAZAB4toBmAGy6gGgAYL6AagB0okCuAGimQLAAfKoAsgBwrgC0AEB2AEB4AEB6AGC9wLwAdKGA/gBfoAC8qUDiALCtQOQAuLUA5gCksUD0AUB",
+    "logged": {
+      "outputValue": 1.220947265625,
+      "outputSetting": 1.465087890625,
+      "enabled": true,
+      "active": true,
+      "p": 2.929931640625,
+      "i": 3.174072265625,
+      "d": 3.418212890625,
+      "integral": 62.50390625,
+      "derivative": 0.03242683410644531,
+      "boilModeActive": true,
+      "ff": 6.103759765625,
+      "smoothGain": 1.77008056640625,
+      "inputValue[degC]": 0.732666015625,
+      "inputSetting[degC]": 0.976806640625,
+      "error[delta_degC]": 3.662353515625,
+      "ambientValue[degC]": 6.592041015625,
+      "ambientOffset[delta_degC]": 6.836181640625
+    }
+  },
+  {
+    "blockType": "Pid",
+    "variant": "empty",
+    "payload": "",
+    "logged": {
+      "active": false,
+      "integral": 0.0,
+      "derivative": 0.0,
+      "boilModeActive": false
+    }
+  },
+  {
+    "blockType": "Sequence",
+    "variant": "full",
+    "payload": "CAESAgoAGAEgqUYosW0wmXU4gX1AAUgBUMllWGtgAWoECgIKAA==",
+    "logged": {
+      "enabled": true,
+      "activeInstruction": 9001,
+      "elapsed[second]": 13.001
+    }
+  },
+  {
+    "blockType": "Sequence",
+    "variant": "empty",
+    "payload": "",
+    "logged": {
+      "elapsed[second]": 0.0
+    }
+  },
+  {
+    "blockType": "SetpointProfile",
+    "variant": "full",
+    "payload": "CgYI0Q8QuRcYASBtKKKcATCL4s+qBjgBQggKBgjxLhDZNtAFAQ==",
+    "logged": {
+      "setting[degC]": 2.441650390625
+    }
+  },
+  {
+    "blockType": "SetpointProfile",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  },
+  {
+    "blockType": "SetpointSensorPair",
+    "variant": "full",
+    "payload": "EGYokk4w4l04AUDyLkgBUNKMAViybWABaG9wAXjCPoABAYgBsW2QAZl1mAGBfdAFAQ==",
+    "logged": {
+      "setting[degC]": 1.220947265625,
+      "value[degC]": 1.465087890625,
+      "valueUnfiltered[degC]": 1.709228515625,
+      "desiredSetting[degC]": 0.976806640625
+    }
+  },
+  {
+    "blockType": "SetpointSensorPair",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  },
+  {
+    "blockType": "Spark2Pins",
+    "variant": "full",
+    "payload": "KAFAAUoICKEfEIknGGrQBQE=",
+    "logged": {}
+  },
+  {
+    "blockType": "Spark2Pins",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  },
+  {
+    "blockType": "Spark3Pins",
+    "variant": "full",
+    "payload": "EAEYASgBMKEfOIknQggI2TYQwT4YbdAFAQ==",
+    "logged": {}
+  },
+  {
+    "blockType": "Spark3Pins",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  },
+  {
+    "blockType": "SysInfo",
+    "variant": "full",
+    "payload": "CgIBqxICczIYAzoCczRCAnM1SgJzNlDZNljBPmCpRmiK4s+qBnIDczExeAGAAclliAGxbZABmXWYAYF9oAHphAGoAdGMAbABuZQBuAEB0AUB2AUB",
+    "logged": {
+      "updatesPerSecond": 9.001,
+      "voltage5": 14.001,
+      "voltageExternal": 15.001,
+      "memoryFree": 16001,
+      "memoryFreeContiguous": 17001,
+      "memoryFreeLowest": 18001,
+      "mainTaskStackFreeLowest": 19001,
+      "uptime[second]": 8.001
+    }
+  },
+  {
+    "blockType": "SysInfo",
+    "variant": "empty",
+    "payload": "",
+    "logged": {
+      "updatesPerSecond": 0.0,
+      "voltage5": 0.0,
+      "voltageExternal": 0.0,
+      "memoryFree": 0,
+      "memoryFreeContiguous": 0,
+      "memoryFreeLowest": 0,
+      "mainTaskStackFreeLowest": 0,
+      "uptime[second]": 0.0
+    }
+  },
+  {
+    "blockType": "TempSensorAnalog",
+    "variant": "full",
+    "payload": "CAEQZhi5FyDCPjABOAFAsm1Ign1Q0owBWKKcAWDyqwFowrsBcJLLAXji2gGAAbLqAQ==",
+    "logged": {
+      "value[degC]": 0.976806640625,
+      "resistance[ohm]": 0.42730712890625
+    }
+  },
+  {
+    "blockType": "TempSensorAnalog",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  },
+  {
+    "blockType": "TempSensorCombi",
+    "variant": "full",
+    "payload": "CNIPEAEaAWciAwoBaQ==",
+    "logged": {
+      "value[degC]": 0.244384765625
+    }
+  },
+  {
+    "blockType": "TempSensorCombi",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  },
+  {
+    "blockType": "TempSensorExternal",
+    "variant": "full",
+    "payload": "CAEQ0Q8Y8i4ghOLPqgYokk4=",
+    "logged": {
+      "value[degC]": 1.220947265625
+    }
+  },
+  {
+    "blockType": "TempSensorExternal",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  },
+  {
+    "blockType": "TempSensorExternal",
+    "variant": "zero",
+    "payload": "CAEQ0Q8Y8i4okk4=",
+    "logged": {
+      "value[degC]": 1.220947265625
+    }
+  },
+  {
+    "blockType": "TempSensorMock",
+    "variant": "full",
+    "payload": "CNIPGAEg8i4qBgiSThDxLjIJCgcI0owBEJFO",
+    "logged": {
+      "connected": true,
+      "value[degC]": 0.244384765625
+    }
+  },
+  {
+    "blockType": "TempSensorMock",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  },
+  {
+    "blockType": "TempSensorOneWire",
+    "variant": "full",
+    "payload": "CNIPGKIfIbkLAAAAAAAAKGg=",
+    "logged": {
+      "value[degC]": 0.244384765625
+    }
+  },
+  {
+    "blockType": "TempSensorOneWire",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  },
+  {
+    "blockType": "Variables",
+    "variant": "full",
+    "payload": "CggKAmsxEgIIARIKCggKAms0EgIIAQ==",
+    "logged": {}
+  },
+  {
+    "blockType": "Variables",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  },
+  {
+    "blockType": "WiFiSettings",
+    "variant": "full",
+    "payload": "CgJzMRICczIYASABKIkn0AUB",
+    "logged": {
+      "signal": 5001
+    }
+  },
+  {
+    "blockType": "WiFiSettings",
+    "variant": "empty",
+    "payload": "",
+    "logged": {
+      "signal": 0
+    }
+  },
+  {
+    "blockType": "EdgeCase",
+    "variant": "full",
+    "payload": "CgwJ0QcAAAAAAAAQ8i4SBQiSThABGGsiAghtKgOinAEw+VU44V1AyWVQsW0=",
+    "logged": {
+      "logged": 12001
+    }
+  },
+  {
+    "blockType": "EdgeCase",
+    "variant": "empty",
+    "payload": "",
+    "logged": {}
+  }
+]
