@@ -1,4 +1,5 @@
 import asyncio
+import time
 from collections.abc import Generator
 from contextlib import AsyncExitStack, asynccontextmanager
 from datetime import timedelta
@@ -281,7 +282,8 @@ async def test_cache_changed_read(cache: BlockCache):
 
 async def test_cache_reader_view(cache: BlockCache):
     """
-    A CHANGED read leaves out the blocks whose covered state is what the controller last sent in a CHANGED read.
+    A CHANGED read leaves out the blocks whose CHANGED payload is what the controller last sent in a CHANGED read:
+    the covered values, and the firmware-written stored fields it sends in every CHANGED read.
     Full reads and write responses may have replaced that state in the cache since.
     """
     changed = ReadMode.CHANGED
@@ -305,7 +307,7 @@ async def test_cache_reader_view(cache: BlockCache):
     cache.on_block_change(read_all(5, sensor(102, 21, changed), mode=changed))
     assert cached_value(cache, 100) == 20
     assert cached_value(cache, 101) == 20
-    assert cache.entries[101].data['setting']['value'] == 22  # Not covered: kept
+    assert cache.entries[101].data['setting']['value'] == 20  # Firmware-written: part of the payload
     assert cached_value(cache, 102) == 21
     assert cache.entries[100].seq == 5
     assert cache.take_dirty() == [100, 101]
@@ -331,13 +333,18 @@ async def test_cache_reader_view(cache: BlockCache):
     cache.on_block_change(read_all(11, sensor(100, 20)))
     assert set(cache._views) == {100}
 
-    # Stub types are replaced, and have no covered values
+    # Stub types are replaced, also by their view
     cache.on_block_change(
         read_all(12, sensor(100, 20), FirmwareBlock(nid=103, type='ErrorObject', data={'error': 'a'}))
     )
     cache.on_block_change(read_all(13, FirmwareBlock(nid=103, type='ErrorObject', data={'error': 'b'}), mode=changed))
     assert cache.entries[103].data == {'error': 'b'}
-    assert set(cache._views) == {100}
+    assert set(cache._views) == {100, 103}
+    cache.on_block_change(
+        read_all(14, sensor(100, 20), FirmwareBlock(nid=103, type='ErrorObject', data={'error': 'c'}))
+    )
+    cache.on_block_change(read_all(15, mode=changed))
+    assert cache.entries[103].data == {'error': 'b'}
 
 
 @pytest.mark.parametrize(
@@ -590,13 +597,15 @@ async def test_changed_tick(bc: Broadcaster, s_publish: Mock, s_read: Mock):
     assert changed == (await api.read_block(BlockIdentity(id='sensor'))).model_dump(mode='json')
     assert patch['data']['deleted'] == []
 
-    # Blocks written through the API are in the next patch.
-    # The controller does not send a block in a CHANGED read for a change in stored fields.
+    # Blocks written through the API are in the next patch, also if the CHANGED read of the tick leaves them out.
+    # The firmware leaves out a block after a write that only changed stored fields.
+    # Here, a CHANGED read before the tick sends it.
     s_publish.reset_mock()
     await api.write_block(Block(id='sensor', type='TempSensorMock', data={'connected': False}))
-    mock_impl()._changed_sent[created.nid] = mock_impl()._blocks[created.nid].message.SerializeToString()
+    assert created.nid in {v.nid for v in await bc.cmder.read_all_blocks(ReadMode.CHANGED)}
     await bc.tick()
     assert read_modes(s_read)[-1] == ReadMode.CHANGED
+    assert created.nid not in {v.nid for v in s_read.spy_return}
     [patch] = published(s_publish, PATCH_TOPIC)
     assert [v['id'] for v in patch['data']['changed']] == ['sensor']
     assert patch['data']['changed'][0]['data']['connected'] is False
@@ -634,6 +643,39 @@ async def test_changed_revert(bc: Broadcaster, s_publish: Mock):
     assert changed == (await api.read_block(BlockIdentity(id='sensor'))).model_dump(mode='json')
 
 
+async def test_changed_revert_written(bc: Broadcaster):
+    """
+    A firmware-written stored field returns to what the previous CHANGED read sent, after a write response.
+    The CHANGED read leaves the block out: its view restores the whole block.
+    """
+    state = state_machine.CV.get()
+    api = spark_api.CV.get()
+    cmder = command.CV.get()
+    cache = bc.cache
+    cache.reset(state.session)
+
+    created = await create_sensor(api)
+    message = mock_impl()._blocks[created.nid].message
+
+    await cmder.read_all_blocks()
+    await cmder.read_all_blocks(ReadMode.CHANGED)
+
+    # A write through the API: the response replaces the cached block
+    await api.patch_block(Block(id='sensor', type='TempSensorMock', data={'setting[degC]': 25}))
+    assert cache.entries[created.nid].data['setting']['value'] == 25
+
+    # The firmware writes the setting back: no response reaches the cache
+    message.setting = 20 * 4096
+    changed = await cmder.read_all_blocks(ReadMode.CHANGED)
+    assert created.nid not in {v.nid for v in changed}
+    assert not cache.need_full
+
+    cmder.on_block_change = None
+    [full] = [v for v in await cmder.read_all_blocks() if v.nid == created.nid]
+    assert cache.entries[created.nid].data == full.data
+    assert full.data['setting']['value'] == 20
+
+
 async def test_links(bc: Broadcaster, s_publish: Mock):
     """Published blocks have string IDs, and publishing does not change the cache"""
     api = spark_api.CV.get()
@@ -658,7 +700,15 @@ async def test_full_interval(bc: Broadcaster, s_publish: Mock, s_read: Mock):
     assert read_modes(s_read) == [ReadMode.DEFAULT, ReadMode.CHANGED]
 
     # Ticks start a little late: a full read is due half a tick early
-    bc._last_full -= config.full_read_interval.total_seconds() - config.broadcast_interval.total_seconds() / 4
+    interval = config.broadcast_interval.total_seconds()
+    full_interval = config.full_read_interval.total_seconds()
+    last_full = bc._last_full
+    bc._last_full = 100.0
+    assert bc._full_due(100.0 + full_interval - interval / 4)
+    assert not bc._full_due(100.0 + full_interval - interval)
+
+    # A full read publishes the state
+    bc._last_full = last_full - full_interval
     s_publish.reset_mock()
     await bc.tick()
     assert read_modes(s_read)[-1] == ReadMode.DEFAULT
@@ -712,6 +762,35 @@ async def test_read_error(bc: Broadcaster, s_publish: Mock, s_read: Mock):
     mock_connection.NEXT_ERROR.append(ErrorCode.UNKNOWN_ERROR)
     await bc.tick()
     assert bc.cache.need_full
+
+
+async def test_read_timeout(bc: Broadcaster, mocker: MockerFixture):
+    """A controller that stops answering is reconnected, as after an API request that timed out"""
+    config = utils.get_config()
+    config.command_timeout = timedelta(milliseconds=100)
+    state = state_machine.CV.get()
+    s_check = mocker.spy(bc.api, 'check_connection')
+    s_reset = mocker.spy(bc.cmder, 'reset_connection')
+
+    await bc.tick()
+
+    # An error response is an answer
+    mock_connection.NEXT_ERROR.append(ErrorCode.UNKNOWN_ERROR)
+    await bc.tick()
+    await asyncio.sleep(0.01)
+    assert s_check.await_count == 0
+
+    # The controller never answers: not the read, and not the noop of the connection check
+    session = state.session
+    mock_connection.NEXT_ERROR.extend([None, None])
+    await bc.tick()
+    assert bc.cache.need_full
+    assert s_check.call_count == 1
+    await asyncio.wait_for(state.wait_disconnected(), timeout=1)
+    assert s_reset.await_count == 1
+
+    await asyncio.wait_for(state.wait_synchronized(), timeout=1)
+    assert state.session == session + 1
 
 
 async def test_merge_error(bc: Broadcaster, s_publish: Mock, s_read: Mock, mocker: MockerFixture):
@@ -817,19 +896,42 @@ async def test_unit_change(bc: Broadcaster, s_publish: Mock, s_read: Mock):
 
 async def test_repeat(bc: Broadcaster, mocker: MockerFixture):
     config = utils.get_config()
+    interval = config.broadcast_interval.total_seconds()
+    tick_duration = 0.004
+    loop = asyncio.get_running_loop()
+    tick_starts = []
+
+    def slow_tick():
+        tick_starts.append(loop.time())
+        time.sleep(tick_duration)
+        raise RuntimeError('tick failed')
+
     s_tick = mocker.patch.object(bc, 'tick', autospec=True)
-    s_tick.side_effect = RuntimeError('tick failed')
+    s_tick.side_effect = slow_tick
     s_deadline = mocker.spy(broadcast, 'next_deadline')
+    m_asyncio = mocker.patch.object(broadcast, 'asyncio', wraps=asyncio)
 
     # Errors do not stop the loop
     async with utils.task_context(bc.repeat()):
         await asyncio.sleep(0.05)
     assert s_tick.await_count >= 2
 
-    # Ticks are scheduled by deadline: each one interval after the previous deadline
-    [first, second, *_] = s_deadline.call_args_list
-    assert second.args[0] == broadcast.next_deadline(*first.args)
-    assert first.args[2] == 0.01
+    # Ticks are scheduled by deadline: each one interval after the previous deadline.
+    # The time a tick takes is not added to the interval: the loop sleeps until the next deadline.
+    calls = s_deadline.call_args_list
+    deadlines = s_deadline.spy_return_list
+    delays = [c.args[0] for c in m_asyncio.sleep.call_args_list]
+    assert len(calls) >= 2
+    assert len(delays) >= 2
+    assert calls[0].args[0] <= tick_starts[0]
+    for idx, (call, deadline, delay) in enumerate(zip(calls, deadlines, delays, strict=False)):
+        prev_deadline, now, call_interval = call.args
+        assert call_interval == interval
+        assert now >= tick_starts[idx] + tick_duration  # After the tick
+        assert delay == pytest.approx(deadline - now)
+        assert delay < interval
+        if idx > 0:
+            assert prev_deadline == deadlines[idx - 1]
 
     # Cancelled if interval <= 0
     s_tick.reset_mock()

@@ -196,7 +196,8 @@ def to_line(args: dict) -> str:
             key = key.removeprefix(RAW_PREFIX)
 
             if bloxfield.is_link(value):
-                value = quoted(value['id'])
+                # An unset link reads as None: 0 parses back to the same link
+                value = quoted(value['id'] if value['id'] is not None else '0')
 
             elif bloxfield.is_quantity(value):
                 amount = value['value']
@@ -215,6 +216,10 @@ def to_line(args: dict) -> str:
             elif isinstance(value, float):
                 value = round(value, 2)
 
+            # A zero datetime reads as None: 0 parses back to the same value
+            elif value is None:
+                value = 0
+
         args.append(f'{key}={value}')
 
     return ' '.join([opcode, ', '.join(args)])
@@ -223,8 +228,9 @@ def to_line(args: dict) -> str:
 def parse(block: Block):
     """
     Converts instructions in given Sequence block from line to dict format.
+    Null instructions are left to the codec: they clear the list.
     """
-    if 'instructions' in block.data:
+    if block.data.get('instructions') is not None:
         block.data['instructions'] = [from_line(s, idx + 1) for idx, s in enumerate(block.data['instructions'])]
 
 

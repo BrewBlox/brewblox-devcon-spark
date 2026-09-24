@@ -10,7 +10,7 @@ import pytest
 from fastapi import FastAPI
 
 from brewblox_devcon_spark import codec, command, const, state_machine
-from brewblox_devcon_spark.codec.pb2 import ActuatorPwm_pb2, Balancer_pb2, SetpointProfile_pb2
+from brewblox_devcon_spark.codec.pb2 import ActuatorPwm_pb2, Balancer_pb2, SetpointProfile_pb2, Variables_pb2
 from brewblox_devcon_spark.connection import connection_handler, mock_connection
 from brewblox_devcon_spark.connection.mock_connection import merge_present
 from brewblox_devcon_spark.models import FirmwareBlock, FirmwareBlockIdentity, ReadMode
@@ -99,6 +99,61 @@ def test_merge_lists():
     assert [v.id for v in dest.clients] == [3]
 
 
+def test_merge_variables():
+    """The firmware merges the Variables map by key (firmware lib/blocks/src/variables_block.cpp)"""
+
+    def variables(**values: Variables_pb2.VarContainer) -> Variables_pb2.Block:
+        block = Variables_pb2.Block()
+        block.variables.SetInParent()
+        for key, value in values.items():
+            block.variables.items[key].CopyFrom(value)
+        return block
+
+    def analog(value: int) -> Variables_pb2.VarContainer:
+        return Variables_pb2.VarContainer(analog=value)
+
+    def content(block: Variables_pb2.Block) -> dict[str, int]:
+        return {k: v.analog for k, v in block.variables.items.items()}
+
+    dest = variables(a=analog(1), b=analog(2))
+
+    # The given keys replace or add their entries, and the other keys are kept
+    merge_present(dest, variables(b=analog(3), c=analog(4)))
+    assert content(dest) == {'a': 1, 'b': 3, 'c': 4}
+
+    # An `empty` entry, or one without a value, deletes its key
+    merge_present(dest, variables(a=Variables_pb2.VarContainer(empty=True), b=Variables_pb2.VarContainer()))
+    assert content(dest) == {'c': 4}
+
+    # A present, empty map changes nothing, and so does an absent one
+    merge_present(dest, variables())
+    merge_present(dest, Variables_pb2.Block())
+    assert content(dest) == {'c': 4}
+
+
+async def test_create_variables(manager):
+    """A created Variables block has no unset or `empty` entries"""
+    state = state_machine.CV.get()
+    state.set_enabled(True)
+    await asyncio.wait_for(state.wait_connected(), timeout=5)
+    cmdr = command.CV.get()
+
+    created = await cmdr.create_block(
+        FirmwareBlock(
+            id='variables',
+            nid=0,
+            type='Variables',
+            data={'variables': {'a': {'analog': 1}, 'b': {'empty': True}, 'c': None}},
+        )
+    )
+    assert created.data['variables'] == {'a': {'analog': 1}}
+
+    written = await cmdr.write_block(
+        FirmwareBlock(nid=created.nid, type='Variables', data={'variables': {'b': {'analog': 2}, 'a': None}})
+    )
+    assert written.data['variables'] == {'b': {'analog': 2}}
+
+
 async def test_changed_read(manager):
     state = state_machine.CV.get()
     state.set_enabled(True)
@@ -135,9 +190,18 @@ async def test_changed_read(manager):
     )
     assert await read_changed() == [created.nid]
 
-    # After clearing blocks, all blocks are changed
-    await cmdr.clear_blocks()
-    changed = await cmdr.read_all_blocks(ReadMode.CHANGED)
-    assert [v.nid for v in changed] == [v.nid for v in blocks]
+    # Clearing blocks removes the user blocks, and keeps the system blocks as they are
+    written = await cmdr.write_block(
+        FirmwareBlock(nid=const.SYS_BLOCK_IDS['DisplaySettings'], type='DisplaySettings', data={'name': 'display'})
+    )
+    assert await read_changed() == [const.SYS_BLOCK_IDS['DisplaySettings']]
+    removed = await cmdr.clear_blocks()
+    assert [v.nid for v in removed] == [created.nid]
+    assert await read_changed() == []
+    assert [v.nid for v in await cmdr.read_all_blocks()] == [v.nid for v in blocks]
+    display = await cmdr.read_block(FirmwareBlockIdentity(nid=const.SYS_BLOCK_IDS['DisplaySettings']))
+    assert display.data['name'] == 'display'
+
+    # After a factory reset, all blocks are changed
     await cmdr.factory_reset()
     assert await read_changed() == [v.nid for v in blocks if v.nid != const.SYS_BLOCK_IDS['SysInfo']]

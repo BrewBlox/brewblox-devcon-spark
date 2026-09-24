@@ -12,6 +12,7 @@ Those publish the retained full state event instead of the patch.
 Values that CHANGED reads do not update (`skip_changed`) are only in the history of full-read ticks.
 
 If a tick fails, it publishes nothing, and the next tick is a full read.
+If the read timed out, the connection is checked, as for API requests.
 If the service is not synchronized, only the status is published, every `full_read_interval`.
 """
 
@@ -22,7 +23,7 @@ from collections.abc import Generator, Mapping
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
 
-from . import codec, command, mqtt, spark_api, state_machine, utils
+from . import codec, command, exceptions, mqtt, spark_api, state_machine, utils
 from .block_analysis import calculate_claims, calculate_relations
 from .command import BlockChange
 from .models import (
@@ -58,8 +59,11 @@ class ReaderView:
 
     type: str
 
-    covered: dict
-    """The covered values that CHANGED read last sent (`Codec.covered_view()`)."""
+    data: dict
+    """
+    The decoded data that the latest CHANGED read to send the block had:
+    the covered values, and the firmware-written stored fields it sent.
+    """
 
 
 class BlockCache:
@@ -75,7 +79,8 @@ class BlockCache:
     Where the cache can not follow a change, it needs a full (DEFAULT) read.
     A full read only satisfies that if it was sent after the change.
 
-    A CHANGED read leaves out a block if its covered state is what a previous CHANGED read sent.
+    A CHANGED read leaves out a block if its whole CHANGED payload is what the previous CHANGED read sent:
+    the covered values, and the firmware-written stored fields that are in every CHANGED read.
     Full reads and write responses may have replaced that state in the cache since,
     so the cache keeps what CHANGED reads sent, and merges it again for the blocks a CHANGED read leaves out.
 
@@ -222,9 +227,7 @@ class BlockCache:
             if self._deleted_after(block.nid, seq):
                 continue
 
-            covered = self.codec.covered_view(block.type, block.data)
-            if covered is not None:
-                self._views[block.nid] = ReaderView(seq, block.type, copy.deepcopy(covered))
+            self._views[block.nid] = ReaderView(seq, block.type, copy.deepcopy(block.data))
 
             entry = self._entries.get(block.nid)
             if entry is not None and entry.seq > seq:
@@ -235,14 +238,14 @@ class BlockCache:
                 continue
             self._merge_block(seq, block.nid, entry, copy.deepcopy(block.data))
 
-        # The controller left out the other blocks: their covered state is what it last sent.
+        # The controller left out the other blocks: their CHANGED payload is what it last sent.
         # Merge that again where a full read or a write response replaced it in the cache since.
         # Views are cleared when a CHANGED read fails: it is unknown what the controller left out.
         for nid, view in self._views.items():
             entry = self._entries.get(nid)
             if nid in sent or entry is None or entry.type != view.type or not view.seq < entry.seq < seq:
                 continue
-            self._merge_block(seq, nid, entry, copy.deepcopy(view.covered))
+            self._merge_block(seq, nid, entry, copy.deepcopy(view.data))
             view.seq = seq
 
     def _merge_block(self, seq: int, nid: int, entry: CachedBlock, partial: dict):
@@ -361,6 +364,10 @@ class Broadcaster:
         except Exception as ex:
             LOGGER.warning(f'Failed to read {mode.name} blocks: {utils.strex(ex)}')
             self.cache.request_full()
+            if isinstance(ex, exceptions.CommandTimeout):
+                # As for API requests: the controller may have stopped answering
+                # without the transport noticing. Reconnect if it does not answer a noop either.
+                asyncio.create_task(self.api.check_connection())
             return
 
         # The controller reconnected during the read, or merging it failed

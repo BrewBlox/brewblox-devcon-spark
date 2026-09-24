@@ -46,10 +46,29 @@ class MockBlock:
     message: Message
 
 
+def _is_unset(entry: Message) -> bool:
+    """A map value without a member, or with `empty` set: the firmware erases it (VarContainer)"""
+    return [f.name for f, _ in entry.ListFields()] in ([], ['empty'])
+
+
+def erase_unset(message: Message) -> None:
+    """
+    Erases the unset values of the map wrappers in `message`, as the firmware does after every write.
+    The Variables map is the only map wrapper.
+    """
+    for field, value in message.ListFields():
+        if (items := descriptors.list_wrapper(field)) and descriptors.is_map(items):
+            entries = getattr(value, items.name)
+            for key in [k for k, v in entries.items() if _is_unset(v)]:
+                del entries[key]
+
+
 def merge_present(dest: Message, src: Message):
     """
     Writes by presence, as the firmware does: fields present in `src` are written, and absent fields are kept.
     Repeated fields and list wrappers are replaced whole, and singular messages are merged.
+    A map wrapper (Variables) is merged by key: the keys in `src` replace their entries,
+    an unset or `empty` entry deletes its key, and the other keys are kept.
     """
     for field, value in src.ListFields():
         if field.label == FieldDescriptor.LABEL_REPEATED:
@@ -57,8 +76,15 @@ def merge_present(dest: Message, src: Message):
             getattr(dest, field.name).MergeFrom(value)
         elif field.message_type is None:
             setattr(dest, field.name, value)
-        elif descriptors.list_wrapper(field):
-            getattr(dest, field.name).CopyFrom(value)
+        elif items := descriptors.list_wrapper(field):
+            if descriptors.is_map(items):
+                wrapper = getattr(dest, field.name)
+                wrapper.SetInParent()
+                for key, entry in getattr(value, items.name).items():
+                    getattr(wrapper, items.name)[key].CopyFrom(entry)
+                erase_unset(dest)
+            else:
+                getattr(dest, field.name).CopyFrom(value)
         else:
             getattr(dest, field.name).SetInParent()
             merge_present(getattr(dest, field.name), value)
@@ -246,6 +272,7 @@ class MockConnection(ConnectionImplBase):
             else:
                 nid = nid or next(self._id_counter)
                 block = self._parse(request.payload)
+                erase_unset(block.message)
                 self._blocks[nid] = block
                 response.payload = [self._to_payload(nid, block, block.name)]
 
@@ -284,13 +311,12 @@ class MockConnection(ConnectionImplBase):
             self.update_systime()
 
         elif request.opcode == Opcode.CLEAR_BLOCKS:
-            response.payload = [
-                self._to_payload(nid, block, block.name)
-                for nid, block in self._blocks.items()
-                if nid >= const.USER_NID_START
-            ]
-            self._blocks = self._default_blocks()
-            self._changed_sent.clear()
+            # User blocks are removed. System blocks keep their settings.
+            removed = [nid for nid in self._blocks if nid >= const.USER_NID_START]
+            response.payload = [self._to_payload(nid, self._blocks[nid], self._blocks[nid].name) for nid in removed]
+            for nid in removed:
+                del self._blocks[nid]
+                self._changed_sent.pop(nid, None)
             self.update_systime()
 
         elif request.opcode == Opcode.CLEAR_WIFI:

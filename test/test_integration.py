@@ -1,5 +1,5 @@
 import asyncio
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from contextlib import AsyncExitStack, asynccontextmanager
 from datetime import timedelta
 from unittest.mock import ANY, Mock
@@ -330,6 +330,20 @@ async def test_patch(client: AsyncClient, block_args: Block, s_publish: Mock):
         assert resp.status_code == 200
         return resp.json()['data']
 
+    def constraints(**changed: dict) -> dict:
+        """A DEFAULT read carries every constraint: the ones not set are disabled and zero"""
+        unset = {
+            'min': {'enabled': False, 'limiting': False, 'value': 0},
+            'max': {'enabled': False, 'limiting': False, 'value': 0},
+            'balanced': {
+                'enabled': False,
+                'limiting': False,
+                'granted': 0,
+                'balancerId': {'__bloxtype': 'Link', 'type': 'BalancerInterface', 'id': None},
+            },
+        }
+        return {k: {**v, **changed.get(k, {})} for k, v in unset.items()}
+
     # Create block with only min constraint
     pwm_block = Block(
         id='pwm',
@@ -349,34 +363,52 @@ async def test_patch(client: AsyncClient, block_args: Block, s_publish: Mock):
     data = await patch({'constraints': {'max': {'value': 100}}})
     assert data['enabled'] is True
     assert data['period']['value'] == 4
-    assert data['constraints'] == {
-        'min': {'enabled': False, 'limiting': False, 'value': 10},
-        'max': {'enabled': False, 'limiting': False, 'value': 100},
-    }
+    assert data['constraints'] == constraints(min={'value': 10}, max={'value': 100})
 
     # Patch the max constraint to only edit the `enabled` field
     data = await patch({'constraints': {'max': {'enabled': True}}})
     assert data['enabled'] is True
-    assert data['constraints'] == {
-        'min': {'enabled': False, 'limiting': False, 'value': 10},
-        'max': {'enabled': True, 'limiting': False, 'value': 100},
-    }
+    assert data['constraints'] == constraints(min={'value': 10}, max={'enabled': True, 'value': 100})
 
     # Zero and false are written
     data = await patch({'enabled': False, 'period[s]': 0, 'constraints': {'min': {'value': 0}}})
     assert data['enabled'] is False
     assert data['period']['value'] == 0
-    assert data['constraints'] == {
-        'max': {'enabled': True, 'limiting': False, 'value': 100},
-    }
+    assert data['constraints'] == constraints(max={'enabled': True, 'value': 100})
 
-    # None is absent: the value is kept
-    data = await patch({'enabled': None, 'period': None, 'constraints': {'max': None}})
-    assert data['enabled'] is False
+    # Null resets a field to its default, and an absent field is kept.
+    # A null constraint is disabled and zeroed.
+    data = await patch({'enabled': True, 'period[s]': 4})
+    data = await patch({'period': None, 'constraints': {'max': None}})
+    assert data['enabled'] is True
     assert data['period']['value'] == 0
-    assert data['constraints'] == {
-        'max': {'enabled': True, 'limiting': False, 'value': 100},
-    }
+    assert data['constraints'] == constraints()
+
+    data = await patch({'enabled': None, 'constraints': {'min': {'enabled': True, 'value': None}}})
+    assert data['enabled'] is False
+    assert data['constraints'] == constraints(min={'enabled': True})
+
+
+async def test_patch_null_number(client: AsyncClient):
+    """
+    A cleared number field in the UI is sent as null: it resets the field to 0.
+    (TempSensorAnalog spec overrides, where 0 means the spec default, are not in the simulator build:
+    test_spark_api.py::test_patch_null covers them with the mock.)
+    """
+
+    async def post(url: str, data: dict) -> dict:
+        resp = await client.post(url, json={'id': 'mock', 'type': 'ActuatorAnalogMock', 'data': data})
+        assert resp.status_code in [200, 201], resp.text
+        return resp.json()['data']
+
+    data = await post('/blocks/create', {'enabled': True, 'storedSetting': 50, 'minSetting': 10, 'maxSetting': 90})
+    assert data['minSetting'] == 10
+
+    data = await post('/blocks/patch', {'minSetting': None, 'storedSetting': 5})
+    assert data['minSetting'] == 0
+    assert data['maxSetting'] == 90
+    assert data['storedSetting'] == 5
+    assert data['enabled'] is True
 
 
 async def test_patch_lists(client: AsyncClient):
@@ -409,6 +441,12 @@ async def test_patch_lists(client: AsyncClient):
     data = await post('/blocks/read', profile)
     assert data['points'] == []
 
+    # Null clears a list too
+    data = await post('/blocks/patch', {**profile, 'data': {'points': points([25])}})
+    assert temps(data) == [25]
+    data = await post('/blocks/patch', {**profile, 'data': {'points': None}})
+    assert data['points'] == []
+
     # A system block
     display = {'id': 'DisplaySettings', 'type': 'DisplaySettings'}
     widget = {'pos': 1, 'color': 'aa0088', 'name': 'profile', 'tempSensor<>': None}
@@ -421,6 +459,12 @@ async def test_patch_lists(client: AsyncClient):
     data = await post('/blocks/patch', {**display, 'data': {'widgets': []}})
     assert data['widgets'] == []
     assert data['name'] == 'renamed'
+
+    data = await post('/blocks/patch', {**display, 'data': {'widgets': [widget], 'name': None}})
+    assert [v['name'] for v in data['widgets']] == ['profile']
+    assert data['name'] == ''
+    data = await post('/blocks/patch', {**display, 'data': {'widgets': None}})
+    assert data['widgets'] == []
 
 
 async def test_patch_variables(client: AsyncClient):
@@ -446,6 +490,79 @@ async def test_patch_variables(client: AsyncClient):
 
     data = await post('/blocks/patch', {**variables, 'data': {}})
     assert data == {'b': {'analog': 3}, 'c': {'analog': 4}}
+
+    # A null entry deletes its key, as `empty` does
+    data = await post('/blocks/patch', {**variables, 'data': {'variables': {'b': None, 'd': {'analog': 5}}}})
+    assert data == {'c': {'analog': 4}, 'd': {'analog': 5}}
+
+    # A null map is a present, empty map: it changes nothing
+    data = await post('/blocks/patch', {**variables, 'data': {'variables': None}})
+    assert data == {'c': {'analog': 4}, 'd': {'analog': 5}}
+
+
+ZERO_LINK = {'__bloxtype': 'Link', 'type': 'Any', 'id': None}
+ZERO_VARIABLES = {
+    'zero': {'timestamp': None},
+    'time': {'timestamp': '2023-11-14T22:13:20Z'},
+    'nolink': {'link': ZERO_LINK},
+    'analog': {'analog': 1},
+}
+ZERO_INSTRUCTIONS = [
+    'WAIT_UNTIL time=0',
+    'WAIT_UNTIL time=2023-11-14T22:13:20Z',
+    'SET_SETPOINT target=0, setting=20.0C',
+    '#',
+    'RESTART',
+]
+
+
+async def create_zero_members(client: AsyncClient) -> Callable[[], Awaitable[None]]:
+    """
+    Creates a Variables block with a zero timestamp and no link next to other variables,
+    and a Sequence with WAIT_UNTIL time=0, a target of 0 and an empty comment. Returns a check that both read unchanged.
+    A zero timestamp and no link read as null, and time=0 and target=0 read as written.
+    """
+
+    async def post(url: str, block: dict) -> dict:
+        resp = await client.post(url, json=block)
+        assert resp.status_code in [200, 201], resp.text
+        return resp.json()['data']
+
+    # The UI stores a new timestamp variable as 0
+    variables = {**ZERO_VARIABLES, 'zero': {'timestamp': 0}}
+    data = await post('/blocks/create', {'id': 'variables', 'type': 'Variables', 'data': {'variables': variables}})
+    assert data['variables'] == ZERO_VARIABLES
+
+    data = {'enabled': False, 'instructions': ZERO_INSTRUCTIONS}
+    data = await post('/blocks/create', {'id': 'sequence', 'type': 'Sequence', 'data': data})
+    assert data['instructions'] == ZERO_INSTRUCTIONS
+
+    async def check():
+        assert (await post('/blocks/read', {'id': 'variables'}))['variables'] == ZERO_VARIABLES
+        assert (await post('/blocks/read', {'id': 'sequence'}))['instructions'] == ZERO_INSTRUCTIONS
+
+    return check
+
+
+async def test_zero_members_patch(client: AsyncClient):
+    """Writing a read back changes nothing"""
+    check = await create_zero_members(client)
+
+    for block in [{'id': 'variables', 'type': 'Variables'}, {'id': 'sequence', 'type': 'Sequence'}]:
+        resp = await client.post('/blocks/read', json=block)
+        resp = await client.post('/blocks/patch', json={**block, 'data': resp.json()['data']})
+        assert resp.status_code == 200, resp.text
+        await check()
+
+
+async def test_zero_members_backup(client: AsyncClient):
+    """A backup save and load changes nothing"""
+    check = await create_zero_members(client)
+
+    resp = await client.post('/blocks/backup/save')
+    resp = await client.post('/blocks/backup/load', json=resp.json())
+    assert resp.json() == {'messages': []}
+    await check()
 
 
 async def test_batch_patch(client: AsyncClient, block_args: Block, s_publish: Mock):
@@ -976,6 +1093,15 @@ async def test_changed_read(client: AsyncClient, block_args: Block):
     assert created.nid in {v.nid for v in changed}
     assert all(not v.id for v in changed)
 
+    # A VERSION request starts a session: the next CHANGED read has every block with covered fields again.
+    # Devcon sends one at every sync, so a reconnect on a transport that keeps its reader identity
+    # (ESP USB, MQTT) still starts with a full CHANGED read.
+    blocks = await cmder.read_all_blocks()
+    await cmder.version()
+    changed = await cmder.read_all_blocks(ReadMode.CHANGED)
+    assert {v.nid for v in changed} == {v.nid for v in blocks if codec.descriptors.coverage(descriptor(v.type))}
+    assert await cmder.read_all_blocks(ReadMode.CHANGED) == []
+
 
 def time_varying(block_type: str) -> set[str]:
     """Fields that change with time, and that CHANGED reads do not update"""
@@ -1201,3 +1327,51 @@ async def test_changed_revert(client: AsyncClient):
     assert nid not in {v.nid for v in changed}
     assert cache.entries[nid].data['value']['value'] == 20
     cmder.on_block_change = None
+
+
+async def test_changed_revert_written(client: AsyncClient):
+    """
+    A firmware-written stored field is in every CHANGED read of its block.
+    If it returns to what the previous CHANGED read sent after a write response, the block is left out,
+    and the cache restores it with the rest of what that read sent.
+    """
+    state = state_machine.CV.get()
+    cmder = command.CV.get()
+    api = spark_api.CV.get()
+
+    await api.create_block(Block(id='sensor', type='TempSensorMock', data={'setting[degC]': 20, 'connected': True}))
+    pair = await api.create_block(
+        Block(
+            id='pair',
+            type='SetpointSensorPair',
+            data={'sensorId<>': 'sensor', 'storedSetting[degC]': 21, 'enabled': True, 'settingMode': 'STORED'},
+        )
+    )
+    await read_until(client, 'pair', lambda data: data['setting']['value'] == 21)
+
+    cache = broadcast.BlockCache()
+    cache.reset(state.session)
+    cmder.on_block_change = cache.on_block_change
+
+    await cmder.read_all_blocks()
+    changed = await cmder.read_all_blocks(ReadMode.CHANGED)
+    assert pair.nid in {v.nid for v in changed}
+
+    # The response to an API write replaces the cached block
+    await api.patch_block(Block(id='pair', type='SetpointSensorPair', data={'storedSetting[degC]': 25}))
+    assert cache.entries[pair.nid].data['storedSetting']['value'] == 25
+
+    # The firmware writes the stored setting back, as a Sequence does: the cache does not see it
+    cmder.on_block_change = None
+    await api.patch_block(Block(id='pair', type='SetpointSensorPair', data={'storedSetting[degC]': 21}))
+    await read_until(client, 'pair', lambda data: data['setting']['value'] == 21)
+    cmder.on_block_change = cache.on_block_change
+
+    changed = await cmder.read_all_blocks(ReadMode.CHANGED)
+    assert pair.nid not in {v.nid for v in changed}
+    assert not cache.need_full
+
+    cmder.on_block_change = None
+    [full] = [v for v in await cmder.read_all_blocks() if v.nid == pair.nid]
+    assert cache.entries[pair.nid].data == full.data
+    assert full.data['storedSetting']['value'] == 21

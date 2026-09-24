@@ -6,6 +6,7 @@ from datetime import timedelta
 import pytest
 from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
+from pytest_mock import MockerFixture
 
 from brewblox_devcon_spark import codec, command, connection, exceptions, state_machine, utils
 from brewblox_devcon_spark.command import BlockChange
@@ -451,19 +452,25 @@ async def test_block_listener_session(manager: LifespanManager):
     assert changes[-1].session == session
 
 
-async def test_request_timeout(manager: LifespanManager):
+async def test_request_timeout(manager: LifespanManager, mocker: MockerFixture):
     """A request can have a shorter timeout than command_timeout"""
+    config = utils.get_config()
     cmdr = await connected()
+    m_asyncio = mocker.patch.object(command, 'asyncio', wraps=asyncio)
 
     mock_connection.NEXT_ERROR.append(None)
     start = time.monotonic()
     with pytest.raises(exceptions.CommandTimeout):
         await cmdr.read_all_blocks(ReadMode.CHANGED, timeout=timedelta(milliseconds=10))
     assert time.monotonic() - start < 0.5
+    assert m_asyncio.wait_for.call_args.kwargs['timeout'] == 0.01
 
-    # The default is command_timeout
+    # The default is command_timeout.
+    # The mock answers before the request waits: the timeout it waits with is checked instead.
     blocks = await cmdr.read_all_blocks(ReadMode.CHANGED)
     assert blocks
+    assert m_asyncio.wait_for.call_args.kwargs['timeout'] == config.command_timeout.total_seconds()
+    assert config.command_timeout != config.broadcast_timeout
 
 
 async def test_block_listener_late_response(manager: LifespanManager):

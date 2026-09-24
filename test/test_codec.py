@@ -1,8 +1,10 @@
 import importlib
 import json
 from base64 import b64decode, b64encode
+from collections.abc import Iterator
 from copy import deepcopy
 from pathlib import Path
+from typing import Any
 
 import pytest
 from fastapi import FastAPI
@@ -20,7 +22,7 @@ from brewblox_devcon_spark.models import (
     Opcode,
     ReadMode,
 )
-from test.fixtures.messages import populate
+from test.fixtures.messages import add_zero_members, populate
 
 TEMP_SENSOR_TYPE_INT = 302
 GOLDEN = json.loads((Path(__file__).parent / 'fixtures' / 'logged_golden.json').read_text())
@@ -833,27 +835,6 @@ async def test_merge_edge_cases():
     assert cdc.merge_changed('TempSensorAnalog', cached, partial) is False
 
 
-async def test_covered_view():
-    """Merging the covered view of CHANGED(t1) into DEFAULT(t0) sets the covered values of t1, and nothing else"""
-    cdc = codec.CV.get()
-    t0 = _actuator(1, Constraints.DurationConstraint(duration=60000, enabled=True, limiting=True, remaining=30000))
-    t1 = _actuator(0, Constraints.DurationConstraint(duration=60000, enabled=True, limiting=False, remaining=0))
-    t1.storedState = 0
-
-    partial = decode(changed(t1, 'storedState'), ReadMode.CHANGED)
-    view = cdc.covered_view('DigitalActuator', partial)
-    assert 'storedState' in partial
-    assert 'storedState' not in view
-    assert view['constraints']['minOff'] == partial['constraints']['minOff']
-
-    cached = decode(t0)
-    assert cdc.merge_changed('DigitalActuator', cached, view) is True
-    assert cached == {**decode(t1), 'storedState': decode(t0)['storedState']}
-
-    # Stub types have no coverage
-    assert cdc.covered_view('ErrorObject', {'error': 'new'}) is None
-
-
 # Logged view: the history format, derived from the DEFAULT decode
 
 
@@ -965,9 +946,6 @@ async def test_encode_presence():
                 'enabled': False,
                 'boilMinOutput': 0,
                 'derivativeFilterChoice': 'FILTER_NONE',
-                'td': None,
-                'kp': {'__bloxtype': 'Quantity', 'unit': '1 / degC', 'value': None},
-                'inputId': {'__bloxtype': 'Link', 'type': 'SetpointSensorPairInterface', 'id': None},
                 'outputValue': 50,  # readonly: stripped
                 'drivenOutputId': 1,  # ignored: stripped
             },
@@ -980,11 +958,8 @@ async def test_encode_presence():
     assert message.HasField('boilMinOutput')
     assert message.HasField('derivativeFilterChoice')
 
-    # Absent keys, None, and typed None are absent: the controller keeps its value
+    # Absent keys are absent: the controller keeps their value
     assert not message.HasField('ti')
-    assert not message.HasField('td')
-    assert not message.HasField('kp')
-    assert not message.HasField('inputId')
     assert not message.HasField('outputValue')
     assert not message.drivenOutputId
 
@@ -1014,8 +989,264 @@ async def test_encode_presence():
     assert message.HasField('instructions')
     assert len(message.instructions.items) == 0
 
-    payload = cdc.encode_payload(DecodedPayload(blockId=1, blockType='Sequence', content={'instructions': None}))
-    assert not parsed(payload, Sequence.Block).HasField('instructions')
+
+def _encode(block_type: str, content: dict, cdc: Codec | None = None) -> Message:
+    cdc = cdc or codec.CV.get()
+    payload = cdc.encode_payload(DecodedPayload(blockId=1, blockType=block_type, content=content))
+    impl = next(v for v in lookup.CV_OBJECTS.get() if v.type_str == block_type)
+    return parsed(payload, impl.message_cls)
+
+
+async def test_encode_null_leaves():
+    """A null resets a writable leaf: it is sent present with its default"""
+    message = _encode(
+        'Pid',
+        {
+            'enabled': None,  # bool
+            'boilMinOutput': None,  # number
+            'derivativeFilterChoice': None,  # enum
+            'kp': {'__bloxtype': 'Quantity', 'unit': '1 / degC', 'value': None},
+            'td[s]': None,
+            'inputId': {'__bloxtype': 'Link', 'type': 'SetpointSensorPairInterface', 'id': None},
+            'outputId<>': None,
+            'outputValue': None,  # readonly: stripped
+        },
+    )
+    for key in ['enabled', 'boilMinOutput', 'derivativeFilterChoice', 'kp', 'td', 'inputId', 'outputId']:
+        assert message.HasField(key), key
+        assert getattr(message, key) == 0, key
+    assert not message.HasField('outputValue')
+    assert not message.HasField('ti')  # Absent: kept
+
+    # Strings and datetimes
+    assert _encode('DisplaySettings', {'name': None}).HasField('name')
+    assert _encode('DisplaySettings', {'name': None}).name == ''
+    message = _encode('SetpointProfile', {'start': None})
+    assert message.HasField('start')
+    assert message.start == 0
+
+    # A zero override means the spec default
+    message = _encode('TempSensorAnalog', {'spec_a_override': None})
+    assert message.HasField('spec_a_override')
+    assert message.spec_a_override == 0
+
+    # Readonly fields are only encoded without filtering: a null one is invalid, and left out
+    message = _encode('Pid', {'outputValue': None, 'enabled': None}, Codec(filter_values=False))
+    assert not message.HasField('outputValue')
+    assert message.HasField('enabled')
+
+
+async def test_encode_null_messages():
+    """A null singular message is sent present, with every writable leaf reset: a constraint is disabled and zeroed"""
+    message = _encode('ActuatorPwm', {'constraints': {'max': None}})
+    assert message.HasField('constraints')
+    assert message.constraints.HasField('max')
+    assert message.constraints.max.HasField('enabled')
+    assert message.constraints.max.enabled is False
+    assert message.constraints.max.HasField('value')
+    assert message.constraints.max.value == 0
+    assert not message.constraints.HasField('min')  # Absent: kept
+
+    # Recursively, links included
+    message = _encode('ActuatorPwm', {'constraints': None})
+    assert message.constraints.HasField('min')
+    assert message.constraints.HasField('max')
+    assert message.constraints.balanced.HasField('balancerId')
+    assert message.constraints.balanced.balancerId == 0
+    assert message.constraints.balanced.HasField('enabled')
+
+    message = _encode('DigitalActuator', {'constraints': {'mutexed': None}})
+    mutexed = message.constraints.mutexed
+    assert [f.name for f, _ in mutexed.ListFields()] == ['mutexId', 'extraHoldTime', 'enabled']
+    assert not mutexed.enabled
+
+    # A null leaf in a message
+    message = _encode('ActuatorPwm', {'constraints': {'min': {'enabled': True, 'value': None}}})
+    assert message.constraints.min.enabled is True
+    assert message.constraints.min.HasField('value')
+    assert message.constraints.min.value == 0
+
+    # Members of a oneof are left out: none of them is the default
+    assert descriptors.reset_value(pb2.EdgeCase_pb2.Block.DESCRIPTOR.fields_by_name['settings']) == {
+        'address': 0,
+        'offset': 0,
+    }
+    variable = pb2.Variables_pb2.VariableMap.DESCRIPTOR.fields_by_name['items'].message_type.fields_by_name['value']
+    assert descriptors.reset_value(variable) == {}
+
+
+async def test_encode_null_lists():
+    """A null list wrapper is sent present and empty: the list is cleared"""
+    message = _encode('SetpointProfile', {'points': None})
+    assert message.HasField('points')
+    assert len(message.points.items) == 0
+
+    message = _encode('Sequence', {'instructions': None})
+    assert message.HasField('instructions')
+    assert len(message.instructions.items) == 0
+
+    # The Variables map is present and empty. The firmware merges it by key: this changes nothing.
+    message = _encode('Variables', {'variables': None})
+    assert message.HasField('variables')
+    assert len(message.variables.items) == 0
+
+    # A null map value is an empty message. For Variables, the firmware deletes that key.
+    message = _encode('Variables', {'variables': {'a': None, 'b': {'analog': 2}}})
+    assert set(message.variables.items) == {'a', 'b'}
+    assert message.variables.items['a'].WhichOneof('var') is None
+    assert message.variables.items['b'].analog == 2 * 4096
+
+    # List elements are complete: a null field there is left out, and has its default
+    message = _encode(
+        'DisplaySettings',
+        {'widgets': [{'pos': 1, 'name': None, 'color': 'aa0088', 'tempSensor<>': 3}]},
+    )
+    [widget] = message.widgets.items
+    assert widget.pos == 1
+    assert widget.name == ''
+    assert widget.color == b'\xaa\x00\x88'
+
+    # A repeated field without wrapper has no presence: empty is not sent
+    message = _encode('EdgeCase', {'listValues': None, 'additionalLinks': None})
+    assert len(message.listValues) == 0
+    assert len(message.additionalLinks) == 0
+
+
+async def test_encode_null_members():
+    """
+    In list elements and map values, a null member of a oneof is sent present at its default:
+    leaving it out would unset the oneof, and the firmware deletes a Variables entry without a value.
+    """
+    # A zero timestamp reads as null
+    message = _encode('Variables', {'variables': {'ts': {'timestamp': None}, 'a': {'analog': 1}}})
+    assert message.variables.items['ts'].WhichOneof('var') == 'timestamp'
+    assert message.variables.items['ts'].timestamp == 0
+    assert message.variables.items['a'].analog == 4096
+
+    # Typed nulls and postfixed keys
+    message = _encode(
+        'Variables',
+        {
+            'variables': {
+                'temp': {'temp[degC]': None},
+                'link': {'link': {'__bloxtype': 'Link', 'type': 'Any', 'id': None}},
+                'duration': {'duration': {'__bloxtype': 'Quantity', 'unit': 'second', 'value': None}},
+            }
+        },
+    )
+    assert {k: v.WhichOneof('var') for k, v in message.variables.items.items()} == {
+        'temp': 'temp',
+        'link': 'link',
+        'duration': 'duration',
+    }
+
+    # In list elements, nested in a oneof member message too
+    message = _encode(
+        'DisplaySettings',
+        {'widgets': [{'pos': 1, 'name': 'w', 'tempSensor<>': None}]},
+    )
+    [widget] = message.widgets.items
+    assert widget.WhichOneof('WidgetType') == 'tempSensor'
+    assert widget.tempSensor == 0
+
+    message = _encode('Sequence', {'instructions': [{'WAIT_UNTIL': {'__raw__time': None}}]})
+    [instruction] = message.instructions.items
+    assert instruction.WAIT_UNTIL.WhichOneof('time') == '__raw__time'
+    assert instruction.WAIT_UNTIL.__getattribute__('__raw__time') == 0
+
+    # Another member given with a value is sent: the null member is left out
+    message = _encode('Variables', {'variables': {'a': {'timestamp': None, 'analog': 2}}})
+    assert message.variables.items['a'].WhichOneof('var') == 'analog'
+    message = _encode('Variables', {'variables': {'a': {'analog': 2, 'timestamp': None}}})
+    assert message.variables.items['a'].WhichOneof('var') == 'analog'
+
+    # Of two null members, the first is sent
+    message = _encode('Variables', {'variables': {'a': {'timestamp': None, 'temp[degC]': None}}})
+    assert message.variables.items['a'].WhichOneof('var') == 'timestamp'
+
+    # A null map value is still an empty message: the firmware deletes that key
+    message = _encode('Variables', {'variables': {'a': None}})
+    assert message.variables.items['a'].WhichOneof('var') is None
+
+
+def _nested_nulls(data: dict) -> set[tuple[str, str]]:
+    """The nulls below the top level of `data`, as (top-level key, key of the null)"""
+
+    def walk(value: Any, key: str) -> Iterator[str]:
+        if codec.processor.is_null(value):
+            yield key
+        elif isinstance(value, list):
+            for v in value:
+                yield from walk(v, key)
+        elif isinstance(value, dict):
+            for k, v in value.items():
+                yield from walk(v, k)
+
+    return {(top, key) for top, value in data.items() if not codec.processor.is_null(value) for key in walk(value, top)}
+
+
+@pytest.mark.parametrize('variant', ['full', 'empty', 'zero_members'])
+async def test_encode_null_round_trip(variant: str):
+    """
+    Writing what a DEFAULT read returned writes the same values.
+    A DEFAULT read has nulls in writable fields only for no link, a zero datetime, and null_if_zero values:
+    the reset writes the same zero.
+    """
+    cdc = codec.CV.get()
+    is_null = codec.processor.is_null
+
+    def writable(desc, data: dict) -> dict:
+        out = {}
+        for key, value in data.items():
+            field = desc.fields_by_name[key]
+            if not descriptors.is_writable(field):
+                continue
+            field = descriptors.list_wrapper(field) or field
+            msg = descriptors.value_type(field)
+            if msg is None:
+                out[key] = value
+            elif descriptors.is_map(field):
+                out[key] = {k: writable(msg, v) for k, v in value.items()}
+            elif isinstance(value, list):
+                out[key] = [writable(msg, v) for v in value]
+            else:
+                out[key] = writable(msg, value)
+        return out
+
+    messages = {
+        'full': lambda cls: populate(cls()),
+        'empty': lambda cls: cls(),
+        # List elements and map values with each oneof member at zero
+        'zero_members': lambda cls: add_zero_members(populate(cls())),
+    }
+
+    nulls = set()
+    nested = set()
+    for entry in lookup.CV_OBJECTS.get():
+        message = messages[variant](entry.message_cls)
+        first = decode(message)
+        payload = cdc.encode_payload(DecodedPayload(blockId=1, blockType=entry.type_str, content=first))
+        second = cdc.decode_payload(payload).content
+
+        desc = entry.message_cls.DESCRIPTOR
+        assert writable(desc, second) == writable(desc, first), entry.type_str
+        nulls |= {(entry.type_str, k) for k, v in writable(desc, first).items() if is_null(v)}
+        nested |= {(entry.type_str, *p) for p in _nested_nulls(writable(desc, first))}
+
+    # Links decode as id 0: the API shows no link as id None, and writes it as 0
+    if variant == 'empty':
+        assert nulls == {('SetpointProfile', 'start'), ('SysInfo', 'systemTime'), ('EdgeCase', 'deltaV')}
+    else:
+        assert nulls == set()
+
+    # A zero datetime in a map value and in a list element reads as null
+    if variant == 'zero_members':
+        assert nested == {
+            ('Variables', 'variables', 'timestamp'),
+            ('Sequence', 'instructions', '__raw__time'),
+        }
+    else:
+        assert nested == set()
 
 
 def _wrappers() -> list[tuple[lookup.ObjectLookup, str]]:

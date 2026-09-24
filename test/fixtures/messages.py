@@ -68,3 +68,73 @@ def populate(message: Message, counter: Iterator[int] | None = None) -> Message:
             setattr(message, field.name, _scalar(field, n))
 
     return message
+
+
+def _copy(message: Message) -> Message:
+    copy = type(message)()
+    copy.CopyFrom(message)
+    return copy
+
+
+def _zeroed(message: Message) -> Iterator[Message]:
+    """
+    Copies of a populated `message`, each with one member of a oneof set to its default.
+    Members that are messages are also set with each of their own zeroed copies.
+    Proto3 `optional` fields are not oneof members here.
+    """
+    for field in message.DESCRIPTOR.fields:
+        if field.label == FieldDescriptor.LABEL_REPEATED:
+            continue
+        member = field.containing_oneof is not None and not descriptors.is_optional(field)
+
+        if field.message_type is None:
+            if member:
+                copy = _copy(message)
+                setattr(copy, field.name, field.default_value)
+                yield copy
+            continue
+
+        if member:
+            copy = _copy(message)
+            copy.ClearField(field.name)
+            getattr(copy, field.name).SetInParent()
+            yield copy
+
+        # A member that is not set is populated first
+        child = (
+            getattr(message, field.name)
+            if message.HasField(field.name)
+            else populate(getattr(_copy(message), field.name))
+        )
+        for zeroed in _zeroed(child):
+            copy = _copy(message)
+            getattr(copy, field.name).CopyFrom(zeroed)
+            yield copy
+
+
+def add_zero_members(message: Message) -> Message:
+    """
+    Adds elements to every list and map of messages in a populated `message`, recursively:
+    copies of its first element, each with one member of a oneof set to its default (`_zeroed`).
+    A DEFAULT read shows some of these as null (a zero datetime, or no link once link ids are resolved).
+    """
+    for field in message.DESCRIPTOR.fields:
+        value_type = descriptors.value_type(field)
+        if value_type is None:
+            continue
+        container = getattr(message, field.name)
+
+        if descriptors.is_map(field):
+            for value in container.values():
+                add_zero_members(value)
+            for key, value in list(container.items())[:1]:
+                for idx, zeroed in enumerate(_zeroed(value)):
+                    container[f'{key}_zero{idx}'].CopyFrom(zeroed)
+        elif field.label == FieldDescriptor.LABEL_REPEATED:
+            for element in container:
+                add_zero_members(element)
+            container.extend([zeroed for element in container[:1] for zeroed in _zeroed(element)])
+        elif message.HasField(field.name):
+            add_zero_members(container)
+
+    return message

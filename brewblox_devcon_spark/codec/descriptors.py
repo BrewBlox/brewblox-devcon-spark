@@ -102,6 +102,35 @@ def json_default(field: FieldDescriptor, *, integer_enums: bool) -> Any:
     return decoded[field.name]
 
 
+def is_writable(field: FieldDescriptor) -> bool:
+    """Neither readonly nor ignored: a write encodes it"""
+    opts = options(field)
+    return not (opts.readonly or opts.ignored)
+
+
+def reset_value(field: FieldDescriptor) -> Any:
+    """
+    The value in proto shape that resets `field` to its default in a write (outside list elements).
+
+    * A leaf: its default, which ParseDict sets present (0, false, '', enum 0).
+    * A list wrapper: present and empty. For a map wrapper, a write that merges by key keeps the map.
+    * A repeated field: empty. It has no presence: an empty list is not sent.
+    * A singular message: present, with every writable leaf reset, recursively.
+      Members of a oneof are left out: none of them is the default.
+    """
+    if items := list_wrapper(field):
+        return {'items': {} if is_map(items) else []}
+    if field.label == FieldDescriptor.LABEL_REPEATED:
+        return {} if is_map(field) else []
+    if field.message_type:
+        return {
+            f.name: reset_value(f)
+            for f in field.message_type.fields
+            if is_writable(f) and (f.containing_oneof is None or is_optional(f))
+        }
+    return field.default_value
+
+
 @cache
 def is_covered(field: FieldDescriptor) -> bool:
     """

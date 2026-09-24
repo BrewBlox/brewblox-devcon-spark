@@ -248,6 +248,7 @@ class CboxCommander:
         """
         Sends a request, and waits for its response.
         An error response is returned, not raised.
+        A `timeout` of None waits for the `command_timeout` setting.
 
         Nothing between the call and the write to the transport yields to the event loop:
         a send sequence number assigned just before the call is the order on the wire.
@@ -285,14 +286,12 @@ class CboxCommander:
         /,
         payload: EncodedPayload | None = None,
         mode: ReadMode = ReadMode.DEFAULT,
-        timeout: timedelta | None = None,
     ) -> list[EncodedPayload]:
         """
         Sends a request, and returns the payloads of its response.
-        `timeout` defaults to the `command_timeout` setting.
         """
         self._next_seq()
-        response = await self._send(opcode, payload, mode, timeout)
+        response = await self._send(opcode, payload, mode, None)
 
         if response.error != ErrorCode.OK:
             raise exceptions.CommandException(f'{opcode.name}, {response.error.name}')

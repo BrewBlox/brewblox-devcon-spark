@@ -86,7 +86,8 @@ def test_unpack_bit_flags(degf_processor: ProtobufProcessor):
 
 
 def test_null_values(degf_processor: ProtobufProcessor, desc):
-    # None, and typed objects without value, are absent: the controller keeps its value
+    # None, and typed objects without value, reset a writable field to its default.
+    # A readonly field (only encoded without filtering) is left out: None is invalid.
     vals = generate_encoding_data()
     vals.content['offset[delta_degF]'] = None
     vals.content['address'] = None
@@ -94,7 +95,7 @@ def test_null_values(degf_processor: ProtobufProcessor, desc):
     vals.content['oneWireBusId'] = {'__bloxtype': 'Link', 'type': 'OneWireBusInterface', 'id': None}
 
     degf_processor.pre_encode(desc, vals, filter_values=False)
-    assert vals.content == {}
+    assert vals.content == {'offset': 0, 'address': 0, 'oneWireBusId': 0}
 
     # Absent keys are not added
     vals = DecodedPayload(blockId=1, blockType='TempSensorOneWire', content={'offset[delta_degC]': 0})

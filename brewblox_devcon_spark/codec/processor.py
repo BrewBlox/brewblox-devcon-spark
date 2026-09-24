@@ -20,7 +20,7 @@ from brewblox_devcon_spark import exceptions, utils
 from brewblox_devcon_spark.models import DecodedPayload, ReadMode
 
 from . import bloxfield, unit_conversion
-from .descriptors import is_map, is_optional, json_default, list_wrapper, options
+from .descriptors import is_map, is_optional, json_default, list_wrapper, options, reset_value
 from .opts import DateFormatOpt
 from .pb2 import brewblox_pb2
 from .time_utils import serialize_datetime
@@ -58,9 +58,12 @@ class OptionElement:
     The API shows a wrapper (`{items: [...]}`) as its bare list or map.
     """
 
+    in_list: bool
+    """Whether `obj` is (inside) an element of a repeated field or a map value"""
+
 
 def is_null(value: Any) -> bool:
-    """None, or a typed Quantity or Link without value: absent when encoding"""
+    """None, or a typed Quantity or Link without value: a reset to the default when encoding"""
     return (
         value is None
         or (bloxfield.is_quantity(value) and value.get('value') is None)
@@ -128,7 +131,7 @@ class ProtobufProcessor:
     def type_name(blockType_num: int) -> str:
         return brewblox_pb2.BlockType.Name(blockType_num)
 
-    def _walk_elements(self, desc: Descriptor, obj: dict) -> Iterator[OptionElement]:
+    def _walk_elements(self, desc: Descriptor, obj: dict, *, in_list: bool = False) -> Iterator[OptionElement]:
         """
         Recursively walks `obj`, and yields an `OptionElement` for each value.
 
@@ -139,6 +142,8 @@ class ProtobufProcessor:
         List wrappers are flattened in `obj`: the wrapper key holds the bare list or map.
         The walk uses the wrapper's `items` field in its place,
         so maps, typed links, and postfixes in the list work as for any repeated field.
+
+        None values are not walked into, also when they are map values.
         """
         for key, value in list(obj.items()):
             base_key, postfix = self._postfix_pattern.findall(key)[0]
@@ -148,10 +153,12 @@ class ProtobufProcessor:
             if items := list_wrapper(field):
                 wrapper, field = field, items
 
+            element = OptionElement(field, obj, key, base_key, postfix, wrapper, in_list)
+
             # Value field, no need for recursion
             # obj is { key: ... }
             if not field.message_type or value is None:
-                yield OptionElement(field, obj, key, base_key, postfix, wrapper)
+                yield element
 
             # Repeated fields are generic collections, expressed in json as list or dict
             elif field.label == FieldDescriptor.LABEL_REPEATED:
@@ -162,23 +169,41 @@ class ProtobufProcessor:
                 if isinstance(value, dict):
                     message_type = field.message_type.fields_by_name['value'].message_type
                     for childobj in value.values():
-                        yield from self._walk_elements(message_type, childobj)
+                        if childobj is not None:
+                            yield from self._walk_elements(message_type, childobj, in_list=True)
 
                 # Generic repeated field
                 # traverse all values
                 # obj is { key: [{...},{...}] }
                 else:
                     for childobj in value:
-                        yield from self._walk_elements(field.message_type, childobj)
+                        yield from self._walk_elements(field.message_type, childobj, in_list=True)
 
-                yield OptionElement(field, obj, key, base_key, postfix, wrapper)
+                yield element
 
             # Submessage with content
             # traverse all members
             # obj is { key: {...} }
             else:
-                yield from self._walk_elements(field.message_type, value)
-                yield OptionElement(field, obj, key, base_key, postfix, wrapper)
+                yield from self._walk_elements(field.message_type, value, in_list=in_list)
+                yield element
+
+    def _resets(self, element: OptionElement) -> bool:
+        """
+        Whether a null `element` is sent as a reset to its default (see `pre_encode()`).
+
+        A member of a oneof (not a proto3 `optional`) is, unless another member of that oneof is given:
+        in a list element or map value, leaving it out would unset the oneof.
+        Any other field is outside list elements, and is left out in them: list elements are complete.
+        """
+        oneof = element.field.containing_oneof
+        if oneof is None or is_optional(element.field):
+            return not element.in_list
+        members = {f.name for f in oneof.fields}
+        return not any(
+            self._postfix_pattern.findall(key)[0][0] in members and not is_null(value)
+            for key, value in element.obj.items()
+        )
 
     def _encode_unit(self, value: float | dict, unit_type: str, postfix: str | None) -> float:
         if isinstance(value, dict):
@@ -209,9 +234,24 @@ class ProtobufProcessor:
         Content values use controller units.
 
         Writes are by presence: absent keys are not encoded, and the controller keeps their value.
-        None, and typed Quantity or Link objects without a value, are absent.
         List wrappers are given as their bare list or map, and encoded as `{items: ...}`.
         An empty list is kept: it sends a present, empty wrapper that clears the list.
+
+        A null (None, or a typed Quantity or Link without a value) resets a writable field
+        to its default, as in a JSON Merge Patch (`descriptors.reset_value()`):
+        * a leaf is sent present with its default: 0, false, '', enum 0, or link 0 (no link).
+        * a list wrapper is sent present and empty: the list is cleared.
+          For the Variables map, which the firmware merges by key, that changes nothing.
+        * a singular message is sent present with every writable leaf reset:
+          a constraint is disabled and zeroed.
+        * a map value is sent as an empty message: for Variables, the firmware deletes that key.
+        List elements and map values are complete, so a null field there is left out: its value is the default.
+        Except a null member of a oneof (not a proto3 `optional`): leaving it out would unset the oneof,
+        and the firmware deletes a Variables entry without a value. It is sent present with its default,
+        unless another member of that oneof is given (of two null members, the first is sent).
+        A zero timestamp variable reads as null, and so writes back the same zero.
+        A null list element of a list of values is left out.
+        A null readonly field (only encoded with `filter_values=False`) is left out: it is invalid.
 
         Postfix notations and typed objects can be mixed in the same data.
 
@@ -304,11 +344,17 @@ class ProtobufProcessor:
             new_key = element.base_key
             new_value = element.obj[element.key]
 
-            # Writes are by presence: an absent key keeps the stored value.
-            # None, and a typed Quantity or Link without value, are absent.
+            # Writes are by presence: an absent key keeps the stored value, and a null resets it.
+            # List elements are complete: a field left out has its default, except a oneof member.
             if is_null(new_value):
                 del element.obj[element.key]
+                if not opts.readonly and self._resets(element):
+                    element.obj[new_key] = reset_value(element.wrapper or element.field)
                 continue
+
+            # A map value given as null is an empty message
+            if is_map(element.field):
+                new_value = {k: {} if v is None else v for k, v in new_value.items()}
 
             try:
                 if isinstance(new_value, (list, set)):

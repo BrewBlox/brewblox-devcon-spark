@@ -37,14 +37,6 @@ def _object_lookup(block_type: str) -> lookup.ObjectLookup | None:
     return next((v for v in lookup.CV_OBJECTS.get() if v.type_str == block_type), None)
 
 
-def _covered(nodes: Mapping[str, descriptors.CoverageNode], obj: dict) -> dict:
-    return {
-        key: obj[key] if node.children is None else _covered(node.children, obj[key])
-        for key, node in nodes.items()
-        if key in obj
-    }
-
-
 def _logged(nodes: Mapping[str, descriptors.LoggedNode], obj: dict, *, full: bool) -> dict:
     out = {}
     for key, node in nodes.items():
@@ -369,20 +361,6 @@ class Codec:
                 changed = True
 
         return changed
-
-    def covered_view(self, block_type: str, partial: dict) -> dict | None:
-        """
-        The covered values in `partial`, the decoded data of a CHANGED read:
-        the state the controller compares to decide whether to send the block again.
-        Merging the view with `merge_changed()` sets the covered values, and nothing else.
-        The view shares values with `partial`.
-
-        None for stub types: they have no coverage.
-        """
-        impl = _object_lookup(block_type)
-        if impl is None:
-            return None
-        return _covered(descriptors.coverage(impl.message_cls.DESCRIPTOR), partial)
 
     def logged_view(self, block_type: str, data: dict, /, *, full: bool) -> dict[str, Any]:
         """

@@ -169,13 +169,16 @@ class SparkApi:
         block.data = resolve_data_ids(block.data, self._find_nid)
         return block
 
-    async def _check_connection(self):
+    async def check_connection(self) -> None:
         """
         Sends a Noop command to controller to evaluate the connection.
         If this command also fails, prompt the commander to reconnect.
+        Call this after a command timed out: the controller may have stopped answering
+        without the transport noticing (a half-open TCP connection).
 
         Only do this when the service is synchronized,
         to avoid weird interactions when prompting for a handshake.
+        Checks do not overlap: once one reset the connection, the others do nothing.
         """
         async with self._conn_check_lock:
             if self.state.is_synchronized():
@@ -212,7 +215,7 @@ class SparkApi:
 
         except exceptions.CommandTimeout as ex:
             # Wrap in a task to not delay the original response
-            asyncio.create_task(self._check_connection())
+            asyncio.create_task(self.check_connection())
             raise ex
 
         except Exception as ex:
@@ -301,8 +304,8 @@ class SparkApi:
     async def write_block(self, block: Block) -> Block:
         """
         Write to a pre-existing block on the controller.
-        Writes are by presence, so this is the same as `patch_block()`:
-        existing values are kept for all fields not present in `block.data`.
+        Writes are by presence, so this is the same as `patch_block()`,
+        which describes what is written.
 
         Args:
             block (Block):
@@ -321,10 +324,22 @@ class SparkApi:
 
     async def patch_block(self, block: Block) -> Block:
         """
-        Write to a pre-existing block on the controller.
-        Existing values will be used for all fields not present in `block.data`.
-        A field that is present is written, also if its value is zero, false, or empty.
-        `None` values count as absent.
+        Write to a pre-existing block on the controller, as a JSON Merge Patch:
+
+        * A field that is absent from `block.data` keeps its value.
+        * A field that is present is written, also if its value is zero, false, or empty.
+          An empty list clears the list.
+        * A field given as `None` (JSON null) is reset to its default.
+          This includes a Quantity with value `None`, and a link given as `None` or with id `None`.
+          A value becomes 0, false, or empty, an enum its first value, a link is cleared, and a list is cleared.
+          A message (such as a constraint) has all its writable fields reset: a constraint is disabled and zeroed.
+          In a list element or map value, a `None` field has its default: list elements are always written whole.
+          A `None` member of a oneof (a Variables value, a Sequence instruction argument) is written with its default,
+          unless another member of it is given: a zero timestamp variable reads as `None`, and writes back as 0.
+        * The Variables map is merged by key by the controller: an entry given as `None` or `{'empty': True}`
+          deletes that key, and the other keys are kept. `None` for the whole map changes nothing.
+
+        Readonly fields are ignored.
 
         Args:
             block (Block):
