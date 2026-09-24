@@ -1,7 +1,9 @@
 import pytest
 
+from brewblox_devcon_spark import codec
 from brewblox_devcon_spark.codec import sequence
-from brewblox_devcon_spark.models import Block
+from brewblox_devcon_spark.models import Block, DecodedPayload
+from brewblox_devcon_spark.spark_api import resolve_data_ids
 
 
 def test_sequence_from_line():
@@ -237,6 +239,11 @@ def test_sequence_to_line():
     )
 
 
+def test_no_args():
+    assert sequence.from_line('RESTART', 1) == {'RESTART': {}}
+    assert sequence.to_line({'RESTART': {}}) == 'RESTART'
+
+
 def test_partial():
     # Logged blocks will not include instructions
     # User input may not include instructions
@@ -245,3 +252,30 @@ def test_partial():
     assert not block.data
     sequence.serialize(block)
     assert not block.data
+
+
+def test_codec_round_trip():
+    # The instructions wrapper is flattened by the codec: sequence.py sees the bare list
+    codec.setup()
+    cdc = codec.CV.get()
+    lines = [
+        'ENABLE target=10',
+        'WAIT_DURATION duration=1m10s',
+        '# comment',
+    ]
+    block = Block(id='sequence', type='Sequence', data={'instructions': lines})
+    sequence.parse(block)
+
+    # spark_api resolves the link ids around the codec
+    content = resolve_data_ids(block.data, int)
+    payload = cdc.encode_payload(DecodedPayload(blockId=100, blockType='Sequence', content=content))
+    decoded = cdc.decode_payload(payload)
+    assert len(decoded.content['instructions']) == 3
+
+    block = Block(id='sequence', type='Sequence', data=resolve_data_ids(decoded.content, str))
+    sequence.serialize(block)
+    assert block.data['instructions'] == [
+        'ENABLE target=10',
+        'WAIT_DURATION duration=1m10s',
+        '# comment',
+    ]

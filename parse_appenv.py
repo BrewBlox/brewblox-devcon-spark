@@ -22,6 +22,8 @@ def parse_cmd_args(raw_args: list[str]) -> tuple[argparse.Namespace, list[str]]:
     parser.add_argument('--discovery')
     parser.add_argument('--command-timeout')
     parser.add_argument('--broadcast-interval')
+    parser.add_argument('--full-read-interval')
+    parser.add_argument('--broadcast-timeout')
     parser.add_argument('--skip-version-check', action='store_true')
     parser.add_argument('--backup-interval')
     parser.add_argument('--backup-retry-interval')

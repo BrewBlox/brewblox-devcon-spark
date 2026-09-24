@@ -16,7 +16,7 @@ import brewblox_pb2 as brewblox__pb2
 import nanopb_pb2 as nanopb__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rSysInfo.proto\x12\x0c\x62lox.SysInfo\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xce\x06\n\x05\x42lock\x12\x1f\n\x08\x64\x65viceId\x18\x01 \x01(\x0c\x42\r\x92?\x02\x08\x0c\x8a\xb5\x18\x04(\x01\x38\x01\x12\x1c\n\x07version\x18\x02 \x01(\tB\x0b\x92?\x02\x08\x0c\x8a\xb5\x18\x02(\x01\x12\x30\n\x08platform\x18\x03 \x01(\x0e\x32\x16.blox.SysInfo.PlatformB\x06\x8a\xb5\x18\x02(\x01\x12$\n\x0fprotocolVersion\x18\x07 \x01(\tB\x0b\x92?\x02\x08\x0c\x8a\xb5\x18\x02(\x01\x12 \n\x0breleaseDate\x18\x08 \x01(\tB\x0b\x92?\x02\x08\x0c\x8a\xb5\x18\x02(\x01\x12!\n\x0cprotocolDate\x18\t \x01(\tB\x0b\x92?\x02\x08\x0c\x8a\xb5\x18\x02(\x01\x12\x19\n\x02ip\x18\n \x01(\rB\r\x92?\x02\x38 \x8a\xb5\x18\x04(\x01`\x01\x12\"\n\x06uptime\x18\x0b \x01(\rB\x12\x92?\x02\x38 \x8a\xb5\x18\t\x08\x03\x10\xe8\x07(\x01\x30\x01\x12*\n\x10updatesPerSecond\x18\x0c \x01(\rB\x10\x92?\x02\x38 \x8a\xb5\x18\x07\x10\xe8\x07(\x01\x30\x01\x12\x1f\n\nsystemTime\x18\r \x01(\rB\x0b\x92?\x02\x38 \x8a\xb5\x18\x02X\x01\x12\x1d\n\x08timeZone\x18\x0e \x01(\tB\x0b\x92?\x02\x08 \x8a\xb5\x18\x02x\x01\x12\x37\n\x08tempUnit\x18\x0f \x01(\x0e\x32\x1d.blox.SysInfo.TemperatureUnitB\x06\x8a\xb5\x18\x02x\x01\x12&\n\x11\x64isplayBrightness\x18\x10 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02x\x01\x12\"\n\x08voltage5\x18\x11 \x01(\rB\x10\x92?\x02\x38\x10\x8a\xb5\x18\x07\x10\xe8\x07(\x01\x30\x01\x12)\n\x0fvoltageExternal\x18\x12 \x01(\rB\x10\x92?\x02\x38\x10\x8a\xb5\x18\x07\x10\xe8\x07(\x01\x30\x01\x12\x1c\n\nmemoryFree\x18\x13 \x01(\rB\x08\x8a\xb5\x18\x04(\x01\x30\x01\x12&\n\x14memoryFreeContiguous\x18\x14 \x01(\rB\x08\x8a\xb5\x18\x04(\x01\x30\x01\x12\"\n\x10memoryFreeLowest\x18\x15 \x01(\rB\x08\x8a\xb5\x18\x04(\x01\x30\x01\x12)\n\x17mainTaskStackFreeLowest\x18\x16 \x01(\rB\x08\x8a\xb5\x18\x04(\x01\x30\x01\x12\x36\n\x0bresetReason\x18\x17 \x01(\x0e\x32\x19.blox.SysInfo.ResetReasonB\x06\x8a\xb5\x18\x02(\x01\x12\x1c\n\x07\x63ommand\x18Z \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12\x1a\n\x05trace\x18[ \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01:\x07\x8a\xb5\x18\x03\x18\x80\x02*}\n\x08Platform\x12\x14\n\x10PLATFORM_UNKNOWN\x10\x00\x12\x10\n\x0cPLATFORM_GCC\x10\x03\x12\x13\n\x0fPLATFORM_PHOTON\x10\x06\x12\x0f\n\x0bPLATFORM_P1\x10\x08\x12\x10\n\x0cPLATFORM_ESP\x10\x64\x12\x11\n\x0cPLATFORM_SIM\x10\xc8\x01*8\n\x0fTemperatureUnit\x12\x10\n\x0cTEMP_CELSIUS\x10\x00\x12\x13\n\x0fTEMP_FAHRENHEIT\x10\x01*\xa4\x05\n\x0bResetReason\x12\x18\n\x14RESET_REASON_UNKNOWN\x10\x00\x12\x19\n\x15RESET_REASON_POWER_ON\x10\x01\x12\x19\n\x15RESET_REASON_EXTERNAL\x10\x02\x12\x19\n\x15RESET_REASON_SOFTWARE\x10\x03\x12\x16\n\x12RESET_REASON_PANIC\x10\x04\x12\x1e\n\x1aRESET_REASON_INTERRUPT_WDT\x10\x05\x12\x19\n\x15RESET_REASON_TASK_WDT\x10\x06\x12\x1a\n\x16RESET_REASON_OTHER_WDT\x10\x07\x12\x1b\n\x17RESET_REASON_DEEP_SLEEP\x10\x08\x12\x19\n\x15RESET_REASON_BROWNOUT\x10\t\x12\x15\n\x11RESET_REASON_SDIO\x10\n\x12\x14\n\x10RESET_REASON_USB\x10\x0b\x12\x15\n\x11RESET_REASON_JTAG\x10\x0c\x12\x16\n\x12RESET_REASON_EFUSE\x10\r\x12\x1d\n\x19RESET_REASON_POWER_GLITCH\x10\x0e\x12\x1b\n\x17RESET_REASON_CPU_LOCKUP\x10\x0f\x12 \n\x1cRESET_REASON_FIRMWARE_UPDATE\x10\x10\x12\'\n#RESET_REASON_FIRMWARE_UPDATE_FAILED\x10\x11\x12(\n$RESET_REASON_FIRMWARE_UPDATE_TIMEOUT\x10\x12\x12\x1e\n\x1aRESET_REASON_FACTORY_RESET\x10\x13\x12\x1a\n\x16RESET_REASON_SAFE_MODE\x10\x14\x12\x19\n\x15RESET_REASON_DFU_MODE\x10\x15\x12\x1f\n\x1bRESET_REASON_USER_REQUESTED\x10\x16\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rSysInfo.proto\x12\x0c\x62lox.SysInfo\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\"\xb9\x07\n\x05\x42lock\x12\x1f\n\x08\x64\x65viceId\x18\x01 \x01(\x0c\x42\r\x92?\x02\x08\x0c\x8a\xb5\x18\x04(\x01\x38\x01\x12\x1c\n\x07version\x18\x02 \x01(\tB\x0b\x92?\x02\x08\x0c\x8a\xb5\x18\x02(\x01\x12\x30\n\x08platform\x18\x03 \x01(\x0e\x32\x16.blox.SysInfo.PlatformB\x06\x8a\xb5\x18\x02(\x01\x12$\n\x0fprotocolVersion\x18\x07 \x01(\tB\x0b\x92?\x02\x08\x0c\x8a\xb5\x18\x02(\x01\x12 \n\x0breleaseDate\x18\x08 \x01(\tB\x0b\x92?\x02\x08\x0c\x8a\xb5\x18\x02(\x01\x12!\n\x0cprotocolDate\x18\t \x01(\tB\x0b\x92?\x02\x08\x0c\x8a\xb5\x18\x02(\x01\x12\x19\n\x02ip\x18\n \x01(\rB\r\x92?\x02\x38 \x8a\xb5\x18\x04(\x01`\x01\x12%\n\x06uptime\x18\x0b \x01(\rB\x15\x92?\x02\x38 \x8a\xb5\x18\x0c\x08\x03\x10\xe8\x07(\x01\x30\x01\x80\x01\x01\x12-\n\x10updatesPerSecond\x18\x0c \x01(\rB\x13\x92?\x02\x38 \x8a\xb5\x18\n\x10\xe8\x07(\x01\x30\x01\x80\x01\x01\x12$\n\nsystemTime\x18\r \x01(\rB\x0b\x92?\x02\x38 \x8a\xb5\x18\x02X\x01H\x00\x88\x01\x01\x12\"\n\x08timeZone\x18\x0e \x01(\tB\x0b\x92?\x02\x08 \x8a\xb5\x18\x02x\x01H\x01\x88\x01\x01\x12<\n\x08tempUnit\x18\x0f \x01(\x0e\x32\x1d.blox.SysInfo.TemperatureUnitB\x06\x8a\xb5\x18\x02x\x01H\x02\x88\x01\x01\x12+\n\x11\x64isplayBrightness\x18\x10 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02x\x01H\x03\x88\x01\x01\x12%\n\x08voltage5\x18\x11 \x01(\rB\x13\x92?\x02\x38\x10\x8a\xb5\x18\n\x10\xe8\x07(\x01\x30\x01\x80\x01\x01\x12,\n\x0fvoltageExternal\x18\x12 \x01(\rB\x13\x92?\x02\x38\x10\x8a\xb5\x18\n\x10\xe8\x07(\x01\x30\x01\x80\x01\x01\x12\x1f\n\nmemoryFree\x18\x13 \x01(\rB\x0b\x8a\xb5\x18\x07(\x01\x30\x01\x80\x01\x01\x12)\n\x14memoryFreeContiguous\x18\x14 \x01(\rB\x0b\x8a\xb5\x18\x07(\x01\x30\x01\x80\x01\x01\x12%\n\x10memoryFreeLowest\x18\x15 \x01(\rB\x0b\x8a\xb5\x18\x07(\x01\x30\x01\x80\x01\x01\x12,\n\x17mainTaskStackFreeLowest\x18\x16 \x01(\rB\x0b\x8a\xb5\x18\x07(\x01\x30\x01\x80\x01\x01\x12\x36\n\x0bresetReason\x18\x17 \x01(\x0e\x32\x19.blox.SysInfo.ResetReasonB\x06\x8a\xb5\x18\x02(\x01\x12\x1c\n\x07\x63ommand\x18Z \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01\x12\x1a\n\x05trace\x18[ \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01:\x07\x8a\xb5\x18\x03\x18\x80\x02\x42\r\n\x0b_systemTimeB\x0b\n\t_timeZoneB\x0b\n\t_tempUnitB\x14\n\x12_displayBrightness*}\n\x08Platform\x12\x14\n\x10PLATFORM_UNKNOWN\x10\x00\x12\x10\n\x0cPLATFORM_GCC\x10\x03\x12\x13\n\x0fPLATFORM_PHOTON\x10\x06\x12\x0f\n\x0bPLATFORM_P1\x10\x08\x12\x10\n\x0cPLATFORM_ESP\x10\x64\x12\x11\n\x0cPLATFORM_SIM\x10\xc8\x01*8\n\x0fTemperatureUnit\x12\x10\n\x0cTEMP_CELSIUS\x10\x00\x12\x13\n\x0fTEMP_FAHRENHEIT\x10\x01*\xa4\x05\n\x0bResetReason\x12\x18\n\x14RESET_REASON_UNKNOWN\x10\x00\x12\x19\n\x15RESET_REASON_POWER_ON\x10\x01\x12\x19\n\x15RESET_REASON_EXTERNAL\x10\x02\x12\x19\n\x15RESET_REASON_SOFTWARE\x10\x03\x12\x16\n\x12RESET_REASON_PANIC\x10\x04\x12\x1e\n\x1aRESET_REASON_INTERRUPT_WDT\x10\x05\x12\x19\n\x15RESET_REASON_TASK_WDT\x10\x06\x12\x1a\n\x16RESET_REASON_OTHER_WDT\x10\x07\x12\x1b\n\x17RESET_REASON_DEEP_SLEEP\x10\x08\x12\x19\n\x15RESET_REASON_BROWNOUT\x10\t\x12\x15\n\x11RESET_REASON_SDIO\x10\n\x12\x14\n\x10RESET_REASON_USB\x10\x0b\x12\x15\n\x11RESET_REASON_JTAG\x10\x0c\x12\x16\n\x12RESET_REASON_EFUSE\x10\r\x12\x1d\n\x19RESET_REASON_POWER_GLITCH\x10\x0e\x12\x1b\n\x17RESET_REASON_CPU_LOCKUP\x10\x0f\x12 \n\x1cRESET_REASON_FIRMWARE_UPDATE\x10\x10\x12\'\n#RESET_REASON_FIRMWARE_UPDATE_FAILED\x10\x11\x12(\n$RESET_REASON_FIRMWARE_UPDATE_TIMEOUT\x10\x12\x12\x1e\n\x1aRESET_REASON_FACTORY_RESET\x10\x13\x12\x1a\n\x16RESET_REASON_SAFE_MODE\x10\x14\x12\x19\n\x15RESET_REASON_DFU_MODE\x10\x15\x12\x1f\n\x1bRESET_REASON_USER_REQUESTED\x10\x16\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -38,9 +38,9 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_BLOCK'].fields_by_name['ip']._options = None
   _globals['_BLOCK'].fields_by_name['ip']._serialized_options = b'\222?\0028 \212\265\030\004(\001`\001'
   _globals['_BLOCK'].fields_by_name['uptime']._options = None
-  _globals['_BLOCK'].fields_by_name['uptime']._serialized_options = b'\222?\0028 \212\265\030\t\010\003\020\350\007(\0010\001'
+  _globals['_BLOCK'].fields_by_name['uptime']._serialized_options = b'\222?\0028 \212\265\030\014\010\003\020\350\007(\0010\001\200\001\001'
   _globals['_BLOCK'].fields_by_name['updatesPerSecond']._options = None
-  _globals['_BLOCK'].fields_by_name['updatesPerSecond']._serialized_options = b'\222?\0028 \212\265\030\007\020\350\007(\0010\001'
+  _globals['_BLOCK'].fields_by_name['updatesPerSecond']._serialized_options = b'\222?\0028 \212\265\030\n\020\350\007(\0010\001\200\001\001'
   _globals['_BLOCK'].fields_by_name['systemTime']._options = None
   _globals['_BLOCK'].fields_by_name['systemTime']._serialized_options = b'\222?\0028 \212\265\030\002X\001'
   _globals['_BLOCK'].fields_by_name['timeZone']._options = None
@@ -50,17 +50,17 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_BLOCK'].fields_by_name['displayBrightness']._options = None
   _globals['_BLOCK'].fields_by_name['displayBrightness']._serialized_options = b'\222?\0028\010\212\265\030\002x\001'
   _globals['_BLOCK'].fields_by_name['voltage5']._options = None
-  _globals['_BLOCK'].fields_by_name['voltage5']._serialized_options = b'\222?\0028\020\212\265\030\007\020\350\007(\0010\001'
+  _globals['_BLOCK'].fields_by_name['voltage5']._serialized_options = b'\222?\0028\020\212\265\030\n\020\350\007(\0010\001\200\001\001'
   _globals['_BLOCK'].fields_by_name['voltageExternal']._options = None
-  _globals['_BLOCK'].fields_by_name['voltageExternal']._serialized_options = b'\222?\0028\020\212\265\030\007\020\350\007(\0010\001'
+  _globals['_BLOCK'].fields_by_name['voltageExternal']._serialized_options = b'\222?\0028\020\212\265\030\n\020\350\007(\0010\001\200\001\001'
   _globals['_BLOCK'].fields_by_name['memoryFree']._options = None
-  _globals['_BLOCK'].fields_by_name['memoryFree']._serialized_options = b'\212\265\030\004(\0010\001'
+  _globals['_BLOCK'].fields_by_name['memoryFree']._serialized_options = b'\212\265\030\007(\0010\001\200\001\001'
   _globals['_BLOCK'].fields_by_name['memoryFreeContiguous']._options = None
-  _globals['_BLOCK'].fields_by_name['memoryFreeContiguous']._serialized_options = b'\212\265\030\004(\0010\001'
+  _globals['_BLOCK'].fields_by_name['memoryFreeContiguous']._serialized_options = b'\212\265\030\007(\0010\001\200\001\001'
   _globals['_BLOCK'].fields_by_name['memoryFreeLowest']._options = None
-  _globals['_BLOCK'].fields_by_name['memoryFreeLowest']._serialized_options = b'\212\265\030\004(\0010\001'
+  _globals['_BLOCK'].fields_by_name['memoryFreeLowest']._serialized_options = b'\212\265\030\007(\0010\001\200\001\001'
   _globals['_BLOCK'].fields_by_name['mainTaskStackFreeLowest']._options = None
-  _globals['_BLOCK'].fields_by_name['mainTaskStackFreeLowest']._serialized_options = b'\212\265\030\004(\0010\001'
+  _globals['_BLOCK'].fields_by_name['mainTaskStackFreeLowest']._serialized_options = b'\212\265\030\007(\0010\001\200\001\001'
   _globals['_BLOCK'].fields_by_name['resetReason']._options = None
   _globals['_BLOCK'].fields_by_name['resetReason']._serialized_options = b'\212\265\030\002(\001'
   _globals['_BLOCK'].fields_by_name['command']._options = None
@@ -69,12 +69,12 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_BLOCK'].fields_by_name['trace']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
   _globals['_BLOCK']._options = None
   _globals['_BLOCK']._serialized_options = b'\212\265\030\003\030\200\002'
-  _globals['_PLATFORM']._serialized_start=910
-  _globals['_PLATFORM']._serialized_end=1035
-  _globals['_TEMPERATUREUNIT']._serialized_start=1037
-  _globals['_TEMPERATUREUNIT']._serialized_end=1093
-  _globals['_RESETREASON']._serialized_start=1096
-  _globals['_RESETREASON']._serialized_end=1772
+  _globals['_PLATFORM']._serialized_start=1017
+  _globals['_PLATFORM']._serialized_end=1142
+  _globals['_TEMPERATUREUNIT']._serialized_start=1144
+  _globals['_TEMPERATUREUNIT']._serialized_end=1200
+  _globals['_RESETREASON']._serialized_start=1203
+  _globals['_RESETREASON']._serialized_end=1879
   _globals['_BLOCK']._serialized_start=62
-  _globals['_BLOCK']._serialized_end=908
+  _globals['_BLOCK']._serialized_end=1015
 # @@protoc_insertion_point(module_scope)

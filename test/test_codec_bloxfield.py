@@ -57,3 +57,9 @@ def test_quantity():
     assert not bloxfield.is_quantity(10)
     assert not bloxfield.is_quantity('many')
     assert not bloxfield.is_quantity(None)
+
+
+def test_bloxfield():
+    assert bloxfield.is_bloxfield({'__bloxtype': 'Quantity'})
+    assert not bloxfield.is_bloxfield({'value': 1})
+    assert not bloxfield.is_bloxfield(1)

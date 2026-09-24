@@ -127,3 +127,21 @@ async def test_wildcard_error(client):
     state.set_acknowledged(make_desc())
     assert state.is_acknowledged()
     assert state.desc().identity_error == 'WILDCARD_ID'
+
+
+async def test_session():
+    state = state_machine.StateMachine()
+    assert state.session == 0
+
+    # Each connect starts a new session
+    state.set_connected('MOCK', 'Narnia')
+    assert state.session == 1
+
+    state.set_acknowledged(make_desc())
+    state.set_synchronized()
+    state.set_updating()
+    state.set_disconnected()
+    assert state.session == 1
+
+    state.set_connected('MOCK', 'Narnia')
+    assert state.session == 2

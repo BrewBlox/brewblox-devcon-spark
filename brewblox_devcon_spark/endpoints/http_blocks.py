@@ -67,7 +67,8 @@ async def blocks_read_stored(args: BlockIdentity) -> Block:
 @router.post('/write')
 async def blocks_write(args: Block) -> Block:
     """
-    Write existing block. This will replace all fields.
+    Write existing block. Alias of /patch: writes are by presence,
+    so this will only replace provided fields.
     """
     block = await spark_api.CV.get().write_block(args)
     publish(changed=[block])
@@ -78,6 +79,7 @@ async def blocks_write(args: Block) -> Block:
 async def blocks_patch(args: Block) -> Block:
     """
     Patch existing block. This will only replace provided fields.
+    A provided field is written also if its value is zero, false, or empty.
     """
     block = await spark_api.CV.get().patch_block(args)
     publish(changed=[block])
@@ -118,7 +120,8 @@ async def blocks_batch_read(args: list[BlockIdentity]) -> list[Block]:
 @router.post('/batch/write')
 async def blocks_batch_write(args: list[Block]) -> list[Block]:
     """
-    Write multiple existing blocks. This will replace all fields.
+    Write multiple existing blocks. Alias of /batch/patch: writes are by presence,
+    so this will only replace provided fields.
     """
     api = spark_api.CV.get()
     blocks = [await api.write_block(block) for block in args]

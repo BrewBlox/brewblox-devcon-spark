@@ -8,12 +8,18 @@ This prevents having to spin up a simulator in a separate process for tests.
 """
 
 import logging
+from base64 import b64decode, b64encode
+from dataclasses import dataclass
 from datetime import datetime
 from itertools import count
 
+from google.protobuf.descriptor import FieldDescriptor
+from google.protobuf.message import Message
+
 from .. import codec, const, utils
-from ..codec import bloxfield
+from ..codec import descriptors, lookup
 from ..models import (
+    CrossPlatformResetReason,
     DecodedPayload,
     EncodedPayload,
     ErrorCode,
@@ -23,7 +29,6 @@ from ..models import (
     Opcode,
     ReadMode,
     ResetData,
-    CrossPlatformResetReason,
 )
 from .connection_impl import ConnectionCallbacks, ConnectionImplBase
 
@@ -32,6 +37,31 @@ LOGGER = logging.getLogger(__name__)
 # an ErrorCode will be returned
 # a None value will cause no response to be returned
 NEXT_ERROR: list[ErrorCode | None] = []
+
+
+@dataclass
+class MockBlock:
+    name: str
+    type_int: int
+    message: Message
+
+
+def merge_present(dest: Message, src: Message):
+    """
+    Writes by presence, as the firmware does: fields present in `src` are written, and absent fields are kept.
+    Repeated fields and list wrappers are replaced whole, and singular messages are merged.
+    """
+    for field, value in src.ListFields():
+        if field.label == FieldDescriptor.LABEL_REPEATED:
+            dest.ClearField(field.name)
+            getattr(dest, field.name).MergeFrom(value)
+        elif field.message_type is None:
+            setattr(dest, field.name, value)
+        elif descriptors.list_wrapper(field):
+            getattr(dest, field.name).CopyFrom(value)
+        else:
+            getattr(dest, field.name).SetInParent()
+            merge_present(getattr(dest, field.name), value)
 
 
 def default_blocks() -> dict[int, FirmwareBlock]:
@@ -89,46 +119,53 @@ class MockConnection(ConnectionImplBase):
         self._start_time = datetime.now()
         self._codec = codec.Codec(filter_values=False)
         self._id_counter = count(start=const.USER_NID_START)
-        self._blocks: dict[int, FirmwareBlock] = default_blocks()
+        self._blocks: dict[int, MockBlock] = self._default_blocks()
 
-    def _to_payload(self, block: FirmwareBlock, mode: ReadMode) -> EncodedPayload:
-        return self._codec.encode_payload(
-            DecodedPayload(blockId=block.nid, blockType=block.type, name=block.id, content=block.data)
-        )
+        # Per nid, the content sent by the previous CHANGED read-all
+        self._changed_sent: dict[int, bytes] = {}
 
-    def _to_block(self, payload: EncodedPayload) -> FirmwareBlock:
-        payload = self._codec.decode_payload(payload)
-        return FirmwareBlock(
-            id=payload.name,
-            nid=payload.blockId,
-            type=payload.blockType,
-            data=payload.content,
-        )
+    def _parse(self, payload: EncodedPayload) -> MockBlock:
+        impl = next(v for v in lookup.CV_OBJECTS.get() if payload.blockType in [v.type_str, v.type_int])
+        message = impl.message_cls()
+        message.ParseFromString(b64decode(payload.content))
+        return MockBlock(payload.name, impl.type_int, message)
 
-    def _default_block(self, block_id: str, block_nid: int, block_type: str) -> FirmwareBlock:
-        return self._to_block(
-            self._codec.encode_payload(
-                DecodedPayload(blockId=block_nid, blockType=block_type, name=block_id, content={})
+    def _default_blocks(self) -> dict[int, MockBlock]:
+        return {
+            block.nid: self._parse(
+                self._codec.encode_payload(
+                    DecodedPayload(blockId=block.nid, blockType=block.type, name=block.id, content=block.data)
+                )
             )
+            for block in default_blocks().values()
+        }
+
+    def _to_payload(self, nid: int, block: MockBlock, name: str | None) -> EncodedPayload:
+        return EncodedPayload(
+            blockId=nid,
+            blockType=block.type_int,
+            name=name,
+            content=b64encode(block.message.SerializeToString()).decode(),
         )
 
-    def _merge_blocks(self, dest: FirmwareBlock, src: FirmwareBlock):
-        for key in dest.data.keys():
-            v_new = src.data[key]
-            if any(
-                [
-                    bloxfield.is_defined_link(v_new),
-                    bloxfield.is_defined_quantity(v_new),
-                    not bloxfield.is_bloxfield(v_new) and v_new is not None,
-                ]
-            ):
-                dest.data[key] = v_new
+    def _read_changed(self) -> list[EncodedPayload]:
+        """
+        A CHANGED read-all: every block whose content changed since the previous CHANGED read-all, without a name.
+        The firmware only sends the fields that CHANGED reads cover. A complete block is a valid superset.
+        """
+        payloads = []
+        for nid, block in self._blocks.items():
+            content = block.message.SerializeToString()
+            if self._changed_sent.get(nid) != content:
+                self._changed_sent[nid] = content
+                payloads.append(self._to_payload(nid, block, None))
+        return payloads
 
     def update_systime(self):
+        # Uptime is skip_changed: merging a CHANGED read ignores it.
+        # The system time is left to time sync, so that SysInfo does not change in the cache with every request.
         elapsed = datetime.now() - self._start_time
-        sysinfo_block = self._blocks[const.SYS_BLOCK_IDS['SysInfo']]
-        sysinfo_block.data['uptime'] = elapsed.total_seconds() * 1000
-        sysinfo_block.data['systemTime'] = self._start_time.timestamp() + elapsed.total_seconds()
+        self._blocks[const.SYS_BLOCK_IDS['SysInfo']].message.uptime = int(elapsed.total_seconds() * 1000)
 
     async def welcome(self):
         config = utils.get_config()
@@ -172,46 +209,45 @@ class MockConnection(ConnectionImplBase):
             Opcode.STORAGE_READ,
             Opcode.NAME_READ,
         ]:
-            block = self._blocks.get(request.payload.blockId)
+            nid = request.payload.blockId
+            block = self._blocks.get(nid)
             if not block:
                 response.error = ErrorCode.INVALID_BLOCK_ID
             else:
-                response.payload = [self._to_payload(block, request.mode)]
+                response.payload = [self._to_payload(nid, block, block.name)]
+
+        elif request.opcode == Opcode.BLOCK_READ_ALL and request.mode == ReadMode.CHANGED:
+            response.payload = self._read_changed()
 
         elif request.opcode in [
             Opcode.BLOCK_READ_ALL,
             Opcode.STORAGE_READ_ALL,
             Opcode.NAME_READ_ALL,
         ]:
-            response.payload = [self._to_payload(block, request.mode) for block in self._blocks.values()]
+            response.payload = [self._to_payload(nid, block, block.name) for nid, block in self._blocks.items()]
 
         elif request.opcode == Opcode.BLOCK_WRITE:
-            block = self._blocks.get(request.payload.blockId)
+            nid = request.payload.blockId
+            block = self._blocks.get(nid)
             if not block:
                 response.error = ErrorCode.INVALID_BLOCK_ID
-            elif request.payload.content is None:
-                response.error = ErrorCode.INVALID_BLOCK
-            elif request.payload.blockType != block.type:
-                response.error = ErrorCode.INVALID_BLOCK_TYPE
             else:
-                src = self._to_block(request.payload)
-                self._merge_blocks(block, src)
-                response.payload = [self._to_payload(block, request.mode)]
+                src = self._parse(request.payload)
+                if src.type_int != block.type_int:
+                    response.error = ErrorCode.INVALID_BLOCK_TYPE
+                else:
+                    merge_present(block.message, src.message)
+                    response.payload = [self._to_payload(nid, block, block.name)]
 
         elif request.opcode == Opcode.BLOCK_CREATE:
             nid = request.payload.blockId
-            block = self._blocks.get(nid)
-            if block or (nid > 0 and nid < const.USER_NID_START):
+            if nid in self._blocks or (nid > 0 and nid < const.USER_NID_START):
                 response.error = ErrorCode.BLOCK_NOT_CREATABLE
-            elif request.payload.content is None:
-                response.error = ErrorCode.INVALID_BLOCK
             else:
                 nid = nid or next(self._id_counter)
-                argblock = self._to_block(request.payload)
-                block = self._default_block(request.payload.name, nid, argblock.type)
-                self._merge_blocks(block, argblock)
+                block = self._parse(request.payload)
                 self._blocks[nid] = block
-                response.payload = [self._to_payload(block, request.mode)]
+                response.payload = [self._to_payload(nid, block, block.name)]
 
         elif request.opcode == Opcode.BLOCK_DELETE:
             nid = request.payload.blockId
@@ -222,24 +258,26 @@ class MockConnection(ConnectionImplBase):
                 response.error = ErrorCode.BLOCK_NOT_DELETABLE
             else:
                 del self._blocks[nid]
+                self._changed_sent.pop(nid, None)
 
         elif request.opcode == Opcode.BLOCK_DISCOVER:
             # Always return spark pins when discovering blocks
-            block = self._blocks[const.SYS_BLOCK_IDS['SparkPins']]
-            response.payload = [self._to_payload(block, request.mode)]
+            nid = const.SYS_BLOCK_IDS['SparkPins']
+            block = self._blocks[nid]
+            response.payload = [self._to_payload(nid, block, block.name)]
 
         elif request.opcode == Opcode.NAME_WRITE:
             nid = request.payload.blockId
             name = request.payload.name
             block = self._blocks.get(nid)
-            match = next((block for block in self._blocks.values() if block.id == name), None)
+            match = next((v for v in self._blocks.values() if v.name == name), None)
             if not block:
                 response.error = ErrorCode.INVALID_BLOCK_ID
-            elif not name or (match and match.nid != nid):
+            elif not name or (match and match is not block):
                 response.error = ErrorCode.INVALID_BLOCK_NAME
             else:
-                block.id = name
-                response.payload = [self._to_payload(block, ReadMode.DEFAULT)]
+                block.name = name
+                response.payload = [self._to_payload(nid, block, block.name)]
 
         elif request.opcode == Opcode.REBOOT:
             self._start_time = datetime.now()
@@ -247,18 +285,20 @@ class MockConnection(ConnectionImplBase):
 
         elif request.opcode == Opcode.CLEAR_BLOCKS:
             response.payload = [
-                self._to_payload(block, request.mode)
-                for block in self._blocks.values()
-                if block.nid >= const.USER_NID_START
+                self._to_payload(nid, block, block.name)
+                for nid, block in self._blocks.items()
+                if nid >= const.USER_NID_START
             ]
-            self._blocks = default_blocks()
+            self._blocks = self._default_blocks()
+            self._changed_sent.clear()
             self.update_systime()
 
         elif request.opcode == Opcode.CLEAR_WIFI:
-            self._blocks[const.SYS_BLOCK_IDS['WiFiSettings']].data.clear()
+            self._blocks[const.SYS_BLOCK_IDS['WiFiSettings']].message.Clear()
 
         elif request.opcode == Opcode.FACTORY_RESET:
-            self._blocks = default_blocks()
+            self._blocks = self._default_blocks()
+            self._changed_sent.clear()
             self.update_systime()
 
         elif request.opcode == Opcode.FIRMWARE_UPDATE:

@@ -98,10 +98,10 @@ async def test_to_block():
     store['alias'] = 123
     store['4-2'] = 24
 
-    assert api._to_block(FirmwareBlock(nid=123, type='', data={})).id == 'alias'
+    assert api.to_block(FirmwareBlock(nid=123, type='', data={})).id == 'alias'
 
     # Service ID not found: create placeholder
-    generated = api._to_block(FirmwareBlock(nid=456, type='', data={}))
+    generated = api.to_block(FirmwareBlock(nid=456, type='', data={}))
     assert generated.id == '456'
 
 
@@ -128,9 +128,11 @@ async def test_resolve_data_ids():
         }
 
     data = create_data()
-    spark_api.resolve_data_ids(data, api._find_nid)
+    resolved = spark_api.resolve_data_ids(data, api._find_nid)
 
-    assert data == {
+    # The input is never modified: it may be shared with a cache
+    assert data == create_data()
+    assert resolved == {
         'testval': 1,
         'input<ProcessValueInterface>': 9001,
         'output<ProcessValueInterface>': 9002,
@@ -148,13 +150,11 @@ async def test_resolve_data_ids():
         },
     }
 
-    spark_api.resolve_data_ids(data, api._find_sid)
-    assert data == create_data()
+    assert spark_api.resolve_data_ids(resolved, api._find_sid) == create_data()
 
-    spark_api.resolve_data_ids(data, api._find_nid)
-    data['input<ProcessValueInterface>'] = 'eeney'
+    resolved['input<ProcessValueInterface>'] = 'eeney'
     with pytest.raises(exceptions.DecodeException):
-        spark_api.resolve_data_ids(data, api._find_sid)
+        spark_api.resolve_data_ids(resolved, api._find_sid)
 
 
 async def test_check_connection(mocker: MockerFixture):
@@ -217,3 +217,43 @@ async def test_start_update():
 
     with pytest.raises(exceptions.UpdateInProgress):
         await api.read_all_blocks()
+
+
+async def test_write_is_patch():
+    """Writes are by presence: absent fields keep their value"""
+    await state_machine.CV.get().wait_synchronized()
+    api = spark_api.CV.get()
+
+    await api.create_block(Block(id='sensor', type='TempSensorMock', data={'setting[degC]': 20, 'connected': True}))
+
+    written = await api.write_block(Block(id='sensor', type='TempSensorMock', data={'connected': False}))
+    assert written.data['connected'] is False
+    assert written.data['setting']['value'] == 20
+
+    patched = await api.patch_block(Block(id='sensor', type='TempSensorMock', data={'setting[degC]': 0}))
+    assert patched.data['connected'] is False
+    assert patched.data['setting']['value'] == 0
+
+
+async def test_clear_blocks_display_settings():
+    """Clearing blocks resets the display settings, whose widgets may link to removed blocks"""
+    await state_machine.CV.get().wait_synchronized()
+    api = spark_api.CV.get()
+
+    sensor = await api.create_block(Block(id='sensor', type='TempSensorMock', data={}))
+    display = await api.write_block(
+        Block(
+            id='DisplaySettings',
+            type='DisplaySettings',
+            data={'name': 'display', 'widgets': [{'pos': 1, 'name': 'sensor', 'tempSensor<>': 'sensor'}]},
+        )
+    )
+    assert display.data['name'] == 'display'
+    assert display.data['widgets'][0]['tempSensor']['id'] == 'sensor'
+
+    removed = await api.clear_blocks()
+    assert [v.id for v in removed] == [sensor.id]
+
+    display = await api.read_block(BlockIdentity(id='DisplaySettings'))
+    assert display.data['name'] == ''
+    assert display.data['widgets'] == []

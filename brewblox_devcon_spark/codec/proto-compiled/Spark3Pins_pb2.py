@@ -17,7 +17,7 @@ import nanopb_pb2 as nanopb__pb2
 import IoArray_pb2 as IoArray__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10Spark3Pins.proto\x12\x0f\x62lox.Spark3Pins\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\x87\x02\n\x05\x42lock\x12 \n\x10\x65nableIoSupply5V\x18\x02 \x01(\x08\x42\x06\x8a\xb5\x18\x02x\x01\x12!\n\x11\x65nableIoSupply12V\x18\x03 \x01(\x08\x42\x06\x8a\xb5\x18\x02x\x01\x12\x12\n\nsoundAlarm\x18\x05 \x01(\x08\x12 \n\x08voltage5\x18\x06 \x01(\rB\x0e\x92?\x02\x38\x10\x8a\xb5\x18\x05\x10\xe8\x07(\x01\x12!\n\tvoltage12\x18\x07 \x01(\rB\x0e\x92?\x02\x38\x10\x8a\xb5\x18\x05\x10\xe8\x07(\x01\x12\x38\n\x08\x63hannels\x18\x08 \x03(\x0b\x32\x17.blox.IoArray.IoChannelB\r\x92?\x04\x10\x05x\x01\x8a\xb5\x18\x02(\x01\x12\x19\n\x04pins\x18Z \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01:\x0b\x8a\xb5\x18\x07\x18\xbf\x02J\x02\n\x0c*\x92\x01\n\tChannelId\x12\x11\n\rSPARK3_NO_PIN\x10\x00\x12\x14\n\x10SPARK3_CHAN_TOP1\x10\x01\x12\x14\n\x10SPARK3_CHAN_TOP2\x10\x02\x12\x14\n\x10SPARK3_CHAN_TOP3\x10\x03\x12\x17\n\x13SPARK3_CHAN_BOTTOM1\x10\x04\x12\x17\n\x13SPARK3_CHAN_BOTTOM2\x10\x05\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10Spark3Pins.proto\x12\x0f\x62lox.Spark3Pins\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\rIoArray.proto\"\xd6\x02\n\x05\x42lock\x12%\n\x10\x65nableIoSupply5V\x18\x02 \x01(\x08\x42\x06\x8a\xb5\x18\x02x\x01H\x00\x88\x01\x01\x12&\n\x11\x65nableIoSupply12V\x18\x03 \x01(\x08\x42\x06\x8a\xb5\x18\x02x\x01H\x01\x88\x01\x01\x12\x17\n\nsoundAlarm\x18\x05 \x01(\x08H\x02\x88\x01\x01\x12#\n\x08voltage5\x18\x06 \x01(\rB\x11\x92?\x02\x38\x10\x8a\xb5\x18\x08\x10\xe8\x07(\x01\x80\x01\x01\x12$\n\tvoltage12\x18\x07 \x01(\rB\x11\x92?\x02\x38\x10\x8a\xb5\x18\x08\x10\xe8\x07(\x01\x80\x01\x01\x12\x38\n\x08\x63hannels\x18\x08 \x03(\x0b\x32\x17.blox.IoArray.IoChannelB\r\x92?\x04\x10\x05x\x01\x8a\xb5\x18\x02(\x01\x12\x19\n\x04pins\x18Z \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01:\x0b\x8a\xb5\x18\x07\x18\xbf\x02J\x02\n\x0c\x42\x13\n\x11_enableIoSupply5VB\x14\n\x12_enableIoSupply12VB\r\n\x0b_soundAlarm*\x92\x01\n\tChannelId\x12\x11\n\rSPARK3_NO_PIN\x10\x00\x12\x14\n\x10SPARK3_CHAN_TOP1\x10\x01\x12\x14\n\x10SPARK3_CHAN_TOP2\x10\x02\x12\x14\n\x10SPARK3_CHAN_TOP3\x10\x03\x12\x17\n\x13SPARK3_CHAN_BOTTOM1\x10\x04\x12\x17\n\x13SPARK3_CHAN_BOTTOM2\x10\x05\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -29,17 +29,17 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_BLOCK'].fields_by_name['enableIoSupply12V']._options = None
   _globals['_BLOCK'].fields_by_name['enableIoSupply12V']._serialized_options = b'\212\265\030\002x\001'
   _globals['_BLOCK'].fields_by_name['voltage5']._options = None
-  _globals['_BLOCK'].fields_by_name['voltage5']._serialized_options = b'\222?\0028\020\212\265\030\005\020\350\007(\001'
+  _globals['_BLOCK'].fields_by_name['voltage5']._serialized_options = b'\222?\0028\020\212\265\030\010\020\350\007(\001\200\001\001'
   _globals['_BLOCK'].fields_by_name['voltage12']._options = None
-  _globals['_BLOCK'].fields_by_name['voltage12']._serialized_options = b'\222?\0028\020\212\265\030\005\020\350\007(\001'
+  _globals['_BLOCK'].fields_by_name['voltage12']._serialized_options = b'\222?\0028\020\212\265\030\010\020\350\007(\001\200\001\001'
   _globals['_BLOCK'].fields_by_name['channels']._options = None
   _globals['_BLOCK'].fields_by_name['channels']._serialized_options = b'\222?\004\020\005x\001\212\265\030\002(\001'
   _globals['_BLOCK'].fields_by_name['pins']._options = None
   _globals['_BLOCK'].fields_by_name['pins']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
   _globals['_BLOCK']._options = None
   _globals['_BLOCK']._serialized_options = b'\212\265\030\007\030\277\002J\002\n\014'
-  _globals['_CHANNELID']._serialized_start=349
-  _globals['_CHANNELID']._serialized_end=495
+  _globals['_CHANNELID']._serialized_start=428
+  _globals['_CHANNELID']._serialized_end=574
   _globals['_BLOCK']._serialized_start=83
-  _globals['_BLOCK']._serialized_end=346
+  _globals['_BLOCK']._serialized_end=425
 # @@protoc_insertion_point(module_scope)
