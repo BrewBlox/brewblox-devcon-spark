@@ -552,6 +552,24 @@ async def test_unsynchronized(bc: Broadcaster, s_publish: Mock, s_read: Mock):
     assert s_read.call_count == 1
 
 
+async def test_history_timestamp(bc: Broadcaster, s_publish: Mock, mocker: MockerFixture):
+    """History is stamped with the tick's deadline in wall-clock time, not with the time the read took"""
+    m_time = mocker.patch.object(broadcast, 'time')
+    m_time.time.return_value = 5000.0
+    loop = asyncio.get_running_loop()
+
+    # A late tick carries the deadline it ran for
+    await bc.tick(loop.time() - 0.25)
+    [evt] = published(s_publish, HISTORY_TOPIC)
+    assert evt['timestamp'] == pytest.approx(4_999_750, abs=5)
+
+    # Without a deadline, the tick is on time
+    s_publish.reset_mock()
+    await bc.tick()
+    [evt] = published(s_publish, HISTORY_TOPIC)
+    assert evt['timestamp'] == pytest.approx(5_000_000, abs=5)
+
+
 async def test_first_tick(bc: Broadcaster, s_publish: Mock, s_read: Mock):
     await bc.tick()
 
@@ -901,7 +919,7 @@ async def test_repeat(bc: Broadcaster, mocker: MockerFixture):
     loop = asyncio.get_running_loop()
     tick_starts = []
 
-    def slow_tick():
+    def slow_tick(deadline: float | None = None):
         tick_starts.append(loop.time())
         time.sleep(tick_duration)
         raise RuntimeError('tick failed')
@@ -910,19 +928,29 @@ async def test_repeat(bc: Broadcaster, mocker: MockerFixture):
     s_tick.side_effect = slow_tick
     s_deadline = mocker.spy(broadcast, 'next_deadline')
     m_asyncio = mocker.patch.object(broadcast, 'asyncio', wraps=asyncio)
+    m_time = mocker.patch.object(broadcast, 'time')
+    m_time.time.return_value = 1000.003
 
     # Errors do not stop the loop
     async with utils.task_context(bc.repeat()):
         await asyncio.sleep(0.05)
     assert s_tick.await_count >= 2
 
+    # The first deadline falls in the middle of a wall-clock interval
+    delays = [c.args[0] for c in m_asyncio.sleep.call_args_list]
+    assert (1000.003 + delays[0]) % interval == pytest.approx(interval / 2, abs=0.001)
+
     # Ticks are scheduled by deadline: each one interval after the previous deadline.
     # The time a tick takes is not added to the interval: the loop sleeps until the next deadline.
+    # Each tick gets the deadline it runs for.
     calls = s_deadline.call_args_list
     deadlines = s_deadline.spy_return_list
-    delays = [c.args[0] for c in m_asyncio.sleep.call_args_list]
+    tick_deadlines = [c.args[0] for c in s_tick.call_args_list]
+    delays = delays[1:]
     assert len(calls) >= 2
     assert len(delays) >= 2
+    assert tick_deadlines[0] == calls[0].args[0]
+    assert tick_deadlines[1 : len(deadlines) + 1] == deadlines[: len(tick_deadlines) - 1]
     assert calls[0].args[0] <= tick_starts[0]
     for idx, (call, deadline, delay) in enumerate(zip(calls, deadlines, delays, strict=False)):
         prev_deadline, now, call_interval = call.args

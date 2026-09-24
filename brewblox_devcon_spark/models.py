@@ -703,6 +703,9 @@ class DatastoreEvent(BaseModel):
 class HistoryEvent(BaseModel):
     key: str
     data: dict
+    # The time of the samples, in milliseconds since the Unix epoch.
+    # The history service uses its arrival time if this is not set.
+    timestamp: int | None = None
 
 
 class ServiceStateEventData(BaseModel):

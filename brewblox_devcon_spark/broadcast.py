@@ -19,6 +19,7 @@ If the service is not synchronized, only the status is published, every `full_re
 import asyncio
 import copy
 import logging
+import time
 from collections.abc import Generator, Mapping
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
@@ -341,8 +342,18 @@ class Broadcaster:
             retain=True,
         )
 
-    async def tick(self):
+    async def tick(self, deadline: float | None = None):
+        """
+        One broadcast tick. `deadline` is the loop time the tick was scheduled for.
+        History samples are stamped with it, so the time a read takes does not shift them.
+        """
         now = asyncio.get_running_loop().time()
+        if deadline is None:
+            deadline = now
+
+        # The deadline in wall-clock milliseconds.
+        # It is computed per tick from the loop clock, so a wall-clock step (NTP sync on a Pi without RTC) is absorbed.
+        timestamp = round((time.time() - (now - deadline)) * 1000)
 
         if not self.state.is_synchronized() or self.state.is_updating():
             self.cache.reset(None)
@@ -390,7 +401,7 @@ class Broadcaster:
 
         self.mqtt_client.publish(
             self.history_topic,
-            HistoryEvent(key=self.config.name, data=history).model_dump(mode='json'),
+            HistoryEvent(key=self.config.name, data=history, timestamp=timestamp).model_dump(mode='json'),
         )
 
         dirty = self.cache.take_dirty()
@@ -415,11 +426,14 @@ class Broadcaster:
             return
 
         loop = asyncio.get_running_loop()
-        deadline = loop.time()
+        # Ticks fall in the middle of a wall-clock interval (at x.500 s for 1 s):
+        # a history bucket of one interval then holds exactly one sample, with half an interval of margin.
+        deadline = loop.time() + (interval / 2 - time.time()) % interval
+        await asyncio.sleep(deadline - loop.time())
 
         while True:
             try:
-                await self.tick()
+                await self.tick(deadline)
             except Exception as ex:
                 LOGGER.error(utils.strex(ex), exc_info=self.config.debug)
 
