@@ -889,25 +889,25 @@ async def test_logged_view():
     # Enum names become numbers, and list elements keep their position
     content = decode(_actuator(1, None))
     assert cdc.logged_view('DigitalActuator', content, full=False) == {
-        'storedState': 1,
         'desiredState': 1,
         'state': 1,
     }
     content = decode(_gpio(0, 0, 0, 0))
     assert cdc.logged_view('GpioModule', content, full=False) == {'analogChannels': [{}, {}]}
 
-    # Links and datetimes
-    content = decode(pb2.TempSensorExternal_pb2.Block(lastUpdated=1_700_000_000))
-    assert cdc.logged_view('TempSensorExternal', content, full=True)['lastUpdated'] == 1_700_000_000
+    # Links
     assert cdc.logged_view('EdgeCase', {'logged': 1, 'link': {'__bloxtype': 'Link', 'id': 1}}, full=True) == {
         'logged': 1,
     }
 
     # Logged links and singular messages: no proto has them yet.
     # These branches of _logged are there for future protos, so the nodes are built by hand.
+    # No logged field is a link or a datetime today.
     fields = pb2.EdgeCase_pb2.Block.DESCRIPTOR.fields_by_name
+    external = pb2.TempSensorExternal_pb2.Block.DESCRIPTOR.fields_by_name
     nodes = {
         'link': descriptors.LoggedNode(fields['link'], None, skip_changed=False),
+        'lastUpdated': descriptors.LoggedNode(external['lastUpdated'], None, skip_changed=False),
         'state': descriptors.LoggedNode(
             fields['state'],
             {
@@ -920,10 +920,12 @@ async def test_logged_view():
     }
     data = {
         'link': {'__bloxtype': 'Link', 'type': 'ActuatorAnalogInterface', 'id': 'actuator'},
+        'lastUpdated': '2023-11-14T22:13:20Z',
         'state': {'connected': True, 'value': {'__bloxtype': 'Quantity', 'unit': 'degC', 'value': 20}},
     }
     assert codec._logged(nodes, data, full=True) == {
         'link<ActuatorAnalogInterface>': 'actuator',
+        'lastUpdated': 1_700_000_000,
         'state': {'connected': True},
     }
 

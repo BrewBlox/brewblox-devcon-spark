@@ -6,8 +6,7 @@
     "logged": {
       "setting": 0.976806640625,
       "value": 1.220947265625,
-      "desiredSetting": 0.732666015625,
-      "storedSetting": 0.488525390625
+      "desiredSetting": 0.732666015625
     }
   },
   {
@@ -39,8 +38,7 @@
     "logged": {
       "setting[delta_degC]": 1.465087890625,
       "value[delta_degC]": 1.709228515625,
-      "desiredSetting[delta_degC]": 1.220947265625,
-      "storedSetting[delta_degC]": 0.976806640625
+      "desiredSetting[delta_degC]": 1.220947265625
     }
   },
   {
@@ -56,8 +54,7 @@
     "logged": {
       "setting": 1.220947265625,
       "value": 1.465087890625,
-      "desiredSetting": 0.976806640625,
-      "storedSetting": 0.732666015625
+      "desiredSetting": 0.976806640625
     }
   },
   {
@@ -108,8 +105,7 @@
     "payload": "CGUQ0Q8YASABKg0KCwipRqAGkU6oBvlVMAE4AUCRyAJI+c8CUJABWAFgAWpcCg4IsW2QAwGYAwGgA+mEARIPCLmUAZADAZgDAaAD8asBGg8IwbsBkAMBmAMBoAP50gEiDwjJ4gGQAwGYAwGgA4H6ASoXCIYBELmRAiABkAMBmAMBoAPZsALQBQE=",
     "logged": {
       "state": 1,
-      "desiredState": 1,
-      "storedState": 1
+      "desiredState": 1
     }
   },
   {
@@ -151,8 +147,7 @@
     "logged": {
       "setting": 1.465087890625,
       "desiredSetting": 1.220947265625,
-      "value": 1.709228515625,
-      "storedSetting": 0.976806640625
+      "value": 1.709228515625
     }
   },
   {
@@ -221,8 +216,7 @@
     "logged": {
       "state": 1,
       "valveState": 1,
-      "desiredState": 1,
-      "storedState": 1
+      "desiredState": 1
     }
   },
   {
@@ -317,19 +311,15 @@
     "logged": {
       "setting[degC]": 1.220947265625,
       "value[degC]": 1.465087890625,
-      "storedSetting[degC]": 0.732666015625,
       "valueUnfiltered[degC]": 1.709228515625,
-      "desiredSetting[degC]": 0.976806640625,
-      "updateInterval[millisecond]": 16001
+      "desiredSetting[degC]": 0.976806640625
     }
   },
   {
     "blockType": "SetpointSensorPair",
     "variant": "empty",
     "payload": "",
-    "logged": {
-      "updateInterval[millisecond]": 0
-    }
+    "logged": {}
   },
   {
     "blockType": "Spark2Pins",
@@ -390,16 +380,8 @@
     "variant": "full",
     "payload": "CAEQZhi5FyDCPjABOAFAsm1Ign1Q0owBWKKcAWDyqwFowrsBcJLLAXji2gGAAbLqAQ==",
     "logged": {
-      "spec_a": 3.353133797645569e-05,
-      "spec_b": 4.547928256215528e-09,
-      "spec_c": 7.633477183688342e-14,
-      "spec_a_override": 4.8432499170303345e-05,
-      "spec_b_override": 6.366917659761384e-09,
-      "spec_c_override": 1.0409034745251233e-13,
       "value[degC]": 0.976806640625,
-      "resistance[ohm]": 0.42730712890625,
-      "spec_r0[ohm]": 0.48834228515625,
-      "spec_r0_override[ohm]": 0.73248291015625
+      "resistance[ohm]": 0.42730712890625
     }
   },
   {
@@ -427,8 +409,6 @@
     "variant": "full",
     "payload": "CAEQ0Q8Y8i4ghOLPqgYokk4=",
     "logged": {
-      "lastUpdated": 1700000004,
-      "setting[degC]": 0.732666015625,
       "value[degC]": 1.220947265625
     }
   },
@@ -436,17 +416,13 @@
     "blockType": "TempSensorExternal",
     "variant": "empty",
     "payload": "",
-    "logged": {
-      "lastUpdated": 0
-    }
+    "logged": {}
   },
   {
     "blockType": "TempSensorExternal",
     "variant": "zero",
     "payload": "CAEQ0Q8Y8i4okk4=",
     "logged": {
-      "lastUpdated": 0,
-      "setting[degC]": 0.732666015625,
       "value[degC]": 1.220947265625
     }
   },

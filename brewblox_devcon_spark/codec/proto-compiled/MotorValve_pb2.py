@@ -19,7 +19,7 @@ import IoArray_pb2 as IoArray__pb2
 import Claims_pb2 as Claims__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10MotorValve.proto\x12\x0f\x62lox.MotorValve\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x11\x43onstraints.proto\x1a\rIoArray.proto\x1a\x0c\x43laims.proto\"\xc8\x05\n\x05\x42lock\x12\x1f\n\x08hwDevice\x18\x01 \x01(\rB\x08\x8a\xb5\x18\x04\x18\x0bx\x01H\x00\x88\x01\x01\x12!\n\x07\x63hannel\x18\x02 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02x\x01H\x01\x88\x01\x01\x12>\n\x0bstoredState\x18\t \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x08\x8a\xb5\x18\x04\x30\x01x\x01H\x02\x88\x01\x01\x12?\n\x0c\x64\x65siredState\x18\x07 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x08\x8a\xb5\x18\x04(\x01\x30\x01H\x03\x88\x01\x01\x12\x38\n\x05state\x18\x03 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x08\x8a\xb5\x18\x04(\x01\x30\x01H\x04\x88\x01\x01\x12>\n\nvalveState\x18\x06 \x01(\x0e\x32\x1b.blox.MotorValve.ValveStateB\x08\x8a\xb5\x18\x04(\x01\x30\x01H\x05\x88\x01\x01\x12N\n\rconstrainedBy\x18\x05 \x01(\x0b\x32..blox.Constraints.DeprecatedDigitalConstraintsB\x07\x8a\xb5\x18\x03\x80\x01\x01\x12\x41\n\x0b\x63onstraints\x18\x0b \x01(\x0b\x32$.blox.Constraints.DigitalConstraintsB\x06\x8a\xb5\x18\x02x\x01\x12\x1c\n\tclaimedBy\x18\x08 \x01(\rB\t\x8a\xb5\x18\x05\x18\xff\x01(\x01\x12:\n\x0bsettingMode\x18\n \x01(\x0e\x32\x18.blox.Claims.SettingModeB\x06\x8a\xb5\x18\x02x\x01H\x06\x88\x01\x01\x12!\n\x0cstartChannel\x18Z \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01:\r\x8a\xb5\x18\t\x18\xc1\x02J\x04\x06\x15\x10\x11\x42\x0b\n\t_hwDeviceB\n\n\x08_channelB\x0e\n\x0c_storedStateB\x0f\n\r_desiredStateB\x08\n\x06_stateB\r\n\x0b_valveStateB\x0e\n\x0c_settingMode*\x96\x01\n\nValveState\x12\x11\n\rVALVE_UNKNOWN\x10\x00\x12\x0e\n\nVALVE_OPEN\x10\x01\x12\x10\n\x0cVALVE_CLOSED\x10\x02\x12\x11\n\rVALVE_OPENING\x10\x03\x12\x11\n\rVALVE_CLOSING\x10\x04\x12\x18\n\x14VALVE_HALF_OPEN_IDLE\x10\x05\x12\x13\n\x0fVALVE_INIT_IDLE\x10\x06\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10MotorValve.proto\x12\x0f\x62lox.MotorValve\x1a\x0e\x62rewblox.proto\x1a\x0cnanopb.proto\x1a\x11\x43onstraints.proto\x1a\rIoArray.proto\x1a\x0c\x43laims.proto\"\xc6\x05\n\x05\x42lock\x12\x1f\n\x08hwDevice\x18\x01 \x01(\rB\x08\x8a\xb5\x18\x04\x18\x0bx\x01H\x00\x88\x01\x01\x12!\n\x07\x63hannel\x18\x02 \x01(\rB\x0b\x92?\x02\x38\x08\x8a\xb5\x18\x02x\x01H\x01\x88\x01\x01\x12<\n\x0bstoredState\x18\t \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x06\x8a\xb5\x18\x02x\x01H\x02\x88\x01\x01\x12?\n\x0c\x64\x65siredState\x18\x07 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x08\x8a\xb5\x18\x04(\x01\x30\x01H\x03\x88\x01\x01\x12\x38\n\x05state\x18\x03 \x01(\x0e\x32\x1a.blox.IoArray.DigitalStateB\x08\x8a\xb5\x18\x04(\x01\x30\x01H\x04\x88\x01\x01\x12>\n\nvalveState\x18\x06 \x01(\x0e\x32\x1b.blox.MotorValve.ValveStateB\x08\x8a\xb5\x18\x04(\x01\x30\x01H\x05\x88\x01\x01\x12N\n\rconstrainedBy\x18\x05 \x01(\x0b\x32..blox.Constraints.DeprecatedDigitalConstraintsB\x07\x8a\xb5\x18\x03\x80\x01\x01\x12\x41\n\x0b\x63onstraints\x18\x0b \x01(\x0b\x32$.blox.Constraints.DigitalConstraintsB\x06\x8a\xb5\x18\x02x\x01\x12\x1c\n\tclaimedBy\x18\x08 \x01(\rB\t\x8a\xb5\x18\x05\x18\xff\x01(\x01\x12:\n\x0bsettingMode\x18\n \x01(\x0e\x32\x18.blox.Claims.SettingModeB\x06\x8a\xb5\x18\x02x\x01H\x06\x88\x01\x01\x12!\n\x0cstartChannel\x18Z \x01(\x08\x42\x0b\x92?\x02\x18\x03\x8a\xb5\x18\x02H\x01:\r\x8a\xb5\x18\t\x18\xc1\x02J\x04\x06\x15\x10\x11\x42\x0b\n\t_hwDeviceB\n\n\x08_channelB\x0e\n\x0c_storedStateB\x0f\n\r_desiredStateB\x08\n\x06_stateB\r\n\x0b_valveStateB\x0e\n\x0c_settingMode*\x96\x01\n\nValveState\x12\x11\n\rVALVE_UNKNOWN\x10\x00\x12\x0e\n\nVALVE_OPEN\x10\x01\x12\x10\n\x0cVALVE_CLOSED\x10\x02\x12\x11\n\rVALVE_OPENING\x10\x03\x12\x11\n\rVALVE_CLOSING\x10\x04\x12\x18\n\x14VALVE_HALF_OPEN_IDLE\x10\x05\x12\x13\n\x0fVALVE_INIT_IDLE\x10\x06\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -31,7 +31,7 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_BLOCK'].fields_by_name['channel']._options = None
   _globals['_BLOCK'].fields_by_name['channel']._serialized_options = b'\222?\0028\010\212\265\030\002x\001'
   _globals['_BLOCK'].fields_by_name['storedState']._options = None
-  _globals['_BLOCK'].fields_by_name['storedState']._serialized_options = b'\212\265\030\0040\001x\001'
+  _globals['_BLOCK'].fields_by_name['storedState']._serialized_options = b'\212\265\030\002x\001'
   _globals['_BLOCK'].fields_by_name['desiredState']._options = None
   _globals['_BLOCK'].fields_by_name['desiredState']._serialized_options = b'\212\265\030\004(\0010\001'
   _globals['_BLOCK'].fields_by_name['state']._options = None
@@ -50,8 +50,8 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_BLOCK'].fields_by_name['startChannel']._serialized_options = b'\222?\002\030\003\212\265\030\002H\001'
   _globals['_BLOCK']._options = None
   _globals['_BLOCK']._serialized_options = b'\212\265\030\t\030\301\002J\004\006\025\020\021'
-  _globals['_VALVESTATE']._serialized_start=831
-  _globals['_VALVESTATE']._serialized_end=981
+  _globals['_VALVESTATE']._serialized_start=829
+  _globals['_VALVESTATE']._serialized_end=979
   _globals['_BLOCK']._serialized_start=116
-  _globals['_BLOCK']._serialized_end=828
+  _globals['_BLOCK']._serialized_end=826
 # @@protoc_insertion_point(module_scope)

@@ -861,7 +861,7 @@ async def test_read_all_logged(client: AsyncClient):
         'id': 'pwm',
         'type': 'ActuatorPwm',
         'data': {
-            'storedSetting': 80,  # logged
+            'enabled': True,  # not logged
             'period': 2,  # not logged
         },
     }
@@ -880,7 +880,7 @@ async def test_read_all_logged(client: AsyncClient):
     assert args['id'] == obj['id']
     obj_data = obj['data']
     assert obj_data is not None
-    assert 'storedSetting' in obj_data
+    assert 'setting' in obj_data
     assert 'period' in obj_data
 
     # log_objects strips all keys that are not explicitly marked as logged
@@ -888,7 +888,7 @@ async def test_read_all_logged(client: AsyncClient):
     assert args['id'] == obj['id']
     obj_data = obj['data']
     assert obj_data is not None
-    assert 'storedSetting' in obj_data
+    assert 'setting' in obj_data
     assert 'period' not in obj_data
 
 
@@ -1270,7 +1270,7 @@ async def test_broadcaster_tick(client: AsyncClient, s_publish: Mock, mocker: Mo
 
     # History has logged fields only
     assert set(full['data']) == set(blocks)
-    assert set(full['data']['pwm']) == {'storedSetting', 'desiredSetting', 'setting', 'value'}
+    assert set(full['data']['pwm']) == {'desiredSetting', 'setting', 'value'}
     for sid, logged in full['data'].items():
         block = blocks[sid]
         assert logged == codec.CV.get().logged_view(block['type'], block['data'], full=True)

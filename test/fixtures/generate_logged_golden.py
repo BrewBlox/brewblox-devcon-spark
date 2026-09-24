@@ -6,6 +6,9 @@ before ReadMode.LOGGED was replaced by CHANGED. It can not be run again: the LOG
 path no longer exists. It is kept to document how the fixture was made.
 One edit since: proto 5bab8b2d dropped `logged` from Pid.integralReset, so it left the Pid
 expectations, as the LOGGED filter would have dropped it.
+Likewise for proto 2453a6f5, which dropped `logged` from 18 fields: storedSetting and storedState,
+SetpointSensorPair updateInterval, TempSensorAnalog's spec coefficients and overrides,
+and TempSensorExternal setting and lastUpdated.
 The message builder is in messages.py, which the codec tests reuse.
 
 For every block type in the codec lookup, it stores the payload of a fully populated message
