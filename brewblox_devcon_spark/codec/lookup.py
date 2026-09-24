@@ -22,6 +22,7 @@ BLOCK_INTERFACE_TYPE_END = 255
 CV_OBJECTS: ContextVar[list['ObjectLookup']] = ContextVar('lookup.objects')
 CV_INTERFACES: ContextVar[list['InterfaceLookup']] = ContextVar('lookup.interfaces')
 CV_COMBINED: ContextVar[list['ObjectLookup | InterfaceLookup']] = ContextVar('lookup.combined')
+CV_OBJECTS_BY_TYPE: ContextVar[dict[str | int, 'ObjectLookup']] = ContextVar('lookup.objects_by_type')
 
 
 @dataclass(frozen=True)
@@ -89,5 +90,7 @@ def setup():
     ]
 
     CV_OBJECTS.set(objects)
+    # The first entry wins, as in a linear search of CV_OBJECTS
+    CV_OBJECTS_BY_TYPE.set({k: v for v in reversed(objects) for k in (v.type_str, v.type_int)})
     CV_INTERFACES.set(interfaces)
     CV_COMBINED.set(combined)

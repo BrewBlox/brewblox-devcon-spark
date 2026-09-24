@@ -34,7 +34,7 @@ class NeedFullRead(Exception):  # noqa: N818
 
 
 def _object_lookup(block_type: str) -> lookup.ObjectLookup | None:
-    return next((v for v in lookup.CV_OBJECTS.get() if v.type_str == block_type), None)
+    return lookup.CV_OBJECTS_BY_TYPE.get().get(block_type)
 
 
 def _logged(nodes: Mapping[str, descriptors.LoggedNode], obj: dict, *, full: bool) -> dict:
@@ -228,7 +228,7 @@ class Codec:
                 )
 
             # First, try to find an object lookup
-            impl = next((v for v in lookup.CV_OBJECTS.get() if payload.blockType in [v.type_str, v.type_int]), None)
+            impl = lookup.CV_OBJECTS_BY_TYPE.get().get(payload.blockType)
 
             if impl:
                 # We have an object lookup, and can decode the content
@@ -353,8 +353,10 @@ class Codec:
                     raise NeedFullRead(f'{desc.full_name}.{key} is not cached, and not default')
 
         for key, value in partial.items():
+            if key in nodes:
+                continue
             field = desc.fields_by_name[key]
-            if key in nodes or not (descriptors.is_optional(field) or descriptors.list_wrapper(field)):
+            if not (descriptors.is_optional(field) or descriptors.list_wrapper(field)):
                 continue
             if key not in cached or cached[key] != value:
                 cached[key] = value

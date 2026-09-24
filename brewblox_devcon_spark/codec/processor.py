@@ -9,7 +9,7 @@ from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
 from collections.abc import Iterator
 from dataclasses import dataclass
-from functools import reduce
+from functools import cache, reduce
 from socket import htonl, ntohl
 from typing import Any
 
@@ -28,7 +28,8 @@ from .time_utils import serialize_datetime
 LOGGER = logging.getLogger(__name__)
 
 
-@dataclass(frozen=True)
+# Not frozen: a frozen dataclass is slow to build, and every decode builds one per value
+@dataclass(slots=True)
 class OptionElement:
     field: FieldDescriptor
     """The protobuf field descriptor"""
@@ -68,6 +69,26 @@ def is_null(value: Any) -> bool:
         value is None
         or (bloxfield.is_quantity(value) and value.get('value') is None)
         or (bloxfield.is_link(value) and value.get('id') is None)
+    )
+
+
+@cache
+def _decode_converts(field: FieldDescriptor) -> bool:
+    """
+    Whether `post_decode()` changes the values of `field`, other than by filtering it out.
+    Lists the options that `post_decode()` converts values for: keep them in sync.
+    """
+    opts = options(field)
+    return bool(
+        opts.omit_if_zero
+        or opts.null_if_zero
+        or opts.scale
+        or opts.unit
+        or opts.objtype
+        or opts.hexed
+        or opts.hexstr
+        or opts.ipv4address
+        or opts.datetime
     )
 
 
@@ -145,9 +166,14 @@ class ProtobufProcessor:
 
         None values are not walked into, also when they are map values.
         """
+        fields = desc.fields_by_name
         for key, value in list(obj.items()):
-            base_key, postfix = self._postfix_pattern.findall(key)[0]
-            field: FieldDescriptor = desc.fields_by_name[base_key]
+            # Decoded data only has plain field names: a postfix is in written data
+            if key in fields:
+                base_key, postfix = key, ''
+            else:
+                base_key, postfix = self._postfix_pattern.findall(key)[0]
+            field: FieldDescriptor = fields[base_key]
             wrapper: FieldDescriptor | None = None
 
             if items := list_wrapper(field):
@@ -515,9 +541,14 @@ class ProtobufProcessor:
                 del element.obj[element.key]
                 continue
 
-            link_type = self.type_name(opts.objtype)
-            qty_system_unit = self.unit_name(opts.unit)
-            qty_user_unit = self._converter.to_user_unit(qty_system_unit)
+            # Most values are kept as decoded
+            if not _decode_converts(element.field):
+                continue
+
+            # Only looked up for the fields that use them: this runs for every value of every read
+            link_type = self.type_name(opts.objtype) if opts.objtype else None
+            qty_system_unit = self.unit_name(opts.unit) if opts.unit else None
+            qty_user_unit = self._converter.to_user_unit(qty_system_unit) if opts.unit else None
 
             def _convert_value(value: float | int | str | None) -> float | int | str | dict | None:
                 # None is the invalid marker: absent optional readonly fields are filled with None
