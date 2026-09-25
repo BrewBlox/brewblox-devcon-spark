@@ -13,7 +13,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from itertools import count
 
-from google.protobuf.descriptor import FieldDescriptor
 from google.protobuf.message import Message
 
 from .. import codec, const, utils
@@ -71,7 +70,7 @@ def merge_present(dest: Message, src: Message):
     an unset or `empty` entry deletes its key, and the other keys are kept.
     """
     for field, value in src.ListFields():
-        if field.label == FieldDescriptor.LABEL_REPEATED:
+        if field.is_repeated:
             dest.ClearField(field.name)
             getattr(dest, field.name).MergeFrom(value)
         elif field.message_type is None:
