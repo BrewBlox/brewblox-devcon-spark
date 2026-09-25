@@ -18,7 +18,7 @@ jobs:
       - uses: docker/setup-buildx-action@v3
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.13"
 
       - name: (Service) Image metadata
         id: service_meta

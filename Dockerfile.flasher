@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1-labs
-FROM python:3.11-slim-bookworm
+FROM python:3.13-slim-trixie
 
 ENV PIP_EXTRA_INDEX_URL=https://www.piwheels.org/simple
 
@@ -16,11 +16,13 @@ RUN <<EOF bash
         libatomic1 \
         usbutils
 
-    # Install Python dependencies using only pre-built wheels
-    pip3 install --only-binary=:all: \
-        cffi==1.17.1 \
-        cryptography==42.0.8 \
-        esptool
+    # Install Python dependencies using only pre-built wheels.
+    # cryptography comes from PyPI: its armv7 wheel includes OpenSSL, while the piwheels
+    # build links the system OpenSSL, with a different time_t size on 32-bit trixie.
+    PIP_EXTRA_INDEX_URL= pip3 install --only-binary=:all: cryptography
+    # esptool is only released as source on PyPI: piwheels serves it as a wheel.
+    # The flash script uses the underscore spelling that esptool 5 deprecated.
+    pip3 install --only-binary=:all: "esptool>=5,<6"
 
     # Install Particle CLI
     CLI_VERSION="3.29.1"

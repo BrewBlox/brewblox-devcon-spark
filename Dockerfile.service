@@ -1,4 +1,4 @@
-FROM python:3.11-bookworm AS base
+FROM python:3.13-trixie AS base
 
 # Declare a build argument for the target architecture
 ARG TARGETPLATFORM
@@ -43,7 +43,7 @@ RUN ARCH="$(dpkg --print-architecture)"; \
     rm -f ./brewblox-amd64.sim; rm -f brewblox-arm32.sim; \
     fi;
 
-FROM python:3.11-slim-bookworm
+FROM python:3.13-slim-trixie
 EXPOSE 5000
 WORKDIR /app
 
