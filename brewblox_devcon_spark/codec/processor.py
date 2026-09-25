@@ -187,7 +187,7 @@ class ProtobufProcessor:
                 yield element
 
             # Repeated fields are generic collections, expressed in json as list or dict
-            elif field.label == FieldDescriptor.LABEL_REPEATED:
+            elif field.is_repeated:
                 # map<K, V> field
                 # traverse all values
                 # The content is serialized as repeated `{ key: K, value: V }` entries
@@ -439,7 +439,7 @@ class ProtobufProcessor:
                 elif mode != ReadMode.CHANGED:
                     obj[key] = {} if is_map(items) else []
 
-            elif present and field.message_type and field.label != FieldDescriptor.LABEL_REPEATED:
+            elif present and field.message_type and not field.is_repeated:
                 self.fill(field.message_type, obj[key], mode)
 
         return obj
