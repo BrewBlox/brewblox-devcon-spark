@@ -1175,12 +1175,14 @@ async def test_changed_merge(client: AsyncClient):
         )
     )
 
-    # Only CHANGED reads bring the readonly state that follows from the writes
+    # Only CHANGED reads bring the readonly state that follows from the writes.
+    # The PWM setting settles last: the balancer grants it on its own interval (1 s),
+    # so the max constraint can already be limiting while the setting is still 0.
     pid_error = cached('pid')['error']
     for _ in range(30):
         await asyncio.sleep(0.1)
         await cmder.read_all_blocks(ReadMode.CHANGED)
-        if cached('pwm')['constraints']['max']['limiting']:
+        if cached('pwm')['setting'] == 40:
             break
 
     assert cached('pair')['value']['value'] == 25

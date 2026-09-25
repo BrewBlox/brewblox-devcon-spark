@@ -103,15 +103,19 @@ class SparkApi:
 
         return sid
 
-    def _sync_block_id(self, block: FirmwareBlock | FirmwareBlockIdentity):
-        if block.id and block.nid:
-            self.block_store[block.id] = block.nid
+    def to_sid(self, nid: int, name: str | None = None) -> str | None:
+        """
+        The string id of block `nid`, as `to_block()` sets it.
+        A `name` read from the controller is added to the block store.
+        """
+        # Writing to the bidict is slow, and names rarely change
+        if name and nid and self.block_store.get(name) != nid:
+            self.block_store[name] = nid
+        return name or self._find_sid(nid)
 
     def _to_block_identity(self, block: FirmwareBlock) -> BlockIdentity:
-        self._sync_block_id(block)
-
         return BlockIdentity(
-            id=block.id or self._find_sid(block.nid),
+            id=self.to_sid(block.nid, block.id),
             nid=block.nid,
             type=block.type,
             serviceId=self.config.name,
@@ -123,8 +127,6 @@ class SparkApi:
         A block name in `block.id` is added to the block store.
         `block` is not modified: its data may be shared with a cache.
         """
-        self._sync_block_id(block)
-
         ident = self._to_block_identity(block)
         block = Block(
             id=ident.id,

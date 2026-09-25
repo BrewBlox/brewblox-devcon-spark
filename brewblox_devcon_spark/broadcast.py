@@ -17,12 +17,12 @@ If the service is not synchronized, only the status is published, every `full_re
 """
 
 import asyncio
-import copy
 import logging
 import time
 from collections.abc import Generator, Mapping
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
+from typing import Any
 
 from . import codec, command, exceptions, mqtt, spark_api, state_machine, utils
 from .block_analysis import calculate_claims, calculate_relations
@@ -40,6 +40,18 @@ from .models import (
 )
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _copy_data(value: Any) -> Any:
+    """
+    A deep copy of decoded block data: dicts and lists of immutable values.
+    Many times faster than `copy.deepcopy`, which the cache would otherwise spend most of a read on.
+    """
+    if isinstance(value, dict):
+        return {k: _copy_data(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_copy_data(v) for v in value]
+    return value
 
 
 @dataclass
@@ -188,7 +200,7 @@ class BlockCache:
 
     def _updated(self, seq: int, block: FirmwareBlock) -> CachedBlock:
         entry = self._entries.get(block.nid)
-        updated = CachedBlock(seq, block.type, copy.deepcopy(block.data))
+        updated = CachedBlock(seq, block.type, _copy_data(block.data))
         if entry is None or (entry.type, entry.data) != (updated.type, updated.data):
             self._dirty.add(block.nid)
         return updated
@@ -228,7 +240,7 @@ class BlockCache:
             if self._deleted_after(block.nid, seq):
                 continue
 
-            self._views[block.nid] = ReaderView(seq, block.type, copy.deepcopy(block.data))
+            self._views[block.nid] = ReaderView(seq, block.type, _copy_data(block.data))
 
             entry = self._entries.get(block.nid)
             if entry is not None and entry.seq > seq:
@@ -237,7 +249,7 @@ class BlockCache:
                 LOGGER.debug(f'CHANGED read of an unknown block: {block.nid} ({block.type})')
                 self.request_full(seq)
                 continue
-            self._merge_block(seq, block.nid, entry, copy.deepcopy(block.data))
+            self._merge_block(seq, block.nid, entry, _copy_data(block.data))
 
         # The controller left out the other blocks: their CHANGED payload is what it last sent.
         # Merge that again where a full read or a write response replaced it in the cache since.
@@ -246,7 +258,7 @@ class BlockCache:
             entry = self._entries.get(nid)
             if nid in sent or entry is None or entry.type != view.type or not view.seq < entry.seq < seq:
                 continue
-            self._merge_block(seq, nid, entry, copy.deepcopy(view.data))
+            self._merge_block(seq, nid, entry, _copy_data(view.data))
             view.seq = seq
 
     def _merge_block(self, seq: int, nid: int, entry: CachedBlock, partial: dict):
@@ -394,10 +406,10 @@ class Broadcaster:
 
         history = {}
         for nid, entry in entries.items():
-            logged = self._to_block(
-                nid, entry.type, self.codec.logged_view(entry.type, entry.data, full=full), names.get(nid)
-            )
-            history[logged.id] = logged.data
+            # What to_block() does to the ids, without building its models for every block on every tick
+            sid = self.api.to_sid(nid, names.get(nid))
+            logged = self.codec.logged_view(entry.type, entry.data, full=full)
+            history[sid] = spark_api.resolve_data_ids(logged, self.api.to_sid)
 
         self.mqtt_client.publish(
             self.history_topic,

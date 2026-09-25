@@ -4,32 +4,33 @@ Parses stream data into controlbox events and data
 
 import logging
 import re
+from collections import deque
 from collections.abc import Generator
-from queue import Queue
 
 LOGGER = logging.getLogger(__name__)
 
-# Pattern: '{start}(?P<message>[^{start}]*?){end}'
+# Pattern: '{start}(?P<message>[^{start}{end}]*){end}'
+# The same match as a lazy `[^{start}]*?`, without a backtracking step per character
 EVENT_END = '>'
-EVENT_PATTERN = re.compile('<(?P<message>[^<]*?)>')
+EVENT_PATTERN = re.compile('<(?P<message>[^<>]*)>')
 DATA_END = '\n'
-DATA_PATTERN = re.compile('^(?P<message>[^^]*?)\n')
+DATA_PATTERN = re.compile('^(?P<message>[^^\n]*)\n')
 
 
 class CboxParser:
     def __init__(self):
         self._buffer: str = ''
-        self._events = Queue()
-        self._data = Queue()
+        self._events: deque[str] = deque()
+        self._data: deque[str] = deque()
         self._messages: list[str] = []
 
     def event_messages(self) -> Generator[str, None, None]:
-        while self._events.qsize() > 0:
-            yield self._events.get_nowait()
+        while self._events:
+            yield self._events.popleft()
 
     def data_messages(self) -> Generator[str, None, None]:
-        while self._data.qsize() > 0:
-            yield self._data.get_nowait()
+        while self._data:
+            yield self._data.popleft()
 
     def reset(self):
         """
@@ -39,10 +40,8 @@ class CboxParser:
         """
         self._buffer = ''
         self._messages = []
-        while self._events.qsize() > 0:
-            self._events.get_nowait()
-        while self._data.qsize() > 0:
-            self._data.get_nowait()
+        self._events.clear()
+        self._data.clear()
 
     def push(self, recv: str):
         self._buffer += recv
@@ -52,13 +51,13 @@ class CboxParser:
         # Other annotations (including wrapped firmware logs) are handled by _on_event
         for msg in self._coerce_message_from_buffer(EVENT_PATTERN, EVENT_END):
             if msg:  # Skip empty annotations (e.g. from newlines)
-                self._events.put(msg)
+                self._events.append(msg)
 
         # Once annotations are filtered, all that remains is data
         # Data is newline-separated
         for msg in self._coerce_message_from_buffer(DATA_PATTERN, DATA_END):
             if msg:  # Skip empty lines
-                self._data.put(msg)
+                self._data.append(msg)
 
     def _extract_message(self, matchobj: re.Match) -> str:
         msg = matchobj.group('message').rstrip()

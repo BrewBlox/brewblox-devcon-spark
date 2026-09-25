@@ -114,6 +114,7 @@ def setup():
 
     # We need to declare listened topics before connect
     # If we subscribe to topic/+ here, we still receive messages for topic/id
+    # Requests are not listened to: every request this service sends would come back
 
     @mqtt_client.subscribe(HANDSHAKE_TOPIC + '+')
     async def on_handshake(client, topic: str, payload: bytes, qos, properties):
@@ -127,10 +128,6 @@ def setup():
 
     @mqtt_client.subscribe(LOG_TOPIC + '+')
     async def on_log(client, topic: str, payload: bytes, qos, properties):
-        pass
-
-    @mqtt_client.subscribe(REQUEST_TOPIC + '+')
-    async def on_request(client, topic: str, payload: bytes, qos, properties):
         pass
 
     @mqtt_client.subscribe(RESPONSE_TOPIC + '+')
