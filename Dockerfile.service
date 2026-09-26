@@ -14,7 +14,6 @@ WORKDIR /app
 RUN uv venv
 
 # Wheels only: building under QEMU is slow, and fails for packages that need Rust.
-# aiozeroconf is the exception: pure Python, but only released as source.
 # The package itself is not installed: uvicorn imports it from /app.
 # On arm/v7, piwheels serves the armv7l wheels that PyPI lacks; unsafe-best-match
 # lets uv fall back to PyPI for versions piwheels does not have, instead of
@@ -23,7 +22,7 @@ RUN if [ "$TARGETPLATFORM" = "linux/arm/v7" ]; then \
     INDEX="--index=https://www.piwheels.org/simple --index-strategy=unsafe-best-match"; \
     fi; \
     uv export --no-hashes --no-dev --no-emit-project | \
-    uv pip sync --verbose --only-binary=:all: --no-binary=aiozeroconf ${INDEX:-} -
+    uv pip sync --verbose --only-binary=:all: ${INDEX:-} -
 
 # A missing compiled protobuf wheel silently installs the pure-Python implementation,
 # which costs 18-30% more CPU per broadcast (measured on amd64).
