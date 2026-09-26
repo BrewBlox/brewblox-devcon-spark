@@ -1,7 +1,12 @@
+import random
+import sys
+
 import pytest
+from google.protobuf import json_format
+from google.protobuf.descriptor import Descriptor, FieldDescriptor
 
 from brewblox_devcon_spark import exceptions
-from brewblox_devcon_spark.codec import ProtobufProcessor, unit_conversion
+from brewblox_devcon_spark.codec import ProtobufProcessor, descriptors, processor, unit_conversion
 from brewblox_devcon_spark.codec.pb2 import TempSensorOneWire_pb2
 from brewblox_devcon_spark.models import DecodedPayload, ReadMode
 
@@ -166,3 +171,74 @@ def test_post_decode_names_failing_field(degc_processor: ProtobufProcessor, desc
         degc_processor.post_decode(desc, payload)
 
     assert 'address' in str(info.value)
+
+
+def _scaled_fields() -> list[FieldDescriptor]:
+    """One field for every combination of scale, unit and integer type in the compiled protos"""
+    found: dict[tuple, FieldDescriptor] = {}
+
+    def walk(desc: Descriptor):
+        for field in desc.fields:
+            opts = descriptors.options(field)
+            if opts.scale:
+                found.setdefault((opts.scale, opts.unit, field.cpp_type), field)
+        for nested in desc.nested_types:
+            walk(nested)
+
+    for module in list(sys.modules.values()):
+        if module.__name__.endswith('_pb2') and hasattr(module, 'DESCRIPTOR'):
+            for desc in module.DESCRIPTOR.message_types_by_name.values():
+                walk(desc)
+    return list(found.values())
+
+
+def test_decimals():
+    # degC and all other units: the scale alone decides
+    assert [processor._decimals(scale, 1) for scale in [2, 256, 1000, 4096, 16384, 2**19]] == [1, 3, 3, 4, 5, 6]
+    # degF: a step is 1.8 times larger
+    assert [processor._decimals(scale, 1.8) for scale in [2, 256, 1000, 4096, 16384]] == [1, 3, 3, 4, 4]
+    # Too fine for a float to hold more digits: not rounded
+    assert processor._decimals(2**41, 1) is None
+
+
+@pytest.mark.parametrize('temperature', ['degC', 'degF'])
+@pytest.mark.parametrize('field', _scaled_fields(), ids=lambda f: f.full_name)
+def test_rounding_is_lossless(temperature: str, field: FieldDescriptor):
+    """Decoded values are rounded to the decimals of their scale, and encode back to the same integer"""
+    unit_conversion.setup()
+    unit_conversion.CV.get().temperature = temperature
+    proc = ProtobufProcessor()
+    desc = field.containing_type
+    opts = descriptors.options(field)
+    unsigned = field.cpp_type in (FieldDescriptor.CPPTYPE_UINT32, FieldDescriptor.CPPTYPE_UINT64)
+    low = 0 if unsigned else -(2**31)
+
+    factor = proc._converter.to_user_factor(proc.unit_name(opts.unit)) if opts.unit else 1
+    decimals = processor._decimals(opts.scale, factor)
+
+    rng = random.Random(field.full_name)
+    numbers = [*range(0 if unsigned else -500, 500), *(rng.randint(low, 2**31 - 1) for _ in range(500))]
+    if opts.null_if_zero or opts.omit_if_zero:
+        numbers = [n for n in numbers if n != 0]
+
+    for n in numbers:
+        message = desc._concrete_class()
+        if field.is_repeated:
+            getattr(message, field.name).append(n)
+        else:
+            setattr(message, field.name, n)
+        content = json_format.MessageToDict(
+            message, preserving_proto_field_name=True, always_print_fields_with_no_presence=True
+        )
+        decoded = proc.post_decode(desc, DecodedPayload(blockId=1, blockType='Test', content=content))
+
+        value = decoded.content[field.name]
+        number = value[0] if field.is_repeated else value
+        number = number['value'] if isinstance(number, dict) else number
+        if decimals is not None:
+            assert number == round(number, decimals)
+
+        encoded = DecodedPayload(blockId=1, blockType='Test', content={field.name: value})
+        proc.pre_encode(desc, encoded, filter_values=False)
+        result = encoded.content[field.name]
+        assert int(result[0] if field.is_repeated else result) == n, (n, value)

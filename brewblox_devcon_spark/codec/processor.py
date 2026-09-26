@@ -4,6 +4,7 @@ Input/output modification functions for transcoding
 
 import ipaddress
 import logging
+import math
 import re
 from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
@@ -26,6 +27,9 @@ from .pb2 import brewblox_pb2
 from .time_utils import serialize_datetime
 
 LOGGER = logging.getLogger(__name__)
+
+# A float holds 15-17 significant digits: finer scales are not rounded
+MAX_DECIMALS = 12
 
 
 # Not frozen: a frozen dataclass is slow to build, and every decode builds one per value
@@ -90,6 +94,18 @@ def _decode_converts(field: FieldDescriptor) -> bool:
         or opts.ipv4address
         or opts.datetime
     )
+
+
+@cache
+def _decimals(scale: int, factor: float) -> int | None:
+    """
+    The decimals a value decoded with `scale` keeps, when its unit conversion multiplies it by `factor`.
+    A value divided by its scale has a long decimal expansion (81971/4096 is 20.012451171875).
+    Rounding to d decimals is off by at most 0.5e-d, which must stay below half a step, 0.5 * factor / scale:
+    then encoding the value gives the same integer again.
+    """
+    decimals = max(0, math.ceil(math.log10(scale / factor)))
+    return decimals if decimals <= MAX_DECIMALS else None
 
 
 class ProtobufProcessor:
@@ -457,7 +473,8 @@ class ProtobufProcessor:
         The content is expected to be completed by `fill()` first.
 
         Supported protobuf options:
-        * scale:        Divides value by scale before unit conversion.
+        * scale:        Divides value by scale before unit conversion, and rounds the result
+                        to the decimals that encode back to the same integer.
         * unit:         Converts to the user unit, and outputs a typed Quantity object.
         * objtype:      Outputs a typed Link object.
         * hexed:        Converts base64 decoder output to int.
@@ -549,6 +566,12 @@ class ProtobufProcessor:
             link_type = self.type_name(opts.objtype) if opts.objtype else None
             qty_system_unit = self.unit_name(opts.unit) if opts.unit else None
             qty_user_unit = self._converter.to_user_unit(qty_system_unit) if opts.unit else None
+            decimals = (
+                _decimals(opts.scale, self._converter.to_user_factor(qty_system_unit) if opts.unit else 1)
+                if opts.scale
+                else None
+            )
+            multiplier = 10**decimals if decimals is not None else None
 
             def _convert_value(value: float | int | str | None) -> float | int | str | dict | None:
                 # None is the invalid marker: absent optional readonly fields are filled with None
@@ -568,6 +591,12 @@ class ProtobufProcessor:
                         value = self.int_to_ipv4(value)
                     elif opts.datetime:
                         value = serialize_datetime(value, DateFormatOpt.ISO8601)
+
+                    # Only the digits the scale can carry: the rest is noise to readers,
+                    # and costs space in history.
+                    # The same float as round(value, decimals), which is slow: it formats the value as a string
+                    if multiplier is not None:
+                        value = round(value * multiplier) / multiplier
 
                 # Invalid quantities and links keep their typed shell
                 if opts.unit:

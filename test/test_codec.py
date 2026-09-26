@@ -8,10 +8,11 @@ from typing import Any
 
 import pytest
 from fastapi import FastAPI
+from google.protobuf.descriptor import Descriptor, FieldDescriptor
 from google.protobuf.message import Message
 
 from brewblox_devcon_spark import codec, exceptions
-from brewblox_devcon_spark.codec import Codec, NeedFullRead, descriptors, lookup, pb2
+from brewblox_devcon_spark.codec import Codec, NeedFullRead, descriptors, lookup, pb2, processor
 from brewblox_devcon_spark.models import (
     DecodedPayload,
     EncodedPayload,
@@ -837,6 +838,26 @@ async def test_merge_edge_cases():
 # Logged view: the history format, derived from the DEFAULT decode
 
 
+def _rounded(desc: Descriptor, logged: dict) -> dict:
+    """
+    The golden values predate the rounding of decoded values to the decimals of their scale:
+    round them the same way. The tests decode in degC, so every unit conversion factor is 1.
+    """
+    return {key: _rounded_value(desc.fields_by_name[key.split('[')[0].split('<')[0]], v) for key, v in logged.items()}
+
+
+def _rounded_value(field: FieldDescriptor, value: Any) -> Any:
+    if isinstance(value, list):
+        return [_rounded_value(field, v) for v in value]
+    if isinstance(value, dict):
+        return _rounded(field.message_type, value)
+    scale = descriptors.options(field).scale
+    decimals = processor._decimals(scale, 1) if scale else None
+    if decimals is None or not isinstance(value, float):
+        return value
+    return round(value, decimals)
+
+
 @pytest.mark.parametrize('case', GOLDEN, ids=[f'{c["blockType"]}-{c["variant"]}' for c in GOLDEN])
 async def test_logged_view_golden(case: dict):
     """
@@ -849,8 +870,8 @@ async def test_logged_view_golden(case: dict):
     content = cdc.decode_payload(payload).content
     view = cdc.logged_view(block_type, content, full=True)
 
-    expected = deepcopy(case['logged'])
     desc = next(v for v in lookup.CV_OBJECTS.get() if v.type_str == block_type).message_cls.DESCRIPTOR
+    expected = _rounded(desc, deepcopy(case['logged']))
 
     # Intended differences, only for fields that are absent from the payload (the 'empty' variant).
     # The old LOGGED decode left the key out. Now:
