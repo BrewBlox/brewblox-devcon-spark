@@ -840,8 +840,9 @@ async def test_merge_edge_cases():
 
 def _rounded(desc: Descriptor, logged: dict) -> dict:
     """
-    The golden values predate the rounding of decoded values to the decimals of their scale:
-    round them the same way. The tests decode in degC, so every unit conversion factor is 1.
+    The golden values predate the rounding of decoded values to the decimals of their scale,
+    and of logged values to logged_decimals: round them the same way.
+    The tests decode in degC, so every unit conversion factor is 1.
     """
     return {key: _rounded_value(desc.fields_by_name[key.split('[')[0].split('<')[0]], v) for key, v in logged.items()}
 
@@ -851,11 +852,12 @@ def _rounded_value(field: FieldDescriptor, value: Any) -> Any:
         return [_rounded_value(field, v) for v in value]
     if isinstance(value, dict):
         return _rounded(field.message_type, value)
-    scale = descriptors.options(field).scale
-    decimals = processor._decimals(scale, 1) if scale else None
+    opts = descriptors.options(field)
+    decimals = processor._decimals(opts.scale, 1) if opts.scale else None
     if decimals is None or not isinstance(value, float):
         return value
-    return round(value, decimals)
+    value = round(value, decimals)
+    return round(value, opts.logged_decimals) if opts.HasField('logged_decimals') else value
 
 
 @pytest.mark.parametrize('case', GOLDEN, ids=[f'{c["blockType"]}-{c["variant"]}' for c in GOLDEN])
@@ -895,6 +897,17 @@ async def test_logged_view_golden(case: dict):
 
 async def test_logged_view():
     cdc = codec.CV.get()
+
+    # History keeps logged_decimals where set, fewer than the API value keeps
+    content = decode(pb2.TempSensorOneWire_pb2.Block(value=81971))
+    assert content['value']['value'] == 20.0125
+    assert cdc.logged_view('TempSensorOneWire', content, full=True) == {'value[degC]': 20.012}
+    content = decode(pb2.TempSensorOneWire_pb2.Block())
+    assert cdc.logged_view('TempSensorOneWire', content, full=True) == {'value[degC]': None}
+    content = decode(Pid.Block(p=81971, derivative=12345))
+    logged = cdc.logged_view('Pid', content, full=True)
+    assert logged['p'] == 20.01
+    assert logged['derivative'] == 0.023546  # not set: the scale's 6 decimals
 
     # skip_changed fields are only in the full view
     content = decode(SysInfo.Block(uptime=1000, memoryFree=100, version='v1'))

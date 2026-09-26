@@ -20,7 +20,7 @@ from google.protobuf import descriptor_pb2
 from google.protobuf.descriptor import Descriptor
 
 from brewblox_devcon_spark import codec
-from brewblox_devcon_spark.codec import descriptors, lookup, pb2, unit_conversion
+from brewblox_devcon_spark.codec import descriptors, lookup, pb2, processor, unit_conversion
 from brewblox_devcon_spark.models import CrossPlatformResetReason, EncodedPayload
 from test.fixtures.messages import populate
 
@@ -370,6 +370,34 @@ def test_logged_fields_are_plain():
                 assert not descriptors.list_wrapper(field), (block_type, *path)
                 assert not descriptors.is_map(field), (block_type, *path)
                 assert field.message_type or not field.is_repeated, (block_type, *path)
+
+
+def test_logged_decimals():
+    """
+    logged_decimals is only set on logged fields with a scale, and keeps fewer decimals than the scale allows,
+    in degC and in degF: otherwise it would change nothing, or claim precision the value does not have.
+    """
+    temperature_units = {pb2.brewblox_pb2.UnitType.Value(u) for u in ['Celsius', 'DeltaCelsius']}
+    for block_type, desc in block_descriptors().items():
+        for path, field, _ in walk_fields(desc):
+            opts = descriptors.options(field)
+            if not opts.HasField('logged_decimals'):
+                continue
+            assert opts.logged, (block_type, *path)
+            assert opts.scale, (block_type, *path)
+            for factor in [1, 1.8] if opts.unit in temperature_units else [1]:
+                assert 0 <= opts.logged_decimals < processor._decimals(opts.scale, factor), (block_type, *path)
+
+
+def test_logged_temperatures_keep_3_decimals():
+    """Decided for history: 0.001 degree, for every logged temperature and temperature difference"""
+    temperature_units = {pb2.brewblox_pb2.UnitType.Value(u) for u in ['Celsius', 'DeltaCelsius']}
+    for block_type, desc in block_descriptors().items():
+        for path, field, _ in walk_fields(desc):
+            opts = descriptors.options(field)
+            if opts.logged and opts.unit in temperature_units:
+                assert opts.HasField('logged_decimals'), (block_type, *path)
+                assert opts.logged_decimals == 3, (block_type, *path)
 
 
 def test_logged_view_of_every_block_type():
