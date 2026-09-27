@@ -803,6 +803,8 @@ async def test_read_timeout(bc: Broadcaster, mocker: MockerFixture):
     mock_connection.NEXT_ERROR.extend([None, None])
     await bc.tick()
     assert bc.cache.need_full
+    # The check runs in a task: from Python 3.13, the spy records the call when the task starts
+    await asyncio.sleep(0)
     assert s_check.call_count == 1
     await asyncio.wait_for(state.wait_disconnected(), timeout=1)
     assert s_reset.await_count == 1
