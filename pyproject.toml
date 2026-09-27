@@ -92,9 +92,7 @@ dependencies = [
     # Without it, arm/v7 silently installs the slower pure-Python implementation.
     "protobuf==7.36.2",
     "aiofiles<24.0.0,>=23.2.1",
-    "aiozeroconf<1.0.0,>=0.1.8",
-    # Replaces netifaces (see override-dependencies): same module, with wheels
-    "netifaces-plus<1.0.0,>=0.12.5",
+    "zeroconf<1.0.0,>=0.151.3",
     "debugpy<2.0.0,>=1.5.1",
     "Pint<1.0,>=0.24.4",
     "pytimeparse<2.0.0,>=1.1.8",
@@ -112,8 +110,6 @@ dependencies = [
 ]
 
 [tool.uv]
-# netifaces (required by aiozeroconf) has no wheels, and is unmaintained
-override-dependencies = ["netifaces ; sys_platform == 'never'"]
 # Versions with known vulnerabilities, of packages we don't require directly
 constraint-dependencies = [
     "anyio>=4.14.2",
