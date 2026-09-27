@@ -301,6 +301,7 @@ def test_uncovered_non_optional_leaves():
         ('SysInfo', 'memoryFreeContiguous'),
         ('SysInfo', 'memoryFreeLowest'),
         ('SysInfo', 'mainTaskStackFreeLowest'),
+        ('SetpointSensorPair', 'updateInterval'),
         ('Spark3Pins', 'voltage5'),
         ('Spark3Pins', 'voltage12'),
         ('WiFiSettings', 'signal'),

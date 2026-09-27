@@ -892,6 +892,13 @@ async def test_logged_view_golden(case: dict):
             assert view[key] == 0, key
         expected[key] = view[key]
 
+    # An omit_if_zero field (SysInfo.mainTaskStackFreeLowest since proto 11f23053) leaves a zero out
+    for key in set(expected) - set(view):
+        field = desc.fields_by_name[key.split('[')[0].split('<')[0]]
+        assert descriptors.options(field).omit_if_zero, key
+        assert expected[key] == 0, key
+        del expected[key]
+
     assert view == expected
 
 
