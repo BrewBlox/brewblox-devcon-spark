@@ -19,6 +19,8 @@ RUN <<EOF bash
     # Install Python dependencies using only pre-built wheels.
     # cryptography comes from PyPI: its armv7 wheel includes OpenSSL, while the piwheels
     # build links the system OpenSSL, with a different time_t size on 32-bit trixie.
+    # PyPI has no armv7 wheel of its dependency cffi: that one comes from piwheels first.
+    pip3 install --only-binary=:all: cffi
     PIP_EXTRA_INDEX_URL= pip3 install --only-binary=:all: cryptography
     # esptool is only released as source on PyPI: piwheels serves it as a wheel.
     # The flash script uses the underscore spelling that esptool 5 deprecated.
