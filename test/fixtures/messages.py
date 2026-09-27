@@ -54,7 +54,7 @@ def populate(message: Message, counter: Iterator[int] | None = None) -> Message:
                 populate(container[key], counter)
             else:
                 container[key] = _scalar(value_field, n)
-        elif field.label == FieldDescriptor.LABEL_REPEATED:
+        elif field.is_repeated:
             container = getattr(message, field.name)
             if field.message_type:
                 populate(container.add(), counter)
@@ -83,7 +83,7 @@ def _zeroed(message: Message) -> Iterator[Message]:
     Proto3 `optional` fields are not oneof members here.
     """
     for field in message.DESCRIPTOR.fields:
-        if field.label == FieldDescriptor.LABEL_REPEATED:
+        if field.is_repeated:
             continue
         member = field.containing_oneof is not None and not descriptors.is_optional(field)
 
@@ -130,7 +130,7 @@ def add_zero_members(message: Message) -> Message:
             for key, value in list(container.items())[:1]:
                 for idx, zeroed in enumerate(_zeroed(value)):
                     container[f'{key}_zero{idx}'].CopyFrom(zeroed)
-        elif field.label == FieldDescriptor.LABEL_REPEATED:
+        elif field.is_repeated:
             for element in container:
                 add_zero_members(element)
             container.extend([zeroed for element in container[:1] for zeroed in _zeroed(element)])

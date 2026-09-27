@@ -17,7 +17,7 @@ from typing import Any
 
 import pytest
 from google.protobuf import descriptor_pb2
-from google.protobuf.descriptor import Descriptor, FieldDescriptor
+from google.protobuf.descriptor import Descriptor
 
 from brewblox_devcon_spark import codec
 from brewblox_devcon_spark.codec import descriptors, lookup, pb2, unit_conversion
@@ -123,7 +123,7 @@ def walk_fields(desc: Descriptor, path: tuple[str, ...] = (), in_list=False) -> 
         yield (*path, field.name), field, in_list
         msg = descriptors.value_type(field)
         if msg is not None:
-            nested = in_list or field.label == FieldDescriptor.LABEL_REPEATED
+            nested = in_list or field.is_repeated
             yield from walk_fields(msg, (*path, field.name), nested)
 
 
@@ -285,7 +285,7 @@ def test_uncovered_non_optional_leaves():
     for block_type, desc in block_descriptors().items():
         for path, field, in_list in walk_fields(desc):
             opts = descriptors.options(field)
-            if in_list or field.message_type or field.label == FieldDescriptor.LABEL_REPEATED or opts.ignored:
+            if in_list or field.message_type or field.is_repeated or opts.ignored:
                 continue
             assert not (opts.skip_changed and field.has_presence), (block_type, *path)
             if not descriptors.is_optional(field) and not descriptors.is_covered(field):
@@ -369,7 +369,7 @@ def test_logged_fields_are_plain():
             if descriptors.options(field).logged:
                 assert not descriptors.list_wrapper(field), (block_type, *path)
                 assert not descriptors.is_map(field), (block_type, *path)
-                assert field.message_type or field.label != FieldDescriptor.LABEL_REPEATED, (block_type, *path)
+                assert field.message_type or not field.is_repeated, (block_type, *path)
 
 
 def test_logged_view_of_every_block_type():

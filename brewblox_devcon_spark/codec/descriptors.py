@@ -81,10 +81,10 @@ def list_wrapper(field: FieldDescriptor) -> FieldDescriptor | None:
     a repeated field (maps included) named `items`.
     """
     msg = field.message_type
-    if msg is None or field.label == FieldDescriptor.LABEL_REPEATED or len(msg.fields) != 1:
+    if msg is None or field.is_repeated or len(msg.fields) != 1:
         return None
     items = msg.fields[0]
-    if items.name == 'items' and items.label == FieldDescriptor.LABEL_REPEATED:
+    if items.name == 'items' and items.is_repeated:
         return items
     return None
 
@@ -120,7 +120,7 @@ def reset_value(field: FieldDescriptor) -> Any:
     """
     if items := list_wrapper(field):
         return {'items': {} if is_map(items) else []}
-    if field.label == FieldDescriptor.LABEL_REPEATED:
+    if field.is_repeated:
         return {} if is_map(field) else []
     if field.message_type:
         return {
@@ -160,7 +160,7 @@ def coverage(desc: Descriptor) -> Mapping[str, CoverageNode]:
     for field in desc.fields:
         if not is_covered(field):
             continue
-        if field.message_type and field.label != FieldDescriptor.LABEL_REPEATED and not list_wrapper(field):
+        if field.message_type and not field.is_repeated and not list_wrapper(field):
             nodes[field.name] = CoverageNode(field, coverage(field.message_type))
         else:
             nodes[field.name] = CoverageNode(field)

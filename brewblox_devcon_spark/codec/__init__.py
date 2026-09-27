@@ -93,7 +93,7 @@ class Codec:
             decoded: dict = json_format.MessageToDict(
                 message=message,
                 preserving_proto_field_name=True,
-                including_default_value_fields=True,
+                always_print_fields_with_no_presence=True,
                 use_integers_for_enums=False,
             )
 
@@ -124,7 +124,7 @@ class Codec:
             decoded: dict = json_format.MessageToDict(
                 message=message,
                 preserving_proto_field_name=True,
-                including_default_value_fields=True,
+                always_print_fields_with_no_presence=True,
                 use_integers_for_enums=False,
             )
 
@@ -292,7 +292,7 @@ class Codec:
         content: dict = json_format.MessageToDict(
             message=message,
             preserving_proto_field_name=True,
-            including_default_value_fields=True,
+            always_print_fields_with_no_presence=True,
             use_integers_for_enums=(mode == ReadMode.STORED),
         )
         self._processor.fill(message.DESCRIPTOR, content, mode)

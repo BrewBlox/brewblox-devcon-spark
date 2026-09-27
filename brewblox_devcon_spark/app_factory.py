@@ -71,7 +71,7 @@ def add_exception_handlers(app: FastAPI):
 
         logger.error(f'[{request.url}] => {msg}')
         return JSONResponse(
-            content.model_dump(mode='json', exclude_none=True), status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
+            content.model_dump(mode='json', exclude_none=True), status_code=status.HTTP_422_UNPROCESSABLE_CONTENT
         )
 
     @app.exception_handler(ResponseValidationError)

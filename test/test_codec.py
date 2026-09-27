@@ -8,7 +8,6 @@ from typing import Any
 
 import pytest
 from fastapi import FastAPI
-from google.protobuf.descriptor import FieldDescriptor
 from google.protobuf.message import Message
 
 from brewblox_devcon_spark import codec, exceptions
@@ -70,7 +69,7 @@ def parsed(payload: EncodedPayload, cls: type[Message]) -> Message:
 def _copy_covered(src: Message, dst: Message):
     for key, node in descriptors.coverage(src.DESCRIPTOR).items():
         field = node.field
-        if field.label == FieldDescriptor.LABEL_REPEATED:
+        if field.is_repeated:
             getattr(dst, key).extend(getattr(src, key))
         elif not field.has_presence:
             setattr(dst, key, getattr(src, key))

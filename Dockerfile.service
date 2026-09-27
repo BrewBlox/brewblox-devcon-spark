@@ -13,17 +13,21 @@ WORKDIR /app
 
 RUN uv venv
 
-# Wheels only (--no-build). On arm/v7, piwheels serves the armv7l wheels
-# that PyPI lacks; unsafe-best-match lets uv fall back to PyPI for versions
-# piwheels does not have, instead of refusing once a package exists there.
-# arm64 and amd64 are served by PyPI alone.
+# Wheels only: building under QEMU is slow, and fails for packages that need Rust.
+# aiozeroconf is the exception: pure Python, but only released as source.
+# The package itself is not installed: uvicorn imports it from /app.
+# On arm/v7, piwheels serves the armv7l wheels that PyPI lacks; unsafe-best-match
+# lets uv fall back to PyPI for versions piwheels does not have, instead of
+# refusing once a package exists there. arm64 and amd64 are served by PyPI alone.
 RUN if [ "$TARGETPLATFORM" = "linux/arm/v7" ]; then \
-    uv export --no-hashes --no-dev --no-build | \
-    uv pip sync --verbose --index=https://www.piwheels.org/simple --index-strategy unsafe-best-match -; \
-    else \
-    uv export --no-hashes --no-dev --no-build | \
-    uv pip sync --verbose -; \
-    fi
+    INDEX="--index=https://www.piwheels.org/simple --index-strategy=unsafe-best-match"; \
+    fi; \
+    uv export --no-hashes --no-dev --no-emit-project | \
+    uv pip sync --verbose --only-binary=:all: --no-binary=aiozeroconf ${INDEX:-} -
+
+# A missing compiled protobuf wheel silently installs the pure-Python implementation,
+# which costs 18-30% more CPU per broadcast (measured on amd64).
+RUN .venv/bin/python -c "from google.protobuf.internal import api_implementation as a; assert a.Type() == 'upb', a.Type()"
 
 RUN ARCH="$(dpkg --print-architecture)"; \
     set -ex; \
@@ -42,6 +46,9 @@ RUN ARCH="$(dpkg --print-architecture)"; \
 FROM python:3.11-slim-bookworm
 EXPOSE 5000
 WORKDIR /app
+
+# The service runs from its own venv: the system pip and setuptools only add vulnerabilities
+RUN python -m pip uninstall --yes pip setuptools wheel
 
 ENV VENV=/app/.venv
 ENV PATH="$VENV/bin:$PATH"

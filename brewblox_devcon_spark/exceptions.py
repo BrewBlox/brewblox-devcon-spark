@@ -94,7 +94,7 @@ class DecodeException(CodecException):
 
 
 class UnknownCodecType(CodecException):
-    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 ##################################################################################################
