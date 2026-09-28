@@ -8,10 +8,11 @@ from typing import Any
 
 import pytest
 from fastapi import FastAPI
+from google.protobuf.descriptor import Descriptor, FieldDescriptor
 from google.protobuf.message import Message
 
 from brewblox_devcon_spark import codec, exceptions
-from brewblox_devcon_spark.codec import Codec, NeedFullRead, descriptors, lookup, pb2
+from brewblox_devcon_spark.codec import Codec, NeedFullRead, descriptors, lookup, pb2, processor
 from brewblox_devcon_spark.models import (
     DecodedPayload,
     EncodedPayload,
@@ -837,6 +838,28 @@ async def test_merge_edge_cases():
 # Logged view: the history format, derived from the DEFAULT decode
 
 
+def _rounded(desc: Descriptor, logged: dict) -> dict:
+    """
+    The golden values predate the rounding of decoded values to the decimals of their scale,
+    and of logged values to logged_decimals: round them the same way.
+    The tests decode in degC, so every unit conversion factor is 1.
+    """
+    return {key: _rounded_value(desc.fields_by_name[key.split('[')[0].split('<')[0]], v) for key, v in logged.items()}
+
+
+def _rounded_value(field: FieldDescriptor, value: Any) -> Any:
+    if isinstance(value, list):
+        return [_rounded_value(field, v) for v in value]
+    if isinstance(value, dict):
+        return _rounded(field.message_type, value)
+    opts = descriptors.options(field)
+    decimals = processor._decimals(opts.scale, 1) if opts.scale else None
+    if decimals is None or not isinstance(value, float):
+        return value
+    value = round(value, decimals)
+    return round(value, opts.logged_decimals) if opts.HasField('logged_decimals') else value
+
+
 @pytest.mark.parametrize('case', GOLDEN, ids=[f'{c["blockType"]}-{c["variant"]}' for c in GOLDEN])
 async def test_logged_view_golden(case: dict):
     """
@@ -849,8 +872,8 @@ async def test_logged_view_golden(case: dict):
     content = cdc.decode_payload(payload).content
     view = cdc.logged_view(block_type, content, full=True)
 
-    expected = deepcopy(case['logged'])
     desc = next(v for v in lookup.CV_OBJECTS.get() if v.type_str == block_type).message_cls.DESCRIPTOR
+    expected = _rounded(desc, deepcopy(case['logged']))
 
     # Intended differences, only for fields that are absent from the payload (the 'empty' variant).
     # The old LOGGED decode left the key out. Now:
@@ -869,11 +892,29 @@ async def test_logged_view_golden(case: dict):
             assert view[key] == 0, key
         expected[key] = view[key]
 
+    # An omit_if_zero field (SysInfo.mainTaskStackFreeLowest since proto 11f23053) leaves a zero out
+    for key in set(expected) - set(view):
+        field = desc.fields_by_name[key.split('[')[0].split('<')[0]]
+        assert descriptors.options(field).omit_if_zero, key
+        assert expected[key] == 0, key
+        del expected[key]
+
     assert view == expected
 
 
 async def test_logged_view():
     cdc = codec.CV.get()
+
+    # History keeps logged_decimals where set, fewer than the API value keeps
+    content = decode(pb2.TempSensorOneWire_pb2.Block(value=81971))
+    assert content['value']['value'] == 20.0125
+    assert cdc.logged_view('TempSensorOneWire', content, full=True) == {'value[degC]': 20.012}
+    content = decode(pb2.TempSensorOneWire_pb2.Block())
+    assert cdc.logged_view('TempSensorOneWire', content, full=True) == {'value[degC]': None}
+    content = decode(Pid.Block(p=81971, derivative=12345))
+    logged = cdc.logged_view('Pid', content, full=True)
+    assert logged['p'] == 20.01
+    assert logged['derivative'] == 0.023546  # not set: the scale's 6 decimals
 
     # skip_changed fields are only in the full view
     content = decode(SysInfo.Block(uptime=1000, memoryFree=100, version='v1'))

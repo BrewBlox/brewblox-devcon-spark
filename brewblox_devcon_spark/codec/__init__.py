@@ -37,6 +37,11 @@ def _object_lookup(block_type: str) -> lookup.ObjectLookup | None:
     return lookup.CV_OBJECTS_BY_TYPE.get().get(block_type)
 
 
+def _coarse(value: float | None, multiplier: int) -> float | None:
+    # logged_decimals: history keeps fewer decimals than the scale allows
+    return None if value is None else round(value * multiplier) / multiplier
+
+
 def _logged(nodes: Mapping[str, descriptors.LoggedNode], obj: dict, *, full: bool) -> dict:
     out = {}
     for key, node in nodes.items():
@@ -52,7 +57,8 @@ def _logged(nodes: Mapping[str, descriptors.LoggedNode], obj: dict, *, full: boo
                 out[key] = _logged(node.children, value, full=full)
 
         elif bloxfield.is_quantity(value):
-            out[f'{key}[{value["unit"]}]'] = value['value']
+            number = value['value']
+            out[f'{key}[{value["unit"]}]'] = number if node.multiplier is None else _coarse(number, node.multiplier)
 
         elif bloxfield.is_link(value):
             out[f'{key}<{value["type"]}>'] = value['id']
@@ -64,7 +70,7 @@ def _logged(nodes: Mapping[str, descriptors.LoggedNode], obj: dict, *, full: boo
             out[key] = time_utils.serialize_datetime(value, DateFormatOpt.SECONDS)
 
         else:
-            out[key] = value
+            out[key] = value if node.multiplier is None else _coarse(value, node.multiplier)
 
     return out
 

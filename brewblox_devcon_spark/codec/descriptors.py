@@ -43,6 +43,9 @@ class LoggedNode:
     skip_changed: bool
     """Only included in history on full reads."""
 
+    multiplier: int | None = None
+    """10 ** logged_decimals: history keeps fewer decimals than the scale allows. None if not set."""
+
 
 @cache
 def options(field: FieldDescriptor) -> brewblox_pb2.FieldOpts:
@@ -197,5 +200,6 @@ def logged_fields(desc: Descriptor) -> Mapping[str, LoggedNode]:
         opts = options(field)
         if opts.logged:
             msg = field.message_type
-            nodes[field.name] = LoggedNode(field, logged_fields(msg) if msg else None, opts.skip_changed)
+            multiplier = 10**opts.logged_decimals if opts.HasField('logged_decimals') else None
+            nodes[field.name] = LoggedNode(field, logged_fields(msg) if msg else None, opts.skip_changed, multiplier)
     return MappingProxyType(nodes)

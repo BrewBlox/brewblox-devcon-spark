@@ -57,6 +57,12 @@ def _convert(amount: float, src: str, dst: str) -> float:
     return _UREG.Quantity(amount, _unit(src)).to(_unit(dst)).magnitude
 
 
+@cache
+def _slope(src: str, dst: str) -> float:
+    # The offset of degC to degF cancels out
+    return abs(_convert(1, src, dst) - _convert(0, src, dst))
+
+
 @dataclass(frozen=True)
 class UnitMapping:
     key: str
@@ -103,6 +109,11 @@ class UnitConverter:
     def to_user_value(self, amount: float, id: str) -> float:
         mapping = self._table[id]
         return _convert(amount, mapping.system_value, mapping.user_value)
+
+    def to_user_factor(self, id: str) -> float:
+        """How much a user value changes when its system value changes by 1"""
+        mapping = self._table[id]
+        return _slope(mapping.system_value, mapping.user_value)
 
     def to_sys_unit(self, id):
         return self._table[id].system_value
