@@ -116,6 +116,10 @@ async def test_unexpected_event(caplog: pytest.LogCaptureFixture):
     assert record.levelname == 'INFO'
     assert 'hello world' in record.message
 
+    # The firmware escapes <, > and &: the log shows the text as written
+    await connection.CV.get().on_event('a &lt;b&gt; &amp;amp;')
+    assert caplog.records[-1].message == 'Firmware log: `a <b> &amp;`'
+
 
 async def test_pre_handshake_garbage(caplog: pytest.LogCaptureFixture):
     """Garbage messages received before handshake are ignored silently."""

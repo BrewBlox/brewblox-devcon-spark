@@ -4,6 +4,7 @@ Requests are matched with responses here.
 """
 
 import asyncio
+import html
 import logging
 from collections.abc import Callable
 from contextvars import ContextVar
@@ -203,7 +204,8 @@ class CboxCommander:
             self.state.set_acknowledged(desc)
 
         else:
-            LOGGER.info(f'Firmware log: `{msg}`')
+            # The firmware escapes <, > and & as entities: they would break the <event> framing
+            LOGGER.info(f'Firmware log: `{html.unescape(msg)}`')
 
     async def _on_response(self, msg: str):
         try:

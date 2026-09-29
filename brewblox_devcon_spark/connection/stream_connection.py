@@ -5,6 +5,7 @@ For serial and simulation targets, the TCP server is a subprocess.
 """
 
 import asyncio
+import codecs
 import logging
 import os
 import platform
@@ -36,19 +37,29 @@ SPARK_DEVICE_REGEX = f'(?:{"|".join([dev for dev in SPARK_HWIDS])})'
 LOGGER = logging.getLogger(__name__)
 
 
+def _utf8_decoder() -> codecs.IncrementalDecoder:
+    """
+    Decodes the byte stream across reads: a read can end inside a multi-byte character,
+    and a serial line can corrupt a byte. A strict decode per read would raise in data_received,
+    and asyncio closes the connection.
+    """
+    return codecs.getincrementaldecoder('utf-8')(errors='replace')
+
+
 class StreamConnection(ConnectionImplBase):
     def __init__(self, kind: ConnectionKind_, address: str, callbacks: ConnectionCallbacks):
         super().__init__(kind, address, callbacks)
 
         self._transport: asyncio.Transport = None
         self._parser = CboxParser()
+        self._decoder = _utf8_decoder()
 
     def connection_made(self, transport: asyncio.Transport):
         self._transport = transport
         self.connected.set()
 
     def data_received(self, recv: bytes):
-        self._parser.push(recv.decode())
+        self._parser.push(self._decoder.decode(recv))
 
         # Drain parsed messages
         for msg in self._parser.event_messages():
@@ -68,6 +79,8 @@ class StreamConnection(ConnectionImplBase):
         self.disconnected.set()
 
     def reset_stream(self):
+        # A character left half-decoded would otherwise start the next session's first line
+        self._decoder.reset()
         self._parser.reset()
 
     async def send_request(self, msg: str):
