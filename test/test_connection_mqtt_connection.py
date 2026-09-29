@@ -140,3 +140,7 @@ async def test_mqtt_message_handling():
     await impl._resp_cb(None, None, b'6;1;sixth-second\n', 0, None)
 
     assert callbacks.on_response.await_args_list == [call('fourth'), call('fifth,fifth-second')]
+
+    # A garbled log line is logged, not raised
+    await impl._log_cb(None, None, b'log \xff', 0, None)
+    callbacks.on_event.assert_awaited_with('log \ufffd')

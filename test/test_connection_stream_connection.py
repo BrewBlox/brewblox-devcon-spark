@@ -143,3 +143,21 @@ async def test_discover_mdns_none(mocker: MockerFixture):
     m_mdns_discover.side_effect = asyncio.TimeoutError
     callbacks = DummyCallbacks()
     assert await stream_connection.discover_mdns(callbacks) is None
+
+
+async def test_utf8_across_reads():
+    """Bytes are decoded across reads: a character can be split, and a corrupt byte is replaced"""
+    callbacks = DummyCallbacks()
+    impl = stream_connection.StreamConnection('TCP', 'localhost:1234', callbacks)
+
+    impl.data_received(b'<caf\xc3')
+    impl.data_received(b'\xa9 \xff>')
+    await asyncio.wait_for(callbacks.event_ev.wait(), timeout=1)
+    assert callbacks.event_msg == 'café �'
+
+    # A character left half-decoded is dropped with the stream, not put before the next data
+    impl.data_received(b'stale\xc3')
+    impl.reset_stream()
+    impl.data_received(b'fresh\n')
+    await asyncio.wait_for(callbacks.response_ev.wait(), timeout=1)
+    assert callbacks.response_msg == 'fresh'

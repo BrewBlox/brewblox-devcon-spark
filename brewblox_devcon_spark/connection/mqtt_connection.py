@@ -72,7 +72,8 @@ class MqttConnection(ConnectionImplBase):
             await self.on_response(msg)
 
     async def _log_cb(self, client, topic, payload: bytes, qos, properties):
-        await self.on_event(payload.decode())
+        # A garbled log line is still logged
+        await self.on_event(payload.decode(errors='replace'))
 
     async def send_request(self, msg: str):
         self.mqtt_client.publish(self._request_topic, msg)
