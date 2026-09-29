@@ -318,7 +318,9 @@ class Codec:
           it is skipped if its partial is all default, else NeedFullRead is raised.
         Then every uncovered key in `partial` that has presence on the wire
         (an optional leaf, or a list wrapper) is set: the firmware sent it.
-        Other uncovered keys are decoded defaults (skip_changed fields), and are ignored.
+        Other uncovered keys are decoded defaults, and are ignored.
+        So are skip_changed fields: a CHANGED read never carries them, even with presence,
+        so their decoded value (a default, or None for an optional readonly field) says nothing.
 
         Stub types (UnknownType, ErrorObject, Deprecated) are replaced, never merged.
         """
@@ -362,6 +364,8 @@ class Codec:
             if key in nodes:
                 continue
             field = desc.fields_by_name[key]
+            if descriptors.options(field).skip_changed:
+                continue
             if not (descriptors.is_optional(field) or descriptors.list_wrapper(field)):
                 continue
             if key not in cached or cached[key] != value:

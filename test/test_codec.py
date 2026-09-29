@@ -872,10 +872,13 @@ async def test_logged_view_golden(case: dict):
     content = cdc.decode_payload(payload).content
     view = cdc.logged_view(block_type, content, full=True)
 
-    desc = next(v for v in lookup.CV_OBJECTS.get() if v.type_str == block_type).message_cls.DESCRIPTOR
+    message_cls = next(v for v in lookup.CV_OBJECTS.get() if v.type_str == block_type).message_cls
+    desc = message_cls.DESCRIPTOR
+    stored = message_cls.FromString(b64decode(case['payload']))
     expected = _rounded(desc, deepcopy(case['logged']))
 
-    # Intended differences, only for fields that are absent from the payload (the 'empty' variant).
+    # Intended differences, only for fields that are absent from the payload:
+    # the 'empty' variant, and fields added after the fixture was made (SysInfo.chipTemperature).
     # The old LOGGED decode left the key out. Now:
     # - an absent optional readonly field is None: invalid.
     # - an absent optional writable field has its default value.
@@ -884,8 +887,8 @@ async def test_logged_view_golden(case: dict):
     for key in set(view) - set(expected):
         name = key.split('[')[0].split('<')[0]
         field = desc.fields_by_name[name]
-        assert case['variant'] == 'empty', key
         assert descriptors.is_optional(field), key
+        assert not stored.HasField(name), key
         if descriptors.options(field).readonly:
             assert view[key] is None, key
         else:

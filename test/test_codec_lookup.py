@@ -9,6 +9,7 @@ from the compiled descriptors rather than the .proto sources.
 """
 
 import importlib
+from copy import deepcopy
 import re
 from base64 import b64encode
 from collections.abc import Iterator
@@ -21,7 +22,7 @@ from google.protobuf.descriptor import Descriptor
 
 from brewblox_devcon_spark import codec
 from brewblox_devcon_spark.codec import descriptors, lookup, pb2, processor, unit_conversion
-from brewblox_devcon_spark.models import CrossPlatformResetReason, EncodedPayload
+from brewblox_devcon_spark.models import CrossPlatformResetReason, EncodedPayload, ReadMode
 from test.fixtures.messages import populate
 
 BLOCK_OPTS = pb2.brewblox_pb2.msg
@@ -279,7 +280,8 @@ def test_uncovered_non_optional_leaves():
     Outside list elements, the only uncovered leaves without presence are skip_changed.
     A CHANGED decode fills them with zero, and the merge ignores them.
     The merge applies every other uncovered leaf that is present: it has presence,
-    so the firmware sent it. No skip_changed leaf may have presence.
+    so the firmware sent it. skip_changed leaves may have presence: the merge ignores them too
+    (test_skip_changed_survives_merge).
     """
     found = set()
     for block_type, desc in block_descriptors().items():
@@ -287,7 +289,6 @@ def test_uncovered_non_optional_leaves():
             opts = descriptors.options(field)
             if in_list or field.message_type or field.is_repeated or opts.ignored:
                 continue
-            assert not (opts.skip_changed and field.has_presence), (block_type, *path)
             if not descriptors.is_optional(field) and not descriptors.is_covered(field):
                 assert opts.skip_changed, (block_type, *path)
                 found.add((block_type, *path))
@@ -306,6 +307,41 @@ def test_uncovered_non_optional_leaves():
         ('Spark3Pins', 'voltage12'),
         ('WiFiSettings', 'signal'),
     }
+
+
+def test_skip_changed_survives_merge():
+    """
+    A CHANGED read never carries skip_changed fields: merging one keeps their cached values.
+    Its decode fills them with a default, or None for an optional readonly field (SysInfo.chipTemperature).
+    """
+    cdc = codec.CV.get()
+    checked = 0
+    for entry in lookup.CV_OBJECTS.get():
+        desc = entry.message_cls.DESCRIPTOR
+
+        def decode(message, mode):
+            payload = EncodedPayload(
+                blockId=100, blockType=entry.type_int, content=b64encode(message.SerializeToString()).decode()
+            )
+            return cdc.decode_payload(payload, mode=mode).content
+
+        cached = decode(populate(entry.message_cls()), ReadMode.DEFAULT)
+        before = deepcopy(cached)
+        cdc.merge_changed(entry.type_str, cached, decode(entry.message_cls(), ReadMode.CHANGED))
+
+        for path, field, in_list in walk_fields(desc):
+            if in_list or not descriptors.options(field).skip_changed:
+                continue
+            old, new = before, cached
+            for key in path:
+                old, new = old.get(key), new.get(key)
+                if old is None:
+                    break
+            if old is not None:
+                assert new == old, (entry.type_str, *path)
+                checked += 1
+
+    assert checked > 0
 
 
 def test_list_elements_have_no_presence():
@@ -437,6 +473,7 @@ def test_skip_changed_logged_paths():
         ('SysInfo', 'memoryFreeContiguous'),
         ('SysInfo', 'memoryFreeLowest'),
         ('SysInfo', 'mainTaskStackFreeLowest'),
+        ('SysInfo', 'chipTemperature'),
         ('WiFiSettings', 'signal'),
     }
     assert logged_paths(block_descriptors()['GpioModule']) == [
