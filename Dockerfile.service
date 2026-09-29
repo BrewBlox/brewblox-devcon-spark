@@ -3,7 +3,7 @@ FROM python:3.13-trixie AS base
 # Declare a build argument for the target architecture
 ARG TARGETPLATFORM
 
-ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy RUST_LOG=info
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 # Pinned installer: the uv release image has no linux/arm/v7 manifest.
 ADD https://astral.sh/uv/0.11.23/install.sh /uv-installer.sh
 RUN UV_INSTALL_DIR=/usr/local/bin UV_NO_MODIFY_PATH=1 sh /uv-installer.sh && rm /uv-installer.sh
@@ -22,7 +22,7 @@ RUN if [ "$TARGETPLATFORM" = "linux/arm/v7" ]; then \
     INDEX="--index=https://www.piwheels.org/simple --index-strategy=unsafe-best-match"; \
     fi; \
     uv export --no-hashes --no-dev --no-emit-project | \
-    uv pip sync --verbose --only-binary=:all: ${INDEX:-} -
+    uv pip sync --only-binary=:all: ${INDEX:-} -
 
 # A missing compiled protobuf wheel silently installs the pure-Python implementation,
 # which costs 18-30% more CPU per broadcast (measured on amd64).
