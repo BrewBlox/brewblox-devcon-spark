@@ -22,7 +22,7 @@ RUN if [ "$TARGETPLATFORM" = "linux/arm/v7" ]; then \
     INDEX="--index=https://www.piwheels.org/simple --index-strategy=unsafe-best-match"; \
     fi; \
     uv export --no-hashes --no-dev --no-emit-project | \
-    uv pip sync --verbose --only-binary=:all: ${INDEX:-} -
+    uv pip sync --only-binary=:all: ${INDEX:-} -
 
 # A missing compiled protobuf wheel silently installs the pure-Python implementation,
 # which costs 18-30% more CPU per broadcast (measured on amd64).
