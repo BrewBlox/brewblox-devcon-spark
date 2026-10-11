@@ -125,7 +125,7 @@ def from_line(line: str, line_num: int) -> dict:
             if unit_name in ['Celsius', 'DeltaCelsius']:
                 # Decimal value followed by C / F / dC / dF
                 # Unit notation is mandatory
-                match = re.match(r'^(\d+\.?\d*)\s*(d?[CF])$', value)
+                match = re.match(r'^(-?\d+\.?\d*)\s*(d?[CF])$', value)
 
                 if not match:
                     raise ValueError(f'line {line_num}: Invalid temperature argument: `{key}={value}`')

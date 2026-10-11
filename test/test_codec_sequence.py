@@ -425,6 +425,25 @@ def test_unset_arguments():
     assert cdc.decode_payload(payload).content['instructions'] == []
 
 
+def test_negative_temperatures():
+    """to_line writes a sign, which from_line reads back"""
+    line = sequence.to_line(
+        {
+            'SET_SETPOINT': {
+                '__raw__target': {'__bloxtype': 'Link', 'id': 'setpoint'},
+                '__raw__setting': {'__bloxtype': 'Quantity', 'value': -5.0, 'unit': 'degC'},
+            },
+        }
+    )
+    assert line == 'SET_SETPOINT target=setpoint, setting=-5.0C'
+    assert sequence.from_line(line, 1)['SET_SETPOINT']['__raw__setting']['value'] == -5.0
+    assert sequence.from_line('SET_SETPOINT target=setpoint, setting=-0.0F', 1)['SET_SETPOINT']['__raw__setting'] == {
+        '__bloxtype': 'Quantity',
+        'value': -0.0,
+        'unit': 'degF',
+    }
+
+
 def _backup_sequence(lines: list[str]) -> Block:
     return Block(id='All closed', nid=102, type='Sequence', data={'enabled': True, 'instructions': lines})
 
