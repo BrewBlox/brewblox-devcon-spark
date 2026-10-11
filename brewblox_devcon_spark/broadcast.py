@@ -440,8 +440,10 @@ class Broadcaster:
         loop = asyncio.get_running_loop()
         # Ticks fall in the middle of a wall-clock interval (at x.500 s for 1 s):
         # a history bucket of one interval then holds exactly one sample, with half an interval of margin.
-        deadline = loop.time() + (interval / 2 - time.time()) % interval
-        await asyncio.sleep(deadline - loop.time())
+        # The delay is taken once: a second clock read would shorten it by the time in between
+        delay = (interval / 2 - time.time()) % interval
+        deadline = loop.time() + delay
+        await asyncio.sleep(delay)
 
         while True:
             try:
