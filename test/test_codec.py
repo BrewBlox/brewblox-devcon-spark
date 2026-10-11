@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from google.protobuf.descriptor import Descriptor, FieldDescriptor
 from google.protobuf.message import Message
 
-from brewblox_devcon_spark import codec, exceptions
+from brewblox_devcon_spark import codec, const, exceptions
 from brewblox_devcon_spark.codec import Codec, NeedFullRead, descriptors, lookup, pb2, processor
 from brewblox_devcon_spark.models import (
     DecodedPayload,
@@ -159,6 +159,21 @@ async def test_transcode_commands():
     # Identity-only payloads are not encoded
     payload = cdc.encode_payload(DecodedPayload(blockId=100, name='sensor'))
     assert payload == EncodedPayload(blockId=100, name='sensor')
+
+
+async def test_encode_request_size():
+    """A request of more than 8 KB, as its base64 line, is refused before it is sent"""
+    cdc = codec.CV.get()
+
+    def request(size: int) -> IntermediateRequest:
+        content = b64encode(bytes(size)).decode()
+        payload = EncodedPayload(blockId=100, blockType='TempSensorOneWire', content=content)
+        return IntermediateRequest(msgId=1, opcode=Opcode.BLOCK_WRITE, payload=payload)
+
+    # The block content is base64 inside the request, which is base64 again
+    assert len(cdc.encode_request(request(4596))) == const.MAX_REQUEST_SIZE
+    with pytest.raises(exceptions.EncodeException, match='Request of 8196 bytes is over the controller limit'):
+        cdc.encode_request(request(4597))
 
 
 async def test_encode_errors():

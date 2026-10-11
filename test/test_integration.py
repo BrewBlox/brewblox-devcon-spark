@@ -1067,6 +1067,31 @@ async def test_system_flash_esp_tcp(
         assert 'The Spark will now download and apply the new firmware' not in log
 
 
+async def test_request_size(client: AsyncClient):
+    """A request over 8 KB is refused before it is sent: the controller would close the connection"""
+
+    def sequence(count: int) -> dict:
+        return {'enabled': False, 'instructions': [f'# comment number {i:04d}' for i in range(count)]}
+
+    # 169 of these comments are just under the limit, 170 over it
+    resp = await client.post('/blocks/create', json={'id': 'long', 'type': 'Sequence', 'data': sequence(169)})
+    assert resp.status_code == 201
+    assert len(resp.json()['data']['instructions']) == 169
+
+    # Validation encodes the block without its name and nid
+    resp = await client.post('/blocks/validate', json={'type': 'Sequence', 'data': sequence(200)})
+    assert resp.status_code == 400
+    assert 'over the controller limit of 8192 bytes' in resp.json()['error']
+
+    resp = await client.post('/blocks/write', json={'id': 'long', 'type': 'Sequence', 'data': sequence(170)})
+    assert resp.status_code == 400
+    assert 'over the controller limit of 8192 bytes' in resp.json()['error']
+
+    assert state_machine.CV.get().is_synchronized()
+    resp = await client.post('/blocks/read', json={'id': 'long'})
+    assert len(resp.json()['data']['instructions']) == 169
+
+
 async def test_debug_encode_request(client: AsyncClient):
     payload = DecodedPayload(
         blockId=123, blockType='TempSensorOneWire', content={'value': 12345, 'offset': 20, 'address': 'FF'}

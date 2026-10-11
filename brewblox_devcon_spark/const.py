@@ -8,6 +8,11 @@ USER_NID_START = 100
 OBJECT_LINK_POSTFIX_START = '<'
 OBJECT_LINK_POSTFIX_END = '>'
 
+# The longest request the controller takes: its base64 line, without the newline.
+# The firmware's cbox::MAX_REQUEST_SIZE, the same on every link.
+# A longer request closes the TCP connection, or is dropped on USB, serial and MQTT.
+MAX_REQUEST_SIZE = 8192
+
 SERVICE_NAMESPACE = 'spark-service'
 GLOBAL_NAMESPACE = 'brewblox-global'
 GLOBAL_UNITS_ID = 'units'
