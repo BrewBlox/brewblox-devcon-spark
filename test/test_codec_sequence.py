@@ -532,3 +532,21 @@ def test_complete_backup_lines():
         before = block.model_copy(deep=True)
         assert sequence.complete_backup_lines(block, firmware) is None
         assert block == before
+
+
+def test_complete_every_argument():
+    """Each argument a backup line leaves out is added as text that from_line parses to its raw zero"""
+    codec.setup()
+    cdc = codec.CV.get()
+    opcodes = [opcode for opcode in sequence.INSTRUCTION_MSG_DESC.fields if opcode.message_type.oneofs]
+    lines = []
+    for opcode in opcodes:
+        line, changes = sequence._complete_line(opcode.name, unset=True, none_datetime=False)
+        assert len(changes) == len(opcode.message_type.oneofs), line
+        lines.append(line)
+
+    for instruction in _written(cdc, lines).instructions.items:
+        [(_, args)] = instruction.ListFields()
+        for oneof in args.DESCRIPTOR.oneofs:
+            assert args.WhichOneof(oneof.name) == f'__raw__{oneof.name}', instruction
+            assert getattr(args, f'__raw__{oneof.name}') == 0, instruction
