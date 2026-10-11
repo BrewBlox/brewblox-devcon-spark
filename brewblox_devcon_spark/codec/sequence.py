@@ -10,6 +10,7 @@ from datetime import timedelta
 from typing import Any
 
 from google.protobuf.descriptor import Descriptor, FieldDescriptor
+from google.protobuf.message import Message
 
 from brewblox_devcon_spark.codec import bloxfield, time_utils
 from brewblox_devcon_spark.codec.pb2 import Sequence_pb2, brewblox_pb2
@@ -240,3 +241,23 @@ def serialize(block: Block):
     """
     if 'instructions' in block.data:
         block.data['instructions'] = [to_line(d) for d in block.data['instructions']]
+
+
+def fill_unset_arguments(message: Message):
+    """
+    Sets every instruction argument the block holds no member for to its raw zero, in place.
+
+    Before the arguments became raw/var oneofs (proto a5dc48c8, 2024-03), they were plain proto3 fields,
+    which leave a zero off the wire. The oneof members kept the field numbers, so an instruction
+    last written before then holds no member for a zero argument, on every firmware since.
+    The controller runs it as the raw zero. Filled in, it reads as that value,
+    and writing the instruction back stores it explicitly.
+    """
+    if not message.HasField('instructions'):
+        return
+
+    for instruction in message.instructions.items:
+        for _, args in instruction.ListFields():
+            for oneof in args.DESCRIPTOR.oneofs:
+                if args.WhichOneof(oneof.name) is None:
+                    setattr(args, f'{RAW_PREFIX}{oneof.name}', 0)

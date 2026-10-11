@@ -3,9 +3,9 @@ from base64 import b64decode, b64encode
 import pytest
 
 from brewblox_devcon_spark import codec
-from brewblox_devcon_spark.codec import descriptors, lookup, sequence
+from brewblox_devcon_spark.codec import descriptors, lookup, sequence, unit_conversion
 from brewblox_devcon_spark.codec.pb2 import Sequence_pb2
-from brewblox_devcon_spark.models import Block, DecodedPayload, EncodedPayload
+from brewblox_devcon_spark.models import Block, DecodedPayload, EncodedPayload, ReadMode
 from brewblox_devcon_spark.spark_api import resolve_data_ids
 
 
@@ -346,3 +346,80 @@ def test_zero_datetime_round_trip():
         payload = cdc.encode_payload(DecodedPayload(blockId=100, blockType='Sequence', content=content))
         written = Sequence_pb2.Block.FromString(b64decode(payload.content))
         assert written.instructions == message.instructions
+
+
+def _read_lines(cdc: codec.Codec, message: Sequence_pb2.Block) -> list[str]:
+    payload = EncodedPayload(
+        blockId=100,
+        blockType=lookup.BlockType.Value('Sequence'),
+        content=b64encode(message.SerializeToString()).decode(),
+    )
+    block = Block(id='sequence', type='Sequence', data=resolve_data_ids(cdc.decode_payload(payload).content, str))
+    sequence.serialize(block)
+    return block.data['instructions']
+
+
+def _written(cdc: codec.Codec, lines: list[str]) -> Sequence_pb2.Block:
+    block = Block(id='sequence', type='Sequence', data={'instructions': lines})
+    sequence.parse(block)
+    content = resolve_data_ids(block.data, int)
+    payload = cdc.encode_payload(DecodedPayload(blockId=100, blockType='Sequence', content=content))
+    return Sequence_pb2.Block.FromString(b64decode(payload.content))
+
+
+def test_unset_arguments():
+    """
+    An instruction last written before the arguments became oneofs holds no member for a zero argument.
+    The controller runs it as the raw zero: it reads as that value, and writing it back stores the member.
+    """
+    codec.setup()
+    cdc = codec.CV.get()
+
+    # Every argument of every opcode
+    message = Sequence_pb2.Block()
+    for opcode in sequence.INSTRUCTION_MSG_DESC.fields:
+        if opcode.message_type.oneofs:
+            getattr(message.instructions.items.add(), opcode.name).SetInParent()
+    lines = _read_lines(cdc, message)
+    assert len(lines) == 21
+    for line in [
+        'ENABLE target=0',
+        'WAIT_DURATION duration=0s',
+        'WAIT_UNTIL time=0',
+        'WAIT_TEMP_BETWEEN target=0, lower=0.0C, upper=0.0C',
+        'WAIT_SETPOINT target=0, precision=0.0dC',
+        'SET_DIGITAL target=0, setting=STATE_INACTIVE',
+        'SET_PWM target=0, setting=0.0',
+    ]:
+        assert line in lines
+
+    written = _written(cdc, lines)
+    for instruction in written.instructions.items:
+        [(_, args)] = instruction.ListFields()
+        assert all(args.WhichOneof(oneof.name) for oneof in args.DESCRIPTOR.oneofs), instruction
+
+    # A member that is set is kept. A zero temperature is 0 °C, in the user's unit.
+    message = Sequence_pb2.Block()
+    setattr(message.instructions.items.add().SET_DIGITAL, '__raw__target', 5)
+    setattr(message.instructions.items.add().SET_SETPOINT, '__raw__target', 6)
+    unit_conversion.CV.get().temperature = 'degF'
+    try:
+        lines = _read_lines(cdc, message)
+    finally:
+        unit_conversion.CV.get().temperature = 'degC'
+    assert lines == [
+        'SET_DIGITAL target=5, setting=STATE_INACTIVE',
+        'SET_SETPOINT target=6, setting=32.0F',
+    ]
+    setting = _written(cdc, lines).instructions.items[0].SET_DIGITAL
+    assert setting.WhichOneof('setting') == '__raw__setting'
+    assert getattr(setting, '__raw__setting') == 0
+
+    # A block without instructions, as in a CHANGED read
+    payload = EncodedPayload(
+        blockId=100,
+        blockType=lookup.BlockType.Value('Sequence'),
+        content=b64encode(Sequence_pb2.Block(enabled=True).SerializeToString()).decode(),
+    )
+    assert 'instructions' not in cdc.decode_payload(payload, mode=ReadMode.CHANGED).content
+    assert cdc.decode_payload(payload).content['instructions'] == []

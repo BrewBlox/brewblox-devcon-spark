@@ -15,7 +15,7 @@ from google.protobuf.message_factory import GetMessageClass
 
 from .. import const, exceptions, utils
 from ..models import DecodedPayload, EncodedPayload, IntermediateRequest, IntermediateResponse, ReadMode
-from . import bloxfield, descriptors, lookup, pb2, time_utils, unit_conversion
+from . import bloxfield, descriptors, lookup, pb2, sequence, time_utils, unit_conversion
 from .opts import DateFormatOpt
 from .processor import ProtobufProcessor
 
@@ -247,6 +247,8 @@ class Codec:
                 # We have an object lookup, and can decode the content
                 message = impl.message_cls()
                 message.ParseFromString(b64decode(payload.content))
+                if impl.type_str == const.SEQUENCE_BLOCK_TYPE:
+                    sequence.fill_unset_arguments(message)
                 return DecodedPayload(
                     blockId=payload.blockId,
                     blockType=impl.type_str,
