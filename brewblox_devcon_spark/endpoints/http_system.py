@@ -216,6 +216,11 @@ class Flasher:
                     )
                     self._notify('Update done!')
 
+        except exceptions.FirmwareUpdateFailed as ex:
+            # A refusal by the controller: its message is complete
+            self._notify(f'Failed to update firmware: {ex.detail}')
+            raise
+
         except Exception as ex:
             self._notify(f'Failed to update firmware: {utils.strex(ex)}')
             raise exceptions.FirmwareUpdateFailed(utils.strex(ex))

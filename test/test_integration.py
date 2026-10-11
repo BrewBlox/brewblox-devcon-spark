@@ -1062,8 +1062,9 @@ async def test_system_flash_esp_tcp(
         ]
     else:
         assert resp.status_code == 424
-        assert error in resp.json()['error']
-        assert error in log[-2]
+        # The controller's refusal as it is, not wrapped in another error
+        assert resp.json()['error'].startswith(f'424: {error}')
+        assert log[-2].startswith(f'Failed to update firmware: {error}')
         assert 'The Spark will now download and apply the new firmware' not in log
 
 
