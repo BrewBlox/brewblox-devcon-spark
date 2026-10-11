@@ -9,6 +9,8 @@ expectations, as the LOGGED filter would have dropped it.
 Likewise for proto 2453a6f5, which dropped `logged` from 18 fields: storedSetting and storedState,
 SetpointSensorPair updateInterval, TempSensorAnalog's spec coefficients and overrides,
 and TempSensorExternal setting and lastUpdated.
+Proto 8434d4d4 dropped the scale of 1000 from SysInfo.uptime, which is now in seconds:
+the full variant's uptime went from 8.001 to 8001, as the same payload now decodes.
 The message builder is in messages.py, which the codec tests reuse.
 
 For every block type in the codec lookup, it stores the payload of a fully populated message

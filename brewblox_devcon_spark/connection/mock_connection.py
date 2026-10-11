@@ -190,7 +190,7 @@ class MockConnection(ConnectionImplBase):
         # Uptime is skip_changed: merging a CHANGED read ignores it.
         # The system time is left to time sync, so that SysInfo does not change in the cache with every request.
         elapsed = datetime.now() - self._start_time
-        self._blocks[const.SYS_BLOCK_IDS['SysInfo']].message.uptime = int(elapsed.total_seconds() * 1000)
+        self._blocks[const.SYS_BLOCK_IDS['SysInfo']].message.uptime = int(elapsed.total_seconds())
 
     async def welcome(self):
         config = utils.get_config()

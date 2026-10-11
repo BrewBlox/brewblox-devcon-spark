@@ -628,7 +628,7 @@ async def test_changed_skip_changed():
     assert partial['uptime']['value'] == 0
 
     assert cdc.merge_changed('SysInfo', cached, partial) is True
-    assert cached['uptime']['value'] == 1
+    assert cached['uptime']['value'] == 1000
     assert cached['memoryFree'] == 2000
     assert cached['version'] == 'v2'
 
@@ -878,7 +878,7 @@ async def test_logged_view_golden(case: dict):
     expected = _rounded(desc, deepcopy(case['logged']))
 
     # Intended differences, only for fields that are absent from the payload:
-    # the 'empty' variant, and fields added after the fixture was made (SysInfo.chipTemperature).
+    # the 'empty' variant, and any field added after the fixture was made.
     # The old LOGGED decode left the key out. Now:
     # - an absent optional readonly field is None: invalid.
     # - an absent optional writable field has its default value.
@@ -895,7 +895,8 @@ async def test_logged_view_golden(case: dict):
             assert view[key] == 0, key
         expected[key] = view[key]
 
-    # An omit_if_zero field (SysInfo.mainTaskStackFreeLowest since proto 11f23053) leaves a zero out
+    # An omit_if_zero field leaves a zero out: SysInfo.mainTaskStackFreeLowest since proto 11f23053,
+    # WiFiSettings.signal since 8434d4d4
     for key in set(expected) - set(view):
         field = desc.fields_by_name[key.split('[')[0].split('<')[0]]
         assert descriptors.options(field).omit_if_zero, key
@@ -921,7 +922,7 @@ async def test_logged_view():
 
     # skip_changed fields are only in the full view
     content = decode(SysInfo.Block(uptime=1000, memoryFree=100, version='v1'))
-    assert cdc.logged_view('SysInfo', content, full=True)['uptime[second]'] == 1
+    assert cdc.logged_view('SysInfo', content, full=True)['uptime[second]'] == 1000
     assert cdc.logged_view('SysInfo', content, full=True)['memoryFree'] == 100
     assert cdc.logged_view('SysInfo', content, full=False) == {}
 
