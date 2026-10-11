@@ -175,11 +175,16 @@ def from_line(line: str, line_num: int) -> dict:
     # - key and value are extracted from the `key=value` string
     # - spaces are stripped from both key and value
     # - quotes are stripped from value
+    # - an argument given twice is refused: a dict would keep only the last value
     # - a {key:value} dict is constructed
-    argdict = {
-        argk.strip(): argv.strip().strip("'")
+    entries = [
+        (argk.strip(), argv.strip().strip("'"))
         for (argk, _, argv) in [arg.partition('=') for arg in args.split(',') if arg]
-    }
+    ]
+    keys = [key for key, _ in entries]
+    if duplicates := sorted({key for key in keys if keys.count(key) > 1}):
+        raise ValueError(f'line {line_num}: Duplicate arguments: `{", ".join(duplicates)}`')
+    argdict = dict(entries)
 
     parsed = dict([parse_arg_entry(key, value) for key, value in argdict.items()])
 

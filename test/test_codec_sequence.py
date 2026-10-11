@@ -138,6 +138,12 @@ def test_sequence_from_line():
     with pytest.raises(ValueError, match=r'Mismatch between delta and absolute'):
         sequence.from_line('SET_SETPOINT target=setpoint, setting=20dF', 1)
 
+    with pytest.raises(ValueError, match=r'line 1: Duplicate arguments: `setting`'):
+        sequence.from_line('SET_SETPOINT target=setpoint, setting=20C, setting=30C', 1)
+
+    with pytest.raises(ValueError, match=r'line 1: Duplicate arguments: `setting, target`'):
+        sequence.from_line('SET_SETPOINT target=setpoint, setting=$var, target=sp, setting=20C', 1)
+
 
 def test_sequence_to_line():
     assert (
