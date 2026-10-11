@@ -5,7 +5,7 @@ import pytest
 from brewblox_devcon_spark import codec
 from brewblox_devcon_spark.codec import descriptors, lookup, sequence, unit_conversion
 from brewblox_devcon_spark.codec.pb2 import Sequence_pb2
-from brewblox_devcon_spark.models import Block, DecodedPayload, EncodedPayload, ReadMode
+from brewblox_devcon_spark.models import Block, DecodedPayload, EncodedPayload, FirmwareDescription, ReadMode
 from brewblox_devcon_spark.spark_api import resolve_data_ids
 
 
@@ -423,3 +423,91 @@ def test_unset_arguments():
     )
     assert 'instructions' not in cdc.decode_payload(payload, mode=ReadMode.CHANGED).content
     assert cdc.decode_payload(payload).content['instructions'] == []
+
+
+def _backup_sequence(lines: list[str]) -> Block:
+    return Block(id='All closed', nid=102, type='Sequence', data={'enabled': True, 'instructions': lines})
+
+
+def _firmware(proto_date: str) -> FirmwareDescription:
+    return FirmwareDescription(
+        firmware_version='1687e574',
+        proto_version='94d21b71',
+        firmware_date=proto_date,
+        proto_date=proto_date,
+    )
+
+
+def test_complete_backup_lines():
+    """Sequence lines in a backup are completed as the service that wrote them left them, by its proto date"""
+    lines = [
+        'SET_DIGITAL target=vA',
+        'SET_DIGITAL target=vB, setting=1',
+        'SET_DIGITAL target=vC',
+        "WAIT_TEMP_BETWEEN target='Kettle Sensor', upper=$high",
+        'WAIT_UNTIL time=None',
+        '# comment, with a comma',
+        'RESTART',
+        'INVALID target=vA',
+    ]
+
+    # Services from the oneof arguments to the 2026-09 datetime change: both
+    block = _backup_sequence(lines)
+    note = sequence.complete_backup_lines(block, _firmware('2026-04-01'))
+    assert block.data['instructions'] == [
+        'SET_DIGITAL target=vA, setting=0',
+        'SET_DIGITAL target=vB, setting=1',
+        'SET_DIGITAL target=vC, setting=0',
+        "WAIT_TEMP_BETWEEN target='Kettle Sensor', upper=$high, lower=0C",
+        'WAIT_UNTIL time=0',
+        '# comment, with a comma',
+        'RESTART',
+        'INVALID target=vA',
+    ]
+    assert note == (
+        'Sequence `All closed` as an older service wrote it: '
+        'added setting=0 on 2 lines, added lower=0C on 1 line, read time=None as time=0 on 1 line. '
+        'These are the values the controller ran.'
+    )
+    for line in block.data['instructions'][:-1]:
+        sequence.from_line(line, 1)
+
+    # The first oneof proto, and the last one that wrote a zero datetime as None
+    for proto_date in ['2024-03-01', '2026-09-24']:
+        block = _backup_sequence(lines)
+        sequence.complete_backup_lines(block, _firmware(proto_date))
+        assert block.data['instructions'][:5] == [
+            'SET_DIGITAL target=vA, setting=0',
+            'SET_DIGITAL target=vB, setting=1',
+            'SET_DIGITAL target=vC, setting=0',
+            "WAIT_TEMP_BETWEEN target='Kettle Sensor', upper=$high, lower=0C",
+            'WAIT_UNTIL time=0',
+        ]
+
+    # Up to proto 8434d4d4: unset arguments only
+    block = _backup_sequence(lines)
+    note = sequence.complete_backup_lines(block, _firmware('2026-10-11'))
+    assert block.data['instructions'][4] == 'WAIT_UNTIL time=None'
+    assert note.startswith('Sequence `All closed` as an older service wrote it: added setting=0 on 2 lines, ')
+
+    # Before the oneof arguments, and backups without firmware, which are older: zero datetimes only
+    for firmware in [_firmware('2024-02-26'), None]:
+        block = _backup_sequence(lines)
+        note = sequence.complete_backup_lines(block, firmware)
+        assert block.data['instructions'][0] == 'SET_DIGITAL target=vA'
+        assert block.data['instructions'][4] == 'WAIT_UNTIL time=0'
+        assert note == (
+            'Sequence `All closed` as an older service wrote it: read time=None as time=0 on 1 line. '
+            'These are the values the controller ran.'
+        )
+
+    # Newer backups, complete lines, and no instructions: nothing changes
+    for block, firmware in [
+        (_backup_sequence(lines), _firmware('2026-10-12')),
+        (_backup_sequence(['SET_DIGITAL target=vA, setting=0']), _firmware('2026-04-01')),
+        (_backup_sequence([]), _firmware('2026-04-01')),
+        (Block(id='All closed', nid=102, type='Sequence', data={'enabled': True}), _firmware('2026-04-01')),
+    ]:
+        before = block.model_copy(deep=True)
+        assert sequence.complete_backup_lines(block, firmware) is None
+        assert block == before
