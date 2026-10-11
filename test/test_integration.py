@@ -1005,6 +1005,68 @@ async def test_system_flash(client: AsyncClient, m_kill: Mock):
     assert not state.is_connected()
 
 
+async def test_system_flash_not_connected(client: AsyncClient, m_kill: Mock, s_publish: Mock, mocker: MockerFixture):
+    # As before the handshake: no controller description
+    state = state_machine.CV.get()
+    mocker.patch.object(state, 'is_acknowledged', return_value=False)
+    state.desc().controller = None
+
+    resp = await client.post('/system/flash')
+    assert resp.status_code == 424
+    assert m_kill.call_count == 0
+    published = [c.args[1]['data']['log'] for c in s_publish.call_args_list if c.args[0].endswith('/update')]
+    assert published == [['Controller is not connected. Aborting update.']]
+
+
+@pytest.mark.parametrize(
+    ('status', 'error'),
+    [
+        (200, None),
+        (413, '127.0.0.1 answered 413: the firmware URL is over 255 bytes'),
+        (503, '127.0.0.1 answered 503: the update did not start'),
+        (500, '127.0.0.1 answered 500: Internal Server Error'),
+    ],
+)
+async def test_system_flash_esp_tcp(
+    client: AsyncClient,
+    m_kill: Mock,
+    s_publish: Mock,
+    httpx_mock: HTTPXMock,
+    status: int,
+    error: str | None,
+):
+    """A Spark 4 update is announced only after port 80 answers 200"""
+    desc = state_machine.CV.get().desc()
+    desc.connection_kind = 'TCP'
+    desc.address = '127.0.0.1:8332'
+    desc.controller.platform = 'esp32'
+    httpx_mock.add_response(method='POST', url='http://127.0.0.1:80/firmware_update', status_code=status)
+
+    resp = await client.post('/system/flash')
+    log = [
+        line
+        for c in s_publish.call_args_list
+        if c.args[0] == 'brewcast/state/sparkey/update'
+        for line in c.args[1]['data']['log']
+    ]
+    [request] = httpx_mock.get_requests()
+    assert request.content.decode().endswith('/brewblox-esp32.bin')
+    assert m_kill.call_count == 1
+
+    if error is None:
+        assert resp.status_code == 200
+        assert log[-3:] == [
+            'The Spark will now download and apply the new firmware',
+            'The update is done when the service reconnects',
+            'Restarting service...',
+        ]
+    else:
+        assert resp.status_code == 424
+        assert error in resp.json()['error']
+        assert error in log[-2]
+        assert 'The Spark will now download and apply the new firmware' not in log
+
+
 async def test_debug_encode_request(client: AsyncClient):
     payload = DecodedPayload(
         blockId=123, blockType='TempSensorOneWire', content={'value': 12345, 'offset': 20, 'address': 'FF'}
