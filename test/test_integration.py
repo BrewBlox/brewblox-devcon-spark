@@ -1079,10 +1079,14 @@ async def test_request_size(client: AsyncClient):
     assert resp.status_code == 201
     assert len(resp.json()['data']['instructions']) == 169
 
-    # Validation encodes the block without its name and nid
-    resp = await client.post('/blocks/validate', json={'type': 'Sequence', 'data': sequence(200)})
+    # Validation counts the name and nid where given, else at their largest
+    resp = await client.post('/blocks/validate', json={'id': 'long', 'type': 'Sequence', 'data': sequence(169)})
+    assert resp.status_code == 200
+    resp = await client.post('/blocks/validate', json={'id': 'long', 'type': 'Sequence', 'data': sequence(170)})
     assert resp.status_code == 400
     assert 'over the controller limit of 8192 bytes' in resp.json()['error']
+    resp = await client.post('/blocks/validate', json={'type': 'Sequence', 'data': sequence(169)})
+    assert resp.status_code == 400
 
     resp = await client.post('/blocks/write', json={'id': 'long', 'type': 'Sequence', 'data': sequence(170)})
     assert resp.status_code == 400

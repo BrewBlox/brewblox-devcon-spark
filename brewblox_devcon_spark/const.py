@@ -5,6 +5,9 @@ System-wide constant values
 BREWBLOX_DNS_TYPE = '_brewblox._tcp.local.'
 
 USER_NID_START = 100
+# The largest nid the controller gives a block, and the longest name it takes (cbox user_end_id, NAME_MAX_SIZE)
+USER_NID_END = 0xFFFFFF00
+NAME_MAX_SIZE = 64
 OBJECT_LINK_POSTFIX_START = '<'
 OBJECT_LINK_POSTFIX_END = '>'
 

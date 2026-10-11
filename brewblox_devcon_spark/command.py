@@ -11,7 +11,7 @@ from contextvars import ContextVar
 from dataclasses import dataclass, field
 from datetime import timedelta
 
-from . import codec, connection, exceptions, state_machine, utils
+from . import codec, connection, const, exceptions, state_machine, utils
 from .models import (
     ControllerDescription,
     DecodedPayload,
@@ -46,6 +46,8 @@ HANDSHAKE_KEYS = [
 # A handshake answering one of these is solicited, and must not be
 # mistaken for the start of a new session.
 HANDSHAKE_OPCODES = frozenset({Opcode.NONE, Opcode.VERSION})
+
+MSGID_MAX = 0xFFFF
 
 LOGGER = logging.getLogger(__name__)
 CV: ContextVar['CboxCommander'] = ContextVar('command.CboxCommander')
@@ -101,7 +103,7 @@ class CboxCommander:
 
     def _next_id(self):
         # 1 to 0xFFFF, never 0: an OK response to msgId 0 without payload is an empty line, which the parser skips
-        self._msgid = self._msgid % 0xFFFF + 1
+        self._msgid = self._msgid % MSGID_MAX + 1
         return self._msgid
 
     def _next_seq(self) -> int:
@@ -334,15 +336,22 @@ class CboxCommander:
 
         return blocks
 
-    async def validate(self, block: FirmwareBlock) -> FirmwareBlock:
+    async def validate(self, block: FirmwareBlock) -> None:
+        """
+        Encodes the block as the largest request that creates or writes it, without sending it,
+        so that a block that passes also fits the controller's request size.
+        A name or nid that is not set counts at its largest.
+        """
+        sized = block.model_copy(
+            update={'id': block.id or 'x' * const.NAME_MAX_SIZE, 'nid': block.nid or const.USER_NID_END}
+        )
         request = IntermediateRequest(
-            msgId=0,
-            opcode=Opcode.NONE,
+            msgId=MSGID_MAX,
+            opcode=Opcode.BLOCK_CREATE,
             mode=ReadMode.DEFAULT,
-            payload=self._to_payload(block),
+            payload=self._to_payload(sized),
         )
         self.codec.encode_request(request)
-        return block
 
     async def noop(self) -> None:
         await self._execute(Opcode.NONE)
