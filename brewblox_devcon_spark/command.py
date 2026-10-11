@@ -100,7 +100,8 @@ class CboxCommander:
         self.on_block_change: Callable[[BlockChange], None] | None = None
 
     def _next_id(self):
-        self._msgid = (self._msgid + 1) % 0xFFFF
+        # 1 to 0xFFFF, never 0: an OK response to msgId 0 without payload is an empty line, which the parser skips
+        self._msgid = self._msgid % 0xFFFF + 1
         return self._msgid
 
     def _next_seq(self) -> int:
