@@ -437,6 +437,8 @@ def test_negative_temperatures():
     )
     assert line == 'SET_SETPOINT target=setpoint, setting=-5.0C'
     assert sequence.from_line(line, 1)['SET_SETPOINT']['__raw__setting']['value'] == -5.0
+    with pytest.raises(ValueError, match='Negative temperature difference'):
+        sequence.from_line('WAIT_SETPOINT target=setpoint, precision=-1dC', 1)
     assert sequence.from_line('SET_SETPOINT target=setpoint, setting=-0.0F', 1)['SET_SETPOINT']['__raw__setting'] == {
         '__bloxtype': 'Quantity',
         'value': -0.0,

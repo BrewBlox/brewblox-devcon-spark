@@ -138,6 +138,10 @@ def from_line(line: str, line_num: int) -> dict:
                         f'line {line_num}: Mismatch between delta and absolute temperature: `{key}={value}{unit}`'
                     )
 
+                # A difference below zero, such as a precision, would never be met
+                if value < 0 and 'delta_' in unit:
+                    raise ValueError(f'line {line_num}: Negative temperature difference: `{key}={value}{unit}`')
+
                 return (
                     raw_key,
                     {
