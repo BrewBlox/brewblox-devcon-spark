@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from google.protobuf.descriptor import Descriptor, FieldDescriptor
 from google.protobuf.message import Message
 
-from brewblox_devcon_spark import codec, exceptions
+from brewblox_devcon_spark import codec, const, exceptions
 from brewblox_devcon_spark.codec import Codec, NeedFullRead, descriptors, lookup, pb2, processor
 from brewblox_devcon_spark.models import (
     DecodedPayload,
@@ -159,6 +159,21 @@ async def test_transcode_commands():
     # Identity-only payloads are not encoded
     payload = cdc.encode_payload(DecodedPayload(blockId=100, name='sensor'))
     assert payload == EncodedPayload(blockId=100, name='sensor')
+
+
+async def test_encode_request_size():
+    """A request of more than 8 KB, as its base64 line, is refused before it is sent"""
+    cdc = codec.CV.get()
+
+    def request(size: int) -> IntermediateRequest:
+        content = b64encode(bytes(size)).decode()
+        payload = EncodedPayload(blockId=100, blockType='TempSensorOneWire', content=content)
+        return IntermediateRequest(msgId=1, opcode=Opcode.BLOCK_WRITE, payload=payload)
+
+    # The block content is base64 inside the request, which is base64 again
+    assert len(cdc.encode_request(request(4596))) == const.MAX_REQUEST_SIZE
+    with pytest.raises(exceptions.EncodeException, match='Request of 8196 bytes is over the controller limit'):
+        cdc.encode_request(request(4597))
 
 
 async def test_encode_errors():
@@ -628,7 +643,7 @@ async def test_changed_skip_changed():
     assert partial['uptime']['value'] == 0
 
     assert cdc.merge_changed('SysInfo', cached, partial) is True
-    assert cached['uptime']['value'] == 1
+    assert cached['uptime']['value'] == 1000
     assert cached['memoryFree'] == 2000
     assert cached['version'] == 'v2'
 
@@ -878,7 +893,7 @@ async def test_logged_view_golden(case: dict):
     expected = _rounded(desc, deepcopy(case['logged']))
 
     # Intended differences, only for fields that are absent from the payload:
-    # the 'empty' variant, and fields added after the fixture was made (SysInfo.chipTemperature).
+    # the 'empty' variant, and any field added after the fixture was made.
     # The old LOGGED decode left the key out. Now:
     # - an absent optional readonly field is None: invalid.
     # - an absent optional writable field has its default value.
@@ -895,7 +910,8 @@ async def test_logged_view_golden(case: dict):
             assert view[key] == 0, key
         expected[key] = view[key]
 
-    # An omit_if_zero field (SysInfo.mainTaskStackFreeLowest since proto 11f23053) leaves a zero out
+    # An omit_if_zero field leaves a zero out: SysInfo.mainTaskStackFreeLowest since proto 11f23053,
+    # WiFiSettings.signal since 8434d4d4
     for key in set(expected) - set(view):
         field = desc.fields_by_name[key.split('[')[0].split('<')[0]]
         assert descriptors.options(field).omit_if_zero, key
@@ -921,7 +937,7 @@ async def test_logged_view():
 
     # skip_changed fields are only in the full view
     content = decode(SysInfo.Block(uptime=1000, memoryFree=100, version='v1'))
-    assert cdc.logged_view('SysInfo', content, full=True)['uptime[second]'] == 1
+    assert cdc.logged_view('SysInfo', content, full=True)['uptime[second]'] == 1000
     assert cdc.logged_view('SysInfo', content, full=True)['memoryFree'] == 100
     assert cdc.logged_view('SysInfo', content, full=False) == {}
 

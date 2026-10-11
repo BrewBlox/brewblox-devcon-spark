@@ -13,7 +13,7 @@ from google.protobuf.descriptor import Descriptor
 from google.protobuf.message import Message
 from google.protobuf.message_factory import GetMessageClass
 
-from .. import exceptions, utils
+from .. import const, exceptions, utils
 from ..models import DecodedPayload, EncodedPayload, IntermediateRequest, IntermediateResponse, ReadMode
 from . import bloxfield, descriptors, lookup, pb2, time_utils, unit_conversion
 from .opts import DateFormatOpt
@@ -83,12 +83,19 @@ class Codec:
         try:
             message = pb2.command_pb2.Request()
             json_format.ParseDict(request.model_dump(mode='json'), message)
-            return b64encode(message.SerializeToString()).decode()
+            encoded = b64encode(message.SerializeToString()).decode()
 
         except Exception as ex:
             msg = utils.strex(ex)
             LOGGER.debug(msg, exc_info=True)
             raise exceptions.EncodeException(msg)
+
+        # Refused here, before it is sent: the controller would end the connection or drop the request
+        if len(encoded) > const.MAX_REQUEST_SIZE:
+            raise exceptions.EncodeException(
+                f'Request of {len(encoded)} bytes is over the controller limit of {const.MAX_REQUEST_SIZE} bytes'
+            )
+        return encoded
 
     def decode_request(self, b64_encoded: str) -> IntermediateRequest:
         try:

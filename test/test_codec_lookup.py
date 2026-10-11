@@ -312,7 +312,9 @@ def test_uncovered_non_optional_leaves():
 def test_skip_changed_survives_merge():
     """
     A CHANGED read never carries skip_changed fields: merging one keeps their cached values.
-    Its decode fills them with a default, or None for an optional readonly field (SysInfo.chipTemperature).
+    Its decode fills them with a default, or None for an optional readonly field.
+    No skip_changed field is optional since SysInfo.chipTemperature was removed (proto 8434d4d4),
+    so this no longer covers the None case.
     """
     cdc = codec.CV.get()
     checked = 0
@@ -413,6 +415,7 @@ def test_logged_decimals():
     """
     logged_decimals is only set on logged fields with a scale, and keeps fewer decimals than the scale allows,
     in degC and in degF: otherwise it would change nothing, or claim precision the value does not have.
+    SysInfo.uptime is the one exception, below.
     """
     temperature_units = {pb2.brewblox_pb2.UnitType.Value(u) for u in ['Celsius', 'DeltaCelsius']}
     for block_type, desc in block_descriptors().items():
@@ -421,6 +424,10 @@ def test_logged_decimals():
             if not opts.HasField('logged_decimals'):
                 continue
             assert opts.logged, (block_type, *path)
+            if (block_type, *path) == ('SysInfo', 'uptime'):
+                # Left from its scale of 1000, which proto 8434d4d4 dropped: whole seconds stay whole
+                assert opts.logged_decimals == 0
+                continue
             assert opts.scale, (block_type, *path)
             for factor in [1, 1.8] if opts.unit in temperature_units else [1]:
                 assert 0 <= opts.logged_decimals < processor._decimals(opts.scale, factor), (block_type, *path)
@@ -473,7 +480,6 @@ def test_skip_changed_logged_paths():
         ('SysInfo', 'memoryFreeContiguous'),
         ('SysInfo', 'memoryFreeLowest'),
         ('SysInfo', 'mainTaskStackFreeLowest'),
-        ('SysInfo', 'chipTemperature'),
         ('WiFiSettings', 'signal'),
     }
     assert logged_paths(block_descriptors()['GpioModule']) == [

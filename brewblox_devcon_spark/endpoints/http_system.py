@@ -21,6 +21,13 @@ from ..models import (
 
 ESP_URL_FMT = 'http://brewblox.blob.core.windows.net/firmware/{date}-{version}/brewblox-esp32.bin'
 
+# Why port 80 of a Spark 4 refuses an update. It stops the cbox port only once the update started,
+# so after a refusal the service reconnects to the same firmware.
+UPDATE_REFUSALS = {
+    413: 'the firmware URL is over 255 bytes',
+    503: 'the update did not start: another update is running, or memory is low',
+}
+
 LOGGER = logging.getLogger(__name__)
 
 router = APIRouter(prefix='/system', tags=['System'])
@@ -125,7 +132,7 @@ async def system_factory_reset():
 
 
 class Flasher:
-    def __init__(self, background_tasks: BackgroundTasks) -> None:
+    def __init__(self) -> None:
         self.config = utils.get_config()
         self.fw_config = utils.get_fw_config()
 
@@ -133,7 +140,6 @@ class Flasher:
         self.mqtt_client = mqtt.CV.get()
         self.commander = command.CV.get()
         self.client = AsyncClient()
-        self.background_tasks = background_tasks
 
         self.notify_topic = f'{self.config.state_topic}/{self.config.name}/update'
         self.fw_version = self.fw_config.firmware_version
@@ -148,15 +154,16 @@ class Flasher:
         )
 
     async def run(self) -> FirmwareFlashResponse:  # pragma: no cover
+        # Before reading the controller description, which is None until the handshake
+        if not self.state.is_acknowledged():
+            self._notify('Controller is not connected. Aborting update.')
+            raise exceptions.NotConnected()
+
         desc = self.state.desc()
         device_id = desc.controller.device.device_id
         platform = desc.controller.platform
         connection_kind = desc.connection_kind
         address = desc.address
-
-        if not self.state.is_acknowledged():
-            self._notify('Controller is not connected. Aborting update.')
-            raise exceptions.NotConnected()
 
         if connection_kind in ['MOCK', 'SIM']:
             self._notify('Firmware updates not available for simulation controllers.')
@@ -183,9 +190,12 @@ class Flasher:
                 if connection_kind == 'TCP':
                     host, _ = address.split(':')
                     self._notify(f'Sending update prompt to {host}')
+                    resp = await self.client.post(f'http://{host}:80/firmware_update', content=self.fw_url)
+                    if resp.status_code != 200:
+                        reason = UPDATE_REFUSALS.get(resp.status_code, resp.reason_phrase)
+                        raise exceptions.FirmwareUpdateFailed(f'{host} answered {resp.status_code}: {reason}')
                     self._notify('The Spark will now download and apply the new firmware')
                     self._notify('The update is done when the service reconnects')
-                    await self.client.post(f'http://{host}:80/firmware_update', content=self.fw_url)
 
                 if connection_kind == 'MQTT':
                     topic = f'brewcast/cbox/fw/{address}'
@@ -206,20 +216,28 @@ class Flasher:
                     )
                     self._notify('Update done!')
 
+        except exceptions.FirmwareUpdateFailed as ex:
+            # A refusal by the controller: its message is complete
+            self._notify(f'Failed to update firmware: {ex.detail}')
+            raise
+
         except Exception as ex:
             self._notify(f'Failed to update firmware: {utils.strex(ex)}')
             raise exceptions.FirmwareUpdateFailed(utils.strex(ex))
 
         finally:
+            # Also after a failure, which leaves the service updating or its connection ended for good.
+            # Not a background task: those run only after a successful response.
+            # The shutdown waits for this response.
             self._notify('Restarting service...')
-            self.background_tasks.add_task(utils.graceful_shutdown, 'Firmware flash')
+            utils.graceful_shutdown('Firmware flash')
 
         response = FirmwareFlashResponse(address=address, version=self.fw_version)
         return response
 
 
 @router.post('/flash')
-async def system_flash(background_tasks: BackgroundTasks) -> FirmwareFlashResponse:
-    flasher = Flasher(background_tasks)
+async def system_flash() -> FirmwareFlashResponse:
+    flasher = Flasher()
     response = await flasher.run()
     return response

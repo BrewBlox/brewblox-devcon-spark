@@ -184,6 +184,14 @@ async def test_unexpected_response(caplog: pytest.LogCaptureFixture):
     assert 'Unexpected message' in record.message
 
 
+def test_msgid_skips_zero():
+    """The msgId wraps from 0xFFFF to 1"""
+    cmdr = command.CV.get()
+    assert [cmdr._next_id(), cmdr._next_id()] == [1, 2]
+    cmdr._msgid = 0xFFFE
+    assert [cmdr._next_id(), cmdr._next_id()] == [0xFFFF, 1]
+
+
 async def test_firmware_update_call(manager: LifespanManager):
     # We don't unit test OTA update logic because it makes very in-depth assumptions
     # about how particle devices respond to YMODEM calls

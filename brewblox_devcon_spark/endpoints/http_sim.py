@@ -17,9 +17,9 @@ router = APIRouter(prefix='/sim', tags=['Sim'])
 @router.websocket('/display')
 async def sim_display_websocket(ws: WebSocket):  # pragma: no cover
     """
-    Open a WebSocket to stream display buffer updates.
-    The full buffer will be sent in the initial push,
-    and subsequent updates will only include changed areas.
+    Open a WebSocket to stream the simulator's display.
+    Every message is a whole frame of 480 x 320 pixels, 3 bytes R, G, B each,
+    in position order: the pixel at x, y is pixel y * 480 + x.
     """
     config = utils.get_config()
     state = state_machine.CV.get()

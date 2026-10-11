@@ -660,6 +660,7 @@ class SparkApi:
             block (Block):
                 A block that at least includes type and data.
                 Both sid and nid may be omitted.
+                The request size is checked with the sid and nid where given, else at their largest.
 
         """
         async with self._execute('Validate block'):
@@ -669,7 +670,8 @@ class SparkApi:
             block.id = None
             block.nid = 0
             block = self._to_firmware_block(block)
-            block = await self.cmder.validate(block)
+            # A copy: to_block() adds a name in the block to the block store
+            await self.cmder.validate(block.model_copy(update={'id': sid, 'nid': nid or 0}))
             block = self.to_block(block)
 
             block.id = sid
