@@ -1,4 +1,5 @@
 from base64 import b64decode, b64encode
+from collections import Counter
 
 import pytest
 
@@ -494,7 +495,7 @@ def test_complete_backup_lines():
 
     # Services from the oneof arguments to the 2026-09 datetime change: both
     block = _backup_sequence(lines)
-    note = sequence.complete_backup_lines(block, _firmware('2026-04-01'))
+    changes = sequence.complete_backup_lines(block, _firmware('2026-04-01'))
     assert block.data['instructions'] == [
         'SET_DIGITAL target=vA, setting=0',
         'SET_DIGITAL target=vB, setting=1',
@@ -505,11 +506,7 @@ def test_complete_backup_lines():
         'RESTART',
         'INVALID target=vA',
     ]
-    assert note == (
-        'Sequence `All closed` as an older service wrote it: '
-        'added setting=0 on 2 lines, added lower=0C on 1 line, read time=None as time=0 on 1 line. '
-        'These are the values the controller ran.'
-    )
+    assert changes == {'added setting=0': 2, 'added lower=0C': 1, 'read time=None as time=0': 1}
     for line in block.data['instructions'][:-1]:
         sequence.from_line(line, 1)
 
@@ -527,20 +524,17 @@ def test_complete_backup_lines():
 
     # Up to proto 8434d4d4: unset arguments only
     block = _backup_sequence(lines)
-    note = sequence.complete_backup_lines(block, _firmware('2026-10-11'))
+    changes = sequence.complete_backup_lines(block, _firmware('2026-10-11'))
     assert block.data['instructions'][4] == 'WAIT_UNTIL time=None'
-    assert note.startswith('Sequence `All closed` as an older service wrote it: added setting=0 on 2 lines, ')
+    assert changes == {'added setting=0': 2, 'added lower=0C': 1}
 
     # Before the oneof arguments, and backups without firmware, which are older: zero datetimes only
     for firmware in [_firmware('2024-02-26'), None]:
         block = _backup_sequence(lines)
-        note = sequence.complete_backup_lines(block, firmware)
+        changes = sequence.complete_backup_lines(block, firmware)
         assert block.data['instructions'][0] == 'SET_DIGITAL target=vA'
         assert block.data['instructions'][4] == 'WAIT_UNTIL time=0'
-        assert note == (
-            'Sequence `All closed` as an older service wrote it: read time=None as time=0 on 1 line. '
-            'These are the values the controller ran.'
-        )
+        assert changes == {'read time=None as time=0': 1}
 
     # Newer backups, complete lines, and no instructions: nothing changes
     for block, firmware in [
@@ -550,8 +544,18 @@ def test_complete_backup_lines():
         (Block(id='All closed', nid=102, type='Sequence', data={'enabled': True}), _firmware('2026-04-01')),
     ]:
         before = block.model_copy(deep=True)
-        assert sequence.complete_backup_lines(block, firmware) is None
+        assert sequence.complete_backup_lines(block, firmware) == {}
         assert block == before
+
+    # One import message for all completed Sequences
+    assert sequence.completion_note(13, Counter({'added setting=0': 126})) == (
+        '13 Sequences as an older service wrote them: added setting=0 on 126 lines. '
+        'These are the values the controller ran.'
+    )
+    assert sequence.completion_note(1, Counter({'added setting=0': 2, 'read time=None as time=0': 1})) == (
+        '1 Sequence as an older service wrote it: added setting=0 on 2 lines, read time=None as time=0 on 1 line. '
+        'These are the values the controller ran.'
+    )
 
 
 def test_complete_every_argument():
