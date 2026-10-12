@@ -4,6 +4,7 @@ Offers a functional interface to the device functionality
 
 import asyncio
 import logging
+from collections import Counter
 from collections.abc import Callable
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
@@ -594,15 +595,27 @@ class SparkApi:
 
             # Resolve IDs now before concurrent calls can edit the block store
             resolved_blocks: list[FirmwareBlock] = []
+            completed: list[str] = []
+            completions: Counter[str] = Counter()
             for block in exported.blocks:
+                # A block the service that wrote the backup could not read holds only that error
+                if block.type in [codec.UNKNOWN_TYPE_STR, codec.ERROR_TYPE_STR]:
+                    message = (
+                        f'Block `{block.id}` was saved without its data, because the service '
+                        'that wrote this backup could not read it: there is nothing to restore.'
+                    )
+                    error_log.append(message)
+                    LOGGER.warning(f'{message} {block.data}')
+                    continue
+
                 try:
                     block = block.model_copy(deep=True)
                     # Sequence lines as the service that wrote the backup left them
                     if block.type == const.SEQUENCE_BLOCK_TYPE and (
-                        note := sequence.complete_backup_lines(block, exported.firmware)
+                        changes := sequence.complete_backup_lines(block, exported.firmware)
                     ):
-                        error_log.append(note)
-                        LOGGER.info(note)
+                        completed.append(block.id)
+                        completions.update(changes)
                     block = self._to_firmware_block(block)
                     resolved_blocks.append(block)
 
@@ -610,6 +623,12 @@ class SparkApi:
                     message = f'failed to resolve block. Error={utils.strex(ex)}, block={block}'
                     error_log.append(message)
                     LOGGER.error(message)
+
+            # One note for every completed Sequence, before the problems
+            if completed:
+                note = sequence.completion_note(len(completed), completions)
+                error_log.insert(0, note)
+                LOGGER.info(f'{note} Sequences: {", ".join(completed)}')
 
             LOGGER.debug('Loading blocks from backup:')
             for block in resolved_blocks:

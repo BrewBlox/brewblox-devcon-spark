@@ -415,7 +415,6 @@ def test_logged_decimals():
     """
     logged_decimals is only set on logged fields with a scale, and keeps fewer decimals than the scale allows,
     in degC and in degF: otherwise it would change nothing, or claim precision the value does not have.
-    SysInfo.uptime is the one exception, below.
     """
     temperature_units = {pb2.brewblox_pb2.UnitType.Value(u) for u in ['Celsius', 'DeltaCelsius']}
     for block_type, desc in block_descriptors().items():
@@ -424,10 +423,6 @@ def test_logged_decimals():
             if not opts.HasField('logged_decimals'):
                 continue
             assert opts.logged, (block_type, *path)
-            if (block_type, *path) == ('SysInfo', 'uptime'):
-                # Left from its scale of 1000, which proto 8434d4d4 dropped: whole seconds stay whole
-                assert opts.logged_decimals == 0
-                continue
             assert opts.scale, (block_type, *path)
             for factor in [1, 1.8] if opts.unit in temperature_units else [1]:
                 assert 0 <= opts.logged_decimals < processor._decimals(opts.scale, factor), (block_type, *path)

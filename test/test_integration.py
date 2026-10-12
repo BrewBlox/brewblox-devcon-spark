@@ -511,7 +511,7 @@ ZERO_INSTRUCTIONS = [
     'WAIT_UNTIL time=0',
     'WAIT_UNTIL time=2023-11-14T22:13:20Z',
     'SET_SETPOINT target=0, setting=20.0C',
-    '#',
+    '',
     'RESTART',
 ]
 
@@ -519,7 +519,8 @@ ZERO_INSTRUCTIONS = [
 async def create_zero_members(client: AsyncClient) -> Callable[[], Awaitable[None]]:
     """
     Creates a Variables block with a zero timestamp and no link next to other variables,
-    and a Sequence with WAIT_UNTIL time=0, a target of 0 and an empty comment. Returns a check that both read unchanged.
+    and a Sequence with WAIT_UNTIL time=0, a target of 0 and a blank line, an empty comment.
+    Returns a check that both read unchanged.
     A zero timestamp and no link read as null, and time=0 and target=0 read as written.
     """
 
@@ -673,6 +674,8 @@ async def test_sequence(client: AsyncClient):
             'instructions': [
                 '   # This is a comment    ',
                 'SET_SETPOINT target=setpoint, setting=40C',
+                '',
+                '#',
                 'WAIT_SETPOINT target=setpoint, precision=1dC',
                 'RESTART',
             ],
@@ -686,9 +689,12 @@ async def test_sequence(client: AsyncClient):
     assert resp.status_code == 201
     block = Block.model_validate_json(resp.text)
 
+    # Blank lines and a lone `#` are COMMENTs without text, and read back blank
     assert block.data['instructions'] == [
         '# This is a comment',
         'SET_SETPOINT target=setpoint, setting=40.0C',
+        '',
+        '',
         'WAIT_SETPOINT target=setpoint, precision=1.0dC',
         'RESTART',
     ]
@@ -840,22 +846,39 @@ async def test_backup_load_old_sequences(client: AsyncClient):
                     'type': 'Sequence',
                     'data': {'enabled': False, 'instructions': ['SET_DIGITAL target=vA', 'WAIT_UNTIL time=None']},
                 },
+                {
+                    'id': 'All open',
+                    'nid': 202,
+                    'type': 'Sequence',
+                    'data': {'enabled': False, 'instructions': ['SET_DIGITAL target=vA', 'SET_DIGITAL target=vA']},
+                },
+                {
+                    'id': 'Variables',
+                    'nid': 203,
+                    'type': 'UnknownType',
+                    'data': {'error': 'No codec entry found for Deprecated_AnalogGpioModule'},
+                },
             ],
         }
 
+    # One note for all completed Sequences, then the block that holds nothing to restore
     resp = await client.post('/blocks/backup/load', json=backup('2026-04-01'))
     assert resp.json()['messages'] == [
-        'Sequence `All closed` as an older service wrote it: '
-        'added setting=0 on 1 line, read time=None as time=0 on 1 line. '
-        'These are the values the controller ran.'
+        '2 Sequences as an older service wrote them: '
+        'added setting=0 on 3 lines, read time=None as time=0 on 1 line. '
+        'These are the values the controller ran.',
+        'Block `Variables` was saved without its data, because the service '
+        'that wrote this backup could not read it: there is nothing to restore.',
     ]
     resp = await client.post('/blocks/read', json={'id': 'All closed'})
     assert resp.json()['data']['instructions'] == ['SET_DIGITAL target=vA, setting=STATE_INACTIVE', 'WAIT_UNTIL time=0']
 
     # A newer backup is not completed: a line without an argument is refused
     resp = await client.post('/blocks/backup/load', json=backup('2026-10-12'))
-    [message] = resp.json()['messages']
-    assert 'Missing arguments: `setting`' in message
+    [closed, opened, variables] = resp.json()['messages']
+    assert variables.startswith('Block `Variables` was saved without its data')
+    assert 'Missing arguments: `setting`' in closed
+    assert 'Missing arguments: `setting`' in opened
 
 
 async def test_backup_stored(client: AsyncClient, block_args: Block):

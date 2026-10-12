@@ -51,7 +51,8 @@ def from_line(line: str, line_num: int) -> dict:
 
     Links in the output will only include the SID, not the NID.
     """
-    if line.lstrip().startswith('#'):
+    # A blank line is a COMMENT without text, as a lone `#` is
+    if not line.strip() or line.lstrip().startswith('#'):
         return {'COMMENT': {'text': line.strip()[1:]}}
 
     if ' ' in line:
@@ -207,8 +208,9 @@ def to_line(args: dict) -> str:
     args: list[str] = []
 
     if opcode == 'COMMENT':
+        # A COMMENT without text is a blank line
         text = argdict.get('text', '')
-        return f'#{text}'
+        return f'#{text}' if text else ''
 
     if not argdict:
         return opcode
@@ -335,7 +337,7 @@ def _complete_line(line: str, *, unset: bool, none_datetime: bool) -> tuple[str,
     return ' '.join([opcode, ', '.join(entries)]), changes
 
 
-def complete_backup_lines(block: Block, firmware: FirmwareDescription | None) -> str | None:
+def complete_backup_lines(block: Block, firmware: FirmwareDescription | None) -> Counter[str]:
     """
     Completes the lines of a Sequence in a backup as the service that wrote the backup left them, in place.
     Only for backup loads: a line a user leaves an argument out of is still refused.
@@ -346,7 +348,7 @@ def complete_backup_lines(block: Block, firmware: FirmwareDescription | None) ->
     - Services until proto c1f698c5 wrote a zero datetime as `None`. It is read as 0.
       A backup without firmware is older than both.
 
-    Returns a description of the changes for the import messages, or None if nothing changed.
+    Returns the number of lines each change was made on: empty if nothing changed.
     """
     lines = block.data.get('instructions')
     proto_date = firmware.proto_date if firmware else ''
@@ -354,13 +356,20 @@ def complete_backup_lines(block: Block, firmware: FirmwareDescription | None) ->
     none_datetime = proto_date <= NONE_DATETIME_TO
 
     if not lines:
-        return None
+        return Counter()
 
     completed = [_complete_line(line, unset=unset, none_datetime=none_datetime) for line in lines]
     counts = Counter(change for _, changes in completed for change in changes)
-    if not counts:
-        return None
+    if counts:
+        block.data['instructions'] = [line for line, _ in completed]
+    return counts
 
-    block.data['instructions'] = [line for line, _ in completed]
+
+def completion_note(sequences: int, counts: Counter[str]) -> str:
+    """The import message for the Sequences complete_backup_lines() changed, and its summed counts"""
+    if sequences == 1:
+        which = '1 Sequence as an older service wrote it'
+    else:
+        which = f'{sequences} Sequences as an older service wrote them'
     done = ', '.join(f'{change} on {n} {"line" if n == 1 else "lines"}' for change, n in counts.items())
-    return f'Sequence `{block.id}` as an older service wrote it: {done}. These are the values the controller ran.'
+    return f'{which}: {done}. These are the values the controller ran.'
