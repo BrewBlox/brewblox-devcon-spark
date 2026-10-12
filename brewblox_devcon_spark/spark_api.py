@@ -597,6 +597,12 @@ class SparkApi:
             for block in exported.blocks:
                 try:
                     block = block.model_copy(deep=True)
+                    # Sequence lines as the service that wrote the backup left them
+                    if block.type == const.SEQUENCE_BLOCK_TYPE and (
+                        note := sequence.complete_backup_lines(block, exported.firmware)
+                    ):
+                        error_log.append(note)
+                        LOGGER.info(note)
                     block = self._to_firmware_block(block)
                     resolved_blocks.append(block)
 

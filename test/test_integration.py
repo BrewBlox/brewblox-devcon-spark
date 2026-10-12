@@ -818,6 +818,46 @@ async def test_backup_load(client: AsyncClient, spark_blocks: list[Block]):
     assert 'derpface' not in resp_ids
 
 
+async def test_backup_load_old_sequences(client: AsyncClient):
+    """
+    A backup's Sequence lines are completed as the service that wrote it left them, by its proto date.
+    Services from 2024-03 to 2026-10 left out the zero arguments of instructions last written before 2024-03.
+    """
+
+    def backup(proto_date: str) -> dict:
+        return {
+            'firmware': {
+                'firmware_version': '1687e574',
+                'proto_version': '94d21b71',
+                'firmware_date': proto_date,
+                'proto_date': proto_date,
+            },
+            'blocks': [
+                {'id': 'vA', 'nid': 200, 'type': 'DigitalActuator', 'data': {'channel': 1}},
+                {
+                    'id': 'All closed',
+                    'nid': 201,
+                    'type': 'Sequence',
+                    'data': {'enabled': False, 'instructions': ['SET_DIGITAL target=vA', 'WAIT_UNTIL time=None']},
+                },
+            ],
+        }
+
+    resp = await client.post('/blocks/backup/load', json=backup('2026-04-01'))
+    assert resp.json()['messages'] == [
+        'Sequence `All closed` as an older service wrote it: '
+        'added setting=0 on 1 line, read time=None as time=0 on 1 line. '
+        'These are the values the controller ran.'
+    ]
+    resp = await client.post('/blocks/read', json={'id': 'All closed'})
+    assert resp.json()['data']['instructions'] == ['SET_DIGITAL target=vA, setting=STATE_INACTIVE', 'WAIT_UNTIL time=0']
+
+    # A newer backup is not completed: a line without an argument is refused
+    resp = await client.post('/blocks/backup/load', json=backup('2026-10-12'))
+    [message] = resp.json()['messages']
+    assert 'Missing arguments: `setting`' in message
+
+
 async def test_backup_stored(client: AsyncClient, block_args: Block):
     resp = await client.post('/blocks/backup/save')
     portable = Backup.model_validate_json(resp.text)

@@ -5,19 +5,36 @@ This converts Sequence block instructions from and to the line format.
 """
 
 import re
+from collections import Counter
 from collections.abc import Iterable
 from datetime import timedelta
 from typing import Any
 
 from google.protobuf.descriptor import Descriptor, FieldDescriptor
+from google.protobuf.message import Message
 
 from brewblox_devcon_spark.codec import bloxfield, time_utils
 from brewblox_devcon_spark.codec.pb2 import Sequence_pb2, brewblox_pb2
-from brewblox_devcon_spark.models import Block
+from brewblox_devcon_spark.models import Block, FirmwareDescription
 
 INSTRUCTION_MSG_DESC: Descriptor = Sequence_pb2.Instruction.DESCRIPTOR
 RAW_PREFIX = '__raw__'
 VAR_PREFIX = '__var__'
+
+# What older services wrote into the Sequence lines of a backup, by the proto date the backup records:
+# the date in firmware.ini, as the controller's handshake reports it.
+ONEOF_ARGUMENTS_FROM = '2024-03-01'
+"""
+Proto a5dc48c8 made every instruction argument a raw/var oneof.
+Before it, a backup line carried every argument, zeros included.
+"""
+UNSET_ARGUMENTS_TO = '2026-10-11'
+"""
+Proto 8434d4d4. Services up to it left out an argument the controller held no member for (see `fill_unset_arguments`).
+The service that fills them in pins this proto too: its backups have nothing to complete.
+"""
+NONE_DATETIME_TO = '2026-09-24'
+"""Protos 5bab8b2d and c1f698c5. Services until the second wrote a zero datetime as `None`."""
 
 
 def base_keys(keys: Iterable[str]) -> set[str]:
@@ -108,7 +125,7 @@ def from_line(line: str, line_num: int) -> dict:
             if unit_name in ['Celsius', 'DeltaCelsius']:
                 # Decimal value followed by C / F / dC / dF
                 # Unit notation is mandatory
-                match = re.match(r'^(\d+\.?\d*)\s*(d?[CF])$', value)
+                match = re.match(r'^(-?\d+\.?\d*)\s*(d?[CF])$', value)
 
                 if not match:
                     raise ValueError(f'line {line_num}: Invalid temperature argument: `{key}={value}`')
@@ -120,6 +137,10 @@ def from_line(line: str, line_num: int) -> dict:
                     raise ValueError(
                         f'line {line_num}: Mismatch between delta and absolute temperature: `{key}={value}{unit}`'
                     )
+
+                # A difference below zero, such as a precision, would never be met
+                if value < 0 and 'delta_' in unit:
+                    raise ValueError(f'line {line_num}: Negative temperature difference: `{key}={value}{unit}`')
 
                 return (
                     raw_key,
@@ -154,11 +175,16 @@ def from_line(line: str, line_num: int) -> dict:
     # - key and value are extracted from the `key=value` string
     # - spaces are stripped from both key and value
     # - quotes are stripped from value
+    # - an argument given twice is refused: a dict would keep only the last value
     # - a {key:value} dict is constructed
-    argdict = {
-        argk.strip(): argv.strip().strip("'")
+    entries = [
+        (argk.strip(), argv.strip().strip("'"))
         for (argk, _, argv) in [arg.partition('=') for arg in args.split(',') if arg]
-    }
+    ]
+    keys = [key for key, _ in entries]
+    if duplicates := sorted({key for key in keys if keys.count(key) > 1}):
+        raise ValueError(f'line {line_num}: Duplicate arguments: `{", ".join(duplicates)}`')
+    argdict = dict(entries)
 
     parsed = dict([parse_arg_entry(key, value) for key, value in argdict.items()])
 
@@ -240,3 +266,101 @@ def serialize(block: Block):
     """
     if 'instructions' in block.data:
         block.data['instructions'] = [to_line(d) for d in block.data['instructions']]
+
+
+def fill_unset_arguments(message: Message):
+    """
+    Sets every instruction argument the block holds no member for to its raw zero, in place.
+
+    Before the arguments became raw/var oneofs (proto a5dc48c8, 2024-03), they were plain proto3 fields,
+    which leave a zero off the wire. The oneof members kept the field numbers, so an instruction
+    last written before then holds no member for a zero argument, on every firmware since.
+    The controller runs it as the raw zero. Filled in, it reads as that value,
+    and writing the instruction back stores it explicitly.
+    """
+    if not message.HasField('instructions'):
+        return
+
+    for instruction in message.instructions.items:
+        for _, args in instruction.ListFields():
+            for oneof in args.DESCRIPTOR.oneofs:
+                if args.WhichOneof(oneof.name) is None:
+                    setattr(args, f'{RAW_PREFIX}{oneof.name}', 0)
+
+
+def _zero_text(field_desc: FieldDescriptor) -> str:
+    """The line text that from_line() parses to the raw zero of an argument"""
+    opts = field_desc.GetOptions().Extensions[brewblox_pb2.field]
+    unit_name = brewblox_pb2.UnitType.Name(opts.unit)
+    return {'Celsius': '0C', 'DeltaCelsius': '0dC', 'Second': '0s'}.get(unit_name, '0')
+
+
+def _complete_line(line: str, *, unset: bool, none_datetime: bool) -> tuple[str, list[str]]:
+    """
+    Completes a line as an older service wrote it.
+    `unset` adds every argument the line leaves out as its raw zero.
+    `none_datetime` reads a datetime written as `None` as 0.
+    Returns the line and a description of each change.
+    Lines that from_line() refuses for other reasons are left to it.
+    """
+    opcode, _, args = line.partition(' ')
+    opcode_field_desc = INSTRUCTION_MSG_DESC.fields_by_name.get(opcode)
+    if line.lstrip().startswith('#') or opcode_field_desc is None:
+        return line, []
+
+    arg_descs = opcode_field_desc.message_type.fields_by_name
+    entries: list[str] = []
+    changes: list[str] = []
+
+    for key, sep, value in [arg.partition('=') for arg in args.split(',') if arg]:
+        key, value = key.strip(), value.strip()
+        field_desc = arg_descs.get(f'{RAW_PREFIX}{key}')
+        datetime = field_desc and field_desc.GetOptions().Extensions[brewblox_pb2.field].datetime
+        if none_datetime and datetime and value == 'None':
+            value = '0'
+            changes.append(f'read {key}=None as {key}=0')
+        entries.append(f'{key}{sep}{value}')
+
+    if unset:
+        given = base_keys(entry.partition('=')[0] for entry in entries)
+        for oneof in opcode_field_desc.message_type.oneofs:
+            if oneof.name not in given:
+                entry = f'{oneof.name}={_zero_text(arg_descs[f"{RAW_PREFIX}{oneof.name}"])}'
+                entries.append(entry)
+                changes.append(f'added {entry}')
+
+    if not changes:
+        return line, []
+
+    return ' '.join([opcode, ', '.join(entries)]), changes
+
+
+def complete_backup_lines(block: Block, firmware: FirmwareDescription | None) -> str | None:
+    """
+    Completes the lines of a Sequence in a backup as the service that wrote the backup left them, in place.
+    Only for backup loads: a line a user leaves an argument out of is still refused.
+
+    `firmware` is the one the backup records, by the proto date of which the completions are chosen:
+    - Services from proto a5dc48c8 to 8434d4d4 left out an argument the controller held no member for.
+      It is added as the raw zero the controller ran.
+    - Services until proto c1f698c5 wrote a zero datetime as `None`. It is read as 0.
+      A backup without firmware is older than both.
+
+    Returns a description of the changes for the import messages, or None if nothing changed.
+    """
+    lines = block.data.get('instructions')
+    proto_date = firmware.proto_date if firmware else ''
+    unset = ONEOF_ARGUMENTS_FROM <= proto_date <= UNSET_ARGUMENTS_TO
+    none_datetime = proto_date <= NONE_DATETIME_TO
+
+    if not lines:
+        return None
+
+    completed = [_complete_line(line, unset=unset, none_datetime=none_datetime) for line in lines]
+    counts = Counter(change for _, changes in completed for change in changes)
+    if not counts:
+        return None
+
+    block.data['instructions'] = [line for line, _ in completed]
+    done = ', '.join(f'{change} on {n} {"line" if n == 1 else "lines"}' for change, n in counts.items())
+    return f'Sequence `{block.id}` as an older service wrote it: {done}. These are the values the controller ran.'
