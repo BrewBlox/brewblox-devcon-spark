@@ -511,7 +511,7 @@ ZERO_INSTRUCTIONS = [
     'WAIT_UNTIL time=0',
     'WAIT_UNTIL time=2023-11-14T22:13:20Z',
     'SET_SETPOINT target=0, setting=20.0C',
-    '#',
+    '',
     'RESTART',
 ]
 
@@ -519,7 +519,8 @@ ZERO_INSTRUCTIONS = [
 async def create_zero_members(client: AsyncClient) -> Callable[[], Awaitable[None]]:
     """
     Creates a Variables block with a zero timestamp and no link next to other variables,
-    and a Sequence with WAIT_UNTIL time=0, a target of 0 and an empty comment. Returns a check that both read unchanged.
+    and a Sequence with WAIT_UNTIL time=0, a target of 0 and a blank line, an empty comment.
+    Returns a check that both read unchanged.
     A zero timestamp and no link read as null, and time=0 and target=0 read as written.
     """
 
@@ -673,6 +674,8 @@ async def test_sequence(client: AsyncClient):
             'instructions': [
                 '   # This is a comment    ',
                 'SET_SETPOINT target=setpoint, setting=40C',
+                '',
+                '#',
                 'WAIT_SETPOINT target=setpoint, precision=1dC',
                 'RESTART',
             ],
@@ -686,9 +689,12 @@ async def test_sequence(client: AsyncClient):
     assert resp.status_code == 201
     block = Block.model_validate_json(resp.text)
 
+    # Blank lines and a lone `#` are COMMENTs without text, and read back blank
     assert block.data['instructions'] == [
         '# This is a comment',
         'SET_SETPOINT target=setpoint, setting=40.0C',
+        '',
+        '',
         'WAIT_SETPOINT target=setpoint, precision=1.0dC',
         'RESTART',
     ]

@@ -51,7 +51,8 @@ def from_line(line: str, line_num: int) -> dict:
 
     Links in the output will only include the SID, not the NID.
     """
-    if line.lstrip().startswith('#'):
+    # A blank line is a COMMENT without text, as a lone `#` is
+    if not line.strip() or line.lstrip().startswith('#'):
         return {'COMMENT': {'text': line.strip()[1:]}}
 
     if ' ' in line:
@@ -207,8 +208,9 @@ def to_line(args: dict) -> str:
     args: list[str] = []
 
     if opcode == 'COMMENT':
+        # A COMMENT without text is a blank line
         text = argdict.get('text', '')
-        return f'#{text}'
+        return f'#{text}' if text else ''
 
     if not argdict:
         return opcode

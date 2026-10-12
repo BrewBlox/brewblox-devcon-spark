@@ -111,6 +111,10 @@ def test_sequence_from_line():
         'COMMENT': {'text': ''},
     }
 
+    # A blank line is a COMMENT without text
+    assert sequence.from_line('', 1) == {'COMMENT': {'text': ''}}
+    assert sequence.from_line('  \t ', 1) == {'COMMENT': {'text': ''}}
+
     with pytest.raises(ValueError, match=r'line 1: Missing argument separator: `target=Kettle Setpoint setting=40C`'):
         sequence.from_line('SET_SETPOINT target=Kettle Setpoint setting=40C', 1)
 
@@ -242,14 +246,9 @@ def test_sequence_to_line():
         == '#$not_a_variable'
     )
 
-    assert (
-        sequence.to_line(
-            {
-                'COMMENT': {},
-            }
-        )
-        == '#'
-    )
+    # A COMMENT without text is a blank line
+    assert sequence.to_line({'COMMENT': {}}) == ''
+    assert sequence.to_line({'COMMENT': {'text': ''}}) == ''
 
 
 def test_no_args():
@@ -297,6 +296,21 @@ def test_codec_round_trip():
         'WAIT_DURATION duration=1m10s',
         '# comment',
     ]
+
+
+def test_blank_line_round_trip():
+    """A blank line and a lone `#` are COMMENTs without text, and read back as blank lines"""
+    codec.setup()
+    cdc = codec.CV.get()
+    written = _written(cdc, ['ENABLE target=10', '', '#', '   ', '# comment'])
+    assert [instruction.WhichOneof('instruction') for instruction in written.instructions.items] == [
+        'ENABLE',
+        'COMMENT',
+        'COMMENT',
+        'COMMENT',
+        'COMMENT',
+    ]
+    assert _read_lines(cdc, written) == ['ENABLE target=10', '', '', '', '# comment']
 
 
 def test_unset_link_round_trip():
