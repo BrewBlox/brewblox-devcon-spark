@@ -21,7 +21,7 @@ from brewblox_devcon_spark import exceptions, utils
 from brewblox_devcon_spark.models import DecodedPayload, ReadMode
 
 from . import bloxfield, unit_conversion
-from .descriptors import is_map, is_optional, json_default, list_wrapper, options, reset_value
+from .descriptors import is_map, is_optional, json_default, list_wrapper, options, real_oneof, reset_value
 from .opts import DateFormatOpt
 from .pb2 import brewblox_pb2
 from .time_utils import serialize_datetime
@@ -238,8 +238,8 @@ class ProtobufProcessor:
         in a list element or map value, leaving it out would unset the oneof.
         Any other field is outside list elements, and is left out in them: list elements are complete.
         """
-        oneof = element.field.containing_oneof
-        if oneof is None or is_optional(element.field):
+        oneof = real_oneof(element.field)
+        if oneof is None:
             return not element.in_list
         members = {f.name for f in oneof.fields}
         return not any(

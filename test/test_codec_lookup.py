@@ -155,7 +155,7 @@ def test_list_wrappers():
 
 def test_optional_matches_descriptor_proto():
     """
-    is_optional() recognizes proto3 `optional` fields by their synthetic oneof:
+    is_optional() and real_oneof() recognize proto3 `optional` fields by their synthetic oneof:
     the upb FieldDescriptor does not expose `proto3_optional`, but its DescriptorProto does.
     """
     for block_type, desc in block_descriptors().items():
@@ -165,6 +165,8 @@ def test_optional_matches_descriptor_proto():
             proto3_optional = next(f.proto3_optional for f in proto.field if f.name == field.name)
             expected = proto3_optional and field.message_type is None
             assert descriptors.is_optional(field) == expected, (block_type, *path)
+            in_real_oneof = field.containing_oneof is not None and not proto3_optional
+            assert (descriptors.real_oneof(field) is not None) == in_real_oneof, (block_type, *path)
 
 
 def test_optional_detection():
@@ -177,8 +179,16 @@ def test_optional_detection():
     assert not descriptors.is_optional(fields['instructions'])
     instruction = descriptors.list_wrapper(fields['instructions']).message_type
     assert not descriptors.is_optional(instruction.fields_by_name['COMMENT'])  # real oneof
+    assert descriptors.real_oneof(instruction.fields_by_name['COMMENT']).name == 'instruction'
     assert not descriptors.list_wrapper(fields['enabled'])
     assert not descriptors.list_wrapper(pb2.Pid_pb2.Block.DESCRIPTOR.fields_by_name['inputId'])
+
+    # An optional message has presence anyway, and is no optional leaf. Neither is in a real oneof.
+    constraints = pb2.DigitalActuator_pb2.Block.DESCRIPTOR.fields_by_name['constraints'].message_type
+    assert constraints.fields_by_name['minOff'].containing_oneof is not None
+    assert not descriptors.is_optional(constraints.fields_by_name['minOff'])
+    assert descriptors.real_oneof(constraints.fields_by_name['minOff']) is None
+    assert descriptors.real_oneof(pb2.Pid_pb2.Block.DESCRIPTOR.fields_by_name['inputValue']) is None
 
 
 def test_deprecated_constraints_skip_changed():
@@ -219,25 +229,15 @@ def test_deprecated_constraints_skip_changed():
 def test_traversed_messages_not_in_oneof():
     """
     A CHANGED decode sets traversed messages present: in a oneof, that would unset the member that was sent.
-    A proto3 `optional` message is the only member of its synthetic oneof, so setting it present unsets nothing.
+    A proto3 `optional` message, such as a constraint, is the only member of its synthetic oneof, and unsets nothing.
     """
-    optional = set()
     for block_type, desc in block_descriptors().items():
         for path in descriptors.traversed_messages(desc):
             msg = desc
             for name in path:
                 field = msg.fields_by_name[name]
+                assert descriptors.real_oneof(field) is None, (block_type, *path)
                 msg = field.message_type
-            # The parents are traversed paths of their own, and are checked there
-            oneof = field.containing_oneof
-            if oneof is not None:
-                assert len(oneof.fields) == 1, (block_type, *path)
-                optional.add((block_type, *path))
-
-    assert optional == {
-        ('GpioModule', 'analogCalibration12'),
-        ('GpioModule', 'analogCalibration34'),
-    }
 
 
 def test_coverage_snapshot():

@@ -1136,7 +1136,8 @@ async def test_encode_null_messages():
     assert message.constraints.max.value == 0
     assert not message.constraints.HasField('min')  # Absent: kept
 
-    # Recursively, links included
+    # Recursively, links included.
+    # The constraints are proto3 `optional` messages, in no real oneof: each is reset.
     message = _encode('ActuatorPwm', {'constraints': None})
     assert message.constraints.HasField('min')
     assert message.constraints.HasField('max')
