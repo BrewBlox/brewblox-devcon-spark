@@ -15,7 +15,7 @@ from types import MappingProxyType
 from typing import Any
 
 from google.protobuf import json_format
-from google.protobuf.descriptor import Descriptor, FieldDescriptor
+from google.protobuf.descriptor import Descriptor, FieldDescriptor, OneofDescriptor
 from google.protobuf.message_factory import GetMessageClass
 
 from .pb2 import brewblox_pb2
@@ -52,17 +52,34 @@ def options(field: FieldDescriptor) -> brewblox_pb2.FieldOpts:
     return field.GetOptions().Extensions[brewblox_pb2.field]
 
 
+def _in_synthetic_oneof(field: FieldDescriptor) -> bool:
+    """
+    A proto3 `optional` field is the only member of a synthetic oneof named `_<name>`.
+    The upb FieldDescriptor exposes neither `proto3_optional` nor `is_synthetic`.
+    """
+    oneof = field.containing_oneof
+    return oneof is not None and oneof.name == f'_{field.name}' and len(oneof.fields) == 1
+
+
 @cache
 def is_optional(field: FieldDescriptor) -> bool:
     """
-    A proto3 `optional` field: a non-message field in a synthetic oneof named `_<name>`.
-    The upb FieldDescriptor exposes neither `proto3_optional` nor `is_synthetic`.
+    A proto3 `optional` field that is not a message.
+    A message field has presence without the keyword, so for a message it changes nothing here.
     A guard test compares this with `proto3_optional` in the DescriptorProto.
     """
-    oneof = field.containing_oneof
-    return (
-        field.message_type is None and oneof is not None and oneof.name == f'_{field.name}' and len(oneof.fields) == 1
-    )
+    return field.message_type is None and _in_synthetic_oneof(field)
+
+
+@cache
+def real_oneof(field: FieldDescriptor) -> OneofDescriptor | None:
+    """
+    The oneof that `field` is a member of, or None.
+    The synthetic oneof of a proto3 `optional` field, a message or not, is none.
+    """
+    if _in_synthetic_oneof(field):
+        return None
+    return field.containing_oneof
 
 
 def is_map(field: FieldDescriptor) -> bool:
@@ -120,17 +137,14 @@ def reset_value(field: FieldDescriptor) -> Any:
     * A repeated field: empty. It has no presence: an empty list is not sent.
     * A singular message: present, with every writable leaf reset, recursively.
       Members of a oneof are left out: none of them is the default.
+      A proto3 `optional` message, such as a constraint, is no member (`real_oneof()`), and is reset.
     """
     if items := list_wrapper(field):
         return {'items': {} if is_map(items) else []}
     if field.is_repeated:
         return {} if is_map(field) else []
     if field.message_type:
-        return {
-            f.name: reset_value(f)
-            for f in field.message_type.fields
-            if is_writable(f) and (f.containing_oneof is None or is_optional(f))
-        }
+        return {f.name: reset_value(f) for f in field.message_type.fields if is_writable(f) and real_oneof(f) is None}
     return field.default_value
 
 
