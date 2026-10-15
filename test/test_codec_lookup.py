@@ -217,14 +217,27 @@ def test_deprecated_constraints_skip_changed():
 
 
 def test_traversed_messages_not_in_oneof():
-    """A CHANGED decode sets traversed messages present: in a oneof, that would unset the member that was sent"""
+    """
+    A CHANGED decode sets traversed messages present: in a oneof, that would unset the member that was sent.
+    A proto3 `optional` message is the only member of its synthetic oneof, so setting it present unsets nothing.
+    """
+    optional = set()
     for block_type, desc in block_descriptors().items():
         for path in descriptors.traversed_messages(desc):
             msg = desc
             for name in path:
                 field = msg.fields_by_name[name]
-                assert field.containing_oneof is None, (block_type, *path)
                 msg = field.message_type
+            # The parents are traversed paths of their own, and are checked there
+            oneof = field.containing_oneof
+            if oneof is not None:
+                assert len(oneof.fields) == 1, (block_type, *path)
+                optional.add((block_type, *path))
+
+    assert optional == {
+        ('GpioModule', 'analogCalibration12'),
+        ('GpioModule', 'analogCalibration34'),
+    }
 
 
 def test_coverage_snapshot():

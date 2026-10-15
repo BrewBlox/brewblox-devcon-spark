@@ -685,6 +685,34 @@ async def test_merge_gpio_module():
     assert_merges(_gpio(10, 8192, 1, 16384), _gpio(0, 0, 0, 0))
 
 
+async def test_merge_gpio_analog_calibration():
+    cdc = codec.CV.get()
+
+    def calibrated(state: int) -> Message:
+        block = _gpio(0, 4096, 0, 0)
+        block.analogCalibration12.offset = -120
+        block.analogCalibration12.scale.items.extend([4194304] * 7)
+        block.analogCalibration12.switchResistance = 5 * 16384
+        block.analogCalibration12.state = state
+        return block
+
+    # A CHANGED read carries the state of a pair, and not its stored calibration
+    assert_merges(
+        calibrated(GpioModule.ANALOG_CALIBRATION_STATE_RUNNING),
+        calibrated(GpioModule.ANALOG_CALIBRATION_STATE_DONE),
+    )
+
+    # A pair the cache does not hold: NONE is skipped, any other state takes a full read
+    t1 = _gpio(0, 4096, 0, 0)
+    assert decode(t1, ReadMode.CHANGED)['analogCalibration12'] == {'state': 'ANALOG_CALIBRATION_STATE_NONE'}
+    assert_merges(_gpio(0, 4096, 0, 0), t1)
+
+    t1.analogCalibration12.state = GpioModule.ANALOG_CALIBRATION_STATE_RUNNING
+    cached = decode(_gpio(0, 4096, 0, 0))
+    with pytest.raises(NeedFullRead, match='analogCalibration12'):
+        cdc.merge_changed('GpioModule', cached, decode(changed(t1), ReadMode.CHANGED))
+
+
 def _pins(claimed: int) -> Message:
     block = Spark3Pins.Block(enableIoSupply5V=True, voltage5=5000, voltage12=12000)
     block.channels.add(id=1, capabilities=3, claimedBy=claimed)
