@@ -84,3 +84,15 @@ to the test function.
 - Commit messages carry no AI attribution trailers (no Co-Authored-By, no session links).
 - PRs target `develop` in BrewBlox/brewblox-devcon-spark. CI runs `uv run pytest` against
   freshly downloaded firmware, then `ruff format --check`, then builds the images.
+
+## Agent skills
+
+### Issue tracker
+
+Specs and tickets are local markdown under `.scratch/`, gitignored and synced between Elco's machines.
+See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` at the root and `docs/adr/`, created lazily.
+See `docs/agents/domain.md`.
