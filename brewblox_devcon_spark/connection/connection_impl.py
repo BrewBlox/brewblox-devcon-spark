@@ -55,6 +55,12 @@ class ConnectionImplBase(ConnectionCallbacks):
     async def on_event(self, msg: str):
         await self._callbacks.on_event(msg)
 
+    def reset_stream(self):
+        """
+        Discard any buffered inbound bytes / queued messages.
+        Default no-op; transport implementations with a parser override this.
+        """
+
     @abstractmethod
     async def send_request(self, msg: str):
         """

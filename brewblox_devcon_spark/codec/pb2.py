@@ -27,6 +27,7 @@ if 'brewblox_pb2' not in sys.modules:  # pragma: no cover
     import EdgeCase_pb2
     import FastPwm_pb2
     import GpioModule_pb2
+    import Kettle_pb2
     import MockPins_pb2
     import MotorValve_pb2
     import Mutex_pb2
@@ -39,13 +40,13 @@ if 'brewblox_pb2' not in sys.modules:  # pragma: no cover
     import Spark2Pins_pb2
     import Spark3Pins_pb2
     import SysInfo_pb2
+    import Tank_pb2
     import TempSensorAnalog_pb2
     import TempSensorCombi_pb2
     import TempSensorExternal_pb2
     import TempSensorMock_pb2
     import TempSensorOneWire_pb2
     import Variables_pb2
-    import VolumeSensor_pb2
     import WiFiSettings_pb2
 
 __all__ = [
@@ -54,15 +55,16 @@ __all__ = [
     'ActuatorOffset_pb2',
     'ActuatorPwm_pb2',
     'Balancer_pb2',
-    'DensitySensor_pb2',
     'DS2408_pb2',
     'DS2413_pb2',
+    'DensitySensor_pb2',
     'DigitalActuator_pb2',
     'DigitalInput_pb2',
     'DisplaySettings_pb2',
     'EdgeCase_pb2',
     'FastPwm_pb2',
     'GpioModule_pb2',
+    'Kettle_pb2',
     'MockPins_pb2',
     'MotorValve_pb2',
     'Mutex_pb2',
@@ -75,13 +77,13 @@ __all__ = [
     'Spark2Pins_pb2',
     'Spark3Pins_pb2',
     'SysInfo_pb2',
+    'Tank_pb2',
     'TempSensorAnalog_pb2',
     'TempSensorCombi_pb2',
     'TempSensorExternal_pb2',
     'TempSensorMock_pb2',
     'TempSensorOneWire_pb2',
     'Variables_pb2',
-    'VolumeSensor_pb2',
     'WiFiSettings_pb2',
     'brewblox_pb2',
     'command_pb2',

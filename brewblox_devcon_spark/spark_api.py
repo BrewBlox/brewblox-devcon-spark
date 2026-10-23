@@ -4,12 +4,13 @@ Offers a functional interface to the device functionality
 
 import asyncio
 import logging
+from collections import Counter
 from collections.abc import Callable
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
 from datetime import UTC, datetime
 
-from . import command, const, datastore_blocks, exceptions, state_machine, utils
+from . import codec, command, const, datastore_blocks, exceptions, state_machine, utils
 from .codec import bloxfield, sequence
 from .models import (
     Backup,
@@ -42,19 +43,27 @@ def merge(a: dict, b: dict):
 def resolve_data_ids(
     data: dict | list | tuple,
     replacer: Callable[[str], int] | Callable[[int], str],
-):
-    iter = enumerate(data) if isinstance(data, (list, tuple)) else data.items()
+) -> dict | list:
+    """
+    Returns a copy of `data` with every link id replaced by `replacer(id)`.
+    `data` itself is never modified: it may be shared with a cache.
+    """
 
-    for k, v in iter:
+    def _resolve(k, v):
         # Object-style link
         if bloxfield.is_link(v):
-            v['id'] = replacer(v['id'])
+            return {**v, 'id': replacer(v['id'])}
         # Postfix-style link
-        elif str(k).endswith(const.OBJECT_LINK_POSTFIX_END):
-            data[k] = replacer(v)
+        if str(k).endswith(const.OBJECT_LINK_POSTFIX_END):
+            return replacer(v)
         # Nested data - increase iteration depth
-        elif isinstance(v, (dict, list, tuple)):
-            resolve_data_ids(v, replacer)
+        if isinstance(v, (dict, list, tuple)):
+            return resolve_data_ids(v, replacer)
+        return v
+
+    if isinstance(data, dict):
+        return {k: _resolve(k, v) for k, v in data.items()}
+    return [_resolve(k, v) for k, v in enumerate(data)]
 
 
 class SparkApi:
@@ -62,6 +71,7 @@ class SparkApi:
         self.config = utils.get_config()
         self.state = state_machine.CV.get()
         self.cmder = command.CV.get()
+        self.codec = codec.CV.get()
         self.block_store = datastore_blocks.CV.get()
 
         self._discovery_lock = asyncio.Lock()
@@ -94,33 +104,38 @@ class SparkApi:
 
         return sid
 
-    def _sync_block_id(self, block: FirmwareBlock | FirmwareBlockIdentity):
-        if block.id and block.nid:
-            self.block_store[block.id] = block.nid
+    def to_sid(self, nid: int, name: str | None = None) -> str | None:
+        """
+        The string id of block `nid`, as `to_block()` sets it.
+        A `name` read from the controller is added to the block store.
+        """
+        # Writing to the bidict is slow, and names rarely change
+        if name and nid and self.block_store.get(name) != nid:
+            self.block_store[name] = nid
+        return name or self._find_sid(nid)
 
     def _to_block_identity(self, block: FirmwareBlock) -> BlockIdentity:
-        self._sync_block_id(block)
-
         return BlockIdentity(
-            id=block.id or self._find_sid(block.nid),
+            id=self.to_sid(block.nid, block.id),
             nid=block.nid,
             type=block.type,
             serviceId=self.config.name,
         )
 
-    def _to_block(self, block: FirmwareBlock) -> Block:
-        self._sync_block_id(block)
-
+    def to_block(self, block: FirmwareBlock) -> Block:
+        """
+        Converts a block as the controller sends it (numeric link ids) to an API block (string ids).
+        A block name in `block.id` is added to the block store.
+        `block` is not modified: its data may be shared with a cache.
+        """
         ident = self._to_block_identity(block)
         block = Block(
             id=ident.id,
             nid=ident.nid,
             type=ident.type,
             serviceId=ident.serviceId,
-            data=block.data,
+            data=resolve_data_ids(block.data, self._find_sid),
         )
-
-        resolve_data_ids(block.data, self._find_sid)
 
         # Special case, where the API data format differs from proto-ready format
         if block.type == const.SEQUENCE_BLOCK_TYPE:
@@ -154,16 +169,19 @@ class SparkApi:
         if block.type == const.SEQUENCE_BLOCK_TYPE:
             sequence.parse(block)
 
-        resolve_data_ids(block.data, self._find_nid)
+        block.data = resolve_data_ids(block.data, self._find_nid)
         return block
 
-    async def _check_connection(self):
+    async def check_connection(self) -> None:
         """
         Sends a Noop command to controller to evaluate the connection.
         If this command also fails, prompt the commander to reconnect.
+        Call this after a command timed out: the controller may have stopped answering
+        without the transport noticing (a half-open TCP connection).
 
         Only do this when the service is synchronized,
         to avoid weird interactions when prompting for a handshake.
+        Checks do not overlap: once one reset the connection, the others do nothing.
         """
         async with self._conn_check_lock:
             if self.state.is_synchronized():
@@ -200,7 +218,7 @@ class SparkApi:
 
         except exceptions.CommandTimeout as ex:
             # Wrap in a task to not delay the original response
-            asyncio.create_task(self._check_connection())
+            asyncio.create_task(self.check_connection())
             raise ex
 
         except Exception as ex:
@@ -233,7 +251,7 @@ class SparkApi:
         async with self._execute('Read block'):
             block = self._to_firmware_block_identity(block)
             block = await self.cmder.read_block(block)
-            block = self._to_block(block)
+            block = self.to_block(block)
             return block
 
     async def read_logged_block(self, block: BlockIdentity) -> Block:
@@ -256,8 +274,9 @@ class SparkApi:
         """
         async with self._execute('Read block (logged)'):
             block = self._to_firmware_block_identity(block)
-            block = await self.cmder.read_block(block, ReadMode.LOGGED)
-            block = self._to_block(block)
+            block = await self.cmder.read_block(block)
+            block = self.to_block(block)
+            block.data = self.codec.logged_view(block.type, block.data, full=True)
             return block
 
     async def read_stored_block(self, block: BlockIdentity) -> Block:
@@ -282,18 +301,18 @@ class SparkApi:
         async with self._execute('Read block (stored)'):
             block = self._to_firmware_block_identity(block)
             block = await self.cmder.read_block(block, ReadMode.STORED)
-            block = self._to_block(block)
+            block = self.to_block(block)
             return block
 
     async def write_block(self, block: Block) -> Block:
         """
         Write to a pre-existing block on the controller.
+        Writes are by presence, so this is the same as `patch_block()`,
+        which describes what is written.
 
         Args:
             block (Block):
-                A complete block. Either sid or nid may be omitted,
-                but all data should be present. No attempt is made
-                to merge new and existing data.
+                A block. Either sid or nid may be omitted.
 
         Returns:
             Block:
@@ -303,17 +322,31 @@ class SparkApi:
         async with self._execute('Write block'):
             block = self._to_firmware_block(block)
             block = await self.cmder.write_block(block)
-            block = self._to_block(block)
+            block = self.to_block(block)
             return block
 
     async def patch_block(self, block: Block) -> Block:
         """
-        Write to a pre-existing block on the controller.
-        Existing values will be used for all fields not present in `block.data`.
+        Write to a pre-existing block on the controller, as a JSON Merge Patch:
+
+        * A field that is absent from `block.data` keeps its value.
+        * A field that is present is written, also if its value is zero, false, or empty.
+          An empty list clears the list.
+        * A field given as `None` (JSON null) is reset to its default.
+          This includes a Quantity with value `None`, and a link given as `None` or with id `None`.
+          A value becomes 0, false, or empty, an enum its first value, a link is cleared, and a list is cleared.
+          A message (such as a constraint) has all its writable fields reset: a constraint is disabled and zeroed.
+          In a list element or map value, a `None` field has its default: list elements are always written whole.
+          A `None` member of a oneof (a Variables value, a Sequence instruction argument) is written with its default,
+          unless another member of it is given: a zero timestamp variable reads as `None`, and writes back as 0.
+        * The Variables map is merged by key by the controller: an entry given as `None` or `{'empty': True}`
+          deletes that key, and the other keys are kept. `None` for the whole map changes nothing.
+
+        Readonly fields are ignored.
 
         Args:
             block (Block):
-                A complete block. Either sid or nid may be omitted,
+                A block. Either sid or nid may be omitted,
                 and existing data will be used for all fields not set in block data.
 
         Returns:
@@ -324,7 +357,7 @@ class SparkApi:
         async with self._execute('Patch block'):
             block = self._to_firmware_block(block)
             block = await self.cmder.patch_block(block)
-            block = self._to_block(block)
+            block = self.to_block(block)
             return block
 
     async def create_block(self, block: Block) -> Block:
@@ -348,7 +381,7 @@ class SparkApi:
                 block.nid = 0
             block = self._to_firmware_block(block)
             block = await self.cmder.create_block(block)
-            block = self._to_block(block)
+            block = self.to_block(block)
             return block
 
     async def delete_block(self, block: BlockIdentity) -> BlockIdentity:
@@ -394,7 +427,7 @@ class SparkApi:
         """
         async with self._execute('Read all blocks'):
             blocks = await self.cmder.read_all_blocks()
-            blocks = [self._to_block(block) for block in blocks]
+            blocks = [self.to_block(block) for block in blocks]
             return blocks
 
     async def read_all_logged_blocks(self) -> list[Block]:
@@ -410,8 +443,10 @@ class SparkApi:
 
         """
         async with self._execute('Read all blocks (logged)'):
-            blocks = await self.cmder.read_all_blocks(ReadMode.LOGGED)
-            blocks = [self._to_block(block) for block in blocks]
+            blocks = await self.cmder.read_all_blocks()
+            blocks = [self.to_block(block) for block in blocks]
+            for block in blocks:
+                block.data = self.codec.logged_view(block.type, block.data, full=True)
             return blocks
 
     async def read_all_stored_blocks(self) -> list[Block]:
@@ -429,7 +464,7 @@ class SparkApi:
         """
         async with self._execute('Read all blocks (stored)'):
             blocks = await self.cmder.read_all_blocks(ReadMode.STORED)
-            blocks = [self._to_block(block) for block in blocks]
+            blocks = [self.to_block(block) for block in blocks]
             return blocks
 
     async def discover_blocks(self) -> list[Block]:
@@ -446,7 +481,7 @@ class SparkApi:
         async with self._execute('Discover blocks'):
             async with self._discovery_lock:
                 blocks = await self.cmder.discover_blocks()
-            blocks = [self._to_block(block) for block in blocks]
+            blocks = [self.to_block(block) for block in blocks]
             return blocks
 
     async def clear_blocks(self) -> list[BlockIdentity]:
@@ -468,7 +503,8 @@ class SparkApi:
                 FirmwareBlock(
                     nid=const.SYS_BLOCK_IDS['DisplaySettings'],
                     type='DisplaySettings',
-                    data={},
+                    # Writes are by presence: reset the settings explicitly
+                    data={'widgets': [], 'name': ''},
                 )
             )
             return identities
@@ -559,9 +595,27 @@ class SparkApi:
 
             # Resolve IDs now before concurrent calls can edit the block store
             resolved_blocks: list[FirmwareBlock] = []
+            completed: list[str] = []
+            completions: Counter[str] = Counter()
             for block in exported.blocks:
+                # A block the service that wrote the backup could not read holds only that error
+                if block.type in [codec.UNKNOWN_TYPE_STR, codec.ERROR_TYPE_STR]:
+                    message = (
+                        f'Block `{block.id}` was saved without its data, because the service '
+                        'that wrote this backup could not read it: there is nothing to restore.'
+                    )
+                    error_log.append(message)
+                    LOGGER.warning(f'{message} {block.data}')
+                    continue
+
                 try:
                     block = block.model_copy(deep=True)
+                    # Sequence lines as the service that wrote the backup left them
+                    if block.type == const.SEQUENCE_BLOCK_TYPE and (
+                        changes := sequence.complete_backup_lines(block, exported.firmware)
+                    ):
+                        completed.append(block.id)
+                        completions.update(changes)
                     block = self._to_firmware_block(block)
                     resolved_blocks.append(block)
 
@@ -569,6 +623,12 @@ class SparkApi:
                     message = f'failed to resolve block. Error={utils.strex(ex)}, block={block}'
                     error_log.append(message)
                     LOGGER.error(message)
+
+            # One note for every completed Sequence, before the problems
+            if completed:
+                note = sequence.completion_note(len(completed), completions)
+                error_log.insert(0, note)
+                LOGGER.info(f'{note} Sequences: {", ".join(completed)}')
 
             LOGGER.debug('Loading blocks from backup:')
             for block in resolved_blocks:
@@ -625,6 +685,7 @@ class SparkApi:
             block (Block):
                 A block that at least includes type and data.
                 Both sid and nid may be omitted.
+                The request size is checked with the sid and nid where given, else at their largest.
 
         """
         async with self._execute('Validate block'):
@@ -634,8 +695,9 @@ class SparkApi:
             block.id = None
             block.nid = 0
             block = self._to_firmware_block(block)
-            block = await self.cmder.validate(block)
-            block = self._to_block(block)
+            # A copy: to_block() adds a name in the block to the block store
+            await self.cmder.validate(block.model_copy(update={'id': sid, 'nid': nid or 0}))
+            block = self.to_block(block)
 
             block.id = sid
             block.nid = nid

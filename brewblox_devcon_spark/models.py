@@ -1,5 +1,5 @@
 import enum
-from datetime import timedelta
+from datetime import date, timedelta
 from functools import partial
 from pathlib import Path
 from typing import Annotated, Any, Literal, Self
@@ -47,6 +47,14 @@ class DiscoveryType(enum.Enum):
 
 
 class ResetReason(enum.Enum):
+    """
+    Reset reason as reported by Particle firmware.
+
+    Only Particle ever filled in the handshake field: ESP firmware sent 00.
+    Firmware built on or after CROSS_PLATFORM_RESET_REASON_DATE reports
+    CrossPlatformResetReason instead, on every platform.
+    """
+
     NONE = '00'
     UNKNOWN = '0A'
     # Hardware
@@ -67,6 +75,70 @@ class ResetReason(enum.Enum):
 
     def __str__(self):
         return self.name
+
+
+# Firmware from this date on maps every platform's reset cause to the
+# cross-platform enum (brewblox-firmware b89ae623, "make reset-reason cross platform").
+# The numeric ranges of the two tables overlap, so the firmware date in the
+# handshake decides which one applies.
+CROSS_PLATFORM_RESET_REASON_DATE = date(2026, 7, 7)
+
+
+class CrossPlatformResetReason(enum.Enum):
+    """
+    Reset reason as reported by all platforms since CROSS_PLATFORM_RESET_REASON_DATE.
+
+    Mirrors the ResetReason enum in SysInfo.proto; the value is the enum number
+    as sent in the handshake. test_codec_lookup checks that the two agree.
+    """
+
+    UNKNOWN = 0
+    POWER_ON = 1
+    EXTERNAL = 2
+    SOFTWARE = 3
+    PANIC = 4
+    INTERRUPT_WDT = 5
+    TASK_WDT = 6
+    OTHER_WDT = 7
+    DEEP_SLEEP = 8
+    BROWNOUT = 9
+    SDIO = 10
+    USB = 11
+    JTAG = 12
+    EFUSE = 13
+    POWER_GLITCH = 14
+    CPU_LOCKUP = 15
+    FIRMWARE_UPDATE = 16
+    FIRMWARE_UPDATE_FAILED = 17
+    FIRMWARE_UPDATE_TIMEOUT = 18
+    FACTORY_RESET = 19
+    SAFE_MODE = 20
+    DFU_MODE = 21
+    USER_REQUESTED = 22
+
+    def __str__(self):
+        return self.name
+
+
+def parse_reset_reason(firmware_date: str, reset_reason_hex: str) -> str:
+    """
+    Resolves the handshake's reset reason to a name.
+
+    The reason is informational: an unrecognized value must never fail the
+    handshake, so it falls back to UNKNOWN instead of raising.
+    """
+    try:
+        cross_platform = date.fromisoformat(firmware_date) >= CROSS_PLATFORM_RESET_REASON_DATE
+    except ValueError:
+        # An unparseable date is not something old firmware produces
+        cross_platform = True
+
+    try:
+        if cross_platform:
+            return str(CrossPlatformResetReason(int(reset_reason_hex, 16)))
+        return str(ResetReason(reset_reason_hex.upper()))
+    except ValueError:
+        return str(CrossPlatformResetReason.UNKNOWN if cross_platform else ResetReason.UNKNOWN)
 
 
 class ResetData(enum.Enum):
@@ -127,6 +199,10 @@ class ErrorCode(enum.Enum):
     NETWORK_WRITE_ERROR = 13
     NETWORK_ENCODING_ERROR = 14
 
+    # The request waited too long in the transport queue before the
+    # controller could handle it; resend if still relevant
+    REQUEST_EXPIRED = 15
+
     # Storage I/O errors
     STORAGE_ERROR = 20
     STORAGE_READ_ERROR = 21
@@ -164,13 +240,7 @@ class ErrorCode(enum.Enum):
 class ReadMode(enum.Enum):
     DEFAULT = 0
     STORED = 1
-    LOGGED = 2
-
-
-class MaskMode(enum.Enum):
-    NO_MASK = 0
-    INCLUSIVE = 1
-    EXCLUSIVE = 2
+    CHANGED = 2
 
 
 def parse_enum(cls: type[enum.Enum], v: Any):
@@ -187,7 +257,6 @@ ResetData_field = Annotated[ResetData, BeforeValidator(partial(parse_enum, Reset
 Opcode_field = Annotated[Opcode, BeforeValidator(partial(parse_enum, Opcode))]
 ErrorCode_field = Annotated[ErrorCode, BeforeValidator(partial(parse_enum, ErrorCode))]
 ReadMode_field = Annotated[ReadMode, BeforeValidator(partial(parse_enum, ReadMode))]
-MaskMode_field = Annotated[MaskMode, BeforeValidator(partial(parse_enum, MaskMode))]
 
 
 class ServiceConfig(BaseSettings):
@@ -266,7 +335,11 @@ class ServiceConfig(BaseSettings):
     command_timeout: timedelta_field = timedelta(seconds=20)
 
     # Broadcast options
-    broadcast_interval: timedelta_field = timedelta(seconds=5)
+    # Every tick reads the blocks that changed, and publishes history and a patch event.
+    # Every full read interval, all blocks are read, and the full state event is published.
+    broadcast_interval: timedelta_field = timedelta(seconds=1)
+    full_read_interval: timedelta_field = timedelta(seconds=5)
+    broadcast_timeout: timedelta_field = timedelta(seconds=5)
 
     # Firmware options
     skip_version_check: bool = False
@@ -339,14 +412,8 @@ class BlockNameChange(BaseModel):
     desired: str
 
 
-class MaskField(BaseModel):
-    address: list[int]
-
-
 class BasePayload(BaseModel):
     blockId: int
-    maskMode: MaskMode_field = MaskMode.NO_MASK
-    maskFields: list[MaskField] = Field(default_factory=list)
 
 
 class EncodedPayload(BasePayload):
@@ -411,7 +478,7 @@ class HandshakeMessage(BaseModel):
 
     @model_validator(mode='after')
     def parse_reset_enums(self) -> Self:
-        self.reset_reason = str(ResetReason(self.reset_reason_hex.upper()))
+        self.reset_reason = parse_reset_reason(self.firmware_date, self.reset_reason_hex)
         try:
             self.reset_data = str(ResetData(self.reset_data_hex.upper()))
         except Exception:
@@ -636,6 +703,9 @@ class DatastoreEvent(BaseModel):
 class HistoryEvent(BaseModel):
     key: str
     data: dict
+    # The time of the samples, in milliseconds since the Unix epoch.
+    # The history service uses its arrival time if this is not set.
+    timestamp: int | None = None
 
 
 class ServiceStateEventData(BaseModel):

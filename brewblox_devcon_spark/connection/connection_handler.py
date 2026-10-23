@@ -137,6 +137,10 @@ class ConnectionHandler(ConnectionCallbacks):
 
         await self._impl.send_request(msg)
 
+    def reset_stream(self):
+        if self._impl is not None:
+            self._impl.reset_stream()
+
     async def reset(self):
         # The run() function will handle cleanup
         if self._impl:

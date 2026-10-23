@@ -68,6 +68,10 @@ class StateMachine:
         # Initial state is disconnected
         self._disconnected_ev.set()
 
+        # Incremented on every connect.
+        # Results of requests sent in an earlier session describe a controller state that is gone.
+        self.session = 0
+
     def desc(self) -> StatusDescription:
         return self._status_desc
 
@@ -98,6 +102,7 @@ class StateMachine:
         self._status_desc.address = address
         self._status_desc.connection_kind = connection_kind
         self._status_desc.connection_status = 'CONNECTED'
+        self.session += 1
 
         LOGGER.info(f'>>> CONNECTED ({connection_kind})')
         self._connected_ev.set()

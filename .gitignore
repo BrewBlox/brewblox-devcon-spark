@@ -73,3 +73,9 @@ eeprom.bin
 firmware/
 
 .appenv
+
+# Claude Code
+.claude/settings.local.json
+
+# The local issue tracker (docs/agents/issue-tracker.md): specs, tickets, maps and research notes, synced between Elco's machines, never committed.
+/.scratch/

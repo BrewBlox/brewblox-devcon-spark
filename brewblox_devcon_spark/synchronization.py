@@ -72,6 +72,20 @@ def subroutine(desc: str):
     return wrapper
 
 
+async def _retry_once(desc: str, coro_factory):
+    """
+    Run coro_factory() once; on CommandTimeout or transient ConnectionException
+    (stream desync raised by the commander), retry once.
+    A dropped or late response manifests as a command_timeout;
+    one retry is cheap, and lets sync recover without a full reconnect.
+    """
+    try:
+        return await coro_factory()
+    except (exceptions.CommandTimeout, exceptions.ConnectionException) as ex:
+        LOGGER.warning(f'{desc}: {utils.strex(ex)} - retrying once')
+        return await coro_factory()
+
+
 class StateSynchronizer:
     def __init__(self):
         self.config = utils.get_config()
@@ -117,7 +131,7 @@ class StateSynchronizer:
     @subroutine('sync block store')
     async def _sync_block_store(self):
         state = state_machine.CV.get()
-        blocks = await self.commander.read_all_block_names()
+        blocks = await _retry_once('read_all_block_names', self.commander.read_all_block_names)
         self.block_store.clear()
         for block in blocks:
             self.block_store[block.id] = block.nid
@@ -158,15 +172,18 @@ class StateSynchronizer:
         temp_unit_enum = 'TEMP_FAHRENHEIT' if temp_unit_name == 'degF' else 'TEMP_CELSIUS'
         LOGGER.info(f'Spark temp unit: {temp_unit_enum}')
 
-        sysinfo = await self.commander.patch_block(
-            FirmwareBlock(
-                nid=const.SYS_BLOCK_IDS['SysInfo'],
-                type=const.SYSINFO_BLOCK_TYPE,
-                data={
-                    'timeZone': tz_posix,
-                    'tempUnit': temp_unit_enum,
-                },
-            )
+        sysinfo = await _retry_once(
+            'patch sysinfo block',
+            lambda: self.commander.patch_block(
+                FirmwareBlock(
+                    nid=const.SYS_BLOCK_IDS['SysInfo'],
+                    type=const.SYSINFO_BLOCK_TYPE,
+                    data={
+                        'timeZone': tz_posix,
+                        'tempUnit': temp_unit_enum,
+                    },
+                )
+            ),
         )
 
         if sysinfo.type != const.SYSINFO_BLOCK_TYPE:

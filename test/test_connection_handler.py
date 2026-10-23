@@ -283,3 +283,10 @@ async def test_handler_discovery_error(mocker: MockerFixture, m_kill: Mock):
     config.discovery = DiscoveryType.mqtt
     await handler.run()
     await handler.run()
+
+
+async def test_reset_stream_without_impl():
+    """reset_stream() is a no-op while disconnected."""
+    handler = connection_handler.ConnectionHandler()
+    assert handler._impl is None
+    handler.reset_stream()

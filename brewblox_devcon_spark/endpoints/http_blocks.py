@@ -67,7 +67,8 @@ async def blocks_read_stored(args: BlockIdentity) -> Block:
 @router.post('/write')
 async def blocks_write(args: Block) -> Block:
     """
-    Write existing block. This will replace all fields.
+    Write existing block. Alias of /patch: writes are by presence,
+    so this will only replace provided fields. A null field is reset to its default.
     """
     block = await spark_api.CV.get().write_block(args)
     publish(changed=[block])
@@ -77,7 +78,11 @@ async def blocks_write(args: Block) -> Block:
 @router.post('/patch')
 async def blocks_patch(args: Block) -> Block:
     """
-    Patch existing block. This will only replace provided fields.
+    Patch existing block, as a JSON Merge Patch. This will only replace provided fields.
+    A provided field is written also if its value is zero, false, or empty.
+    A null field (a null Quantity value or link id included) is reset to its default:
+    zero, false, empty, no link, or an empty list; a null constraint is disabled and zeroed.
+    A Variables entry given as null is deleted; null for the whole Variables map changes nothing.
     """
     block = await spark_api.CV.get().patch_block(args)
     publish(changed=[block])
@@ -118,7 +123,8 @@ async def blocks_batch_read(args: list[BlockIdentity]) -> list[Block]:
 @router.post('/batch/write')
 async def blocks_batch_write(args: list[Block]) -> list[Block]:
     """
-    Write multiple existing blocks. This will replace all fields.
+    Write multiple existing blocks. Alias of /batch/patch: writes are by presence,
+    so this will only replace provided fields. A null field is reset to its default.
     """
     api = spark_api.CV.get()
     blocks = [await api.write_block(block) for block in args]
@@ -129,7 +135,8 @@ async def blocks_batch_write(args: list[Block]) -> list[Block]:
 @router.post('/batch/patch')
 async def blocks_batch_patch(args: list[Block]) -> list[Block]:
     """
-    Write multiple existing blocks. This will only replace provided fields.
+    Patch multiple existing blocks, as /patch does.
+    This will only replace provided fields, and a null field is reset to its default.
     """
     api = spark_api.CV.get()
     blocks = [await api.patch_block(block) for block in args]

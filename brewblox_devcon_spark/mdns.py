@@ -6,14 +6,21 @@ import asyncio
 import logging
 from collections import namedtuple
 from collections.abc import AsyncGenerator
-from contextlib import suppress
+from contextlib import aclosing, suppress
 from datetime import timedelta
-from socket import AF_INET, inet_aton, inet_ntoa
 
-from aiozeroconf import ServiceBrowser, ServiceStateChange, Zeroconf
-from aiozeroconf.aiozeroconf import ServiceInfo
+from zeroconf import DNSQuestionType, IPVersion, ServiceStateChange, Zeroconf
+from zeroconf.asyncio import AsyncServiceBrowser, AsyncServiceInfo, AsyncZeroconf
 
-SIM_ADDR = inet_aton('0.0.0.0')
+# Simulators announce this address
+SIM_ADDR = '0.0.0.0'
+
+# How long to wait for the details of an announced service
+INFO_TIMEOUT_MS = 3000
+
+# Ask for multicast answers. By default, the first query asks for unicast answers,
+# which some Sparks answer only when the query is repeated a second later.
+QUESTION_TYPE = DNSQuestionType.QM
 
 LOGGER = logging.getLogger(__name__)
 
@@ -24,27 +31,28 @@ async def _discover(
     desired_id: str | None,
     dns_type: str,
 ) -> AsyncGenerator[ConnectInfo, None]:
-    queue: asyncio.Queue[ServiceInfo] = asyncio.Queue()
-    conf = Zeroconf(asyncio.get_event_loop(), address_family=[AF_INET])
+    names: asyncio.Queue[str] = asyncio.Queue()
+    aiozc = AsyncZeroconf(ip_version=IPVersion.V4Only)
 
-    async def add_service(service_type, name):
-        info = await conf.get_service_info(service_type, name)
-        await queue.put(info)
-
-    def sync_change_handler(_, service_type, name, state_change):
+    def on_change(zeroconf: Zeroconf, service_type: str, name: str, state_change: ServiceStateChange):
         if state_change is ServiceStateChange.Added:
-            asyncio.create_task(add_service(service_type, name))
+            names.put_nowait(name)
+
+    browser = AsyncServiceBrowser(aiozc.zeroconf, dns_type, handlers=[on_change], question_type=QUESTION_TYPE)
 
     try:
-        ServiceBrowser(conf, dns_type, handlers=[sync_change_handler])
-
         while True:
-            info = await queue.get()
-            if info.address in [None, SIM_ADDR]:
+            name = await names.get()
+            info = AsyncServiceInfo(dns_type, name)
+            if not await info.async_request(aiozc.zeroconf, INFO_TIMEOUT_MS, question_type=QUESTION_TYPE):
+                continue  # the service did not answer
+
+            addresses = [a for a in info.parsed_addresses(IPVersion.V4Only) if a != SIM_ADDR]
+            if not addresses:
                 continue  # discard unknown addresses and simulators
 
-            addr = inet_ntoa(info.address)
-            id = info.properties.get(b'ID', b'').decode().lower()
+            addr = addresses[0]
+            id = (info.properties.get(b'ID') or b'').decode().lower()
 
             if not id:
                 LOGGER.error(f'Invalid device: {info.name} @ {addr}:{info.port} has no ID TXT property')
@@ -55,7 +63,8 @@ async def _discover(
             else:
                 LOGGER.info(f'Discarding {info.name} @ {addr}:{info.port}')
     finally:
-        await conf.close()
+        await browser.async_cancel()
+        await aiozc.async_close()
 
 
 async def discover_all(
@@ -63,10 +72,11 @@ async def discover_all(
     dns_type: str,
     timeout: timedelta,
 ) -> AsyncGenerator[ConnectInfo, None]:
-    with suppress(asyncio.TimeoutError):
-        async with asyncio.timeout(timeout.total_seconds()):
-            async for res in _discover(desired_id, dns_type):  # pragma: no branch
-                yield res
+    async with aclosing(_discover(desired_id, dns_type)) as results:
+        with suppress(asyncio.TimeoutError):
+            async with asyncio.timeout(timeout.total_seconds()):
+                async for res in results:  # pragma: no branch
+                    yield res
 
 
 async def discover_one(
@@ -74,6 +84,8 @@ async def discover_one(
     dns_type: str,
     timeout: timedelta,
 ) -> ConnectInfo:
-    async with asyncio.timeout(timeout.total_seconds()):
-        async for res in _discover(desired_id, dns_type):  # pragma: no branch
-            return res
+    # Closing the generator stops the browser now, not when it is garbage collected
+    async with aclosing(_discover(desired_id, dns_type)) as results:
+        async with asyncio.timeout(timeout.total_seconds()):
+            async for res in results:  # pragma: no branch
+                return res
