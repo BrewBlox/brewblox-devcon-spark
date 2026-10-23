@@ -33,6 +33,7 @@ Balancer = pb2.Balancer_pb2
 Constraints = importlib.import_module('Constraints_pb2')
 DigitalActuator = pb2.DigitalActuator_pb2
 GpioModule = pb2.GpioModule_pb2
+Kettle = pb2.Kettle_pb2
 Pid = pb2.Pid_pb2
 Sequence = pb2.Sequence_pb2
 Spark3Pins = pb2.Spark3Pins_pb2
@@ -821,6 +822,31 @@ async def test_merge_constrained_actuator():
     partial = decode(changed(t1), ReadMode.CHANGED)
     with pytest.raises(NeedFullRead, match='minOff'):
         cdc.merge_changed('DigitalActuator', cached, partial)
+
+
+def _kettle(height: int | None) -> Message:
+    block = Kettle.Block()
+    block.vessel.SetInParent()
+    if height is not None:
+        block.vessel.height = height
+    return block
+
+
+async def test_merge_nested_nullable():
+    cdc = codec.CV.get()
+
+    # A nullable leaf in a sub-message is None when absent, in every read mode
+    assert decode(_kettle(None))['vessel']['height']['value'] is None
+    assert decode(_kettle(None), ReadMode.CHANGED)['vessel']['height']['value'] is None
+
+    assert_merges(_kettle(300 * 1024), _kettle(None))
+    assert_merges(_kettle(None), _kettle(310 * 1024))
+
+    # The firmware always sends the vessel, but its presence on the wire means nothing:
+    # a CHANGED read without it invalidates the cached height
+    cached = decode(_kettle(300 * 1024))
+    assert cdc.merge_changed('Kettle', cached, decode(Kettle.Block(), ReadMode.CHANGED)) is True
+    assert cached == decode(_kettle(None))
 
 
 async def test_merge_sequence():

@@ -373,14 +373,6 @@ def test_list_elements_have_no_presence():
             assert not descriptors.list_wrapper(field), (block_type, *path)
 
 
-def test_nullable_leaves_top_level():
-    """Every nullable (optional + readonly) leaf sits at the top level of a block"""
-    for block_type, desc in block_descriptors().items():
-        for path, field, _ in walk_fields(desc):
-            if len(path) > 1 and descriptors.is_optional(field) and path[0] != 'constrainedBy':
-                assert not descriptors.options(field).readonly, (block_type, *path)
-
-
 def logged_paths(desc: Descriptor, *, full: bool = True) -> list[tuple[str, ...]]:
     """
     Paths of the logged leaves of `desc`.
