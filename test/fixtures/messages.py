@@ -1,5 +1,5 @@
 """
-Builds fully populated protobuf messages for codec tests.
+Builds protobuf messages for codec tests.
 """
 
 from collections.abc import Iterator
@@ -136,5 +136,14 @@ def add_zero_members(message: Message) -> Message:
             container.extend([zeroed for element in container[:1] for zeroed in _zeroed(element)])
         elif message.HasField(field.name):
             add_zero_members(container)
+
+    return message
+
+
+def zero_optionals(message: Message) -> Message:
+    """Set every optional scalar of `message` present at its default. Its messages stay absent."""
+    for field in message.DESCRIPTOR.fields:
+        if descriptors.is_optional(field):
+            setattr(message, field.name, field.default_value)
 
     return message

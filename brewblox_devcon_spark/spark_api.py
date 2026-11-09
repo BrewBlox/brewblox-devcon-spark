@@ -295,7 +295,7 @@ class SparkApi:
                 The desired block, as present on the controller.
                 Block data will only include fields that are stored
                 in persistent memory on the controller.
-                Non-persistent fields will be absent or set to a default value.
+                Non-persistent fields will be absent.
 
         """
         async with self._execute('Read block (stored)'):
@@ -452,14 +452,14 @@ class SparkApi:
     async def read_all_stored_blocks(self) -> list[Block]:
         """
         Read all blocks on the controller.
-        Block data is formatted to be suitable for logging.
+        Block data will only include persistent fields.
 
         Returns:
             list[Block]:
                 All present blocks on the controller.
                 Block data will only include fields that are stored
                 in persistent memory on the controller.
-                Non-persistent fields will be absent or set to a default value.
+                Non-persistent fields will be absent.
 
         """
         async with self._execute('Read all blocks (stored)'):

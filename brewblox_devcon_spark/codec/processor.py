@@ -21,7 +21,7 @@ from brewblox_devcon_spark import exceptions, utils
 from brewblox_devcon_spark.models import DecodedPayload, ReadMode
 
 from . import bloxfield, unit_conversion
-from .descriptors import is_map, is_optional, json_default, list_wrapper, options, real_oneof, reset_value
+from .descriptors import is_map, is_optional, list_wrapper, options, real_oneof, reset_value
 from .opts import DateFormatOpt
 from .pb2 import brewblox_pb2
 from .time_utils import serialize_datetime
@@ -428,8 +428,7 @@ class ProtobufProcessor:
 
         MessageToDict never emits an unset optional field, or an unset singular message.
         * An absent optional readonly field is invalid, and becomes None.
-        * An absent optional writable field gets its default value.
-          Not in CHANGED reads: there, absent means unchanged.
+        * An absent optional writable field stays absent: the firmware did not send it.
         * A list wrapper is replaced by its bare list or map.
           An absent wrapper becomes an empty list or map, except in CHANGED reads.
           A CHANGED decode sets the covered wrappers present first, so only uncovered wrappers stay absent.
@@ -442,12 +441,8 @@ class ProtobufProcessor:
             present = key in obj
 
             if is_optional(field):
-                if present:
-                    continue
-                if options(field).readonly:
+                if not present and options(field).readonly:
                     obj[key] = None
-                elif mode != ReadMode.CHANGED:
-                    obj[key] = json_default(field, integer_enums=(mode == ReadMode.STORED))
 
             elif items := list_wrapper(field):
                 if present:
