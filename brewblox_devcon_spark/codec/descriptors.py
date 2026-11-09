@@ -14,9 +14,7 @@ from functools import cache
 from types import MappingProxyType
 from typing import Any
 
-from google.protobuf import json_format
 from google.protobuf.descriptor import Descriptor, FieldDescriptor, OneofDescriptor
-from google.protobuf.message_factory import GetMessageClass
 
 from .pb2 import brewblox_pb2
 
@@ -107,19 +105,6 @@ def list_wrapper(field: FieldDescriptor) -> FieldDescriptor | None:
     if items.name == 'items' and items.is_repeated:
         return items
     return None
-
-
-@cache
-def json_default(field: FieldDescriptor, *, integer_enums: bool) -> Any:
-    """The value MessageToDict gives `field` when it is set to its default."""
-    message = GetMessageClass(field.containing_type)()
-    setattr(message, field.name, field.default_value)
-    decoded = json_format.MessageToDict(
-        message,
-        preserving_proto_field_name=True,
-        use_integers_for_enums=integer_enums,
-    )
-    return decoded[field.name]
 
 
 def is_writable(field: FieldDescriptor) -> bool:

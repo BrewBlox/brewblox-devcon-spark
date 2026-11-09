@@ -1,7 +1,7 @@
 """
 An in-process firmware simulation.
 This is not intended to simulate firmware processes,
-only to provide encoded responses that make some sense.
+but its responses follow the firmware's.
 
 MockConnection is an alternative to StreamConnection or MqttConnection.
 This prevents having to spin up a simulator in a separate process for tests.
@@ -60,6 +60,24 @@ def erase_unset(message: Message) -> None:
             entries = getattr(value, items.name)
             for key in [k for k, v in entries.items() if _is_unset(v)]:
                 del entries[key]
+
+
+# Its presence says that a calibration is stored: absent while none is
+PRESENT_WHEN_STORED = {'blox.GpioModule.Block.analogCalibration12', 'blox.GpioModule.Block.analogCalibration34'}
+
+
+def zero_missing_stored(message: Message) -> None:
+    for field in message.DESCRIPTOR.fields:
+        if not descriptors.options(field).stored or field.is_repeated or descriptors.real_oneof(field):
+            continue
+        if field.message_type:
+            if field.full_name in PRESENT_WHEN_STORED and not message.HasField(field.name):
+                continue
+            sub = getattr(message, field.name)
+            sub.SetInParent()
+            zero_missing_stored(sub)
+        elif descriptors.is_optional(field) and not message.HasField(field.name):
+            setattr(message, field.name, field.default_value)
 
 
 def merge_present(dest: Message, src: Message):
@@ -155,9 +173,15 @@ class MockConnection(ConnectionImplBase):
         message.ParseFromString(b64decode(payload.content))
         return MockBlock(payload.name, impl.type_int, message)
 
+    def _create(self, payload: EncodedPayload) -> MockBlock:
+        block = self._parse(payload)
+        erase_unset(block.message)
+        zero_missing_stored(block.message)
+        return block
+
     def _default_blocks(self) -> dict[int, MockBlock]:
         return {
-            block.nid: self._parse(
+            block.nid: self._create(
                 self._codec.encode_payload(
                     DecodedPayload(blockId=block.nid, blockType=block.type, name=block.id, content=block.data)
                 )
@@ -270,8 +294,7 @@ class MockConnection(ConnectionImplBase):
                 response.error = ErrorCode.BLOCK_NOT_CREATABLE
             else:
                 nid = nid or next(self._id_counter)
-                block = self._parse(request.payload)
-                erase_unset(block.message)
+                block = self._create(request.payload)
                 self._blocks[nid] = block
                 response.payload = [self._to_payload(nid, block, block.name)]
 
