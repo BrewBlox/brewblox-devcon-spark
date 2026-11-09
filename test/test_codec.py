@@ -22,7 +22,7 @@ from brewblox_devcon_spark.models import (
     Opcode,
     ReadMode,
 )
-from test.fixtures.messages import add_zero_members, populate
+from test.fixtures.messages import add_zero_members, populate, zero_optionals
 
 TEMP_SENSOR_TYPE_INT = 302
 GOLDEN = json.loads((Path(__file__).parent / 'fixtures' / 'logged_golden.json').read_text())
@@ -506,12 +506,12 @@ async def test_fill_default():
     assert content['outputValue'] is None
     assert content['inputValue'] == {'__bloxtype': 'Quantity', 'unit': 'degC', 'value': None, 'readonly': True}
 
-    # Absent optional writable fields get their default
-    assert content['enabled'] is False
-    assert content['integralReset'] == 0
-    assert content['derivativeFilterChoice'] == 'FILTER_NONE'
-    assert content['kp'] == {'__bloxtype': 'Quantity', 'unit': '1 / degC', 'value': 0}
-    assert content['inputId'] == {'__bloxtype': 'Link', 'type': 'SetpointSensorPairInterface', 'id': 0}
+    # Absent optional writable fields stay absent: the firmware did not send them
+    assert 'enabled' not in content
+    assert 'integralReset' not in content
+    assert 'derivativeFilterChoice' not in content
+    assert 'kp' not in content
+    assert 'inputId' not in content
 
     # Non-optional fields are always present
     assert content['active'] is False
@@ -523,28 +523,31 @@ async def test_fill_default():
     assert content['enabled'] is True
     assert content['derivativeFilterChoice'] == 'SETTLE_IN_47_SAMPLES'
 
-    # Present singular messages are filled too
+    # An absent writable field stays absent inside a present message too
     block = DigitalActuator.Block()
     block.constraints.minOff.enabled = True
     for mode in [ReadMode.DEFAULT, ReadMode.STORED]:
         content = decode(block, mode)
         assert content['constraints']['minOff']['enabled'] is True
-        assert content['constraints']['minOff']['duration'] == {'__bloxtype': 'Quantity', 'unit': 'second', 'value': 0}
+        assert 'duration' not in content['constraints']['minOff']
 
 
 async def test_fill_stored():
-    content = decode(Pid.Block(kp=4096), ReadMode.STORED)
+    content = decode(Pid.Block(kp=4096, derivativeFilterChoice=2), ReadMode.STORED)
 
-    # Readonly fields are filtered, writable fields filled, enums as numbers
+    # Readonly fields are filtered, absent writable fields stay absent, enums as numbers
     assert 'outputValue' not in content
     assert 'inputValue' not in content
-    assert content['enabled'] is False
-    assert content['derivativeFilterChoice'] == 0
+    assert 'enabled' not in content
+    assert content['derivativeFilterChoice'] == 2
     assert content['kp']['value'] == pytest.approx(1)
 
     # Wrappers are flattened, and an absent wrapper is an empty list
     content = decode(Sequence.Block(), ReadMode.STORED)
     assert content['instructions'] == []
+
+    # A firmware without Variables does not send the link: a backup holds none
+    assert 'variablesId' not in content
 
 
 async def test_fill_changed():
@@ -922,21 +925,13 @@ async def test_logged_view_golden(case: dict):
 
     # Intended differences, only for fields that are absent from the payload:
     # the 'empty' variant, and any field added after the fixture was made.
-    # The old LOGGED decode left the key out. Now:
-    # - an absent optional readonly field is None: invalid.
-    # - an absent optional writable field has its default value.
-    #   The firmware sets every stored field in DEFAULT reads, and no logged field is write-only,
-    #   so real reads never take this path.
     for key in set(view) - set(expected):
         name = key.split('[')[0].split('<')[0]
         field = desc.fields_by_name[name]
         assert descriptors.is_optional(field), key
+        assert descriptors.options(field).readonly, key
         assert not stored.HasField(name), key
-        if descriptors.options(field).readonly:
-            assert view[key] is None, key
-        else:
-            assert view[key] == 0, key
-        expected[key] = view[key]
+        expected[key] = None
 
     # An omit_if_zero field leaves a zero out: SysInfo.mainTaskStackFreeLowest since proto 11f23053,
     # WiFiSettings.signal since 8434d4d4
@@ -1275,12 +1270,13 @@ def _nested_nulls(data: dict) -> set[tuple[str, str]]:
     return {(top, key) for top, value in data.items() if not codec.processor.is_null(value) for key in walk(value, top)}
 
 
-@pytest.mark.parametrize('variant', ['full', 'empty', 'zero_members'])
+@pytest.mark.parametrize('variant', ['full', 'empty', 'zeros', 'zero_members'])
 async def test_encode_null_round_trip(variant: str):
     """
     Writing what a DEFAULT read returned writes the same values.
-    A DEFAULT read has nulls in writable fields only for no link, a zero datetime, and null_if_zero values:
-    the reset writes the same zero.
+    A DEFAULT read has nulls in writable fields only for no link, a zero datetime, and null_if_zero values
+    the firmware sent: the reset writes the same zero.
+    A field it did not send is absent, and the write leaves it out.
     """
     cdc = codec.CV.get()
     is_null = codec.processor.is_null
@@ -1306,6 +1302,8 @@ async def test_encode_null_round_trip(variant: str):
     messages = {
         'full': lambda cls: populate(cls()),
         'empty': lambda cls: cls(),
+        # A block at zero, with every optional scalar present
+        'zeros': lambda cls: zero_optionals(cls()),
         # List elements and map values with each oneof member at zero
         'zero_members': lambda cls: add_zero_members(populate(cls())),
     }
@@ -1324,10 +1322,12 @@ async def test_encode_null_round_trip(variant: str):
         nested |= {(entry.type_str, *p) for p in _nested_nulls(writable(desc, first))}
 
     # Links decode as id 0: the API shows no link as id None, and writes it as 0
-    if variant == 'empty':
-        assert nulls == {('SetpointProfile', 'start'), ('SysInfo', 'systemTime'), ('EdgeCase', 'deltaV')}
-    else:
-        assert nulls == set()
+    # EdgeCase.deltaV has no presence: it always decodes, and a zero reads as null
+    expected_nulls = {
+        'zeros': {('SetpointProfile', 'start'), ('SysInfo', 'systemTime'), ('EdgeCase', 'deltaV')},
+        'empty': {('EdgeCase', 'deltaV')},
+    }
+    assert nulls == expected_nulls.get(variant, set())
 
     # A zero datetime in a map value and in a list element reads as null
     if variant == 'zero_members':

@@ -124,16 +124,11 @@ def test_invalid_values(degf_processor: ProtobufProcessor, desc):
 
 
 def test_fill(degf_processor: ProtobufProcessor, desc):
-    # Absent optional fields: readonly is invalid (None), writable gets its default
-    assert degf_processor.fill(desc, {}) == {'value': None, 'offset': 0, 'address': '0', 'oneWireBusId': 0}
-    assert degf_processor.fill(desc, {}, ReadMode.STORED) == {
-        'value': None,
-        'offset': 0,
-        'address': '0',
-        'oneWireBusId': 0,
-    }
-    # CHANGED: absent writable fields are unchanged
-    assert degf_processor.fill(desc, {}, ReadMode.CHANGED) == {'value': None}
+    # Absent optional fields: readonly is invalid (None), writable stays absent
+    for mode in ReadMode:
+        assert degf_processor.fill(desc, {}, mode) == {'value': None}
+    # Present fields are kept
+    assert degf_processor.fill(desc, {'offset': 5}) == {'value': None, 'offset': 5}
     assert degf_processor.fill(desc, {'value': 10}, ReadMode.CHANGED) == {'value': 10}
 
 

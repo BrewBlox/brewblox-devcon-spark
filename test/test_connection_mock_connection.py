@@ -154,6 +154,46 @@ async def test_create_variables(manager):
     assert written.data['variables'] == {'b': {'analog': 2}}
 
 
+async def test_missing_stored_fields_read_as_zero(manager):
+    state = state_machine.CV.get()
+    state.set_enabled(True)
+    await asyncio.wait_for(state.wait_connected(), timeout=5)
+    cmdr = command.CV.get()
+
+    created = await cmdr.create_block(FirmwareBlock(id='pid', nid=0, type='Pid', data={'enabled': True}))
+    pid = await cmdr.read_block(FirmwareBlockIdentity(nid=created.nid))
+    assert pid.data['enabled'] is True
+    assert pid.data['kp']['value'] == 0
+    assert pid.data['inputId']['id'] == 0
+
+    # A write-only field is on no read
+    assert 'integralReset' not in pid.data
+
+    # A constraint the create lacks reads disabled
+    created = await cmdr.create_block(
+        FirmwareBlock(
+            id='actuator',
+            nid=0,
+            type='DigitalActuator',
+            data={'constraints': {'minOff': {'enabled': True}}},
+        )
+    )
+    actuator = await cmdr.read_block(FirmwareBlockIdentity(nid=created.nid))
+    assert actuator.data['constraints']['minOff']['enabled'] is True
+    assert actuator.data['constraints']['minOff']['duration']['value'] == 0
+    assert actuator.data['constraints']['minOn']['enabled'] is False
+    assert actuator.data['constraints']['minOn']['duration']['value'] == 0
+
+    # A calibration pair is absent until one is stored
+    created = await cmdr.create_block(FirmwareBlock(id='module', nid=0, type='GpioModule', data={}))
+    module = await cmdr.read_block(FirmwareBlockIdentity(nid=created.nid))
+    assert 'analogCalibration12' not in module.data
+    assert module.data['modulePosition'] == 0
+
+    display = await cmdr.read_block(FirmwareBlockIdentity(nid=const.SYS_BLOCK_IDS['DisplaySettings']))
+    assert display.data['name'] == ''
+
+
 async def test_changed_read(manager):
     state = state_machine.CV.get()
     state.set_enabled(True)
