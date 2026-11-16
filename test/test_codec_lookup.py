@@ -144,7 +144,7 @@ def test_list_wrappers():
         ('Sequence', 'instructions'): 'blox.Sequence.InstructionList.items',
         ('SetpointProfile', 'points'): 'blox.SetpointProfile.PointList.items',
         ('TempSensorCombi', 'sensors'): 'blox.TempSensorCombi.SensorList.items',
-        ('TempSensorMock', 'fluctuations'): 'blox.TempSensorMock.FluctuationList.items',
+        ('TempSensorMockFluctuating', 'fluctuations'): 'blox.TempSensorMockFluctuating.FluctuationList.items',
         ('Variables', 'variables'): 'blox.Variables.VariableMap.items',
     }
 

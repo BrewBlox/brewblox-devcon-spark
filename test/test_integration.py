@@ -1285,11 +1285,15 @@ async def test_changed_merge(client: AsyncClient):
             data={'sensorId<>': 'sensor', 'storedSetting[degC]': 21, 'enabled': True, 'filter': 'FILTER_NONE'},
         ),
         Block(id='balancer', type='Balancer', data={}),
+        # A PWM without a digital target delivers nothing, and reports no setting
+        Block(id='pins', type='MockPins', data={}),
+        Block(id='actuator', type='DigitalActuator', data={'hwDevice<>': 'pins', 'channel': 1}),
         Block(
             id='pwm',
             type='ActuatorPwm',
             data={
                 'enabled': True,
+                'actuatorId<>': 'actuator',
                 'period[s]': 4,
                 'constraints': {
                     'min': {'enabled': True, 'value': 10},

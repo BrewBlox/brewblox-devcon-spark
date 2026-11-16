@@ -115,6 +115,7 @@ class CrossPlatformResetReason(enum.Enum):
     SAFE_MODE = 20
     DFU_MODE = 21
     USER_REQUESTED = 22
+    FIRMWARE_UPDATE_ABORTED = 23
 
     def __str__(self):
         return self.name

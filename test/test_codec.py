@@ -608,7 +608,7 @@ async def test_changed_wrappers():
         (Sequence.Block(), 'instructions', []),
         (pb2.SetpointProfile_pb2.Block(), 'points', []),
         (pb2.TempSensorCombi_pb2.Block(), 'sensors', []),
-        (pb2.TempSensorMock_pb2.Block(), 'fluctuations', []),
+        (pb2.TempSensorMockFluctuating_pb2.Block(), 'fluctuations', []),
         (pb2.DisplaySettings_pb2.Block(), 'widgets', []),
         (pb2.Variables_pb2.Block(), 'variables', {}),
     ]:
