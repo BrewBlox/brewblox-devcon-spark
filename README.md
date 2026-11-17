@@ -28,7 +28,7 @@ To remove these leftovers, run `invoke testclean`.
 The Spark service is coupled to a specific Spark firmware version.
 Version info is tracked in [firmware.ini](./firmware.ini), and firmware binaries are downloaded during the Docker image build.
 
-Protobuf message definitions are loaded from the [Brewblox proto](https://github.com/BrewBlox/brewblox-proto) submodule at *[brewblox_devcon_spark/codec/proto](./brewblox_devcon_spark/codec/proto)*.
+Protobuf message definitions are loaded from the [Brewblox proto](https://github.com/BrewBlox/brewblox-proto) submodule at *[brewblox-proto](./brewblox-proto)*.
 The firmware.ini file contains a sha for the relevant brewblox-proto commit.
 
 The brewblox-proto repository only contains .proto files. The associated pb2.py files are compiled here and committed into version control.
