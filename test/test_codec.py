@@ -717,7 +717,7 @@ async def test_merge_gpio_analog_calibration():
 
 
 def _pins(claimed: int) -> Message:
-    block = Spark3Pins.Block(enableIoSupply5V=True, voltage5=5000, voltage12=12000)
+    block = Spark3Pins.Block(soundAlarm=True, voltage5=5000, voltage12=12000)
     block.channels.add(id=1, capabilities=3, claimedBy=claimed)
     block.channels.add(id=2, capabilities=3)
     return block

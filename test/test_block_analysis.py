@@ -224,7 +224,6 @@ def make_blocks() -> list[Block]:
             serviceId='test',
             data={
                 'enableIoSupply12V': True,
-                'enableIoSupply5V': True,
                 'channels': [
                     {
                         'id': 1,
