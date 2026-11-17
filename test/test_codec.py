@@ -35,6 +35,7 @@ DigitalActuator = pb2.DigitalActuator_pb2
 GpioModule = pb2.GpioModule_pb2
 Pid = pb2.Pid_pb2
 Sequence = pb2.Sequence_pb2
+SetpointSensorPair = pb2.SetpointSensorPair_pb2
 Spark3Pins = pb2.Spark3Pins_pb2
 SysInfo = pb2.SysInfo_pb2
 TempSensorCombi = pb2.TempSensorCombi_pb2
@@ -509,19 +510,18 @@ async def test_fill_default():
     # Absent optional writable fields stay absent: the firmware did not send them
     assert 'enabled' not in content
     assert 'integralReset' not in content
-    assert 'derivativeFilterChoice' not in content
     assert 'kp' not in content
     assert 'inputId' not in content
 
     # Non-optional fields are always present
     assert content['active'] is False
-    assert content['derivativeFilter'] == 'FILTER_NONE'
+    assert decode(ActuatorLogic.Block())['result'] == 'RESULT_FALSE'
 
     # Explicit values are kept
-    content = decode(Pid.Block(outputValue=0, enabled=True, derivativeFilterChoice=2))
+    content = decode(Pid.Block(outputValue=0, enabled=True))
     assert content['outputValue'] == 0
     assert content['enabled'] is True
-    assert content['derivativeFilterChoice'] == 'SETTLE_IN_47_SAMPLES'
+    assert decode(SetpointSensorPair.Block(filter=2))['filter'] == 'SETTLE_IN_47_SAMPLES'
 
     # An absent writable field stays absent inside a present message too
     block = DigitalActuator.Block()
@@ -533,14 +533,14 @@ async def test_fill_default():
 
 
 async def test_fill_stored():
-    content = decode(Pid.Block(kp=4096, derivativeFilterChoice=2), ReadMode.STORED)
+    content = decode(Pid.Block(kp=4096), ReadMode.STORED)
 
     # Readonly fields are filtered, absent writable fields stay absent, enums as numbers
     assert 'outputValue' not in content
     assert 'inputValue' not in content
     assert 'enabled' not in content
-    assert content['derivativeFilterChoice'] == 2
     assert content['kp']['value'] == pytest.approx(1)
+    assert decode(SetpointSensorPair.Block(filter=2), ReadMode.STORED)['filter'] == 2
 
     # Wrappers are flattened, and an absent wrapper is an empty list
     content = decode(Sequence.Block(), ReadMode.STORED)
@@ -749,7 +749,6 @@ def _pid(value: int | None, active: bool) -> Message:
         ti=100,
         td=10,
         integral=0 if value is None else 256,
-        derivativeFilter=0 if value is None else 2,
     )
     if value is not None:
         block.inputValue = value
@@ -1029,7 +1028,6 @@ async def test_encode_presence():
             content={
                 'enabled': False,
                 'boilMinOutput': 0,
-                'derivativeFilterChoice': 'FILTER_NONE',
                 'outputValue': 50,  # readonly: stripped
                 'drivenOutputId': 1,  # ignored: stripped
             },
@@ -1040,7 +1038,7 @@ async def test_encode_presence():
     # Explicit zero, false, and enum 0 are present
     assert message.HasField('enabled')
     assert message.HasField('boilMinOutput')
-    assert message.HasField('derivativeFilterChoice')
+    assert _encode('SetpointSensorPair', {'filter': 'FILTER_NONE'}).HasField('filter')
 
     # Absent keys are absent: the controller keeps their value
     assert not message.HasField('ti')
@@ -1088,7 +1086,6 @@ async def test_encode_null_leaves():
         {
             'enabled': None,  # bool
             'boilMinOutput': None,  # number
-            'derivativeFilterChoice': None,  # enum
             'kp': {'__bloxtype': 'Quantity', 'unit': '1 / degC', 'value': None},
             'td[s]': None,
             'inputId': {'__bloxtype': 'Link', 'type': 'SetpointSensorPairInterface', 'id': None},
@@ -1096,11 +1093,15 @@ async def test_encode_null_leaves():
             'outputValue': None,  # readonly: stripped
         },
     )
-    for key in ['enabled', 'boilMinOutput', 'derivativeFilterChoice', 'kp', 'td', 'inputId', 'outputId']:
+    for key in ['enabled', 'boilMinOutput', 'kp', 'td', 'inputId', 'outputId']:
         assert message.HasField(key), key
         assert getattr(message, key) == 0, key
     assert not message.HasField('outputValue')
     assert not message.HasField('ti')  # Absent: kept
+
+    message = _encode('SetpointSensorPair', {'filter': None})  # enum
+    assert message.HasField('filter')
+    assert message.filter == 0
 
     # Strings and datetimes
     assert _encode('DisplaySettings', {'name': None}).HasField('name')

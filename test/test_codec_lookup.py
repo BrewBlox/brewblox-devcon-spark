@@ -263,7 +263,6 @@ def test_coverage_snapshot():
         'integral',
         'derivative',
         'boilModeActive',
-        'derivativeFilter',
         'ff',
         'ambientValue',
         'ambientOffset',
